@@ -25,7 +25,4 @@ class ZVariantRef :
 class ZDynamicObject :
 	public ZVariant
 {
-public:
-	typedef void (__fastcall* ToString_t)(ZDynamicObject* th, ZString* a2);
-	static ToString_t ToString;
 };

@@ -132,15 +132,6 @@ class ZActor :
 	public ICrowdAIActor
 {
 public:
-	static uint16_t* s_nextActorID;
-
-	typedef void (__thiscall* OnOutfitChanged_t)(ZActor* th);
-	static OnOutfitChanged_t OnOutfitChanged;
-
-	typedef void (__thiscall* ReviveActor_t)(ZActor* th);
-	static ReviveActor_t ReviveActor;	
-
-public:
 	PAD(0x100); // 0x300
 	bool m_bStartEnabled; // 0x400
 	TEntityRef<ZCharacterTemplateAspect> m_rCharacter; // 0x408
