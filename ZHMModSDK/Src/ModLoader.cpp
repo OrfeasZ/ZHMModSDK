@@ -3,6 +3,10 @@
 #include <Windows.h>
 #include <filesystem>
 
+
+
+#include "EventDispatcherImpl.h"
+#include "HookImpl.h"
 #include "IPluginInterface.h"
 #include "Logging.h"
 #include "Util/StringUtils.h"
@@ -112,6 +116,9 @@ void ModLoader::UnloadMod(const std::string& p_Name)
 		return;
 
 	Logger::Info("Unloading mod '{}'.", p_Name);
+
+	HookRegistry::ClearPluginDetours(it->second.PluginInterface);
+	EventDispatcherRegistry::ClearPluginListeners(it->second.PluginInterface);
 
 	delete it->second.PluginInterface;
 	FreeLibrary(it->second.Module);

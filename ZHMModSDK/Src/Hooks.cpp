@@ -1,6 +1,8 @@
 #include "Hooks.h"
 #include "HookImpl.h"
 
+std::unordered_set<HookBase*>* HookRegistry::g_Hooks = nullptr;
+
 DetourTrampoline* Trampolines::g_Trampolines = nullptr;
 size_t Trampolines::g_TrampolineCount = 0;
 

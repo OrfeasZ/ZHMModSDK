@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <unordered_set>
 #include <vector>
 
 #include "ModSDK.h"
@@ -12,6 +13,38 @@
 
 #define MAX_TRAMPOLINES 2048
 
+class HookRegistry
+{
+private:
+	static std::unordered_set<HookBase*>* g_Hooks;
+
+public:
+	static void RegisterHook(HookBase* p_Hook)
+	{
+		if (g_Hooks == nullptr)
+			g_Hooks = new std::unordered_set<HookBase*>();
+
+		g_Hooks->insert(p_Hook);
+	}
+
+	static void RemoveHook(HookBase* p_Hook)
+	{
+		if (g_Hooks == nullptr)
+			return;
+
+		g_Hooks->erase(p_Hook);
+	}
+
+	static void ClearPluginDetours(IPluginInterface* p_Plugin)
+	{
+		if (g_Hooks == nullptr)
+			return;
+
+		for (auto s_Hook : *g_Hooks)
+			s_Hook->RemovePluginDetours(p_Plugin);
+	}
+};
+
 template <class ReturnType, class... Args>
 class HookImpl : public Hook<ReturnType, Args...>
 {
@@ -19,6 +52,8 @@ protected:
 	HookImpl(const char* p_HookName, void* p_Target, typename Hook<ReturnType, Args...>::OriginalFunc_t p_Detour) :
 		m_Target(p_Target)
 	{
+		HookRegistry::RegisterHook(this);
+		
 		// We push null here because that's what's used by the caller
 		// implementation to determine when we've ran out of detours.
 		m_Detours.push_back(nullptr);
@@ -58,6 +93,8 @@ protected:
 	HookImpl(const char* p_HookName, typename Hook<ReturnType, Args...>::OriginalFunc_t p_Original) :
 		m_Target(nullptr)
 	{
+		HookRegistry::RegisterHook(this);
+
 		if (p_Original == nullptr)
 		{
 			Logger::Error("Could not find address for hook '{}'. This probably means that the game was updated and the SDK requires changes.", p_HookName);
@@ -72,6 +109,8 @@ protected:
 public:
 	~HookImpl() override
 	{
+		HookRegistry::RemoveHook(this);
+
 		if (m_Target != nullptr)
 		{
 			MH_DisableHook(m_Target);
@@ -80,28 +119,73 @@ public:
 	}
 
 protected:
-	void AddDetourInternal(void* p_Detour) override
+	void AddDetourInternal(IPluginInterface* p_Plugin, void* p_Detour) override
 	{
+		// TODO: Do we need any sort of locking here?
+
 		// We remove it first to make sure we only have unique detours
 		// in our list. We could use a set to make this easier but iteration
 		// performance wouldn't be very great.		
 		RemoveDetourInternal(p_Detour);
 
-		m_Detours.insert(m_Detours.end() - 1, p_Detour);
+		auto s_Detour = new HookBase::Detour();
+		s_Detour->DetourFunc = p_Detour;
+		s_Detour->Plugin = p_Plugin;
+		
+		m_Detours.insert(m_Detours.end() - 1, s_Detour);
 	}
 
 	void RemoveDetourInternal(void* p_Detour) override
 	{
-		m_Detours.erase(std::remove(m_Detours.begin(), m_Detours.end(), p_Detour), m_Detours.end());
+		for (auto it = m_Detours.begin(); it != m_Detours.end();)
+		{
+			if (*it == nullptr)
+			{
+				++it;
+				continue;
+			}
+
+			if ((*it)->DetourFunc == p_Detour)
+			{
+				delete* it;
+				it = m_Detours.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
 	}
 
-	void** GetDetours() override
+	HookBase::Detour** GetDetours() override
 	{
 		return m_Detours.data();
 	}
 
+	void RemovePluginDetours(IPluginInterface* p_Plugin) override
+	{
+		for (auto it = m_Detours.begin(); it != m_Detours.end();)
+		{
+			if (*it == nullptr)
+			{
+				++it;
+				continue;
+			}
+
+			if ((*it)->Plugin == p_Plugin)
+			{
+				delete* it;
+				it = m_Detours.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+
 private:
-	std::vector<void*> m_Detours;
+	std::vector<HookBase::Detour*> m_Detours;
 	void* m_Target;
 };
 
