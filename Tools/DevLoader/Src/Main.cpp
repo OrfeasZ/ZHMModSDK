@@ -9,44 +9,48 @@ int main(int argc, char* argv[])
 	// NOTE: This app assumes that it's launched from its build directory.
 	// If it isn't then the copying steps will fail.
 
-	std::string s_HitmanPathStr{ "C:\\Program Files\\EpicGames\\HITMAN3" };
-	std::string s_EpicUsername{ "NoFaTe" };
-	std::string s_EpicUserId{ "29438d6d19854c498ff2e7b77e2e5c07" };
+	std::string s_HitmanPathStr = "C:\\Program Files\\EpicGames\\HITMAN3";
+	std::string s_EpicUsername = "NoFaTe";
+	std::string s_EpicUserId = "29438d6d19854c498ff2e7b77e2e5c07";
 
 	// Get cmd-line args
-	bool badArgs{ false };
-	for (int i{ 1 }; i < argc; i++)
+	bool s_BadArgs = false;
+	
+	for (int i = 1; i < argc; ++i)
 	{
 		if (strlen(argv[i]) >= 1 && argv[i][0] == '-')
 		{
 			if (i + 1 >= argc)
 			{
 				std::cerr << "Argument " << argv[i] << " has no value" << std::endl;
-				badArgs = true;
+				s_BadArgs = true;
 				break;
 			}
 
-
 			if (!strcmp(argv[i], "-hitman_path"))
+			{
 				s_HitmanPathStr = argv[i + 1];
-
+			}
 			else if (!strcmp(argv[i], "-epic_username"))
+			{
 				s_EpicUsername = argv[i + 1];
-
+			}
 			else if (!strcmp(argv[i], "-epic_userid"))
+			{
 				s_EpicUserId = argv[i + 1];
-
+			}
 			else
 			{
 				std::cerr << "Unknown argument " << argv[i] << std::endl;
-				badArgs = true;
+				s_BadArgs = true;
 			}
+			
 			// Increment i since we already read from the next argv
-			i++;
+			++i;
 		}
 	}
 
-	if (badArgs)
+	if (s_BadArgs)
 	{
 		std::cerr << "Unable to start due to invalid arguments. Correct syntax: DevLoader.exe [-hitman_path <filepath>] [-epic_username <name>] [-epic_userid <id>]" << std::endl;
 		return EXIT_FAILURE;
