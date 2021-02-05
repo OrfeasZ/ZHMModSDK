@@ -74,8 +74,8 @@ private:
 
 
 #define PATTERN_FUNCTION(Pattern, Mask, FunctionName, FunctionType) \
-	EngineFunction<FunctionType>* Functions::FunctionName = new PatternEngineFunction<FunctionType>(#FunctionName, Pattern, Mask);\
+	EngineFunction<FunctionType>* Functions::FunctionName = new PatternEngineFunction<FunctionType>(#FunctionName, Pattern, Mask);
 
 #define PATTERN_RELATIVE_FUNCTION(Pattern, Mask, FunctionName, FunctionType) \
-	EngineFunction<FunctionType>* Functions::FunctionName = new PatternRelativeEngineFunction<FunctionType>(#FunctionName, Pattern, Mask);\
+	EngineFunction<FunctionType>* Functions::FunctionName = new PatternRelativeEngineFunction<FunctionType>(#FunctionName, Pattern, Mask);
 
