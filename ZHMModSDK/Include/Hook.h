@@ -23,6 +23,8 @@ protected:
 	virtual Detour** GetDetours() = 0;
 	virtual void RemovePluginDetours(IPluginInterface* p_Plugin) = 0;
 
+	void* m_OriginalFunc = nullptr;
+	
 	friend class HookRegistry;
 };
 
@@ -63,12 +65,15 @@ public:
 	bool m_HasReturnVal;
 };
 
+template <class T>
+class Hook;
+
 template <class ReturnType, class... Args>
-class Hook : public HookBase
+class Hook<ReturnType(Args...)> : public HookBase
 {
 public:
 	typedef ReturnType(__fastcall* OriginalFunc_t)(Args...);
-	typedef HookResult<ReturnType>(*DetourFunc_t)(IPluginInterface*, Hook<ReturnType, Args...>*, Args...);
+	typedef HookResult<ReturnType>(*DetourFunc_t)(IPluginInterface*, Hook<ReturnType(Args...)>*, Args...);
 
 	void AddDetour(IPluginInterface* p_Plugin, DetourFunc_t p_Detour)
 	{
@@ -105,19 +110,16 @@ public:
 	ReturnType CallOriginal(Args... p_Args)
 	{
 		assert(m_OriginalFunc != nullptr);
-		return m_OriginalFunc(p_Args...);
+		return reinterpret_cast<OriginalFunc_t>(m_OriginalFunc)(p_Args...);
 	}
-
-protected:
-	OriginalFunc_t m_OriginalFunc = nullptr;
 };
 
 template <class... Args>
-class Hook<void, Args...> : public HookBase
+class Hook<void(Args...)> : public HookBase
 {
 public:
 	typedef void (__fastcall* OriginalFunc_t)(Args...);
-	typedef HookResult<void> (*DetourFunc_t)(IPluginInterface*, Hook<void, Args...>*, Args...);
+	typedef HookResult<void> (*DetourFunc_t)(IPluginInterface*, Hook<void(Args...)>*, Args...);
 
 	void AddDetour(IPluginInterface* p_Plugin, DetourFunc_t p_Detour)
 	{
@@ -154,9 +156,6 @@ public:
 	void CallOriginal(Args... p_Args)
 	{
 		assert(m_OriginalFunc != nullptr);
-		m_OriginalFunc(p_Args...);
+		reinterpret_cast<OriginalFunc_t>(m_OriginalFunc)(p_Args...);
 	}
-
-protected:
-	OriginalFunc_t m_OriginalFunc = nullptr;
 };

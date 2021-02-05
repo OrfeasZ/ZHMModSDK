@@ -45,11 +45,14 @@ public:
 	}
 };
 
+template <class T>
+class HookImpl;
+
 template <class ReturnType, class... Args>
-class HookImpl : public Hook<ReturnType, Args...>
+class HookImpl<ReturnType(Args...)> : public Hook<ReturnType(Args...)>
 {
 protected:
-	HookImpl(const char* p_HookName, void* p_Target, typename Hook<ReturnType, Args...>::OriginalFunc_t p_Detour) :
+	HookImpl(const char* p_HookName, void* p_Target, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
 		m_Target(p_Target)
 	{
 		HookRegistry::RegisterHook(this);
@@ -85,12 +88,12 @@ protected:
 			return;
 		}
 
-		this->m_OriginalFunc = reinterpret_cast<typename Hook<ReturnType, Args...>::OriginalFunc_t>(s_Original);
+		this->m_OriginalFunc = reinterpret_cast<typename Hook<ReturnType(Args...)>::OriginalFunc_t>(s_Original);
 
 		Logger::Debug("Successfully installed detour for hook '{}' at address {}.", p_HookName, fmt::ptr(p_Target));
 	}
 
-	HookImpl(const char* p_HookName, typename Hook<ReturnType, Args...>::OriginalFunc_t p_Original) :
+	HookImpl(const char* p_HookName, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Original) :
 		m_Target(nullptr)
 	{
 		HookRegistry::RegisterHook(this);
@@ -101,9 +104,9 @@ protected:
 			return;
 		}
 
-		this->m_OriginalFunc = reinterpret_cast<typename Hook<ReturnType, Args...>::OriginalFunc_t>(p_Original);
+		this->m_OriginalFunc = reinterpret_cast<typename Hook<ReturnType(Args...)>::OriginalFunc_t>(p_Original);
 
-		Logger::Debug("Successfully installed detour for hook '{}'.", p_HookName, fmt::ptr(p_Original));
+		Logger::Debug("Successfully installed detour for hook '{}'.", p_HookName);
 	}
 
 public:
@@ -189,12 +192,15 @@ private:
 	void* m_Target;
 };
 
+template <class T>
+class PatternHook;
+
 template <class ReturnType, class... Args>
-class PatternHook final : public HookImpl<ReturnType, Args...>
+class PatternHook<ReturnType(Args...)> final : public HookImpl<ReturnType(Args...)>
 {
 public:
-	PatternHook(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType, Args...>::OriginalFunc_t p_Detour) :
-		HookImpl<ReturnType, Args...>(p_HookName, GetTarget(p_Pattern, p_Mask), p_Detour)
+	PatternHook(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
+		HookImpl<ReturnType(Args...)>(p_HookName, GetTarget(p_Pattern, p_Mask), p_Detour)
 	{		
 	}
 
@@ -305,12 +311,15 @@ public:
 	}
 };
 
+template <class T>
+class PatternCallHook;
+
 template <class ReturnType, class... Args>
-class PatternCallHook final : public HookImpl<ReturnType, Args...>
+class PatternCallHook<ReturnType(Args...)> final : public HookImpl<ReturnType(Args...)>
 {
 public:
-	PatternCallHook(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType, Args...>::OriginalFunc_t p_Detour) :
-		HookImpl<ReturnType, Args...>(p_HookName, InstallDetourAndGetOriginal(p_HookName, p_Pattern, p_Mask, p_Detour))
+	PatternCallHook(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
+		HookImpl<ReturnType(Args...)>(p_HookName, InstallDetourAndGetOriginal(p_HookName, p_Pattern, p_Mask, p_Detour))
 	{		
 	}
 
@@ -330,7 +339,7 @@ public:
 	}
 
 private:
-	typename Hook<ReturnType, Args...>::OriginalFunc_t InstallDetourAndGetOriginal(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType, Args...>::OriginalFunc_t p_Detour)
+	typename Hook<ReturnType(Args...)>::OriginalFunc_t InstallDetourAndGetOriginal(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour)
 	{
 		const auto* s_Pattern = reinterpret_cast<const uint8_t*>(p_Pattern);
 		m_Target = Util::ProcessUtils::SearchPattern(ModSDK::GetInstance()->GetModuleBase(), ModSDK::GetInstance()->GetSizeOfCode(), s_Pattern, p_Mask);
@@ -387,20 +396,63 @@ private:
 	uintptr_t m_Target;
 };
 
-#define PATTERN_HOOK(Pattern, Mask, ReturnType, HookName, ...) \
-	Hook<ReturnType, __VA_ARGS__>* Hooks::HookName = new PatternHook<ReturnType, __VA_ARGS__>(\
+template <class T>
+class PatternRelativeCallHook;
+
+template <class ReturnType, class... Args>
+class PatternRelativeCallHook<ReturnType(Args...)> final : public HookImpl<ReturnType(Args...)>
+{
+public:
+	PatternRelativeCallHook(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
+		HookImpl<ReturnType(Args...)>(p_HookName, GetTarget(p_HookName, p_Pattern, p_Mask), p_Detour)
+	{
+	}
+
+private:
+	void* GetTarget(const char* p_HookName, const char* p_Pattern, const char* p_Mask) const
+	{
+		const auto* s_Pattern = reinterpret_cast<const uint8_t*>(p_Pattern);
+		auto s_Target = Util::ProcessUtils::SearchPattern(ModSDK::GetInstance()->GetModuleBase(), ModSDK::GetInstance()->GetSizeOfCode(), s_Pattern, p_Mask);
+
+		// We expect this to be a CALL (0xE8) instruction.
+		if (s_Target != 0 && *reinterpret_cast<uint8_t*>(s_Target) != 0xE8)
+		{
+			Logger::Error("Expected a call instruction for hook '{}' at address {} but instead got {:X02}.", p_HookName, fmt::ptr(reinterpret_cast<void*>(s_Target)), *reinterpret_cast<uint8_t*>(s_Target));
+			return nullptr;
+		}
+
+		if (s_Target == 0)
+			return nullptr;
+		
+		const uintptr_t s_OriginalFunction = s_Target + 5 + *reinterpret_cast<int32_t*>(s_Target + 1);
+		return reinterpret_cast<void*>(s_OriginalFunction);
+	}
+};
+
+
+#define PATTERN_HOOK(Pattern, Mask, HookName, HookType) \
+	Hook<HookType>* Hooks::HookName = new PatternHook<HookType>(\
 		#HookName, \
 		Pattern, Mask, \
-		(typename Hook<ReturnType, __VA_ARGS__>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
+		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
 	);\
 	\
 	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
 
-#define PATTERN_CALL_HOOK(Pattern, Mask, ReturnType, HookName, ...) \
-	Hook<ReturnType, __VA_ARGS__>* Hooks::HookName = new PatternCallHook<ReturnType, __VA_ARGS__>(\
+#define PATTERN_CALL_HOOK(Pattern, Mask, HookName, HookType) \
+	Hook<HookType>* Hooks::HookName = new PatternCallHook<HookType>(\
 		#HookName, \
 		Pattern, Mask, \
-		(typename Hook<ReturnType, __VA_ARGS__>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
+		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
+	);\
+	\
+	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
+
+#define PATTERN_RELATIVE_CALL_HOOK(Pattern, Mask, HookName, HookType) \
+	Hook<HookType>* Hooks::HookName = new PatternRelativeCallHook<HookType>(\
+		#HookName, \
+		Pattern, Mask, \
+		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
 	);\
 	\
 	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));

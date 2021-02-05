@@ -1,34 +1,18 @@
-#include "Events.h"
-#include "Hooks.h"
-#include "IPluginInterface.h"
+#include "WakingUpNpcs.h"
+
 #include "Logging.h"
 
-class WakingUpNpcs : public IPluginInterface
+void WakingUpNpcs::Init()
 {
-public:
-	~WakingUpNpcs() override
-	{
-	}
+	Logger::Info("Hello world!");
 
-	void Init() override
-	{
-		Logger::Info("Hello world!");
+	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &OnLoadScene);
+}
 
-		Events::OnConsoleCommand->AddListener(this, [](IPluginInterface*)
-		{
-			Logger::Debug("Console command!");
-		});
-
-		Events::OnConsoleCommand->AddListener(this, [](IPluginInterface*)
-		{
-			Logger::Debug("Console command2!");
-		});
-
-		Events::OnConsoleCommand->AddListener(this, [](IPluginInterface*)
-		{
-			Logger::Debug("Console command3!");
-		});
-	}
-};
+DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, const ZSceneData& sceneData)
+{
+	Logger::Debug("Loading scene: {}", sceneData.m_sceneName.c_str());
+	return HookResult<void>(HookAction::Continue{});
+}
 
 DECLARE_ZHM_PLUGIN(WakingUpNpcs);
