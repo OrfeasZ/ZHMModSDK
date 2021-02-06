@@ -60,7 +60,7 @@ private:
 		// We expect this to be a CALL (0xE8) instruction.
 		if (s_Target != 0 && *reinterpret_cast<uint8_t*>(s_Target) != 0xE8)
 		{
-			Logger::Error("Expected a call instruction for function '{}' at address {} but instead got {:X02}.", p_FunctionName, fmt::ptr(reinterpret_cast<void*>(s_Target)), *reinterpret_cast<uint8_t*>(s_Target));
+			Logger::Error("Expected a call instruction for function '{}' at address {} but instead got 0x{:02X}.", p_FunctionName, fmt::ptr(reinterpret_cast<void*>(s_Target)), *reinterpret_cast<uint8_t*>(s_Target));
 			return nullptr;
 		}
 

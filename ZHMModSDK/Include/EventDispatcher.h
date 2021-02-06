@@ -2,27 +2,25 @@
 
 #include "Common.h"
 
-class IPluginInterface;
-
 class EventDispatcherBase : public IDestructible
 {
 public:
 	~EventDispatcherBase() override = default;
+	virtual void RemoveListenersWithContext(void* p_Context) = 0;
 
 protected:
 	struct EventListenerRegistration
 	{
-		IPluginInterface* Plugin;
+		void* Context;
 		void* Listener;
 	};
 	
 protected:	
-	virtual void AddListenerInternal(IPluginInterface* p_Plugin, void* p_Listener) = 0;
+	virtual void AddListenerInternal(void* p_Context, void* p_Listener) = 0;
 	virtual void RemoveListenerInternal(void* p_Listener) = 0;
 	virtual EventListenerRegistration** GetRegistrations() = 0;
 	virtual void LockForCall() = 0;
 	virtual void UnlockForCall() = 0;
-	virtual void RemovePluginListeners(IPluginInterface* p_Plugin) = 0;
 
 	friend class EventDispatcherRegistry;
 };
@@ -35,11 +33,11 @@ template <class... Args>
 class EventDispatcher : public EventDispatcherBase
 {
 public:
-	typedef void (*EventListener_t)(IPluginInterface*, Args...);
+	typedef void (*EventListener_t)(void*, Args...);
 
-	EventListener_t AddListener(IPluginInterface* p_Plugin, EventListener_t p_Listener)
+	EventListener_t AddListener(void* p_Context, EventListener_t p_Listener)
 	{
-		AddListenerInternal(p_Plugin, p_Listener);
+		AddListenerInternal(p_Context, p_Listener);
 		return p_Listener;
 	}
 
@@ -59,7 +57,7 @@ public:
 		while (s_Registration != nullptr)
 		{
 			const auto s_Listener = static_cast<EventListener_t>(s_Registration->Listener);
-			s_Listener(s_Registration->Plugin);
+			s_Listener(s_Registration->Context);
 			s_Registration = *++s_Registrations;
 		}
 
@@ -71,11 +69,11 @@ template <>
 class EventDispatcher<void> : public EventDispatcherBase
 {
 public:
-	typedef void (*EventListener_t)(IPluginInterface*);
+	typedef void (*EventListener_t)(void*);
 
-	EventListener_t AddListener(IPluginInterface* p_Plugin, EventListener_t p_Listener)
+	EventListener_t AddListener(void* p_Context, EventListener_t p_Listener)
 	{
-		AddListenerInternal(p_Plugin, p_Listener);
+		AddListenerInternal(p_Context, p_Listener);
 		return p_Listener;
 	}
 
@@ -95,7 +93,7 @@ public:
 		while (s_Registration != nullptr)
 		{
 			const auto s_Listener = static_cast<EventListener_t>(s_Registration->Listener);
-			s_Listener(s_Registration->Plugin);
+			s_Listener(s_Registration->Context);
 			s_Registration = *++s_Registrations;
 		}
 

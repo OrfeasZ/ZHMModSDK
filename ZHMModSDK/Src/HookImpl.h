@@ -13,6 +13,8 @@
 
 #define MAX_TRAMPOLINES 2048
 
+class IPluginInterface;
+
 class HookRegistry
 {
 private:
@@ -41,7 +43,7 @@ public:
 			return;
 
 		for (auto s_Hook : *g_Hooks)
-			s_Hook->RemovePluginDetours(p_Plugin);
+			s_Hook->RemoveDetoursWithContext(p_Plugin);
 	}
 };
 
@@ -121,8 +123,30 @@ public:
 		}
 	}
 
+	void RemoveDetoursWithContext(void* p_Context) override
+	{
+		for (auto it = m_Detours.begin(); it != m_Detours.end();)
+		{
+			if (*it == nullptr)
+			{
+				++it;
+				continue;
+			}
+
+			if ((*it)->Context == p_Context)
+			{
+				delete* it;
+				it = m_Detours.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+
 protected:
-	void AddDetourInternal(IPluginInterface* p_Plugin, void* p_Detour) override
+	void AddDetourInternal(void* p_Context, void* p_Detour) override
 	{
 		// TODO: Do we need any sort of locking here?
 
@@ -133,7 +157,7 @@ protected:
 
 		auto s_Detour = new HookBase::Detour();
 		s_Detour->DetourFunc = p_Detour;
-		s_Detour->Plugin = p_Plugin;
+		s_Detour->Context = p_Context;
 		
 		m_Detours.insert(m_Detours.end() - 1, s_Detour);
 	}
@@ -163,28 +187,6 @@ protected:
 	HookBase::Detour** GetDetours() override
 	{
 		return m_Detours.data();
-	}
-
-	void RemovePluginDetours(IPluginInterface* p_Plugin) override
-	{
-		for (auto it = m_Detours.begin(); it != m_Detours.end();)
-		{
-			if (*it == nullptr)
-			{
-				++it;
-				continue;
-			}
-
-			if ((*it)->Plugin == p_Plugin)
-			{
-				delete* it;
-				it = m_Detours.erase(it);
-			}
-			else
-			{
-				++it;
-			}
-		}
 	}
 
 private:
@@ -347,7 +349,7 @@ private:
 		// We expect this to be a CALL (0xE8) instruction.
 		if (m_Target != 0 && *reinterpret_cast<uint8_t*>(m_Target) != 0xE8)
 		{
-			Logger::Error("Expected a call instruction for hook '{}' at address {} but instead got {:X02}.", p_HookName, fmt::ptr(reinterpret_cast<void*>(m_Target)), *reinterpret_cast<uint8_t*>(m_Target));
+			Logger::Error("Expected a call instruction for hook '{}' at address {} but instead got 0x{:02X}.", p_HookName, fmt::ptr(reinterpret_cast<void*>(m_Target)), *reinterpret_cast<uint8_t*>(m_Target));
 			return nullptr;
 		}
 
@@ -417,7 +419,7 @@ private:
 		// We expect this to be a CALL (0xE8) instruction.
 		if (s_Target != 0 && *reinterpret_cast<uint8_t*>(s_Target) != 0xE8)
 		{
-			Logger::Error("Expected a call instruction for hook '{}' at address {} but instead got {:X02}.", p_HookName, fmt::ptr(reinterpret_cast<void*>(s_Target)), *reinterpret_cast<uint8_t*>(s_Target));
+			Logger::Error("Expected a call instruction for hook '{}' at address {} but instead got 0x{:02X}.", p_HookName, fmt::ptr(reinterpret_cast<void*>(s_Target)), *reinterpret_cast<uint8_t*>(s_Target));
 			return nullptr;
 		}
 

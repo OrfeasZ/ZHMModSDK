@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <unordered_set>
 
+class IPluginInterface;
+
 class EventDispatcherRegistry
 {
 private:
@@ -35,7 +37,7 @@ public:
 			return;
 
 		for (auto s_Dispatcher : *g_Dispatchers)
-			s_Dispatcher->RemovePluginListeners(p_Plugin);
+			s_Dispatcher->RemoveListenersWithContext(p_Plugin);
 	}
 };
 
@@ -63,8 +65,34 @@ public:
 		EventDispatcherRegistry::RemoveDispatcher(this);
 	}
 
+	void RemoveListenersWithContext(void* p_Context) override
+	{
+		AcquireSRWLockExclusive(&m_Lock);
+
+		for (auto it = m_Listeners.begin(); it != m_Listeners.end();)
+		{
+			if (*it == nullptr)
+			{
+				++it;
+				continue;
+			}
+
+			if ((*it)->Context == p_Context)
+			{
+				delete* it;
+				it = m_Listeners.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+
+		ReleaseSRWLockExclusive(&m_Lock);
+	}
+	
 protected:
-	void AddListenerInternal(IPluginInterface* p_Plugin, void* p_Listener) override
+	void AddListenerInternal(void* p_Context, void* p_Listener) override
 	{
 		// We remove it first to make sure we only have unique listeners
 		// in our list. We could use a set to make this easier but iteration
@@ -75,7 +103,7 @@ protected:
 
 		auto* s_Registration = new EventDispatcherBase::EventListenerRegistration();
 		s_Registration->Listener = p_Listener;
-		s_Registration->Plugin = p_Plugin;
+		s_Registration->Context = p_Context;
 		
 		m_Listeners.insert(m_Listeners.end() - 1, s_Registration);
 		
@@ -121,32 +149,6 @@ protected:
 	void UnlockForCall() override
 	{
 		ReleaseSRWLockShared(&m_Lock);
-	}
-
-	void RemovePluginListeners(IPluginInterface* p_Plugin) override
-	{
-		AcquireSRWLockExclusive(&m_Lock);
-
-		for (auto it = m_Listeners.begin(); it != m_Listeners.end();)
-		{
-			if (*it == nullptr)
-			{
-				++it;
-				continue;
-			}
-
-			if ((*it)->Plugin == p_Plugin)
-			{
-				delete* it;
-				it = m_Listeners.erase(it);
-			}
-			else
-			{
-				++it;
-			}
-		}
-
-		ReleaseSRWLockExclusive(&m_Lock);
 	}
 
 private:
