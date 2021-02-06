@@ -2,6 +2,7 @@
 
 #include "ModLoader.h"
 #include "DebugConsole.h"
+#include "Globals.h"
 #include "HookImpl.h"
 #include "Hooks.h"
 #include "Logging.h"
@@ -49,9 +50,9 @@ ModSDK::~ModSDK()
 }
 
 bool ModSDK::Startup()
-{
+{	
 	m_DebugConsole->StartRedirecting();
-	m_ModLoader->LoadAllMods();
+	m_ModLoader->Startup();
 
 	return true;
 }

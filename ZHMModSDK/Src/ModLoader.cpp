@@ -6,6 +6,7 @@
 
 
 #include "EventDispatcherImpl.h"
+#include "Globals.h"
 #include "HookImpl.h"
 #include "IPluginInterface.h"
 #include "Logging.h"
@@ -18,7 +19,26 @@ ModLoader::ModLoader()
 
 ModLoader::~ModLoader()
 {
+	Hooks::Engine_Init->RemoveDetoursWithContext(this);
 	UnloadAllMods();
+}
+
+void ModLoader::Startup()
+{
+	// Notify all loaded mods that the engine has intialized once it has.
+	Hooks::Engine_Init->AddDetour(this, [](void* p_Ctx, auto p_Hook, void* th, void* a2)
+	{
+		auto s_Result = p_Hook->CallOriginal(th, a2);
+
+		auto s_Loader = reinterpret_cast<ModLoader*>(p_Ctx);
+
+		for (auto& s_Mod : s_Loader->m_LoadedMods)
+			s_Mod.second.PluginInterface->OnEngineInitialized();
+
+		return HookResult<bool>(HookAction::Return{}, s_Result);
+	});
+	
+	LoadAllMods();
 }
 
 void ModLoader::LoadAllMods()
@@ -104,6 +124,10 @@ void ModLoader::LoadMod(const std::string& p_Name)
 	s_Mod.PluginInterface = s_PluginInterface;
 
 	m_LoadedMods[s_Name] = s_Mod;
+
+	// If the engine is already initialized, inform the mod.
+	if (*Globals::GameTimeManager != nullptr)
+		s_PluginInterface->OnEngineInitialized();
 }
 
 void ModLoader::UnloadMod(const std::string& p_Name)

@@ -23,3 +23,15 @@ PATTERN_RELATIVE_CALL_HOOK(
 	"x????xxxxxxxx",
 	ZGameLoopManager_RegisterFrameUpdate, void(ZGameLoopManager* th, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)
 );
+
+PATTERN_RELATIVE_CALL_HOOK(
+	"\xE8\x00\x00\x00\x00\x48\x8D\x05\x00\x00\x00\x00\x89\x5D\xB8",
+	"x????xxx????xxx",
+	ZGameLoopManager_UnregisterFrameUpdate, void(ZGameLoopManager* th, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)
+);
+
+PATTERN_HOOK(
+	"\x40\x55\x56\x41\x55",
+	"xxxxx",
+	Engine_Init, bool(void*, void*)
+);

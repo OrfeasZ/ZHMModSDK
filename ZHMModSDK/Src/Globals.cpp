@@ -5,7 +5,7 @@ PATTERN_RELATIVE_GLOBAL(
 	"\x48\x8D\x0D\x00\x00\x00\x00\x0F\xB6\xF2",
 	"xxx????xxx",
 	3,
-	ZGameLoopManager**, GameLoopManager
+	ZGameLoopManager*, GameLoopManager
 )
 
 PATTERN_RELATIVE_GLOBAL(

@@ -20,6 +20,7 @@ public:
 	~ModLoader();
 
 public:
+	void Startup();
 	void LoadAllMods();
 	void LoadMod(const std::string& p_Name);
 	void UnloadMod(const std::string& p_Name);
