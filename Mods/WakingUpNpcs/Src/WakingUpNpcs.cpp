@@ -27,8 +27,8 @@ void WakingUpNpcs::Init()
 {
 	Logger::Info("Hello world!");
 
-	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &OnLoadScene);
-	Events::OnConsoleCommand->AddListener(this, &OnConsoleCommand);
+	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &WakingUpNpcs::OnLoadScene);
+	Events::OnConsoleCommand->AddListener(this, &WakingUpNpcs::OnConsoleCommand);
 }
 
 void WakingUpNpcs::OnEngineInitialized()
@@ -41,7 +41,7 @@ void WakingUpNpcs::OnEngineInitialized()
 
 void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
-	for (int i = 0; i < *Globals::NextActorId - 1; ++i)
+	for (int i = 0; i <= *Globals::NextActorId - 1; ++i)
 	{
 		auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 
@@ -82,11 +82,12 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
 DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, const ZSceneData& sceneData)
 {
+	// TODO: This doesn't get called when loading a save on the same level or restarting. Find something that does.
 	Logger::Debug("Loading scene: {}", sceneData.m_sceneName.c_str());
 
 	m_PacifiedTimes.clear();
 	
-	return HookResult<void>(HookAction::Continue{});
+	return HookResult<void>(HookAction::Continue());
 }
 
 DECLARE_PLUGIN_LISTENER(WakingUpNpcs, OnConsoleCommand)

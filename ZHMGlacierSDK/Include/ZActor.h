@@ -15,6 +15,7 @@ class ZAIVisionConfigurationEntity;
 class ZHTNDomainEntity;
 class ZCompiledBehaviorTree;
 class ZSpatialEntity;
+class ZKnowledge;
 
 class ICharacterCollision :
 	public IComponentInterface
@@ -47,7 +48,7 @@ public:
 	virtual void IActor_unk17() = 0;
 	virtual void IActor_unk18() = 0;
 	virtual void IActor_unk19() = 0;
-	virtual void IActor_unk20() = 0;
+	virtual ZKnowledge* Knowledge() = 0;
 	virtual void IActor_unk21() = 0;
 	virtual void IActor_unk22() = 0;
 	virtual void IActor_unk23() = 0;
