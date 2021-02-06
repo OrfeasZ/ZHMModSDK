@@ -20,6 +20,8 @@ protected:
 	virtual void AddDetourInternal(void* p_Context, void* p_Detour) = 0;
 	virtual void RemoveDetourInternal(void* p_Detour) = 0;
 	virtual Detour** GetDetours() = 0;
+	virtual void LockForCall() = 0;
+	virtual void UnlockForCall() = 0;
 
 	void* m_OriginalFunc = nullptr;
 	
@@ -85,6 +87,8 @@ public:
 
 	ReturnType Call(Args... p_Args)
 	{
+		LockForCall();
+		
 		auto s_Detours = GetDetours();
 
 		auto s_Detour = *s_Detours;
@@ -96,10 +100,15 @@ public:
 
 			// Detour returned a value. Stop execution and return it.
 			if (s_Result.m_HasReturnVal)
+			{
+				UnlockForCall();
 				return s_Result.m_ReturnVal;
-
+			}
+			
 			s_Detour = *++s_Detours;
 		}
+
+		UnlockForCall();
 
 		// None of the detours returned a value. Call the original function.
 		return CallOriginal(p_Args...);
@@ -131,6 +140,8 @@ public:
 
 	void Call(Args... p_Args)
 	{
+		LockForCall();
+		
 		auto s_Detours = GetDetours();
 
 		auto s_Detour = *s_Detours;
@@ -142,10 +153,15 @@ public:
 
 			// Detour returned a value. Stop execution and return it.
 			if (s_Result.m_HasReturnVal)
+			{
+				UnlockForCall();
 				return;
-
+			}
+			
 			s_Detour = *++s_Detours;
 		}
+
+		UnlockForCall();
 
 		// None of the detours returned a value. Call the original function.
 		CallOriginal(p_Args...);

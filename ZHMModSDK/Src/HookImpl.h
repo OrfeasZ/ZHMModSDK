@@ -13,6 +13,9 @@
 
 #define MAX_TRAMPOLINES 2048
 
+// TODO: Suspend all threads but the current one when installing or removing hooks.
+// This should fix various crashes when hot-reloading.
+
 class IPluginInterface;
 
 class HookRegistry
@@ -57,6 +60,8 @@ protected:
 	HookImpl(const char* p_HookName, void* p_Target, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
 		m_Target(p_Target)
 	{
+		InitializeSRWLock(&m_Lock);
+		
 		HookRegistry::RegisterHook(this);
 		
 		// We push null here because that's what's used by the caller
@@ -98,6 +103,8 @@ protected:
 	HookImpl(const char* p_HookName, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Original) :
 		m_Target(nullptr)
 	{
+		InitializeSRWLock(&m_Lock);
+		
 		HookRegistry::RegisterHook(this);
 
 		if (p_Original == nullptr)
@@ -114,17 +121,25 @@ protected:
 public:
 	~HookImpl() override
 	{
-		HookRegistry::RemoveHook(this);
+		AcquireSRWLockExclusive(&m_Lock);
 
+		m_Detours.clear();
+		
 		if (m_Target != nullptr)
 		{
 			MH_DisableHook(m_Target);
 			MH_RemoveHook(m_Target);
 		}
+
+		ReleaseSRWLockExclusive(&m_Lock);
+		
+		HookRegistry::RemoveHook(this);
 	}
 
 	void RemoveDetoursWithContext(void* p_Context) override
 	{
+		AcquireSRWLockExclusive(&m_Lock);
+
 		for (auto it = m_Detours.begin(); it != m_Detours.end();)
 		{
 			if (*it == nullptr)
@@ -143,6 +158,8 @@ public:
 				++it;
 			}
 		}
+
+		ReleaseSRWLockExclusive(&m_Lock);
 	}
 
 protected:
@@ -158,12 +175,18 @@ protected:
 		auto s_Detour = new HookBase::Detour();
 		s_Detour->DetourFunc = p_Detour;
 		s_Detour->Context = p_Context;
-		
+
+		AcquireSRWLockExclusive(&m_Lock);
+
 		m_Detours.insert(m_Detours.end() - 1, s_Detour);
+
+		ReleaseSRWLockExclusive(&m_Lock);
 	}
 
 	void RemoveDetourInternal(void* p_Detour) override
 	{
+		AcquireSRWLockExclusive(&m_Lock);
+
 		for (auto it = m_Detours.begin(); it != m_Detours.end();)
 		{
 			if (*it == nullptr)
@@ -182,6 +205,8 @@ protected:
 				++it;
 			}
 		}
+
+		ReleaseSRWLockExclusive(&m_Lock);
 	}
 
 	HookBase::Detour** GetDetours() override
@@ -189,9 +214,20 @@ protected:
 		return m_Detours.data();
 	}
 
+	void LockForCall() override
+	{
+		AcquireSRWLockShared(&m_Lock);
+	}
+
+	void UnlockForCall() override
+	{
+		ReleaseSRWLockShared(&m_Lock);
+	}
+
 private:
 	std::vector<HookBase::Detour*> m_Detours;
 	void* m_Target;
+	SRWLOCK m_Lock;
 };
 
 template <class T>
