@@ -5,6 +5,11 @@
 struct ZGameTime
 {
 	int64_t m_nTicks;
+
+	double ToSeconds() const
+	{
+		return static_cast<double>(m_nTicks) / 1024.0 / 1024.0;
+	}
 };
 
 class ZGameTimeManager : 
