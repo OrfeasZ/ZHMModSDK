@@ -44,7 +44,16 @@ void ModLoader::Startup()
 void ModLoader::LoadAllMods()
 {
 	// Discover and load mods.
-	const auto s_ModPath = std::filesystem::absolute("mods");
+	char s_ExePathStr[MAX_PATH];
+	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+
+	if (s_PathSize == 0)
+		return;
+
+	std::filesystem::path s_ExePath(s_ExePathStr);
+	auto s_ExeDir = s_ExePath.parent_path();
+	
+	const auto s_ModPath = absolute(s_ExeDir / "mods");
 	
 	if (exists(s_ModPath) && is_directory(s_ModPath))
 	{
@@ -77,8 +86,17 @@ void ModLoader::LoadMod(const std::string& p_Name)
 		return;
 	}
 
-	const auto s_ModulePath = std::filesystem::absolute("mods\\" + p_Name + ".dll");
+	char s_ExePathStr[MAX_PATH];
+	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
 
+	if (s_PathSize == 0)
+		return;
+
+	std::filesystem::path s_ExePath(s_ExePathStr);
+	auto s_ExeDir = s_ExePath.parent_path();
+
+	const auto s_ModulePath = absolute(s_ExeDir / ("mods/" + p_Name + ".dll"));
+	
 	if (!exists(s_ModulePath) || !is_regular_file(s_ModulePath))
 	{
 		Logger::Warn("Could not find mod '{}'.", p_Name);
