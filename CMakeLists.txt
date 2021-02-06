@@ -13,6 +13,7 @@ add_subdirectory("DirectInputProxy")
 
 # Mods.
 add_subdirectory("Mods/WakingUpNpcs")
+add_subdirectory("Mods/NoPause")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -22,4 +23,5 @@ add_dependencies(DevLoader
 	DirectInputProxy 
 	ZHMModSDK 
 	WakingUpNpcs
+	NoPause
 )
