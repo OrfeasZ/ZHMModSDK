@@ -38,20 +38,32 @@ jobs:
       run: |
         cmake --build _build
 
+    - name: Copy SDK and loader artifacts
+      run: |
+        cd _build
+        mkdir _sdk
+        Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _sdk/
+        Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/
+        Copy-Item DirectInputProxy/dinput8.dll -Destination _sdk/
+        Copy-Item DirectInputProxy/dinput8.dll -Destination _sdk/
+
+    - name: Copy mod artifacts
+      run: |
+        cd _build
+        mkdir _mods
+        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item "Mods/$_/$_.dll" -Destination "_mods/$_.dll" }
+        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item "Mods/$_/$_.pdb" -Destination "_mods/$_.pdb" }
+
     - name: Archive SDK and loader
       uses: actions/upload-artifact@v2
       with:
         name: mod-loader-release
         path: |
-          _build/ZHMModSDK/ZHMModSDK.dll
-          _build/ZHMModSDK/ZHMModSDK.pdb
-          _build/DirectInputProxy/dinput8.dll
-          _build/DirectInputProxy/dinput8.pdb
+          _build/_sdk/*
 
     - name: Archive mods
       uses: actions/upload-artifact@v2
       with:
         name: mods-release
         path: |
-          _build/Mods/*/*.dll
-          _build/Mods/*/*.pdb
+          _build/_mods/*
