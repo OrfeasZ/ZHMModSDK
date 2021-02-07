@@ -24,7 +24,7 @@ jobs:
         cd "${{ github.workspace }}"
         mkdir _build
         cd _build
-        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_C_COMPILER=cl.exe
 
     - name: Build
       run: |
