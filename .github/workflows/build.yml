@@ -24,7 +24,12 @@ jobs:
         cd "${{ github.workspace }}"
         mkdir _build
         cd _build
-        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_C_COMPILER=cl.exe
+        cmake .. -G Ninja ^
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
+          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_DEST_WIN }}\scripts\buildsystems\vcpkg.cmake ^
+          -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
+          -DCMAKE_CXX_COMPILER=cl ^
+          -DCMAKE_C_COMPILER=cl
 
     - name: Build
       run: |
