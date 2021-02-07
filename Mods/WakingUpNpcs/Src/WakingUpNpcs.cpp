@@ -25,23 +25,19 @@ WakingUpNpcs::~WakingUpNpcs()
 
 void WakingUpNpcs::Init()
 {
-	Logger::Info("Hello world!");
-
 	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &WakingUpNpcs::OnLoadScene);
 	Events::OnConsoleCommand->AddListener(this, &WakingUpNpcs::OnConsoleCommand);
 }
 
 void WakingUpNpcs::OnEngineInitialized()
 {
-	Logger::Debug("Engine was initialized!");
-
 	const ZMemberDelegate<WakingUpNpcs, void(const SGameUpdateEvent&)> s_Delegate(this, &WakingUpNpcs::OnFrameUpdate);
 	Hooks::ZGameLoopManager_RegisterFrameUpdate->Call(Globals::GameLoopManager, s_Delegate, 0, EUpdateMode::eUpdatePlayMode);
 }
 
 void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
-	for (int i = 0; i <= *Globals::NextActorId - 1; ++i)
+	for (int i = 0; i < *Globals::NextActorId; ++i)
 	{
 		auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 
