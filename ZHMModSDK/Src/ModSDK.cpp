@@ -1,12 +1,15 @@
 #include "ModSDK.h"
 
 #include "ModLoader.h"
-#include "DebugConsole.h"
 #include "Globals.h"
 #include "HookImpl.h"
 #include "Hooks.h"
 #include "Logging.h"
 #include "Util/ProcessUtils.h"
+
+#if _DEBUG
+#include "DebugConsole.h"
+#endif
 
 ZHMSDK_API IModSDK* SDK()
 {
@@ -32,7 +35,11 @@ void ModSDK::DestroyInstance()
 ModSDK::ModSDK()
 {
 	g_Instance = this;
+	
+#if _DEBUG
 	m_DebugConsole = new DebugConsole();
+#endif
+	
 	m_ModLoader = new ModLoader();
 
 	HMODULE s_Module = GetModuleHandleA(nullptr);
@@ -45,7 +52,10 @@ ModSDK::ModSDK()
 ModSDK::~ModSDK()
 {
 	delete m_ModLoader;
+
+#if _DEBUG
 	delete m_DebugConsole;
+#endif
 
 	Trampolines::ClearTrampolines();
 }
@@ -53,8 +63,11 @@ ModSDK::~ModSDK()
 bool ModSDK::Startup()
 {
 	Util::ProcessUtils::ResumeSuspendedThreads();
-	
+
+#if _DEBUG
 	m_DebugConsole->StartRedirecting();
+#endif
+	
 	m_ModLoader->Startup();
 
 	return true;

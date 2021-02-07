@@ -11,6 +11,7 @@
 #include "spdlog/common.h"
 #include "Util/StringUtils.h"
 
+#if _DEBUG
 extern void SetupLogging(spdlog::level::level_enum p_LogLevel);
 extern void FlushLoggers();
 extern void ClearLoggers();
@@ -131,3 +132,4 @@ void DebugConsole::StopRedirecting()
 	_dup2(m_OriginalStdout, 1);
 	_dup2(m_OriginalStderr, 2);
 }
+#endif

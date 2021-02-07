@@ -1,6 +1,7 @@
 #pragma once
 #include <thread>
 
+#if _DEBUG
 class DebugConsole
 {
 public:
@@ -23,3 +24,4 @@ private:
 	
 	bool m_Redirected;
 };
+#endif

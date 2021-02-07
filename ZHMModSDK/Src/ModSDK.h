@@ -23,7 +23,10 @@ public:
 	bool Startup();
 
 	ModLoader* GetModLoader() const { return m_ModLoader; }
+
+#if _DEBUG
 	DebugConsole* GetDebugConsole() const { return m_DebugConsole; }
+#endif
 
 	uintptr_t GetModuleBase() const { return m_ModuleBase; }
 	uint32_t GetSizeOfCode() const { return m_SizeOfCode; }
@@ -31,7 +34,11 @@ public:
 	
 private:
 	ModLoader* m_ModLoader;
+	
+#if _DEBUG
 	DebugConsole* m_DebugConsole;
+#endif
+	
 	uintptr_t m_ModuleBase;
 	uint32_t m_SizeOfCode;
 	uint32_t m_ImageSize;
