@@ -10,6 +10,7 @@
 #include "ZActor.h"
 
 #include "SGameUpdateEvent.h"
+#include "ZScene.h"
 
 WakingUpNpcs::WakingUpNpcs() :
 	m_Generator(m_RandomDevice())
