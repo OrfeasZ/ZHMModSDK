@@ -15,7 +15,7 @@ PATTERN_HOOK(
 PATTERN_HOOK(
 	"\x40\x55\x56\x57\x41\x56\x48\x8D\x6C\x24\xC1",
 	"xxxxxxxxxxx",
-	ZEntitySceneContext_LoadScene, void(ZEntitySceneContext* th, const ZSceneData& sceneData)
+	ZEntitySceneContext_LoadScene, void(ZEntitySceneContext* th, ZSceneData& sceneData)
 )
 
 PATTERN_RELATIVE_CALL_HOOK(

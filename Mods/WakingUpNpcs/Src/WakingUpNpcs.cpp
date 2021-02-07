@@ -76,7 +76,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 	}
 }
 
-DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, const ZSceneData& sceneData)
+DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData)
 {
 	// TODO: This doesn't get called when loading a save on the same level or restarting. Find something that does.
 	Logger::Debug("Loading scene: {}", sceneData.m_sceneName.c_str());

@@ -18,7 +18,7 @@ private:
 	void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
 private:
-	DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, const ZSceneData&)
+	DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&)
 	DEFINE_PLUGIN_LISTENER(WakingUpNpcs, OnConsoleCommand)
 
 private:
