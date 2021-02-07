@@ -19,21 +19,23 @@ jobs:
       with:
         submodules: recursive
 
+    - name: Setup VS environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - name: Generate projects
       run: |
-        cd "${{ github.workspace }}"
-        mkdir _build
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        md _build
         cd _build
-        cmake .. -G Ninja `
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo `
-          -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_DEST_WIN }}\scripts\buildsystems\vcpkg.cmake `
-          -DVCPKG_TARGET_TRIPLET=x64-windows-static `
-          -DCMAKE_CXX_COMPILER=cl `
-          -DCMAKE_C_COMPILER=cl
+        cmake -G Ninja ^
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
+          -DCMAKE_CXX_COMPILER=cl ^
+          -DCMAKE_C_COMPILER=cl ^
+          ..
 
     - name: Build
       run: |
-        cd "${{ github.workspace }}"
-        mkdir _build
         cd _build
         cmake --build
