@@ -6,31 +6,43 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-static std::vector<spdlog::logger*> g_Loggers;
+static std::vector<spdlog::logger*>* g_Loggers;
 
 ZHMSDK_API LoggerList GetLoggers()
 {
+	if (g_Loggers == nullptr)
+		g_Loggers = new std::vector<spdlog::logger*>();
+	
 	return LoggerList
 	{
-		g_Loggers.data(),
-		g_Loggers.size(),
+		g_Loggers->data(),
+		g_Loggers->size(),
 	};
 }
 
 void ClearLoggers()
 {
-	for (auto& s_Logger : g_Loggers)
+	if (g_Loggers == nullptr)
+		return;
+	
+	for (auto& s_Logger : *g_Loggers)
 	{
 		delete s_Logger;
 	}
 
-	g_Loggers.clear();
+	g_Loggers->clear();
+	
+	delete g_Loggers;
+	g_Loggers = nullptr;
 }
 
 void SetupLogging(spdlog::level::level_enum p_LogLevel)
 {
 	ClearLoggers();
-	
+
+	if (g_Loggers == nullptr)
+		g_Loggers = new std::vector<spdlog::logger*>();
+
 	auto s_ConsoleDistSink = std::make_shared<spdlog::sinks::dist_sink_mt>();
 	auto s_StdoutSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
@@ -41,7 +53,7 @@ void SetupLogging(spdlog::level::level_enum p_LogLevel)
 	s_ConsoleLogger->set_level(p_LogLevel);
 	s_ConsoleLogger->set_pattern("%v");
 
-	g_Loggers.push_back(s_ConsoleLogger);
+	g_Loggers->push_back(s_ConsoleLogger);
 	
 	//////////////////////////////////////////////////////////////////////////
 
@@ -52,12 +64,15 @@ void SetupLogging(spdlog::level::level_enum p_LogLevel)
 	s_FileLogger->set_level(p_LogLevel);
 	s_FileLogger->set_pattern("%v");
 
-	g_Loggers.push_back(s_FileLogger);
+	g_Loggers->push_back(s_FileLogger);
 }
 
 void FlushLoggers()
 {
-	for (auto& s_Logger : g_Loggers)
+	if (g_Loggers == nullptr)
+		return;
+
+	for (auto& s_Logger : *g_Loggers)
 	{
 		s_Logger->flush();
 	}
