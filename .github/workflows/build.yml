@@ -10,6 +10,10 @@ jobs:
     name: Build
     runs-on: [ windows-latest ]
 
+    strategy:
+      matrix:
+        buildtype: [ RelWithDebInfo, Debug ]
+
     steps:
     - name: Get latest CMake and ninja
       uses: lukka/get-cmake@latest
@@ -26,30 +30,30 @@ jobs:
 
     - name: Generate projects
       run: |
-        mkdir _build
-        cd _build
+        mkdir _build-${{ matrix.buildtype }}
+        cd _build-${{ matrix.buildtype }}
         cmake -G Ninja `
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+          -DCMAKE_BUILD_TYPE=${{ matrix.buildtype }} `
           -DCMAKE_CXX_COMPILER=cl `
           -DCMAKE_C_COMPILER=cl `
           ..
 
     - name: Build
       run: |
-        cmake --build _build
+        cmake --build _build-${{ matrix.buildtype }}
 
     - name: Copy SDK and loader artifacts
       run: |
-        cd _build
+        cd _build-${{ matrix.buildtype }}
         mkdir _sdk
         Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _sdk/
         Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/
         Copy-Item DirectInputProxy/dinput8.dll -Destination _sdk/
-        Copy-Item DirectInputProxy/dinput8.dll -Destination _sdk/
+        Copy-Item DirectInputProxy/dinput8.pdb -Destination _sdk/
 
     - name: Copy mod artifacts
       run: |
-        cd _build
+        cd _build-${{ matrix.buildtype }}
         mkdir _mods
         Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_mods"  ($_.Name + ".dll")) }
         Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_mods"  ($_.Name + ".pdb")) }
@@ -57,13 +61,13 @@ jobs:
     - name: Archive SDK and loader
       uses: actions/upload-artifact@v2
       with:
-        name: mod-loader-release
+        name: mod-loader-${{ matrix.buildtype }}
         path: |
-          _build/_sdk/*
+          _build-${{ matrix.buildtype }}/_sdk/*
 
     - name: Archive mods
       uses: actions/upload-artifact@v2
       with:
-        name: mods-release
+        name: mods-${{ matrix.buildtype }}
         path: |
-          _build/_mods/*
+          _build-${{ matrix.buildtype }}/_mods/*
