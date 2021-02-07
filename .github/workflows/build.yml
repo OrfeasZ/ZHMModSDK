@@ -38,22 +38,18 @@ jobs:
       run: |
         cmake --build _build
 
-    - name: Archive binaries
+    - name: Archive SDK
       uses: actions/upload-artifact@v2
       with:
-        name: zhm-mod-loader
+        name: zhm-mod-loader-release
         path: |
           _build/ZHMModSDK/ZHMModSDK.dll
           _build/ZHMModSDK/ZHMModSDK.pdb
-        name: mod-no-pause
+
+    - name: Archive mods
+      uses: actions/upload-artifact@v2
+      with:
+        name: mods-release
         path: |
-          _build/Mods/NoPause/NoPause.dll
-          _build/Mods/NoPause/NoPause.pdb
-        name: mod-skip-intro
-        path: |
-          _build/Mods/SkipIntro/SkipIntro.dll
-          _build/Mods/SkipIntro/SkipIntro.pdb
-        name: mod-waking-up-npcs
-        path: |
-          _build/Mods/WakingUpNpcs/WakingUpNpcs.dll
-          _build/Mods/WakingUpNpcs/WakingUpNpcs.pdb
+          _build/Mods/**/*.dll
+          _build/Mods/**/*.pdb
