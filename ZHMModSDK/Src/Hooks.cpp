@@ -65,3 +65,27 @@ PATTERN_HOOK(
 	"xxxxxxxxxxxxxxx",
 	ZApplicationEngineWin32_MainWindowProc, LRESULT(ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM)
 )
+
+PATTERN_HOOK(
+	"\x40\x55\x56\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x00\x48\x8B\x29",
+	"xxxxxxxxxxxx?xxx",
+	SetPropertyValue, bool(ZEntityRef, uint32_t, const ZVariantRef&, bool)
+)
+
+PATTERN_HOOK(
+	"\x48\x89\x5C\x24\x10\x57\x48\x83\xEC\x00\x49\x8B\xF8\x48\xC7\x44\x24\x30",
+	"xxxxxxxxx?xxxxxxxx",
+	GetPropertyValue, bool(ZEntityRef, uint32_t, void*)
+)
+
+PATTERN_HOOK(
+	"\x48\x89\x6C\x24\x20\x56\x57\x41\x56\x48\x83\xEC\x00\x48\x8B\x31",
+	"xxxxxxxxxxxx?xxx",
+	SignalOutputPin, bool(ZEntityRef, uint32_t, const ZVariantRef&)
+)
+
+PATTERN_HOOK(
+	"\x48\x89\x6C\x24\x20\x56\x41\x56\x41\x57\x48\x83\xEC\x00\x48\x8B\x29",
+	"xxxxxxxxxxxxx?xxx",
+	SignalInputPin, bool(ZEntityRef, uint32_t, const ZVariantRef&)
+)

@@ -7,7 +7,7 @@
 #include "EUpdateMode.h"
 #include "Hook.h"
 #include "ZDelegate.h"
-#include "ZScene.h"
+#include "ZEntity.h"
 
 class ZActor;
 class ZComponentCreateInfo;
@@ -16,6 +16,10 @@ class ZGameLoopManager;
 class ZKnowledge;
 class ZActorManager;
 class ZApplicationEngineWin32;
+class ZEntityImpl;
+class ZVariantRef;
+class ZEntitySceneContext;
+class ZSceneData;
 
 class ZHMSDK_API Hooks
 {
@@ -27,7 +31,11 @@ public:
 	static Hook<bool(void*, void*)>* Engine_Init;
 	static Hook<void(ZKnowledge*, EGameTension)>* ZKnowledge_SetGameTension;
 	static Hook<void(ZActorManager*, EAISharedEventType, bool)>* ZActorManager_SetHitmanSharedEvent;
-	static Hook<bool(const ZString&, bool)>* GetApplicationOptionBool;
-	static Hook<void(ZApplicationEngineWin32*, bool)>* ZApplicationEngineWin32_OnMainWindowActivated;
+	static Hook<bool(const ZString& optionName, bool defaultValue)>* GetApplicationOptionBool;
+	static Hook<void(ZApplicationEngineWin32* th, bool activated)>* ZApplicationEngineWin32_OnMainWindowActivated;
 	static Hook<LRESULT(ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM)>* ZApplicationEngineWin32_MainWindowProc;
+	static Hook<bool(ZEntityRef entity, uint32_t propertyId, const ZVariantRef& value, bool invokeChangeHandlers)>* SetPropertyValue;
+	static Hook<bool(ZEntityRef entity, uint32_t propertyId, void* output)>* GetPropertyValue;
+	static Hook<bool(ZEntityRef entity, uint32_t pinId, const ZVariantRef& data)>* SignalOutputPin;
+	static Hook<bool(ZEntityRef entity, uint32_t pinId, const ZVariantRef& data)>* SignalInputPin;
 };
