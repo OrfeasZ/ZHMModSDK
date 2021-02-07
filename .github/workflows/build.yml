@@ -71,3 +71,12 @@ jobs:
         name: mods-${{ matrix.buildtype }}
         path: |
           _build-${{ matrix.buildtype }}/_mods/*
+
+    - name: Archive devloader
+      uses: actions/upload-artifact@v2
+      if: matrix.buildtype == 'Debug'
+      with:
+        name: devloader-${{ matrix.buildtype }}
+        path: |
+          _build-${{ matrix.buildtype }}/Tools/DevLoader/DevLoader.exe
+          _build-${{ matrix.buildtype }}/Tools/DevLoader/DevLoader.pdb
