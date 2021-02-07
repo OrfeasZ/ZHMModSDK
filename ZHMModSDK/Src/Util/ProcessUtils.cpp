@@ -1,5 +1,11 @@
 #include "ProcessUtils.h"
 
+#include <TlHelp32.h>
+#include <Windows.h>
+#include <unordered_set>
+
+#include "Logging.h"
+
 using namespace Util;
 
 uintptr_t ProcessUtils::SearchPattern(uintptr_t p_BaseAddress, size_t p_ScanSize, const uint8_t* p_Pattern, const char* p_Mask)
@@ -102,4 +108,74 @@ uintptr_t ProcessUtils::GetRelativeAddr(uintptr_t p_Base, int32_t p_Offset)
 	int32_t s_RelAddr = *reinterpret_cast<int32_t*>(s_RelAddrPtr);
 
 	return s_RelAddrPtr + s_RelAddr + sizeof(int32_t);
+}
+
+static std::unordered_set<HANDLE>* g_SuspendedThreads = nullptr;
+
+void ProcessUtils::SuspendAllThreadsButCurrent()
+{
+	if (g_SuspendedThreads != nullptr)
+		return;
+	
+	g_SuspendedThreads = new std::unordered_set<HANDLE>();
+	
+	HANDLE s_Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+
+	if (s_Snapshot == INVALID_HANDLE_VALUE)
+		return;
+
+	auto s_CurrentThread = GetCurrentThreadId();
+	
+	THREADENTRY32 s_ThreadEntry{};
+	s_ThreadEntry.dwSize = sizeof(s_ThreadEntry);
+	
+	if (Thread32First(s_Snapshot, &s_ThreadEntry))
+	{
+		do 
+		{
+			if (s_ThreadEntry.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(s_ThreadEntry.th32OwnerProcessID) && 
+				s_ThreadEntry.th32ThreadID != s_CurrentThread && 
+				s_ThreadEntry.th32OwnerProcessID == GetCurrentProcessId())
+			{
+				HANDLE s_Thread = OpenThread(THREAD_ALL_ACCESS, false, s_ThreadEntry.th32ThreadID);
+
+				if (s_Thread != nullptr)
+				{
+					Logger::Trace("Adding thread {} to the list of threads to suspend.", s_ThreadEntry.th32ThreadID);
+					g_SuspendedThreads->insert(s_Thread);
+				}
+				else
+				{
+					Logger::Trace("Could not open thread {} to suspend. Error: {}.", s_ThreadEntry.th32ThreadID, GetLastError());
+				}
+			}
+			
+			s_ThreadEntry.dwSize = sizeof(s_ThreadEntry);
+		}
+		while (Thread32Next(s_Snapshot, &s_ThreadEntry));
+	}
+	
+	CloseHandle(s_Snapshot);
+
+	Logger::Trace("Suspending {} threads.", g_SuspendedThreads->size());
+
+	for (auto* s_Thread : *g_SuspendedThreads)
+		SuspendThread(s_Thread);
+}
+
+void ProcessUtils::ResumeSuspendedThreads()
+{
+	if (g_SuspendedThreads == nullptr)
+		return;
+
+	Logger::Trace("Resuming {} suspended threads.", g_SuspendedThreads->size());
+
+	for (auto* s_Thread : *g_SuspendedThreads)
+	{
+		ResumeThread(s_Thread);
+		CloseHandle(s_Thread);
+	}
+
+	delete g_SuspendedThreads;
+	g_SuspendedThreads = nullptr;
 }

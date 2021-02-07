@@ -31,6 +31,7 @@ void ModSDK::DestroyInstance()
 
 ModSDK::ModSDK()
 {
+	g_Instance = this;
 	m_DebugConsole = new DebugConsole();
 	m_ModLoader = new ModLoader();
 
@@ -50,7 +51,9 @@ ModSDK::~ModSDK()
 }
 
 bool ModSDK::Startup()
-{	
+{
+	Util::ProcessUtils::ResumeSuspendedThreads();
+	
 	m_DebugConsole->StartRedirecting();
 	m_ModLoader->Startup();
 

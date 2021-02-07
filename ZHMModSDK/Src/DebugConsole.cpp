@@ -5,6 +5,7 @@
 #include <io.h>
 
 #include "Events.h"
+#include "Logging.h"
 #include "ModSDK.h"
 #include "ModLoader.h"
 #include "spdlog/common.h"
@@ -90,7 +91,7 @@ DebugConsole::~DebugConsole()
 	DWORD s_Written;
 	WriteConsoleInputA(GetStdHandle(STD_INPUT_HANDLE), s_Inputs, 2, &s_Written);
 	
-	m_InputThread.join();
+	m_InputThread.detach();
 
 	FlushLoggers();
 	ClearLoggers();

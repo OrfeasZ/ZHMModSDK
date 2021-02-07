@@ -60,6 +60,8 @@ protected:
 	HookImpl(const char* p_HookName, void* p_Target, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
 		m_Target(p_Target)
 	{
+		Util::ProcessUtils::SuspendAllThreadsButCurrent();
+		
 		InitializeSRWLock(&m_Lock);
 		
 		HookRegistry::RegisterHook(this);
@@ -103,6 +105,8 @@ protected:
 	HookImpl(const char* p_HookName, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Original) :
 		m_Target(nullptr)
 	{
+		Util::ProcessUtils::SuspendAllThreadsButCurrent();
+
 		InitializeSRWLock(&m_Lock);
 		
 		HookRegistry::RegisterHook(this);
@@ -379,6 +383,8 @@ public:
 private:
 	typename Hook<ReturnType(Args...)>::OriginalFunc_t InstallDetourAndGetOriginal(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour)
 	{
+		Util::ProcessUtils::SuspendAllThreadsButCurrent();
+
 		const auto* s_Pattern = reinterpret_cast<const uint8_t*>(p_Pattern);
 		m_Target = Util::ProcessUtils::SearchPattern(ModSDK::GetInstance()->GetModuleBase(), ModSDK::GetInstance()->GetSizeOfCode(), s_Pattern, p_Mask);
 
@@ -428,7 +434,7 @@ private:
 		
 		VirtualProtect(reinterpret_cast<void*>(m_Target), 5, s_OldProtect, nullptr);
 		
-		return reinterpret_cast<typename Hook<ReturnType, Args...>::OriginalFunc_t>(s_OriginalFunction);
+		return reinterpret_cast<typename Hook<ReturnType(Args...)>::OriginalFunc_t>(s_OriginalFunction);
 	}
 
 	uintptr_t m_Target;

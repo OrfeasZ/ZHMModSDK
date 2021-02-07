@@ -28,7 +28,7 @@ public:
 	uintptr_t GetModuleBase() const { return m_ModuleBase; }
 	uint32_t GetSizeOfCode() const { return m_SizeOfCode; }
 	uint32_t GetImageSize() const { return m_ImageSize; }
-
+	
 private:
 	ModLoader* m_ModLoader;
 	DebugConsole* m_DebugConsole;

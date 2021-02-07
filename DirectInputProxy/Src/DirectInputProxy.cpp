@@ -1,11 +1,71 @@
 ﻿#include <thread>
+#include <unordered_set>
 #include <Windows.h>
+#include <TlHelp32.h>
 
 static HMODULE g_OriginalDirectInput = nullptr;
 static HMODULE g_ZHMModSDK = nullptr;
 
 typedef HRESULT (__stdcall* DirectInput8Create_t)(HINSTANCE, DWORD, REFIID, LPVOID*, LPUNKNOWN);
 static DirectInput8Create_t o_DirectInput8Create = nullptr;
+
+static std::unordered_set<HANDLE>* g_SuspendedThreads = nullptr;
+
+void SuspendAllThreadsButCurrent()
+{
+	if (g_SuspendedThreads != nullptr)
+		return;
+
+	g_SuspendedThreads = new std::unordered_set<HANDLE>();
+
+	HANDLE s_Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+
+	if (s_Snapshot == INVALID_HANDLE_VALUE)
+		return;
+
+	auto s_CurrentThread = GetCurrentThreadId();
+
+	THREADENTRY32 s_ThreadEntry{};
+	s_ThreadEntry.dwSize = sizeof(s_ThreadEntry);
+
+	if (Thread32First(s_Snapshot, &s_ThreadEntry))
+	{
+		do
+		{
+			if (s_ThreadEntry.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(s_ThreadEntry.th32OwnerProcessID) &&
+				s_ThreadEntry.th32ThreadID != s_CurrentThread &&
+				s_ThreadEntry.th32OwnerProcessID == GetCurrentProcessId())
+			{
+				HANDLE s_Thread = OpenThread(THREAD_ALL_ACCESS, false, s_ThreadEntry.th32ThreadID);
+
+				if (s_Thread != nullptr)
+					g_SuspendedThreads->insert(s_Thread);
+			}
+
+			s_ThreadEntry.dwSize = sizeof(s_ThreadEntry);
+		} while (Thread32Next(s_Snapshot, &s_ThreadEntry));
+	}
+
+	CloseHandle(s_Snapshot);
+
+	for (auto* s_Thread : *g_SuspendedThreads)
+		SuspendThread(s_Thread);
+}
+
+void ResumeSuspendedThreads()
+{
+	if (g_SuspendedThreads == nullptr)
+		return;
+
+	for (auto* s_Thread : *g_SuspendedThreads)
+	{
+		ResumeThread(s_Thread);
+		CloseHandle(s_Thread);
+	}
+
+	delete g_SuspendedThreads;
+	g_SuspendedThreads = nullptr;
+}
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
@@ -50,11 +110,15 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 				ResetEvent(s_UnloadEvent);
 
 				if (g_ZHMModSDK != nullptr)
-				{
+				{					
 					GetProcAddress(g_ZHMModSDK, "Unload")();
+
+					SuspendAllThreadsButCurrent();
 
 					while (FreeLibrary(g_ZHMModSDK));
 
+					ResumeSuspendedThreads();
+					
 					g_ZHMModSDK = nullptr;
 				}
 
@@ -84,7 +148,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 				{
 					GetProcAddress(g_ZHMModSDK, "Unload")();
 
+					SuspendAllThreadsButCurrent();
+					
 					while (FreeLibrary(g_ZHMModSDK));
+
+					ResumeSuspendedThreads();
 
 					g_ZHMModSDK = nullptr;
 				}
