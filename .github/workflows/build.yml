@@ -6,11 +6,14 @@ on:
       - master
 
 jobs:
-  build-release:
-    name: Build release
+  build:
+    name: Build
     runs-on: [ windows-latest ]
 
     steps:
+    - name: Get latest CMake and ninja
+      uses: lukka/get-cmake@latest
+
     - name: Checkout
       uses: actions/checkout@v2
       with:
