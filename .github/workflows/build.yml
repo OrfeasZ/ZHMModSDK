@@ -38,18 +38,20 @@ jobs:
       run: |
         cmake --build _build
 
-    - name: Archive SDK
+    - name: Archive SDK and loader
       uses: actions/upload-artifact@v2
       with:
-        name: zhm-mod-loader-release
+        name: mod-loader-release
         path: |
           _build/ZHMModSDK/ZHMModSDK.dll
           _build/ZHMModSDK/ZHMModSDK.pdb
+          _build/DirectInputProxy/dinput8.dll
+          _build/DirectInputProxy/dinput8.pdb
 
     - name: Archive mods
       uses: actions/upload-artifact@v2
       with:
         name: mods-release
         path: |
-          _build/Mods/**/*.dll
-          _build/Mods/**/*.pdb
+          _build/Mods/*/*.dll
+          _build/Mods/*/*.pdb
