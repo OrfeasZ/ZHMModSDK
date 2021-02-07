@@ -1,0 +1,30 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-release:
+    name: Build release
+    runs-on: [ windows-latest ]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Generate projects
+      run: |
+        cd "${{ github.workspace }}"
+        mkdir _build
+        cd _build
+        cmake .. -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+    - name: Build
+      run: |
+        cd "${{ github.workspace }}"
+        cd _build
+        ninja
