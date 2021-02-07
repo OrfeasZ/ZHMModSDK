@@ -51,8 +51,8 @@ jobs:
       run: |
         cd _build
         mkdir _mods
-        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item "Mods/$_/$_.dll" -Destination "_mods/$_.dll" }
-        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item "Mods/$_/$_.pdb" -Destination "_mods/$_.pdb" }
+        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_mods"  ($_.Name + ".dll")) }
+        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_mods"  ($_.Name + ".pdb")) }
 
     - name: Archive SDK and loader
       uses: actions/upload-artifact@v2
