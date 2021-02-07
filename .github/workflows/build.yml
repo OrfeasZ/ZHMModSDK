@@ -22,7 +22,9 @@ jobs:
     - name: Generate projects
       run: |
         cd "${{ github.workspace }}"
-        cmake . -B _build -G Ninja `
+        mkdir _build
+        cd _build
+        cmake .. -G Ninja `
           -DCMAKE_BUILD_TYPE=RelWithDebInfo `
           -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_DEST_WIN }}\scripts\buildsystems\vcpkg.cmake `
           -DVCPKG_TARGET_TRIPLET=x64-windows-static `
@@ -32,4 +34,6 @@ jobs:
     - name: Build
       run: |
         cd "${{ github.workspace }}"
-        cmake --build _build
+        mkdir _build
+        cd _build
+        cmake --build
