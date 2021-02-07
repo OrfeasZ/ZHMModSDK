@@ -36,5 +36,4 @@ jobs:
 
     - name: Build
       run: |
-        cd _build
-        cmake --build
+        cmake --build _build
