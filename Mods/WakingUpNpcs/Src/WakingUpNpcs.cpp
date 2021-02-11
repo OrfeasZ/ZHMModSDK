@@ -17,7 +17,6 @@ WakingUpNpcs::WakingUpNpcs() :
 {	
 }
 
-
 WakingUpNpcs::~WakingUpNpcs()
 {
 	const ZMemberDelegate<WakingUpNpcs, void(const SGameUpdateEvent&)> s_Delegate(this, &WakingUpNpcs::OnFrameUpdate);
@@ -42,15 +41,16 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 	{
 		auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 
-		// TODO: Check if dragged or in a container.
-		if (s_Actor->IsPacified())
+		// Process NPCs that are pacified (knocked out) and are not hidden (or being hidden) in a container.
+		if (s_Actor->IsPacified() && !s_Actor->m_bBodyHidden && !s_Actor->m_bIsBeingDumped)
 		{
 			auto it = m_PacifiedTimes.find(s_Actor);
-			
+
 			if (it == m_PacifiedTimes.end())
 			{
-				// Wake up this actor at some point in the future, between 4 and 8 minutes.
-				std::uniform_real_distribution<double> s_Distribution(4.0 * 60.0, 8.0 * 60.0);
+				// If this is the first time we see this NPC it means they were just now pacified.
+				// Wake them up at some point in the future, between 4 and 8 minutes.
+				std::uniform_real_distribution<double> s_Distribution(0.2 * 60.0, 0.5 * 60.0);
 				double s_WakeUpTime = s_Distribution(m_Generator);
 				
 				Logger::Debug("Actor '{}' was pacified. Waking up in {} seconds.", s_Actor->m_sActorName.c_str(), s_WakeUpTime);
@@ -59,9 +59,12 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 			}
 			else
 			{
+				// If we already have them in the list, just tick down their wake up timer.
 				auto s_RemainingTime = it->second - p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-				if (s_RemainingTime <= 0)
+				// As soon as the timer reaches 0, then it means it's time to wake up the NPC.
+				// If however the NPC is being dragged we should wait until that action stops.
+				if (s_RemainingTime <= 0 && !s_Actor->m_bIsBeingDragged)
 				{
 					// TODO: Set alerted state.
 					Logger::Debug("Waking up actor '{}'.", s_Actor->m_sActorName.c_str());
