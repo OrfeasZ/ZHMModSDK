@@ -80,3 +80,52 @@ jobs:
         path: |
           _build-${{ matrix.buildtype }}/Tools/DevLoader/DevLoader.exe
           _build-${{ matrix.buildtype }}/Tools/DevLoader/DevLoader.pdb
+
+  create_release:
+    name: Create release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+    - name: Create release
+      id: create
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        draft: false
+        prerelease: startsWith(github.ref, 'refs/tags/v0.')
+
+  upload_release:
+    name: Upload release artifacts
+    needs: create_release
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        artifact: [ mod-loader-RelWithDebInfo, mods-RelWithDebInfo, mod-loader-Debug, mods-Debug, devloader-Debug ]
+
+    steps:
+    - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+    - name: Archive artifact files
+      run: |
+        cd ${{ matrix.artifact }}
+        zip -r ${{ matrix.artifact }}.zip *
+
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create_release.create.outputs.upload_url }}
+        asset_path: ${{ matrix.artifact }}/${{ matrix.artifact }}.zip
+        asset_name: ${{ matrix.artifact }}.zip
+        asset_content_type: application/zip
