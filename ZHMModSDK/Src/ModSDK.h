@@ -7,6 +7,8 @@
 class ModLoader;
 class DebugConsole;
 
+#define DECLARE_SDK_GLOBAL(GlobalType, GlobalName) GlobalType GlobalName() override;
+
 class ModSDK : public IModSDK
 {
 private:
@@ -31,7 +33,7 @@ public:
 	uintptr_t GetModuleBase() const { return m_ModuleBase; }
 	uint32_t GetSizeOfCode() const { return m_SizeOfCode; }
 	uint32_t GetImageSize() const { return m_ImageSize; }
-	
+
 private:
 	ModLoader* m_ModLoader;
 	

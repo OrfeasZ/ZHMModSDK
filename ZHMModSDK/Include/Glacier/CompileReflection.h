@@ -11,7 +11,7 @@
 
 #include <string_view>
 #include <array>
-#include "Crc32.h"
+#include "Hash.h"
 
 namespace detail
 {
@@ -142,4 +142,4 @@ template <> inline constexpr std::string_view ZHMTypeName<double> = "float64";
  * The CRC32 of a type for use in lookups with the reflection engine. 
  */
 template <class T>
-inline constexpr uint32_t ZHMTypeId = Crc32::Calculate(ZHMTypeName<T>.data(), ZHMTypeName<T>.size());
+inline constexpr uint32_t ZHMTypeId = Hash::Crc32(ZHMTypeName<T>.data(), ZHMTypeName<T>.size());

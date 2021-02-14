@@ -69,7 +69,7 @@ PATTERN_HOOK(
 PATTERN_HOOK(
 	"\x40\x55\x56\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x00\x48\x8B\x29",
 	"xxxxxxxxxxxx?xxx",
-	SetPropertyValue, bool(ZEntityRef, uint32_t, const ZVariantRef&, bool)
+	SetPropertyValue, bool(ZEntityRef, uint32_t, const ZObjectRef&, bool)
 )
 
 PATTERN_HOOK(
@@ -81,11 +81,11 @@ PATTERN_HOOK(
 PATTERN_HOOK(
 	"\x48\x89\x6C\x24\x20\x56\x57\x41\x56\x48\x83\xEC\x00\x48\x8B\x31",
 	"xxxxxxxxxxxx?xxx",
-	SignalOutputPin, bool(ZEntityRef, uint32_t, const ZVariantRef&)
+	SignalOutputPin, bool(ZEntityRef, uint32_t, const ZObjectRef&)
 )
 
 PATTERN_HOOK(
 	"\x48\x89\x6C\x24\x20\x56\x41\x56\x41\x57\x48\x83\xEC\x00\x48\x8B\x29",
 	"xxxxxxxxxxxxx?xxx",
-	SignalInputPin, bool(ZEntityRef, uint32_t, const ZVariantRef&)
+	SignalInputPin, bool(ZEntityRef, uint32_t, const ZObjectRef&)
 )

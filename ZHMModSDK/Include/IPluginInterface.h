@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Hooks.h"
+#include "IModSDK.h"
 
 class IPluginInterface
 {

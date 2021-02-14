@@ -2,15 +2,15 @@
 
 #include <random>
 
-
 #include "Events.h"
 #include "Functions.h"
-#include "Globals.h"
 #include "Logging.h"
-#include "ZActor.h"
 
-#include "SGameUpdateEvent.h"
-#include "ZScene.h"
+#include <Glacier/ZActor.h>
+#include <Glacier/ZKnowledge.h>
+#include <Glacier/SGameUpdateEvent.h>
+#include <Glacier/ZObject.h>
+#include <Glacier/ZScene.h>
 
 WakingUpNpcs::WakingUpNpcs() :
 	m_Generator(m_RandomDevice())
@@ -33,6 +33,7 @@ void WakingUpNpcs::OnEngineInitialized()
 {
 	const ZMemberDelegate<WakingUpNpcs, void(const SGameUpdateEvent&)> s_Delegate(this, &WakingUpNpcs::OnFrameUpdate);
 	Hooks::ZGameLoopManager_RegisterFrameUpdate->Call(Globals::GameLoopManager, s_Delegate, 0, EUpdateMode::eUpdatePlayMode);
+	
 }
 
 void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
@@ -50,7 +51,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 			{
 				// If this is the first time we see this NPC it means they were just now pacified.
 				// Wake them up at some point in the future, between 4 and 8 minutes.
-				std::uniform_real_distribution<double> s_Distribution(0.2 * 60.0, 0.5 * 60.0);
+				std::uniform_real_distribution<double> s_Distribution(4.0 * 60.0, 8.0 * 60.0);
 				double s_WakeUpTime = s_Distribution(m_Generator);
 				
 				Logger::Debug("Actor '{}' was pacified. Waking up in {} seconds.", s_Actor->m_sActorName.c_str(), s_WakeUpTime);
@@ -69,6 +70,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 					// TODO: Set alerted state.
 					Logger::Debug("Waking up actor '{}'.", s_Actor->m_sActorName.c_str());
 					Functions::ZActor_ReviveActor->Call(s_Actor);
+
 					m_PacifiedTimes.erase(it);
 				}
 				else

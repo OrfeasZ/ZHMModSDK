@@ -5,7 +5,7 @@
 #include "ZObject.h"
 
 class ZGameStats :
-	public TMap<ZString, ZVariant>
+	public TMap<ZString, ZObjectRef>
 {
 public:
 	virtual ~ZGameStats() = 0;

@@ -3,6 +3,7 @@
 #include "Common.h"
 #include <cstdint>
 
+class ZMemoryManager;
 class ZGameLoopManager;
 class ZTypeRegistry;
 class ZGameTimeManager;
@@ -20,4 +21,5 @@ public:
 	static ZGameContext* GameContext;
 	static ZActorManager* ActorManager;
 	static uint16_t* NextActorId;
+	static ZMemoryManager** MemoryManager;
 };

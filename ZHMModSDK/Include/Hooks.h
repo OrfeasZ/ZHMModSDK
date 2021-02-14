@@ -2,12 +2,13 @@
 
 #include <Windows.h>
 
-#include "Common.h"
-#include "Enums.h"
-#include "EUpdateMode.h"
 #include "Hook.h"
-#include "ZDelegate.h"
-#include "ZEntity.h"
+#include "Common.h"
+
+#include <Glacier/Enums.h>
+#include <Glacier/EUpdateMode.h>
+#include <Glacier/ZDelegate.h>
+#include <Glacier/ZEntity.h>
 
 class ZActor;
 class ZComponentCreateInfo;
@@ -17,7 +18,7 @@ class ZKnowledge;
 class ZActorManager;
 class ZApplicationEngineWin32;
 class ZEntityImpl;
-class ZVariantRef;
+class ZObjectRef;
 class ZEntitySceneContext;
 class ZSceneData;
 
@@ -34,8 +35,8 @@ public:
 	static Hook<bool(const ZString& optionName, bool defaultValue)>* GetApplicationOptionBool;
 	static Hook<void(ZApplicationEngineWin32* th, bool activated)>* ZApplicationEngineWin32_OnMainWindowActivated;
 	static Hook<LRESULT(ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM)>* ZApplicationEngineWin32_MainWindowProc;
-	static Hook<bool(ZEntityRef entity, uint32_t propertyId, const ZVariantRef& value, bool invokeChangeHandlers)>* SetPropertyValue;
+	static Hook<bool(ZEntityRef entity, uint32_t propertyId, const ZObjectRef& value, bool invokeChangeHandlers)>* SetPropertyValue;
 	static Hook<bool(ZEntityRef entity, uint32_t propertyId, void* output)>* GetPropertyValue;
-	static Hook<bool(ZEntityRef entity, uint32_t pinId, const ZVariantRef& data)>* SignalOutputPin;
-	static Hook<bool(ZEntityRef entity, uint32_t pinId, const ZVariantRef& data)>* SignalInputPin;
+	static Hook<bool(ZEntityRef entity, uint32_t pinId, const ZObjectRef& data)>* SignalOutputPin;
+	static Hook<bool(ZEntityRef entity, uint32_t pinId, const ZObjectRef& data)>* SignalInputPin;
 };

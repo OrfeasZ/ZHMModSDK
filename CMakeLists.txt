@@ -7,7 +7,6 @@ add_subdirectory("External/spdlog")
 add_subdirectory("External/minhook")
 
 # Core modules.
-add_subdirectory("ZHMGlacierSDK")
 add_subdirectory("ZHMModSDK")
 add_subdirectory("DirectInputProxy")
 

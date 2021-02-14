@@ -26,9 +26,9 @@ SOFTWARE.
 
 #include <cstdint>
 
-namespace Crc32
+namespace Hash
 {
-    static constexpr uint32_t crc32_table[] =
+    static constexpr uint32_t g_Crc32Table[] =
 	{
 		0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
 		0xe963a535, 0x9e6495a3,	0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -72,32 +72,136 @@ namespace Crc32
 		0x40df0b66, 0x37d83bf0, 0xa9bcae53, 0xdebb9ec5, 0x47b2cf7f, 0x30b5ffe9,
 		0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693,
 		0x54de5729, 0x23d967bf, 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94,
-		0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
+		0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
 	};
 
-    constexpr uint32_t Calculate(const char* data, size_t len)
+    constexpr uint32_t Crc32(const char* p_Data, size_t p_Length)
     {
-		uint32_t crc = 0xFFFFFFFF;
+		uint32_t s_Hash = 0xFFFFFFFF;
     	
-		while(len--)
+		while (p_Length--)
 		{
-			crc = crc32_table[*data ^ (crc & 0xFF)] ^ (crc >> 8);
-			data++;
+			s_Hash = g_Crc32Table[*p_Data ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
+			p_Data++;
 		}
 
-		return crc ^ 0xFFFFFFFF;
+		return s_Hash ^ 0xFFFFFFFF;
     }
 
-    constexpr uint32_t Calculate(const char* data)
+    constexpr uint32_t Crc32(const char* p_Data)
     {
-		uint32_t crc = 0xFFFFFFFF;
+		uint32_t s_Hash = 0xFFFFFFFF;
     	
-		while(*data)
+		while (*p_Data)
 		{
-			crc = crc32_table[*data ^ (crc & 0xFF)] ^ (crc >> 8);
-			data++;
+			s_Hash = g_Crc32Table[*p_Data ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
+			p_Data++;
 		}
     	
-		return crc ^ 0xFFFFFFFF;
+		return s_Hash ^ 0xFFFFFFFF;
+    }
+
+	constexpr uint32_t Fnv1a(const char* p_Data, size_t p_Length)
+    {
+		uint32_t s_Hash = 0x811c9dc5;
+
+    	while (p_Length--)
+    	{
+			s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
+			p_Data++;
+    	}
+
+		return s_Hash;
+    }
+
+	constexpr uint32_t Fnv1a(const char* p_Data)
+    {
+		uint32_t s_Hash = 0x811c9dc5;
+
+		while (*p_Data)
+    	{
+			s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
+			p_Data++;
+    	}
+
+		return s_Hash;
+    }
+
+	constexpr uint32_t Fnv1a_Lower(const char* p_Data, size_t p_Length)
+	{
+		uint32_t s_Hash = 0x811c9dc5;
+
+		while (p_Length--)
+		{
+			s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
+			p_Data++;
+		}
+
+		return s_Hash;
+	}
+
+	constexpr uint32_t Fnv1a_Lower(const char* p_Data)
+    {
+		uint32_t s_Hash = 0x811c9dc5;
+
+		while (*p_Data)
+    	{
+			s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
+			p_Data++;
+    	}
+
+		return s_Hash;
+    }
+
+	constexpr uint64_t Fnv1a64(const char* p_Data, size_t p_Length)
+    {
+		uint64_t s_Hash = 0x811c9dc5;
+
+    	while (p_Length--)
+    	{
+			s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
+			p_Data++;
+    	}
+
+		return s_Hash;
+    }
+
+	constexpr uint64_t Fnv1a64(const char* p_Data)
+    {
+		uint64_t s_Hash = 0x811c9dc5;
+
+		while (*p_Data)
+    	{
+			s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
+			p_Data++;
+    	}
+
+		return s_Hash;
+    }
+
+	constexpr uint64_t Fnv1a64_Lower(const char* p_Data, size_t p_Length)
+	{
+		uint64_t s_Hash = 0x811c9dc5;
+
+		while (p_Length--)
+		{
+			s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
+			p_Data++;
+		}
+
+		return s_Hash;
+	}
+
+	constexpr uint64_t Fnv1a64_Lower(const char* p_Data)
+    {
+		uint64_t s_Hash = 0x811c9dc5;
+
+		while (*p_Data)
+    	{
+			s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
+			p_Data++;
+    	}
+
+		return s_Hash;
     }
 }

@@ -3,8 +3,6 @@
 #include <Windows.h>
 #include <filesystem>
 
-
-
 #include "EventDispatcherImpl.h"
 #include "Globals.h"
 #include "HookImpl.h"
@@ -30,7 +28,7 @@ void ModLoader::Startup()
 	{
 		auto s_Result = p_Hook->CallOriginal(th, a2);
 
-		auto s_Loader = reinterpret_cast<ModLoader*>(p_Ctx);
+		auto s_Loader = static_cast<ModLoader*>(p_Ctx);
 
 		for (auto& s_Mod : s_Loader->m_LoadedMods)
 			s_Mod.second.PluginInterface->OnEngineInitialized();

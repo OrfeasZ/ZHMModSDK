@@ -2,7 +2,8 @@
 
 #include "Hooks.h"
 #include "Logging.h"
-#include "ZScene.h"
+
+#include <Glacier/ZScene.h>
 
 void SkipIntro::Init()
 {

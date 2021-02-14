@@ -36,7 +36,7 @@ class STypeFunctions
 {
 public:
 	void (*construct)(void*);
-	void (*copyConstruct)(void*, void*);
+	void (*copyConstruct)(void*, const void*);
 	void (*destruct)(void*);
 	void (*assign)(void*, void*);
 	bool (*equal)(void*, void*);

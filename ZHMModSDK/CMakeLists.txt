@@ -30,7 +30,6 @@ target_compile_definitions(ZHMModSDK PRIVATE
 )
 
 target_link_libraries(ZHMModSDK PUBLIC
-	ZHMGlacierSDK
 	minhook
 	spdlog
 )

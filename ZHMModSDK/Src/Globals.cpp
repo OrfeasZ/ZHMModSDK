@@ -1,5 +1,5 @@
-#include "Globals.h"
 #include "GlobalsImpl.h"
+#include "ModSDK.h"
 
 PATTERN_RELATIVE_GLOBAL(
 	"\x48\x8D\x0D\x00\x00\x00\x00\x0F\xB6\xF2",
@@ -48,4 +48,11 @@ PATTERN_RELATIVE_GLOBAL(
 	"xxx????xxxxxxx",
 	3,
 	uint16_t*, NextActorId
+)
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8B\x05\x00\x00\x00\x00\x48\x89\x9C\x24\x68\x01\x00\x00",
+	"xxx????xxxxxxxx",
+	3,
+	ZMemoryManager**, MemoryManager
 )
