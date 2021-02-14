@@ -196,6 +196,18 @@ public:
 	}
 
 	template <class T>
+	bool SetProperty(uint32_t p_PropertyId, const T& p_Value, bool p_InvokeChangeHandlers = true)
+	{
+		return Hooks::SetPropertyValue->Call(*this, p_PropertyId, ZVariant<T>(p_Value), p_InvokeChangeHandlers);
+	}
+
+	template <class T>
+	bool SetProperty(const ZString& p_PropertyName, const T& p_Value, bool p_InvokeChangeHandlers = true)
+	{
+		return SetProperty<T>(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers);
+	}
+
+	template <class T>
 	bool SetProperty(uint32_t p_PropertyId, const ZVariant<T>& p_Value, bool p_InvokeChangeHandlers = true)
 	{
 		return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);
