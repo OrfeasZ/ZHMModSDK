@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ZPrimitives.h"
+#include "CompileReflection.h"
 #include "TArray.h"
 
 class STypeID;
