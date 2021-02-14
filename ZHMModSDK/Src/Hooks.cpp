@@ -1,6 +1,8 @@
 #include "Hooks.h"
 #include "HookImpl.h"
 
+#include <Glacier/ZEntity.h>
+
 std::unordered_set<HookBase*>* HookRegistry::g_Hooks = nullptr;
 
 DetourTrampoline* Trampolines::g_Trampolines = nullptr;

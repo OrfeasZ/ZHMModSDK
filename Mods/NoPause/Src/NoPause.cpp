@@ -1,6 +1,7 @@
 #include "NoPause.h"
-
 #include "Logging.h"
+
+#include <Glacier/ZString.h>
 
 void NoPause::Init()
 {

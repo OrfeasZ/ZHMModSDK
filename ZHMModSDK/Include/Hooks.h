@@ -8,7 +8,6 @@
 #include <Glacier/Enums.h>
 #include <Glacier/EUpdateMode.h>
 #include <Glacier/ZDelegate.h>
-#include <Glacier/ZEntity.h>
 
 class ZActor;
 class ZComponentCreateInfo;
@@ -21,6 +20,8 @@ class ZEntityImpl;
 class ZObjectRef;
 class ZEntitySceneContext;
 class ZSceneData;
+class ZString;
+class ZEntityRef;
 
 class ZHMSDK_API Hooks
 {

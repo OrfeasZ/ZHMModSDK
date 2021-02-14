@@ -1,5 +1,5 @@
+#include "Globals.h"
 #include "GlobalsImpl.h"
-#include "ModSDK.h"
 
 PATTERN_RELATIVE_GLOBAL(
 	"\x48\x8D\x0D\x00\x00\x00\x00\x0F\xB6\xF2",
