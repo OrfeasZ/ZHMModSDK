@@ -206,6 +206,53 @@ class ZActorManager :
 public:
 	virtual ~ZActorManager() {}
 
+
+	/**
+	 * Get an actor by their name
+	 *
+	 * Author: Andrew Pratt
+	 * Param p_Name: Actor's name
+	 * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
+	 */
+	ZActor* GetActorByName(const char* p_Name)
+	{
+		for (int i = 0; i < *Globals::NextActorId; ++i)
+		{
+			auto* s_Actor = m_aActiveActors[i].m_pInterfaceRef;
+
+			if (strcmp(s_Actor->m_sActorName.c_str(), p_Name) == 0)
+				return s_Actor;
+		}
+		return nullptr;
+	}
+
+	ZActor* GetActorByName(const std::string p_Name)
+	{
+		return GetActorByName(p_Name.c_str());
+	}
+
+	/**
+	 * Get an actor by their entity id
+	 *
+	 * Author: Andrew Pratt
+	 * Param p_id: Actor's entity id
+	 * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
+	*/
+	ZActor* GetActorById(uint64_t p_id)
+	{
+		for (int i = 0; i < *Globals::NextActorId; ++i)
+		{
+			auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+			ZEntityRef s_EntRef;
+			s_Actor->GetID(&s_EntRef);
+
+			if ((*s_EntRef.m_pEntity)->m_nEntityId == p_id)
+				return s_Actor;
+		}
+		return nullptr;
+	}
+
+
 public:
 	PAD(0x1F60);
 	TEntityRef<ZActor> m_aActiveActors[1000]; // 0x1F68
