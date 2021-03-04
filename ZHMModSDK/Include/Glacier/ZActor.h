@@ -220,9 +220,10 @@ public:
 		{
 			auto* s_Actor = m_aActiveActors[i].m_pInterfaceRef;
 
-			if (strcmp(s_Actor->m_sActorName.c_str(), p_Name) == 0)
+			if (s_Actor->m_sActorName == p_Name)
 				return s_Actor;
 		}
+		
 		return nullptr;
 	}
 
@@ -235,20 +236,22 @@ public:
 	 * Get an actor by their entity id
 	 *
 	 * Author: Andrew Pratt
-	 * Param p_id: Actor's entity id
+	 * Param p_Id: Actor's entity id
 	 * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
 	*/
-	ZActor* GetActorById(uint64_t p_id)
+	ZActor* GetActorById(uint64_t p_Id)
 	{
 		for (int i = 0; i < *Globals::NextActorId; ++i)
 		{
 			auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+			
 			ZEntityRef s_EntRef;
 			s_Actor->GetID(&s_EntRef);
 
-			if ((*s_EntRef.m_pEntity)->m_nEntityId == p_id)
+			if ((*s_EntRef.m_pEntity)->m_nEntityId == p_Id)
 				return s_Actor;
 		}
+		
 		return nullptr;
 	}
 
