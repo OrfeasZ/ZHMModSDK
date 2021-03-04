@@ -47,7 +47,7 @@ protected:
 	THashMapIterator(SHashMapInfo<T>* p_MapInfo) :
 		TIterator<T>(nullptr),
 		m_pMapInfo(p_MapInfo),
-		m_nBucket(-1)
+		m_nBucket(UINT32_MAX)
 	{
 	}
 	
@@ -147,7 +147,15 @@ public:
 
 		return iterator(&m_Info, s_Bucket, &s_Node->m_value);
 	}
-	
+
+	iterator begin()
+	{
+		if (m_Info.m_nBucketCount == 0 || m_Info.m_pBuckets[0] == UINT32_MAX)
+			return iterator(&m_Info);
+		
+		return iterator(&m_Info, 0, &m_Info.m_pNodes[m_Info.m_pBuckets[0]]);
+	}
+
 	iterator end()
 	{
 		return iterator(&m_Info);

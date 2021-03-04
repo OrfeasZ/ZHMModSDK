@@ -135,7 +135,31 @@ public:
 		return reinterpret_cast<ZEntityImpl*>(s_RealPtr);
 	}
 
-public:
+	template <class T>
+	T* QueryInterface()
+	{
+		if (!m_pEntity || !*m_pEntity || !(*m_pEntity)->m_pInterfaces)
+			return nullptr;
+
+		if (!*Globals::TypeRegistry)
+			return nullptr;
+		
+		auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+
+		if (it == (*Globals::TypeRegistry)->m_types.end())
+			return nullptr;
+
+		for (auto& s_Interface : *(*m_pEntity)->m_pInterfaces)
+		{
+			if (s_Interface.m_pTypeId == it->second)
+			{
+				return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Interface.m_nOffset);
+			}
+		}
+
+		return nullptr;
+	}
+	
 	template <class T>
 	ZVariant<T> GetProperty(uint32_t p_PropertyId) const
 	{
@@ -238,4 +262,11 @@ class TEntityRef
 public:
 	ZEntityRef m_ref;
 	T* m_pInterfaceRef;
+};
+
+class ZRepositoryItemEntity :
+	public ZEntityImpl
+{
+public:
+	ZRepositoryID m_sId;
 };
