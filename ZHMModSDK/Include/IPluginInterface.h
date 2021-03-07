@@ -31,17 +31,9 @@ typedef IPluginInterface* (__cdecl* GetPluginInterface_t)();
 		return g_ ## PluginClass ## _Instance;\
 	}
 
-#define DEFINE_PLUGIN_DETOUR(PluginClass, ReturnType, DetourName, ...) \
-	template <class... Args>\
-	static HookResult<ReturnType> DetourName(void* th, Args... p_Args)\
-	{\
-		return reinterpret_cast<PluginClass*>(th)->DetourName ## _Internal(p_Args...);\
-	}\
-	\
-	HookResult<ReturnType> DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
+#define DEFINE_PLUGIN_DETOUR(PluginClass, ReturnType, DetourName, ...) DEFINE_DETOUR_WITH_CONTEXT(PluginClass, ReturnType, DetourName, __VA_ARGS__)
 
-#define DECLARE_PLUGIN_DETOUR(PluginClass, ReturnType, DetourName, ...) \
-	HookResult<ReturnType> PluginClass::DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
+#define DECLARE_PLUGIN_DETOUR(PluginClass, ReturnType, DetourName, ...) DECLARE_DETOUR_WITH_CONTEXT(PluginClass, ReturnType, DetourName, __VA_ARGS__)
 
 #define DEFINE_PLUGIN_LISTENER(PluginClass, EventName, ...) \
 	template <class... Args>\

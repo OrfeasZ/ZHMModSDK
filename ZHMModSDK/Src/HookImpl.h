@@ -473,6 +473,41 @@ private:
 	}
 };
 
+template <class T>
+class ModuleHook;
+
+template <class ReturnType, class... Args>
+class ModuleHook<ReturnType(Args...)> final : public HookImpl<ReturnType(Args...)>
+{
+public:
+	ModuleHook(const char* p_HookName, const char* p_ModuleName, const char* p_FunctionName, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
+		HookImpl<ReturnType(Args...)>(p_HookName, GetTarget(p_HookName, p_ModuleName, p_FunctionName), p_Detour)
+	{
+	}
+
+private:
+	void* GetTarget(const char* p_HookName, const char* p_ModuleName, const char* p_FunctionName) const
+	{
+		const auto s_Module = LoadLibraryA(p_ModuleName);
+
+		if (s_Module == nullptr)
+		{
+			Logger::Error("Could not load requested module '{}' for hook '{}' (error: {}).", p_ModuleName, p_HookName, GetLastError());
+			return nullptr;
+		}
+
+		const auto s_Function = GetProcAddress(s_Module, p_FunctionName);
+
+		if (s_Function == nullptr)
+		{
+			Logger::Error("Could not find requested function '{}' in module '{}' for hook '{}' (error: {}).", p_FunctionName, p_ModuleName, p_HookName, GetLastError());
+			return nullptr;
+		}
+	
+		return reinterpret_cast<void*>(s_Function);
+	}
+};
+
 
 #define PATTERN_HOOK(Pattern, Mask, HookName, HookType) \
 	Hook<HookType>* Hooks::HookName = new PatternHook<HookType>(\
@@ -483,6 +518,14 @@ private:
 	\
 	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
 
+#define MODULE_HOOK(ModuleName, FunctionName, HookName, HookType) \
+	Hook<HookType>* Hooks::HookName = new ModuleHook<HookType>(\
+		#HookName, \
+		ModuleName, FunctionName, \
+		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
+	);\
+	\
+	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
 #define PATTERN_CALL_HOOK(Pattern, Mask, HookName, HookType) \
 	Hook<HookType>* Hooks::HookName = new PatternCallHook<HookType>(\
 		#HookName, \

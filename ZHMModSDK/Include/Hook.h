@@ -173,3 +173,15 @@ public:
 		reinterpret_cast<OriginalFunc_t>(m_OriginalFunc)(p_Args...);
 	}
 };
+
+#define DEFINE_DETOUR_WITH_CONTEXT(ContextType, ReturnType, DetourName, ...) \
+	template <class... Args>\
+	static HookResult<ReturnType> DetourName(void* th, Args... p_Args)\
+	{\
+		return reinterpret_cast<ContextType*>(th)->DetourName ## _Internal(p_Args...);\
+	}\
+	\
+	HookResult<ReturnType> DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
+
+#define DECLARE_DETOUR_WITH_CONTEXT(ContextType, ReturnType, DetourName, ...) \
+	HookResult<ReturnType> ContextType::DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
