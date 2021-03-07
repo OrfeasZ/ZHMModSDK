@@ -14,6 +14,7 @@ add_subdirectory("DirectInputProxy")
 add_subdirectory("Mods/WakingUpNpcs")
 add_subdirectory("Mods/NoPause")
 add_subdirectory("Mods/SkipIntro")
+add_subdirectory("Mods/CodeGen")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -25,4 +26,5 @@ add_dependencies(DevLoader
 	WakingUpNpcs
 	NoPause
 	SkipIntro
+	CodeGen
 )
