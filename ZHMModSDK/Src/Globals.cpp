@@ -56,3 +56,18 @@ PATTERN_RELATIVE_GLOBAL(
 	3,
 	ZMemoryManager**, MemoryManager
 )
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x0D\x00\x00\x00\x00\x48\x8D\x85\x78\x04\x00\x00",
+	"xxx????xxxxxxx",
+	3,
+	ZRenderManager*, RenderManager
+)
+
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x89\x1D\x00\x00\x00\x00\x48\x8D\x15",
+	"xxx????xxx",
+	3,
+	ZApplicationEngineWin32**, ApplicationEngineWin32
+)

@@ -157,7 +157,7 @@ void ModLoader::UnloadMod(const std::string& p_Name)
 
 	Logger::Info("Unloading mod '{}'.", p_Name);
 
-	HookRegistry::ClearPluginDetours(it->second.PluginInterface);
+	HookRegistry::ClearDetoursWithContext(it->second.PluginInterface);
 	EventDispatcherRegistry::ClearPluginListeners(it->second.PluginInterface);
 
 	delete it->second.PluginInterface;

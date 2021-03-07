@@ -91,3 +91,20 @@ PATTERN_HOOK(
 	"xxxxxxxxxxxxx?xxx",
 	SignalInputPin, bool(ZEntityRef, uint32_t, const ZObjectRef&)
 )
+
+PATTERN_RELATIVE_CALL_HOOK(
+	"\xE8\x00\x00\x00\x00\xEB\x00\x48\x8B\xC3\x48\x89\x86\x58\x41\x01\x00",
+	"x????x?xxxxxxxxxx",
+	ZRenderDevice_ZRenderDevice, ZRenderDevice*(ZRenderDevice* th)
+)
+
+MODULE_HOOK(
+	"d3d12.dll", "D3D12CreateDevice",
+	D3D12CreateDevice, HRESULT(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
+)
+
+PATTERN_HOOK(
+	"\x44\x88\x44\x24\x18\x57",
+	"xxxxxx",
+	ZRenderSwapChain_Resize, void(ZRenderSwapChain* th, void* a2, bool a3)
+)

@@ -118,6 +118,7 @@ void DebugConsole::StartRedirecting()
 	freopen_s(&s_Con, "CONOUT$", "w", stderr);
 	freopen_s(&s_Con, "CONOUT$", "w", stdout);
 
+	SetConsoleOutputCP(CP_UTF8);
 	SetupLogging(spdlog::level::trace);
 }
 

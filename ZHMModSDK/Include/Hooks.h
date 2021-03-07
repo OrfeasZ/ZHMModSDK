@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <d3d12.h>
 
 #include "Hook.h"
 #include "Common.h"
@@ -22,6 +23,8 @@ class ZEntitySceneContext;
 class ZSceneData;
 class ZString;
 class ZEntityRef;
+class ZRenderDevice;
+class ZRenderSwapChain;
 
 class ZHMSDK_API Hooks
 {
@@ -40,4 +43,7 @@ public:
 	static Hook<bool(ZEntityRef entity, uint32_t propertyId, void* output)>* GetPropertyValue;
 	static Hook<bool(ZEntityRef entity, uint32_t pinId, const ZObjectRef& data)>* SignalOutputPin;
 	static Hook<bool(ZEntityRef entity, uint32_t pinId, const ZObjectRef& data)>* SignalInputPin;
+	static Hook<ZRenderDevice* (ZRenderDevice* th)>* ZRenderDevice_ZRenderDevice;
+	static Hook<HRESULT(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)>* D3D12CreateDevice;
+	static Hook<void(ZRenderSwapChain* th, void* a2, bool a3)>* ZRenderSwapChain_Resize;
 };

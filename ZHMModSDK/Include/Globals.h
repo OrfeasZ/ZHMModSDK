@@ -10,6 +10,8 @@ class ZGameTimeManager;
 class ZHitman5Module;
 class ZGameContext;
 class ZActorManager;
+class ZRenderManager;
+class ZApplicationEngineWin32;
 
 class ZHMSDK_API Globals
 {
@@ -22,4 +24,6 @@ public:
 	static ZActorManager* ActorManager;
 	static uint16_t* NextActorId;
 	static ZMemoryManager** MemoryManager;
+	static ZRenderManager* RenderManager;
+	static ZApplicationEngineWin32** ApplicationEngineWin32;
 };

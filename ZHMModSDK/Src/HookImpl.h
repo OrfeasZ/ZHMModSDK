@@ -40,13 +40,13 @@ public:
 		g_Hooks->erase(p_Hook);
 	}
 
-	static void ClearPluginDetours(IPluginInterface* p_Plugin)
+	static void ClearDetoursWithContext(void* p_Context)
 	{
 		if (g_Hooks == nullptr)
 			return;
 
 		for (auto s_Hook : *g_Hooks)
-			s_Hook->RemoveDetoursWithContext(p_Plugin);
+			s_Hook->RemoveDetoursWithContext(p_Context);
 	}
 };
 
@@ -518,14 +518,6 @@ private:
 	\
 	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
 
-#define MODULE_HOOK(ModuleName, FunctionName, HookName, HookType) \
-	Hook<HookType>* Hooks::HookName = new ModuleHook<HookType>(\
-		#HookName, \
-		ModuleName, FunctionName, \
-		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
-	);\
-	\
-	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
 #define PATTERN_CALL_HOOK(Pattern, Mask, HookName, HookType) \
 	Hook<HookType>* Hooks::HookName = new PatternCallHook<HookType>(\
 		#HookName, \
@@ -539,6 +531,15 @@ private:
 	Hook<HookType>* Hooks::HookName = new PatternRelativeCallHook<HookType>(\
 		#HookName, \
 		Pattern, Mask, \
+		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
+	);\
+	\
+	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
+
+#define MODULE_HOOK(ModuleName, FunctionName, HookName, HookType) \
+	Hook<HookType>* Hooks::HookName = new ModuleHook<HookType>(\
+		#HookName, \
+		ModuleName, FunctionName, \
 		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
 	);\
 	\
