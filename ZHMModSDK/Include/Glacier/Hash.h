@@ -24,6 +24,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <cctype>
 #include <cstdint>
 
 namespace Hash
@@ -133,7 +134,7 @@ namespace Hash
 
 		while (p_Length--)
 		{
-			s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
+			s_Hash = (s_Hash ^ ::tolower(*p_Data)) * 0x1000193;
 			p_Data++;
 		}
 
@@ -146,7 +147,7 @@ namespace Hash
 
 		while (*p_Data)
     	{
-			s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
+			s_Hash = (s_Hash ^ ::tolower(*p_Data)) * 0x1000193;
 			p_Data++;
     	}
 

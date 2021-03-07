@@ -34,18 +34,18 @@ struct TDefaultHashMapPolicy<ZString>
 };
 
 template <class T>
-class THashMapIterator : public TIterator<T>
+class THashMapIterator : public TIterator<THashMapNode<T>>
 {
 protected:
-	THashMapIterator(SHashMapInfo<T>* p_MapInfo, uint32_t p_Bucket, T* p_Current) :
-		TIterator<T>(p_Current),
+	THashMapIterator(SHashMapInfo<T>* p_MapInfo, uint32_t p_Bucket, THashMapNode<T>* p_Current) :
+		TIterator<THashMapNode<T>>(p_Current),
 		m_pMapInfo(p_MapInfo),
 		m_nBucket(p_Bucket)
 	{
 	}
 	
 	THashMapIterator(SHashMapInfo<T>* p_MapInfo) :
-		TIterator<T>(nullptr),
+		TIterator<THashMapNode<T>>(nullptr),
 		m_pMapInfo(p_MapInfo),
 		m_nBucket(UINT32_MAX)
 	{
@@ -54,40 +54,48 @@ protected:
 public:
 	THashMapIterator<T>& operator++()
 	{
-		uint32_t s_NextIndex = UINT32_MAX;
+		uint32_t s_NextIndex = this->m_pCurrent->m_nNextIndex;
 		
 		if (s_NextIndex != UINT32_MAX)
 		{
-			this->m_pCurrent = &m_pMapInfo->m_pNodes[s_NextIndex].m_value;
+			this->m_pCurrent = &m_pMapInfo->m_pNodes[s_NextIndex];
 			return *this;
 		}
 
 		++m_nBucket;
 
 		if (m_nBucket >= m_pMapInfo->m_nBucketCount)
+		{
+			m_nBucket = UINT32_MAX;
+			this->m_pCurrent = nullptr;
 			return *this;
-
+		}
+		
 		while (m_pMapInfo->m_pBuckets[m_nBucket] == UINT32_MAX)
 		{
 			++m_nBucket;
 
 			if (m_nBucket >= m_pMapInfo->m_nBucketCount)
+			{
+				m_nBucket = UINT32_MAX;
+				this->m_pCurrent = nullptr;
 				return *this;
+			}
 		}
 
-		this->m_pCurrent = &m_pMapInfo->m_pNodes[m_pMapInfo->m_pBuckets[m_nBucket]].m_value;
+		this->m_pCurrent = &m_pMapInfo->m_pNodes[m_pMapInfo->m_pBuckets[m_nBucket]];
 
 		return *this;
 	}
 
 	T& operator*()
 	{
-		return *this->m_pCurrent;
+		return this->m_pCurrent->m_value;
 	}
 
 	T* operator->()
 	{
-		return this->m_pCurrent;
+		return &this->m_pCurrent->m_value;
 	}
 
 	bool operator==(const THashMapIterator<T>& p_Other) const
@@ -145,20 +153,26 @@ public:
 			s_NodeIndex = s_Node->m_nNextIndex;
 		}
 
-		return iterator(&m_Info, s_Bucket, &s_Node->m_value);
+		return iterator(&m_Info, s_Bucket, s_Node);
 	}
 
 	iterator begin()
 	{
 		if (m_Info.m_nBucketCount == 0 || m_Info.m_pBuckets[0] == UINT32_MAX)
 			return iterator(&m_Info);
-		
-		return iterator(&m_Info, 0, &m_Info.m_pNodes[m_Info.m_pBuckets[0]]);
+
+		auto s_FirstNode = m_Info.m_pNodes[m_Info.m_pBuckets[0]];
+		return iterator(&m_Info, 0, &s_FirstNode);
 	}
 
 	iterator end()
 	{
 		return iterator(&m_Info);
+	}
+
+	size_t size() const
+	{
+		return m_nSize;
 	}
 	
 public:

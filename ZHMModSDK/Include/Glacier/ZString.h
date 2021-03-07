@@ -48,6 +48,14 @@ public:
 		return strncmp(c_str(), p_Other.c_str(), size()) == 0;
 	}
 
+	bool startsWith(const ZString& p_Other) const
+	{
+		if (size() < p_Other.size())
+			return false;
+
+		return strncmp(c_str(), p_Other.c_str(), p_Other.size()) == 0;
+	}
+
 private:
 	int32_t m_nLength;
 	char* m_pChars;
