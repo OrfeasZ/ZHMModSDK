@@ -15,6 +15,7 @@ add_subdirectory("Mods/WakingUpNpcs")
 add_subdirectory("Mods/NoPause")
 add_subdirectory("Mods/SkipIntro")
 add_subdirectory("Mods/CodeGen")
+add_subdirectory("Mods/CertPinBypass")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -27,4 +28,5 @@ add_dependencies(DevLoader
 	NoPause
 	SkipIntro
 	CodeGen
+	CertPinBypass
 )

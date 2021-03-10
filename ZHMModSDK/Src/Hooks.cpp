@@ -108,3 +108,9 @@ PATTERN_HOOK(
 	"xxxxxx",
 	ZRenderSwapChain_Resize, void(ZRenderSwapChain* th, void* a2, bool a3)
 )
+
+PATTERN_HOOK(
+	"\x48\x89\x54\x24\x10\x55\x53\x57\x48\x8D\xAC\x24\x40\xFF\xFF\xFF",
+	"xxxxxxxxxxxxxxxx",
+	Check_SSL_Cert, bool(void*, void*)
+)
