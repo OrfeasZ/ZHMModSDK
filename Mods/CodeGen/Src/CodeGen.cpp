@@ -827,6 +827,7 @@ void CodeGen::GenerateEnumsFiles()
 	m_EnumsSourceFile << " */" << std::endl;
 	m_EnumsSourceFile << std::endl;
 	m_EnumsSourceFile << "#include \"ZHMEnums.h\"" << std::endl;
+	m_EnumsSourceFile << "#include <ZHM/ZHMTypeInfo.h>" << std::endl;
 	m_EnumsSourceFile << std::endl;
 	m_EnumsSourceFile << "std::unordered_map<std::string, std::unordered_map<int32_t, std::string>>* ZHMEnums::g_Enums = nullptr;" << std::endl;
 	m_EnumsSourceFile << "ZHMEnums::EnumRegistrar ZHMEnums::g_Registrar;" << std::endl;
@@ -844,6 +845,38 @@ void CodeGen::GenerateEnumsFiles()
 	m_EnumsSourceFile << "\t\treturn \"\";" << std::endl;
 	m_EnumsSourceFile << std::endl;
 	m_EnumsSourceFile << "\treturn s_ValueIt->second;" << std::endl;
+	m_EnumsSourceFile << "}" << std::endl;
+	m_EnumsSourceFile << std::endl;
+
+	m_EnumsSourceFile << "template <size_t N>" << std::endl;
+	m_EnumsSourceFile << "struct EnumTypeLiteral" << std::endl;
+	m_EnumsSourceFile << "{" << std::endl;
+	m_EnumsSourceFile << "\tconstexpr EnumTypeLiteral(const char(&p_Str)[N])" << std::endl;
+	m_EnumsSourceFile << "\t{" << std::endl;
+	m_EnumsSourceFile << "\t\tstd::copy_n(p_Str, N, Name);" << std::endl;
+	m_EnumsSourceFile << "\t}" << std::endl;
+	m_EnumsSourceFile << std::endl;
+	m_EnumsSourceFile << "\tchar Name[N];" << std::endl;
+	m_EnumsSourceFile << "};" << std::endl;
+	m_EnumsSourceFile << std::endl;
+
+	m_EnumsSourceFile << "template<EnumTypeLiteral TEnumType>" << std::endl;
+	m_EnumsSourceFile << "nlohmann::json EnumToJson(void* p_Object)" << std::endl;
+	m_EnumsSourceFile << "{" << std::endl;
+	m_EnumsSourceFile << "\tnlohmann::json s_Json;" << std::endl;
+	m_EnumsSourceFile << std::endl;
+	m_EnumsSourceFile << "\ts_Json[\"$enumVal\"] = static_cast<int>(*reinterpret_cast<int32_t*>(p_Object));" << std::endl;
+	m_EnumsSourceFile << "\ts_Json[\"$enumValName\"] = ZHMEnums::GetEnumValueName(TEnumType.Name, *reinterpret_cast<int32_t*>(p_Object));" << std::endl;
+	m_EnumsSourceFile << std::endl;
+	m_EnumsSourceFile << "\treturn s_Json;" << std::endl;
+	m_EnumsSourceFile << "}" << std::endl;
+	m_EnumsSourceFile << std::endl;
+	
+	m_EnumsSourceFile << "template<EnumTypeLiteral TEnumType>" << std::endl;
+	m_EnumsSourceFile << "nlohmann::json EnumToJsonSimple(void* p_Object)" << std::endl;
+	m_EnumsSourceFile << "{" << std::endl;
+	m_EnumsSourceFile << "\tnlohmann::json s_Json = ZHMEnums::GetEnumValueName(TEnumType.Name, *reinterpret_cast<int32_t*>(p_Object));" << std::endl;
+	m_EnumsSourceFile << "\treturn s_Json;" << std::endl;
 	m_EnumsSourceFile << "}" << std::endl;
 	m_EnumsSourceFile << std::endl;
 
@@ -866,6 +899,23 @@ void CodeGen::GenerateEnumsFiles()
 	}
 
 	m_EnumsSourceFile << "}" << std::endl;
+	m_EnumsSourceFile << std::endl;
+
+	for (auto& s_Enum : m_Enums)
+	{
+		auto s_TypeName = std::string(s_Enum.first);
+
+		auto s_DotIndex = s_TypeName.find_first_of('.');
+
+		while (s_DotIndex != std::string::npos)
+		{
+			s_TypeName[s_DotIndex] = '_';
+			s_DotIndex = s_TypeName.find_first_of('.');
+		}
+		
+		m_EnumsSourceFile << "static ZHMTypeInfo " << s_TypeName << "_TypeInfo = ZHMTypeInfo(\"" << s_Enum.first << "\", EnumToJson<\"" << s_Enum.first << "\">, EnumToJsonSimple<\"" << s_Enum.first << "\">);" << std::endl;
+	}
+	
 	m_EnumsSourceFile << std::endl;
 }
 
