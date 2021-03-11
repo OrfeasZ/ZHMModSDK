@@ -10,6 +10,8 @@
 #include "Logging.h"
 #include "Util/StringUtils.h"
 
+#include <Glacier/ZModule.h>
+
 ModLoader::ModLoader()
 {
 	
@@ -27,6 +29,8 @@ void ModLoader::Startup()
 	Hooks::Engine_Init->AddDetour(this, [](void* p_Ctx, auto p_Hook, void* th, void* a2)
 	{
 		auto s_Result = p_Hook->CallOriginal(th, a2);
+
+		Logger::Debug("Engine was initialized. Notifying mods.");
 
 		auto s_Loader = static_cast<ModLoader*>(p_Ctx);
 
@@ -142,8 +146,11 @@ void ModLoader::LoadMod(const std::string& p_Name)
 	m_LoadedMods[s_Name] = s_Mod;
 
 	// If the engine is already initialized, inform the mod.
-	if (*Globals::GameTimeManager != nullptr)
+	if (*Globals::Hitman5Module != nullptr && (*Globals::Hitman5Module)->m_pEntitySceneContext != nullptr)
+	{
+		Logger::Debug("Engine is already initialized. Calling mod initialized method.");
 		s_PluginInterface->OnEngineInitialized();
+	}
 }
 
 void ModLoader::UnloadMod(const std::string& p_Name)

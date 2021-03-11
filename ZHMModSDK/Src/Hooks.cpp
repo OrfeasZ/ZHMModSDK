@@ -32,9 +32,9 @@ PATTERN_RELATIVE_CALL_HOOK(
 	ZGameLoopManager_UnregisterFrameUpdate, void(ZGameLoopManager* th, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)
 )
 
-PATTERN_HOOK(
-	"\x40\x55\x56\x41\x55",
-	"xxxxx",
+PATTERN_RELATIVE_CALL_HOOK(
+	"\xE8\x00\x00\x00\x00\x84\xC0\x75\x00\xE8\x00\x00\x00\x00\x48\x8B\xC8\xE8",
+	"x????xxx?x????xxxx",
 	Engine_Init, bool(void*, void*)
 )
 
