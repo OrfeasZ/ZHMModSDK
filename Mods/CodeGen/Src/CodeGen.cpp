@@ -115,7 +115,7 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 
 	std::ostringstream s_Stream;
 
-	s_Stream << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::endl;
+	s_Stream << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::dec << std::endl;
 	s_Stream << "class " << s_Type->m_pTypeName;
 
 	if (s_Type->m_nBaseClassCount > 0 || s_Type->m_nInterfaceCount > 0)
@@ -127,7 +127,7 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 	{
 		if (!s_Type->m_pInterfaces[i].m_pType->typeInfo())
 		{
-			s_Stream << "// Unknown interface at offset 0x" << std::hex << s_Type->m_pInterfaces[i].m_nOffset << " " << std::endl;
+			s_Stream << "// Unknown interface at offset 0x" << std::hex << s_Type->m_pInterfaces[i].m_nOffset << " " << std::dec << std::endl;
 			continue;
 		}
 
@@ -138,7 +138,7 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 	{
 		if (!s_Type->m_pBaseClasses[i].m_pType->typeInfo())
 		{
-			s_Stream << "// Unknown base class at offset 0x" << std::hex << s_Type->m_pBaseClasses[i].m_nOffset << " " << std::endl;
+			s_Stream << "// Unknown base class at offset 0x" << std::hex << s_Type->m_pBaseClasses[i].m_nOffset << " " << std::dec << std::endl;
 			continue;
 		}
 
@@ -170,7 +170,7 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 			else
 				s_PropSize = static_cast<uint64_t>(s_Type->m_nTypeSize) - s_Prop.m_nOffset;
 
-			s_Stream << "\tchar " << s_Prop.m_pName << "[0x" << std::hex << std::uppercase << s_PropSize << "];";
+			s_Stream << "\tchar " << s_Prop.m_pName << "[0x" << std::hex << std::uppercase << s_PropSize << std::dec << "];";
 
 		}
 		else
@@ -178,7 +178,7 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 			s_Stream << "\t" << s_Prop.m_pType->typeInfo()->m_pTypeName << " " << s_Prop.m_pName << ";";
 		}
 
-		s_Stream << " // 0x" << std::hex << std::uppercase << s_Prop.m_nOffset << std::endl;
+		s_Stream << " // 0x" << std::hex << std::uppercase << s_Prop.m_nOffset << std::dec << std::endl;
 	}
 
 	s_Stream << "};" << std::endl << std::endl;
@@ -199,7 +199,7 @@ void CodeGen::GenerateEnum(STypeID* p_Type)
 
 	std::ostringstream s_Stream;
 
-	s_Stream << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::endl;
+	s_Stream << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::dec << std::endl;
 	s_Stream << "enum class " << s_Type->m_pTypeName << std::endl;
 	s_Stream << "{" << std::endl;
 
@@ -288,8 +288,8 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 	if (s_TypeName.find_first_of('<') != std::string::npos)
 		return;
 
-	s_HeaderStream << s_Indent << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::endl;
-	s_HeaderStream << s_Indent << "class " << s_TypeName;
+	s_HeaderStream << s_Indent << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::dec << std::endl;
+	s_HeaderStream << s_Indent << "class alignas(" << s_Type->m_nTypeAlignment << ") " << s_TypeName;
 
 	if (s_Type->m_nBaseClassCount > 0)
 		s_HeaderStream << " :";
@@ -345,7 +345,7 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 		else
 		{
 			// TODO: Remove this once we support namespacing.
-			if (std::string(s_Prop.m_pType->typeInfo()->m_pTypeName).find_first_of('.') != std::string::npos)
+			if (std::string(s_Prop.m_pType->typeInfo()->m_pTypeName).find_first_of('.') != std::string::npos && !s_Prop.m_pType->typeInfo()->isEnum())
 				return;
 			
 			if (s_Prop.m_pType->typeInfo()->isArray())
@@ -385,10 +385,20 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 				s_GenType->Dependencies.insert(s_Prop.m_pType->typeInfo()->m_pTypeName);
 			}
 
-			s_HeaderStream << s_Indent << "\t" << s_Prop.m_pType->typeInfo()->m_pTypeName << " " << s_Prop.m_pName << ";";
+			std::string s_PropTypeName = s_Prop.m_pType->typeInfo()->m_pTypeName;
+
+			auto s_DotIndex = s_PropTypeName.find_first_of('.');
+
+			while (s_DotIndex != std::string::npos)
+			{
+				s_PropTypeName[s_DotIndex] = '_';
+				s_DotIndex = s_PropTypeName.find_first_of('.');
+			}
+
+			s_HeaderStream << s_Indent << "\t" << s_PropTypeName << " " << s_Prop.m_pName << ";";
 		}
 
-		s_HeaderStream << " // 0x" << std::hex << std::uppercase << s_Prop.m_nOffset << std::endl;
+		s_HeaderStream << " // 0x" << std::hex << std::uppercase << s_Prop.m_nOffset << std::dec << std::endl;
 	}
 
 	s_HeaderStream << s_Indent << "};" << std::endl;
@@ -429,7 +439,7 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 			continue;
 
 		// TODO: Add support for namespaced types.
-		if (s_PropTypeName.find_first_of('.') != std::string::npos)
+		if (s_PropTypeName.find_first_of('.') != std::string::npos && !s_Prop.m_pType->typeInfo()->isEnum())
 			return;
 
 		s_SourceStream << "\tp_Stream << JsonStr(\"" << s_Prop.m_pName << "\") << \":\";" << std::endl;
@@ -549,7 +559,7 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 			continue;
 
 		// TODO: Add support for namespaced types.
-		if (s_PropTypeName.find_first_of('.') != std::string::npos)
+		if (s_PropTypeName.find_first_of('.') != std::string::npos && !s_Prop.m_pType->typeInfo()->isEnum())
 			return;
 
 		s_SourceStream << "\tp_Stream << JsonStr(\"" << s_Prop.m_pName << "\") << \":\";" << std::endl;
@@ -657,7 +667,7 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 			continue;
 
 		// TODO: Add support for namespaced types.
-		if (s_PropTypeName.find_first_of('.') != std::string::npos)
+		if (s_PropTypeName.find_first_of('.') != std::string::npos && !s_Prop.m_pType->typeInfo()->isEnum())
 			return;
 
 		if (s_Prop.m_pType->typeInfo()->isPrimitive())
@@ -681,7 +691,16 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 		}
 		else if (s_Prop.m_pType->typeInfo()->isEnum())
 		{
-			s_SourceStream << "\ts_Object." << s_Prop.m_pName << " = static_cast<" << s_PropTypeName << ">(ZHMEnums::GetEnumValueByName(\"" << s_PropTypeName << "\", std::string_view(p_Document[\"" << s_Prop.m_pName << "\"])));" << std::endl;
+			std::string s_EnumTypeName = s_PropTypeName;
+			auto s_DotIndex = s_EnumTypeName.find_first_of('.');
+
+			while (s_DotIndex != std::string::npos)
+			{
+				s_EnumTypeName[s_DotIndex] = '_';
+				s_DotIndex = s_EnumTypeName.find_first_of('.');
+			}
+			
+			s_SourceStream << "\ts_Object." << s_Prop.m_pName << " = static_cast<" << s_EnumTypeName << ">(ZHMEnums::GetEnumValueByName(\"" << s_PropTypeName << "\", std::string_view(p_Document[\"" << s_Prop.m_pName << "\"])));" << std::endl;
 		}
 		else if (s_Prop.m_pType->typeInfo()->m_pTypeName == std::string("ZString"))
 		{
@@ -706,7 +725,16 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 			}
 			else if (s_ArrayType->m_pArrayElementType->typeInfo()->isEnum())
 			{
-				s_SourceStream << "\t\ts_Object." << s_Prop.m_pName << ".push_back(static_cast<" << s_ArrayTypeName << ">(ZHMEnums::GetEnumValueByName(\"" << s_ArrayTypeName << "\", std::string_view(s_Item))));" << std::endl;
+				std::string s_ArrayEnumType = s_ArrayTypeName;
+				auto s_DotIndex = s_ArrayEnumType.find_first_of('.');
+
+				while (s_DotIndex != std::string::npos)
+				{
+					s_ArrayEnumType[s_DotIndex] = '_';
+					s_DotIndex = s_ArrayEnumType.find_first_of('.');
+				}
+				
+				s_SourceStream << "\t\ts_Object." << s_Prop.m_pName << ".push_back(static_cast<" << s_ArrayEnumType << ">(ZHMEnums::GetEnumValueByName(\"" << s_ArrayTypeName << "\", std::string_view(s_Item))));" << std::endl;
 			}
 			else if (s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName == std::string("ZString"))
 			{
@@ -750,12 +778,12 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 			continue;
 
 		// TODO: Add support for namespaced types.
-		if (s_PropTypeName.find_first_of('.') != std::string::npos)
+		if (s_PropTypeName.find_first_of('.') != std::string::npos && !s_Prop.m_pType->typeInfo()->isEnum())
 			return;
 
 		if (!s_Prop.m_pType->typeInfo()->isPrimitive() && !s_Prop.m_pType->typeInfo()->isEnum())
 		{
-			s_SourceStream << "\t" << s_Prop.m_pName << ".Serialize(p_Serializer, p_OwnOffset + offsetof(" << s_TypeName << ", " << s_Prop.m_pName << "));";
+			s_SourceStream << "\t" << s_Prop.m_pName << ".Serialize(p_Serializer, p_OwnOffset + offsetof(" << s_TypeName << ", " << s_Prop.m_pName << "));" << std::endl;
 		}
 	}
 
@@ -776,14 +804,19 @@ void CodeGen::GenerateReflectiveEnum(STypeID* p_Type)
 {
 	auto s_Type = reinterpret_cast<IEnumType*>(p_Type->typeInfo());
 
-	// TODO: Remove this once we support namespacing.
-	if (std::string(s_Type->m_pTypeName).find_first_of('.') != std::string::npos)
-		return;
+	std::string s_EnumTypeName = s_Type->m_pTypeName;
+	auto s_DotIndex = s_EnumTypeName.find_first_of('.');
+
+	while (s_DotIndex != std::string::npos)
+	{
+		s_EnumTypeName[s_DotIndex] = '_';
+		s_DotIndex = s_EnumTypeName.find_first_of('.');
+	}
 
 	std::ostringstream s_Stream;
 
-	s_Stream << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::endl;
-	s_Stream << "enum class " << s_Type->m_pTypeName << std::endl;
+	s_Stream << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::dec << std::endl;
+	s_Stream << "enum class " << s_EnumTypeName << std::endl;
 	s_Stream << "{" << std::endl;
 
 	for (auto it = s_Type->m_entries.begin(); it != s_Type->m_entries.end(); ++it)
@@ -814,6 +847,8 @@ bool IsPrimitive(const std::string& p_TypeName)
 		p_TypeName == "float64" ||
 		p_TypeName == "bool" ||
 		p_TypeName == "ZVariant" ||
+		p_TypeName == "TypeID" ||
+		p_TypeName == "ZRepositoryID" ||
 		p_TypeName == "ZString";
 }
 
@@ -992,6 +1027,7 @@ void CodeGen::GenerateEnumsFiles()
 	m_EnumsHeaderFile << "public:" << std::endl;
 	m_EnumsHeaderFile << "\tstatic std::string GetEnumValueName(const std::string& p_TypeName, int32_t p_Value);" << std::endl;
 	m_EnumsHeaderFile << "\tstatic int32_t GetEnumValueByName(const std::string& p_TypeName, std::string_view p_Name);" << std::endl;
+	m_EnumsHeaderFile << "\tstatic bool IsTypeNameEnum(const std::string& p_TypeName);" << std::endl;
 	m_EnumsHeaderFile << "};" << std::endl;
 
 	m_EnumsSourceFile << "/*" << std::endl;
@@ -1038,37 +1074,10 @@ void CodeGen::GenerateEnumsFiles()
 	m_EnumsSourceFile << "\treturn 0;" << std::endl;
 	m_EnumsSourceFile << "}" << std::endl;
 	m_EnumsSourceFile << std::endl;
-
-	m_EnumsSourceFile << "template <size_t N>" << std::endl;
-	m_EnumsSourceFile << "struct EnumTypeLiteral" << std::endl;
-	m_EnumsSourceFile << "{" << std::endl;
-	m_EnumsSourceFile << "\tconstexpr EnumTypeLiteral(const char(&p_Str)[N])" << std::endl;
-	m_EnumsSourceFile << "\t{" << std::endl;
-	m_EnumsSourceFile << "\t\tstd::copy_n(p_Str, N, Name);" << std::endl;
-	m_EnumsSourceFile << "\t}" << std::endl;
-	m_EnumsSourceFile << std::endl;
-	m_EnumsSourceFile << "\tchar Name[N];" << std::endl;
-	m_EnumsSourceFile << "};" << std::endl;
-	m_EnumsSourceFile << std::endl;
-
-	m_EnumsSourceFile << "template<EnumTypeLiteral TEnumType>" << std::endl;
-	m_EnumsSourceFile << "void WriteEnumJson(void* p_Object, std::ostream& p_Stream)" << std::endl;
-	m_EnumsSourceFile << "{" << std::endl;
-	m_EnumsSourceFile << "\tp_Stream << \"{\" << JsonStr(\"$enumVal\") << \":\" << static_cast<int>(*reinterpret_cast<int32_t*>(p_Object)) << \",\" << JsonStr(\"$enumValName\") << \":\" << JsonStr(ZHMEnums::GetEnumValueName(TEnumType.Name, *reinterpret_cast<int32_t*>(p_Object))) << \"}\";" << std::endl;
-	m_EnumsSourceFile << "}" << std::endl;
-	m_EnumsSourceFile << std::endl;
 	
-	m_EnumsSourceFile << "template<EnumTypeLiteral TEnumType>" << std::endl;
-	m_EnumsSourceFile << "void WriteEnumJsonSimple(void* p_Object, std::ostream& p_Stream)" << std::endl;
+	m_EnumsSourceFile << "bool ZHMEnums::IsTypeNameEnum(const std::string& p_TypeName)" << std::endl;
 	m_EnumsSourceFile << "{" << std::endl;
-	m_EnumsSourceFile << "\tp_Stream << JsonStr(ZHMEnums::GetEnumValueName(TEnumType.Name, *reinterpret_cast<int32_t*>(p_Object)));" << std::endl;
-	m_EnumsSourceFile << "}" << std::endl;
-	m_EnumsSourceFile << std::endl;
-	
-	m_EnumsSourceFile << "template<EnumTypeLiteral TEnumType>" << std::endl;
-	m_EnumsSourceFile << "void EnumFromJson(simdjson::ondemand::value p_Document, void* p_Target)" << std::endl;
-	m_EnumsSourceFile << "{" << std::endl;
-	m_EnumsSourceFile << "\t*reinterpret_cast<int32_t*>(p_Target) = ZHMEnums::GetEnumValueByName(TEnumType.Name, std::string_view(p_Document));" << std::endl;
+	m_EnumsSourceFile << "\treturn g_Enums->find(p_TypeName) != g_Enums->end();" << std::endl;
 	m_EnumsSourceFile << "}" << std::endl;
 	m_EnumsSourceFile << std::endl;
 
@@ -1091,23 +1100,6 @@ void CodeGen::GenerateEnumsFiles()
 	}
 
 	m_EnumsSourceFile << "}" << std::endl;
-	m_EnumsSourceFile << std::endl;
-
-	for (auto& s_Enum : m_Enums)
-	{
-		auto s_TypeName = std::string(s_Enum.first);
-
-		auto s_DotIndex = s_TypeName.find_first_of('.');
-
-		while (s_DotIndex != std::string::npos)
-		{
-			s_TypeName[s_DotIndex] = '_';
-			s_DotIndex = s_TypeName.find_first_of('.');
-		}
-		
-		m_EnumsSourceFile << "static ZHMTypeInfo " << s_TypeName << "_TypeInfo = ZHMTypeInfo(\"" << s_Enum.first << "\", sizeof(uint32_t), alignof(uint32_t), WriteEnumJson<\"" << s_Enum.first << "\">, WriteEnumJsonSimple<\"" << s_Enum.first << "\">, EnumFromJson<\"" << s_Enum.first << "\">);" << std::endl;
-	}
-	
 	m_EnumsSourceFile << std::endl;
 }
 
