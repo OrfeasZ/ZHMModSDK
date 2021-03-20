@@ -37,6 +37,7 @@ There are a few sample mods included in this repository that can be used either 
 | [SkipIntro](/Mods/SkipIntro) | Skips the intro sequence and starts the game directly at the main menu. |
 | [WakingUpNpcs](/Mods/WakingUpNpcs) | Makes pacified NPCs wake up after a random interval between 4 and 8 minutes. |
 | [CodeGen](/Mods/CodeGen) | Generates binding code from the embedded engine typeinfo which can be used by tools like [ResourceParser](https://github.com/OrfeasZ/ZHMTools/tree/master/Tools/ResourceParser). |
+| [CertPinBypass](/Mods/CertPinBypass) | Disables SSL certificate pinning, allowing the game to connect to any trusted server instead of only IOI's. |
 
 ## Contributing
 
