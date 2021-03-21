@@ -177,7 +177,7 @@ class IEnumType :
 	public IType
 {
 public:
-	TFixedArray<ZEnumEntry> m_entries;
+	TArray<ZEnumEntry> m_entries;
 };
 
 class SArrayFunctions
@@ -188,15 +188,6 @@ public:
 	void* (*next)(void*, void*);
 	size_t (*size)(void*);
 	// TODO: There's more shit here. Map it out.
-};
-
-class IArrayType :
-	public IType
-{
-public:
-	STypeID* m_pArrayElementType;
-	SArrayFunctions* m_pArrayFunctions;
-	void (*resize)(void*, size_t);
 };
 
 class STypeID
@@ -215,4 +206,19 @@ public:
 	uint16_t m_nTypeNum;
 	IType* m_pType;
 	STypeID* m_pSource;
+};
+
+class IArrayType :
+	public IType
+{
+public:
+	inline size_t fixedArraySize() const
+	{
+		return m_nTypeSize / m_pArrayElementType->typeInfo()->m_nTypeSize;
+	}
+
+public:
+	STypeID* m_pArrayElementType;
+	SArrayFunctions* m_pArrayFunctions;
+	void (*resize)(void*, size_t);
 };
