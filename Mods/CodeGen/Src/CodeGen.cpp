@@ -561,9 +561,9 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 				{
 					auto s_ArrayType = reinterpret_cast<IArrayType*>(s_Prop.m_pType->typeInfo());
 
-					if (ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).startsWith("TPair<") ||
-						ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).startsWith("TMap<") ||
-						ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).startsWith("TMultiMap<"))
+					if (ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).StartsWith("TPair<") ||
+						ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).StartsWith("TMap<") ||
+						ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).StartsWith("TMultiMap<"))
 					{
 						auto s_Parts1 = SplitString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName, '<');
 						auto s_Parts2 = SplitString(s_Parts1[1], ',');
@@ -571,8 +571,8 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 						s_GenType->Dependencies.insert(s_Parts2[0]);
 						s_GenType->Dependencies.insert(s_Parts2[1].substr(0, s_Parts2[1].size() - 1));
 					}
-					else if (ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).startsWith("TArray<") ||
-						ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).startsWith("TFixedArray<"))
+					else if (ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).StartsWith("TArray<") ||
+						ZString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName).StartsWith("TFixedArray<"))
 					{
 						auto s_Parts = SplitString(s_ArrayType->m_pArrayElementType->typeInfo()->m_pTypeName, '<');
 						s_GenType->Dependencies.insert(s_Parts[1].substr(0, s_Parts[1].size() - 1));
@@ -583,9 +583,9 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 					}
 				}
 			}
-			else if (ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).startsWith("TPair<") ||
-				ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).startsWith("TMap<") ||
-				ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).startsWith("TMultiMap<"))
+			else if (ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).StartsWith("TPair<") ||
+				ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).StartsWith("TMap<") ||
+				ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).StartsWith("TMultiMap<"))
 			{
 				auto s_Parts1 = SplitString(s_Prop.m_pType->typeInfo()->m_pTypeName, '<');
 				auto s_Parts2 = SplitString(s_Parts1[1], ',');

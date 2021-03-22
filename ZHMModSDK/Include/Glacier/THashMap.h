@@ -98,6 +98,16 @@ public:
 		return &this->m_pCurrent->m_value;
 	}
 
+	T& operator*() const
+	{
+		return this->m_pCurrent->m_value;
+	}
+
+	T* operator->() const
+	{
+		return &this->m_pCurrent->m_value;
+	}
+
 	bool operator==(const THashMapIterator<T>& p_Other) const
 	{
 		return p_Other.m_pCurrent == this->m_pCurrent &&
@@ -161,8 +171,7 @@ public:
 		if (m_Info.m_nBucketCount == 0 || m_Info.m_pBuckets[0] == UINT32_MAX)
 			return iterator(&m_Info);
 
-		auto s_FirstNode = m_Info.m_pNodes[m_Info.m_pBuckets[0]];
-		return iterator(&m_Info, 0, &s_FirstNode);
+		return iterator(&m_Info, 0, &m_Info.m_pNodes[m_Info.m_pBuckets[0]]);
 	}
 
 	iterator end()

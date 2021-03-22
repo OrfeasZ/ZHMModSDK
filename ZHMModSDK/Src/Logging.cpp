@@ -6,7 +6,50 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
+#include <UI/Console.h>
+
 static std::vector<spdlog::logger*>* g_Loggers;
+
+template <class Mutex>
+class ConsoleSink : public spdlog::sinks::base_sink<Mutex>
+{
+	using MyType = ConsoleSink<Mutex>;
+
+public:
+	ConsoleSink()
+	{
+	}
+
+	static std::shared_ptr<MyType> instance()
+	{
+		static std::shared_ptr<MyType> instance = std::make_shared<MyType>();
+		return instance;
+	}
+
+	void sink_it_(const spdlog::details::log_msg& p_Message) override
+	{
+		spdlog::memory_buf_t s_Formatted;
+		spdlog::sinks::base_sink<Mutex>::formatter_->format(p_Message, s_Formatted);
+		
+		UI::Console::AddLogLine(p_Message.level, ZString(s_Formatted.data(), s_Formatted.size()));
+	}
+
+	void flush_() override
+	{
+	}
+
+private:
+	void PrintMessageFinal(const std::string& p_Message)
+	{
+		typedef void(__cdecl* fb_Console_writeConsole_t)(const char* tag, const char* buffer, uint32_t size);
+		static fb_Console_writeConsole_t fb_Console_writeConsole = reinterpret_cast<fb_Console_writeConsole_t>(0x00439140);
+
+		fb_Console_writeConsole("", p_Message.c_str(), p_Message.size());
+	}
+};
+
+typedef ConsoleSink<spdlog::details::null_mutex> ConsoleSink_st;
+typedef ConsoleSink<std::mutex> ConsoleSink_mt;
 
 ZHMSDK_API LoggerList GetLoggers()
 {
@@ -45,8 +88,10 @@ void SetupLogging(spdlog::level::level_enum p_LogLevel)
 
 	auto s_ConsoleDistSink = std::make_shared<spdlog::sinks::dist_sink_mt>();
 	auto s_StdoutSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+	auto s_UiConsoleSink = std::make_shared<ConsoleSink_mt>();
 
 	s_ConsoleDistSink->add_sink(s_StdoutSink);
+	s_ConsoleDistSink->add_sink(s_UiConsoleSink);
 
 	auto s_ConsoleLogger = new spdlog::logger("con", s_ConsoleDistSink);
 

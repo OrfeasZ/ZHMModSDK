@@ -14,6 +14,10 @@
 #include "DebugConsole.h"
 #endif
 
+extern void SetupLogging(spdlog::level::level_enum p_LogLevel);
+extern void FlushLoggers();
+extern void ClearLoggers();
+
 ZHMSDK_API IModSDK* SDK()
 {
 	return ModSDK::GetInstance();
@@ -41,6 +45,9 @@ ModSDK::ModSDK()
 
 #if _DEBUG
 	m_DebugConsole = new DebugConsole();
+	SetupLogging(spdlog::level::trace);
+#else
+	SetupLogging(spdlog::level::info);
 #endif
 
 	m_ModLoader = new ModLoader();
@@ -58,13 +65,17 @@ ModSDK::~ModSDK()
 
 	Rendering::ImguiRenderer::GetInstance()->Shutdown();
 
-#if _DEBUG
-	delete m_DebugConsole;
-#endif
-
 	HookRegistry::ClearAllDetours();
 
 	Trampolines::ClearTrampolines();
+
+#if _DEBUG
+	FlushLoggers();
+	ClearLoggers();
+
+	delete m_DebugConsole;
+#endif
+
 }
 
 bool ModSDK::Startup()
@@ -81,10 +92,7 @@ bool ModSDK::Startup()
 
 	Hooks::ZApplicationEngineWin32_OnDebugInfo->AddDetour(this, [](void*, auto p_Hook, ZApplicationEngineWin32*, const ZString& p_Info, const ZString& p_Details)
 		{
-			Logger::Debug("Debug info '{}': {}", p_Info.c_str(), p_Details.c_str());
-
-			/*while (!GetAsyncKeyState(VK_F5))
-				Sleep(100);*/
+			//Logger::Debug("Debug info '{}': {}", p_Info.c_str(), p_Details.c_str());
 
 			return HookResult<void>(HookAction::Continue());
 		});

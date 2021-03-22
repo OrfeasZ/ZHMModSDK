@@ -12,10 +12,6 @@
 #include "Util/StringUtils.h"
 
 #if _DEBUG
-extern void SetupLogging(spdlog::level::level_enum p_LogLevel);
-extern void FlushLoggers();
-extern void ClearLoggers();
-
 DebugConsole::DebugConsole() :
 	m_Running(true),
 	m_Redirected(false)
@@ -94,9 +90,6 @@ DebugConsole::~DebugConsole()
 
 	m_InputThread.detach();
 
-	FlushLoggers();
-	ClearLoggers();
-
 	StopRedirecting();
 
 	FreeConsole();
@@ -119,7 +112,6 @@ void DebugConsole::StartRedirecting()
 	freopen_s(&s_Con, "CONOUT$", "w", stdout);
 
 	SetConsoleOutputCP(CP_UTF8);
-	SetupLogging(spdlog::level::trace);
 }
 
 void DebugConsole::StopRedirecting()
