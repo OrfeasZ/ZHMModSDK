@@ -64,6 +64,8 @@ namespace Rendering
 		int64_t m_Time = 0;
 		int64_t m_TicksPerSecond = 0;
 
+		volatile bool m_ImguiHasFocus = false;
+		
 		friend class D3D12Hooks;
 	};
 }

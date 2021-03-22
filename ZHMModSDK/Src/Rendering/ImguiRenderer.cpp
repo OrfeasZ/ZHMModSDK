@@ -6,16 +6,18 @@
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_dx12.h>
+
 #include "D3D12Hooks.h"
 #include "D3DUtils.h"
 #include "Hooks.h"
 #include "Logging.h"
 #include "HookImpl.h"
 
-#include "Glacier/ZApplicationEngineWin32.h"
+#include <Glacier/ZApplicationEngineWin32.h>
 
-#include "imgui.h"
-#include "backends/imgui_impl_dx12.h"
+#include <UI/Console.h>
 
 using namespace Rendering;
 
@@ -96,28 +98,29 @@ void ImguiRenderer::Draw()
     s_ImGuiIO.KeySuper = false;
 
     // Set mouse position
-    s_ImGuiIO.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
-	
-    if (auto* s_ForegroundWnd = GetForegroundWindow())
+    if (m_ImguiHasFocus)
     {
-        if (s_ForegroundWnd == m_Hwnd || IsChild(s_ForegroundWnd, m_Hwnd))
+        s_ImGuiIO.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
+
+        if (auto* s_ForegroundWnd = GetForegroundWindow())
         {
-            POINT s_CursorPos;
-        	
-            if (GetCursorPos(&s_CursorPos) && ScreenToClient(m_Hwnd, &s_CursorPos))
-                s_ImGuiIO.MousePos = ImVec2(static_cast<float>(s_CursorPos.x), static_cast<float>(s_CursorPos.y));
+            if (s_ForegroundWnd == m_Hwnd || IsChild(s_ForegroundWnd, m_Hwnd))
+            {
+                POINT s_CursorPos;
+
+                if (GetCursorPos(&s_CursorPos) && ScreenToClient(m_Hwnd, &s_CursorPos))
+                    s_ImGuiIO.MousePos = ImVec2(static_cast<float>(s_CursorPos.x), static_cast<float>(s_CursorPos.y));
+            }
         }
     }
 
 	// Construct the UI.
     ImGui::NewFrame();
 
-    bool s_Open = true;
-	ImGui::Begin("ZHM Mod SDK", &s_Open, ImGuiWindowFlags_AlwaysAutoResize);
-
-    ImGui::Text("Hello ZHM Mod SDK world!");
-
-    ImGui::End();
+    if (m_ImguiHasFocus)
+    {
+        UI::Console::Draw();
+    }
 }
 
 void ImguiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
@@ -443,7 +446,6 @@ void ImguiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
     if (!m_RendererSetup || m_CommandQueue || !m_SwapChain)
         return;
 
-    Logger::Debug("Setting command queue {}.", fmt::ptr(p_CommandQueue));
     m_CommandQueue = p_CommandQueue;
 }
 
@@ -483,6 +485,15 @@ void ImguiRenderer::ExecuteCmdList(FrameContext* p_Frame)
 DECLARE_DETOUR_WITH_CONTEXT(ImguiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
 {
     if (ImGui::GetCurrentContext() == nullptr)
+        return HookResult<LRESULT>(HookAction::Continue());
+
+    auto s_ScanCode = static_cast<uint8_t>(p_Lparam >> 16);
+
+    // Toggle imgui input when user presses the grave / tilde key.
+    if (s_ScanCode == 0x29 && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN))
+        m_ImguiHasFocus = !m_ImguiHasFocus;
+
+	if (!m_ImguiHasFocus)
         return HookResult<LRESULT>(HookAction::Continue());
 
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
@@ -567,5 +578,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ImguiRenderer, LRESULT, WndProc, ZApplicationEngineW
         break;
     }
 
-    return HookResult<LRESULT>(HookAction::Continue());
+	// Don't call the original function so input isn't passed down to the game.
+	// TODO: This doesn't seem to eat keyboard input.
+    return HookResult<LRESULT>(HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam));
 }
