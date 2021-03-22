@@ -48,6 +48,7 @@ namespace Rendering
 
 	private:
 		DEFINE_DETOUR_WITH_CONTEXT(ImguiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM)
+		DEFINE_DETOUR_WITH_CONTEXT(ImguiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
 
 	private:
 		bool m_RendererSetup = false;

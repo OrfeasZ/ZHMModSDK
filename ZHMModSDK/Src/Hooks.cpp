@@ -120,3 +120,9 @@ PATTERN_HOOK(
 	"xxxxx?xxx",
 	ZApplicationEngineWin32_OnDebugInfo, void(ZApplicationEngineWin32* th, const ZString& info, const ZString& details)
 )
+
+PATTERN_HOOK(
+	"\x40\x53\x41\x55\x48\x83\xEC\x00\x48\x8B\xD9",
+	"xxxxxxx?xxx",
+	ZKeyboardWindows_Update, void(ZKeyboardWindows* th, bool a2)
+)

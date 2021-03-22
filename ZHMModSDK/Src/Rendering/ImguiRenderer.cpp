@@ -71,6 +71,7 @@ void ImguiRenderer::Init()
 #endif
 
 	Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(this, &ImguiRenderer::WndProc);
+	Hooks::ZKeyboardWindows_Update->AddDetour(this, &ImguiRenderer::ZKeyboardWindows_Update);
 }
 
 void ImguiRenderer::Shutdown()
@@ -579,6 +580,14 @@ DECLARE_DETOUR_WITH_CONTEXT(ImguiRenderer, LRESULT, WndProc, ZApplicationEngineW
 	}
 
 	// Don't call the original function so input isn't passed down to the game.
-	// TODO: This doesn't seem to eat keyboard input.
 	return HookResult<LRESULT>(HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam));
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ImguiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
+{
+	// Don't process input while the imgui overlay has focus.
+	if (m_ImguiHasFocus)
+		return HookResult<void>(HookAction::Return());
+
+	return HookResult<void>(HookAction::Continue());
 }

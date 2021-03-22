@@ -25,6 +25,7 @@ class ZString;
 class ZEntityRef;
 class ZRenderDevice;
 class ZRenderSwapChain;
+class ZKeyboardWindows;
 
 class ZHMSDK_API Hooks
 {
@@ -48,4 +49,5 @@ public:
 	static Hook<void(ZRenderSwapChain* th, void* a2, bool a3)>* ZRenderSwapChain_Resize;
 	static Hook<bool(void*, void*)>* Check_SSL_Cert;
 	static Hook<void(ZApplicationEngineWin32* th, const ZString& info, const ZString& details)>* ZApplicationEngineWin32_OnDebugInfo;
+	static Hook<void(ZKeyboardWindows* th, bool a2)>* ZKeyboardWindows_Update;
 };
