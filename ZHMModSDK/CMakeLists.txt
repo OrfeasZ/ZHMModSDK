@@ -32,4 +32,8 @@ target_compile_definitions(ZHMModSDK PRIVATE
 target_link_libraries(ZHMModSDK PUBLIC
 	minhook
 	spdlog
+	imgui
+	d3d12.lib
+	dxgi.lib
+	dxguid.lib
 )

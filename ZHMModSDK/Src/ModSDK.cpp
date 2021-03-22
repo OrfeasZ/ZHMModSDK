@@ -5,7 +5,10 @@
 #include "HookImpl.h"
 #include "Hooks.h"
 #include "Logging.h"
+#include "Rendering/ImguiRenderer.h"
 #include "Util/ProcessUtils.h"
+
+#include "Glacier/ZString.h"
 
 #if _DEBUG
 #include "DebugConsole.h"
@@ -50,9 +53,11 @@ ModSDK::ModSDK()
 }
 
 ModSDK::~ModSDK()
-{
+{	
 	delete m_ModLoader;
 
+	Rendering::ImguiRenderer::GetInstance()->Shutdown();
+	
 #if _DEBUG
 	delete m_DebugConsole;
 #endif
@@ -67,6 +72,8 @@ bool ModSDK::Startup()
 #if _DEBUG
 	m_DebugConsole->StartRedirecting();
 #endif
+
+	Rendering::ImguiRenderer::GetInstance()->Init();
 	
 	m_ModLoader->Startup();
 
