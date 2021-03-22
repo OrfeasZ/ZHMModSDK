@@ -65,6 +65,8 @@ void ImguiRenderer::Init()
         return HookResult<HRESULT>(HookAction::Return(), s_Result);
     });
 #endif
+
+    Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(this, &ImguiRenderer::WndProc);
 	
     D3D12Hooks::InstallHooks();
 }
@@ -304,10 +306,6 @@ bool ImguiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
         ImGuiIO& s_ImGuiIO = ImGui::GetIO();
         ImGui::StyleColorsDark();
 
-        RECT s_Rect = { 0, 0, 0, 0 };
-        GetClientRect(m_Hwnd, &s_Rect);
-        s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
-
         s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
         s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
         s_ImGuiIO.BackendPlatformName = "imgui_impl_win32";
@@ -342,6 +340,12 @@ bool ImguiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
         m_ImguiInitialized = true;
     }
+
+    ImGuiIO& s_ImGuiIO = ImGui::GetIO();
+	
+    RECT s_Rect = { 0, 0, 0, 0 };
+    GetClientRect(m_Hwnd, &s_Rect);
+    s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
 
     if (!ImGui_ImplDX12_Init(s_Device, m_BufferCount, DXGI_FORMAT_R8G8B8A8_UNORM, m_SrvDescriptorHeap, m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()))
         return false;
@@ -474,4 +478,94 @@ void ImguiRenderer::ExecuteCmdList(FrameContext* p_Frame)
     };
 
     m_CommandQueue->ExecuteCommandLists(1, s_CommandLists);
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ImguiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
+{
+    if (ImGui::GetCurrentContext() == nullptr)
+        return HookResult<LRESULT>(HookAction::Continue());
+
+    ImGuiIO& s_ImGuiIO = ImGui::GetIO();
+
+    switch (p_Message)
+    {
+    case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK:
+    case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK:
+    case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK:
+    {
+        int s_Button = 0;
+    		
+        if (p_Message == WM_LBUTTONDOWN || p_Message == WM_LBUTTONDBLCLK)
+            s_Button = 0;
+        if (p_Message == WM_RBUTTONDOWN || p_Message == WM_RBUTTONDBLCLK)
+            s_Button = 1;
+        if (p_Message == WM_MBUTTONDOWN || p_Message == WM_MBUTTONDBLCLK)
+            s_Button = 2;    		
+        if (p_Message == WM_XBUTTONDOWN || p_Message == WM_XBUTTONDBLCLK) 
+            s_Button = (GET_XBUTTON_WPARAM(p_Wparam) == XBUTTON1) ? 3 : 4;
+
+        if (!ImGui::IsAnyMouseDown() && GetCapture() == nullptr)
+            SetCapture(p_Hwnd);
+
+        s_ImGuiIO.MouseDown[s_Button] = true;
+
+    	break;
+    }
+
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_XBUTTONUP:
+    {
+        int s_Button = 0;
+    		
+        if (p_Message == WM_LBUTTONUP)
+            s_Button = 0;
+        if (p_Message == WM_RBUTTONUP) 
+            s_Button = 1;
+        if (p_Message == WM_MBUTTONUP) 
+            s_Button = 2;
+    		
+        if (p_Message == WM_XBUTTONUP)
+            s_Button = (GET_XBUTTON_WPARAM(p_Wparam) == XBUTTON1) ? 3 : 4;
+
+        s_ImGuiIO.MouseDown[s_Button] = false;
+
+        if (!ImGui::IsAnyMouseDown() && GetCapture() == p_Hwnd)
+            ReleaseCapture();
+
+    	break;
+    }
+    case WM_MOUSEWHEEL:
+        s_ImGuiIO.MouseWheel += static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(WHEEL_DELTA);
+        break;
+    
+    case WM_MOUSEHWHEEL:
+        s_ImGuiIO.MouseWheelH += static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(WHEEL_DELTA);
+        break;
+    	
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        if (p_Wparam < 256)
+            s_ImGuiIO.KeysDown[p_Wparam] = true;
+  
+        break;
+    	
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        if (p_Wparam < 256)
+            s_ImGuiIO.KeysDown[p_Wparam] = false;
+ 
+        break;
+    	
+    case WM_CHAR:
+        // You can also use ToAscii()+GetKeyboardState() to retrieve characters.
+        if (p_Wparam > 0 && p_Wparam < 0x10000)
+            s_ImGuiIO.AddInputCharacterUTF16(static_cast<unsigned short>(p_Wparam));
+
+        break;
+    }
+
+    return HookResult<LRESULT>(HookAction::Continue());
 }

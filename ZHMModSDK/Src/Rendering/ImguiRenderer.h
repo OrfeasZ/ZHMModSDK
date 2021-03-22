@@ -47,6 +47,9 @@ namespace Rendering
 		void Draw();
 
 	private:
+		DEFINE_DETOUR_WITH_CONTEXT(ImguiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM)
+
+	private:
 		bool m_RendererSetup = false;
 		bool m_ImguiInitialized = false;
 		
