@@ -63,7 +63,7 @@ ModSDK::~ModSDK()
 #endif
 
 	HookRegistry::ClearAllDetours();
-	
+
 	Trampolines::ClearTrampolines();
 }
 

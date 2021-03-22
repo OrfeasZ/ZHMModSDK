@@ -137,6 +137,7 @@ public:
 		AcquireSRWLockExclusive(&m_Lock);
 
 		m_Detours.clear();
+		m_Detours.push_back(nullptr);
 		
 		if (m_Target != nullptr)
 		{
@@ -163,7 +164,7 @@ public:
 
 			if ((*it)->Context == p_Context)
 			{
-				delete* it;
+				delete *it;
 				it = m_Detours.erase(it);
 			}
 			else
@@ -183,7 +184,8 @@ public:
 			delete* it;
 
 		m_Detours.clear();
-
+		m_Detours.push_back(nullptr);
+		
 		ReleaseSRWLockExclusive(&m_Lock);
 	}
 

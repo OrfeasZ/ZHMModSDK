@@ -31,6 +31,8 @@ ImguiRenderer* ImguiRenderer::GetInstance()
 
 void ImguiRenderer::Init()
 {
+    D3D12Hooks::InstallHooks();
+	
     QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
     QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
 
@@ -67,15 +69,13 @@ void ImguiRenderer::Init()
 #endif
 
     Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(this, &ImguiRenderer::WndProc);
-	
-    D3D12Hooks::InstallHooks();
 }
 
 void ImguiRenderer::Shutdown()
 {
-    ResetRenderer();
-	
     D3D12Hooks::RemoveHooks();
+	
+    ResetRenderer();
 }
 
 void ImguiRenderer::Draw()

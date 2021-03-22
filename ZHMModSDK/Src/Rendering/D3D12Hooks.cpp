@@ -27,21 +27,29 @@ void D3D12Hooks::InstallHooks()
 		Logger::Error("Could not get D3D vtables. Custom rendering will not work.");
 		return;
 	}
+	
+	Util::ProcessUtils::SuspendAllThreadsButCurrent();
 
 	INSTALL_D3D12_HOOK(IDXGISwapChain, Present);
 	INSTALL_D3D12_HOOK(IDXGISwapChain, ResizeBuffers);
 	INSTALL_D3D12_HOOK(IDXGISwapChain, ResizeTarget);
 	INSTALL_D3D12_HOOK(ID3D12CommandQueue, ExecuteCommandLists);
 
+	Util::ProcessUtils::ResumeSuspendedThreads();
+	
 	Logger::Debug("Installed D3D hooks.");
 }
 
 void D3D12Hooks::RemoveHooks()
 {
+	Util::ProcessUtils::SuspendAllThreadsButCurrent();
+	
 	for (auto& s_Hook : m_InstalledHooks)
 		RemoveHook(s_Hook);
 
 	m_InstalledHooks.clear();
+	
+	Util::ProcessUtils::ResumeSuspendedThreads();
 }
 
 HRESULT D3D12Hooks::Detour_IDXGISwapChain_Present(IDXGISwapChain* th, UINT SyncInterval, UINT Flags)
@@ -112,6 +120,11 @@ struct ScopedWindow
 	{
 		return Window;
 	}
+
+	operator bool()
+	{
+		return Window != nullptr;
+	}
 	
 	HWND Window;
 };
@@ -125,7 +138,40 @@ std::vector<D3D12Hooks::InstalledHook> D3D12Hooks::m_InstalledHooks;
  * destroyed before this function returns.
  */
 std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
-{	
+{
+	Logger::Debug("[D3D12Hooks] Locating D3D12 vtable addresses.");
+
+#if _DEBUG
+	// See if we already have a cached version of these for this process.
+	char s_SharedMemoryName[256];
+	sprintf_s(s_SharedMemoryName, sizeof(s_SharedMemoryName), "ZHModSDK_D3D12Hooks_Vtbl_%llu_%lu", sizeof(VTables), GetCurrentProcessId());
+
+	{
+		auto* s_Mapping = OpenFileMapping(FILE_MAP_READ, false, s_SharedMemoryName);
+
+		if (s_Mapping != nullptr)
+		{
+			auto* s_Buffer = MapViewOfFile(s_Mapping, FILE_MAP_READ, 0, 0, sizeof(VTables));
+
+			if (s_Buffer != nullptr)
+			{
+				Logger::Debug("[D3D12Hooks] Found cached vtable info. Re-using.");
+
+				VTables s_VTables{};
+				memcpy(&s_VTables, s_Buffer, sizeof(VTables));
+
+				UnmapViewOfFile(s_Buffer);
+				CloseHandle(s_Mapping);
+
+				return s_VTables;
+			}
+
+			CloseHandle(s_Mapping);
+		}
+	}
+#endif
+
+	// If we don't, try to find them from scratch.
 	ScopedD3DRef<IDXGIFactory1> s_Factory;
 
 	if (CreateDXGIFactory1(REF_IID_PPV_ARGS(s_Factory)) != S_OK)
@@ -136,21 +182,38 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	if (s_Factory->EnumAdapters(0, &s_Adapter.Ref) == DXGI_ERROR_NOT_FOUND)
 		return std::nullopt;
 
+	Logger::Debug("[D3D12Hooks] Creating D3D12 device.");
+
+#if _DEBUG
+	ID3D12Debug* s_Debug = nullptr;
+
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&s_Debug))))
+		s_Debug->EnableDebugLayer();
+
+	s_Debug->Release();
+#endif
+	
 	ScopedD3DRef<ID3D12Device> s_Device;
 
 	if (D3D12CreateDevice(s_Adapter, D3D_FEATURE_LEVEL_12_0, REF_IID_PPV_ARGS(s_Device)) != S_OK)
 		return std::nullopt;
+
+	Logger::Debug("[D3D12Hooks] Creating command queue.");
 	
 	D3D12_COMMAND_QUEUE_DESC s_CommandQueueDesc{};	
 	ScopedD3DRef<ID3D12CommandQueue> s_CommandQueue;
 	
 	if (s_Device->CreateCommandQueue(&s_CommandQueueDesc, REF_IID_PPV_ARGS(s_CommandQueue)) != S_OK)
 		return std::nullopt;
+
+	Logger::Debug("[D3D12Hooks] Creating command allocator.");
 	
 	ScopedD3DRef<ID3D12CommandAllocator> s_CommandAllocator;
 
 	if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, REF_IID_PPV_ARGS(s_CommandAllocator)) != S_OK)
 		return std::nullopt;
+
+	Logger::Debug("[D3D12Hooks] Creating command list.");
 
 	ScopedD3DRef<ID3D12GraphicsCommandList> s_GraphicsCommandList;
 
@@ -167,8 +230,13 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 	RegisterClassExA(&s_WindowClass.Class);
 
+	Logger::Debug("[D3D12Hooks] Creating fake window for swap chain.");
+
 	ScopedWindow s_Window = CreateWindowA(s_WindowClass->lpszClassName, "ZHMModSDK_D3D", WS_OVERLAPPEDWINDOW, 0, 0, 256, 256, nullptr, nullptr, s_WindowClass->hInstance, nullptr);
-	
+
+	if (!s_Window)
+		return std::nullopt;
+
 	DXGI_RATIONAL s_RefreshRateRational{};
 	s_RefreshRateRational.Numerator = 60;
 	s_RefreshRateRational.Denominator = 1;
@@ -194,6 +262,8 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	s_SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	ScopedD3DRef<IDXGISwapChain> s_SwapChain;
+
+	Logger::Debug("[D3D12Hooks] Creating swap chain.");
 	
 	if (s_Factory->CreateSwapChain(s_CommandQueue, &s_SwapChainDesc, &s_SwapChain.Ref) != S_OK)
 		return std::nullopt;
@@ -207,6 +277,28 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	s_VTables.ID3D12GraphicsCommandListVtbl = s_GraphicsCommandList.VTable();
 	s_VTables.IDXGISwapChainVtbl = s_SwapChain.VTable();
 
+	Logger::Debug("[D3D12Hooks] Located all D3D12 vtable addresses.");
+
+#if _DEBUG
+	// Cache this in case we need to reload.
+	auto* s_Mapping = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(VTables), s_SharedMemoryName);
+
+	if (s_Mapping != nullptr)
+	{
+		auto* s_Buffer = MapViewOfFile(s_Mapping, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(VTables));
+
+		if (s_Buffer != nullptr)
+		{
+			memcpy(s_Buffer, &s_VTables, sizeof(VTables));
+			UnmapViewOfFile(s_Buffer);
+
+			Logger::Debug("[D3D12Hooks] Cached vtable addresses in shared memory.");
+		}
+		
+		// NOTE: We don't close the handle since we want this to be found in the future.
+	}
+#endif	
+	
 	return s_VTables;
 }
 
