@@ -27,7 +27,7 @@ void D3D12Hooks::InstallHooks()
 		Logger::Error("Could not get D3D vtables. Custom rendering will not work.");
 		return;
 	}
-	
+
 	Util::ProcessUtils::SuspendAllThreadsButCurrent();
 
 	INSTALL_D3D12_HOOK(IDXGISwapChain, Present);
@@ -36,19 +36,19 @@ void D3D12Hooks::InstallHooks()
 	INSTALL_D3D12_HOOK(ID3D12CommandQueue, ExecuteCommandLists);
 
 	Util::ProcessUtils::ResumeSuspendedThreads();
-	
+
 	Logger::Debug("Installed D3D hooks.");
 }
 
 void D3D12Hooks::RemoveHooks()
 {
 	Util::ProcessUtils::SuspendAllThreadsButCurrent();
-	
+
 	for (auto& s_Hook : m_InstalledHooks)
 		RemoveHook(s_Hook);
 
 	m_InstalledHooks.clear();
-	
+
 	Util::ProcessUtils::ResumeSuspendedThreads();
 }
 
@@ -87,7 +87,7 @@ void D3D12Hooks::Detour_ID3D12CommandQueue_ExecuteCommandLists(ID3D12CommandQueu
 struct ScopedWindowClass
 {
 	ScopedWindowClass() : Class({}) {}
-	
+
 	~ScopedWindowClass()
 	{
 		UnregisterClassA(Class.lpszClassName, Class.hInstance);
@@ -102,14 +102,14 @@ struct ScopedWindowClass
 	{
 		return Class;
 	}
-	
+
 	WNDCLASSEX Class;
 };
 
 struct ScopedWindow
 {
 	ScopedWindow(HWND p_Window) : Window(p_Window) {}
-	
+
 	~ScopedWindow()
 	{
 		if (Window != nullptr)
@@ -125,7 +125,7 @@ struct ScopedWindow
 	{
 		return Window != nullptr;
 	}
-	
+
 	HWND Window;
 };
 
@@ -157,7 +157,7 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 			{
 				Logger::Debug("[D3D12Hooks] Found cached vtable info. Re-using.");
 
-				VTables s_VTables{};
+				VTables s_VTables {};
 				memcpy(&s_VTables, s_Buffer, sizeof(VTables));
 
 				UnmapViewOfFile(s_Buffer);
@@ -176,7 +176,7 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 	if (CreateDXGIFactory1(REF_IID_PPV_ARGS(s_Factory)) != S_OK)
 		return std::nullopt;
-	
+
 	ScopedD3DRef<IDXGIAdapter> s_Adapter;
 
 	if (s_Factory->EnumAdapters(0, &s_Adapter.Ref) == DXGI_ERROR_NOT_FOUND)
@@ -192,22 +192,22 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 	s_Debug->Release();
 #endif
-	
+
 	ScopedD3DRef<ID3D12Device> s_Device;
 
 	if (D3D12CreateDevice(s_Adapter, D3D_FEATURE_LEVEL_12_0, REF_IID_PPV_ARGS(s_Device)) != S_OK)
 		return std::nullopt;
 
 	Logger::Debug("[D3D12Hooks] Creating command queue.");
-	
-	D3D12_COMMAND_QUEUE_DESC s_CommandQueueDesc{};	
+
+	D3D12_COMMAND_QUEUE_DESC s_CommandQueueDesc {};
 	ScopedD3DRef<ID3D12CommandQueue> s_CommandQueue;
-	
+
 	if (s_Device->CreateCommandQueue(&s_CommandQueueDesc, REF_IID_PPV_ARGS(s_CommandQueue)) != S_OK)
 		return std::nullopt;
 
 	Logger::Debug("[D3D12Hooks] Creating command allocator.");
-	
+
 	ScopedD3DRef<ID3D12CommandAllocator> s_CommandAllocator;
 
 	if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, REF_IID_PPV_ARGS(s_CommandAllocator)) != S_OK)
@@ -237,21 +237,21 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	if (!s_Window)
 		return std::nullopt;
 
-	DXGI_RATIONAL s_RefreshRateRational{};
+	DXGI_RATIONAL s_RefreshRateRational {};
 	s_RefreshRateRational.Numerator = 60;
 	s_RefreshRateRational.Denominator = 1;
 
-	DXGI_MODE_DESC s_BufferDesc{};
+	DXGI_MODE_DESC s_BufferDesc {};
 	s_BufferDesc.Width = 256;
 	s_BufferDesc.Height = 256;
 	s_BufferDesc.RefreshRate = s_RefreshRateRational;
 	s_BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-	DXGI_SAMPLE_DESC s_SampleDesc{};
+	DXGI_SAMPLE_DESC s_SampleDesc {};
 	s_SampleDesc.Count = 1;
 	s_SampleDesc.Quality = 0;
 
-	DXGI_SWAP_CHAIN_DESC s_SwapChainDesc{};
+	DXGI_SWAP_CHAIN_DESC s_SwapChainDesc {};
 	s_SwapChainDesc.BufferDesc = s_BufferDesc;
 	s_SwapChainDesc.SampleDesc = s_SampleDesc;
 	s_SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -264,11 +264,11 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	ScopedD3DRef<IDXGISwapChain> s_SwapChain;
 
 	Logger::Debug("[D3D12Hooks] Creating swap chain.");
-	
+
 	if (s_Factory->CreateSwapChain(s_CommandQueue, &s_SwapChainDesc, &s_SwapChain.Ref) != S_OK)
 		return std::nullopt;
 
-	VTables s_VTables{};
+	VTables s_VTables {};
 	s_VTables.IDXGIFactory1Vtbl = s_Factory.VTable();
 	s_VTables.IDXGIAdapterVtbl = s_Adapter.VTable();
 	s_VTables.ID3D12DeviceVtbl = s_Device.VTable();
@@ -294,11 +294,11 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 			Logger::Debug("[D3D12Hooks] Cached vtable addresses in shared memory.");
 		}
-		
+
 		// NOTE: We don't close the handle since we want this to be found in the future.
 	}
 #endif	
-	
+
 	return s_VTables;
 }
 

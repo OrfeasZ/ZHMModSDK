@@ -11,5 +11,5 @@ public:
 
 template<typename T>
 class TResourcePtr : public ZResourcePtr
-{	
+{
 };

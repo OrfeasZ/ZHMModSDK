@@ -29,7 +29,7 @@ namespace Rendering
 			IDXGISwapChain_ResizeTarget = 14,
 			ID3D12CommandQueue_ExecuteCommandLists = 10,
 		};
-		
+
 	private:
 		struct VTables
 		{

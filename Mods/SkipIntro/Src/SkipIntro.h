@@ -9,9 +9,9 @@ class SkipIntro : public IPluginInterface
 {
 public:
 	void Init() override;
-	
+
 private:
-	DEFINE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&)
+	DEFINE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
 };
 
 DEFINE_ZHM_PLUGIN(SkipIntro)

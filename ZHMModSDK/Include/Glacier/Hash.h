@@ -29,7 +29,7 @@ SOFTWARE.
 
 namespace Hash
 {
-    static constexpr uint32_t g_Crc32Table[] =
+	static constexpr uint32_t g_Crc32Table[] =
 	{
 		0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
 		0xe963a535, 0x9e6495a3,	0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -76,10 +76,10 @@ namespace Hash
 		0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
 	};
 
-    constexpr uint32_t Crc32(const char* p_Data, size_t p_Length)
-    {
+	constexpr uint32_t Crc32(const char* p_Data, size_t p_Length)
+	{
 		uint32_t s_Hash = 0xFFFFFFFF;
-    	
+
 		while (p_Length--)
 		{
 			s_Hash = g_Crc32Table[*p_Data ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
@@ -87,46 +87,46 @@ namespace Hash
 		}
 
 		return s_Hash ^ 0xFFFFFFFF;
-    }
+	}
 
-    constexpr uint32_t Crc32(const char* p_Data)
-    {
+	constexpr uint32_t Crc32(const char* p_Data)
+	{
 		uint32_t s_Hash = 0xFFFFFFFF;
-    	
+
 		while (*p_Data)
 		{
 			s_Hash = g_Crc32Table[*p_Data ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
 			p_Data++;
 		}
-    	
+
 		return s_Hash ^ 0xFFFFFFFF;
-    }
+	}
 
 	constexpr uint32_t Fnv1a(const char* p_Data, size_t p_Length)
-    {
+	{
 		uint32_t s_Hash = 0x811c9dc5;
 
-    	while (p_Length--)
-    	{
+		while (p_Length--)
+		{
 			s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
 			p_Data++;
-    	}
+		}
 
 		return s_Hash;
-    }
+	}
 
 	constexpr uint32_t Fnv1a(const char* p_Data)
-    {
+	{
 		uint32_t s_Hash = 0x811c9dc5;
 
 		while (*p_Data)
-    	{
+		{
 			s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
 			p_Data++;
-    	}
+		}
 
 		return s_Hash;
-    }
+	}
 
 	constexpr uint32_t Fnv1a_Lower(const char* p_Data, size_t p_Length)
 	{
@@ -142,43 +142,43 @@ namespace Hash
 	}
 
 	constexpr uint32_t Fnv1a_Lower(const char* p_Data)
-    {
+	{
 		uint32_t s_Hash = 0x811c9dc5;
 
 		while (*p_Data)
-    	{
+		{
 			s_Hash = (s_Hash ^ ::tolower(*p_Data)) * 0x1000193;
 			p_Data++;
-    	}
+		}
 
 		return s_Hash;
-    }
+	}
 
 	constexpr uint64_t Fnv1a64(const char* p_Data, size_t p_Length)
-    {
+	{
 		uint64_t s_Hash = 0x811c9dc5;
 
-    	while (p_Length--)
-    	{
+		while (p_Length--)
+		{
 			s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
 			p_Data++;
-    	}
+		}
 
 		return s_Hash;
-    }
+	}
 
 	constexpr uint64_t Fnv1a64(const char* p_Data)
-    {
+	{
 		uint64_t s_Hash = 0x811c9dc5;
 
 		while (*p_Data)
-    	{
+		{
 			s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
 			p_Data++;
-    	}
+		}
 
 		return s_Hash;
-    }
+	}
 
 	constexpr uint64_t Fnv1a64_Lower(const char* p_Data, size_t p_Length)
 	{
@@ -194,15 +194,15 @@ namespace Hash
 	}
 
 	constexpr uint64_t Fnv1a64_Lower(const char* p_Data)
-    {
+	{
 		uint64_t s_Hash = 0x811c9dc5;
 
 		while (*p_Data)
-    	{
+		{
 			s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
 			p_Data++;
-    	}
+		}
 
 		return s_Hash;
-    }
+	}
 }

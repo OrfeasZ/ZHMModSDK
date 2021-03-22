@@ -7,7 +7,7 @@ class TBinaryTreeNode
 {
 public:
 	inline TBinaryTreeNode<T>* GetNextNode()
-	{		
+	{
 		if (m_pRight)
 		{
 			auto v2 = m_pRight;
@@ -59,7 +59,7 @@ public:
 
 	inline TBinaryTreeIterator<T>* operator++()
 	{
-		auto node = reinterpret_cast<TBinaryTreeNode<T>*>((char*) this - offsetof(TBinaryTreeNode<T>, m_data));
+		auto node = reinterpret_cast<TBinaryTreeNode<T>*>((char*)this - offsetof(TBinaryTreeNode<T>, m_data));
 		m_pCurrent = &node->m_data;
 		return this;
 	}
@@ -106,7 +106,7 @@ public:
 public:
 	inline iterator end() const
 	{
-		return (T*) &m_nSize;
+		return (T*)&m_nSize;
 	}
 
 	inline iterator begin() const
@@ -123,7 +123,7 @@ public:
 };
 
 template <typename T>
-class TRedBlackTree : 
+class TRedBlackTree :
 	public TBinaryTree<T>
 {
 };

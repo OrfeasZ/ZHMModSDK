@@ -95,7 +95,7 @@ PATTERN_HOOK(
 PATTERN_HOOK(
 	"\x48\x89\x4C\x24\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x38\xE9\xFF\xFF",
 	"xxxxxxxxxxxxxxxxxxxxxxxxx",
-	ZRenderDevice_ZRenderDevice, ZRenderDevice*(ZRenderDevice* th)
+	ZRenderDevice_ZRenderDevice, ZRenderDevice* (ZRenderDevice* th)
 )
 
 MODULE_HOOK(

@@ -103,7 +103,7 @@ public:
 	char* m_pTypeName;
 	STypeID* m_pTypeID;
 	bool (*fromString)(void*, IType*, const ZString&);
-	uint32_t (*toString)(void*, IType*, char*, uint32_t, const ZString&);
+	uint32_t(*toString)(void*, IType*, char*, uint32_t, const ZString&);
 };
 
 class SInputPinEntry
@@ -186,7 +186,7 @@ public:
 	void* (*begin)(void*);
 	void* (*end)(void*);
 	void* (*next)(void*, void*);
-	size_t (*size)(void*);
+	size_t(*size)(void*);
 	// TODO: There's more shit here. Map it out.
 };
 

@@ -43,19 +43,19 @@ protected:
 		m_nBucket(p_Bucket)
 	{
 	}
-	
+
 	THashMapIterator(SHashMapInfo<T>* p_MapInfo) :
 		TIterator<THashMapNode<T>>(nullptr),
 		m_pMapInfo(p_MapInfo),
 		m_nBucket(UINT32_MAX)
 	{
 	}
-	
+
 public:
 	THashMapIterator<T>& operator++()
 	{
 		uint32_t s_NextIndex = this->m_pCurrent->m_nNextIndex;
-		
+
 		if (s_NextIndex != UINT32_MAX)
 		{
 			this->m_pCurrent = &m_pMapInfo->m_pNodes[s_NextIndex];
@@ -70,7 +70,7 @@ public:
 			this->m_pCurrent = nullptr;
 			return *this;
 		}
-		
+
 		while (m_pMapInfo->m_pBuckets[m_nBucket] == UINT32_MAX)
 		{
 			++m_nBucket;
@@ -104,7 +104,7 @@ public:
 			p_Other.m_nBucket == m_nBucket &&
 			p_Other.m_pMapInfo == m_pMapInfo;
 	}
-	
+
 public:
 	SHashMapInfo<T>* m_pMapInfo;
 	int32_t m_nBucket;
@@ -117,13 +117,13 @@ template <class TKeyType, class TValueType, class THashingPolicy = TDefaultHashM
 class THashMap
 {
 public:
-    using value_type = TPair<const TKeyType, TValueType>;
+	using value_type = TPair<const TKeyType, TValueType>;
 	using node_type = THashMapNode<value_type>;
-    using reference = value_type&;
-    using const_reference = const value_type&;
-    using iterator = THashMapIterator<value_type>;
-    using const_iterator = const THashMapIterator<value_type>;
-	
+	using reference = value_type&;
+	using const_reference = const value_type&;
+	using iterator = THashMapIterator<value_type>;
+	using const_iterator = const THashMapIterator<value_type>;
+
 public:
 	iterator find(const TKeyType& p_Key)
 	{
@@ -139,7 +139,7 @@ public:
 			return iterator(&m_Info);
 
 		node_type* s_Node = nullptr;
-		
+
 		while (true)
 		{
 			s_Node = &m_Info.m_pNodes[s_NodeIndex];
@@ -174,7 +174,7 @@ public:
 	{
 		return m_nSize;
 	}
-	
+
 public:
 	uint32_t m_nSize;
 	uint32_t m_nFreeSlots;

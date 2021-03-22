@@ -12,7 +12,7 @@ class ZObjectRef
 {
 public:
 	ZObjectRef()
-	{	
+	{
 		auto it = (*Globals::TypeRegistry)->m_types.find("void");
 
 		assert(it != (*Globals::TypeRegistry)->m_types.end());
@@ -22,7 +22,7 @@ public:
 
 		m_pTypeID = it->second;
 	}
-	
+
 protected:
 	ZObjectRef(STypeID* p_TypeId, void* p_Data) : m_pTypeID(p_TypeId), m_pData(p_Data) {}
 
@@ -57,7 +57,7 @@ public:
 	{
 		return m_pTypeID == nullptr || m_pData == nullptr || Hash::Crc32(m_pTypeID->typeInfo()->m_pTypeName) == ZHMTypeId<void>;
 	}
-	
+
 protected:
 	STypeID* m_pTypeID = nullptr;
 	void* m_pData = nullptr;
@@ -72,18 +72,18 @@ public:
 		ZObjectRef(GetTypeId(), nullptr)
 	{
 		m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-			m_pTypeID->typeInfo()->m_nTypeSize, 
+			m_pTypeID->typeInfo()->m_nTypeSize,
 			m_pTypeID->typeInfo()->m_nTypeAlignment
 		);
 
 		m_pTypeID->typeInfo()->m_pTypeFunctions->construct(m_pData);
 	}
-	
+
 	ZVariant(const T& p_Value) :
 		ZObjectRef(GetTypeId(), nullptr)
 	{
 		m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-			m_pTypeID->typeInfo()->m_nTypeSize, 
+			m_pTypeID->typeInfo()->m_nTypeSize,
 			m_pTypeID->typeInfo()->m_nTypeAlignment
 		);
 
@@ -106,7 +106,7 @@ public:
 		m_pTypeID->typeInfo()->m_pTypeFunctions->destruct(m_pData);
 		(*Globals::MemoryManager)->m_pNormalAllocator->Free(m_pData);
 	}
-	
+
 	T& Get()
 	{
 		return *static_cast<T*>(m_pData);
@@ -125,7 +125,7 @@ private:
 		auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
 
 		assert(it != (*Globals::TypeRegistry)->m_types.end());
-		
+
 		if (it == (*Globals::TypeRegistry)->m_types.end())
 			return nullptr;
 
@@ -160,7 +160,7 @@ private:
 		auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
 
 		assert(it != (*Globals::TypeRegistry)->m_types.end());
-		
+
 		if (it == (*Globals::TypeRegistry)->m_types.end())
 			return nullptr;
 

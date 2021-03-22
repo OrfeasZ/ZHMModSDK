@@ -25,7 +25,7 @@ public:
 	PAD(0x10);
 };
 
-class ZHitman5Module : 
+class ZHitman5Module :
 	public ZSimpleModuleBase,
 	public ZConfiguration
 {

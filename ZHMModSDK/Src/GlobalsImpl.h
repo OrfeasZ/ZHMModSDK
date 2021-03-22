@@ -10,7 +10,7 @@ template <class T>
 T PatternGlobalRelative(const char* p_GlobalName, const char* p_Pattern, const char* p_Mask, ptrdiff_t p_Offset)
 {
 	static_assert(std::is_pointer<T>::value, "Global type is not a pointer type.");
-	
+
 	const auto* s_Pattern = reinterpret_cast<const uint8_t*>(p_Pattern);
 	auto s_Target = Util::ProcessUtils::SearchPattern(ModSDK::GetInstance()->GetModuleBase(), ModSDK::GetInstance()->GetSizeOfCode(), s_Pattern, p_Mask);
 

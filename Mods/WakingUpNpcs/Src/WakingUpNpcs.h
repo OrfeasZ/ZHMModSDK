@@ -10,7 +10,7 @@ class WakingUpNpcs : public IPluginInterface
 public:
 	WakingUpNpcs();
 	~WakingUpNpcs() override;
-	
+
 	void Init() override;
 	void OnEngineInitialized() override;
 
@@ -18,8 +18,8 @@ private:
 	void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
 private:
-	DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&)
-	DEFINE_PLUGIN_LISTENER(WakingUpNpcs, OnConsoleCommand)
+	DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+	DEFINE_PLUGIN_LISTENER(WakingUpNpcs, OnConsoleCommand);
 
 private:
 	std::unordered_map<ZActor*, double> m_PacifiedTimes;

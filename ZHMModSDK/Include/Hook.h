@@ -10,14 +10,14 @@ public:
 	~HookBase() override = default;
 	virtual void RemoveDetoursWithContext(void* p_Context) = 0;
 	virtual void RemoveAllDetours() = 0;
-	
+
 protected:
 	struct Detour
 	{
 		void* Context;
 		void* DetourFunc;
 	};
-	
+
 	virtual void AddDetourInternal(void* p_Context, void* p_Detour) = 0;
 	virtual void RemoveDetourInternal(void* p_Detour) = 0;
 	virtual Detour** GetDetours() = 0;
@@ -25,7 +25,7 @@ protected:
 	virtual void UnlockForCall() = 0;
 
 	void* m_OriginalFunc = nullptr;
-	
+
 	friend class HookRegistry;
 };
 
@@ -57,7 +57,7 @@ public:
 
 template <>
 class HookResult<void>
-{	
+{
 public:
 	HookResult(HookAction::Return) : m_HasReturnVal(true) {}
 	HookResult(HookAction::Continue) : m_HasReturnVal(false) {}
@@ -89,7 +89,7 @@ public:
 	ReturnType Call(Args... p_Args)
 	{
 		LockForCall();
-		
+
 		auto s_Detours = GetDetours();
 
 		auto s_Detour = *s_Detours;
@@ -105,7 +105,7 @@ public:
 				UnlockForCall();
 				return s_Result.m_ReturnVal;
 			}
-			
+
 			s_Detour = *++s_Detours;
 		}
 
@@ -126,8 +126,8 @@ template <class... Args>
 class Hook<void(Args...)> : public HookBase
 {
 public:
-	typedef void (__fastcall* OriginalFunc_t)(Args...);
-	typedef HookResult<void> (*DetourFunc_t)(void*, Hook<void(Args...)>*, Args...);
+	typedef void(__fastcall* OriginalFunc_t)(Args...);
+	typedef HookResult<void>(*DetourFunc_t)(void*, Hook<void(Args...)>*, Args...);
 
 	void AddDetour(void* p_Context, DetourFunc_t p_Detour)
 	{
@@ -142,7 +142,7 @@ public:
 	void Call(Args... p_Args)
 	{
 		LockForCall();
-		
+
 		auto s_Detours = GetDetours();
 
 		auto s_Detour = *s_Detours;
@@ -158,7 +158,7 @@ public:
 				UnlockForCall();
 				return;
 			}
-			
+
 			s_Detour = *++s_Detours;
 		}
 

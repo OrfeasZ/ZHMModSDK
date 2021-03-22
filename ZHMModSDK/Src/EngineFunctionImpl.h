@@ -20,7 +20,7 @@ public:
 			Logger::Error("Could not locate address for function '{}'. This probably means that the game was updated and the SDK requires changes.", p_FunctionName);
 			return;
 		}
-		
+
 		Logger::Debug("Successfully located function '{}' at address '{}'.", p_FunctionName, fmt::ptr(this->m_Address));
 	}
 
@@ -66,7 +66,7 @@ private:
 
 		if (s_Target == 0)
 			return nullptr;
-		
+
 		const uintptr_t s_OriginalFunction = s_Target + 5 + *reinterpret_cast<int32_t*>(s_Target + 1);
 		return reinterpret_cast<void*>(s_OriginalFunction);
 	}

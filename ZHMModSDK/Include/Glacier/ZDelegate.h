@@ -19,9 +19,9 @@ protected:
 		m_pad(nullptr),
 		pStaticFunc(p_StaticCb),
 		pInst(p_MemberInstance)
-	{		
+	{
 	}
-	
+
 public:
 	MemberCallback_t m_mfp;
 	void* m_pad;
@@ -37,13 +37,13 @@ class ZMemberDelegate<InstanceType, ReturnType(Args...)> : public ZDelegate<Retu
 {
 private:
 	typedef ReturnType(InstanceType::* MemberFunction_t)(Args...);
-	
+
 	union MemberFunctionCaster
 	{
 		MemberFunction_t MemberFunc;
 		typename ZDelegate<ReturnType(Args...)>::MemberCallback_t MemberCallback;
 	};
-	
+
 public:
 	ZMemberDelegate(InstanceType* p_Instance, MemberFunction_t p_MemberFunction) :
 		ZDelegate<ReturnType(Args...)>(GetMemberCb(p_MemberFunction), nullptr, p_Instance)

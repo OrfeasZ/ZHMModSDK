@@ -14,7 +14,7 @@ private:
 		HMODULE Module;
 		IPluginInterface* PluginInterface;
 	};
-	
+
 public:
 	ModLoader();
 	~ModLoader();

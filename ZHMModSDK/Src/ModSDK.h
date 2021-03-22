@@ -36,11 +36,11 @@ public:
 
 private:
 	ModLoader* m_ModLoader;
-	
+
 #if _DEBUG
 	DebugConsole* m_DebugConsole;
 #endif
-	
+
 	uintptr_t m_ModuleBase;
 	uint32_t m_SizeOfCode;
 	uint32_t m_ImageSize;

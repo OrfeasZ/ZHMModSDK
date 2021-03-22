@@ -14,7 +14,7 @@ DECLARE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext* th, ZSc
 {
 	if (std::string(p_SceneData.m_sceneName.c_str()) == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
 		p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Frontend/MainMenu.entity";
-	
+
 	return HookResult<void>(HookAction::Continue());
 }
 

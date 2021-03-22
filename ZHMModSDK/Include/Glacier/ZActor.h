@@ -197,12 +197,12 @@ public:
 	bool m_bUnk37 : 1;
 	bool m_bUnk38 : 1;
 	bool m_bUnk39 : 1;
-	PAD(0x2B8);	
+	PAD(0x2B8);
 };
 
 class ZActorManager :
 	public IComponentInterface
-{	
+{
 public:
 	virtual ~ZActorManager() {}
 
@@ -223,7 +223,7 @@ public:
 			if (s_Actor->m_sActorName == p_Name)
 				return s_Actor;
 		}
-		
+
 		return nullptr;
 	}
 
@@ -244,14 +244,14 @@ public:
 		for (int i = 0; i < *Globals::NextActorId; ++i)
 		{
 			auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
-			
+
 			ZEntityRef s_EntRef;
 			s_Actor->GetID(&s_EntRef);
 
 			if ((*s_EntRef.m_pEntity)->m_nEntityId == p_Id)
 				return s_Actor;
 		}
-		
+
 		return nullptr;
 	}
 

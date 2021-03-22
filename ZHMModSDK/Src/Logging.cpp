@@ -12,7 +12,7 @@ ZHMSDK_API LoggerList GetLoggers()
 {
 	if (g_Loggers == nullptr)
 		g_Loggers = new std::vector<spdlog::logger*>();
-	
+
 	return LoggerList
 	{
 		g_Loggers->data(),
@@ -24,14 +24,14 @@ void ClearLoggers()
 {
 	if (g_Loggers == nullptr)
 		return;
-	
+
 	for (auto& s_Logger : *g_Loggers)
 	{
 		delete s_Logger;
 	}
 
 	g_Loggers->clear();
-	
+
 	delete g_Loggers;
 	g_Loggers = nullptr;
 }
@@ -49,16 +49,16 @@ void SetupLogging(spdlog::level::level_enum p_LogLevel)
 	s_ConsoleDistSink->add_sink(s_StdoutSink);
 
 	auto s_ConsoleLogger = new spdlog::logger("con", s_ConsoleDistSink);
-	
+
 	s_ConsoleLogger->set_level(p_LogLevel);
 	s_ConsoleLogger->set_pattern("%v");
 
 	g_Loggers->push_back(s_ConsoleLogger);
-	
+
 	//////////////////////////////////////////////////////////////////////////
 
 	auto s_FileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("ZHMModLoader.log", true);
-	
+
 	auto s_FileLogger = new spdlog::logger("file", s_FileSink);
 
 	s_FileLogger->set_level(p_LogLevel);

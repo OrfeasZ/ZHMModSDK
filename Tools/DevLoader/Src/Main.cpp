@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
 
 	// Get cmd-line args
 	bool s_BadArgs = false;
-	
+
 	for (int i = 1; i < argc; ++i)
 	{
 		if (strlen(argv[i]) >= 1 && argv[i][0] == '-')
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 				std::cerr << "Unknown argument " << argv[i] << std::endl;
 				s_BadArgs = true;
 			}
-			
+
 			// Increment i since we already read from the next argv
 			++i;
 		}
@@ -154,10 +154,10 @@ int main(int argc, char* argv[])
 
 		std::string s_CommandLine = "-epicapp=Eider -epicenv=Prod -EpicPortal -epicusername=" + s_EpicUsername + " -epicuserid=" + s_EpicUserId + " -epiclocale=en";
 
-		STARTUPINFO s_StartupInfo{};
+		STARTUPINFO s_StartupInfo {};
 		s_StartupInfo.cb = sizeof(s_StartupInfo);
 
-		PROCESS_INFORMATION s_ProcessInfo{};
+		PROCESS_INFORMATION s_ProcessInfo {};
 
 		if (!CreateProcessA(
 			s_ApplicationPath.c_str(),
@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 			s_ApplicationDir.c_str(),
 			&s_StartupInfo,
 			&s_ProcessInfo
-		))
+			))
 		{
 			return 1;
 		}

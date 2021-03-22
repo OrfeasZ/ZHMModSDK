@@ -22,7 +22,7 @@ public:
 
 		g_Dispatchers->insert(p_Dispatcher);
 	}
-	
+
 	static void RemoveDispatcher(EventDispatcherBase* p_Dispatcher)
 	{
 		if (g_Dispatchers == nullptr)
@@ -61,7 +61,7 @@ public:
 		AcquireSRWLockExclusive(&m_Lock);
 		m_Listeners.clear();
 		ReleaseSRWLockExclusive(&m_Lock);
-		
+
 		EventDispatcherRegistry::RemoveDispatcher(this);
 	}
 
@@ -90,7 +90,7 @@ public:
 
 		ReleaseSRWLockExclusive(&m_Lock);
 	}
-	
+
 protected:
 	void AddListenerInternal(void* p_Context, void* p_Listener) override
 	{
@@ -104,9 +104,9 @@ protected:
 		auto* s_Registration = new EventDispatcherBase::EventListenerRegistration();
 		s_Registration->Listener = p_Listener;
 		s_Registration->Context = p_Context;
-		
+
 		m_Listeners.insert(m_Listeners.end() - 1, s_Registration);
-		
+
 		ReleaseSRWLockExclusive(&m_Lock);
 	}
 
@@ -121,7 +121,7 @@ protected:
 				++it;
 				continue;
 			}
-			
+
 			if ((*it)->Listener == p_Listener)
 			{
 				delete* it;
@@ -132,7 +132,7 @@ protected:
 				++it;
 			}
 		}
-		
+
 		ReleaseSRWLockExclusive(&m_Lock);
 	}
 

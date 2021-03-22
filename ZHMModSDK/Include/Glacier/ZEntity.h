@@ -11,7 +11,7 @@ class ZActor;
 class STypeID;
 class ZEntityRef;
 
-class IEntity : 
+class IEntity :
 	public IComponentInterface
 {
 public:
@@ -32,7 +32,7 @@ class ZPinData
 {
 public:
 	int32_t m_unk00;
-	IType* m_pType; 
+	IType* m_pType;
 };
 
 class ZPin
@@ -97,7 +97,7 @@ public:
 	virtual ZEntityRef* GetID(ZEntityRef* result) = 0;
 	virtual void Activate(int) = 0;
 	virtual void Deactivate(int) = 0;
-	
+
 public:
 	ZEntityType* m_pType;
 	uint32_t m_unk00;
@@ -143,7 +143,7 @@ public:
 
 		if (!*Globals::TypeRegistry)
 			return nullptr;
-		
+
 		auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
 
 		if (it == (*Globals::TypeRegistry)->m_types.end())
@@ -159,7 +159,7 @@ public:
 
 		return nullptr;
 	}
-	
+
 	template <class T>
 	ZVariant<T> GetProperty(uint32_t p_PropertyId) const
 	{
@@ -174,11 +174,11 @@ public:
 	{
 		return std::move(GetProperty<T>(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size())));
 	}
-	
+
 	ZObjectRef GetProperty(uint32_t p_PropertyId) const
 	{
 		ZObjectRef s_Property;
-		
+
 		if (!(*m_pEntity)->m_pProperties01)
 			return std::move(s_Property);
 
@@ -188,7 +188,7 @@ public:
 				continue;
 
 			auto* s_Type = s_PropertyType.m_pType->getPropertyInfo()->m_pType;
-			
+
 			auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
 				s_Type->typeInfo()->m_nTypeSize,
 				s_Type->typeInfo()->m_nTypeAlignment
@@ -208,7 +208,7 @@ public:
 	{
 		return std::move(GetProperty(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size())));
 	}
-	
+
 	bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true)
 	{
 		return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);

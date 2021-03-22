@@ -45,7 +45,7 @@ public:
 	PAD(24); // 152
 	ZString m_sBodyId; // 176
 
-	union 
+	union
 	{
 		uint64_t m_nFlags;
 
@@ -70,7 +70,7 @@ public:
 			bool m_bAttentionOSDVisible : 1; // 194 (0xC2)
 			bool m_bBodyFound : 1; // & 2 (>> 1)
 			bool m_bBodyFoundPacified : 1; // & 4 (>> 2)
-			bool m_bBodyFoundMurdered: 1; // & 8 (>> 3)
+			bool m_bBodyFoundMurdered : 1; // & 8 (>> 3)
 			bool m_bCanOpenCPDoor : 1; // & 0x10 (>> 4)
 			bool m_bDisguiseClean : 1; // & 0x20 (>> 5)
 			bool m_bSpottedEnteringCloset : 1; // & 0x40 (>> 6)

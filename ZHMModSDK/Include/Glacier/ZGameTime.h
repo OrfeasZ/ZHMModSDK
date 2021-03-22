@@ -12,7 +12,7 @@ struct ZGameTime
 	}
 };
 
-class ZGameTimeManager : 
+class ZGameTimeManager :
 	public IComponentInterface
 {
 public:

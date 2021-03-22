@@ -3,6 +3,7 @@
 #include "ZPrimitives.h"
 
 #include <d3d12.h>
+#include <dxgi.h>
 
 class ZRenderSwapChain
 {

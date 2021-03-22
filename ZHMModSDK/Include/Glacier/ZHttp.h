@@ -32,20 +32,20 @@ public:
 	{
 		switch (p_Verb)
 		{
-		case EVerb::eGET:
-			return "GET";
+			case EVerb::eGET:
+				return "GET";
 
-		case EVerb::ePOST:
-			return "POST";
+			case EVerb::ePOST:
+				return "POST";
 
-		case EVerb::ePUT:
-			return "PUT";
+			case EVerb::ePUT:
+				return "PUT";
 
-		case EVerb::eHEAD:
-			return "HEAD";
+			case EVerb::eHEAD:
+				return "HEAD";
 
-		default:
-			return "UNKNOWN";
+			default:
+				return "UNKNOWN";
 		}
 	}
 
@@ -68,9 +68,9 @@ public:
 			else
 				s_URL += "&";
 
-			s_URL += it->m_key.c_str();
+			s_URL += it->first.c_str();
 			s_URL += "=";
-			s_URL += it->m_value.c_str();
+			s_URL += it->second.c_str();
 		}
 
 		return s_URL;

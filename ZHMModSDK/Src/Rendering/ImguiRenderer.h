@@ -13,13 +13,13 @@ namespace Rendering
 		struct FrameContext
 		{
 			size_t Index = 0;
-			
+
 			ID3D12CommandAllocator* CommandAllocator = nullptr;
 			ID3D12GraphicsCommandList* CommandList = nullptr;
-			
+
 			ID3D12Resource* BackBuffer = nullptr;
 			D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHandle = { 0 };
-			
+
 			ID3D12Fence* Fence = nullptr;
 			HANDLE FenceEvent = nullptr;
 			volatile uint64_t FenceValue = 0;
@@ -32,7 +32,7 @@ namespace Rendering
 
 	private:
 		static ImguiRenderer* m_Instance;
-		
+
 	public:
 		void Init();
 		void Shutdown();
@@ -52,7 +52,7 @@ namespace Rendering
 	private:
 		bool m_RendererSetup = false;
 		bool m_ImguiInitialized = false;
-		
+
 		UINT m_BufferCount = 0;
 		ID3D12DescriptorHeap* m_RtvDescriptorHeap = nullptr;
 		ID3D12DescriptorHeap* m_SrvDescriptorHeap = nullptr;
@@ -65,7 +65,7 @@ namespace Rendering
 		int64_t m_TicksPerSecond = 0;
 
 		volatile bool m_ImguiHasFocus = false;
-		
+
 		friend class D3D12Hooks;
 	};
 }

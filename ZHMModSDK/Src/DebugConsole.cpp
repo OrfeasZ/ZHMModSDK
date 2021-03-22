@@ -27,48 +27,48 @@ DebugConsole::DebugConsole() :
 	StartRedirecting();
 
 	m_InputThread = std::thread([&]
-	{
-		std::string s_ReadLine;
-
-		while (m_Running)
 		{
-			std::getline(std::cin, s_ReadLine);
+			std::string s_ReadLine;
 
-			if (s_ReadLine.size() == 0)
-				continue;
-
-			auto s_Parts = Util::StringUtils::Split(s_ReadLine, " ");
-
-			if (s_Parts.size() == 1)
+			while (m_Running)
 			{
-				if (s_Parts[0] == "unloadall")
-				{
-					ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
-				}
-				else if (s_Parts[0] == "reloadall")
-				{
-					ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
-				}
-			}
-			if (s_Parts.size() == 2)
-			{
-				if (s_Parts[0] == "load")
-				{
-					ModSDK::GetInstance()->GetModLoader()->LoadMod(s_Parts[1]);
-				}
-				else if (s_Parts[0] == "unload")
-				{
-					ModSDK::GetInstance()->GetModLoader()->UnloadMod(s_Parts[1]);
-				}
-				else if (s_Parts[1] == "reload")
-				{
-					ModSDK::GetInstance()->GetModLoader()->ReloadMod(s_Parts[1]);
-				}
-			}
+				std::getline(std::cin, s_ReadLine);
 
-			Events::OnConsoleCommand->Call();
-		}
-	});
+				if (s_ReadLine.size() == 0)
+					continue;
+
+				auto s_Parts = Util::StringUtils::Split(s_ReadLine, " ");
+
+				if (s_Parts.size() == 1)
+				{
+					if (s_Parts[0] == "unloadall")
+					{
+						ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
+					}
+					else if (s_Parts[0] == "reloadall")
+					{
+						ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
+					}
+				}
+				if (s_Parts.size() == 2)
+				{
+					if (s_Parts[0] == "load")
+					{
+						ModSDK::GetInstance()->GetModLoader()->LoadMod(s_Parts[1]);
+					}
+					else if (s_Parts[0] == "unload")
+					{
+						ModSDK::GetInstance()->GetModLoader()->UnloadMod(s_Parts[1]);
+					}
+					else if (s_Parts[1] == "reload")
+					{
+						ModSDK::GetInstance()->GetModLoader()->ReloadMod(s_Parts[1]);
+					}
+				}
+
+				Events::OnConsoleCommand->Call();
+			}
+		});
 }
 
 DebugConsole::~DebugConsole()
@@ -77,7 +77,7 @@ DebugConsole::~DebugConsole()
 
 	// Send a key event to the console so getline unblocks.
 	INPUT_RECORD s_Inputs[2];
-	
+
 	s_Inputs[0].EventType = KEY_EVENT;
 	s_Inputs[0].Event.KeyEvent.bKeyDown = TRUE;
 	s_Inputs[0].Event.KeyEvent.dwControlKeyState = 0;
@@ -85,18 +85,18 @@ DebugConsole::~DebugConsole()
 	s_Inputs[0].Event.KeyEvent.wRepeatCount = 1;
 	s_Inputs[0].Event.KeyEvent.wVirtualKeyCode = VK_RETURN;
 	s_Inputs[0].Event.KeyEvent.wVirtualScanCode = MapVirtualKeyA(VK_RETURN, MAPVK_VK_TO_VSC);
-	
+
 	s_Inputs[1] = s_Inputs[0];
 	s_Inputs[1].Event.KeyEvent.bKeyDown = FALSE;
 
 	DWORD s_Written;
 	WriteConsoleInputA(GetStdHandle(STD_INPUT_HANDLE), s_Inputs, 2, &s_Written);
-	
+
 	m_InputThread.detach();
 
 	FlushLoggers();
 	ClearLoggers();
-	
+
 	StopRedirecting();
 
 	FreeConsole();
@@ -112,7 +112,7 @@ void DebugConsole::StartRedirecting()
 	m_OriginalStdin = _dup(0);
 	m_OriginalStdout = _dup(1);
 	m_OriginalStderr = _dup(2);
-	
+
 	FILE* s_Con;
 	freopen_s(&s_Con, "CONIN$", "r", stdin);
 	freopen_s(&s_Con, "CONOUT$", "w", stderr);

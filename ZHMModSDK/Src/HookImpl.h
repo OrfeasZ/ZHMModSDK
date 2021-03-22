@@ -70,15 +70,15 @@ protected:
 		m_Target(p_Target)
 	{
 		Util::ProcessUtils::SuspendAllThreadsButCurrent();
-		
+
 		InitializeSRWLock(&m_Lock);
-		
+
 		HookRegistry::RegisterHook(this);
-		
+
 		// We push null here because that's what's used by the caller
 		// implementation to determine when we've ran out of detours.
 		m_Detours.push_back(nullptr);
-		
+
 		if (p_Target == nullptr)
 		{
 			Logger::Error("Could not find address for hook '{}'. This probably means that the game was updated and the SDK requires changes.", p_HookName);
@@ -87,9 +87,9 @@ protected:
 
 		// Make sure MinHook is initialized.
 		MH_Initialize();
-		
+
 		// Install the detour.
-		void* s_Original = nullptr;		
+		void* s_Original = nullptr;
 		auto s_Result = MH_CreateHook(m_Target, p_Detour, &s_Original);
 
 		if (s_Result != MH_OK)
@@ -117,7 +117,7 @@ protected:
 		Util::ProcessUtils::SuspendAllThreadsButCurrent();
 
 		InitializeSRWLock(&m_Lock);
-		
+
 		HookRegistry::RegisterHook(this);
 
 		if (p_Original == nullptr)
@@ -138,7 +138,7 @@ public:
 
 		m_Detours.clear();
 		m_Detours.push_back(nullptr);
-		
+
 		if (m_Target != nullptr)
 		{
 			MH_DisableHook(m_Target);
@@ -146,7 +146,7 @@ public:
 		}
 
 		ReleaseSRWLockExclusive(&m_Lock);
-		
+
 		HookRegistry::RemoveHook(this);
 	}
 
@@ -164,7 +164,7 @@ public:
 
 			if ((*it)->Context == p_Context)
 			{
-				delete *it;
+				delete* it;
 				it = m_Detours.erase(it);
 			}
 			else
@@ -185,7 +185,7 @@ public:
 
 		m_Detours.clear();
 		m_Detours.push_back(nullptr);
-		
+
 		ReleaseSRWLockExclusive(&m_Lock);
 	}
 
@@ -266,7 +266,7 @@ class PatternHook<ReturnType(Args...)> final : public HookImpl<ReturnType(Args..
 public:
 	PatternHook(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
 		HookImpl<ReturnType(Args...)>(p_HookName, GetTarget(p_Pattern, p_Mask), p_Detour)
-	{		
+	{
 	}
 
 private:
@@ -291,7 +291,7 @@ struct DetourTrampoline
 
 		Pad = 0xCCCCCCCC;
 	}
-	
+
 	uint16_t Mov;
 	uintptr_t FunctionAddress;
 	uint16_t Jmp;
@@ -311,14 +311,14 @@ public:
 		if (g_Trampolines == nullptr)
 		{
 			// Get system information. We use this later to find the first usable free memory region.
-			SYSTEM_INFO s_SysInfo{};
+			SYSTEM_INFO s_SysInfo {};
 			GetSystemInfo(&s_SysInfo);
 
 			auto s_AllocAddress = ALIGN_TO(reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr)) + ModSDK::GetInstance()->GetImageSize(), s_SysInfo.dwAllocationGranularity);
 			uintptr_t s_AllocEnd = s_AllocAddress + sizeof(DetourTrampoline) * MAX_TRAMPOLINES;
 
 			// Iterate through memory regions until we find one that's free and fits our data.
-			MEMORY_BASIC_INFORMATION s_MemInfo{};
+			MEMORY_BASIC_INFORMATION s_MemInfo {};
 			auto s_QueryResult = VirtualQuery(reinterpret_cast<void*>(s_AllocAddress), &s_MemInfo, sizeof(s_MemInfo));
 
 			while (s_QueryResult != 0 && (s_MemInfo.State != MEM_FREE || reinterpret_cast<uintptr_t>(s_MemInfo.BaseAddress) + s_MemInfo.RegionSize < s_AllocEnd))
@@ -335,11 +335,11 @@ public:
 			{
 				// We didn't find a free memory region. Just allocate wherever and pray for the best.
 				Logger::Warn("Could not find a free memory region for trampoline storage. Allocating anywhere and praying.");
-				s_AllocAddress = 0;				
+				s_AllocAddress = 0;
 			}
 
 			Logger::Trace("Attempting to allocate trampoline storage at {}.", fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
-			
+
 			g_Trampolines = static_cast<DetourTrampoline*>(VirtualAlloc(reinterpret_cast<void*>(s_AllocAddress), sizeof(DetourTrampoline) * MAX_TRAMPOLINES, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
 
 			if (g_Trampolines == nullptr)
@@ -349,7 +349,7 @@ public:
 			}
 
 			g_TrampolineCount = 0;
-			
+
 			Logger::Trace("Allocated trampoline storage at {} (requested address: {}).", fmt::ptr(g_Trampolines), fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
 		}
 
@@ -358,7 +358,7 @@ public:
 			Logger::Error("Could not create trampoline because we have reached the max number of trampolines allowed ({}). You can raise this limit by modifying MAX_TRAMPOLINES in HookImpl.h.", MAX_TRAMPOLINES);
 			return 0;
 		}
-		
+
 		auto* s_Trampoline = g_Trampolines + g_TrampolineCount;
 		*s_Trampoline = DetourTrampoline(p_TargetAddress);
 
@@ -385,7 +385,7 @@ class PatternCallHook<ReturnType(Args...)> final : public HookImpl<ReturnType(Ar
 public:
 	PatternCallHook(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
 		HookImpl<ReturnType(Args...)>(p_HookName, InstallDetourAndGetOriginal(p_HookName, p_Pattern, p_Mask, p_Detour))
-	{		
+	{
 	}
 
 	~PatternCallHook() override
@@ -452,11 +452,11 @@ private:
 		// Cast down to int and rewrite the call offset.
 		DWORD s_OldProtect;
 		VirtualProtect(reinterpret_cast<void*>(m_Target), 5, PAGE_EXECUTE_READWRITE, &s_OldProtect);
-		
+
 		*reinterpret_cast<int32_t*>(m_Target + 1) = static_cast<int32_t>(s_Distance);
-		
+
 		VirtualProtect(reinterpret_cast<void*>(m_Target), 5, s_OldProtect, nullptr);
-		
+
 		return reinterpret_cast<typename Hook<ReturnType(Args...)>::OriginalFunc_t>(s_OriginalFunction);
 	}
 
@@ -490,7 +490,7 @@ private:
 
 		if (s_Target == 0)
 			return nullptr;
-		
+
 		const uintptr_t s_OriginalFunction = s_Target + 5 + *reinterpret_cast<int32_t*>(s_Target + 1);
 		return reinterpret_cast<void*>(s_OriginalFunction);
 	}
@@ -526,7 +526,7 @@ private:
 			Logger::Error("Could not find requested function '{}' in module '{}' for hook '{}' (error: {}).", p_FunctionName, p_ModuleName, p_HookName, GetLastError());
 			return nullptr;
 		}
-	
+
 		return reinterpret_cast<void*>(s_Function);
 	}
 };

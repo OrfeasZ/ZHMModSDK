@@ -19,13 +19,13 @@ class ScopedDestructible
 public:
 	ScopedDestructible(IDestructible** p_Destructible) :
 		m_Destructible(p_Destructible)
-	{		
+	{
 	}
 
 	~ScopedDestructible()
 	{
 		if (*m_Destructible)
-			delete *m_Destructible;
+			delete* m_Destructible;
 	}
 
 private:

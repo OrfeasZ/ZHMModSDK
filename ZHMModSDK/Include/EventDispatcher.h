@@ -14,8 +14,8 @@ protected:
 		void* Context;
 		void* Listener;
 	};
-	
-protected:	
+
+protected:
 	virtual void AddListenerInternal(void* p_Context, void* p_Listener) = 0;
 	virtual void RemoveListenerInternal(void* p_Listener) = 0;
 	virtual EventListenerRegistration** GetRegistrations() = 0;
@@ -85,7 +85,7 @@ public:
 	void Call()
 	{
 		LockForCall();
-		
+
 		const auto* s_Registrations = GetRegistrations();
 
 		auto* s_Registration = *s_Registrations;

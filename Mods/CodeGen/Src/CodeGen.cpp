@@ -243,13 +243,13 @@ std::string NormalizeName(STypeID* p_Type)
 		auto s_ElementType = reinterpret_cast<IArrayType*>(p_Type->typeInfo())->m_pArrayElementType;
 		return "TFixedArray<" + NormalizeName(s_ElementType) + ", " + std::to_string(reinterpret_cast<IArrayType*>(p_Type->typeInfo())->fixedArraySize()) + ">";
 	}
-	
+
 	if (p_Type->typeInfo()->isArray())
 	{
 		auto s_ElementType = reinterpret_cast<IArrayType*>(p_Type->typeInfo())->m_pArrayElementType;
 		return "TArray<" + NormalizeName(s_ElementType) + ">";
 	}
-	
+
 	auto s_DotIndex = s_TypeName.find_first_of('.');
 
 	while (s_DotIndex != std::string::npos)
@@ -264,7 +264,7 @@ std::string NormalizeName(STypeID* p_Type)
 void GenerateArrayJsonWriter(STypeID* p_ElementType, std::ostream& p_Stream, const std::string& p_ValueName, int p_Depth = 0, const std::string& p_Indentation = "")
 {
 	p_Stream << p_Indentation << "\tp_Stream << \"[\";" << std::endl;
-	
+
 	p_Stream << p_Indentation << "\tfor (size_t i = 0; i < " << p_ValueName << ".size(); ++i)" << std::endl;
 	p_Stream << p_Indentation << "\t{" << std::endl;
 	p_Stream << p_Indentation << "\t\tauto& s_Item" << p_Depth << " = " << p_ValueName << "[i];" << std::endl;
@@ -304,7 +304,7 @@ void GenerateArrayJsonWriter(STypeID* p_ElementType, std::ostream& p_Stream, con
 	p_Stream << p_Indentation << "\t\t\tp_Stream << \",\";" << std::endl;
 
 	p_Stream << p_Indentation << "\t}" << std::endl;
-	
+
 	p_Stream << p_Indentation << "\tp_Stream << \"]\";" << std::endl;
 }
 
@@ -436,7 +436,7 @@ void GenerateArraySimpleJsonReader(STypeID* p_ElementType, std::ostream& p_Strea
 		}
 
 		p_Stream << p_Indentation << "\t}" << std::endl;
-	}	
+	}
 }
 
 void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
@@ -554,7 +554,7 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 			// TODO: Remove this once we support namespacing.
 			if (std::string(s_Prop.m_pType->typeInfo()->m_pTypeName).find_first_of('.') != std::string::npos && !s_Prop.m_pType->typeInfo()->isEnum())
 				return;
-			
+
 			if (s_Prop.m_pType->typeInfo()->isArray() || s_Prop.m_pType->typeInfo()->isFixedArray())
 			{
 				if (s_Prop.m_pType->typeInfo()->m_pTypeName != std::string("TArray"))
@@ -583,7 +583,7 @@ void CodeGen::GenerateReflectiveClass(STypeID* p_Type)
 					}
 				}
 			}
-			else if (ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).startsWith("TPair<") || 
+			else if (ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).startsWith("TPair<") ||
 				ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).startsWith("TMap<") ||
 				ZString(s_Prop.m_pType->typeInfo()->m_pTypeName).startsWith("TMultiMap<"))
 			{
@@ -877,7 +877,7 @@ void CodeGen::GenerateReflectiveEnum(STypeID* p_Type)
 	auto s_Type = reinterpret_cast<IEnumType*>(p_Type->typeInfo());
 
 	std::string s_EnumTypeName = s_Type->m_pTypeName;
-	
+
 	std::ostringstream s_Stream;
 
 	s_Stream << "// 0x" << std::hex << std::uppercase << p_Type << " (Size: 0x" << std::hex << std::uppercase << s_Type->m_nTypeSize << ")" << std::dec << std::endl;
@@ -1108,7 +1108,7 @@ void CodeGen::GenerateEnumsFiles()
 	m_EnumsSourceFile << "std::unordered_map<std::string, std::unordered_map<int32_t, std::string>>* ZHMEnums::g_Enums = nullptr;" << std::endl;
 	m_EnumsSourceFile << "ZHMEnums::EnumRegistrar ZHMEnums::g_Registrar;" << std::endl;
 	m_EnumsSourceFile << std::endl;
-	
+
 	m_EnumsSourceFile << "std::string ZHMEnums::GetEnumValueName(const std::string& p_TypeName, int32_t p_Value)" << std::endl;
 	m_EnumsSourceFile << "{" << std::endl;
 	m_EnumsSourceFile << "\tauto s_EnumIt = g_Enums->find(p_TypeName);" << std::endl;
@@ -1124,7 +1124,7 @@ void CodeGen::GenerateEnumsFiles()
 	m_EnumsSourceFile << "\treturn s_ValueIt->second;" << std::endl;
 	m_EnumsSourceFile << "}" << std::endl;
 	m_EnumsSourceFile << std::endl;
-	
+
 	m_EnumsSourceFile << "int32_t ZHMEnums::GetEnumValueByName(const std::string& p_TypeName, std::string_view p_Name)" << std::endl;
 	m_EnumsSourceFile << "{" << std::endl;
 	m_EnumsSourceFile << "\tauto s_EnumIt = g_Enums->find(p_TypeName);" << std::endl;
@@ -1139,7 +1139,7 @@ void CodeGen::GenerateEnumsFiles()
 	m_EnumsSourceFile << "\treturn 0;" << std::endl;
 	m_EnumsSourceFile << "}" << std::endl;
 	m_EnumsSourceFile << std::endl;
-	
+
 	m_EnumsSourceFile << "bool ZHMEnums::IsTypeNameEnum(const std::string& p_TypeName)" << std::endl;
 	m_EnumsSourceFile << "{" << std::endl;
 	m_EnumsSourceFile << "\treturn g_Enums->find(p_TypeName) != g_Enums->end();" << std::endl;

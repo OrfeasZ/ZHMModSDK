@@ -13,10 +13,10 @@ DECLARE_PLUGIN_DETOUR(NoPause, bool, GetOption, const ZString& p_OptionName, boo
 {
 	if (std::string(p_OptionName.c_str()) == "PauseOnFocusLoss")
 		return HookResult<bool>(HookAction::Return(), false);
-	
+
 	if (std::string(p_OptionName.c_str()) == "NO_MINIMIZE_FOCUSLOSS")
 		return HookResult<bool>(HookAction::Return(), true);
-	
+
 	return HookResult<bool>(HookAction::Continue());
 }
 
@@ -24,7 +24,7 @@ DECLARE_PLUGIN_DETOUR(NoPause, LRESULT, WndProc, ZApplicationEngineWin32* th, HW
 {
 	if (p_Message == WM_ACTIVATEAPP)
 		return HookResult<LRESULT>(HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam));
-	
+
 	return HookResult<LRESULT>(HookAction::Continue());
 }
 

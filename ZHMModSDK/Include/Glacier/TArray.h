@@ -7,7 +7,7 @@ class TIterator
 {
 protected:
 	TIterator(T* p_Current) : m_pCurrent(p_Current) {}
-	
+
 public:
 	T* m_pCurrent;
 };
@@ -59,7 +59,7 @@ public:
 
 		if (!fitsInline() || !hasInlineFlag())
 			free(m_pBegin);
-		
+
 		m_pBegin = m_pEnd = m_pAllocationEnd = nullptr;
 	}
 
@@ -67,7 +67,7 @@ public:
 	{
 		if (fitsInline() && hasInlineFlag())
 			return m_nInlineCount;
-		
+
 		return (reinterpret_cast<uintptr_t>(m_pEnd) - reinterpret_cast<uintptr_t>(m_pBegin)) / sizeof(T);
 	}
 
@@ -88,7 +88,7 @@ public:
 	{
 		if (fitsInline() && hasInlineFlag())
 			return reinterpret_cast<T*>(&m_pBegin);
-		
+
 		return m_pBegin;
 	}
 
@@ -103,7 +103,7 @@ public:
 	inline T* begin() const
 	{
 		if (fitsInline() && hasInlineFlag())
-			return (T*) (&m_pBegin);
+			return (T*)(&m_pBegin);
 
 		return m_pBegin;
 	}

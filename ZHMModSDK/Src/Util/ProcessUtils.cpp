@@ -116,25 +116,25 @@ void ProcessUtils::SuspendAllThreadsButCurrent()
 {
 	if (g_SuspendedThreads != nullptr)
 		return;
-	
+
 	g_SuspendedThreads = new std::unordered_set<HANDLE>();
-	
+
 	HANDLE s_Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
 
 	if (s_Snapshot == INVALID_HANDLE_VALUE)
 		return;
 
 	auto s_CurrentThread = GetCurrentThreadId();
-	
-	THREADENTRY32 s_ThreadEntry{};
+
+	THREADENTRY32 s_ThreadEntry {};
 	s_ThreadEntry.dwSize = sizeof(s_ThreadEntry);
-	
+
 	if (Thread32First(s_Snapshot, &s_ThreadEntry))
 	{
-		do 
+		do
 		{
-			if (s_ThreadEntry.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(s_ThreadEntry.th32OwnerProcessID) && 
-				s_ThreadEntry.th32ThreadID != s_CurrentThread && 
+			if (s_ThreadEntry.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(s_ThreadEntry.th32OwnerProcessID) &&
+				s_ThreadEntry.th32ThreadID != s_CurrentThread &&
 				s_ThreadEntry.th32OwnerProcessID == GetCurrentProcessId())
 			{
 				HANDLE s_Thread = OpenThread(THREAD_ALL_ACCESS, false, s_ThreadEntry.th32ThreadID);
@@ -149,12 +149,12 @@ void ProcessUtils::SuspendAllThreadsButCurrent()
 					Logger::Trace("Could not open thread {} to suspend. Error: {}.", s_ThreadEntry.th32ThreadID, GetLastError());
 				}
 			}
-			
+
 			s_ThreadEntry.dwSize = sizeof(s_ThreadEntry);
 		}
 		while (Thread32Next(s_Snapshot, &s_ThreadEntry));
 	}
-	
+
 	CloseHandle(s_Snapshot);
 
 	Logger::Trace("Suspending {} threads.", g_SuspendedThreads->size());

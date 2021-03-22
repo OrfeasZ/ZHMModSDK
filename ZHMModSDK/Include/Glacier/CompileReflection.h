@@ -15,103 +15,103 @@
 
 namespace detail
 {
-    template <class T>
-    constexpr std::string_view ComputeTypeName();
+	template <class T>
+	constexpr std::string_view ComputeTypeName();
 
-    template <>
-    constexpr std::string_view ComputeTypeName<void>()
-    {
-        return "void";
-    }
-	
-    using TypeNameProber = void;
-
-    template <class T>
-    constexpr std::string_view WrappedTypeName()
-    {
-        return __FUNCSIG__;
-    }
-
-    constexpr std::size_t WrappedTypeNamePrefixLength()
+	template <>
+	constexpr std::string_view ComputeTypeName<void>()
 	{
-        return WrappedTypeName<TypeNameProber>().find(ComputeTypeName<TypeNameProber>());
-    }
+		return "void";
+	}
 
-    constexpr std::size_t WrappedTypeNameSuffixLength()
+	using TypeNameProber = void;
+
+	template <class T>
+	constexpr std::string_view WrappedTypeName()
 	{
-        return WrappedTypeName<TypeNameProber>().length()
-            - WrappedTypeNamePrefixLength()
-            - ComputeTypeName<TypeNameProber>().length();
-    }
+		return __FUNCSIG__;
+	}
 
-    template <class T>
-    constexpr std::string_view ComputeTypeName()
-    {
-        constexpr auto s_WrappedName = detail::WrappedTypeName<T>();
-        constexpr auto s_PrefixLength = detail::WrappedTypeNamePrefixLength();
-        constexpr auto s_SuffixLength = detail::WrappedTypeNameSuffixLength();
-        constexpr auto s_TypeNameLength = s_WrappedName.length() - s_PrefixLength - s_SuffixLength;
+	constexpr std::size_t WrappedTypeNamePrefixLength()
+	{
+		return WrappedTypeName<TypeNameProber>().find(ComputeTypeName<TypeNameProber>());
+	}
 
-        return s_WrappedName.substr(s_PrefixLength, s_TypeNameLength);
-    }
+	constexpr std::size_t WrappedTypeNameSuffixLength()
+	{
+		return WrappedTypeName<TypeNameProber>().length()
+			- WrappedTypeNamePrefixLength()
+			- ComputeTypeName<TypeNameProber>().length();
+	}
+
+	template <class T>
+	constexpr std::string_view ComputeTypeName()
+	{
+		constexpr auto s_WrappedName = detail::WrappedTypeName<T>();
+		constexpr auto s_PrefixLength = detail::WrappedTypeNamePrefixLength();
+		constexpr auto s_SuffixLength = detail::WrappedTypeNameSuffixLength();
+		constexpr auto s_TypeNameLength = s_WrappedName.length() - s_PrefixLength - s_SuffixLength;
+
+		return s_WrappedName.substr(s_PrefixLength, s_TypeNameLength);
+	}
 
 	template <std::size_t N>
 	struct ZHMTypeNameData
-    {
-        std::array<char, N> Data;
-        std::size_t Size;
-    };
+	{
+		std::array<char, N> Data;
+		std::size_t Size;
+	};
 
 	/*
 	 * Compute the ZHM-specific typename of a type.
-	 * 
+	 *
 	 * This basically takes the demangled MSVC typename and removes and instances
 	 * of 'class ' and 'struct ' and replaces '::' with '.'.
-	 * 
+	 *
 	 * For example "class TArray<struct SomeNamespace::SomeType>" becomes
 	 * "TArray<SomeNamespace.SomeType>".
 	 */
-    template <std::size_t N>
-    constexpr auto ComputeZHMTypeName(std::string_view p_TypeName) noexcept
-    {
-        constexpr auto s_ClassPrefix = std::string_view("class ");
-        constexpr auto s_StructPrefix = std::string_view("struct ");
+	template <std::size_t N>
+	constexpr auto ComputeZHMTypeName(std::string_view p_TypeName) noexcept
+	{
+		constexpr auto s_ClassPrefix = std::string_view("class ");
+		constexpr auto s_StructPrefix = std::string_view("struct ");
 
-        auto s_ZHMTypeNameStorage = std::array<char, N>();
+		auto s_ZHMTypeNameStorage = std::array<char, N>();
 
-        std::size_t s_FinalSize = 0;
+		std::size_t s_FinalSize = 0;
 
-        for (std::size_t i = 0; i < N; ++i)
-        {
-            if (p_TypeName[i] == 'c' && i + s_ClassPrefix.size() < N &&
-                p_TypeName.substr(i, s_ClassPrefix.size()) == s_ClassPrefix)
-            {
-                i += s_ClassPrefix.size() - 1;
-                continue;
-            }
+		for (std::size_t i = 0; i < N; ++i)
+		{
+			if (p_TypeName[i] == 'c' && i + s_ClassPrefix.size() < N &&
+				p_TypeName.substr(i, s_ClassPrefix.size()) == s_ClassPrefix)
+			{
+				i += s_ClassPrefix.size() - 1;
+				continue;
+			}
 
-            if (p_TypeName[i] == 's' && i + s_StructPrefix.size() < N &&
-                p_TypeName.substr(i, s_StructPrefix.size()) == s_StructPrefix)
-            {
-                i += s_StructPrefix.size() - 1;
-                continue;
-            }
+			if (p_TypeName[i] == 's' && i + s_StructPrefix.size() < N &&
+				p_TypeName.substr(i, s_StructPrefix.size()) == s_StructPrefix)
+			{
+				i += s_StructPrefix.size() - 1;
+				continue;
+			}
 
-            if (p_TypeName[i] == ':' && i + 1 < N && p_TypeName[i + 1] == ':')
-            {
-                ++i;
-                s_ZHMTypeNameStorage[s_FinalSize++] = '.';
-                continue;
-            }
+			if (p_TypeName[i] == ':' && i + 1 < N && p_TypeName[i + 1] == ':')
+			{
+				++i;
+				s_ZHMTypeNameStorage[s_FinalSize++] = '.';
+				continue;
+			}
 
-            s_ZHMTypeNameStorage[s_FinalSize++] = p_TypeName[i];
-        }
+			s_ZHMTypeNameStorage[s_FinalSize++] = p_TypeName[i];
+		}
 
-        return ZHMTypeNameData<N>{ s_ZHMTypeNameStorage, s_FinalSize };
-    }
-	
+		return ZHMTypeNameData<N>{ s_ZHMTypeNameStorage, s_FinalSize };
+	}
+
 	template <class T>
-    inline constexpr auto ZHMTypeName_Storage = ComputeZHMTypeName<ComputeTypeName<T>().size()>(ComputeTypeName<T>());
+	inline constexpr auto ZHMTypeName_Storage = ComputeZHMTypeName<ComputeTypeName<T>().size()>(ComputeTypeName<T>());
 }
 
 /**
@@ -139,7 +139,7 @@ template <> inline constexpr std::string_view ZHMTypeName<float> = "float32";
 template <> inline constexpr std::string_view ZHMTypeName<double> = "float64";
 
 /**
- * The CRC32 of a type for use in lookups with the reflection engine. 
+ * The CRC32 of a type for use in lookups with the reflection engine.
  */
 template <class T>
 inline constexpr uint32_t ZHMTypeId = Hash::Crc32(ZHMTypeName<T>.data(), ZHMTypeName<T>.size());

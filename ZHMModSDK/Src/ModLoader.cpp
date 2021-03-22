@@ -14,7 +14,7 @@
 
 ModLoader::ModLoader()
 {
-	
+
 }
 
 ModLoader::~ModLoader()
@@ -27,19 +27,19 @@ void ModLoader::Startup()
 {
 	// Notify all loaded mods that the engine has intialized once it has.
 	Hooks::Engine_Init->AddDetour(this, [](void* p_Ctx, auto p_Hook, void* th, void* a2)
-	{
-		auto s_Result = p_Hook->CallOriginal(th, a2);
+		{
+			auto s_Result = p_Hook->CallOriginal(th, a2);
 
-		Logger::Debug("Engine was initialized. Notifying mods.");
+			Logger::Debug("Engine was initialized. Notifying mods.");
 
-		auto s_Loader = static_cast<ModLoader*>(p_Ctx);
+			auto s_Loader = static_cast<ModLoader*>(p_Ctx);
 
-		for (auto& s_Mod : s_Loader->m_LoadedMods)
-			s_Mod.second.PluginInterface->OnEngineInitialized();
+			for (auto& s_Mod : s_Loader->m_LoadedMods)
+				s_Mod.second.PluginInterface->OnEngineInitialized();
 
-		return HookResult<bool>(HookAction::Return{}, s_Result);
-	});
-	
+			return HookResult<bool>(HookAction::Return {}, s_Result);
+		});
+
 	LoadAllMods();
 }
 
@@ -54,13 +54,13 @@ void ModLoader::LoadAllMods()
 
 	std::filesystem::path s_ExePath(s_ExePathStr);
 	auto s_ExeDir = s_ExePath.parent_path();
-	
+
 	const auto s_ModPath = absolute(s_ExeDir / "mods");
-	
+
 	if (exists(s_ModPath) && is_directory(s_ModPath))
 	{
 		Logger::Debug("Looking for mods in '{}'...", s_ModPath.string());
-		
+
 		for (const auto& s_Entry : std::filesystem::directory_iterator(s_ModPath))
 		{
 			if (!s_Entry.is_regular_file())
@@ -81,7 +81,7 @@ void ModLoader::LoadAllMods()
 void ModLoader::LoadMod(const std::string& p_Name)
 {
 	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
-	
+
 	if (m_LoadedMods.find(s_Name) != m_LoadedMods.end())
 	{
 		Logger::Warn("A mod with the same name ({}) is already loaded. Skipping.", p_Name);
@@ -98,12 +98,12 @@ void ModLoader::LoadMod(const std::string& p_Name)
 	auto s_ExeDir = s_ExePath.parent_path();
 
 	const auto s_ModulePath = absolute(s_ExeDir / ("mods/" + p_Name + ".dll"));
-	
+
 	if (!exists(s_ModulePath) || !is_regular_file(s_ModulePath))
 	{
 		Logger::Warn("Could not find mod '{}'.", p_Name);
 	}
-	
+
 	Logger::Info("Attempting to load mod '{}'.", p_Name);
 	Logger::Debug("Module path is '{}'.", s_ModulePath.string().c_str());
 
@@ -134,12 +134,12 @@ void ModLoader::LoadMod(const std::string& p_Name)
 		FreeLibrary(s_Module);
 		return;
 	}
-	
+
 	s_PluginInterface->Init();
 
 	Logger::Info("Initialized mod '{}'.", p_Name);
 
-	LoadedMod s_Mod{};
+	LoadedMod s_Mod {};
 	s_Mod.Module = s_Module;
 	s_Mod.PluginInterface = s_PluginInterface;
 
