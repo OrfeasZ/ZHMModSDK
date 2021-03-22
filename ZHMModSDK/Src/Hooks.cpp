@@ -114,3 +114,9 @@ PATTERN_HOOK(
 	"xxxxxxxxxxxxxxxx",
 	Check_SSL_Cert, bool(void*, void*)
 )
+
+PATTERN_HOOK(
+	"\x40\x53\x48\x83\xEC\x00\x41\xF7\x00",
+	"xxxxx?xxx",
+	ZApplicationEngineWin32_OnDebugInfo, void(ZApplicationEngineWin32* th, const ZString& info, const ZString& details)
+)

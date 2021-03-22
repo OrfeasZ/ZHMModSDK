@@ -47,4 +47,5 @@ public:
 	static Hook<HRESULT(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)>* D3D12CreateDevice;
 	static Hook<void(ZRenderSwapChain* th, void* a2, bool a3)>* ZRenderSwapChain_Resize;
 	static Hook<bool(void*, void*)>* Check_SSL_Cert;
+	static Hook<void(ZApplicationEngineWin32* th, const ZString& info, const ZString& details)>* ZApplicationEngineWin32_OnDebugInfo;
 };

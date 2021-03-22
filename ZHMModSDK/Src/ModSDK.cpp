@@ -79,5 +79,15 @@ bool ModSDK::Startup()
 	
 	m_ModLoader->Startup();
 
+	Hooks::ZApplicationEngineWin32_OnDebugInfo->AddDetour(this, [](void*, auto p_Hook, ZApplicationEngineWin32*, const ZString& p_Info, const ZString& p_Details)
+	{
+		Logger::Debug("Debug info '{}': {}", p_Info.c_str(), p_Details.c_str());
+
+		/*while (!GetAsyncKeyState(VK_F5))
+			Sleep(100);*/
+		
+		return HookResult<void>(HookAction::Continue());
+	});
+
 	return true;
 }
