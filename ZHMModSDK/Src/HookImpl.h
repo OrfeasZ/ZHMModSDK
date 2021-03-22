@@ -48,6 +48,15 @@ public:
 		for (auto s_Hook : *g_Hooks)
 			s_Hook->RemoveDetoursWithContext(p_Context);
 	}
+
+	static void ClearAllDetours()
+	{
+		if (g_Hooks == nullptr)
+			return;
+
+		for (auto s_Hook : *g_Hooks)
+			s_Hook->RemoveAllDetours();
+	}
 };
 
 template <class T>
@@ -162,6 +171,18 @@ public:
 				++it;
 			}
 		}
+
+		ReleaseSRWLockExclusive(&m_Lock);
+	}
+
+	void RemoveAllDetours() override
+	{
+		AcquireSRWLockExclusive(&m_Lock);
+
+		for (auto it = m_Detours.begin(); it != m_Detours.end(); ++it)
+			delete* it;
+
+		m_Detours.clear();
 
 		ReleaseSRWLockExclusive(&m_Lock);
 	}

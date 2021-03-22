@@ -62,6 +62,8 @@ ModSDK::~ModSDK()
 	delete m_DebugConsole;
 #endif
 
+	HookRegistry::ClearAllDetours();
+	
 	Trampolines::ClearTrampolines();
 }
 

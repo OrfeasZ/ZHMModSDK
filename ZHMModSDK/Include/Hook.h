@@ -9,6 +9,7 @@ class HookBase : public IDestructible
 public:
 	~HookBase() override = default;
 	virtual void RemoveDetoursWithContext(void* p_Context) = 0;
+	virtual void RemoveAllDetours() = 0;
 	
 protected:
 	struct Detour
