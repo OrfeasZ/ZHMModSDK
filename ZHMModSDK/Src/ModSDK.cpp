@@ -5,10 +5,9 @@
 #include "HookImpl.h"
 #include "Hooks.h"
 #include "Logging.h"
-#include "Rendering/ImguiRenderer.h"
 #include "Util/ProcessUtils.h"
-
 #include "Glacier/ZString.h"
+#include "Rendering/D3D12Renderer.h"
 
 #if _DEBUG
 #include "DebugConsole.h"
@@ -63,7 +62,7 @@ ModSDK::~ModSDK()
 {
 	delete m_ModLoader;
 
-	Rendering::ImguiRenderer::GetInstance()->Shutdown();
+	Rendering::D3D12Renderer::Shutdown();
 
 	HookRegistry::ClearAllDetours();
 
@@ -75,7 +74,6 @@ ModSDK::~ModSDK()
 
 	delete m_DebugConsole;
 #endif
-
 }
 
 bool ModSDK::Startup()
@@ -86,7 +84,7 @@ bool ModSDK::Startup()
 	m_DebugConsole->StartRedirecting();
 #endif
 
-	Rendering::ImguiRenderer::GetInstance()->Init();
+	Rendering::D3D12Renderer::Init();
 
 	m_ModLoader->Startup();
 

@@ -33,7 +33,9 @@ target_link_libraries(ZHMModSDK PUBLIC
 	minhook
 	spdlog
 	imgui
+	DirectXTK12
 	d3d12.lib
 	dxgi.lib
 	dxguid.lib
+	runtimeobject.lib
 )

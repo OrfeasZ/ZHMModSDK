@@ -186,3 +186,6 @@ public:
 
 #define DECLARE_DETOUR_WITH_CONTEXT(ContextType, ReturnType, DetourName, ...) \
 	HookResult<ReturnType> ContextType::DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
+
+#define DEFINE_STATIC_DETOUR(ReturnType, DetourName, ...) static HookResult<ReturnType> DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
+#define DECLARE_STATIC_DETOUR(ParentType, ReturnType, DetourName, ...) HookResult<ReturnType> ParentType::DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)

@@ -1,7 +1,7 @@
 // Thanks to SpecialK source code and its creator (https://discourse.differentk.fyi/)
 // for providing some helpful pointers on how to properly sync rendering.
 
-#include "ImguiRenderer.h"
+#include "ImGuiRenderer.h"
 
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
@@ -9,79 +9,51 @@
 #include <imgui.h>
 #include <backends/imgui_impl_dx12.h>
 
-#include "D3D12Hooks.h"
-#include "D3DUtils.h"
 #include "Hooks.h"
 #include "Logging.h"
-#include "HookImpl.h"
 
 #include <Glacier/ZApplicationEngineWin32.h>
 
 #include <UI/Console.h>
 
-using namespace Rendering;
+#include "Rendering/D3DUtils.h"
 
-ImguiRenderer* ImguiRenderer::m_Instance = nullptr;
+using namespace Rendering::Renderers;
 
-ImguiRenderer* ImguiRenderer::GetInstance()
+bool ImGuiRenderer::m_RendererSetup = false;
+bool ImGuiRenderer::m_ImguiInitialized = false;
+
+UINT ImGuiRenderer::m_BufferCount = 0;
+ID3D12DescriptorHeap* ImGuiRenderer::m_RtvDescriptorHeap = nullptr;
+ID3D12DescriptorHeap* ImGuiRenderer::m_SrvDescriptorHeap = nullptr;
+ID3D12CommandQueue* ImGuiRenderer::m_CommandQueue = nullptr;
+ImGuiRenderer::FrameContext* ImGuiRenderer::m_FrameContext = nullptr;
+IDXGISwapChain3* ImGuiRenderer::m_SwapChain = nullptr;
+HWND ImGuiRenderer::m_Hwnd = nullptr;
+
+int64_t ImGuiRenderer::m_Time = 0;
+int64_t ImGuiRenderer::m_TicksPerSecond = 0;
+
+volatile bool ImGuiRenderer::m_ImguiHasFocus = false;
+
+void ImGuiRenderer::Init()
 {
-	if (m_Instance == nullptr)
-		m_Instance = new ImguiRenderer();
-
-	return m_Instance;
-}
-
-void ImguiRenderer::Init()
-{
-	D3D12Hooks::InstallHooks();
-
 	QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
 	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
 
-	// If we're running in debug mode we should enable the D3D debug layer.
-#if _DEBUG
-	Hooks::D3D12CreateDevice->AddDetour(this, [](void*, Hook<HRESULT(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)>* p_Hook, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
-		{
-			Logger::Debug("Creating D3D device. Enabling debug layer.");
-
-			ID3D12Debug* s_Debug = nullptr;
-
-			if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&s_Debug))))
-			{
-				s_Debug->EnableDebugLayer();
-			}
-
-			const auto s_Result = p_Hook->CallOriginal(pAdapter, MinimumFeatureLevel, riid, ppDevice);
-
-			if (s_Debug)
-			{
-				ID3D12InfoQueue* s_InfoQueue = nullptr;
-				(*reinterpret_cast<ID3D12Device**>(ppDevice))->QueryInterface(IID_PPV_ARGS(&s_InfoQueue));
-
-				s_InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, false);
-				s_InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-				s_InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false);
-				s_InfoQueue->Release();
-
-				s_Debug->Release();
-			}
-
-			return HookResult<HRESULT>(HookAction::Return(), s_Result);
-		});
-#endif
-
-	Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(this, &ImguiRenderer::WndProc);
-	Hooks::ZKeyboardWindows_Update->AddDetour(this, &ImguiRenderer::ZKeyboardWindows_Update);
+	Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(nullptr, &ImGuiRenderer::WndProc);
+	Hooks::ZKeyboardWindows_Update->AddDetour(nullptr, &ImGuiRenderer::ZKeyboardWindows_Update);
 }
 
-void ImguiRenderer::Shutdown()
+void ImGuiRenderer::Shutdown()
 {
-	D3D12Hooks::RemoveHooks();
+	Hooks::ZApplicationEngineWin32_MainWindowProc->RemoveDetour(&ImGuiRenderer::WndProc);
+	Hooks::ZKeyboardWindows_Update->RemoveDetour(&ImGuiRenderer::ZKeyboardWindows_Update);
 
-	ResetRenderer();
+	OnReset();
 }
 
-void ImguiRenderer::Draw()
+void ImGuiRenderer::Draw()
 {
 	ImGui_ImplDX12_NewFrame();
 
@@ -124,12 +96,12 @@ void ImguiRenderer::Draw()
 	}
 }
 
-void ImguiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
+void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
 	if (!SetupRenderer(p_SwapChain))
 	{
 		Logger::Error("Failed to set up ImGui renderer.");
-		ResetRenderer();
+		OnReset();
 		return;
 	}
 
@@ -207,7 +179,7 @@ void ImguiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 		s_Frame.FenceValue = s_SyncValue;
 }
 
-bool ImguiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
+bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 {
 	if (m_RendererSetup)
 		return true;
@@ -364,7 +336,7 @@ bool ImguiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	return true;
 }
 
-void ImguiRenderer::ResetRenderer()
+void ImGuiRenderer::OnReset()
 {
 	Logger::Debug("Resetting renderer.");
 
@@ -442,7 +414,7 @@ void ImguiRenderer::ResetRenderer()
 	m_Hwnd = nullptr;
 }
 
-void ImguiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
+void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 {
 	if (!m_RendererSetup || m_CommandQueue || !m_SwapChain)
 		return;
@@ -450,7 +422,7 @@ void ImguiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 	m_CommandQueue = p_CommandQueue;
 }
 
-void ImguiRenderer::WaitForGpu(FrameContext* p_Frame)
+void ImGuiRenderer::WaitForGpu(FrameContext* p_Frame)
 {
 	if (p_Frame->Recording)
 		ExecuteCmdList(p_Frame);
@@ -469,7 +441,7 @@ void ImguiRenderer::WaitForGpu(FrameContext* p_Frame)
 	p_Frame->FenceValue = s_SyncValue;
 }
 
-void ImguiRenderer::ExecuteCmdList(FrameContext* p_Frame)
+void ImGuiRenderer::ExecuteCmdList(FrameContext* p_Frame)
 {
 	if (FAILED(p_Frame->CommandList->Close()))
 		return;
@@ -483,7 +455,7 @@ void ImguiRenderer::ExecuteCmdList(FrameContext* p_Frame)
 	m_CommandQueue->ExecuteCommandLists(1, s_CommandLists);
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(ImguiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
+DECLARE_STATIC_DETOUR(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
 {
 	if (ImGui::GetCurrentContext() == nullptr)
 		return HookResult<LRESULT>(HookAction::Continue());
@@ -583,7 +555,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ImguiRenderer, LRESULT, WndProc, ZApplicationEngineW
 	return HookResult<LRESULT>(HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam));
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(ImguiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
+DECLARE_STATIC_DETOUR(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
 {
 	// Don't process input while the imgui overlay has focus.
 	if (m_ImguiHasFocus)

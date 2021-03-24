@@ -114,6 +114,9 @@ static std::unordered_set<HANDLE>* g_SuspendedThreads = nullptr;
 
 void ProcessUtils::SuspendAllThreadsButCurrent()
 {
+	// We only suspend threads in debug mode because this is only useful if
+	// we want to hot-reload everything. In release mode it can just cause issues.
+#if _DEBUG
 	if (g_SuspendedThreads != nullptr)
 		return;
 
@@ -161,10 +164,12 @@ void ProcessUtils::SuspendAllThreadsButCurrent()
 
 	for (auto* s_Thread : *g_SuspendedThreads)
 		SuspendThread(s_Thread);
+#endif
 }
 
 void ProcessUtils::ResumeSuspendedThreads()
 {
+#if _DEBUG
 	if (g_SuspendedThreads == nullptr)
 		return;
 
@@ -178,4 +183,5 @@ void ProcessUtils::ResumeSuspendedThreads()
 
 	delete g_SuspendedThreads;
 	g_SuspendedThreads = nullptr;
+#endif
 }

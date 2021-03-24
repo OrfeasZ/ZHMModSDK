@@ -9,7 +9,7 @@
 #include "Logging.h"
 #include "Util/ProcessUtils.h"
 
-#include "ImguiRenderer.h"
+#include "Renderers/ImGuiRenderer.h"
 
 using namespace Rendering;
 
@@ -59,26 +59,26 @@ HRESULT D3D12Hooks::Detour_IDXGISwapChain_Present(IDXGISwapChain* th, UINT SyncI
 	if (th->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
 		return Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
 
-	ImguiRenderer::GetInstance()->OnPresent(s_SwapChain3);
+	Renderers::ImGuiRenderer::OnPresent(s_SwapChain3);
 
 	return Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
 }
 
 HRESULT D3D12Hooks::Detour_IDXGISwapChain_ResizeBuffers(IDXGISwapChain* th, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	ImguiRenderer::GetInstance()->ResetRenderer();
+	Renderers::ImGuiRenderer::OnReset();
 	return Original_IDXGISwapChain_ResizeBuffers(th, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 }
 
 HRESULT D3D12Hooks::Detour_IDXGISwapChain_ResizeTarget(IDXGISwapChain* th, const DXGI_MODE_DESC* pNewTargetParameters)
 {
-	ImguiRenderer::GetInstance()->ResetRenderer();
+	Renderers::ImGuiRenderer::OnReset();
 	return Original_IDXGISwapChain_ResizeTarget(th, pNewTargetParameters);
 }
 
 void D3D12Hooks::Detour_ID3D12CommandQueue_ExecuteCommandLists(ID3D12CommandQueue* th, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
 {
-	ImguiRenderer::GetInstance()->SetCommandQueue(th);
+	Renderers::ImGuiRenderer::SetCommandQueue(th);
 	Original_ID3D12CommandQueue_ExecuteCommandLists(th, NumCommandLists, ppCommandLists);
 }
 
@@ -147,7 +147,7 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	sprintf_s(s_SharedMemoryName, sizeof(s_SharedMemoryName), "ZHModSDK_D3D12Hooks_Vtbl_%llu_%lu", sizeof(VTables), GetCurrentProcessId());
 
 	{
-		auto* s_Mapping = OpenFileMapping(FILE_MAP_READ, false, s_SharedMemoryName);
+		auto* s_Mapping = OpenFileMappingA(FILE_MAP_READ, false, s_SharedMemoryName);
 
 		if (s_Mapping != nullptr)
 		{
@@ -185,12 +185,12 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	Logger::Debug("[D3D12Hooks] Creating D3D12 device.");
 
 #if _DEBUG
-	ID3D12Debug* s_Debug = nullptr;
+	/*ID3D12Debug* s_Debug = nullptr;
 
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&s_Debug))))
 		s_Debug->EnableDebugLayer();
 
-	s_Debug->Release();
+	s_Debug->Release();*/
 #endif
 
 	ScopedD3DRef<ID3D12Device> s_Device;

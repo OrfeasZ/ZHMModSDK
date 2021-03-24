@@ -6,6 +6,7 @@ project(ZHMMods CXX)
 add_subdirectory("External/spdlog")
 add_subdirectory("External/minhook")
 add_subdirectory("External/imgui")
+add_subdirectory("External/DirectXTK12")
 
 # Core modules.
 add_subdirectory("ZHMModSDK")
