@@ -6,6 +6,7 @@ namespace Rendering
 	{
 	public:
 		static void Init();
+		static void OnEngineInit();
 		static void Shutdown();
 	};
 }

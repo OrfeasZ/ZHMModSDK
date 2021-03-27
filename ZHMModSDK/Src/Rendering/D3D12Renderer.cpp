@@ -1,11 +1,14 @@
 #include "D3D12Renderer.h"
 #include "D3D12Hooks.h"
+#include "Logging.h"
+#include "Renderers/DirectXTKRenderer.h"
 #include "Renderers/ImGuiRenderer.h"
 
 using namespace Rendering;
 
 void D3D12Renderer::Init()
 {
+	Renderers::DirectXTKRenderer::Init();
 	Renderers::ImGuiRenderer::Init();
 	
 	// Init the D3D12 hooks.
@@ -13,7 +16,7 @@ void D3D12Renderer::Init()
 
 	// If we're running in debug mode we should enable the D3D debug layer.
 #if _DEBUG
-	/*Hooks::D3D12CreateDevice->AddDetour(this, [](void*, Hook<HRESULT(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)>* p_Hook, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
+	/*Hooks::D3D12CreateDevice->AddDetour(nullptr, [](void*, Hook<HRESULT(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)>* p_Hook, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 		{
 			Logger::Debug("Creating D3D device. Enabling debug layer.");
 
@@ -44,9 +47,16 @@ void D3D12Renderer::Init()
 #endif
 }
 
+void D3D12Renderer::OnEngineInit()
+{
+	Renderers::DirectXTKRenderer::OnEngineInit();
+	Renderers::ImGuiRenderer::OnEngineInit();
+}
+
 void D3D12Renderer::Shutdown()
 {
 	D3D12Hooks::RemoveHooks();
 	
 	Renderers::ImGuiRenderer::Shutdown();
+	Renderers::DirectXTKRenderer::Shutdown();
 }

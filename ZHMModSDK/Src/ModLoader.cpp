@@ -12,6 +12,8 @@
 
 #include <Glacier/ZModule.h>
 
+#include <Rendering/D3D12Renderer.h>
+
 ModLoader::ModLoader()
 {
 
@@ -30,6 +32,8 @@ void ModLoader::Startup()
 		{
 			auto s_Result = p_Hook->CallOriginal(th, a2);
 
+			Rendering::D3D12Renderer::OnEngineInit();
+
 			Logger::Debug("Engine was initialized. Notifying mods.");
 
 			auto s_Loader = static_cast<ModLoader*>(p_Ctx);
@@ -41,6 +45,18 @@ void ModLoader::Startup()
 		});
 
 	LoadAllMods();
+
+	// If the engine is already initialized, inform the mods.
+	// TODO: This isn't a good check. Fix it.
+	if (*Globals::Hitman5Module != nullptr && (*Globals::Hitman5Module)->m_pEntitySceneContext != nullptr)
+	{
+		Rendering::D3D12Renderer::OnEngineInit();
+
+		Logger::Debug("Engine is already initialized. Calling mod initialized methods.");
+		
+		for (auto& s_Mod : m_LoadedMods)
+			s_Mod.second.PluginInterface->OnEngineInitialized();
+	}
 }
 
 void ModLoader::LoadAllMods()
@@ -144,13 +160,6 @@ void ModLoader::LoadMod(const std::string& p_Name)
 	s_Mod.PluginInterface = s_PluginInterface;
 
 	m_LoadedMods[s_Name] = s_Mod;
-
-	// If the engine is already initialized, inform the mod.
-	if (*Globals::Hitman5Module != nullptr && (*Globals::Hitman5Module)->m_pEntitySceneContext != nullptr)
-	{
-		Logger::Debug("Engine is already initialized. Calling mod initialized method.");
-		s_PluginInterface->OnEngineInitialized();
-	}
 }
 
 void ModLoader::UnloadMod(const std::string& p_Name)

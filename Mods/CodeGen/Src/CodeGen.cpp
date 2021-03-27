@@ -131,7 +131,7 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 			continue;
 		}
 
-		s_Stream << "\tpublic " << s_Type->m_pInterfaces[i].m_pType->typeInfo()->m_pTypeName << "," << std::endl;
+		s_Stream << "\tpublic " << s_Type->m_pInterfaces[i].m_pType->typeInfo()->m_pTypeName << ", // Offset 0x" << std::hex << s_Type->m_pInterfaces[i].m_nOffset << " " << std::dec << std::endl;
 	}
 
 	for (uint16_t i = 0; i < s_Type->m_nBaseClassCount; ++i)
@@ -142,7 +142,7 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 			continue;
 		}
 
-		s_Stream << "\tpublic " << s_Type->m_pBaseClasses[i].m_pType->typeInfo()->m_pTypeName << "," << std::endl;
+		s_Stream << "\tpublic " << s_Type->m_pBaseClasses[i].m_pType->typeInfo()->m_pTypeName << ", // Offset 0x" << std::hex << s_Type->m_pBaseClasses[i].m_nOffset << " " << std::dec << std::endl;
 	}
 
 	if (s_Type->m_nBaseClassCount > 0 || s_Type->m_nInterfaceCount > 0)

@@ -17,6 +17,7 @@
 #include <UI/Console.h>
 
 #include "Rendering/D3DUtils.h"
+#include "Fonts.h"
 
 using namespace Rendering::Renderers;
 
@@ -30,6 +31,7 @@ ID3D12CommandQueue* ImGuiRenderer::m_CommandQueue = nullptr;
 ImGuiRenderer::FrameContext* ImGuiRenderer::m_FrameContext = nullptr;
 IDXGISwapChain3* ImGuiRenderer::m_SwapChain = nullptr;
 HWND ImGuiRenderer::m_Hwnd = nullptr;
+bool ImGuiRenderer::m_Shutdown = false;
 
 int64_t ImGuiRenderer::m_Time = 0;
 int64_t ImGuiRenderer::m_TicksPerSecond = 0;
@@ -45,8 +47,15 @@ void ImGuiRenderer::Init()
 	Hooks::ZKeyboardWindows_Update->AddDetour(nullptr, &ImGuiRenderer::ZKeyboardWindows_Update);
 }
 
+void ImGuiRenderer::OnEngineInit()
+{
+	
+}
+
 void ImGuiRenderer::Shutdown()
 {
+	m_Shutdown = true;
+
 	Hooks::ZApplicationEngineWin32_MainWindowProc->RemoveDetour(&ImGuiRenderer::WndProc);
 	Hooks::ZKeyboardWindows_Update->RemoveDetour(&ImGuiRenderer::ZKeyboardWindows_Update);
 
@@ -98,6 +107,9 @@ void ImGuiRenderer::Draw()
 
 void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
+	if (m_Shutdown)
+		return;
+	
 	if (!SetupRenderer(p_SwapChain))
 	{
 		Logger::Error("Failed to set up ImGui renderer.");
@@ -211,20 +223,20 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 		if (s_Device->CreateDescriptorHeap(&s_Desc, IID_PPV_ARGS(&m_RtvDescriptorHeap)) != S_OK)
 			return false;
 
-		D3D_SET_OBJECT_NAME_A(m_RtvDescriptorHeap, "ZHMModSDK ImGui Descriptor Heap");
+		D3D_SET_OBJECT_NAME_A(m_RtvDescriptorHeap, "ZHMModSDK ImGui Rtv Descriptor Heap");
 	}
 
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC s_Desc = {};
 		s_Desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		s_Desc.NumDescriptors = m_BufferCount; // TODO: This can probably be 1
+		s_Desc.NumDescriptors = 1;
 		s_Desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		s_Desc.NodeMask = 0;
 
 		if (s_Device->CreateDescriptorHeap(&s_Desc, IID_PPV_ARGS(&m_SrvDescriptorHeap)) != S_OK)
 			return false;
 
-		D3D_SET_OBJECT_NAME_A(m_SrvDescriptorHeap, "ZHMModSDK Backbuffer Descriptor Heap");
+		D3D_SET_OBJECT_NAME_A(m_SrvDescriptorHeap, "ZHMModSDK ImGui Srv Descriptor Heap");
 	}
 
 	const auto s_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -314,6 +326,8 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 		s_ImGuiIO.BackendRendererName = "imgui_impl_dx12";
 		s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
+		s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 16.f);
+
 		m_ImguiInitialized = true;
 	}
 
@@ -338,7 +352,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
 void ImGuiRenderer::OnReset()
 {
-	Logger::Debug("Resetting renderer.");
+	Logger::Debug("Resetting ImGui renderer.");
 
 	m_RendererSetup = false;
 
@@ -416,6 +430,9 @@ void ImGuiRenderer::OnReset()
 
 void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 {
+	if (m_Shutdown)
+		return;
+
 	if (!m_RendererSetup || m_CommandQueue || !m_SwapChain)
 		return;
 

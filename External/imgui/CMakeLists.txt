@@ -22,4 +22,3 @@ set_target_properties(imgui PROPERTIES
 target_include_directories(imgui PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/source
 )
-

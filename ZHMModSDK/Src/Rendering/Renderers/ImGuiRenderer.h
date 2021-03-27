@@ -29,6 +29,7 @@ namespace Rendering::Renderers
 
 	public:
 		static void Init();
+		static void OnEngineInit();
 		static void Shutdown();
 		
 	public:
@@ -57,6 +58,7 @@ namespace Rendering::Renderers
 		static FrameContext* m_FrameContext;
 		static IDXGISwapChain3* m_SwapChain;
 		static HWND m_Hwnd;
+		static bool m_Shutdown;
 
 		static int64_t m_Time;
 		static int64_t m_TicksPerSecond;

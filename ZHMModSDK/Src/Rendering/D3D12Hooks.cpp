@@ -7,6 +7,7 @@
 
 #include "D3DUtils.h"
 #include "Logging.h"
+#include "Renderers/DirectXTKRenderer.h"
 #include "Util/ProcessUtils.h"
 
 #include "Renderers/ImGuiRenderer.h"
@@ -59,26 +60,37 @@ HRESULT D3D12Hooks::Detour_IDXGISwapChain_Present(IDXGISwapChain* th, UINT SyncI
 	if (th->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
 		return Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
 
+	Renderers::DirectXTKRenderer::OnPresent(s_SwapChain3);
 	Renderers::ImGuiRenderer::OnPresent(s_SwapChain3);
 
-	return Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
+	auto s_Result = Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
+
+	Renderers::DirectXTKRenderer::PostPresent(s_SwapChain3);
+
+	return s_Result;
 }
 
 HRESULT D3D12Hooks::Detour_IDXGISwapChain_ResizeBuffers(IDXGISwapChain* th, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
 	Renderers::ImGuiRenderer::OnReset();
+	Renderers::DirectXTKRenderer::OnReset();
+
 	return Original_IDXGISwapChain_ResizeBuffers(th, BufferCount, Width, Height, NewFormat, SwapChainFlags);
 }
 
 HRESULT D3D12Hooks::Detour_IDXGISwapChain_ResizeTarget(IDXGISwapChain* th, const DXGI_MODE_DESC* pNewTargetParameters)
 {
 	Renderers::ImGuiRenderer::OnReset();
+	Renderers::DirectXTKRenderer::OnReset();
+
 	return Original_IDXGISwapChain_ResizeTarget(th, pNewTargetParameters);
 }
 
 void D3D12Hooks::Detour_ID3D12CommandQueue_ExecuteCommandLists(ID3D12CommandQueue* th, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
 {
+	Renderers::DirectXTKRenderer::SetCommandQueue(th);
 	Renderers::ImGuiRenderer::SetCommandQueue(th);
+
 	Original_ID3D12CommandQueue_ExecuteCommandLists(th, NumCommandLists, ppCommandLists);
 }
 
