@@ -26,6 +26,7 @@ class ZEntityRef;
 class ZRenderDevice;
 class ZRenderSwapChain;
 class ZKeyboardWindows;
+class ZRenderGraphNodeCamera;
 
 class ZHMSDK_API Hooks
 {
@@ -50,5 +51,5 @@ public:
 	static Hook<bool(void*, void*)>* Check_SSL_Cert;
 	static Hook<void(ZApplicationEngineWin32* th, const ZString& info, const ZString& details)>* ZApplicationEngineWin32_OnDebugInfo;
 	static Hook<void(ZKeyboardWindows* th, bool a2)>* ZKeyboardWindows_Update;
-	static Hook<void(void* a1, void* a2, void* a3, void* a4, void* a5)>* DrawScaleform;
+	static Hook<bool(void* a1)>* ZRenderGraphNodeCamera_Unknown01;
 };

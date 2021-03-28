@@ -65,7 +65,7 @@ namespace Rendering::Renderers
 		static void Draw(FrameContext* p_Frame);
 
 	private:
-		DEFINE_STATIC_DETOUR(void, DrawScaleform, void* a1, void* a2, void* a3, void* a4, void* a5);
+		DEFINE_STATIC_DETOUR(bool, ZRenderGraphNodeCamera_Unknown01, void* th);
 
 	private:
 		static bool m_RendererSetup;

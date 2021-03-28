@@ -5,13 +5,12 @@
 #include <vector>
 
 #include "ModSDK.h"
-
+#include <MinHook.h>
 #include "Hook.h"
-#include "MinHook.h"
 #include "Util/ProcessUtils.h"
 #include "Logging.h"
 
-#define MAX_TRAMPOLINES 2048
+#define MAX_TRAMPOLINES 4096
 
 // TODO: Suspend all threads but the current one when installing or removing hooks.
 // This should fix various crashes when hot-reloading.
@@ -56,6 +55,112 @@ public:
 
 		for (auto s_Hook : *g_Hooks)
 			s_Hook->RemoveAllDetours();
+	}
+};
+
+#pragma pack(push, 1)
+struct DetourTrampoline
+{
+	DetourTrampoline(uintptr_t p_Address) :
+		FunctionAddress(p_Address)
+	{
+		// NOP
+		memset(AdditionalInstructions, 0x90, sizeof(AdditionalInstructions));
+		
+		// 0x48 0xB8 => movabs rax 
+		Mov = 0xB848;
+
+		// 0xFF 0xE0 => jmp rax
+		Jmp = 0xE0FF;
+
+		Pad = 0xCCCCCCCC;
+	}
+
+	uint8_t AdditionalInstructions[16];
+	uint16_t Mov;
+	uintptr_t FunctionAddress;
+	uint16_t Jmp;
+	uint32_t Pad;
+};
+#pragma pack(pop)
+
+class Trampolines
+{
+private:
+	static DetourTrampoline* g_Trampolines;
+	static size_t g_TrampolineCount;
+
+public:
+	static DetourTrampoline* CreateTrampoline(uintptr_t p_TargetAddress, void* p_AdditionalInstructions = nullptr, size_t p_AdditionalInstructionsSize = 0)
+	{
+		if (g_Trampolines == nullptr)
+		{
+			// Get system information. We use this later to find the first usable free memory region.
+			SYSTEM_INFO s_SysInfo {};
+			GetSystemInfo(&s_SysInfo);
+
+			auto s_AllocAddress = ALIGN_TO(reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr)) + ModSDK::GetInstance()->GetImageSize(), s_SysInfo.dwAllocationGranularity);
+			uintptr_t s_AllocEnd = s_AllocAddress + sizeof(DetourTrampoline) * MAX_TRAMPOLINES;
+
+			// Iterate through memory regions until we find one that's free and fits our data.
+			MEMORY_BASIC_INFORMATION s_MemInfo {};
+			auto s_QueryResult = VirtualQuery(reinterpret_cast<void*>(s_AllocAddress), &s_MemInfo, sizeof(s_MemInfo));
+
+			while (s_QueryResult != 0 && (s_MemInfo.State != MEM_FREE || reinterpret_cast<uintptr_t>(s_MemInfo.BaseAddress) + s_MemInfo.RegionSize < s_AllocEnd))
+			{
+				s_AllocAddress = ALIGN_TO(reinterpret_cast<uintptr_t>(s_MemInfo.BaseAddress) + s_MemInfo.RegionSize, s_SysInfo.dwAllocationGranularity);
+				s_AllocEnd = s_AllocAddress + sizeof(DetourTrampoline) * MAX_TRAMPOLINES;
+
+				Logger::Trace("Memory segment at {} is not suitable. Trying next at {}.", fmt::ptr(s_MemInfo.BaseAddress), fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
+
+				s_QueryResult = VirtualQuery(reinterpret_cast<void*>(s_AllocAddress), &s_MemInfo, sizeof(s_MemInfo));
+			}
+
+			if (s_QueryResult == 0)
+			{
+				// We didn't find a free memory region. Just allocate wherever and pray for the best.
+				Logger::Warn("Could not find a free memory region for trampoline storage. Allocating anywhere and praying.");
+				s_AllocAddress = 0;
+			}
+
+			Logger::Trace("Attempting to allocate trampoline storage at {}.", fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
+
+			g_Trampolines = static_cast<DetourTrampoline*>(VirtualAlloc(reinterpret_cast<void*>(s_AllocAddress), sizeof(DetourTrampoline) * MAX_TRAMPOLINES, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
+
+			if (g_Trampolines == nullptr)
+			{
+				Logger::Error("Trampoline storage allocation failed with error {}. Requested address was {}.", GetLastError(), fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
+				return 0;
+			}
+
+			g_TrampolineCount = 0;
+
+			Logger::Trace("Allocated trampoline storage at {} (requested address: {}).", fmt::ptr(g_Trampolines), fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
+		}
+
+		if (g_TrampolineCount >= MAX_TRAMPOLINES)
+		{
+			Logger::Error("Could not create trampoline because we have reached the max number of trampolines allowed ({}). You can raise this limit by modifying MAX_TRAMPOLINES in HookImpl.h.", MAX_TRAMPOLINES);
+			return 0;
+		}
+
+		auto* s_Trampoline = g_Trampolines + g_TrampolineCount;
+		*s_Trampoline = DetourTrampoline(p_TargetAddress);
+
+		if (p_AdditionalInstructions != nullptr && p_AdditionalInstructionsSize > 0)
+			memcpy(s_Trampoline->AdditionalInstructions, p_AdditionalInstructions, p_AdditionalInstructionsSize);
+
+		++g_TrampolineCount;
+
+		return s_Trampoline;
+	}
+
+	static void ClearTrampolines()
+	{
+		if (g_Trampolines == nullptr)
+			return;
+
+		VirtualFree(g_Trampolines, 0, MEM_RELEASE);
 	}
 };
 
@@ -119,6 +224,8 @@ protected:
 		InitializeSRWLock(&m_Lock);
 
 		HookRegistry::RegisterHook(this);
+		
+		m_Detours.push_back(nullptr);
 
 		if (p_Original == nullptr)
 		{
@@ -277,105 +384,6 @@ private:
 	}
 };
 
-#pragma pack(push, 1)
-struct DetourTrampoline
-{
-	DetourTrampoline(uintptr_t p_Address) :
-		FunctionAddress(p_Address)
-	{
-		// 0x48 0xB8 => movabs rax 
-		Mov = 0xB848;
-
-		// 0xFF 0xE0 => jmp rax
-		Jmp = 0xE0FF;
-
-		Pad = 0xCCCCCCCC;
-	}
-
-	uint16_t Mov;
-	uintptr_t FunctionAddress;
-	uint16_t Jmp;
-	uint32_t Pad;
-};
-#pragma pack(pop)
-
-class Trampolines
-{
-private:
-	static DetourTrampoline* g_Trampolines;
-	static size_t g_TrampolineCount;
-
-public:
-	static uintptr_t CreateTrampoline(uintptr_t p_TargetAddress)
-	{
-		if (g_Trampolines == nullptr)
-		{
-			// Get system information. We use this later to find the first usable free memory region.
-			SYSTEM_INFO s_SysInfo {};
-			GetSystemInfo(&s_SysInfo);
-
-			auto s_AllocAddress = ALIGN_TO(reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr)) + ModSDK::GetInstance()->GetImageSize(), s_SysInfo.dwAllocationGranularity);
-			uintptr_t s_AllocEnd = s_AllocAddress + sizeof(DetourTrampoline) * MAX_TRAMPOLINES;
-
-			// Iterate through memory regions until we find one that's free and fits our data.
-			MEMORY_BASIC_INFORMATION s_MemInfo {};
-			auto s_QueryResult = VirtualQuery(reinterpret_cast<void*>(s_AllocAddress), &s_MemInfo, sizeof(s_MemInfo));
-
-			while (s_QueryResult != 0 && (s_MemInfo.State != MEM_FREE || reinterpret_cast<uintptr_t>(s_MemInfo.BaseAddress) + s_MemInfo.RegionSize < s_AllocEnd))
-			{
-				s_AllocAddress = ALIGN_TO(reinterpret_cast<uintptr_t>(s_MemInfo.BaseAddress) + s_MemInfo.RegionSize, s_SysInfo.dwAllocationGranularity);
-				s_AllocEnd = s_AllocAddress + sizeof(DetourTrampoline) * MAX_TRAMPOLINES;
-
-				Logger::Trace("Memory segment at {} is not suitable. Trying next at {}.", fmt::ptr(s_MemInfo.BaseAddress), fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
-
-				s_QueryResult = VirtualQuery(reinterpret_cast<void*>(s_AllocAddress), &s_MemInfo, sizeof(s_MemInfo));
-			}
-
-			if (s_QueryResult == 0)
-			{
-				// We didn't find a free memory region. Just allocate wherever and pray for the best.
-				Logger::Warn("Could not find a free memory region for trampoline storage. Allocating anywhere and praying.");
-				s_AllocAddress = 0;
-			}
-
-			Logger::Trace("Attempting to allocate trampoline storage at {}.", fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
-
-			g_Trampolines = static_cast<DetourTrampoline*>(VirtualAlloc(reinterpret_cast<void*>(s_AllocAddress), sizeof(DetourTrampoline) * MAX_TRAMPOLINES, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
-
-			if (g_Trampolines == nullptr)
-			{
-				Logger::Error("Trampoline storage allocation failed with error {}. Requested address was {}.", GetLastError(), fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
-				return 0;
-			}
-
-			g_TrampolineCount = 0;
-
-			Logger::Trace("Allocated trampoline storage at {} (requested address: {}).", fmt::ptr(g_Trampolines), fmt::ptr(reinterpret_cast<void*>(s_AllocAddress)));
-		}
-
-		if (g_TrampolineCount >= MAX_TRAMPOLINES)
-		{
-			Logger::Error("Could not create trampoline because we have reached the max number of trampolines allowed ({}). You can raise this limit by modifying MAX_TRAMPOLINES in HookImpl.h.", MAX_TRAMPOLINES);
-			return 0;
-		}
-
-		auto* s_Trampoline = g_Trampolines + g_TrampolineCount;
-		*s_Trampoline = DetourTrampoline(p_TargetAddress);
-
-		++g_TrampolineCount;
-
-		return reinterpret_cast<uintptr_t>(s_Trampoline);
-	}
-
-	static void ClearTrampolines()
-	{
-		if (g_Trampolines == nullptr)
-			return;
-
-		VirtualFree(g_Trampolines, 0, MEM_RELEASE);
-	}
-};
-
 template <class T>
 class PatternCallHook;
 
@@ -439,7 +447,7 @@ private:
 			if (s_TrampolineAddress == 0)
 				return nullptr;
 
-			s_Distance = s_TrampolineAddress - (m_Target + 5);
+			s_Distance = reinterpret_cast<uintptr_t>(s_TrampolineAddress) - (m_Target + 5);
 
 			// Sanity check again.
 			if (s_Distance >= INT32_MAX || s_Distance <= INT32_MIN)

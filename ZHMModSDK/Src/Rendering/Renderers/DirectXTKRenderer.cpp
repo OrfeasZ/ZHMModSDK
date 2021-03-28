@@ -49,38 +49,37 @@ std::unique_ptr<DirectX::SpriteBatch> DirectXTKRenderer::m_SpriteBatch;
 
 void DirectXTKRenderer::Init()
 {
-	
+	Hooks::ZRenderGraphNodeCamera_Unknown01->AddDetour(nullptr, &DirectXTKRenderer::ZRenderGraphNodeCamera_Unknown01);
 }
 
 void DirectXTKRenderer::OnEngineInit()
 {
-	Hooks::DrawScaleform->AddDetour(nullptr, &DirectXTKRenderer::DrawScaleform);
 }
 
 void DirectXTKRenderer::Shutdown()
 {
 	m_Shutdown = true;
 
-	Hooks::DrawScaleform->RemoveDetour(&DirectXTKRenderer::DrawScaleform);
+	Hooks::ZRenderGraphNodeCamera_Unknown01->RemoveDetour(&DirectXTKRenderer::ZRenderGraphNodeCamera_Unknown01);
 
 	OnReset();
 }
 
-DECLARE_STATIC_DETOUR(DirectXTKRenderer, void, DrawScaleform, void* a1, void* a2, void* a3, void* a4, void* a5)
+DECLARE_STATIC_DETOUR(DirectXTKRenderer, bool, ZRenderGraphNodeCamera_Unknown01, void* a1)
 {
 	m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pRenderContext->m_mWorldToView);
 	m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pRenderContext->m_mViewToProjection);
 
 	m_ViewProjection = m_View * m_Projection;
-	
+
 	m_LineEffect->SetView(m_View);
 	m_LineEffect->SetProjection(m_Projection);
 
-	return HookResult<void>(HookAction::Continue());
+	return HookResult<bool>(HookAction::Continue());
 }
 
 void DirectXTKRenderer::Draw(FrameContext* p_Frame)
-{	
+{
 	ID3D12DescriptorHeap* s_Heaps[] = { m_ResourceDescriptors->Heap() };
 	p_Frame->CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
 
@@ -100,6 +99,7 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 			s_Actor->GetID(&s_ActorRef);
 
 			auto* s_SpatialEntity = s_ActorRef.QueryInterface<ZSpatialEntity>();
+			auto* s_RepoEntity = s_ActorRef.QueryInterface<ZRepositoryItemEntity>();
 
 			SMatrix s_Transform;
 			Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
@@ -111,26 +111,50 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 			DirectX::VertexPositionColor v2(to, DirectX::Colors::White);
 			m_LineBatch->DrawLine(v1, v2);
 
-			DirectX::SimpleMath::Vector4 s_World(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2, 1.f);
-			const DirectX::SimpleMath::Vector4 s_Projected = DirectX::XMVector4Transform(s_World, m_ViewProjection);
-
-			if (s_Projected.w > 0.000001f)
 			{
-				float s_InvertedZ = 1.f / s_Projected.w;
+				DirectX::SimpleMath::Vector4 s_World(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.f, 1.f);
+				const DirectX::SimpleMath::Vector4 s_Projected = DirectX::XMVector4Transform(s_World, m_ViewProjection);
 
-				DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
+				if (s_Projected.w > 0.000001f)
+				{
+					float s_InvertedZ = 1.f / s_Projected.w;
 
-				float s_ScreenX = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
-				float s_ScreenY = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
+					DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
 
-				std::string s_Name(s_Actor->m_sActorName.c_str(), s_Actor->m_sActorName.size());
+					float s_ScreenX = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
+					float s_ScreenY = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
 
-				DirectX::SimpleMath::Vector2 s_Origin = m_Font->MeasureString(s_Name.c_str());
-				s_Origin /= 2.f;
+					std::string s_Name(s_Actor->m_sActorName.c_str(), s_Actor->m_sActorName.size());
 
-				m_Font->DrawString(m_SpriteBatch.get(), s_Name.c_str(), DirectX::SimpleMath::Vector2(s_ScreenX, s_ScreenY), DirectX::Colors::Red, 0.f, s_Origin, 0.4f);
+					DirectX::SimpleMath::Vector2 s_Origin = m_Font->MeasureString(s_Name.c_str());
+					s_Origin /= 2.f;
+
+					m_Font->DrawString(m_SpriteBatch.get(), s_Name.c_str(), DirectX::SimpleMath::Vector2(s_ScreenX, s_ScreenY), DirectX::Colors::Red, 0.f, s_Origin, 0.4f);
+				}
 			}
-		}		
+
+			{
+				DirectX::SimpleMath::Vector4 s_World(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.1f, 1.f);
+				const DirectX::SimpleMath::Vector4 s_Projected = DirectX::XMVector4Transform(s_World, m_ViewProjection);
+
+				if (s_Projected.w > 0.000001f)
+				{
+					float s_InvertedZ = 1.f / s_Projected.w;
+
+					DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
+
+					float s_ScreenX = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
+					float s_ScreenY = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
+
+					std::string s_Name = s_RepoEntity->m_sId.ToString();
+
+					DirectX::SimpleMath::Vector2 s_Origin = m_Font->MeasureString(s_Name.c_str());
+					s_Origin /= 2.f;
+
+					m_Font->DrawString(m_SpriteBatch.get(), s_Name.c_str(), DirectX::SimpleMath::Vector2(s_ScreenX, s_ScreenY), DirectX::Colors::Red, 0.f, s_Origin, 0.4f);
+				}
+			}
+		}
 	}
 
 	m_LineBatch->End();
@@ -194,10 +218,10 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
 		s_Frame.CommandList->ResourceBarrier(1, &s_Barrier);
 	}
-	
+
 	D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
 	s_Frame.CommandList->RSSetViewports(1, &s_Viewport);
-	
+
 	D3D12_RECT s_ScissorRect = { 0, 0, static_cast<LONG>(m_WindowWidth), static_cast<LONG>(m_WindowHeight) };
 	s_Frame.CommandList->RSSetScissorRects(1, &s_ScissorRect);
 
@@ -232,7 +256,7 @@ void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain)
 
 	if (!m_CommandQueue || !m_SwapChain)
 		return;
-	
+
 	m_GraphicsMemory->Commit(m_CommandQueue);
 }
 
@@ -323,7 +347,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
 	m_WindowWidth = static_cast<float>(s_Rect.right - s_Rect.left);
 	m_WindowHeight = static_cast<float>(s_Rect.bottom - s_Rect.top);
-	
+
 	m_GraphicsMemory = std::make_unique<DirectX::GraphicsMemory>(s_Device);
 
 	m_LineBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>(s_Device);
@@ -356,13 +380,13 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 			RobotoRegularSpritefont_size,
 			m_ResourceDescriptors->GetCpuHandle(static_cast<int>(Descriptors::FontRegular)),
 			m_ResourceDescriptors->GetGpuHandle(static_cast<int>(Descriptors::FontRegular))
-		);
+			);
 
 		DirectX::RenderTargetState rtState(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT);
 
 		DirectX::SpriteBatchPipelineStateDescription pd(rtState);
 		m_SpriteBatch = std::make_unique<DirectX::SpriteBatch>(s_Device, resourceUpload, pd);
-		
+
 		auto uploadResourcesFinished = resourceUpload.End(m_CommandQueue);
 
 		uploadResourcesFinished.wait();
@@ -376,7 +400,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	m_LineEffect->SetWorld(m_World);
 	m_LineEffect->SetView(m_View);
 	m_LineEffect->SetProjection(m_Projection);
-	
+
 	m_RendererSetup = true;
 
 	Logger::Debug("DirectXTK renderer successfully set up.");
@@ -398,7 +422,7 @@ void DirectXTKRenderer::OnReset()
 	m_LineBatch.reset();
 
 	m_GraphicsMemory.reset();
-	
+
 	for (UINT i = 0; i < m_BufferCount; i++)
 	{
 		auto& s_Frame = m_FrameContext[i];

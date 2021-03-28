@@ -127,8 +127,8 @@ PATTERN_HOOK(
 	ZKeyboardWindows_Update, void(ZKeyboardWindows* th, bool a2)
 )
 
-PATTERN_HOOK(
-	"\x40\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x6C\x24\x40\x0F\xB6\x05",
-	"xxxxxxxxxxxxx????xxxxxxxx",
-	DrawScaleform, void(void* a1, void* a2, void* a3, void* a4, void* a5)
+PATTERN_CALL_HOOK(
+	"\xE8\x00\x00\x00\x00\x84\xC0\x0F\x84\x00\x00\x00\x00\x41\x0F\x10\x87\x90\x01\x00\x00",
+	"x????xxxx????xxxxxxxx",
+	ZRenderGraphNodeCamera_Unknown01, bool(void* a1)
 )

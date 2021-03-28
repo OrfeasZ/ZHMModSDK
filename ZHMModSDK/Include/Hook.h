@@ -96,7 +96,7 @@ public:
 
 		while (s_Detour != nullptr)
 		{
-			auto s_DetourFunc = static_cast<DetourFunc_t>(s_Detour->DetourFunc);
+			auto s_DetourFunc = reinterpret_cast<DetourFunc_t>(s_Detour->DetourFunc);
 			auto s_Result = s_DetourFunc(s_Detour->Context, this, p_Args...);
 
 			// Detour returned a value. Stop execution and return it.
@@ -149,7 +149,7 @@ public:
 
 		while (s_Detour != nullptr)
 		{
-			auto s_DetourFunc = static_cast<DetourFunc_t>(s_Detour->DetourFunc);
+			auto s_DetourFunc = reinterpret_cast<DetourFunc_t>(s_Detour->DetourFunc);
 			auto s_Result = s_DetourFunc(s_Detour->Context, this, p_Args...);
 
 			// Detour returned a value. Stop execution and return it.
@@ -182,10 +182,10 @@ public:
 		return reinterpret_cast<ContextType*>(th)->DetourName ## _Internal(p_Args...);\
 	}\
 	\
-	HookResult<ReturnType> DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
+	HookResult<ReturnType> __fastcall DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
 
 #define DECLARE_DETOUR_WITH_CONTEXT(ContextType, ReturnType, DetourName, ...) \
-	HookResult<ReturnType> ContextType::DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
+	HookResult<ReturnType> __fastcall ContextType::DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
 
-#define DEFINE_STATIC_DETOUR(ReturnType, DetourName, ...) static HookResult<ReturnType> DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
-#define DECLARE_STATIC_DETOUR(ParentType, ReturnType, DetourName, ...) HookResult<ReturnType> ParentType::DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
+#define DEFINE_STATIC_DETOUR(ReturnType, DetourName, ...) static HookResult<ReturnType> __fastcall DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
+#define DECLARE_STATIC_DETOUR(ParentType, ReturnType, DetourName, ...) HookResult<ReturnType> __fastcall ParentType::DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
