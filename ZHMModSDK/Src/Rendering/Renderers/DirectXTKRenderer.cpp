@@ -94,7 +94,7 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 
 	m_LineBatch->Begin(p_Frame->CommandList);
 
-	if (Globals::ActorManager && Globals::NextActorId && *Globals::NextActorId > 0)
+	/*if (Globals::ActorManager && Globals::NextActorId && *Globals::NextActorId > 0)
 	{
 		for (int i = 0; i < *Globals::NextActorId; ++i)
 		{
@@ -160,7 +160,7 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 				}
 			}
 		}
-	}
+	}*/
 
 	m_LineBatch->End();
 
