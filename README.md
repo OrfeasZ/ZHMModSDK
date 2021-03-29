@@ -19,13 +19,17 @@ Right now it's at a very early stage, with only a few aspects of the engine expo
 
 3. Create a new folder called `mods` inside the `Retail` folder you extracted the mod loader to.
 
-4. Extract the `.dll` files for the mods you want to use from the `mods-RelWithDebInfo.zip` archive to the `mods` folder you created in the previous step. You can find a description of what each mod does below.
+4. Extract the `.dll` files from the `mods-RelWithDebInfo.zip` archive to the `mods` folder you created in the previous step. You can find a description of what each mod does below.
 
 5. Run the game like you normally would.
 
-6. ...
+6. When the game opens, you'll see a dialog asking you which mods you'd like to use. Select them and press OK. You might need to restart your game for some of them to work.
 
-7. Profit?
+7. ...
+
+8. Profit?
+
+> NOTE: You can at any time change the mods you're using by pressing the `~` key and selecting them, or by editing the `mods.ini` file inside your game's `Retail` folder.
 
 ## Sample mods
 
