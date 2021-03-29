@@ -10,6 +10,7 @@ add_library(imgui STATIC
 	source/imstb_rectpack.h
 	source/imstb_textedit.h
 	source/imstb_truetype.h
+	source/imgui_demo.cpp
 	source/backends/imgui_impl_dx12.cpp
 	source/backends/imgui_impl_dx12.h
 )

@@ -5,7 +5,7 @@
 
 #include <Glacier/ZScene.h>
 
-void CertPinBypass::Init()
+void CertPinBypass::PreInit()
 {
 	Hooks::Check_SSL_Cert->AddDetour(this, &CertPinBypass::On_Check_SSL_Cert);
 }

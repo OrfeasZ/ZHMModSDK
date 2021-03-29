@@ -18,6 +18,9 @@
 
 #include "Rendering/D3DUtils.h"
 #include "Fonts.h"
+#include "Globals.h"
+#include "ModSDK.h"
+#include "Glacier/ZRender.h"
 
 using namespace Rendering::Renderers;
 
@@ -27,7 +30,7 @@ bool ImGuiRenderer::m_ImguiInitialized = false;
 UINT ImGuiRenderer::m_BufferCount = 0;
 ID3D12DescriptorHeap* ImGuiRenderer::m_RtvDescriptorHeap = nullptr;
 ID3D12DescriptorHeap* ImGuiRenderer::m_SrvDescriptorHeap = nullptr;
-ID3D12CommandQueue* ImGuiRenderer::m_CommandQueue = nullptr;
+//ID3D12CommandQueue* ImGuiRenderer::m_CommandQueue = nullptr;
 ImGuiRenderer::FrameContext* ImGuiRenderer::m_FrameContext = nullptr;
 IDXGISwapChain3* ImGuiRenderer::m_SwapChain = nullptr;
 HWND ImGuiRenderer::m_Hwnd = nullptr;
@@ -36,16 +39,163 @@ bool ImGuiRenderer::m_Shutdown = false;
 int64_t ImGuiRenderer::m_Time = 0;
 int64_t ImGuiRenderer::m_TicksPerSecond = 0;
 
+ImFont* ImGuiRenderer::m_FontLight = nullptr;
+ImFont* ImGuiRenderer::m_FontRegular = nullptr;
+ImFont* ImGuiRenderer::m_FontMedium = nullptr;
+ImFont* ImGuiRenderer::m_FontBold = nullptr;
+ImFont* ImGuiRenderer::m_FontBlack = nullptr;
+
 volatile bool ImGuiRenderer::m_ImguiHasFocus = false;
+
+SRWLOCK ImGuiRenderer::m_Lock;
 
 void ImGuiRenderer::Init()
 {
+	InitializeSRWLock(&m_Lock);
+	
+	UI::Console::Init();
+	
 	QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
 	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
+	ImGuiIO& s_ImGuiIO = ImGui::GetIO();
+	ImGui::StyleColorsDark();
+
+	s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
+	s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
+	s_ImGuiIO.BackendPlatformName = "imgui_impl_win32";
+
+	// Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeysDown[] array that we will update during the application lifetime.
+	s_ImGuiIO.KeyMap[ImGuiKey_Tab] = VK_TAB;
+	s_ImGuiIO.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
+	s_ImGuiIO.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
+	s_ImGuiIO.KeyMap[ImGuiKey_UpArrow] = VK_UP;
+	s_ImGuiIO.KeyMap[ImGuiKey_DownArrow] = VK_DOWN;
+	s_ImGuiIO.KeyMap[ImGuiKey_PageUp] = VK_PRIOR;
+	s_ImGuiIO.KeyMap[ImGuiKey_PageDown] = VK_NEXT;
+	s_ImGuiIO.KeyMap[ImGuiKey_Home] = VK_HOME;
+	s_ImGuiIO.KeyMap[ImGuiKey_End] = VK_END;
+	s_ImGuiIO.KeyMap[ImGuiKey_Insert] = VK_INSERT;
+	s_ImGuiIO.KeyMap[ImGuiKey_Delete] = VK_DELETE;
+	s_ImGuiIO.KeyMap[ImGuiKey_Backspace] = VK_BACK;
+	s_ImGuiIO.KeyMap[ImGuiKey_Space] = VK_SPACE;
+	s_ImGuiIO.KeyMap[ImGuiKey_Enter] = VK_RETURN;
+	s_ImGuiIO.KeyMap[ImGuiKey_Escape] = VK_ESCAPE;
+	s_ImGuiIO.KeyMap[ImGuiKey_KeyPadEnter] = VK_RETURN;
+	s_ImGuiIO.KeyMap[ImGuiKey_A] = 'A';
+	s_ImGuiIO.KeyMap[ImGuiKey_C] = 'C';
+	s_ImGuiIO.KeyMap[ImGuiKey_V] = 'V';
+	s_ImGuiIO.KeyMap[ImGuiKey_X] = 'X';
+	s_ImGuiIO.KeyMap[ImGuiKey_Y] = 'Y';
+	s_ImGuiIO.KeyMap[ImGuiKey_Z] = 'Z';
+
+	s_ImGuiIO.BackendRendererName = "imgui_impl_dx12";
+	s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+
+	m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoLight_compressed_data, RobotoLight_compressed_size, 32.f);
+	m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data, RobotoRegular_compressed_size, 32.f);
+	m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoMedium_compressed_data, RobotoMedium_compressed_size, 32.f);
+	m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBold_compressed_data, RobotoBold_compressed_size, 32.f);
+	m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 32.f);
+
+	s_ImGuiIO.FontDefault = m_FontRegular;
+	
+	SetupStyles();
+
+	m_ImguiInitialized = true;
 
 	Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(nullptr, &ImGuiRenderer::WndProc);
 	Hooks::ZKeyboardWindows_Update->AddDetour(nullptr, &ImGuiRenderer::ZKeyboardWindows_Update);
 }
+
+void ImGuiRenderer::SetupStyles()
+{
+	auto& s_Style = ImGui::GetStyle();
+
+	s_Style.ChildRounding = 0.f;
+	s_Style.FrameRounding = 0.f;
+	s_Style.GrabRounding = 0.f;
+	s_Style.PopupRounding = 0.f;
+	s_Style.ScrollbarRounding = 0.f;
+	s_Style.TabRounding = 0.f;
+	s_Style.WindowRounding = 0.f;
+	s_Style.WindowBorderSize = 0.f;
+
+	s_Style.WindowPadding = ImVec2(20.f, 20.f);
+	s_Style.FramePadding = ImVec2(10.f, 10.f);
+	s_Style.CellPadding = ImVec2(5.f, 5.f);
+	s_Style.ItemSpacing = ImVec2(20.f, 10.f);
+	s_Style.ItemInnerSpacing = ImVec2(10.f, 10.f);
+	s_Style.TouchExtraPadding = ImVec2(0.f, 0.f);
+	s_Style.IndentSpacing = 20.f;
+	s_Style.ScrollbarSize = 20.f;
+	s_Style.GrabMinSize = 20.f;
+
+	s_Style.WindowBorderSize = 0.f;
+	s_Style.ChildBorderSize = 0.f;
+	s_Style.PopupBorderSize = 0.f;
+	s_Style.FrameBorderSize = 0.f;
+	s_Style.TabBorderSize = 0.f;
+
+	ImVec4* s_Colors = s_Style.Colors;
+	s_Colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+	s_Colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+	s_Colors[ImGuiCol_WindowBg] = ImVec4(0.18f, 0.19f, 0.22f, 1.00f);
+	s_Colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	s_Colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
+	s_Colors[ImGuiCol_Border] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+	s_Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	s_Colors[ImGuiCol_FrameBg] = ImVec4(0.06f, 0.05f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_FrameBgHovered] = ImVec4(1.00f, 1.00f, 1.00f, 0.13f);
+	s_Colors[ImGuiCol_FrameBgActive] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_TitleBg] = ImVec4(0.18f, 0.19f, 0.22f, 1.00f);
+	s_Colors[ImGuiCol_TitleBgActive] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.18f, 0.19f, 0.22f, 1.00f);
+	s_Colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+	s_Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
+	s_Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+	s_Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+	s_Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+	s_Colors[ImGuiCol_CheckMark] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_SliderGrab] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.06f, 0.05f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_Button] = ImVec4(0.55f, 0.11f, 0.13f, 1.00f);
+	s_Colors[ImGuiCol_ButtonHovered] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_ButtonActive] = ImVec4(0.06f, 0.05f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_Header] = ImVec4(0.55f, 0.11f, 0.13f, 1.00f);
+	s_Colors[ImGuiCol_HeaderHovered] = ImVec4(0.98f, 0.00f, 0.00f, 1.00f);
+	s_Colors[ImGuiCol_HeaderActive] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_Separator] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+	s_Colors[ImGuiCol_SeparatorHovered] = ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
+	s_Colors[ImGuiCol_SeparatorActive] = ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
+	s_Colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.09f);
+	s_Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.55f, 0.11f, 0.13f, 1.00f);
+	s_Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_Tab] = ImVec4(0.55f, 0.11f, 0.13f, 1.00f);
+	s_Colors[ImGuiCol_TabHovered] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_TabActive] = ImVec4(0.98f, 0.00f, 0.05f, 1.00f);
+	s_Colors[ImGuiCol_TabUnfocused] = ImVec4(0.07f, 0.10f, 0.15f, 0.97f);
+	s_Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.14f, 0.26f, 0.42f, 1.00f);
+	s_Colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+	s_Colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+	s_Colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	s_Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+	s_Colors[ImGuiCol_TableHeaderBg] = ImVec4(0.19f, 0.19f, 0.20f, 1.00f);
+	s_Colors[ImGuiCol_TableBorderStrong] = ImVec4(0.31f, 0.31f, 0.35f, 1.00f);
+	s_Colors[ImGuiCol_TableBorderLight] = ImVec4(0.23f, 0.23f, 0.25f, 1.00f);
+	s_Colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	s_Colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
+	s_Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+	s_Colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+	s_Colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+	s_Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+	s_Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+	s_Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+}
+
 
 void ImGuiRenderer::OnEngineInit()
 {
@@ -60,6 +210,8 @@ void ImGuiRenderer::Shutdown()
 	Hooks::ZKeyboardWindows_Update->RemoveDetour(&ImGuiRenderer::ZKeyboardWindows_Update);
 
 	OnReset();
+	
+	UI::Console::Shutdown();
 }
 
 void ImGuiRenderer::Draw()
@@ -103,10 +255,14 @@ void ImGuiRenderer::Draw()
 	{
 		UI::Console::Draw();
 	}
+
+	ModSDK::GetInstance()->OnDrawUI(m_ImguiHasFocus);
 }
 
 void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
+	ScopedSharedGuard s_Guard(&m_Lock);
+
 	if (m_Shutdown)
 		return;
 	
@@ -120,7 +276,7 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 	if (m_SwapChain != p_SwapChain)
 		return;
 
-	if (!m_CommandQueue)
+	if (!Globals::RenderManager->m_pDevice->m_pCommandQueue)
 		return;
 
 	const auto s_BackBufferIndex = p_SwapChain->GetCurrentBackBufferIndex();
@@ -187,7 +343,7 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
 	const auto s_SyncValue = s_Frame.FenceValue + 1;
 
-	if (SUCCEEDED(m_CommandQueue->Signal(s_Frame.Fence, s_SyncValue)))
+	if (SUCCEEDED(Globals::RenderManager->m_pDevice->m_pCommandQueue->Signal(s_Frame.Fence, s_SyncValue)))
 		s_Frame.FenceValue = s_SyncValue;
 }
 
@@ -286,63 +442,24 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	if (p_SwapChain->GetHwnd(&m_Hwnd) != S_OK)
 		return false;
 
-	if (!m_ImguiInitialized)
-	{
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-
-		ImGuiIO& s_ImGuiIO = ImGui::GetIO();
-		ImGui::StyleColorsDark();
-
-		s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
-		s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
-		s_ImGuiIO.BackendPlatformName = "imgui_impl_win32";
-		s_ImGuiIO.ImeWindowHandle = m_Hwnd;
-
-		// Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeysDown[] array that we will update during the application lifetime.
-		s_ImGuiIO.KeyMap[ImGuiKey_Tab] = VK_TAB;
-		s_ImGuiIO.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
-		s_ImGuiIO.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
-		s_ImGuiIO.KeyMap[ImGuiKey_UpArrow] = VK_UP;
-		s_ImGuiIO.KeyMap[ImGuiKey_DownArrow] = VK_DOWN;
-		s_ImGuiIO.KeyMap[ImGuiKey_PageUp] = VK_PRIOR;
-		s_ImGuiIO.KeyMap[ImGuiKey_PageDown] = VK_NEXT;
-		s_ImGuiIO.KeyMap[ImGuiKey_Home] = VK_HOME;
-		s_ImGuiIO.KeyMap[ImGuiKey_End] = VK_END;
-		s_ImGuiIO.KeyMap[ImGuiKey_Insert] = VK_INSERT;
-		s_ImGuiIO.KeyMap[ImGuiKey_Delete] = VK_DELETE;
-		s_ImGuiIO.KeyMap[ImGuiKey_Backspace] = VK_BACK;
-		s_ImGuiIO.KeyMap[ImGuiKey_Space] = VK_SPACE;
-		s_ImGuiIO.KeyMap[ImGuiKey_Enter] = VK_RETURN;
-		s_ImGuiIO.KeyMap[ImGuiKey_Escape] = VK_ESCAPE;
-		s_ImGuiIO.KeyMap[ImGuiKey_KeyPadEnter] = VK_RETURN;
-		s_ImGuiIO.KeyMap[ImGuiKey_A] = 'A';
-		s_ImGuiIO.KeyMap[ImGuiKey_C] = 'C';
-		s_ImGuiIO.KeyMap[ImGuiKey_V] = 'V';
-		s_ImGuiIO.KeyMap[ImGuiKey_X] = 'X';
-		s_ImGuiIO.KeyMap[ImGuiKey_Y] = 'Y';
-		s_ImGuiIO.KeyMap[ImGuiKey_Z] = 'Z';
-
-		s_ImGuiIO.BackendRendererName = "imgui_impl_dx12";
-		s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
-
-		s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 16.f);
-
-		m_ImguiInitialized = true;
-	}
-
-	ImGuiIO& s_ImGuiIO = ImGui::GetIO();
-
-	RECT s_Rect = { 0, 0, 0, 0 };
-	GetClientRect(m_Hwnd, &s_Rect);
-	s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
-
 	if (!ImGui_ImplDX12_Init(s_Device, m_BufferCount, DXGI_FORMAT_R8G8B8A8_UNORM, m_SrvDescriptorHeap, m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()))
 		return false;
 
 	if (!ImGui_ImplDX12_CreateDeviceObjects())
 		return false;
 
+	SetupStyles();
+	
+	ImGuiIO& s_ImGuiIO = ImGui::GetIO();
+
+	RECT s_Rect = { 0, 0, 0, 0 };
+	GetClientRect(m_Hwnd, &s_Rect);
+	
+	s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
+	s_ImGuiIO.ImeWindowHandle = m_Hwnd;
+
+	s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
+	
 	m_RendererSetup = true;
 
 	Logger::Debug("ImGui renderer successfully set up.");
@@ -352,6 +469,8 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
 void ImGuiRenderer::OnReset()
 {
+	ScopedExclusiveGuard s_Guard(&m_Lock);
+
 	Logger::Debug("Resetting ImGui renderer.");
 
 	m_RendererSetup = false;
@@ -409,7 +528,7 @@ void ImGuiRenderer::OnReset()
 	delete[] m_FrameContext;
 	m_FrameContext = nullptr;
 
-	m_CommandQueue = nullptr;
+	//m_CommandQueue = nullptr;
 
 	if (m_RtvDescriptorHeap)
 	{
@@ -430,13 +549,13 @@ void ImGuiRenderer::OnReset()
 
 void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 {
-	if (m_Shutdown)
+	/*if (m_Shutdown)
 		return;
 
 	if (!m_RendererSetup || m_CommandQueue || !m_SwapChain)
 		return;
-
-	m_CommandQueue = p_CommandQueue;
+	
+	m_CommandQueue = Globals::RenderManager->m_pDevice->m_pCommandQueue;*/
 }
 
 void ImGuiRenderer::WaitForGpu(FrameContext* p_Frame)
@@ -444,12 +563,12 @@ void ImGuiRenderer::WaitForGpu(FrameContext* p_Frame)
 	if (p_Frame->Recording)
 		ExecuteCmdList(p_Frame);
 
-	if (!p_Frame->FenceEvent || !m_CommandQueue)
+	if (!p_Frame->FenceEvent || !Globals::RenderManager->m_pDevice->m_pCommandQueue)
 		return;
 
 	const auto s_SyncValue = p_Frame->FenceValue + 1;
 
-	if (FAILED(m_CommandQueue->Signal(p_Frame->Fence, s_SyncValue)))
+	if (FAILED(Globals::RenderManager->m_pDevice->m_pCommandQueue->Signal(p_Frame->Fence, s_SyncValue)))
 		return;
 
 	if (SUCCEEDED(p_Frame->Fence->SetEventOnCompletion(s_SyncValue, p_Frame->FenceEvent)))
@@ -469,7 +588,7 @@ void ImGuiRenderer::ExecuteCmdList(FrameContext* p_Frame)
 		p_Frame->CommandList,
 	};
 
-	m_CommandQueue->ExecuteCommandLists(1, s_CommandLists);
+	Globals::RenderManager->m_pDevice->m_pCommandQueue->ExecuteCommandLists(1, s_CommandLists);
 }
 
 DECLARE_STATIC_DETOUR(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
@@ -486,6 +605,17 @@ DECLARE_STATIC_DETOUR(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* 
 	if (!m_ImguiHasFocus)
 		return HookResult<LRESULT>(HookAction::Continue());
 
+	// If we got a quit / close message then return control back to the process.
+	if (p_Message == WM_QUIT || p_Message == WM_DESTROY || p_Message == WM_NCDESTROY || p_Message == WM_CLOSE)
+	{
+		m_ImguiHasFocus = false;
+		return HookResult<LRESULT>(HookAction::Continue());
+	}
+	
+	// Pass resizing messages down to the process.
+	if (p_Message == WM_SIZE)
+		return HookResult<LRESULT>(HookAction::Continue());
+	
 	ImGuiIO& s_ImGuiIO = ImGui::GetIO();
 
 	switch (p_Message)

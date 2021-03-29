@@ -21,7 +21,6 @@ struct GeneratedType
 class CodeGen : public IPluginInterface
 {
 public:
-	void Init() override;
 	void OnEngineInitialized() override;
 
 private:

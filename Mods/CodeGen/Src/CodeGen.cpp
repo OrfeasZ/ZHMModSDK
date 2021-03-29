@@ -11,10 +11,6 @@
 #include <iostream>
 #include <fstream>
 
-void CodeGen::Init()
-{
-}
-
 void CodeGen::OnEngineInitialized()
 {
 	Generate();

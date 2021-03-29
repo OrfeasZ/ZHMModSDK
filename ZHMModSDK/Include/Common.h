@@ -1,5 +1,8 @@
 #pragma once
 
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 #if LOADER_EXPORTS
 #	define ZHMSDK_API __declspec(dllexport)
 #else
@@ -30,4 +33,38 @@ public:
 
 private:
 	IDestructible** m_Destructible;
+};
+
+class ScopedSharedGuard
+{
+public:
+	ScopedSharedGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock)
+	{
+		AcquireSRWLockShared(m_Lock);
+	}
+
+	~ScopedSharedGuard()
+	{
+		ReleaseSRWLockShared(m_Lock);
+	}
+
+private:
+	SRWLOCK* m_Lock;
+};
+
+class ScopedExclusiveGuard
+{
+public:
+	ScopedExclusiveGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock)
+	{
+		AcquireSRWLockExclusive(m_Lock);
+	}
+
+	~ScopedExclusiveGuard()
+	{
+		ReleaseSRWLockExclusive(m_Lock);
+	}
+
+private:
+	SRWLOCK* m_Lock;
 };

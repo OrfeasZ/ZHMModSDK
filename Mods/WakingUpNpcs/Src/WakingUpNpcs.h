@@ -11,7 +11,7 @@ public:
 	WakingUpNpcs();
 	~WakingUpNpcs() override;
 
-	void Init() override;
+	void PreInit() override;
 	void OnEngineInitialized() override;
 
 private:

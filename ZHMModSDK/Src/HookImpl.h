@@ -56,6 +56,22 @@ public:
 		for (auto s_Hook : *g_Hooks)
 			s_Hook->RemoveAllDetours();
 	}
+
+	static void DestroyHooks()
+	{
+		if (g_Hooks == nullptr)
+			return;
+
+		for (auto s_Hook : *g_Hooks)
+			s_Hook->RemoveAllDetours();
+		
+		Util::ProcessUtils::SuspendAllThreadsButCurrent();
+
+		for (auto s_Hook : *g_Hooks)
+			s_Hook->Remove();
+		
+		Util::ProcessUtils::ResumeSuspendedThreads();
+	}
 };
 
 #pragma pack(push, 1)
@@ -239,7 +255,7 @@ protected:
 	}
 
 public:
-	~HookImpl() override
+	void Remove() override
 	{
 		AcquireSRWLockExclusive(&m_Lock);
 
@@ -250,11 +266,13 @@ public:
 		{
 			MH_DisableHook(m_Target);
 			MH_RemoveHook(m_Target);
+			
+			this->m_OriginalFunc = reinterpret_cast<typename Hook<ReturnType(Args...)>::OriginalFunc_t>(m_Target);
 		}
 
-		ReleaseSRWLockExclusive(&m_Lock);
+		m_Target = nullptr;
 
-		HookRegistry::RemoveHook(this);
+		ReleaseSRWLockExclusive(&m_Lock);
 	}
 
 	void RemoveDetoursWithContext(void* p_Context) override
@@ -396,8 +414,10 @@ public:
 	{
 	}
 
-	~PatternCallHook() override
+	void Remove() override
 	{
+		Util::ProcessUtils::SuspendAllThreadsButCurrent();
+
 		// Restore the original call.
 		const ptrdiff_t s_Distance = reinterpret_cast<uintptr_t>(this->m_OriginalFunc) - (m_Target + 5);
 
@@ -409,13 +429,13 @@ public:
 		*reinterpret_cast<int32_t*>(m_Target + 1) = static_cast<int32_t>(s_Distance);
 
 		VirtualProtect(reinterpret_cast<void*>(m_Target), 5, s_OldProtect, nullptr);
+
+		Util::ProcessUtils::ResumeSuspendedThreads();
 	}
 
 private:
 	typename Hook<ReturnType(Args...)>::OriginalFunc_t InstallDetourAndGetOriginal(const char* p_HookName, const char* p_Pattern, const char* p_Mask, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour)
 	{
-		Util::ProcessUtils::SuspendAllThreadsButCurrent();
-
 		const auto* s_Pattern = reinterpret_cast<const uint8_t*>(p_Pattern);
 		m_Target = Util::ProcessUtils::SearchPattern(ModSDK::GetInstance()->GetModuleBase(), ModSDK::GetInstance()->GetSizeOfCode(), s_Pattern, p_Mask);
 
@@ -545,33 +565,25 @@ private:
 		#HookName, \
 		Pattern, Mask, \
 		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
-	);\
-	\
-	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
+	);
 
 #define PATTERN_CALL_HOOK(Pattern, Mask, HookName, HookType) \
 	Hook<HookType>* Hooks::HookName = new PatternCallHook<HookType>(\
 		#HookName, \
 		Pattern, Mask, \
 		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
-	);\
-	\
-	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
+	);
 
 #define PATTERN_RELATIVE_CALL_HOOK(Pattern, Mask, HookName, HookType) \
 	Hook<HookType>* Hooks::HookName = new PatternRelativeCallHook<HookType>(\
 		#HookName, \
 		Pattern, Mask, \
 		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
-	);\
-	\
-	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
+	);
 
 #define MODULE_HOOK(ModuleName, FunctionName, HookName, HookType) \
 	Hook<HookType>* Hooks::HookName = new ModuleHook<HookType>(\
 		#HookName, \
 		ModuleName, FunctionName, \
 		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
-	);\
-	\
-	static ScopedDestructible g_ ## HookName ## _Destructible = ScopedDestructible(reinterpret_cast<IDestructible**>(&Hooks::HookName));
+	);

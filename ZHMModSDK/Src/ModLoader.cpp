@@ -4,15 +4,10 @@
 #include <filesystem>
 
 #include "EventDispatcherImpl.h"
-#include "Globals.h"
 #include "HookImpl.h"
 #include "IPluginInterface.h"
 #include "Logging.h"
 #include "Util/StringUtils.h"
-
-#include <Glacier/ZModule.h>
-
-#include <Rendering/D3D12Renderer.h>
 
 ModLoader::ModLoader()
 {
@@ -27,36 +22,7 @@ ModLoader::~ModLoader()
 
 void ModLoader::Startup()
 {
-	// Notify all loaded mods that the engine has intialized once it has.
-	Hooks::Engine_Init->AddDetour(this, [](void* p_Ctx, auto p_Hook, void* th, void* a2)
-		{
-			auto s_Result = p_Hook->CallOriginal(th, a2);
-
-			Rendering::D3D12Renderer::OnEngineInit();
-
-			Logger::Debug("Engine was initialized. Notifying mods.");
-
-			auto s_Loader = static_cast<ModLoader*>(p_Ctx);
-
-			for (auto& s_Mod : s_Loader->m_LoadedMods)
-				s_Mod.second.PluginInterface->OnEngineInitialized();
-
-			return HookResult<bool>(HookAction::Return {}, s_Result);
-		});
-
 	LoadAllMods();
-
-	// If the engine is already initialized, inform the mods.
-	// TODO: This isn't a good check. Fix it.
-	if (*Globals::Hitman5Module != nullptr && (*Globals::Hitman5Module)->m_pEntitySceneContext != nullptr)
-	{
-		Rendering::D3D12Renderer::OnEngineInit();
-
-		Logger::Debug("Engine is already initialized. Calling mod initialized methods.");
-		
-		for (auto& s_Mod : m_LoadedMods)
-			s_Mod.second.PluginInterface->OnEngineInitialized();
-	}
 }
 
 void ModLoader::LoadAllMods()
@@ -151,35 +117,44 @@ void ModLoader::LoadMod(const std::string& p_Name)
 		return;
 	}
 
-	s_PluginInterface->Init();
-
-	Logger::Info("Initialized mod '{}'.", p_Name);
-
 	LoadedMod s_Mod {};
 	s_Mod.Module = s_Module;
 	s_Mod.PluginInterface = s_PluginInterface;
 
 	m_LoadedMods[s_Name] = s_Mod;
+	m_ModList.push_back(s_PluginInterface);
+
+	ModSDK::GetInstance()->OnModLoaded(s_Name, s_PluginInterface);
 }
 
 void ModLoader::UnloadMod(const std::string& p_Name)
 {
 	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
-	auto it = m_LoadedMods.find(s_Name);
+	auto s_ModMapIt = m_LoadedMods.find(s_Name);
 
-	if (it == m_LoadedMods.end())
+	if (s_ModMapIt == m_LoadedMods.end())
 		return;
 
 	Logger::Info("Unloading mod '{}'.", p_Name);
 
-	HookRegistry::ClearDetoursWithContext(it->second.PluginInterface);
-	EventDispatcherRegistry::ClearPluginListeners(it->second.PluginInterface);
+	HookRegistry::ClearDetoursWithContext(s_ModMapIt->second.PluginInterface);
+	EventDispatcherRegistry::ClearPluginListeners(s_ModMapIt->second.PluginInterface);
 
-	delete it->second.PluginInterface;
-	FreeLibrary(it->second.Module);
+	for (auto it = m_ModList.begin(); it != m_ModList.end();)
+	{
+		if (*it == s_ModMapIt->second.PluginInterface)
+			it = m_ModList.erase(it);
+		else
+			++it;
+	}
+	
+	delete s_ModMapIt->second.PluginInterface;
+	FreeLibrary(s_ModMapIt->second.Module);
 
-	m_LoadedMods.erase(it);
+	m_LoadedMods.erase(s_ModMapIt);
+
+	ModSDK::GetInstance()->OnModUnloaded(s_Name);
 }
 
 void ModLoader::ReloadMod(const std::string& p_Name)

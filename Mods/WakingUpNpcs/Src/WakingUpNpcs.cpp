@@ -23,7 +23,7 @@ WakingUpNpcs::~WakingUpNpcs()
 	Hooks::ZGameLoopManager_UnregisterFrameUpdate->Call(Globals::GameLoopManager, s_Delegate, 0, EUpdateMode::eUpdatePlayMode);
 }
 
-void WakingUpNpcs::Init()
+void WakingUpNpcs::PreInit()
 {
 	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &WakingUpNpcs::OnLoadScene);
 	Events::OnConsoleCommand->AddListener(this, &WakingUpNpcs::OnConsoleCommand);

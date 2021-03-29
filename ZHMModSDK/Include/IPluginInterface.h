@@ -7,8 +7,25 @@ class IPluginInterface
 {
 public:
 	virtual ~IPluginInterface() {}
-	virtual void Init() = 0;
+	virtual void PreInit() {}
+	virtual void Init() {}
 	virtual void OnEngineInitialized() {}
+	virtual void OnDrawUI(bool p_HasFocus) {}
+	virtual void OnDraw3D() {}
+
+private:
+	virtual void SetupUI()
+	{
+		auto* s_Context = SDK()->GetImGuiContext();
+
+		if (!s_Context)
+			return;
+
+		ImGui::SetCurrentContext(s_Context);
+		ImGui::SetAllocatorFunctions(SDK()->GetImGuiAlloc(), SDK()->GetImGuiFree(), SDK()->GetImGuiAllocatorUserData());
+	}
+
+	friend class ModSDK;
 };
 
 typedef IPluginInterface* (__cdecl* GetPluginInterface_t)();

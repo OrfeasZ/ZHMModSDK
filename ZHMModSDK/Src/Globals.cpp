@@ -64,10 +64,16 @@ PATTERN_RELATIVE_GLOBAL(
 	ZRenderManager*, RenderManager
 )
 
-
 PATTERN_RELATIVE_GLOBAL(
 	"\x48\x89\x1D\x00\x00\x00\x00\x48\x8D\x15",
 	"xxx????xxx",
 	3,
 	ZApplicationEngineWin32**, ApplicationEngineWin32
+)
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x48\x8B\xCE\x48\xC7\x46\x20",
+	"xxx????x????xxxxxxx",
+	3,
+	ZGameUIManager*, GameUIManager
 )

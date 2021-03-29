@@ -2,22 +2,39 @@
 
 #include <imgui.h>
 
+#include "IModSDK.h"
+
 using namespace UI;
 
 std::vector<Console::LogLine>* Console::m_LogLines = nullptr;
+bool Console::m_ShouldScroll = false;
+SRWLOCK Console::m_Lock;
+
+void Console::Init()
+{
+	InitializeSRWLock(&m_Lock);
+}
+
+void Console::Shutdown()
+{
+}
 
 void Console::Draw()
 {
-	bool s_Open = true;
-	ImGui::Begin("Console", &s_Open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+	ImGui::PushFont(SDK()->GetImGuiBlackFont());
+	ImGui::Begin("CONSOLE", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |ImGuiWindowFlags_NoScrollbar);
+	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	auto& s_ImGuiIO = ImGui::GetIO();
-	ImGui::SetWindowSize(ImVec2(s_ImGuiIO.DisplaySize.x - 60, 200), ImGuiCond_Always);
+	ImGui::SetWindowSize(ImVec2(s_ImGuiIO.DisplaySize.x - 60, 400), ImGuiCond_Always);
 	ImGui::SetWindowPos(ImVec2(30, 30), ImGuiCond_Always);
 
 	// Render the list of log lines.
-	ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+	const float s_FooterHeight = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+	ImGui::BeginChild("ScrollingRegion", ImVec2(0, -s_FooterHeight), false, ImGuiWindowFlags_HorizontalScrollbar);
 
+	AcquireSRWLockShared(&m_Lock);
+	
 	for (auto& s_LogLine : *m_LogLines)
 	{
 		ImVec4 s_Color;
@@ -52,7 +69,15 @@ void Console::Draw()
 		if (s_Colored)
 			ImGui::PopStyleColor();
 	}
+	
+	ReleaseSRWLockShared(&m_Lock);
 
+	if (m_ShouldScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+	{
+		ImGui::SetScrollY(ImGui::GetScrollMaxY());
+		m_ShouldScroll = false;
+	}
+	
 	ImGui::EndChild();
 
 	// Render the text input.
@@ -60,17 +85,25 @@ void Console::Draw()
 
 	char s_Command[2048];
 	memset(s_Command, 0, sizeof(s_Command));
-	ImGui::InputText("ConsoleInput", s_Command, IM_ARRAYSIZE(s_Command), ImGuiInputTextFlags_EnterReturnsTrue);
+	ImGui::InputText("", s_Command, IM_ARRAYSIZE(s_Command), ImGuiInputTextFlags_EnterReturnsTrue);
 
 	ImGui::SetItemDefaultFocus();
 
+	ImGui::PopFont();
 	ImGui::End();
+	ImGui::PopFont();
 }
 
 void Console::AddLogLine(spdlog::level::level_enum p_Level, const ZString& p_Text)
 {
+	AcquireSRWLockExclusive(&m_Lock);
+	
 	if (m_LogLines == nullptr)
 		m_LogLines = new std::vector<LogLine>();
 	
 	m_LogLines->push_back(LogLine { p_Level, ZString::CopyFrom(p_Text) });
+
+	m_ShouldScroll = true;
+
+	ReleaseSRWLockExclusive(&m_Lock);
 }

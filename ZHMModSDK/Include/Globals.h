@@ -12,6 +12,7 @@ class ZGameContext;
 class ZActorManager;
 class ZRenderManager;
 class ZApplicationEngineWin32;
+class ZGameUIManager;
 
 class ZHMSDK_API Globals
 {
@@ -26,4 +27,5 @@ public:
 	static ZMemoryManager** MemoryManager;
 	static ZRenderManager* RenderManager;
 	static ZApplicationEngineWin32** ApplicationEngineWin32;
+	static ZGameUIManager* GameUIManager;
 };

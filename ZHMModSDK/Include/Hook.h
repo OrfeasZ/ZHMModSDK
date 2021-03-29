@@ -23,6 +23,7 @@ protected:
 	virtual Detour** GetDetours() = 0;
 	virtual void LockForCall() = 0;
 	virtual void UnlockForCall() = 0;
+	virtual void Remove() = 0;
 
 	void* m_OriginalFunc = nullptr;
 

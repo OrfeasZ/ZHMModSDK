@@ -8,7 +8,7 @@
 class NoPause : public IPluginInterface
 {
 public:
-	void Init() override;
+	void PreInit() override;
 
 private:
 	DEFINE_PLUGIN_DETOUR(NoPause, bool, GetOption, const ZString&, bool);

@@ -27,7 +27,7 @@ using namespace Rendering::Renderers;
 bool DirectXTKRenderer::m_RendererSetup = false;
 UINT DirectXTKRenderer::m_BufferCount = 0;
 ID3D12DescriptorHeap* DirectXTKRenderer::m_RtvDescriptorHeap = nullptr;
-ID3D12CommandQueue* DirectXTKRenderer::m_CommandQueue = nullptr;
+//ID3D12CommandQueue* DirectXTKRenderer::m_CommandQueue = nullptr;
 DirectXTKRenderer::FrameContext* DirectXTKRenderer::m_FrameContext = nullptr;
 IDXGISwapChain3* DirectXTKRenderer::m_SwapChain = nullptr;
 HWND DirectXTKRenderer::m_Hwnd = nullptr;
@@ -47,9 +47,11 @@ std::unique_ptr<DirectX::DescriptorHeap> DirectXTKRenderer::m_ResourceDescriptor
 std::unique_ptr<DirectX::SpriteFont> DirectXTKRenderer::m_Font;
 std::unique_ptr<DirectX::SpriteBatch> DirectXTKRenderer::m_SpriteBatch;
 
+SRWLOCK DirectXTKRenderer::m_Lock;
+
 void DirectXTKRenderer::Init()
 {
-	Hooks::ZRenderGraphNodeCamera_Unknown01->AddDetour(nullptr, &DirectXTKRenderer::ZRenderGraphNodeCamera_Unknown01);
+	Hooks::ZRenderVRDeviceDummy_Unknown01->AddDetour(nullptr, &DirectXTKRenderer::ZRenderVRDeviceDummy_Unknown01);
 }
 
 void DirectXTKRenderer::OnEngineInit()
@@ -60,21 +62,24 @@ void DirectXTKRenderer::Shutdown()
 {
 	m_Shutdown = true;
 
-	Hooks::ZRenderGraphNodeCamera_Unknown01->RemoveDetour(&DirectXTKRenderer::ZRenderGraphNodeCamera_Unknown01);
+	Hooks::ZRenderVRDeviceDummy_Unknown01->RemoveDetour(&DirectXTKRenderer::ZRenderVRDeviceDummy_Unknown01);
 
 	OnReset();
 }
 
-DECLARE_STATIC_DETOUR(DirectXTKRenderer, bool, ZRenderGraphNodeCamera_Unknown01, void* a1)
+DECLARE_STATIC_DETOUR(DirectXTKRenderer, bool, ZRenderVRDeviceDummy_Unknown01, void* a1)
 {
 	m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pRenderContext->m_mWorldToView);
 	m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pRenderContext->m_mViewToProjection);
 
 	m_ViewProjection = m_View * m_Projection;
 
-	m_LineEffect->SetView(m_View);
-	m_LineEffect->SetProjection(m_Projection);
-
+	if (m_RendererSetup)
+	{
+		m_LineEffect->SetView(m_View);
+		m_LineEffect->SetProjection(m_Projection);
+	}
+	
 	return HookResult<bool>(HookAction::Continue());
 }
 
@@ -164,9 +169,14 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 
 void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
+	ScopedSharedGuard s_Guard(&m_Lock);
+
 	if (m_Shutdown)
 		return;
 
+	if (!Globals::RenderManager->m_pDevice->m_pCommandQueue)
+		return;
+	
 	if (!SetupRenderer(p_SwapChain))
 	{
 		Logger::Error("Failed to set up DirectXTK renderer.");
@@ -175,9 +185,6 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 	}
 
 	if (m_SwapChain != p_SwapChain)
-		return;
-
-	if (!m_CommandQueue)
 		return;
 
 	const auto s_BackBufferIndex = p_SwapChain->GetCurrentBackBufferIndex();
@@ -245,7 +252,7 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
 	const auto s_SyncValue = s_Frame.FenceValue + 1;
 
-	if (SUCCEEDED(m_CommandQueue->Signal(s_Frame.Fence, s_SyncValue)))
+	if (SUCCEEDED(Globals::RenderManager->m_pDevice->m_pCommandQueue->Signal(s_Frame.Fence, s_SyncValue)))
 		s_Frame.FenceValue = s_SyncValue;
 }
 
@@ -254,10 +261,10 @@ void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain)
 	if (m_Shutdown)
 		return;
 
-	if (!m_CommandQueue || !m_SwapChain)
+	if (!Globals::RenderManager->m_pDevice->m_pCommandQueue || !m_SwapChain)
 		return;
 
-	m_GraphicsMemory->Commit(m_CommandQueue);
+	m_GraphicsMemory->Commit(Globals::RenderManager->m_pDevice->m_pCommandQueue);
 }
 
 bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
@@ -369,33 +376,29 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	{
 		m_ResourceDescriptors = std::make_unique<DirectX::DescriptorHeap>(s_Device, static_cast<int>(Descriptors::Count));
 
-		DirectX::ResourceUploadBatch resourceUpload(s_Device);
+		DirectX::ResourceUploadBatch s_ResourceUpload(s_Device);
 
-		resourceUpload.Begin();
+		s_ResourceUpload.Begin();
 
 		m_Font = std::make_unique<DirectX::SpriteFont>(
 			s_Device,
-			resourceUpload,
+			s_ResourceUpload,
 			RobotoRegularSpritefont_data,
 			RobotoRegularSpritefont_size,
 			m_ResourceDescriptors->GetCpuHandle(static_cast<int>(Descriptors::FontRegular)),
 			m_ResourceDescriptors->GetGpuHandle(static_cast<int>(Descriptors::FontRegular))
-			);
+		);
 
-		DirectX::RenderTargetState rtState(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT);
+		DirectX::RenderTargetState s_RtState(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT);
 
-		DirectX::SpriteBatchPipelineStateDescription pd(rtState);
-		m_SpriteBatch = std::make_unique<DirectX::SpriteBatch>(s_Device, resourceUpload, pd);
+		DirectX::SpriteBatchPipelineStateDescription s_Desc(s_RtState);
+		m_SpriteBatch = std::make_unique<DirectX::SpriteBatch>(s_Device, s_ResourceUpload, s_Desc);
 
-		auto uploadResourcesFinished = resourceUpload.End(m_CommandQueue);
-
-		uploadResourcesFinished.wait();
-
-		D3D12_VIEWPORT viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
-		m_SpriteBatch->SetViewport(viewport);
+		s_ResourceUpload.End(Globals::RenderManager->m_pDevice->m_pCommandQueue).wait();
+		
+		D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
+		m_SpriteBatch->SetViewport(s_Viewport);
 	}
-
-	m_World = m_View = m_Projection = DirectX::SimpleMath::Matrix::Identity;
 
 	m_LineEffect->SetWorld(m_World);
 	m_LineEffect->SetView(m_View);
@@ -410,6 +413,8 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
 void DirectXTKRenderer::OnReset()
 {
+	ScopedExclusiveGuard s_Guard(&m_Lock);
+
 	Logger::Debug("Resetting DirectXTK renderer.");
 
 	m_RendererSetup = false;
@@ -470,7 +475,7 @@ void DirectXTKRenderer::OnReset()
 	delete[] m_FrameContext;
 	m_FrameContext = nullptr;
 
-	m_CommandQueue = nullptr;
+	//m_CommandQueue = nullptr;
 
 	if (m_RtvDescriptorHeap)
 	{
@@ -485,13 +490,13 @@ void DirectXTKRenderer::OnReset()
 
 void DirectXTKRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 {
-	if (m_Shutdown)
+	/*if (m_Shutdown)
 		return;
 
 	if (m_CommandQueue)
 		return;
 
-	m_CommandQueue = p_CommandQueue;
+	m_CommandQueue = Globals::RenderManager->m_pDevice->m_pCommandQueue;*/
 }
 
 void DirectXTKRenderer::WaitForGpu(FrameContext* p_Frame)
@@ -499,12 +504,12 @@ void DirectXTKRenderer::WaitForGpu(FrameContext* p_Frame)
 	if (p_Frame->Recording)
 		ExecuteCmdList(p_Frame);
 
-	if (!p_Frame->FenceEvent || !m_CommandQueue)
+	if (!p_Frame->FenceEvent || !Globals::RenderManager->m_pDevice->m_pCommandQueue)
 		return;
 
 	const auto s_SyncValue = p_Frame->FenceValue + 1;
 
-	if (FAILED(m_CommandQueue->Signal(p_Frame->Fence, s_SyncValue)))
+	if (FAILED(Globals::RenderManager->m_pDevice->m_pCommandQueue->Signal(p_Frame->Fence, s_SyncValue)))
 		return;
 
 	if (SUCCEEDED(p_Frame->Fence->SetEventOnCompletion(s_SyncValue, p_Frame->FenceEvent)))
@@ -524,5 +529,5 @@ void DirectXTKRenderer::ExecuteCmdList(FrameContext* p_Frame)
 		p_Frame->CommandList,
 	};
 
-	m_CommandQueue->ExecuteCommandLists(1, s_CommandLists);
+	Globals::RenderManager->m_pDevice->m_pCommandQueue->ExecuteCommandLists(1, s_CommandLists);
 }

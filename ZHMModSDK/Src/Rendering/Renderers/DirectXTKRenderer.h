@@ -5,7 +5,6 @@
 #include <memory>
 
 #include <GraphicsMemory.h>
-#include <wrl/client.h>
 
 #include "DescriptorHeap.h"
 #include "Effects.h"
@@ -65,13 +64,13 @@ namespace Rendering::Renderers
 		static void Draw(FrameContext* p_Frame);
 
 	private:
-		DEFINE_STATIC_DETOUR(bool, ZRenderGraphNodeCamera_Unknown01, void* th);
+		DEFINE_STATIC_DETOUR(bool, ZRenderVRDeviceDummy_Unknown01, void* th);
 
 	private:
 		static bool m_RendererSetup;
 		static UINT m_BufferCount;
 		static ID3D12DescriptorHeap* m_RtvDescriptorHeap;
-		static ID3D12CommandQueue* m_CommandQueue;
+		//static ID3D12CommandQueue* m_CommandQueue;
 		static FrameContext* m_FrameContext;
 		static IDXGISwapChain3* m_SwapChain;
 		static HWND m_Hwnd;
@@ -92,5 +91,7 @@ namespace Rendering::Renderers
 		static std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors;
 		static std::unique_ptr<DirectX::SpriteFont> m_Font;
 		static std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch;
+		
+		static SRWLOCK m_Lock;
 	};
 }

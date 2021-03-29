@@ -29,6 +29,12 @@ public:
 	void ReloadAllMods();
 	IPluginInterface* GetModByName(const std::string& p_Name);
 
+	std::vector<IPluginInterface*> GetLoadedMods() const
+	{
+		return m_ModList;
+	}
+	
 private:
+	std::vector<IPluginInterface*> m_ModList;
 	std::unordered_map<std::string, LoadedMod> m_LoadedMods;
 };
