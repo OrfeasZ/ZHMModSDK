@@ -31,6 +31,8 @@ void ModSelector::UpdateAvailableMods(const std::unordered_set<std::string>& p_M
 	// so the mod selector is shown automatically when a user launches the game.
 	if (p_ActiveMods.empty())
 		m_ShouldShow = true;
+	else
+		m_ShouldShow = false;
 }
 
 void ModSelector::Draw(bool p_HasFocus)
