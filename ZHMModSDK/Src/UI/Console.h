@@ -19,7 +19,7 @@ namespace UI
 	public:
 		static void Init();
 		static void Shutdown();
-		static void Draw();
+		static void Draw(bool p_HasFocus);
 		static void AddLogLine(spdlog::level::level_enum p_Level, const ZString& p_Text);
 
 	private:

@@ -10,3 +10,6 @@
 [submodule "External/DirectXTK12"]
 	path = External/DirectXTK12
 	url = https://github.com/microsoft/DirectXTK12.git
+[submodule "External/mINI"]
+	path = External/mINI
+	url = https://github.com/pulzed/mINI.git

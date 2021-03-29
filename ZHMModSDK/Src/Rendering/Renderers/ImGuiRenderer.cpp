@@ -14,7 +14,9 @@
 
 #include <Glacier/ZApplicationEngineWin32.h>
 
-#include <UI/Console.h>
+#include "UI/Console.h"
+#include "UI/MainMenu.h"
+#include "UI/ModSelector.h"
 
 #include "Rendering/D3DUtils.h"
 #include "Fonts.h"
@@ -54,6 +56,7 @@ void ImGuiRenderer::Init()
 	InitializeSRWLock(&m_Lock);
 	
 	UI::Console::Init();
+	UI::ModSelector::Init();
 	
 	QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
 	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
@@ -62,6 +65,8 @@ void ImGuiRenderer::Init()
 	ImGui::CreateContext();
 
 	ImGuiIO& s_ImGuiIO = ImGui::GetIO();
+	s_ImGuiIO.IniFilename = nullptr;
+	
 	ImGui::StyleColorsDark();
 
 	s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
@@ -251,10 +256,9 @@ void ImGuiRenderer::Draw()
 	// Construct the UI.
 	ImGui::NewFrame();
 
-	if (m_ImguiHasFocus)
-	{
-		UI::Console::Draw();
-	}
+	UI::MainMenu::Draw(m_ImguiHasFocus);
+	UI::Console::Draw(m_ImguiHasFocus);
+	UI::ModSelector::Draw(m_ImguiHasFocus);
 
 	ModSDK::GetInstance()->OnDrawUI(m_ImguiHasFocus);
 }

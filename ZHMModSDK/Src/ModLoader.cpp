@@ -8,6 +8,8 @@
 #include "IPluginInterface.h"
 #include "Logging.h"
 #include "Util/StringUtils.h"
+#include "UI/ModSelector.h"
+#include <ini.h>
 
 ModLoader::ModLoader()
 {
@@ -25,8 +27,11 @@ void ModLoader::Startup()
 	LoadAllMods();
 }
 
-void ModLoader::LoadAllMods()
+void ModLoader::ScanAvailableMods()
 {
+	m_AvailableMods.clear();
+	m_AvailableModsLower.clear();
+	
 	// Discover and load mods.
 	char s_ExePathStr[MAX_PATH];
 	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
@@ -51,13 +56,117 @@ void ModLoader::LoadAllMods()
 			if (s_Entry.path().extension() != ".dll")
 				continue;
 
-			LoadMod(s_Entry.path().stem().string());
+			m_AvailableMods.insert(s_Entry.path().filename().stem().string());
+			m_AvailableModsLower.insert(Util::StringUtils::ToLowerCase(s_Entry.path().filename().stem().string()));
 		}
 	}
 	else
 	{
 		Logger::Warn("Mod directory '{}' not found.", s_ModPath.string());
 	}
+
+	UI::ModSelector::UpdateAvailableMods(m_AvailableMods, GetActiveMods());
+}
+
+std::unordered_set<std::string> ModLoader::GetActiveMods()
+{
+	std::unordered_set<std::string> s_Mods;
+
+	for (auto& s_LoadedMod : m_LoadedMods)
+		s_Mods.insert(s_LoadedMod.first);
+
+	return s_Mods;
+}
+
+void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
+{
+	std::unordered_set<std::string> s_LowerModNames;
+
+	for (auto& s_Mod : p_Mods)
+		s_LowerModNames.insert(Util::StringUtils::ToLowerCase(s_Mod));
+	
+	// First unload any mods that don't exist in the new list.
+	std::vector<std::string> s_ModsToUnload;
+
+	for (auto& s_Pair : m_LoadedMods)
+		if (!s_LowerModNames.contains(s_Pair.first))
+			s_ModsToUnload.push_back(s_Pair.first);
+
+	for (auto& s_Mod : s_ModsToUnload)
+		UnloadMod(s_Mod);
+
+	// Then load any mods that aren't already loaded.
+	for (auto& s_Mod : s_LowerModNames)
+	{
+		// Mod is already loaded; skip.
+		if (m_LoadedMods.find(s_Mod) != m_LoadedMods.end())
+			continue;
+
+		LoadMod(s_Mod);
+	}
+
+	// And persist the mods to the ini file.
+	char s_ExePathStr[MAX_PATH];
+	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+
+	if (s_PathSize == 0)
+		return;
+
+	std::filesystem::path s_ExePath(s_ExePathStr);
+	auto s_ExeDir = s_ExePath.parent_path();
+
+	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
+
+	mINI::INIFile s_File(s_IniPath.string());
+	mINI::INIStructure s_Ini;
+
+	for (auto& s_Mod : p_Mods)
+	{
+		mINI::INIMap<std::string> s_EmptyMap;
+		s_Ini.set(s_Mod, s_EmptyMap);
+	}
+
+	s_File.generate(s_Ini, true);
+
+	UI::ModSelector::UpdateAvailableMods(m_AvailableMods, GetActiveMods());
+}
+
+std::unordered_set<std::string> ModLoader::GetAvailableMods()
+{
+	return m_AvailableMods;
+}
+
+void ModLoader::LoadAllMods()
+{
+	ScanAvailableMods();
+
+	// Get the mods we want to load.
+	char s_ExePathStr[MAX_PATH];
+	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+
+	if (s_PathSize == 0)
+		return;
+
+	std::filesystem::path s_ExePath(s_ExePathStr);
+	auto s_ExeDir = s_ExePath.parent_path();
+
+	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
+
+	mINI::INIFile s_File(s_IniPath.string());
+	mINI::INIStructure s_Ini;
+
+	// now we can read the file
+	s_File.read(s_Ini);
+
+	for (auto& s_Mod : s_Ini)
+	{
+		if (m_AvailableModsLower.contains(Util::StringUtils::ToLowerCase(s_Mod.first)))
+		{
+			LoadMod(s_Mod.first);
+		}
+	}
+
+	UI::ModSelector::UpdateAvailableMods(m_AvailableMods, GetActiveMods());
 }
 
 void ModLoader::LoadMod(const std::string& p_Name)

@@ -19,6 +19,7 @@ set_target_properties(ZHMModSDK PROPERTIES
 
 target_include_directories(ZHMModSDK PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Src
+	${CMAKE_SOURCE_DIR}/External/mINI/src/mini
 )
 
 target_include_directories(ZHMModSDK PUBLIC

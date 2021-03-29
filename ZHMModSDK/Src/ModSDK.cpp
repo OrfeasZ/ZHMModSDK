@@ -49,7 +49,7 @@ void ModSDK::DestroyInstance()
 	// We do this in a different thread so the game has time to pause.
 	auto* s_ExitThread = CreateThread(nullptr, 0, [](LPVOID) -> DWORD
 		{
-			Sleep(500);
+			Sleep(1000);
 			delete g_Instance;
 			g_Instance = nullptr;
 			return 0;
@@ -161,6 +161,14 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod)
 		p_Mod->SetupUI();
 
 	p_Mod->PreInit();
+
+	if (*Globals::Hitman5Module != nullptr &&
+		(*Globals::Hitman5Module)->m_pEntitySceneContext != nullptr &&
+		(*Globals::Hitman5Module)->m_pEntitySceneContext->m_sceneData.m_sceneName.size() > 0)
+	{
+		p_Mod->Init();
+		p_Mod->OnEngineInitialized();
+	}
 }
 
 void ModSDK::OnModUnloaded(const std::string& p_Name)

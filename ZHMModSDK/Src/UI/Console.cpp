@@ -19,75 +19,80 @@ void Console::Shutdown()
 {
 }
 
-void Console::Draw()
+void Console::Draw(bool p_HasFocus)
 {
+	if (!p_HasFocus)
+		return;
+
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	ImGui::Begin("CONSOLE", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |ImGuiWindowFlags_NoScrollbar);
+	auto s_Showing = ImGui::Begin("CONSOLE", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+	ImGui::SetWindowCollapsed(true, ImGuiCond_Once);
 
 	auto& s_ImGuiIO = ImGui::GetIO();
 	ImGui::SetWindowSize(ImVec2(s_ImGuiIO.DisplaySize.x - 60, 400), ImGuiCond_Always);
-	ImGui::SetWindowPos(ImVec2(30, 30), ImGuiCond_Always);
+	ImGui::SetWindowPos(ImVec2(30, 80 * (s_ImGuiIO.DisplaySize.y / 2048.f)), ImGuiCond_Always);
 
-	// Render the list of log lines.
-	const float s_FooterHeight = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-	ImGui::BeginChild("ScrollingRegion", ImVec2(0, -s_FooterHeight), false, ImGuiWindowFlags_HorizontalScrollbar);
-
-	AcquireSRWLockShared(&m_Lock);
-	
-	for (auto& s_LogLine : *m_LogLines)
+	if (s_Showing)
 	{
-		ImVec4 s_Color;
-		bool s_Colored = false;
+		// Render the list of log lines.
+		const float s_FooterHeight = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -s_FooterHeight), false, ImGuiWindowFlags_HorizontalScrollbar);
 
-		if (s_LogLine.Level == spdlog::level::trace)
+		AcquireSRWLockShared(&m_Lock);
+
+		for (auto& s_LogLine : *m_LogLines)
 		{
-			s_Color = ImVec4(168.f / 255.f, 61.f / 255.f, 255.f / 255.f, 1.f);
-			s_Colored = true;
-		}
-		else if (s_LogLine.Level == spdlog::level::debug)
-		{
-			s_Color = ImVec4(61.f / 255.f, 129.f / 255.f, 255.f / 255.f, 1.f);
-			s_Colored = true;			
-		}
-		else if (s_LogLine.Level == spdlog::level::warn)
-		{
-			s_Color = ImVec4(255.f / 255.f, 168.f / 255.f, 61.f / 255.f, 1.f);
-			s_Colored = true;			
-		}
-		else if (s_LogLine.Level == spdlog::level::err || s_LogLine.Level == spdlog::level::critical)
-		{
-			s_Color = ImVec4(255.f / 255.f, 69.f / 255.f, 69.f / 255.f, 1.f);
-			s_Colored = true;			
+			ImVec4 s_Color;
+			bool s_Colored = false;
+
+			if (s_LogLine.Level == spdlog::level::trace)
+			{
+				s_Color = ImVec4(168.f / 255.f, 61.f / 255.f, 255.f / 255.f, 1.f);
+				s_Colored = true;
+			}
+			else if (s_LogLine.Level == spdlog::level::debug)
+			{
+				s_Color = ImVec4(61.f / 255.f, 129.f / 255.f, 255.f / 255.f, 1.f);
+				s_Colored = true;
+			}
+			else if (s_LogLine.Level == spdlog::level::warn)
+			{
+				s_Color = ImVec4(255.f / 255.f, 168.f / 255.f, 61.f / 255.f, 1.f);
+				s_Colored = true;
+			}
+			else if (s_LogLine.Level == spdlog::level::err || s_LogLine.Level == spdlog::level::critical)
+			{
+				s_Color = ImVec4(255.f / 255.f, 69.f / 255.f, 69.f / 255.f, 1.f);
+				s_Colored = true;
+			}
+
+			if (s_Colored)
+				ImGui::PushStyleColor(ImGuiCol_Text, s_Color);
+
+			ImGui::TextUnformatted(s_LogLine.Text.c_str(), s_LogLine.Text.c_str() + s_LogLine.Text.size());
+
+			if (s_Colored)
+				ImGui::PopStyleColor();
 		}
 
-		if (s_Colored)
-			ImGui::PushStyleColor(ImGuiCol_Text, s_Color);
-		
-		ImGui::TextUnformatted(s_LogLine.Text.c_str(), s_LogLine.Text.c_str() + s_LogLine.Text.size());
+		ReleaseSRWLockShared(&m_Lock);
 
-		if (s_Colored)
-			ImGui::PopStyleColor();
+		// Auto scroll to bottom.
+		ImGui::SetScrollHereY(1.0f);
+
+		ImGui::EndChild();
+
+		// Render the text input.
+		ImGui::Separator();
+
+		char s_Command[2048];
+		memset(s_Command, 0, sizeof(s_Command));
+		ImGui::InputText("", s_Command, IM_ARRAYSIZE(s_Command), ImGuiInputTextFlags_EnterReturnsTrue);
+
+		ImGui::SetItemDefaultFocus();
 	}
-	
-	ReleaseSRWLockShared(&m_Lock);
-
-	if (m_ShouldScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
-	{
-		ImGui::SetScrollY(ImGui::GetScrollMaxY());
-		m_ShouldScroll = false;
-	}
-	
-	ImGui::EndChild();
-
-	// Render the text input.
-	ImGui::Separator();
-
-	char s_Command[2048];
-	memset(s_Command, 0, sizeof(s_Command));
-	ImGui::InputText("", s_Command, IM_ARRAYSIZE(s_Command), ImGuiInputTextFlags_EnterReturnsTrue);
-
-	ImGui::SetItemDefaultFocus();
 
 	ImGui::PopFont();
 	ImGui::End();
