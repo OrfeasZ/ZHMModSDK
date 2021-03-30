@@ -10,7 +10,7 @@ using namespace UI;
 
 SRWLOCK ModSelector::m_Lock;
 std::vector<ModSelector::AvailableMod> ModSelector::m_AvailableMods;
-bool ModSelector::m_Open = true;
+bool ModSelector::m_Open = false;
 bool ModSelector::m_ShouldShow = false;
 
 void ModSelector::Init()
@@ -39,6 +39,7 @@ void ModSelector::Draw(bool p_HasFocus)
 {
 	if (m_ShouldShow)
 	{
+		m_Open = true;
 		m_ShouldShow = false;
 		SDK()->RequestUIFocus();
 	}
