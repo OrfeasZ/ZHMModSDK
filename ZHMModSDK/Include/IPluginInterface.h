@@ -2,6 +2,7 @@
 
 #include "Hooks.h"
 #include "IModSDK.h"
+#include "IRenderer.h"
 
 class IPluginInterface
 {
@@ -11,7 +12,7 @@ public:
 	virtual void Init() {}
 	virtual void OnEngineInitialized() {}
 	virtual void OnDrawUI(bool p_HasFocus) {}
-	virtual void OnDraw3D() {}
+	virtual void OnDraw3D(IRenderer* p_Renderer) {}
 
 private:
 	virtual void SetupUI()

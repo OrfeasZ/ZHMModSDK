@@ -6,6 +6,7 @@
 #include "IModSDK.h"
 #include "Hooks.h"
 
+class IRenderer;
 class IPluginInterface;
 class ModLoader;
 class DebugConsole;
@@ -38,7 +39,7 @@ public:
 
 public:
 	void OnDrawUI(bool p_HasFocus);
-	void OnDraw3D();
+	void OnDraw3D(IRenderer* p_Renderer);
 	void OnImGuiInit();
 	void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod);
 	void OnModUnloaded(const std::string& p_Name);

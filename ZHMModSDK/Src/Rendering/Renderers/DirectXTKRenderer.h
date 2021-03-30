@@ -13,6 +13,7 @@
 #include "SpriteBatch.h"
 #include "VertexTypes.h"
 #include "Hooks.h"
+#include "IRenderer.h"
 #include "SpriteFont.h"
 
 class SGameUpdateEvent;
@@ -44,6 +45,15 @@ namespace Rendering::Renderers
 			FontRegular,
 			FontBold,
 			Count
+		};
+
+		class TKRendererInterface : public IRenderer
+		{
+		public:
+			void DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor) override;
+			void DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation = 0.f, float p_Scale = 1.f, TextAlignment p_Alignment = TextAlignment::Center) override;
+			bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
+			bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_Out) override;
 		};
 
 	public:
@@ -92,6 +102,9 @@ namespace Rendering::Renderers
 		static std::unique_ptr<DirectX::SpriteFont> m_Font;
 		static std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch;
 		
+		static TKRendererInterface* m_RendererInterface;
 		static SRWLOCK m_Lock;
+
+		friend class TKRendererInterface;
 	};
 }

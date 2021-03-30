@@ -141,10 +141,10 @@ void ModSDK::OnDrawUI(bool p_HasFocus)
 		s_Mod->OnDrawUI(p_HasFocus);
 }
 
-void ModSDK::OnDraw3D()
+void ModSDK::OnDraw3D(IRenderer* p_Renderer)
 {
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
-		s_Mod->OnDraw3D();
+		s_Mod->OnDraw3D(p_Renderer);
 }
 
 void ModSDK::OnImGuiInit()

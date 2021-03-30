@@ -21,6 +21,7 @@
 #include "Glacier/ZCameraEntity.h"
 #include "Rendering/D3DUtils.h"
 #include "Fonts.h"
+#include "ModSDK.h"
 
 using namespace Rendering::Renderers;
 
@@ -47,10 +48,95 @@ std::unique_ptr<DirectX::DescriptorHeap> DirectXTKRenderer::m_ResourceDescriptor
 std::unique_ptr<DirectX::SpriteFont> DirectXTKRenderer::m_Font;
 std::unique_ptr<DirectX::SpriteBatch> DirectXTKRenderer::m_SpriteBatch;
 
+DirectXTKRenderer::TKRendererInterface* DirectXTKRenderer::m_RendererInterface;
+
 SRWLOCK DirectXTKRenderer::m_Lock;
+
+
+void DirectXTKRenderer::TKRendererInterface::DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor)
+{
+	if (!m_RendererSetup)
+		return;
+
+	DirectX::VertexPositionColor s_From(
+		DirectX::SimpleMath::Vector3(p_From.x, p_From.y, p_From.z),
+		DirectX::SimpleMath::Vector4(p_FromColor.x, p_FromColor.y, p_FromColor.z, p_FromColor.w)
+	);
+	
+	DirectX::VertexPositionColor s_To(
+		DirectX::SimpleMath::Vector3(p_To.x, p_To.y, p_To.z),
+		DirectX::SimpleMath::Vector4(p_ToColor.x, p_ToColor.y, p_ToColor.z, p_ToColor.w)
+	);
+	
+	m_LineBatch->DrawLine(s_From, s_To);
+}
+
+void DirectXTKRenderer::TKRendererInterface::DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/, float p_Scale/* = 1.f*/, TextAlignment p_Alignment/* = TextAlignment::Center*/)
+{
+	if (!m_RendererSetup)
+		return;
+
+	const std::string s_Text(p_Text.c_str(), p_Text.size());
+	const DirectX::SimpleMath::Vector2 s_StringSize = m_Font->MeasureString(s_Text.c_str());
+	
+	DirectX::SimpleMath::Vector2 s_Origin(0.f, 0.f);
+
+	if (p_Alignment == TextAlignment::Center)
+		s_Origin.x = s_StringSize.x / 2.f;
+	else if (p_Alignment == TextAlignment::Right)
+		s_Origin.x = s_StringSize.x;
+
+	m_Font->DrawString(
+		m_SpriteBatch.get(),
+		s_Text.c_str(),
+		DirectX::SimpleMath::Vector2(p_Pos.x, p_Pos.y),
+		DirectX::SimpleMath::Vector4(p_Color.x, p_Color.y, p_Color.z, p_Color.w),
+		p_Rotation,
+		s_Origin,
+		p_Scale
+	);
+}
+
+bool DirectXTKRenderer::TKRendererInterface::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out)
+{
+	if (!m_RendererSetup)
+		return false;
+	
+	const DirectX::SimpleMath::Vector4 s_World(p_WorldPos.x, p_WorldPos.y, p_WorldPos.z, 1.f);
+	const DirectX::SimpleMath::Vector4 s_Projected = DirectX::XMVector4Transform(s_World, m_ViewProjection);
+
+	if (s_Projected.w <= 0.000001f)
+		return false;
+	
+	const float s_InvertedZ = 1.f / s_Projected.w;
+	const DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
+
+	p_Out.x = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
+	p_Out.y = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
+
+	return true;
+}
+
+bool DirectXTKRenderer::TKRendererInterface::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_Out)
+{
+	if (!m_RendererSetup)
+		return false;
+
+	const DirectX::XMVECTOR s_ScreenPos = DirectX::XMLoadFloat2(reinterpret_cast<DirectX::XMFLOAT2*>(&p_Out));
+	DirectX::XMVectorSetY(s_ScreenPos, 1.f);
+
+	const auto s_Result = DirectX::XMVector3Unproject(s_ScreenPos, 0, 0, m_WindowWidth, m_WindowHeight, 0.f, 1.f, m_Projection, m_View, m_World);
+
+	p_Out.x = DirectX::XMVectorGetX(s_Result);
+	p_Out.y = DirectX::XMVectorGetY(s_Result);
+	p_Out.z = DirectX::XMVectorGetZ(s_Result);
+
+	return true;
+}
 
 void DirectXTKRenderer::Init()
 {
+	m_RendererInterface = new TKRendererInterface();
 	Hooks::ZRenderVRDeviceDummy_Unknown01->AddDetour(nullptr, &DirectXTKRenderer::ZRenderVRDeviceDummy_Unknown01);
 }
 
@@ -94,73 +180,7 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 
 	m_LineBatch->Begin(p_Frame->CommandList);
 
-	/*if (Globals::ActorManager && Globals::NextActorId && *Globals::NextActorId > 0)
-	{
-		for (int i = 0; i < *Globals::NextActorId; ++i)
-		{
-			auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
-
-			ZEntityRef s_ActorRef;
-			s_Actor->GetID(&s_ActorRef);
-
-			auto* s_SpatialEntity = s_ActorRef.QueryInterface<ZSpatialEntity>();
-			auto* s_RepoEntity = s_ActorRef.QueryInterface<ZRepositoryItemEntity>();
-
-			SMatrix s_Transform;
-			Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
-
-			DirectX::SimpleMath::Vector3 from(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z);
-			DirectX::SimpleMath::Vector3 to(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2);
-
-			DirectX::VertexPositionColor v1(from, DirectX::Colors::Red);
-			DirectX::VertexPositionColor v2(to, DirectX::Colors::White);
-			m_LineBatch->DrawLine(v1, v2);
-
-			{
-				DirectX::SimpleMath::Vector4 s_World(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.f, 1.f);
-				const DirectX::SimpleMath::Vector4 s_Projected = DirectX::XMVector4Transform(s_World, m_ViewProjection);
-
-				if (s_Projected.w > 0.000001f)
-				{
-					float s_InvertedZ = 1.f / s_Projected.w;
-
-					DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
-
-					float s_ScreenX = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
-					float s_ScreenY = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
-
-					std::string s_Name(s_Actor->m_sActorName.c_str(), s_Actor->m_sActorName.size());
-
-					DirectX::SimpleMath::Vector2 s_Origin = m_Font->MeasureString(s_Name.c_str());
-					s_Origin /= 2.f;
-
-					m_Font->DrawString(m_SpriteBatch.get(), s_Name.c_str(), DirectX::SimpleMath::Vector2(s_ScreenX, s_ScreenY), DirectX::Colors::Red, 0.f, s_Origin, 0.4f);
-				}
-			}
-
-			{
-				DirectX::SimpleMath::Vector4 s_World(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.1f, 1.f);
-				const DirectX::SimpleMath::Vector4 s_Projected = DirectX::XMVector4Transform(s_World, m_ViewProjection);
-
-				if (s_Projected.w > 0.000001f)
-				{
-					float s_InvertedZ = 1.f / s_Projected.w;
-
-					DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
-
-					float s_ScreenX = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
-					float s_ScreenY = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
-
-					std::string s_Name = s_RepoEntity->m_sId.ToString();
-
-					DirectX::SimpleMath::Vector2 s_Origin = m_Font->MeasureString(s_Name.c_str());
-					s_Origin /= 2.f;
-
-					m_Font->DrawString(m_SpriteBatch.get(), s_Name.c_str(), DirectX::SimpleMath::Vector2(s_ScreenX, s_ScreenY), DirectX::Colors::Red, 0.f, s_Origin, 0.4f);
-				}
-			}
-		}
-	}*/
+	ModSDK::GetInstance()->OnDraw3D(m_RendererInterface);	
 
 	m_LineBatch->End();
 
