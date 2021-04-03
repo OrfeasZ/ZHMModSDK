@@ -41,7 +41,7 @@ public:
 	void OnDrawUI(bool p_HasFocus);
 	void OnDraw3D(IRenderer* p_Renderer);
 	void OnImGuiInit();
-	void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod);
+	void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
 	void OnModUnloaded(const std::string& p_Name);
 
 private:

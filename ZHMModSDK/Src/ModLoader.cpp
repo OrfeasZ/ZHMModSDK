@@ -102,7 +102,7 @@ void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
 		if (m_LoadedMods.find(s_Mod) != m_LoadedMods.end())
 			continue;
 
-		LoadMod(s_Mod);
+		LoadMod(s_Mod, true);
 	}
 
 	// And persist the mods to the ini file.
@@ -162,14 +162,14 @@ void ModLoader::LoadAllMods()
 	{
 		if (m_AvailableModsLower.contains(Util::StringUtils::ToLowerCase(s_Mod.first)))
 		{
-			LoadMod(s_Mod.first);
+			LoadMod(s_Mod.first, false);
 		}
 	}
 
 	UI::ModSelector::UpdateAvailableMods(m_AvailableMods, GetActiveMods());
 }
 
-void ModLoader::LoadMod(const std::string& p_Name)
+void ModLoader::LoadMod(const std::string& p_Name, bool p_LiveLoad)
 {
 	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
@@ -233,7 +233,7 @@ void ModLoader::LoadMod(const std::string& p_Name)
 	m_LoadedMods[s_Name] = s_Mod;
 	m_ModList.push_back(s_PluginInterface);
 
-	ModSDK::GetInstance()->OnModLoaded(s_Name, s_PluginInterface);
+	ModSDK::GetInstance()->OnModLoaded(s_Name, s_PluginInterface, p_LiveLoad);
 }
 
 void ModLoader::UnloadMod(const std::string& p_Name)
@@ -279,7 +279,7 @@ void ModLoader::ReloadMod(const std::string& p_Name)
 	}
 
 	UnloadMod(p_Name);
-	LoadMod(p_Name);
+	LoadMod(p_Name, true);
 }
 
 void ModLoader::UnloadAllMods()

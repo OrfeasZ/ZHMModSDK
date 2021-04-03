@@ -50,7 +50,7 @@ DebugConsole::DebugConsole() :
 				{
 					if (s_Parts[0] == "load")
 					{
-						ModSDK::GetInstance()->GetModLoader()->LoadMod(s_Parts[1]);
+						ModSDK::GetInstance()->GetModLoader()->LoadMod(s_Parts[1], true);
 					}
 					else if (s_Parts[0] == "unload")
 					{

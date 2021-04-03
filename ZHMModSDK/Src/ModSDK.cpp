@@ -155,14 +155,15 @@ void ModSDK::OnImGuiInit()
 		s_Mod->SetupUI();
 }
 
-void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod)
+void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad)
 {
 	if (m_ImGuiInitialized)
 		p_Mod->SetupUI();
 
 	p_Mod->PreInit();
 
-	if (*Globals::Hitman5Module != nullptr &&
+	if (p_LiveLoad &&
+		*Globals::Hitman5Module != nullptr &&
 		(*Globals::Hitman5Module)->m_pEntitySceneContext != nullptr &&
 		(*Globals::Hitman5Module)->m_pEntitySceneContext->m_sceneData.m_sceneName.size() > 0)
 	{
