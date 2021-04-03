@@ -26,7 +26,6 @@ WakingUpNpcs::~WakingUpNpcs()
 void WakingUpNpcs::PreInit()
 {
 	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &WakingUpNpcs::OnLoadScene);
-	Events::OnConsoleCommand->AddListener(this, &WakingUpNpcs::OnConsoleCommand);
 }
 
 void WakingUpNpcs::OnEngineInitialized()
@@ -89,66 +88,6 @@ DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, 
 	m_PacifiedTimes.clear();
 
 	return HookResult<void>(HookAction::Continue());
-}
-
-DECLARE_PLUGIN_LISTENER(WakingUpNpcs, OnConsoleCommand)
-{
-	Logger::Debug("On console command!");
-
-	for (int i = 0; i < *Globals::NextActorId; ++i)
-	{
-		auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
-
-		s_Actor->m_OutfitRepositoryID = "3a7a202d-48db-423c-8668-a431f744613c";
-		Functions::ZActor_OnOutfitChanged->Call(s_Actor);
-
-		ZEntityRef s_ActorRef;
-		s_Actor->GetID(&s_ActorRef);
-
-		for (auto s_Interface : *(*s_ActorRef.m_pEntity)->m_pInterfaces)
-		{
-			Logger::Debug("Interface: {}", s_Interface.m_pTypeId->typeInfo()->m_pTypeName);
-		}
-
-		break;
-
-		auto s_RepoItem = s_ActorRef.QueryInterface<ZRepositoryItemEntity>();
-
-		if (s_RepoItem)
-			Logger::Debug("Actor '{}' with repo id: {}", s_Actor->m_sActorName.c_str(), s_RepoItem->m_sId.ToString());
-		else
-			Logger::Debug("Actor '{}' without repo id.", s_Actor->m_sActorName.c_str());
-
-		// TODO: Check if dragged or in a container.
-		/*if (s_Actor->IsPacified())
-		{
-			auto s_Knowledge = s_Actor->Knowledge();
-
-			Logger::Debug("Got knowledge for actor {}. Setting tension to alerted.", fmt::ptr(s_Knowledge));
-
-			ZEntityRef s_EntityRef;
-			s_Actor->GetID(&s_EntityRef);
-
-			if ((*s_EntityRef.m_pEntity)->m_pProperties01)
-			{
-				for (auto& s_Property : *(*s_EntityRef.m_pEntity)->m_pProperties01)
-				{
-					Logger::Debug("Property: {} => {} {} {}", s_Property.m_nPropertyId, s_Property.m_pType->getPropertyInfo()->m_pName, fmt::ptr(s_Property.m_pType), fmt::ptr(s_Property.m_pType->getPropertyInfo()));
-				}
-			}
-
-			/*s_EntityRef.SetProperty("m_OutfitRepositoryID", ZRepositoryID("8F928C7A-99DD-43DB-A027-1310CF49F3AD"));
-
-			ZVariant<ZRepositoryID> s_Property = s_EntityRef.GetProperty<ZRepositoryID>("m_OutfitRepositoryID");
-
-			ZObjectRef s_Thing;
-			Logger::Debug("Real property: {}. Read property: {} {}.", s_Actor->m_OutfitRepositoryID.ToString(), s_Property.As<ZRepositoryID>()->ToString(), s_Property.IsEmpty());#1#
-		}*/
-
-		//Functions::ZHM5BaseCharacter_ActivateRagdoll->Call(s_Actor, true);
-	}
-
-	//Hooks::ZActorManager_SetHitmanSharedEvent->Call(Globals::ActorManager, EAISharedEventType::AISET_Hunted, true);
 }
 
 DECLARE_ZHM_PLUGIN(WakingUpNpcs);
