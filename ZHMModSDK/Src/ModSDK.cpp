@@ -169,6 +169,9 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod)
 		p_Mod->Init();
 		p_Mod->OnEngineInitialized();
 	}
+
+	if (m_ImGuiInitialized)
+		p_Mod->SetupUI();
 }
 
 void ModSDK::OnModUnloaded(const std::string& p_Name)

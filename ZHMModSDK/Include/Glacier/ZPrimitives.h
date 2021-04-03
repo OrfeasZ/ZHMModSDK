@@ -2,7 +2,8 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <string>
+
+#include "ZString.h"
 
 typedef uint8_t uint8;
 typedef int8_t int8;
@@ -38,7 +39,7 @@ public:
 		Parentheses,
 	};
 
-	ZGuid(const std::string& p_Data, GuidFormat p_Format = GuidFormat::Dashes)
+	ZGuid(const ZString& p_Data, GuidFormat p_Format = GuidFormat::Dashes)
 	{
 		FromString(p_Data, p_Format);
 	}
@@ -49,7 +50,7 @@ public:
 		m_nLow = p_Other.m_nLow;
 	}
 
-	void operator=(const std::string& p_Data)
+	void operator=(const ZString& p_Data)
 	{
 		FromString(p_Data, GuidFormat::Dashes);
 	}
@@ -59,7 +60,7 @@ public:
 		FromString(p_Data, GuidFormat::Dashes);
 	}
 
-	void FromString(const std::string& p_Data, GuidFormat p_Format = GuidFormat::Dashes)
+	void FromString(const ZString& p_Data, GuidFormat p_Format = GuidFormat::Dashes)
 	{
 #pragma warning(disable:4477)
 		if (p_Format == GuidFormat::Dashes)
@@ -97,7 +98,7 @@ public:
 #pragma warning(default:4477)
 	}
 
-	std::string ToString(GuidFormat p_Format = GuidFormat::Dashes) const
+	ZString ToString(GuidFormat p_Format = GuidFormat::Dashes) const
 	{
 		char s_GUID[128];
 		memset(s_GUID, 0, sizeof(s_GUID));
@@ -140,7 +141,7 @@ public:
 		if (s_Ret == -1)
 			return "";
 
-		return s_GUID;
+		return ZString::CopyFrom(s_GUID);
 	}
 
 public:
@@ -167,10 +168,10 @@ class ZRepositoryID :
 	public ZGuid
 {
 public:
-	ZRepositoryID(const std::string& p_Data, GuidFormat p_Format = GuidFormat::Dashes) : ZGuid(p_Data, p_Format) {}
+	ZRepositoryID(const ZString& p_Data, GuidFormat p_Format = GuidFormat::Dashes) : ZGuid(p_Data, p_Format) {}
 	ZRepositoryID(const ZRepositoryID& p_Other) : ZGuid(p_Other) {}
 
-	void operator=(const std::string& p_Data)
+	void operator=(const ZString& p_Data)
 	{
 		FromString(p_Data, GuidFormat::Dashes);
 	}

@@ -110,6 +110,8 @@ void ImGuiRenderer::Init()
 	
 	SetupStyles();
 
+	ModSDK::GetInstance()->OnImGuiInit();
+
 	m_ImguiInitialized = true;
 
 	Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(nullptr, &ImGuiRenderer::WndProc);

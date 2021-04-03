@@ -6,12 +6,20 @@
 class SVector2
 {
 public:
+	SVector2() : x(0.f), y(0.f) {}
+	SVector2(float p_X, float p_Y) : x(p_X), y(p_Y) {}
+	
+public:
 	float32 x; // 0x0
 	float32 y; // 0x4
 };
 
 class SVector3
 {
+public:
+	SVector3() : x(0.f), y(0.f), z(0.f) {}
+	SVector3(float p_X, float p_Y, float p_Z) : x(p_X), y(p_Y), z(p_Z) {}
+	
 public:
 	float32 x; // 0x0
 	float32 y; // 0x4
@@ -20,6 +28,10 @@ public:
 
 class SVector4
 {
+public:
+	SVector4() : x(0.f), y(0.f), z(0.f), w(0.f) {}
+	SVector4(float p_X, float p_Y, float p_Z, float p_W) : x(p_X), y(p_Y), z(p_Z), w(p_W) {}
+	
 public:
 	float32 x; // 0x0
 	float32 y; // 0x4
