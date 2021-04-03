@@ -2,8 +2,7 @@
 
 #include <imgui.h>
 
-
-#include "IModSDK.h"
+#include "ModSDK.h"
 #include "ModSelector.h"
 
 using namespace UI;
@@ -24,6 +23,8 @@ void MainMenu::Draw(bool p_HasFocus)
 	{
 		ModSelector::Show();
 	}
+
+	ModSDK::GetInstance()->OnDrawMenu();
 
 	ImGui::EndMainMenuBar();
 }

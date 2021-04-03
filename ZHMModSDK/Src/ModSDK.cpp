@@ -135,6 +135,12 @@ void ModSDK::ThreadedStartup()
 	}
 }
 
+void ModSDK::OnDrawMenu()
+{
+	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
+		s_Mod->OnDrawMenu();
+}
+
 void ModSDK::OnDrawUI(bool p_HasFocus)
 {
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())

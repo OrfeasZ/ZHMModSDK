@@ -38,6 +38,7 @@ public:
 	uint32_t GetImageSize() const { return m_ImageSize; }
 
 public:
+	void OnDrawMenu();
 	void OnDrawUI(bool p_HasFocus);
 	void OnDraw3D(IRenderer* p_Renderer);
 	void OnImGuiInit();
