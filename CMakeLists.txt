@@ -19,6 +19,7 @@ add_subdirectory("Mods/SkipIntro")
 add_subdirectory("Mods/CodeGen")
 add_subdirectory("Mods/CertPinBypass")
 add_subdirectory("Mods/MaxPatchLevel")
+add_subdirectory("Mods/DebugMod")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -33,4 +34,5 @@ add_dependencies(DevLoader
 	CodeGen
 	CertPinBypass
 	MaxPatchLevel
+	DebugMod
 )

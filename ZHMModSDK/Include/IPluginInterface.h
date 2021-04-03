@@ -8,11 +8,6 @@ class IPluginInterface
 {
 public:
 	virtual ~IPluginInterface() {}
-	virtual void PreInit() {}
-	virtual void Init() {}
-	virtual void OnEngineInitialized() {}
-	virtual void OnDrawUI(bool p_HasFocus) {}
-	virtual void OnDraw3D(IRenderer* p_Renderer) {}
 
 private:
 	virtual void SetupUI()
@@ -25,6 +20,14 @@ private:
 		ImGui::SetCurrentContext(s_Context);
 		ImGui::SetAllocatorFunctions(SDK()->GetImGuiAlloc(), SDK()->GetImGuiFree(), SDK()->GetImGuiAllocatorUserData());
 	}
+
+public:
+	virtual void PreInit() {}
+	virtual void Init() {}
+	virtual void OnEngineInitialized() {}
+	virtual void OnDrawUI(bool p_HasFocus) {}
+	virtual void OnDraw3D(IRenderer* p_Renderer) {}
+	virtual void OnDrawMenu() {}
 
 	friend class ModSDK;
 };
