@@ -137,7 +137,7 @@ bool DirectXTKRenderer::TKRendererInterface::ScreenToWorld(const SVector2& p_Scr
 void DirectXTKRenderer::Init()
 {
 	m_RendererInterface = new TKRendererInterface();
-	Hooks::ZRenderVRDeviceDummy_Unknown01->AddDetour(nullptr, &DirectXTKRenderer::ZRenderVRDeviceDummy_Unknown01);
+	Hooks::ZRenderContext_Unknown01->AddDetour(nullptr, &DirectXTKRenderer::ZRenderContext_Unknown01);
 }
 
 void DirectXTKRenderer::OnEngineInit()
@@ -148,12 +148,12 @@ void DirectXTKRenderer::Shutdown()
 {
 	m_Shutdown = true;
 
-	Hooks::ZRenderVRDeviceDummy_Unknown01->RemoveDetour(&DirectXTKRenderer::ZRenderVRDeviceDummy_Unknown01);
+	Hooks::ZRenderContext_Unknown01->RemoveDetour(&DirectXTKRenderer::ZRenderContext_Unknown01);
 
 	OnReset();
 }
 
-DECLARE_STATIC_DETOUR(DirectXTKRenderer, bool, ZRenderVRDeviceDummy_Unknown01, void* a1)
+DECLARE_STATIC_DETOUR(DirectXTKRenderer, void, ZRenderContext_Unknown01, ZRenderContext* a1)
 {
 	m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pRenderContext->m_mWorldToView);
 	m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pRenderContext->m_mViewToProjection);
@@ -166,7 +166,7 @@ DECLARE_STATIC_DETOUR(DirectXTKRenderer, bool, ZRenderVRDeviceDummy_Unknown01, v
 		m_LineEffect->SetProjection(m_Projection);
 	}
 	
-	return HookResult<bool>(HookAction::Continue());
+	return HookResult<void>(HookAction::Continue());
 }
 
 void DirectXTKRenderer::Draw(FrameContext* p_Frame)

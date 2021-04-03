@@ -74,7 +74,7 @@ namespace Rendering::Renderers
 		static void Draw(FrameContext* p_Frame);
 
 	private:
-		DEFINE_STATIC_DETOUR(bool, ZRenderVRDeviceDummy_Unknown01, void* th);
+		DEFINE_STATIC_DETOUR(void, ZRenderContext_Unknown01, ZRenderContext* th);
 
 	private:
 		static bool m_RendererSetup;

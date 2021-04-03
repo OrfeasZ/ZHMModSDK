@@ -128,9 +128,9 @@ PATTERN_HOOK(
 );
 
 PATTERN_CALL_HOOK(
-	"\xE8\x00\x00\x00\x00\x84\xC0\x0F\x84\x00\x00\x00\x00\x41\x0F\x10\x87\x90\x01\x00\x00",
-	"x????xxxx????xxxxxxxx",
-	ZRenderVRDeviceDummy_Unknown01, bool(void* a1)
+	"\xE8\x00\x00\x00\x00\x41\x0F\xB6\x85\xA0\x00\x00\x00\x88\x45\x81",
+	"x????xxxxxxxxxxx",
+	ZRenderContext_Unknown01, void(ZRenderContext* th)
 );
 
 PATTERN_HOOK(
