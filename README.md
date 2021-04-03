@@ -43,6 +43,7 @@ There are a few sample mods included in this repository that can be used either 
 | [CodeGen](/Mods/CodeGen) | Generates binding code from the embedded engine typeinfo which can be used by tools like [ResourceParser](https://github.com/OrfeasZ/ZHMTools/tree/master/Tools/ResourceParser). |
 | [CertPinBypass](/Mods/CertPinBypass) | Disables SSL certificate pinning, allowing the game to connect to any trusted server instead of only IOI's. |
 | [MaxPatchLevel](/Mods/MaxPatchLevel) | Dynamically sets the RPKG patchlevel to 1000, making the game discover patch chunks without having to modify the `packagedefinition.txt` file. |
+| [DebugMod](/Mods/DebugMod) | Adds a debug menu to test different SDK functionalities, like 3D rendering and entity information display. |
 
 ## Contributing
 
