@@ -80,11 +80,11 @@ private:
 	void OnEvent(RatingEventType p_EventType);
 	ZString GetCurrentRating() const;
 	void RegisterEvent(RatingEventType p_EventType, int64_t p_Points);
+	void Reset();
 
 private:
 	DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th);
 	DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event);
-	DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventReceived, ZAchievementManagerSimple* th, const SOnlineEvent& event);
 
 private:
 	SRWLOCK m_EventLock = {};

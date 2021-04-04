@@ -8,6 +8,8 @@
 #include <Glacier/ZAIGameState.h>
 #include <Glacier/SOnlineEvent.h>
 
+#include "json.hpp"
+
 void AdvancedRating::PreInit()
 {
 	InitializeSRWLock(&m_EventLock);
@@ -31,7 +33,6 @@ void AdvancedRating::PreInit()
 	
 	Hooks::ZGameStatsManager_SendAISignals->AddDetour(this, &AdvancedRating::ZGameStatsManager_SendAISignals);
 	Hooks::ZAchievementManagerSimple_OnEventSent->AddDetour(this, &AdvancedRating::ZAchievementManagerSimple_OnEventSent);
-	Hooks::ZAchievementManagerSimple_OnEventReceived->AddDetour(this, &AdvancedRating::ZAchievementManagerSimple_OnEventReceived);
 }
 
 void AdvancedRating::OnDrawUI(bool p_HasFocus)
@@ -113,22 +114,59 @@ void AdvancedRating::RegisterEvent(RatingEventType p_EventType, int64_t p_Points
 	m_RegisteredEvents[p_EventType] = RatingEvent { p_EventType, p_Points };
 }
 
+void AdvancedRating::Reset()
+{
+	AcquireSRWLockExclusive(&m_EventLock);
+
+	m_CurrentPoints = 0;
+	m_EventHistory.clear();
+	
+	ReleaseSRWLockExclusive(&m_EventLock);
+}
+
 DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventId, const ZDynamicObject& event)
 {
 	ZString s_EventData;
 	Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), &s_EventData);
-	
+
 	Logger::Debug("Achievement Event Sent: {} - {}", eventId, s_EventData);
+
+	auto s_JsonEvent = nlohmann::json::parse(s_EventData.c_str(), s_EventData.c_str() + s_EventData.size());
+
+	const std::string s_EventName = s_JsonEvent["Name"];
 	
-	return HookResult<void>(HookAction::Continue());
-}
+	if (s_EventName == "SecuritySystemRecorder")
+	{
+		if (s_JsonEvent["Value"]["event"] == "spotted")
+			OnEvent(RatingEventType::CaughtOnCamera);
+		else if (s_JsonEvent["Value"]["event"] == "destroyed")
+			OnEvent(RatingEventType::RecordingsRemoved);
+	}
+	else if (s_EventName == "Kill")
+	{
+		const bool s_Target = s_JsonEvent["Value"]["IsTarget"];
+		const std::string s_ID = s_JsonEvent["Value"]["RepositoryId"];
+		const auto s_ActorType = static_cast<EActorType>(s_JsonEvent["Value"]["ActorType"]);
 
-DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventReceived, ZAchievementManagerSimple* th, const SOnlineEvent& event)
-{
-	ZString s_EventData;
-	Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event.data), &s_EventData);
+		if (!s_Target && s_ActorType == EActorType::eAT_Civilian)
+			OnEvent(RatingEventType::CivilianKilled);
 
-	Logger::Debug("Achievement Event Received: {} - {}", event.sName, s_EventData);
+		if (!s_Target && s_ActorType == EActorType::eAT_Guard)
+			OnEvent(RatingEventType::GuardKilled);
+	}
+	else if (s_EventName == "Pacify")
+	{
+		const bool s_Target = s_JsonEvent["Value"]["IsTarget"];
+		const std::string s_ID = s_JsonEvent["Value"]["RepositoryId"];
+		const auto s_ActorType = static_cast<EActorType>(s_JsonEvent["Value"]["ActorType"]);
+
+		if (!s_Target)
+			OnEvent(RatingEventType::ActorPacified);
+	}
+	else if (s_EventName == "ContractStart")
+	{
+		Reset();
+	}
 	
 	return HookResult<void>(HookAction::Continue());
 }
