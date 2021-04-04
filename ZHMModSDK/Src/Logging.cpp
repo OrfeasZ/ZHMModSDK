@@ -37,15 +37,6 @@ public:
 	void flush_() override
 	{
 	}
-
-private:
-	void PrintMessageFinal(const std::string& p_Message)
-	{
-		typedef void(__cdecl* fb_Console_writeConsole_t)(const char* tag, const char* buffer, uint32_t size);
-		static fb_Console_writeConsole_t fb_Console_writeConsole = reinterpret_cast<fb_Console_writeConsole_t>(0x00439140);
-
-		fb_Console_writeConsole("", p_Message.c_str(), p_Message.size());
-	}
 };
 
 typedef ConsoleSink<spdlog::details::null_mutex> ConsoleSink_st;

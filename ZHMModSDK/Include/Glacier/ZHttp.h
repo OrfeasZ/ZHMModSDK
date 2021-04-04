@@ -28,7 +28,7 @@ public:
 		eHEAD,
 	};
 
-	static std::string EVerbToStr(EVerb p_Verb)
+	static ZString EVerbToStr(EVerb p_Verb)
 	{
 		switch (p_Verb)
 		{
@@ -53,7 +53,7 @@ public:
 	virtual ~ZHttpUrl() {}
 
 public:
-	std::string fullUrl() const
+	/*ZString fullUrl() const
 	{
 		std::string s_URL;
 		s_URL = m_protocol.c_str();
@@ -74,7 +74,7 @@ public:
 		}
 
 		return s_URL;
-	}
+	}*/
 
 public:
 	EVerb m_eVerb;

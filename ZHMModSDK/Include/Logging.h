@@ -3,7 +3,11 @@
 #include <memory>
 
 #include "Common.h"
+
 #include "spdlog/logger.h"
+#include "spdlog/fmt/ostr.h"
+
+#include "Glacier/ZString.h"
 
 struct LoggerList
 {

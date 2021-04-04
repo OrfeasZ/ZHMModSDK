@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <minmax.h>
+#include <ostream>
 
 class ZString
 {
@@ -51,11 +52,13 @@ public:
 		}
 	}
 
+	[[nodiscard]]
 	uint32_t size() const
 	{
 		return m_nLength & 0x3FFFFFFF;
 	}
 
+	[[nodiscard]]
 	const char* c_str() const
 	{
 		return m_pChars;
@@ -74,6 +77,7 @@ public:
 		return strncmp(c_str(), p_Other.c_str(), size()) == 0;
 	}
 
+	[[nodiscard]]
 	bool StartsWith(const ZString& p_Other) const
 	{
 		if (size() < p_Other.size())
@@ -82,9 +86,16 @@ public:
 		return strncmp(c_str(), p_Other.c_str(), p_Other.size()) == 0;
 	}
 
+	[[nodiscard]]
 	bool IsAllocated() const
 	{
 		return (m_nLength & 0xC0000000) == 0;
+	}
+
+	[[nodiscard]]
+	std::string_view ToStringView() const
+	{
+		return std::string_view(c_str(), size());
 	}
 
 public:
@@ -108,3 +119,8 @@ private:
 	int32_t m_nLength;
 	const char* m_pChars;
 };
+
+inline std::ostream& operator<<(std::ostream& p_Stream, const ZString& p_String)
+{
+	return p_Stream.write(p_String.c_str(), p_String.size());
+}

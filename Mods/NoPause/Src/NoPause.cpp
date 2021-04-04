@@ -11,10 +11,10 @@ void NoPause::PreInit()
 
 DECLARE_PLUGIN_DETOUR(NoPause, bool, GetOption, const ZString& p_OptionName, bool p_Default)
 {
-	if (std::string(p_OptionName.c_str()) == "PauseOnFocusLoss")
+	if (p_OptionName == "PauseOnFocusLoss")
 		return HookResult<bool>(HookAction::Return(), false);
 
-	if (std::string(p_OptionName.c_str()) == "NO_MINIMIZE_FOCUSLOSS")
+	if (p_OptionName == "NO_MINIMIZE_FOCUSLOSS")
 		return HookResult<bool>(HookAction::Return(), true);
 
 	return HookResult<bool>(HookAction::Continue());

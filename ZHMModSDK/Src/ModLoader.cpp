@@ -196,7 +196,7 @@ void ModLoader::LoadMod(const std::string& p_Name, bool p_LiveLoad)
 	}
 
 	Logger::Info("Attempting to load mod '{}'.", p_Name);
-	Logger::Debug("Module path is '{}'.", s_ModulePath.string().c_str());
+	Logger::Debug("Module path is '{}'.", s_ModulePath.string());
 
 	const auto s_Module = LoadLibraryA(s_ModulePath.string().c_str());
 

@@ -52,7 +52,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 				std::uniform_real_distribution<double> s_Distribution(4.0 * 60.0, 8.0 * 60.0);
 				double s_WakeUpTime = s_Distribution(m_Generator);
 
-				Logger::Debug("Actor '{}' was pacified. Waking up in {} seconds.", s_Actor->m_sActorName.c_str(), s_WakeUpTime);
+				Logger::Debug("Actor '{}' was pacified. Waking up in {} seconds.", s_Actor->m_sActorName, s_WakeUpTime);
 
 				m_PacifiedTimes[s_Actor] = s_WakeUpTime;
 			}
@@ -66,7 +66,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 				if (s_RemainingTime <= 0 && !s_Actor->m_bIsBeingDragged)
 				{
 					// TODO: Set alerted state.
-					Logger::Debug("Waking up actor '{}'.", s_Actor->m_sActorName.c_str());
+					Logger::Debug("Waking up actor '{}'.", s_Actor->m_sActorName);
 					Functions::ZActor_ReviveActor->Call(s_Actor);
 
 					m_PacifiedTimes.erase(it);
@@ -83,7 +83,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData)
 {
 	// TODO: This doesn't get called when loading a save on the same level or restarting. Find something that does.
-	Logger::Debug("Loading scene: {}", sceneData.m_sceneName.c_str());
+	Logger::Debug("Loading scene: {}", sceneData.m_sceneName);
 
 	m_PacifiedTimes.clear();
 

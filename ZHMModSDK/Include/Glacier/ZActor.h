@@ -214,7 +214,7 @@ public:
 	 * Param p_Name: Actor's name
 	 * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
 	 */
-	ZActor* GetActorByName(const char* p_Name)
+	ZActor* GetActorByName(const ZString& p_Name)
 	{
 		for (int i = 0; i < *Globals::NextActorId; ++i)
 		{
@@ -225,11 +225,6 @@ public:
 		}
 
 		return nullptr;
-	}
-
-	ZActor* GetActorByName(const std::string p_Name)
-	{
-		return GetActorByName(p_Name.c_str());
 	}
 
 	/**
