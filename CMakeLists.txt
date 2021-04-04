@@ -20,6 +20,7 @@ add_subdirectory("Mods/CodeGen")
 add_subdirectory("Mods/CertPinBypass")
 add_subdirectory("Mods/MaxPatchLevel")
 add_subdirectory("Mods/DebugMod")
+add_subdirectory("Mods/AdvancedRating")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -35,4 +36,5 @@ add_dependencies(DevLoader
 	CertPinBypass
 	MaxPatchLevel
 	DebugMod
+	AdvancedRating
 )

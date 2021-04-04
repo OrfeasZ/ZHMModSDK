@@ -161,6 +161,31 @@ public:
 	}
 
 	template <class T>
+	bool HasInterface() const
+	{
+		if (!m_pEntity || !*m_pEntity || !(*m_pEntity)->m_pInterfaces)
+			return false;
+
+		if (!*Globals::TypeRegistry)
+			return false;
+
+		auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+
+		if (it == (*Globals::TypeRegistry)->m_types.end())
+			return false;
+
+		for (auto& s_Interface : *(*m_pEntity)->m_pInterfaces)
+		{
+			if (s_Interface.m_pTypeId == it->second)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	template <class T>
 	ZVariant<T> GetProperty(uint32_t p_PropertyId) const
 	{
 		// TODO: Type checks?

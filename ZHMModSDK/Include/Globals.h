@@ -3,6 +3,8 @@
 #include "Common.h"
 #include <cstdint>
 
+class ZGameStatsManager;
+class ZEntityManager;
 class ZMemoryManager;
 class ZGameLoopManager;
 class ZTypeRegistry;
@@ -28,4 +30,6 @@ public:
 	static ZRenderManager* RenderManager;
 	static ZApplicationEngineWin32** ApplicationEngineWin32;
 	static ZGameUIManager* GameUIManager;
+	static ZEntityManager* EntityManager;
+	static ZGameStatsManager* GameStatsManager;
 };

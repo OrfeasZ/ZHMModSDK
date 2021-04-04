@@ -4,6 +4,8 @@
 #include <minmax.h>
 #include <ostream>
 
+#include "Common.h"
+
 class ZString
 {
 public:
@@ -44,13 +46,7 @@ public:
 		}
 	}
 
-	inline ~ZString()
-	{
-		if (IsAllocated())
-		{
-			free(const_cast<char*>(m_pChars));
-		}
-	}
+	ZHMSDK_API ~ZString();
 
 	[[nodiscard]]
 	uint32_t size() const
@@ -108,12 +104,7 @@ public:
 	}
 
 private:
-	void Allocate(const char* str, size_t size)
-	{
-		m_nLength = static_cast<uint32_t>(size);
-		m_pChars = reinterpret_cast<char*>(malloc(size));
-		memcpy(const_cast<char*>(m_pChars), str, size);
-	}
+	ZHMSDK_API void Allocate(const char* str, size_t size);
 
 private:
 	int32_t m_nLength;

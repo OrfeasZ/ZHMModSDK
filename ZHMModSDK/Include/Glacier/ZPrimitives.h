@@ -16,18 +16,6 @@ typedef int64_t int64;
 typedef float float32;
 typedef double float64;
 
-#ifndef CONCAT_IMPL
-#define CONCAT_IMPL(x, y) x##y
-#endif
-
-#ifndef MACRO_CONCAT
-#define MACRO_CONCAT(x, y) CONCAT_IMPL(x, y)
-#endif
-
-#ifndef PAD
-#define PAD(SIZE) unsigned char MACRO_CONCAT(_pad, __COUNTER__)[SIZE];
-#endif
-
 class ZGuid
 {
 public:

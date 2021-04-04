@@ -6,6 +6,7 @@
 #include "Hooks.h"
 #include "Logging.h"
 #include "IPluginInterface.h"
+#include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
 #include "Rendering/D3D12Renderer.h"
 #include "Rendering/Renderers/ImGuiRenderer.h"
@@ -264,6 +265,11 @@ ImFont* ModSDK::GetImGuiBoldFont()
 ImFont* ModSDK::GetImGuiBlackFont()
 {
 	return Rendering::Renderers::ImGuiRenderer::GetFontBlack();
+}
+
+bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name)
+{
+	return TryGetPinName(p_PinId, p_Name);
 }
 
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)

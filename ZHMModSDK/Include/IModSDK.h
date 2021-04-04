@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Glacier/ZPrimitives.h"
 #include "Common.h"
 #include "imgui.h"
 
@@ -17,6 +18,7 @@ public:
 	virtual ImFont* GetImGuiMediumFont() = 0;
 	virtual ImFont* GetImGuiBoldFont() = 0;
 	virtual ImFont* GetImGuiBlackFont() = 0;
+	virtual bool GetPinName(int32_t p_PinId, ZString& p_Name) = 0;
 };
 
 ZHMSDK_API IModSDK* SDK();

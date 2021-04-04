@@ -29,7 +29,11 @@ class ZKeyboardWindows;
 class ZRenderGraphNodeCamera;
 class ZPackageManagerPackage;
 class ZGameUIManagerEntity;
+class ZGameStatsManager;
 class ZRenderContext;
+class ZDynamicObject;
+class ZAchievementManagerSimple;
+class SOnlineEvent;
 
 class ZHMSDK_API Hooks
 {
@@ -59,4 +63,7 @@ public:
 	static Hook<void(ZGameLoopManager* th, const ZString& a2)>* ZGameLoopManager_RequestPause;
 	static Hook<void(ZGameLoopManager* th, const ZString& a2)>* ZGameLoopManager_ReleasePause;
 	static Hook<bool(ZGameUIManagerEntity* th, EGameUIMenu menu, bool force)>* ZGameUIManagerEntity_TryOpenMenu;
+	static Hook<void(ZGameStatsManager* th)>* ZGameStatsManager_SendAISignals;
+	static Hook<void(ZAchievementManagerSimple* th, const SOnlineEvent& event)>* ZAchievementManagerSimple_OnEventReceived;
+	static Hook<void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)>* ZAchievementManagerSimple_OnEventSent;
 };

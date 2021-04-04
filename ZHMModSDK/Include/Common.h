@@ -11,6 +11,18 @@
 
 #define ALIGN_TO(address, alignment) static_cast<uintptr_t>(address + alignment - 1) & ~(static_cast<ptrdiff_t>(alignment) - 1)
 
+#ifndef CONCAT_IMPL
+#define CONCAT_IMPL(x, y) x##y
+#endif
+
+#ifndef MACRO_CONCAT
+#define MACRO_CONCAT(x, y) CONCAT_IMPL(x, y)
+#endif
+
+#ifndef PAD
+#define PAD(SIZE) unsigned char MACRO_CONCAT(_pad, __COUNTER__)[SIZE];
+#endif
+
 class IDestructible
 {
 public:

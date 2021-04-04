@@ -200,6 +200,8 @@ public:
 	PAD(0x2B8);
 };
 
+class ZActorSavableHandler;
+
 class ZActorManager :
 	public IComponentInterface
 {
@@ -254,4 +256,6 @@ public:
 public:
 	PAD(0x1F60);
 	TEntityRef<ZActor> m_aActiveActors[1000]; // 0x1F68
+	PAD(0xAA20); // 0x5DE8
+	ZActorSavableHandler* m_pSavableHandler; // 0x10808
 };

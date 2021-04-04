@@ -60,6 +60,7 @@ public:
 	ImFont* GetImGuiMediumFont() override;
 	ImFont* GetImGuiBoldFont() override;
 	ImFont* GetImGuiBlackFont() override;
+	bool GetPinName(int32_t p_PinId, ZString& p_Name) override;
 
 private:
 	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);

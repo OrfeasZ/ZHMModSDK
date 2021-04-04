@@ -13,7 +13,7 @@ namespace UI
 		struct LogLine
 		{
 			spdlog::level::level_enum Level;
-			ZString Text;
+			std::string Text;
 		};
 		
 	public:

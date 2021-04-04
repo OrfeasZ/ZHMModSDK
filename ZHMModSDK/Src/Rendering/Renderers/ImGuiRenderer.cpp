@@ -258,6 +258,8 @@ void ImGuiRenderer::Draw()
 	// Construct the UI.
 	ImGui::NewFrame();
 
+	ImGui::GetStyle().Alpha = m_ImguiHasFocus ? 1.f : 0.3f;
+
 	UI::MainMenu::Draw(m_ImguiHasFocus);
 	UI::Console::Draw(m_ImguiHasFocus);
 	UI::ModSelector::Draw(m_ImguiHasFocus);

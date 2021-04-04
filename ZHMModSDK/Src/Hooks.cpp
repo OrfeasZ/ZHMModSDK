@@ -156,3 +156,21 @@ PATTERN_HOOK(
 	"xxxxxxxxxxxxxx?xxxx",
 	ZGameUIManagerEntity_TryOpenMenu, bool(ZGameUIManagerEntity* th, EGameUIMenu menu, bool force)
 );
+
+PATTERN_HOOK(
+	"\x40\x53\x48\x83\xEC\x00\xF3\x48\x0F\x2C\x05\x00\x00\x00\x00\x48\x8B\xD9",
+	"xxxxx?xxxxx????xxx",
+	ZGameStatsManager_SendAISignals, void(ZGameStatsManager* th)
+);
+
+PATTERN_HOOK(
+	"\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xB9\x48\x81\xEC\x00\x00\x00\x00\x45\x33\xFF",
+	"xxxxxxxxxxxxxxxxxxxxxxxxxxxx????xxx",
+	ZAchievementManagerSimple_OnEventReceived, void(ZAchievementManagerSimple* th, const SOnlineEvent& event)
+);
+
+PATTERN_HOOK(
+	"\x40\x55\x53\x56\x57\x41\x54\x48\x8D\x6C\x24\xC9\x48\x81\xEC\x00\x00\x00\x00\x33\xFF",
+	"xxxxxxxxxxxxxxx????xx",
+	ZAchievementManagerSimple_OnEventSent, void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)
+);

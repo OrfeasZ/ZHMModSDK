@@ -109,7 +109,7 @@ void Console::AddLogLine(spdlog::level::level_enum p_Level, const ZString& p_Tex
 	if (m_LogLines == nullptr)
 		m_LogLines = new std::vector<LogLine>();
 	
-	m_LogLines->push_back(LogLine { p_Level, ZString::CopyFrom(p_Text) });
+	m_LogLines->push_back(LogLine { p_Level, std::string(p_Text.c_str(), p_Text.size()) });
 
 	m_ShouldScroll = true;
 

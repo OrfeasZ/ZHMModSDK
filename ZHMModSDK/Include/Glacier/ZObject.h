@@ -167,3 +167,8 @@ private:
 		return it->second;
 	}
 };
+
+class ZDynamicObject :
+	public ZObjectRef
+{
+};
