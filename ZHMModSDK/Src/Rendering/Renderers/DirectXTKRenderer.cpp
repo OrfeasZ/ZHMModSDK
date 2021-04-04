@@ -392,7 +392,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	const auto s_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-	for (size_t i = 0; i < m_BufferCount; ++i)
+	for (UINT i = 0; i < m_BufferCount; ++i)
 	{
 		auto& s_Frame = m_FrameContext[i];
 
@@ -402,14 +402,14 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 			return false;
 
 		char s_FenceDebugName[128];
-		sprintf_s(s_FenceDebugName, sizeof(s_FenceDebugName), "ZHMModSDK DirectXTK Fence #%llu", i);
+		sprintf_s(s_FenceDebugName, sizeof(s_FenceDebugName), "ZHMModSDK DirectXTK Fence #%u", i);
 		D3D_SET_OBJECT_NAME_A(s_Frame.Fence, s_FenceDebugName);
 
 		if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&s_Frame.CommandAllocator)) != S_OK)
 			return false;
 
 		char s_CmdAllocDebugName[128];
-		sprintf_s(s_CmdAllocDebugName, sizeof(s_CmdAllocDebugName), "ZHMModSDK DirectXTK Command Allocator #%llu", i);
+		sprintf_s(s_CmdAllocDebugName, sizeof(s_CmdAllocDebugName), "ZHMModSDK DirectXTK Command Allocator #%u", i);
 		D3D_SET_OBJECT_NAME_A(s_Frame.CommandAllocator, s_CmdAllocDebugName);
 
 		if (s_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, s_Frame.CommandAllocator, nullptr, IID_PPV_ARGS(&s_Frame.CommandList)) != S_OK ||
@@ -417,7 +417,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 			return false;
 
 		char s_CmdListDebugName[128];
-		sprintf_s(s_CmdListDebugName, sizeof(s_CmdListDebugName), "ZHMModSDK DirectXTK Command List #%llu", i);
+		sprintf_s(s_CmdListDebugName, sizeof(s_CmdListDebugName), "ZHMModSDK DirectXTK Command List #%u", i);
 		D3D_SET_OBJECT_NAME_A(s_Frame.CommandList, s_CmdListDebugName);
 
 		if (p_SwapChain->GetBuffer(i, IID_PPV_ARGS(&s_Frame.BackBuffer)) != S_OK)

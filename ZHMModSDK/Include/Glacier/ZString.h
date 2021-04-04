@@ -25,7 +25,7 @@ public:
 		m_nLength = static_cast<uint32_t>(std::strlen(str)) | 0x80000000;
 	}
 
-	ZString(const char* str, uint32_t size) :
+	ZString(const char* str, size_t size) :
 		m_pChars(str)
 	{
 		m_nLength = static_cast<uint32_t>(size) | 0x80000000;

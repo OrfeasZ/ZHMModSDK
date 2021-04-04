@@ -117,7 +117,7 @@ public:
 
 public:
 	SHashMapInfo<T>* m_pMapInfo;
-	int32_t m_nBucket;
+	uint32_t m_nBucket;
 
 	template <class K, class V, class H>
 	friend class THashMap;
