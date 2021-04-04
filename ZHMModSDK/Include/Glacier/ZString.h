@@ -94,6 +94,16 @@ public:
 		return std::string_view(c_str(), size());
 	}
 
+	operator std::string_view() const
+	{
+		return ToStringView();
+	}
+
+	operator std::string() const
+	{
+		return std::string(ToStringView());
+	}
+
 public:
 	static ZString CopyFrom(const ZString& p_Other)
 	{
