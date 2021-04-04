@@ -5,7 +5,7 @@
 
 #include <Glacier/ZScene.h>
 #include <Glacier/ZActor.h>
-
+#include <Glacier/ZSpatialEntity.h>
 
 #include "Functions.h"
 #include "Globals.h"
@@ -29,7 +29,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 
 	if (s_Showing)
 	{
-		ImGui::Checkbox("Render NPC position lines", &m_RenderNpcLines);
+		ImGui::Checkbox("Render NPC position boxes", &m_RenderNpcBoxes);
 		ImGui::Checkbox("Render NPC names", &m_RenderNpcNames);
 		ImGui::Checkbox("Render NPC repository IDs", &m_RenderNpcRepoIds);
 	}
@@ -41,7 +41,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 
 void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 {
-	if (m_RenderNpcLines || m_RenderNpcNames || m_RenderNpcRepoIds)
+	if (m_RenderNpcBoxes || m_RenderNpcNames || m_RenderNpcRepoIds)
 	{
 		for (int i = 0; i < *Globals::NextActorId; ++i)
 		{
@@ -55,14 +55,13 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 			SMatrix s_Transform;
 			Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
 
-			if (m_RenderNpcLines)
+			if (m_RenderNpcBoxes)
 			{
-				p_Renderer->DrawLine3D(
-					SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z),
-					SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2),
-					SVector4(1.f, 1.f, 1.f, 1.f),
-					SVector4(1.f, 0.f, 0.f, 1.f)
-				);
+				float4 s_Min, s_Max;
+
+				s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+
+				p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(1.f, 0.f, 0.f, 1.f));
 			}
 
 			if (m_RenderNpcNames)

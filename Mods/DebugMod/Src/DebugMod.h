@@ -14,7 +14,7 @@ public:
 
 private:
 	bool m_MenuActive = false;
-	bool m_RenderNpcLines = false;
+	bool m_RenderNpcBoxes = false;
 	bool m_RenderNpcNames = false;
 	bool m_RenderNpcRepoIds = false;
 };

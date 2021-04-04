@@ -134,6 +134,73 @@ bool DirectXTKRenderer::TKRendererInterface::ScreenToWorld(const SVector2& p_Scr
 	return true;
 }
 
+void DirectXTKRenderer::TKRendererInterface::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color)
+{
+	SVector3 s_Corners[] = {
+		SVector3(p_Min.x, p_Min.y, p_Min.z),
+		SVector3(p_Min.x, p_Max.y, p_Min.z),
+		SVector3(p_Max.x, p_Max.y, p_Min.z),
+		SVector3(p_Max.x, p_Min.y, p_Min.z),
+		SVector3(p_Max.x, p_Max.y, p_Max.z),
+		SVector3(p_Min.x, p_Max.y, p_Max.z),
+		SVector3(p_Min.x, p_Min.y, p_Max.z),
+		SVector3(p_Max.x, p_Min.y, p_Max.z),
+	};
+
+	DrawLine3D(s_Corners[0], s_Corners[1], p_Color, p_Color);
+	DrawLine3D(s_Corners[1], s_Corners[2], p_Color, p_Color);
+	DrawLine3D(s_Corners[2], s_Corners[3], p_Color, p_Color);
+	DrawLine3D(s_Corners[3], s_Corners[0], p_Color, p_Color);
+
+	DrawLine3D(s_Corners[4], s_Corners[5], p_Color, p_Color);
+	DrawLine3D(s_Corners[5], s_Corners[6], p_Color, p_Color);
+	DrawLine3D(s_Corners[6], s_Corners[7], p_Color, p_Color);
+	DrawLine3D(s_Corners[7], s_Corners[4], p_Color, p_Color);
+
+	DrawLine3D(s_Corners[1], s_Corners[5], p_Color, p_Color);
+	DrawLine3D(s_Corners[0], s_Corners[6], p_Color, p_Color);
+
+	DrawLine3D(s_Corners[2], s_Corners[4], p_Color, p_Color);
+	DrawLine3D(s_Corners[3], s_Corners[7], p_Color, p_Color);
+}
+
+inline SVector3 XMVecToSVec3(const DirectX::XMVECTOR& p_Vec)
+{
+	return SVector3(DirectX::XMVectorGetX(p_Vec), DirectX::XMVectorGetY(p_Vec), DirectX::XMVectorGetZ(p_Vec));
+}
+
+void DirectXTKRenderer::TKRendererInterface::DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color)
+{
+	const auto s_Transform = *reinterpret_cast<DirectX::FXMMATRIX*>(&p_Transform);
+
+	DirectX::XMVECTOR s_Corners[] = {
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Min.y, p_Min.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Max.y, p_Min.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Max.y, p_Min.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Min.y, p_Min.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Max.y, p_Max.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Max.y, p_Max.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Min.y, p_Max.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Min.y, p_Max.z), s_Transform),
+	};
+
+	DrawLine3D(XMVecToSVec3(s_Corners[0]), XMVecToSVec3(s_Corners[1]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[1]), XMVecToSVec3(s_Corners[2]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[3]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[0]), p_Color, p_Color);
+
+	DrawLine3D(XMVecToSVec3(s_Corners[4]), XMVecToSVec3(s_Corners[5]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[5]), XMVecToSVec3(s_Corners[6]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[6]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[7]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
+
+	DrawLine3D(XMVecToSVec3(s_Corners[1]), XMVecToSVec3(s_Corners[5]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[0]), XMVecToSVec3(s_Corners[6]), p_Color, p_Color);
+
+	DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
+}
+
 void DirectXTKRenderer::Init()
 {
 	m_RendererInterface = new TKRendererInterface();

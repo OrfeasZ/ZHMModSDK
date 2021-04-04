@@ -54,6 +54,8 @@ namespace Rendering::Renderers
 			void DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation = 0.f, float p_Scale = 1.f, TextAlignment p_Alignment = TextAlignment::Center) override;
 			bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
 			bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_Out) override;
+			void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) override;
+			void DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color) override;
 		};
 
 	public:

@@ -1,20 +1,7 @@
 #pragma once
 
 #include "ZEntity.h"
-
-class ZSpatialEntity :
-	public ZEntityImpl
-{
-public:
-	PAD(0x88);
-};
-
-class ZBoundedEntity :
-	public ZSpatialEntity
-{
-public:
-	PAD(0x18);
-};
+#include "ZSpatialEntity.h"
 
 class ZRenderableEntity :
 	public ZBoundedEntity
