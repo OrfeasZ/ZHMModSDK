@@ -99,11 +99,6 @@ public:
 		return ToStringView();
 	}
 
-	operator std::string() const
-	{
-		return std::string(ToStringView());
-	}
-
 public:
 	static ZString CopyFrom(const ZString& p_Other)
 	{
