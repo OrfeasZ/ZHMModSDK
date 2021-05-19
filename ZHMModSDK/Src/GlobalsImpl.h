@@ -16,7 +16,7 @@ T PatternGlobalRelative(const char* p_GlobalName, const char* p_Pattern, const c
 
 	if (s_Target == 0)
 	{
-		Logger::Error("Could not find address for global '{}'. This probably means that the game was updated and the SDK requires changes.");
+		Logger::Error("Could not find address for global '{}'. This probably means that the game was updated and the SDK requires changes.", p_GlobalName);
 		return nullptr;
 	}
 
