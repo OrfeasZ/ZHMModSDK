@@ -5,6 +5,8 @@
 #include "ZMemory.h"
 #include "Globals.h"
 
+#include <cassert>
+
 class STypeID;
 class ZString;
 
@@ -58,7 +60,7 @@ public:
 		return m_pTypeID == nullptr || m_pData == nullptr || Hash::Crc32(m_pTypeID->typeInfo()->m_pTypeName) == ZHMTypeId<void>;
 	}
 
-protected:
+public:
 	STypeID* m_pTypeID = nullptr;
 	void* m_pData = nullptr;
 };

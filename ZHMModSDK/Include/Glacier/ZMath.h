@@ -42,6 +42,15 @@ public:
 class SMatrix43
 {
 public:
+	SMatrix43() :
+		XAxis(1.f, 0.f, 0.f),
+		YAxis(0.f, 1.f, 0.f),
+		ZAxis(0.f, 0.f, 1.f),
+		Trans(0.f, 0.f, 0.f)
+	{		
+	}
+	
+public:
 	SVector3 XAxis; // 0x0
 	SVector3 YAxis; // 0xC
 	SVector3 ZAxis; // 0x18

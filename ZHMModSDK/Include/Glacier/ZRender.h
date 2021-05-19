@@ -7,6 +7,39 @@
 
 #include "ZMath.h"
 
+class IRenderDestinationEntity :
+	public IComponentInterface
+{
+public:
+	virtual ZEntityRef* GetSource() = 0;
+	virtual void IRenderDestinationEntity_unk06() = 0;
+	virtual void IRenderDestinationEntity_unk07() = 0;
+	virtual void IRenderDestinationEntity_unk08() = 0;
+	virtual void SetSource(ZEntityRef*) = 0;
+	virtual void IRenderDestinationEntity_unk10() = 0;
+	virtual void IRenderDestinationEntity_unk11() = 0;
+	virtual void IRenderDestinationEntity_unk12() = 0;
+	virtual void IRenderDestinationEntity_unk13() = 0;
+	virtual void IRenderDestinationEntity_unk14() = 0;
+	virtual void IRenderDestinationEntity_unk15() = 0;
+	virtual void IRenderDestinationEntity_unk16() = 0;
+	virtual void IRenderDestinationEntity_unk17() = 0;
+	virtual void IRenderDestinationEntity_unk18() = 0;
+	virtual void IRenderDestinationEntity_unk19() = 0;
+	virtual void IRenderDestinationEntity_unk20() = 0;
+	virtual void IRenderDestinationEntity_unk21() = 0;
+	virtual void IRenderDestinationEntity_unk22() = 0;
+	virtual void IRenderDestinationEntity_unk23() = 0;
+	virtual void IRenderDestinationEntity_unk24() = 0;
+	virtual void IRenderDestinationEntity_unk25() = 0;
+	virtual void IRenderDestinationEntity_unk26() = 0;
+	virtual void IRenderDestinationEntity_unk27() = 0;
+	virtual void IRenderDestinationEntity_unk28() = 0;
+	virtual void IRenderDestinationEntity_unk29() = 0;
+	virtual void IRenderDestinationEntity_unk30() = 0;
+	virtual void IRenderDestinationEntity_unk31() = 0;
+};
+
 class ZRenderSwapChain
 {
 public:
@@ -48,5 +81,5 @@ public:
 	PAD(0x14150);
 	ZRenderDevice* m_pDevice; // 0x14158
 	PAD(0x1B8); // 0x14160
-	ZRenderContext* m_pRenderContext; //0x14318
+	ZRenderContext* m_pRenderContext; // 0x14318
 };

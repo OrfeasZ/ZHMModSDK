@@ -45,7 +45,9 @@ public:
 	virtual void ZSpatialEntity_unk42() = 0;
 
 public:
-	PAD(0x88);
+	PAD(0x08);
+	SMatrix43 m_mTransform; // 0x20
+	PAD(0x50);
 };
 
 class ZBoundedEntity :
