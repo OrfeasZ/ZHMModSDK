@@ -47,6 +47,8 @@ private:
 
 	std::ofstream m_ClassesFile;
 	std::ofstream m_EnumsFile;
+	
+	std::ofstream m_SDKEnumsHeader;
 
 	std::ofstream m_ReflectiveClassesHeaderFile;
 	std::ofstream m_ReflectiveClassesSourceFile;
