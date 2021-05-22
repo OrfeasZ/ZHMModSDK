@@ -15,6 +15,8 @@
 #include <Glacier/ZFreeCamera.h>
 #include <Glacier/ZRender.h>
 
+#include "Glacier/ZGameLoopManager.h"
+
 FreeCam::FreeCam() :
 	m_FreeCamActive(false), m_ShouldToggle(false)
 {
@@ -23,7 +25,7 @@ FreeCam::FreeCam() :
 FreeCam::~FreeCam()
 {
 	const ZMemberDelegate<FreeCam, void(const SGameUpdateEvent&)> s_Delegate(this, &FreeCam::OnFrameUpdate);
-	Hooks::ZGameLoopManager_UnregisterFrameUpdate->Call(Globals::GameLoopManager, s_Delegate, 99999, EUpdateMode::eUpdatePlayMode);
+	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdatePlayMode);
 }
 
 void FreeCam::PreInit()
@@ -33,7 +35,7 @@ void FreeCam::PreInit()
 void FreeCam::OnEngineInitialized()
 {
 	const ZMemberDelegate<FreeCam, void(const SGameUpdateEvent&)> s_Delegate(this, &FreeCam::OnFrameUpdate);
-	Hooks::ZGameLoopManager_RegisterFrameUpdate->Call(Globals::GameLoopManager, s_Delegate, 99999, EUpdateMode::eUpdatePlayMode);
+	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdatePlayMode);
 }
 
 void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)

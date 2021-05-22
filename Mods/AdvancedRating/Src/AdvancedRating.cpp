@@ -31,7 +31,8 @@ void AdvancedRating::PreInit()
 	RegisterEvent(RatingEventType::CaughtCommitingCrime, 7);
 	RegisterEvent(RatingEventType::CivilianKilled, 8);
 	
-	Hooks::ZGameStatsManager_SendAISignals->AddDetour(this, &AdvancedRating::ZGameStatsManager_SendAISignals);
+	Hooks::ZGameStatsManager_SendAISignals01->AddDetour(this, &AdvancedRating::ZGameStatsManager_SendAISignals);
+	Hooks::ZGameStatsManager_SendAISignals02->AddDetour(this, &AdvancedRating::ZGameStatsManager_SendAISignals);
 	Hooks::ZAchievementManagerSimple_OnEventSent->AddDetour(this, &AdvancedRating::ZAchievementManagerSimple_OnEventSent);
 }
 

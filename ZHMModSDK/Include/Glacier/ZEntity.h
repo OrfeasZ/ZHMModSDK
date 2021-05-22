@@ -219,7 +219,8 @@ public:
 				s_Type->typeInfo()->m_nTypeAlignment
 			);
 
-			Hooks::GetPropertyValue->Call(*this, p_PropertyId, s_Data);
+			// TODO: Re-implement this.
+			//Hooks::GetPropertyValue->Call(*this, p_PropertyId, s_Data);
 
 			s_Property.Assign(s_Type, s_Data);
 

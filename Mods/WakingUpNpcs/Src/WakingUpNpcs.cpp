@@ -12,6 +12,8 @@
 #include <Glacier/ZObject.h>
 #include <Glacier/ZScene.h>
 
+#include "Glacier/ZGameLoopManager.h"
+
 WakingUpNpcs::WakingUpNpcs() :
 	m_Generator(m_RandomDevice())
 {
@@ -20,7 +22,7 @@ WakingUpNpcs::WakingUpNpcs() :
 WakingUpNpcs::~WakingUpNpcs()
 {
 	const ZMemberDelegate<WakingUpNpcs, void(const SGameUpdateEvent&)> s_Delegate(this, &WakingUpNpcs::OnFrameUpdate);
-	Hooks::ZGameLoopManager_UnregisterFrameUpdate->Call(Globals::GameLoopManager, s_Delegate, 0, EUpdateMode::eUpdatePlayMode);
+	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 0, EUpdateMode::eUpdatePlayMode);
 }
 
 void WakingUpNpcs::PreInit()
@@ -31,7 +33,7 @@ void WakingUpNpcs::PreInit()
 void WakingUpNpcs::OnEngineInitialized()
 {
 	const ZMemberDelegate<WakingUpNpcs, void(const SGameUpdateEvent&)> s_Delegate(this, &WakingUpNpcs::OnFrameUpdate);
-	Hooks::ZGameLoopManager_RegisterFrameUpdate->Call(Globals::GameLoopManager, s_Delegate, 0, EUpdateMode::eUpdatePlayMode);
+	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 0, EUpdateMode::eUpdatePlayMode);
 }
 
 void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)

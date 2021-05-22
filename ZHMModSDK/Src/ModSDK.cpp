@@ -111,11 +111,6 @@ bool ModSDK::Startup()
 	// Notify all loaded mods that the engine has intialized once it has.
 	Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
 
-	Hooks::ZGameLoopManager_RequestPause->AddDetour(this, [](void*, auto p_Hook, ZGameLoopManager* th, const ZString& a2)
-		{
-			return HookResult<void>(HookAction::Continue());
-		});
-	
 	return true;
 }
 
