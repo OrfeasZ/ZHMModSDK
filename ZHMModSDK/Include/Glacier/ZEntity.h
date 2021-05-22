@@ -185,7 +185,7 @@ public:
 		return false;
 	}
 
-	template <class T>
+	/*template <class T>
 	ZVariant<T> GetProperty(uint32_t p_PropertyId) const
 	{
 		// TODO: Type checks?
@@ -233,7 +233,7 @@ public:
 	ZObjectRef GetProperty(const ZString& p_PropertyName) const
 	{
 		return std::move(GetProperty(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size())));
-	}
+	}*/
 
 	bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true)
 	{
