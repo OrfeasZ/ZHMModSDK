@@ -156,8 +156,8 @@ public:
 	bool m_bEnableOutfitModifiers; // 0x4BD
 	TEntityRef<ZAIVisionConfigurationEntity> m_AgentVisionConfiguration; // 0x4C0
 	TEntityRef<ZHTNDomainEntity> m_DomainConfig; // 0x4D0
-	PAD(0xC70); // 0x4E0
-	bool m_bUnk00 : 1; // 0x1150
+	PAD(0xC78); // 0x4E0
+	bool m_bUnk00 : 1; // 0x1158
 	bool m_bUnk01 : 1;
 	bool m_bUnk02 : 1;
 	bool m_bUnk03 : 1;
@@ -165,7 +165,7 @@ public:
 	bool m_bUnk05 : 1;
 	bool m_bIsBeingDragged : 1;
 	bool m_bIsBeingDumped : 1;
-	bool m_bUnk08 : 1; // 0x1151
+	bool m_bUnk08 : 1; // 0x1159
 	bool m_bUnk09 : 1;
 	bool m_bUnk10 : 1;
 	bool m_bUnk11 : 1;
@@ -173,7 +173,7 @@ public:
 	bool m_bUnk13 : 1;
 	bool m_bUnk14 : 1;
 	bool m_bUnk15 : 1;
-	bool m_bUnk16 : 1; // 0x1152
+	bool m_bUnk16 : 1; // 0x115A
 	bool m_bUnk17 : 1;
 	bool m_bUnk18 : 1;
 	bool m_bUnk19 : 1;
@@ -181,7 +181,7 @@ public:
 	bool m_bUnk21 : 1;
 	bool m_bUnk22 : 1;
 	bool m_bUnk23 : 1;
-	bool m_bUnk24 : 1; // 0x1153
+	bool m_bUnk24 : 1; // 0x115B
 	bool m_bUnk25 : 1;
 	bool m_bUnk26 : 1;
 	bool m_bUnk27 : 1;
@@ -189,7 +189,7 @@ public:
 	bool m_bUnk29 : 1;
 	bool m_bUnk30 : 1;
 	bool m_bUnk31 : 1;
-	bool m_bUnk32 : 1; // 0x1154
+	bool m_bUnk32 : 1; // 0x115C
 	bool m_bUnk33 : 1;
 	bool m_bBodyHidden : 1;
 	bool m_bUnk35 : 1;
@@ -198,6 +198,17 @@ public:
 	bool m_bUnk38 : 1;
 	bool m_bUnk39 : 1;
 	PAD(0x2B8);
+
+public:
+	void PrintBitflags()
+	{
+		Logger::Debug("0:{} 1:{} 2:{} 3:{} 4:{} 5:{} 6:{} 7:{} 8:{} 9:{} 10:{} 11:{} 12:{} 13:{} 14:{} 15:{} 16:{} 17:{} 18:{} 19:{} 20:{} 21:{} 22:{} 23:{} 24:{} 25:{} 26:{} 27:{} 28:{} 29:{} 30:{} 31:{} 32:{} 33:{} 34:{} 35:{} 36:{} 37:{} 38:{} 39:{}",
+			m_bUnk00, m_bUnk01, m_bUnk02, m_bUnk03, m_bUnk04, m_bUnk05, m_bIsBeingDragged, m_bIsBeingDumped, m_bUnk08, m_bUnk09,
+			m_bUnk10, m_bUnk11, m_bUnk12, m_bUnk13, m_bUnk14, m_bUnk15, m_bUnk16, m_bUnk17, m_bUnk18, m_bUnk19,
+			m_bUnk20, m_bUnk21, m_bUnk22, m_bUnk23, m_bUnk24, m_bUnk25, m_bUnk26, m_bUnk27, m_bUnk28, m_bUnk29,
+			m_bUnk30, m_bUnk31, m_bUnk32, m_bUnk33, m_bBodyHidden, m_bUnk35, m_bUnk36, m_bUnk37, m_bUnk38, m_bUnk39
+		);
+	}
 };
 
 class ZActorSavableHandler;

@@ -65,7 +65,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
 				// As soon as the timer reaches 0, then it means it's time to wake up the NPC.
 				// If however the NPC is being dragged we should wait until that action stops.
-				if (s_RemainingTime <= 0 && !s_Actor->m_bIsBeingDragged)
+				if (s_RemainingTime <= 0.0 && !s_Actor->m_bIsBeingDragged)
 				{
 					// TODO: Set alerted state.
 					Logger::Debug("Waking up actor '{}'.", s_Actor->m_sActorName);
