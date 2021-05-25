@@ -34,6 +34,7 @@ add_subdirectory("Mods/CertPinBypass")
 add_subdirectory("Mods/MaxPatchLevel")
 add_subdirectory("Mods/DebugMod")
 add_subdirectory("Mods/AdvancedRating")
+add_subdirectory("Mods/FreeCam")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -50,4 +51,5 @@ add_dependencies(DevLoader
 	MaxPatchLevel
 	DebugMod
 	AdvancedRating
+	FreeCam
 )
