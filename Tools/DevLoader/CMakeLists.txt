@@ -12,11 +12,6 @@ add_executable(DevLoader
 	${SRC_FILES}
 )
 
-set_target_properties(DevLoader PROPERTIES
-	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-	CXX_STANDARD 20
-)
-
 target_include_directories(DevLoader PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Src
 )

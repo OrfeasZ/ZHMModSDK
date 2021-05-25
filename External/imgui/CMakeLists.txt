@@ -15,11 +15,6 @@ add_library(imgui STATIC
 	source/backends/imgui_impl_dx12.h
 )
 
-set_target_properties(imgui PROPERTIES
-	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-	CXX_STANDARD 20
-)
-
 target_include_directories(imgui PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/source
 )

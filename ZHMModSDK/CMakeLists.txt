@@ -12,11 +12,6 @@ add_library(ZHMModSDK SHARED
 	${SRC_FILES}
 )
 
-set_target_properties(ZHMModSDK PROPERTIES
-	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-	CXX_STANDARD 20
-)
-
 target_include_directories(ZHMModSDK PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Src
 	${CMAKE_SOURCE_DIR}/External/mINI/src/mini

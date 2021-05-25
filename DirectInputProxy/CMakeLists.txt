@@ -13,7 +13,5 @@ add_library(DirectInputProxy SHARED
 )
 
 set_target_properties(DirectInputProxy PROPERTIES
-	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-	CXX_STANDARD 20
 	OUTPUT_NAME "dinput8"
 )

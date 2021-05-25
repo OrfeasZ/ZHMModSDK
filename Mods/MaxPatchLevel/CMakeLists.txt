@@ -12,11 +12,6 @@ add_library(MaxPatchLevel SHARED
 	${SRC_FILES}
 )
 
-set_target_properties(MaxPatchLevel PROPERTIES
-	MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-	CXX_STANDARD 20
-)
-
 target_include_directories(MaxPatchLevel PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Src
 )

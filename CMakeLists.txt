@@ -1,6 +1,19 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
+if(POLICY CMP0091)
+	cmake_policy(SET CMP0091 NEW)
+endif()
+
 project(ZHMMods CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	set(VCPKG_CRT_LINKAGE "static")
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	
+	string(REPLACE "/MDd" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+endif()
 
 # Dependencies.
 add_subdirectory("External/spdlog")
