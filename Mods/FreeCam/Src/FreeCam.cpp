@@ -18,7 +18,7 @@
 #include "Glacier/ZGameLoopManager.h"
 
 FreeCam::FreeCam() :
-	m_FreeCamActive(false), m_ShouldToggle(false)
+	m_FreeCamActive(false), m_ShouldToggle(false), m_ToggleFreecamAction("KBMButtonX")
 {
 }
 
@@ -26,6 +26,15 @@ FreeCam::~FreeCam()
 {
 	const ZMemberDelegate<FreeCam, void(const SGameUpdateEvent&)> s_Delegate(this, &FreeCam::OnFrameUpdate);
 	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdatePlayMode);
+
+	// Reset the camera to default when unloading with freecam active.
+	if (m_FreeCamActive)
+	{
+		TEntityRef<IRenderDestinationEntity> s_RenderDest;
+		Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
+
+		s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
+	}
 }
 
 void FreeCam::PreInit()
@@ -51,11 +60,17 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
 	(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_FreeCamActive);
 	
-	auto s_Camera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
+	if (Functions::ZInputAction_Digital->Call(&m_ToggleFreecamAction, -1))
+	{
+		m_FreeCamActive = !m_FreeCamActive;
+		m_ShouldToggle = true;
+	}
 	
 	if (m_ShouldToggle)
 	{
 		m_ShouldToggle = false;
+
+		auto s_Camera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
 
 		TEntityRef<IRenderDestinationEntity> s_RenderDest;
 		Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
@@ -74,25 +89,6 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 			s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
 		}
 	}
-
-
-	/*if (!m_FreeCamActive)
-	{
-		m_CameraTransform = s_Camera->m_mTransform;
-	}
-	else
-	{
-		s_Camera->m_mTransform = m_CameraTransform;
-	}
-
-	Logger::Debug("Camera: {} {}", fmt::ptr(s_Camera), offsetof(ZCameraEntity, m_mTransform));
-
-	Logger::Debug("{} {} {}, {} {} {}, {} {} {}, {} {} {}",
-		s_Camera->m_mTransform.XAxis.x, s_Camera->m_mTransform.XAxis.y, s_Camera->m_mTransform.XAxis.z,
-		s_Camera->m_mTransform.YAxis.x, s_Camera->m_mTransform.YAxis.y, s_Camera->m_mTransform.YAxis.z,
-		s_Camera->m_mTransform.ZAxis.x, s_Camera->m_mTransform.ZAxis.y, s_Camera->m_mTransform.ZAxis.z,
-		s_Camera->m_mTransform.Trans.x, s_Camera->m_mTransform.Trans.y, s_Camera->m_mTransform.Trans.z
-	);*/
 }
 
 void FreeCam::OnDrawMenu()

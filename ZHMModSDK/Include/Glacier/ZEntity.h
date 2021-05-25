@@ -107,12 +107,12 @@ public:
 class ZEntityRef
 {
 public:
-	ZEntityType** m_pEntity;
+	ZEntityType** m_pEntity = nullptr;
 
 public:
 	ZEntityImpl* GetBaseEntity()
 	{
-		if (!*m_pEntity)
+		if (!m_pEntity || !*m_pEntity)
 			return nullptr;
 
 		/*if (!(*m_pEntity)->m_pInterfaces)
@@ -287,7 +287,7 @@ class TEntityRef
 {
 public:
 	ZEntityRef m_ref;
-	T* m_pInterfaceRef;
+	T* m_pInterfaceRef = nullptr;
 };
 
 class ZRepositoryItemEntity :

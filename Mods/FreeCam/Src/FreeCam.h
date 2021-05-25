@@ -2,10 +2,9 @@
 
 #include "IPluginInterface.h"
 
-#include <random>
-#include <unordered_map>
-
 #include <Glacier/ZEntity.h>
+
+#include "Glacier/ZInput.h"
 
 class FreeCam : public IPluginInterface
 {
@@ -23,8 +22,8 @@ private:
 private:
 	volatile bool m_FreeCamActive;
 	volatile bool m_ShouldToggle;
-	SMatrix43 m_CameraTransform;
 	ZEntityRef m_OriginalCam;
+	ZInputAction m_ToggleFreecamAction;
 };
 
 DEFINE_ZHM_PLUGIN(FreeCam)

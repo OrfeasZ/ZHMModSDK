@@ -3,11 +3,17 @@
 #include "Common.h"
 #include "Enums.h"
 
+class ZActionMapTree;
+
 class ZInputAction
 {
 public:
+	ZInputAction(const char* p_Name) : m_szName(p_Name) {}
+	
+public:
 	const char* m_szName;
-	PAD(0x10);
+	ZActionMapTree* m_pkMap = nullptr;
+	int m_iSeq = -1;
 };
 
 class ZInputBinding
