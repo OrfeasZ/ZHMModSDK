@@ -98,3 +98,17 @@ PATTERN_RELATIVE_GLOBAL(
 	21,
 	ZCameraManager*, CameraManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x0D\x00\x00\x00\x00\x0F\x29\x78\xA8\x4C\x8B\xF2",
+	"xxx????xxxxxxx",
+	3,
+	ZPlayerRegistry*, PlayerRegistry
+);
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\xEB\x00\x48\x8B\xC6",
+	"xxx????x????x?xxx",
+	3,
+	ZHM5InputManager*, InputManager
+);

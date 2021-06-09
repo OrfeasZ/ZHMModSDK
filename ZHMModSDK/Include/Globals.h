@@ -16,6 +16,8 @@ class ZRenderManager;
 class ZApplicationEngineWin32;
 class ZGameUIManager;
 class ZCameraManager;
+class ZPlayerRegistry;
+class ZHM5InputManager;
 
 class ZHMSDK_API Globals
 {
@@ -34,4 +36,6 @@ public:
 	static ZEntityManager* EntityManager;
 	static ZGameStatsManager* GameStatsManager;
 	static ZCameraManager* CameraManager;
+	static ZPlayerRegistry* PlayerRegistry;
+	static ZHM5InputManager* InputManager;
 };

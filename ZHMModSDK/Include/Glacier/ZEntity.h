@@ -280,6 +280,31 @@ public:
 	{
 		return SetProperty<T>(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers);
 	}
+
+	void SignalInputPin(const ZString& p_PinName, const ZObjectRef& p_Data = ZObjectRef()) const
+	{
+		SignalInputPin(Hash::Crc32(p_PinName.c_str(), p_PinName.size()), p_Data);
+	}
+
+	void SignalInputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const
+	{
+		Hooks::SignalInputPin->Call(*this, p_PinId, p_Data);
+	}
+
+	void SignalOutputPin(const ZString& p_PinName, const ZObjectRef& p_Data = ZObjectRef()) const
+	{
+		SignalOutputPin(Hash::Crc32(p_PinName.c_str(), p_PinName.size()), p_Data);
+	}
+
+	void SignalOutputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const
+	{
+		Hooks::SignalOutputPin->Call(*this, p_PinId, p_Data);
+	}
+
+	operator bool() const
+	{
+		return m_pEntity != nullptr && (*m_pEntity) != nullptr;
+	}
 };
 
 template <typename T>
@@ -288,6 +313,11 @@ class TEntityRef
 public:
 	ZEntityRef m_ref;
 	T* m_pInterfaceRef = nullptr;
+
+	operator bool() const
+	{
+		return m_ref && m_pInterfaceRef != nullptr;
+	}
 };
 
 class ZRepositoryItemEntity :

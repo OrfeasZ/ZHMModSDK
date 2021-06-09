@@ -5,6 +5,7 @@
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZPrimitives.h"
 
+class ZHitman5;
 class ZActor;
 class ZDynamicObject;
 class ZString;
@@ -14,6 +15,7 @@ class ZSpatialEntity;
 class ZEngineAppCommon;
 class IRenderDestinationEntity;
 class ZInputAction;
+class ZHM5InputControl;
 struct SMatrix;
 
 class ZHMSDK_API Functions
@@ -29,4 +31,6 @@ public:
 	static EngineFunction<TEntityRef<IRenderDestinationEntity>* (ZCameraManager* th, TEntityRef<IRenderDestinationEntity>* result)>* ZCameraManager_GetActiveRenderDestinationEntity;
 	static EngineFunction<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
 	static EngineFunction<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
+	static EngineFunction<void(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
+	static EngineFunction<ZHM5InputControl*(ZHM5InputManager* th)>* ZHM5InputManager_GetInputControlForLocalPlayer;
 };

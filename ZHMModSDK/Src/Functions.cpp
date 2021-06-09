@@ -70,3 +70,17 @@ PATTERN_FUNCTION(
 	ZInputAction_Digital,
 	bool(ZInputAction* th, int a2)
 );
+
+PATTERN_RELATIVE_FUNCTION(
+	"\xE8\x00\x00\x00\x00\x48\x8B\x44\x24\x48\x48\x8B\xB0\x40\x11\x00\x00",
+	"x????xxxxxxxxxxxx",
+	ZPlayerRegistry_GetLocalPlayer,
+	void(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)
+);
+
+PATTERN_FUNCTION(
+	"\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8B\x15\x00\x00\x00\x00\x4C\x8D\x15",
+	"xxxxxxxxx?xxx????xxx",
+	ZHM5InputManager_GetInputControlForLocalPlayer,
+	ZHM5InputControl* (ZHM5InputManager* th)
+);
