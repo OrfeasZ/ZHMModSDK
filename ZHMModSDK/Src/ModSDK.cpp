@@ -122,13 +122,8 @@ void ModSDK::ThreadedStartup()
 		s_Mod->Init();
 
 	// If the engine is already initialized, inform the mods.
-	// TODO: This isn't a good check. Fix it.
-	if (*Globals::Hitman5Module != nullptr &&
-		(*Globals::Hitman5Module)->m_pEntitySceneContext != nullptr &&
-		(*Globals::Hitman5Module)->m_pEntitySceneContext->m_sceneData.m_sceneName.size() > 0)
-	{
+	if (Globals::Hitman5Module->IsEngineInitialized())
 		OnEngineInit();
-	}
 }
 
 void ModSDK::OnDrawMenu()
@@ -164,10 +159,7 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
 
 	p_Mod->PreInit();
 
-	if (p_LiveLoad &&
-		*Globals::Hitman5Module != nullptr &&
-		(*Globals::Hitman5Module)->m_pEntitySceneContext != nullptr &&
-		(*Globals::Hitman5Module)->m_pEntitySceneContext->m_sceneData.m_sceneName.size() > 0)
+	if (p_LiveLoad && Globals::Hitman5Module->IsEngineInitialized())
 	{
 		p_Mod->Init();
 		p_Mod->OnEngineInitialized();

@@ -23,7 +23,7 @@ public:
 	static ZGameLoopManager* GameLoopManager;
 	static ZTypeRegistry** TypeRegistry;
 	static ZGameTimeManager** GameTimeManager;
-	static ZHitman5Module** Hitman5Module;
+	static ZHitman5Module* Hitman5Module;
 	static ZGameContext* GameContext;
 	static ZActorManager* ActorManager;
 	static uint16_t* NextActorId;

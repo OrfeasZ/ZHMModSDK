@@ -26,7 +26,7 @@ PATTERN_RELATIVE_GLOBAL(
 	"\x48\x89\x05\x00\x00\x00\x00\x0F\x57\xC0\xF3\x0F\x11\x05",
 	"xxx????xxxxxxx",
 	3,
-	ZHitman5Module**, Hitman5Module
+	ZHitman5Module*, Hitman5Module
 );
 
 PATTERN_RELATIVE_GLOBAL(

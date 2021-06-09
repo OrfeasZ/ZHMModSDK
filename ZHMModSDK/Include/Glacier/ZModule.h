@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Reflection.h"
+#include "ZScene.h"
 #include "ZString.h"
 
 class ZEntitySceneContext;
@@ -34,4 +35,14 @@ public:
 	ZEntitySceneContext* m_pEntitySceneContext; // 0x88
 	ZUserFeedbackManager* m_pUserFeedbackManager; // 0x90
 	PAD(0x50);
+
+public:
+	[[nodiscard]]
+	bool IsEngineInitialized() const
+	{
+		if (!m_pEntitySceneContext)
+			return false;
+		
+		return m_pEntitySceneContext->m_sceneData.m_sceneName.size() != 0;
+	}
 };
