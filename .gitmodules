@@ -13,6 +13,3 @@
 [submodule "External/mINI"]
 	path = External/mINI
 	url = https://github.com/pulzed/mINI.git
-[submodule "External/discord-rpc"]
-	path = External/discord-rpc
-	url = https://github.com/discord/discord-rpc.git
