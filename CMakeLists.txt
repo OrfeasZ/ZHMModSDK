@@ -20,6 +20,7 @@ add_subdirectory("External/spdlog")
 add_subdirectory("External/minhook")
 add_subdirectory("External/imgui")
 add_subdirectory("External/DirectXTK12")
+add_subdirectory("External/discord-rpc")
 
 # Core modules.
 add_subdirectory("ZHMModSDK")
@@ -35,6 +36,7 @@ add_subdirectory("Mods/MaxPatchLevel")
 add_subdirectory("Mods/DebugMod")
 add_subdirectory("Mods/AdvancedRating")
 add_subdirectory("Mods/FreeCam")
+add_subdirectory("Mods/DiscordRichPresence")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -52,4 +54,5 @@ add_dependencies(DevLoader
 	DebugMod
 	AdvancedRating
 	FreeCam
+	DiscordRpc
 )
