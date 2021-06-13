@@ -46,7 +46,7 @@ void DiscordRpc::PopulateScenes()
 		{ "sheep", "Hawke's Bay" },
 		{ "miami", "Miami" },
 		{ "colombia", "Santa Fortuna" },
-		{ "Mumbai", "Mumbai" },
+		{ "mumbai", "Mumbai" },
 		{ "skunk", "Whittleton Creek" },
 		{ "theark", "Isle of Sgàil" },
 		{ "greedy", "New York" },
