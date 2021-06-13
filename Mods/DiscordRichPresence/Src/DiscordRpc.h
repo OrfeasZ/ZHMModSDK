@@ -15,8 +15,8 @@ private:
 	void PopulateScenes();
 	void PopulateGameModes();
 	void PopulateCodenameHints();
-	std::string lowercaseString(std::string in);
-	std::string findLocationForScene(ZString scene);
+	std::string LowercaseString(std::string in);
+	std::string FindLocationForScene(ZString scene);
 
 private:
 	DEFINE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);

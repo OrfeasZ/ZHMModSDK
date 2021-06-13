@@ -126,7 +126,7 @@ void DiscordRpc::PopulateCodenameHints()
 	};
 }
 
-std::string DiscordRpc::lowercaseString(std::string in)
+std::string DiscordRpc::LowercaseString(std::string in)
 {
 	std::string copy = in;
 	std::transform(copy.begin(), copy.end(), copy.begin(), [](unsigned char c) { return std::tolower(c); });
@@ -134,9 +134,9 @@ std::string DiscordRpc::lowercaseString(std::string in)
 	return copy;
 }
 
-std::string DiscordRpc::findLocationForScene(ZString scene)
+std::string DiscordRpc::FindLocationForScene(ZString scene)
 {
-	std::string lowercaseScene = lowercaseString(scene.c_str());
+	std::string lowercaseScene = LowercaseString(scene.c_str());
 	for (auto& it : m_scenes)
 	{
 		if (lowercaseScene.find(it.first) != std::string::npos)
@@ -158,7 +158,7 @@ DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZS
 	std::string location = "";
 	std::string imageKey = "logo";
 
-	location = findLocationForScene(sceneData.m_sceneName);
+	location = FindLocationForScene(sceneData.m_sceneName);
 
 	if (location == "In Startup Screen" || location == "In Menu")
 	{
@@ -174,7 +174,7 @@ DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZS
 		// Discord image key
 		std::string locationKey = std::regex_replace(location, std::regex(" "), "-");
 		locationKey = std::regex_replace(locationKey, std::regex("à"), "a");
-		locationKey = lowercaseString(locationKey);
+		locationKey = LowercaseString(locationKey);
 
 		imageKey = "location-" + locationKey;
 		if (gameMode == "Mission" || gameMode == "Sniper Assassin")
@@ -184,7 +184,7 @@ DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZS
 			std::string missionName = action;
 
 			std::string missionKey = std::regex_replace(missionName, std::regex(" "), "-");
-			missionKey = lowercaseString(missionKey);
+			missionKey = LowercaseString(missionKey);
 			imageKey = "mission-" + missionKey;
 		}
 		else
