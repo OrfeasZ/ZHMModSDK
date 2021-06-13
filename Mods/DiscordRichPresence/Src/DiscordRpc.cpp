@@ -37,7 +37,7 @@ void DiscordRpc::PopulateScenes()
 		{ "thefacility", "ICA Facility" },
 		// HITMAN
 		{ "paris", "Paris" },
-		{ "coastalTown", "Sapienza" },
+		{ "coastaltown", "Sapienza" },
 		{ "marrakesh", "Marrakesh" },
 		{ "bangkok", "Bangkok" },
 		{ "colorado", "Colorado" },
