@@ -83,7 +83,7 @@ ModSDK::~ModSDK()
 {
 	m_ImGuiInitialized = false;
 
-	Rendering::D3D12Renderer::Shutdown();
+	//Rendering::D3D12Renderer::Shutdown();
 
 	delete m_ModLoader;
 
@@ -116,7 +116,7 @@ bool ModSDK::Startup()
 
 void ModSDK::ThreadedStartup()
 {
-	Rendering::D3D12Renderer::Init();
+	//Rendering::D3D12Renderer::Init();
 
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->Init();
@@ -178,7 +178,7 @@ void ModSDK::OnEngineInit()
 {
 	Logger::Debug("Engine was initialized.");
 
-	Rendering::D3D12Renderer::OnEngineInit();
+	//Rendering::D3D12Renderer::OnEngineInit();
 
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnEngineInitialized();
