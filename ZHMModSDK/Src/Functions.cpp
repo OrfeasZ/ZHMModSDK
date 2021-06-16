@@ -72,8 +72,8 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_RELATIVE_FUNCTION(
-	"\xE8\x00\x00\x00\x00\x48\x8B\x44\x24\x48\x48\x8B\xB0\x40\x11\x00\x00",
-	"x????xxxxxxxxxxxx",
+	"\xE8\x00\x00\x00\x00\x48\x8B\x4C\x24\x38\x48\x85\xC9\x74\x00\x48\x81\xC1",
+	"x????xxxxxxxxx?xxx",
 	ZPlayerRegistry_GetLocalPlayer,
 	void(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)
 );
