@@ -84,3 +84,17 @@ PATTERN_FUNCTION(
 	ZHM5InputManager_GetInputControlForLocalPlayer,
 	ZHM5InputControl* (ZHM5InputManager* th)
 );
+
+PATTERN_FUNCTION(
+	"\x89\x54\x24\x10\x57\x48\x83\xEC\x00\x48\x89\x5C\x24\x60",
+	"xxxxxxxx?xxxxx",
+	ZResourceManager_UninstallResource,
+	void(ZResourceManager* th, int index)
+);
+
+PATTERN_FUNCTION(
+	"\x4C\x8B\xDC\x49\x89\x5B\x08\x49\x89\x6B\x10\x4D\x89\x43\x18",
+	"xxxxxxxxxxxxxxx",
+	ZEntityManager_NewEntity,
+	void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef& parent, void* a6, int64_t a7)
+);

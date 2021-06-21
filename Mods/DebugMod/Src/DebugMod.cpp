@@ -6,15 +6,64 @@
 #include <Glacier/ZScene.h>
 #include <Glacier/ZActor.h>
 #include <Glacier/ZSpatialEntity.h>
+#include <Glacier/EntityFactory.h>
 
-#include "Functions.h"
-#include "Globals.h"
+#include <Functions.h>
+#include <Globals.h>
 
 void DebugMod::OnDrawMenu()
 {
 	if (ImGui::Button("DEBUG MENU"))
 	{
 		m_MenuActive = !m_MenuActive;
+	}
+
+	if (ImGui::Button("BADABING BADABOOM"))
+	{
+		const auto s_ID = ResId<"[assembly:/_pro/environment/templates/props/lamps/lamps_outdoor_paris_a.template?/facility_vertical_stand_floodlight_00.entitytemplate].pc_entitytype">;
+		
+		TResourcePtr<ZTemplateEntityFactory> s_Resource;
+		Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
+
+		Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex, fmt::ptr(s_Resource.GetResource()));
+
+		if (!s_Resource)
+		{
+			Logger::Debug("Resource is not loaded.");
+		}
+		else
+		{
+			TEntityRef<ZHitman5> s_LocalHitman;
+			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+			// Spawn some shit now.
+			ZEntityRef s_NewEntity;
+			Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, s_NewEntity, "", s_Resource, s_LocalHitman.m_ref, nullptr, -1);
+
+			if (!s_NewEntity)
+			{
+				Logger::Debug("Failed to spawn entity.");
+			}
+			else
+			{
+				Logger::Debug("Spawned entity!");
+				
+				m_EntityMutex.lock();
+
+				m_EntitiesToTrack.push_back(s_NewEntity);
+				
+				m_EntityMutex.unlock();
+			}
+		}
+	}
+
+	if (ImGui::Button("BLOOP"))
+	{
+		m_EntityMutex.lock();
+
+		m_EntitiesToTrack.clear();
+
+		m_EntityMutex.unlock();
 	}
 }
 
@@ -87,6 +136,24 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 			}
 		}
 	}
+
+	m_EntityMutex.lock_shared();
+
+	for (auto& s_Entity : m_EntitiesToTrack)
+	{
+		auto* s_SpatialEntity = s_Entity.QueryInterface<ZSpatialEntity>();
+
+		SMatrix s_Transform;
+		Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
+
+		float4 s_Min, s_Max;
+
+		s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+
+		p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(0.f, 0.f, 1.f, 1.f));
+	}
+	
+	m_EntityMutex.unlock_shared();
 }
 
 DECLARE_ZHM_PLUGIN(DebugMod);

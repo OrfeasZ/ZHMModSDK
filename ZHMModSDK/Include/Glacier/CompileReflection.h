@@ -11,7 +11,9 @@
 
 #include <string_view>
 #include <array>
+
 #include "Hash.h"
+#include "ZResourceID.h"
 
 namespace detail
 {
@@ -112,6 +114,35 @@ namespace detail
 
 	template <class T>
 	inline constexpr auto ZHMTypeName_Storage = ComputeZHMTypeName<ComputeTypeName<T>().size()>(ComputeTypeName<T>());
+
+	template <std::size_t N>
+	struct StringLiteral
+	{
+		constexpr StringLiteral(const char(&p_Str)[N])
+		{
+			std::copy_n(p_Str, N, Value);
+		}
+
+		char Value[N];
+	};
+
+	template <StringLiteral Path>
+	constexpr ZRuntimeResourceID IOIPathToRuntimeResourceID()
+	{
+		// Minus 1 here because the size includes the null terminator.
+		constexpr auto s_Hash = Hash::MD5<sizeof(Path.Value) - 1>(std::string_view(Path.Value, sizeof(Path.Value) - 1));
+
+		constexpr uint32_t s_IDHigh = ((s_Hash.A >> 24) & 0x000000FF)
+			| ((s_Hash.A >> 8) & 0x0000FF00)
+			| ((s_Hash.A << 8) & 0x00FF0000);
+
+		constexpr uint32_t s_IDLow = ((s_Hash.B >> 24) & 0x000000FF)
+			| ((s_Hash.B >> 8) & 0x0000FF00)
+			| ((s_Hash.B << 8) & 0x00FF0000)
+			| ((s_Hash.B << 24) & 0xFF000000);
+
+		return ZRuntimeResourceID(s_IDHigh, s_IDLow);
+	}
 }
 
 /**
@@ -143,3 +174,9 @@ template <> inline constexpr std::string_view ZHMTypeName<double> = "float64";
  */
 template <class T>
 inline constexpr uint32_t ZHMTypeId = Hash::Crc32(ZHMTypeName<T>.data(), ZHMTypeName<T>.size());
+
+/**
+ * ZRuntimeResourceID from an IOI path string.
+ */
+template <detail::StringLiteral Path> inline constexpr auto ResId = detail::IOIPathToRuntimeResourceID<Path>();
+

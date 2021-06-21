@@ -112,3 +112,17 @@ PATTERN_RELATIVE_GLOBAL(
 	3,
 	ZHM5InputManager*, InputManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x0D\x00\x00\x00\x00\x48\x89\x43\x30",
+	"xxx????xxxx",
+	3,
+	ZResourceManager*, ResourceManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8B\x05\x00\x00\x00\x00\x44\x8B\xFE\x49\xC1\xE7",
+	"xxx????xxxxxx",
+	3,
+	ZResourceContainer**, ResourceContainer
+);

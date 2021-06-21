@@ -16,6 +16,9 @@ class ZEngineAppCommon;
 class IRenderDestinationEntity;
 class ZInputAction;
 class ZHM5InputControl;
+class ZEntityRef;
+class ZEntityManager;
+class IEntityFactory;
 struct SMatrix;
 
 class ZHMSDK_API Functions
@@ -33,4 +36,6 @@ public:
 	static EngineFunction<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
 	static EngineFunction<void(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
 	static EngineFunction<ZHM5InputControl*(ZHM5InputManager* th)>* ZHM5InputManager_GetInputControlForLocalPlayer;
+	static EngineFunction<void(ZResourceManager* th, int index)>* ZResourceManager_UninstallResource;
+	static EngineFunction<void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef& parent, void* a6, int64_t a7)>* ZEntityManager_NewEntity;
 };
