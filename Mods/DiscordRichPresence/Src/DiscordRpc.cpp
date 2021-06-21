@@ -7,16 +7,15 @@
 #include <Glacier/ZScene.h>
 #include <regex>
 
-DiscordClient discordClient;
 
 DiscordRpc::~DiscordRpc()
 {
-	discordClient.Teardown();
+	m_discordClient.Teardown();
 }
 
 void DiscordRpc::PreInit()
 {
-	discordClient.Initialize();
+	m_discordClient.Initialize();
 	PopulateScenes();
 	PopulateGameModes();
 	PopulateCodenameHints();
@@ -195,7 +194,7 @@ DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZS
 	}
 	
 
-	discordClient.Update(action.c_str(), details.c_str(), imageKey.c_str());
+	m_discordClient.Update(action, details, imageKey);
 
 	return HookResult<void>(HookAction::Continue());
 }

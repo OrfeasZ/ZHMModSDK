@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "IPluginInterface.h"
+#include "DiscordClient.h"
 
 class DiscordRpc : public IPluginInterface
 {
@@ -25,6 +26,7 @@ private:
 	std::unordered_map<std::string_view, const char*> m_scenes;
 	std::unordered_map<std::string_view, const char*> m_gameModes;
 	std::unordered_map<std::string_view, const char*> m_codenameHints;
+	DiscordClient m_discordClient;
 };
 
 DEFINE_ZHM_PLUGIN(DiscordRpc)
