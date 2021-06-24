@@ -3,12 +3,18 @@
 #include "ZResourceID.h"
 #include "Reflection.h"
 #include "TArray.h"
+#include "ZEntity.h"
 
 class ZEntityScope;
 
 class IEntitySceneContext :
 	public IComponentInterface
 {
+};
+
+class ISceneEntity :
+	public IComponentInterface
+{	
 };
 
 class ZSceneData
@@ -59,6 +65,7 @@ public:
 public:
 	PAD(0x08);
 	ZSceneData m_sceneData;
-	PAD(136); // 96
+	PAD(120); // 96
+	TEntityRef<ISceneEntity> m_pScene; // 216
 	ZEntityScope* m_pEntityScope; // 232
 };

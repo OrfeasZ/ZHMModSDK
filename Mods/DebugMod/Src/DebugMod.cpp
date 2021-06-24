@@ -11,6 +11,8 @@
 #include <Functions.h>
 #include <Globals.h>
 
+#include "Glacier/ZModule.h"
+
 void DebugMod::OnDrawMenu()
 {
 	if (ImGui::Button("DEBUG MENU"))
@@ -18,41 +20,69 @@ void DebugMod::OnDrawMenu()
 		m_MenuActive = !m_MenuActive;
 	}
 
-	if (ImGui::Button("BADABING BADABOOM"))
+	/*if (ImGui::Button("BADABING BADABOOM"))
 	{
-		const auto s_ID = ResId<"[assembly:/_pro/environment/templates/props/lamps/lamps_outdoor_paris_a.template?/facility_vertical_stand_floodlight_00.entitytemplate].pc_entitytype">;
-		
-		TResourcePtr<ZTemplateEntityFactory> s_Resource;
-		Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
 
-		Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex, fmt::ptr(s_Resource.GetResource()));
+		auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
-		if (!s_Resource)
+		if (!s_Scene)
 		{
-			Logger::Debug("Resource is not loaded.");
+			Logger::Debug("Scene not loaded.");
 		}
 		else
 		{
-			TEntityRef<ZHitman5> s_LocalHitman;
-			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+			//const auto s_ID = ResId<"[assembly:/_pro/environment/templates/props/lamps/lamps_outdoor_paris_a.template?/facility_vertical_stand_floodlight_00.entitytemplate].pc_entitytype">;
+			const auto s_ID = ResId<"[assembly:/templates/gameplay/ai2/actors.template?/npcactor.entitytemplate].pc_entitytype">;
 
-			// Spawn some shit now.
-			ZEntityRef s_NewEntity;
-			Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, s_NewEntity, "", s_Resource, s_LocalHitman.m_ref, nullptr, -1);
+			TResourcePtr<ZTemplateEntityFactory> s_Resource;
+			Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
 
-			if (!s_NewEntity)
+			Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex, fmt::ptr(s_Resource.GetResource()));
+
+			if (!s_Resource)
 			{
-				Logger::Debug("Failed to spawn entity.");
+				Logger::Debug("Resource is not loaded.");
 			}
 			else
 			{
-				Logger::Debug("Spawned entity!");
-				
-				m_EntityMutex.lock();
+				// Spawn some shit now.
+				ZEntityRef s_NewEntity;
+				Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, nullptr, -1);
 
-				m_EntitiesToTrack.push_back(s_NewEntity);
-				
-				m_EntityMutex.unlock();
+				if (!s_NewEntity)
+				{
+					Logger::Debug("Failed to spawn entity.");
+				}
+				else
+				{
+					auto s_Actor = s_NewEntity.QueryInterface<ZActor>();
+
+					Logger::Debug("Spawned entity {}!", fmt::ptr(s_Actor));
+
+					TEntityRef<ZHitman5> s_LocalHitman;
+					Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+					
+					// Set outfit and other properties.
+					s_Actor->m_sActorName = "Ur Mum";
+					s_Actor->m_nOutfitVariation = 1;
+					s_Actor->m_bStartEnabled = true;
+					s_Actor->m_OutfitRepositoryID = ZRepositoryID("E222CC14-8D48-42DE-9AF6-1B745DBB3614");
+					s_Actor->m_eRequiredVoiceVariation = EActorVoiceVariation::eAVV_MECH03;
+
+					auto s_ActorSpatial = s_NewEntity.QueryInterface<ZSpatialEntity>();
+					const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+					
+					s_ActorSpatial->m_mTransform = s_HitmanSpatial->m_mTransform;
+					s_ActorSpatial->m_mTransform.Trans.x += 2.f;
+
+					s_Actor->Activate(0);
+
+					m_EntityMutex.lock();
+
+					m_EntitiesToTrack.push_back(s_NewEntity);
+
+					m_EntityMutex.unlock();
+				}
 			}
 		}
 	}
@@ -64,7 +94,7 @@ void DebugMod::OnDrawMenu()
 		m_EntitiesToTrack.clear();
 
 		m_EntityMutex.unlock();
-	}
+	}*/
 }
 
 void DebugMod::OnDrawUI(bool p_HasFocus)
