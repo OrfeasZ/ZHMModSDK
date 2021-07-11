@@ -10,12 +10,12 @@
 
 DiscordRpc::~DiscordRpc()
 {
-	m_discordClient.Teardown();
+	m_DiscordClient.Teardown();
 }
 
 void DiscordRpc::PreInit()
 {
-	m_discordClient.Initialize();
+	m_DiscordClient.Initialize();
 	PopulateScenes();
 	PopulateGameModes();
 	PopulateCodenameHints();
@@ -24,7 +24,7 @@ void DiscordRpc::PreInit()
 
 void DiscordRpc::PopulateScenes()
 {
-	m_scenes = {
+	m_Scenes = {
 		// Menu
 		{ "boot.entity", "In Startup Screen" },
 		{ "mainmenu.entity", "In Menu" },
@@ -58,12 +58,12 @@ void DiscordRpc::PopulateScenes()
 		{ "elegant", "Mendoza" },
 		{ "trapped", "Carpathian Mountains" }
 	};
-	Logger::Info("Finished populating scene map");
+	Logger::Trace("Finished populating scene map");
 }
 
 void DiscordRpc::PopulateGameModes()
 {
-	m_gameModes = {
+	m_GameModes = {
 		{ "sniper", "Sniper Assassin" },
 		{ "usercreated", "Contracts Mode" },
 		{ "creation", "Contracts Mode" },
@@ -75,12 +75,12 @@ void DiscordRpc::PopulateGameModes()
 		{ "escalation", "Escalation" },
 		{ "elusive", "Elusive Target" }
 	};
-	Logger::Info("Finished populating game modes");
+	Logger::Trace("Finished populating game modes");
 }
 
 void DiscordRpc::PopulateCodenameHints()
 {
-	m_codenameHints = {
+	m_CodenameHints = {
 		{ "GarterSnake", "A Bitter Pill" },
 		{ "Spider", "A Gilded Cage" },
 		{ "Python", "A House Built On Sand" },
@@ -123,24 +123,25 @@ void DiscordRpc::PopulateCodenameHints()
 		{ "SC_Seagull", "The Pen And The Sword" },
 		{ "SC_Falcon", "Crime And Punishment" }
 	};
+	Logger::Trace("Finished populating codename hints");
 }
 
-std::string DiscordRpc::LowercaseString(std::string in)
+std::string DiscordRpc::LowercaseString(std::string p_In)
 {
-	std::string copy = in;
-	std::transform(copy.begin(), copy.end(), copy.begin(), [](unsigned char c) { return std::tolower(c); });
+	std::string s_Copy = p_In;
+	std::transform(s_Copy.begin(), s_Copy.end(), s_Copy.begin(), [](unsigned char p_C) { return std::tolower(p_C); });
 
-	return copy;
+	return s_Copy;
 }
 
-std::string DiscordRpc::FindLocationForScene(ZString scene)
+std::string DiscordRpc::FindLocationForScene(ZString p_Scene)
 {
-	std::string lowercaseScene = LowercaseString(scene.c_str());
-	for (auto& it : m_scenes)
+	std::string s_LowercaseScene = LowercaseString(p_Scene.c_str());
+	for (auto& s_It : m_Scenes)
 	{
-		if (lowercaseScene.find(it.first) != std::string::npos)
+		if (s_LowercaseScene.find(s_It.first) != std::string::npos)
 		{
-			return it.second;
+			return s_It.second;
 		}
 	}
 
@@ -152,49 +153,49 @@ DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZS
 	Logger::Info("Scene: {}", sceneData.m_sceneName);
 	Logger::Info("Codename: {}", sceneData.m_codeNameHint);
 	Logger::Info("Type: {}", sceneData.m_type);
-	std::string action = "";
-	std::string details = "";
-	std::string location = "";
-	std::string imageKey = "logo";
+	std::string s_Action = "";
+	std::string s_Details = "";
+	std::string s_Location = "";
+	std::string s_ImageKey = "logo";
 
-	location = FindLocationForScene(sceneData.m_sceneName);
+	s_Location = FindLocationForScene(sceneData.m_sceneName);
 
-	if (location == "In Startup Screen" || location == "In Menu")
+	if (s_Location == "In Startup Screen" || s_Location == "In Menu")
 	{
-		action = location;
+		s_Action = s_Location;
 	}
 	else
 	{
-		auto gameModeIt = m_gameModes.find(sceneData.m_type.ToStringView());
-		std::string gameMode = gameModeIt == m_gameModes.end() ? "ERR_UNKNOWN_GAMEMODE" : gameModeIt->second;
+		auto s_GameModeIt = m_GameModes.find(sceneData.m_type.ToStringView());
+		std::string s_GameMode = s_GameModeIt == m_GameModes.end() ? "ERR_UNKNOWN_GAMEMODE" : s_GameModeIt->second;
 
-		details = "Playing " + gameMode + " in " + location;
+		s_Details = "Playing " + s_GameMode + " in " + s_Location;
 
 		// Discord image key
-		std::string locationKey = std::regex_replace(location, std::regex(" "), "-");
-		locationKey = std::regex_replace(locationKey, std::regex("à"), "a");
-		locationKey = LowercaseString(locationKey);
+		std::string s_LocationKey = std::regex_replace(s_Location, std::regex(" "), "-");
+		s_LocationKey = std::regex_replace(s_LocationKey, std::regex("à"), "a");
+		s_LocationKey = LowercaseString(s_LocationKey);
 
-		imageKey = "location-" + locationKey;
-		if (gameMode == "Mission" || gameMode == "Sniper Assassin")
+		s_ImageKey = "location-" + s_LocationKey;
+		if (s_GameMode == "Mission" || s_GameMode == "Sniper Assassin")
 		{
-			auto missionIt = m_codenameHints.find(sceneData.m_codeNameHint.ToStringView());
-			action = missionIt == m_codenameHints.end() ? "ERR_UNKNOWN_MISSION" : missionIt->second;
-			std::string missionName = action;
+			auto s_MissionIt = m_CodenameHints.find(sceneData.m_codeNameHint.ToStringView());
+			s_Action = s_MissionIt == m_CodenameHints.end() ? "ERR_UNKNOWN_MISSION" : s_MissionIt->second;
+			std::string s_MissionName = s_Action;
 
-			std::string missionKey = std::regex_replace(missionName, std::regex(" "), "-");
-			missionKey = LowercaseString(missionKey);
-			imageKey = "mission-" + missionKey;
+			std::string s_MissionKey = std::regex_replace(s_MissionName, std::regex(" "), "-");
+			s_MissionKey = LowercaseString(s_MissionKey);
+			s_ImageKey = "mission-" + s_MissionKey;
 		}
 		else
 		{
-			details = "Playing " + gameMode;
-			action = location;
+			s_Details = "Playing " + s_GameMode;
+			s_Action = s_Location;
 		}
 	}
 	
 
-	m_discordClient.Update(action, details, imageKey);
+	m_DiscordClient.Update(s_Action, s_Details, s_ImageKey);
 
 	return HookResult<void>(HookAction::Continue());
 }

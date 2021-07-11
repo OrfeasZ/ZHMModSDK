@@ -4,16 +4,16 @@ static const discord::ClientId APPLICATION_ID = 852754886197379103;
 
 void DiscordClient::Initialize()
 {
-	m_discordInitResult = discord::Core::Create(APPLICATION_ID, DiscordCreateFlags_NoRequireDiscord, &m_core);
-	if (m_discordInitResult != discord::Result::Ok)
+	m_DiscordInitResult = discord::Core::Create(APPLICATION_ID, DiscordCreateFlags_NoRequireDiscord, &m_Core);
+	if (m_DiscordInitResult != discord::Result::Ok)
 	{
-		Logger::Error("Discord init failed with result: {}", m_discordInitResult);
+		Logger::Error("Discord init failed with result: {}", m_DiscordInitResult);
 	}
 }
 
-void DiscordClient::Update(std::string state, std::string details, std::string imageKey)
+void DiscordClient::Update(std::string p_State, std::string p_Details, std::string p_ImageKey)
 {
-	if (m_discordInitResult != discord::Result::Ok)
+	if (m_DiscordInitResult != discord::Result::Ok)
 	{
 		// Don't attempt to update Discord if we couldn't connect before
 		return;
@@ -21,14 +21,14 @@ void DiscordClient::Update(std::string state, std::string details, std::string i
 
 	discord::Activity activity;
 	activity.SetType(discord::ActivityType::Playing);
-	activity.SetState(state.c_str());
-	activity.SetDetails(details.c_str());
-	activity.GetAssets().SetLargeImage(imageKey.c_str());
+	activity.SetState(p_State.c_str());
+	activity.SetDetails(p_Details.c_str());
+	activity.GetAssets().SetLargeImage(p_ImageKey.c_str());
 
-	m_core->ActivityManager().UpdateActivity(activity, [](discord::Result result)
+	m_Core->ActivityManager().UpdateActivity(activity, [](discord::Result p_Result)
 	{
 		//-- Don't care
-		Logger::Debug("Activity Manager push completed with result: {}", result);
+		Logger::Trace("Activity Manager push completed with result: {}", p_Result);
 	});
 }
 

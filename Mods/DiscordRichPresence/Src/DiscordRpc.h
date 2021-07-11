@@ -16,17 +16,17 @@ private:
 	void PopulateScenes();
 	void PopulateGameModes();
 	void PopulateCodenameHints();
-	std::string LowercaseString(std::string in);
-	std::string FindLocationForScene(ZString scene);
+	std::string LowercaseString(std::string p_In);
+	std::string FindLocationForScene(ZString p_Scene);
 
 private:
 	DEFINE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
 
 private:
-	std::unordered_map<std::string_view, const char*> m_scenes;
-	std::unordered_map<std::string_view, const char*> m_gameModes;
-	std::unordered_map<std::string_view, const char*> m_codenameHints;
-	DiscordClient m_discordClient;
+	std::unordered_map<std::string_view, const char*> m_Scenes;
+	std::unordered_map<std::string_view, const char*> m_GameModes;
+	std::unordered_map<std::string_view, const char*> m_CodenameHints;
+	DiscordClient m_DiscordClient;
 };
 
 DEFINE_ZHM_PLUGIN(DiscordRpc)
