@@ -16,7 +16,7 @@ private:
 	void PopulateScenes();
 	void PopulateGameModes();
 	void PopulateCodenameHints();
-	std::string LowercaseString(std::string p_In);
+	std::string LowercaseString(const std::string& p_In);
 	std::string FindLocationForScene(ZString p_Scene);
 
 private:

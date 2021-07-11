@@ -126,7 +126,7 @@ void DiscordRpc::PopulateCodenameHints()
 	Logger::Trace("Finished populating codename hints");
 }
 
-std::string DiscordRpc::LowercaseString(std::string p_In)
+std::string DiscordRpc::LowercaseString(const std::string& p_In)
 {
 	std::string s_Copy = p_In;
 	std::transform(s_Copy.begin(), s_Copy.end(), s_Copy.begin(), [](unsigned char p_C) { return std::tolower(p_C); });
@@ -150,9 +150,9 @@ std::string DiscordRpc::FindLocationForScene(ZString p_Scene)
 
 DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData)
 {
-	Logger::Info("Scene: {}", sceneData.m_sceneName);
-	Logger::Info("Codename: {}", sceneData.m_codeNameHint);
-	Logger::Info("Type: {}", sceneData.m_type);
+	Logger::Trace("Scene: {}", sceneData.m_sceneName);
+	Logger::Trace("Codename: {}", sceneData.m_codeNameHint);
+	Logger::Trace("Type: {}", sceneData.m_type);
 	std::string s_Action = "";
 	std::string s_Details = "";
 	std::string s_Location = "";

@@ -11,7 +11,7 @@ void DiscordClient::Initialize()
 	}
 }
 
-void DiscordClient::Update(std::string p_State, std::string p_Details, std::string p_ImageKey)
+void DiscordClient::Update(const std::string& p_State, const std::string& p_Details, const std::string& p_ImageKey)
 {
 	if (m_DiscordInitResult != discord::Result::Ok)
 	{
@@ -27,7 +27,6 @@ void DiscordClient::Update(std::string p_State, std::string p_Details, std::stri
 
 	m_Core->ActivityManager().UpdateActivity(activity, [](discord::Result p_Result)
 	{
-		//-- Don't care
 		Logger::Trace("Activity Manager push completed with result: {}", p_Result);
 	});
 }
