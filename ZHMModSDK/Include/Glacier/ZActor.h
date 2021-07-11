@@ -16,6 +16,7 @@ class ZHTNDomainEntity;
 class ZCompiledBehaviorTree;
 class ZSpatialEntity;
 class ZKnowledge;
+class ZAnimatedActor;
 
 class ICharacterCollision :
 	public IComponentInterface
@@ -156,7 +157,9 @@ public:
 	bool m_bEnableOutfitModifiers; // 0x4BD
 	TEntityRef<ZAIVisionConfigurationEntity> m_AgentVisionConfiguration; // 0x4C0
 	TEntityRef<ZHTNDomainEntity> m_DomainConfig; // 0x4D0
-	PAD(0xC78); // 0x4E0
+	PAD(0xBC8); // 0x4E0
+	ZAnimatedActor* m_pAnimatedActor; // 0x10A8
+	PAD(0xA8);
 	bool m_bUnk00 : 1; // 0x1158
 	bool m_bUnk01 : 1;
 	bool m_bUnk02 : 1;

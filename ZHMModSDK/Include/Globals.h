@@ -3,6 +3,8 @@
 #include "Common.h"
 #include <cstdint>
 
+class ZResourceContainer;
+class ZResourceManager;
 class ZGameStatsManager;
 class ZEntityManager;
 class ZMemoryManager;
@@ -38,4 +40,6 @@ public:
 	static ZCameraManager* CameraManager;
 	static ZPlayerRegistry* PlayerRegistry;
 	static ZHM5InputManager* InputManager;
+	static ZResourceContainer** ResourceContainer;
+	static ZResourceManager* ResourceManager;
 };

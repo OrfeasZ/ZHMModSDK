@@ -72,8 +72,8 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_RELATIVE_FUNCTION(
-	"\xE8\x00\x00\x00\x00\x48\x8B\x44\x24\x48\x48\x8B\xB0\x40\x11\x00\x00",
-	"x????xxxxxxxxxxxx",
+	"\xE8\x00\x00\x00\x00\x48\x8B\x4C\x24\x38\x48\x85\xC9\x74\x00\x48\x81\xC1",
+	"x????xxxxxxxxx?xxx",
 	ZPlayerRegistry_GetLocalPlayer,
 	void(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)
 );
@@ -83,4 +83,18 @@ PATTERN_FUNCTION(
 	"xxxxxxxxx?xxx????xxx",
 	ZHM5InputManager_GetInputControlForLocalPlayer,
 	ZHM5InputControl* (ZHM5InputManager* th)
+);
+
+PATTERN_FUNCTION(
+	"\x89\x54\x24\x10\x57\x48\x83\xEC\x00\x48\x89\x5C\x24\x60",
+	"xxxxxxxx?xxxxx",
+	ZResourceManager_UninstallResource,
+	void(ZResourceManager* th, int index)
+);
+
+PATTERN_FUNCTION(
+	"\x4C\x8B\xDC\x49\x89\x5B\x08\x49\x89\x6B\x10\x4D\x89\x43\x18",
+	"xxxxxxxxxxxxxxx",
+	ZEntityManager_NewEntity,
+	void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef& parent, void* a6, int64_t a7)
 );
