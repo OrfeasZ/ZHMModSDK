@@ -78,8 +78,8 @@ public:
 	virtual ~ZRenderManager() = default;
 
 public:
-	PAD(0x14150);
-	ZRenderDevice* m_pDevice; // 0x14158
-	PAD(0x1B8); // 0x14160
-	ZRenderContext* m_pRenderContext; // 0x14318
+	PAD(0x14170);
+	ZRenderDevice* m_pDevice; // 0x14178
+	PAD(0x1C0); // 0x14180
+	ZRenderContext* m_pRenderContext; // 0x14340
 };

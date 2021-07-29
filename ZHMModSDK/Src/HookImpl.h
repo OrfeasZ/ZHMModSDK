@@ -251,7 +251,7 @@ protected:
 
 		this->m_OriginalFunc = reinterpret_cast<typename Hook<ReturnType(Args...)>::OriginalFunc_t>(p_Original);
 
-		Logger::Debug("Successfully installed detour for hook '{}'.", p_HookName);
+		Logger::Debug("Successfully installed detour for hook '{}' at address {}.", p_HookName, fmt::ptr(p_Original));
 	}
 
 public:
