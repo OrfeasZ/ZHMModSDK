@@ -45,6 +45,7 @@ There are a few sample mods included in this repository that can be used either 
 | [MaxPatchLevel](/Mods/MaxPatchLevel) | Dynamically sets the RPKG patchlevel to 1000, making the game discover patch chunks without having to modify the `packagedefinition.txt` file. |
 | [DebugMod](/Mods/DebugMod) | Adds a debug menu to test different SDK functionalities, like 3D rendering and entity information display. |
 | [FreeCam](/Mods/FreeCam) | Adds support for an in-game free camera that works with both KB+M and controllers. Can be toggled either from the SDK menu or by pressing `P`. For more details on available controls see [here](/Mods/FreeCam). |
+| [DiscordRichPresence](/Mods/DiscordRichPresence) | Sends rich presence updates to Discord with details such as level name, gamemode, etc. **[Requires additional setup!](/Mods/DiscordRichPresence)** |
 
 ## Contributing
 

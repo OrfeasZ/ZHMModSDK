@@ -53,5 +53,5 @@ add_dependencies(DevLoader
 	DebugMod
 	AdvancedRating
 	FreeCam
-	DiscordRpc
+	DiscordRichPresence
 )
