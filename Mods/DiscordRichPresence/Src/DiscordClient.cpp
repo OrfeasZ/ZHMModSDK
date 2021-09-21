@@ -20,7 +20,7 @@ void DiscordClient::Update(const std::string& p_State, const std::string& p_Deta
 		return;
 	}
 
-	discord::Activity activity;
+	discord::Activity activity {};
 	activity.SetType(discord::ActivityType::Playing);
 	activity.SetState(p_State.c_str());
 	activity.SetDetails(p_Details.c_str());
