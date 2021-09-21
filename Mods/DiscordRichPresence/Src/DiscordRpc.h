@@ -11,6 +11,7 @@ class DiscordRpc : public IPluginInterface
 public:
 	~DiscordRpc() override;
 	void PreInit() override;
+	void OnDraw3D(IRenderer* p_Renderer) override;
 
 private:
 	void PopulateScenes();

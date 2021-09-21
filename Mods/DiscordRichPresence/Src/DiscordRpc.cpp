@@ -78,6 +78,11 @@ void DiscordRpc::PopulateGameModes()
 	Logger::Trace("Finished populating game modes");
 }
 
+void DiscordRpc::OnDraw3D(IRenderer* p_Renderer)
+{
+	m_DiscordClient.Callback();
+}
+
 void DiscordRpc::PopulateCodenameHints()
 {
 	m_CodenameHints = {
