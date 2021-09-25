@@ -14,7 +14,7 @@ DiscordRpc::~DiscordRpc()
 	m_DiscordClient.Teardown();
 
 	const ZMemberDelegate<DiscordRpc, void(const SGameUpdateEvent&)> s_Delegate(this, &DiscordRpc::OnFrameUpdate);
-	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdatePlayMode);
+	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdateAlways);
 }
 
 void DiscordRpc::PreInit()
@@ -29,7 +29,7 @@ void DiscordRpc::PreInit()
 void DiscordRpc::OnEngineInitialized()
 {
 	const ZMemberDelegate<DiscordRpc, void(const SGameUpdateEvent&)> s_Delegate(this, &DiscordRpc::OnFrameUpdate);
-	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdatePlayMode);
+	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdateAlways);
 }
 
 void DiscordRpc::PopulateScenes()
