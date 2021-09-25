@@ -3,6 +3,7 @@
 #include "Hooks.h"
 #include "Logging.h"
 #include "DiscordClient.h"
+#include "Glacier/ZGameLoopManager.h"
 
 #include <Glacier/ZScene.h>
 #include <regex>
@@ -11,6 +12,9 @@
 DiscordRpc::~DiscordRpc()
 {
 	m_DiscordClient.Teardown();
+
+	const ZMemberDelegate<DiscordRpc, void(const SGameUpdateEvent&)> s_Delegate(this, &DiscordRpc::OnFrameUpdate);
+	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdateAlways);
 }
 
 void DiscordRpc::PreInit()
@@ -20,6 +24,12 @@ void DiscordRpc::PreInit()
 	PopulateGameModes();
 	PopulateCodenameHints();
 	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &DiscordRpc::OnLoadScene);
+}
+
+void DiscordRpc::OnEngineInitialized()
+{
+	const ZMemberDelegate<DiscordRpc, void(const SGameUpdateEvent&)> s_Delegate(this, &DiscordRpc::OnFrameUpdate);
+	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdateAlways);
 }
 
 void DiscordRpc::PopulateScenes()
@@ -78,6 +88,11 @@ void DiscordRpc::PopulateGameModes()
 	Logger::Trace("Finished populating game modes");
 }
 
+void DiscordRpc::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
+{
+	m_DiscordClient.Callback();
+}
+
 void DiscordRpc::PopulateCodenameHints()
 {
 	m_CodenameHints = {
@@ -106,7 +121,7 @@ void DiscordRpc::PopulateCodenameHints()
 		{ "Sheep 9", "Nightcall" },
 		{ "Golden Gecko", "On Top Of The World" },
 		{ "Flu", "Patient Zero" },
-		{ "Snow Crane", "Situs Inversus" },
+		{ "SnowCrane", "Situs Inversus" },
 		{ "Ebola", "The Author" },
 		{ "Llama", "The Farewell" },
 		{ "Polarbear Graduation", "The Final Test" },

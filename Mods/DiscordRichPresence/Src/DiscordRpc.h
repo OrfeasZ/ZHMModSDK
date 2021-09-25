@@ -11,6 +11,8 @@ class DiscordRpc : public IPluginInterface
 public:
 	~DiscordRpc() override;
 	void PreInit() override;
+	void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
+	void OnEngineInitialized() override;
 
 private:
 	void PopulateScenes();

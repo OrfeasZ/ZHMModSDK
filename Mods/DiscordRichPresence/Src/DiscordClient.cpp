@@ -16,10 +16,11 @@ void DiscordClient::Update(const std::string& p_State, const std::string& p_Deta
 	if (m_DiscordInitResult != discord::Result::Ok)
 	{
 		// Don't attempt to update Discord if we couldn't connect before
+		Logger::Trace("Skipped Discord update due to non-ok init result: {}", m_DiscordInitResult);
 		return;
 	}
 
-	discord::Activity activity;
+	discord::Activity activity {};
 	activity.SetType(discord::ActivityType::Playing);
 	activity.SetState(p_State.c_str());
 	activity.SetDetails(p_Details.c_str());
@@ -29,6 +30,11 @@ void DiscordClient::Update(const std::string& p_State, const std::string& p_Deta
 	{
 		Logger::Trace("Activity Manager push completed with result: {}", p_Result);
 	});
+}
+
+void DiscordClient::Callback()
+{
+	m_Core->RunCallbacks();
 }
 
 void DiscordClient::Teardown()
