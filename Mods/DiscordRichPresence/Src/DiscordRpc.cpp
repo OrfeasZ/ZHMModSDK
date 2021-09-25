@@ -121,7 +121,7 @@ void DiscordRpc::PopulateCodenameHints()
 		{ "Sheep 9", "Nightcall" },
 		{ "Golden Gecko", "On Top Of The World" },
 		{ "Flu", "Patient Zero" },
-		{ "Snow Crane", "Situs Inversus" },
+		{ "SnowCrane", "Situs Inversus" },
 		{ "Ebola", "The Author" },
 		{ "Llama", "The Farewell" },
 		{ "Polarbear Graduation", "The Final Test" },
