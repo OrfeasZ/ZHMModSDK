@@ -20,7 +20,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 	if (it == m_knownInputs.end())
 	{
 		Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
-		
+
 		m_knownInputs[pinId] = true;
 	}
 
@@ -45,7 +45,11 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 		{
 			Logger::Info("Error: {}", e.what());
 		}
-		
+		catch (...)
+		{
+			Logger::Info("Error: Unknown error");
+		}
+
 		m_knownOutputs[pinId] = true;
 	}
 
