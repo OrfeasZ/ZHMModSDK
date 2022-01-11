@@ -1,14 +1,8 @@
-#include "AdvancedRating.h"
+#include "LogPins.h"
 
 #include "Hooks.h"
 #include "Logging.h"
 #include "Functions.h"
-
-#include <Glacier/ZScene.h>
-#include <Glacier/ZAIGameState.h>
-#include <Glacier/SOnlineEvent.h>
-
-#include "json.hpp"
 
 void LogPins::PreInit()
 {
