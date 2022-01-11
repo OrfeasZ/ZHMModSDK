@@ -195,7 +195,7 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 	{
 		auto s_Input = s_Type->m_pInputs[i];
 
-		s_Stream << "\tchar void" << s_Input.m_pName << "()";
+		s_Stream << "\tchar void" << s_Input.m_pName << "();" << std::endl;
 	}
 
 	s_Stream << "};" << std::endl << std::endl;
