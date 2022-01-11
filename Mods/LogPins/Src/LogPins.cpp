@@ -10,13 +10,12 @@ void LogPins::PreInit()
 	Hooks::SignalOutputPin->AddDetour(this, &LogPins::SignalOutputPin);
 }
 
-
-DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
+DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
 {
 	Logger::Debug("Pin Input: {}", pinId);
 }
 
-DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
+DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
 {
 	Logger::Debug("Pin Output: {}", pinId);
 }
