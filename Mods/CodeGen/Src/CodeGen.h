@@ -25,6 +25,7 @@ public:
 
 private:
 	void Generate();
+	bool TryGetPinName(int32_t p_PinId, ZString& p_Name);
 
 private:
 	void GenerateClass(STypeID* p_Type);
