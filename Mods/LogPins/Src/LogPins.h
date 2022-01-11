@@ -1,5 +1,8 @@
 #pragma once
 
+#include <random>
+#include <unordered_map>
+
 #include "IPluginInterface.h"
 
 class LogPins : public IPluginInterface

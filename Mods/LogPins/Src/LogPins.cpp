@@ -8,7 +8,6 @@ void LogPins::PreInit()
 {
 	Hooks::SignalInputPin->AddDetour(this, &LogPins::SignalInputPin);
 	Hooks::SignalOutputPin->AddDetour(this, &LogPins::SignalOutputPin);
-	Hooks::ZAchievementManagerSimple_OnEventSent->AddDetour(this, &AdvancedRating::ZAchievementManagerSimple_OnEventSent);
 }
 
 
@@ -17,7 +16,7 @@ DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef zEntityRef, uint3
 	Logger::Debug("Pin Input: {}", pinId);
 }
 
-DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef);
+DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
 {
 	Logger::Debug("Pin Output: {}", pinId);
 }
