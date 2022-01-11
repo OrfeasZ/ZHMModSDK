@@ -28,8 +28,6 @@ void CodeGen::Generate()
 	m_ClassesFile.open("classes.txt", std::ofstream::out);
 	m_EnumsFile.open("enums.txt", std::ofstream::out);
 	
-	m_ClassesFile << "PIEMOD" << std::endl;
-	
 	m_SDKEnumsHeader.open("Enums.h", std::ofstream::out);
 
 	m_ReflectiveClassesHeaderFile.open("ZHMGen.h", std::ofstream::out);
@@ -191,6 +189,13 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 		}
 
 		s_Stream << " // 0x" << std::hex << std::uppercase << s_Prop.m_nOffset << std::dec << std::endl;
+	}
+
+	for (uint16_t i = 0; i < s_Type->m_nInputCount; ++i)
+	{
+		auto s_Input = s_Type->m_pInputs[i];
+
+		s_Stream << "\tchar void" << s_Input.m_pName << "()";
 	}
 
 	s_Stream << "};" << std::endl << std::endl;
