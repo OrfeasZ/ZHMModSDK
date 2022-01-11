@@ -37,7 +37,10 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 
 		for (auto pInterface : *(*entityRef.m_pEntity)->m_pInterfaces)
 		{
-			if(!pInterface || !pInterface.m_pTypeId || !pInterface.m_pTypeId->m_pType || !pInterface.m_pTypeId->m_pType->m_pTypeName)
+			if (!pInterface.m_pTypeId ||
+				!pInterface.m_pTypeId->m_pType ||
+				!pInterface.m_pTypeId->m_pType->m_pTypeName
+			)
 				continue;
 			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
 		}
