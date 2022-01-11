@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include "IPluginInterface.h"
+#include "..\..\..\ZHMModSDK\Src\PinRegistry.h"
 
 class STypeID;
 
