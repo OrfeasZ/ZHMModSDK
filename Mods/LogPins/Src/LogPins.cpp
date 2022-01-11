@@ -4,6 +4,8 @@
 #include "Logging.h"
 #include "Functions.h"
 
+#include <Glacier/ZScene.h>
+
 void LogPins::PreInit()
 {
 	Hooks::SignalInputPin->AddDetour(this, &LogPins::SignalInputPin);
@@ -13,11 +15,15 @@ void LogPins::PreInit()
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
 {
 	Logger::Debug("Pin Input: {}", pinId);
+
+	return HookResult<bool>(HookAction::Continue(), true);
 }
 
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
 {
 	Logger::Debug("Pin Output: {}", pinId);
+
+	return HookResult<bool>(HookAction::Return(), true);
 }
 
 DECLARE_ZHM_PLUGIN(LogPins);
