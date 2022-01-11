@@ -34,20 +34,12 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 	{
 		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 		Logger::Info("Pin entity interfaces include:");
-		try
+
+		for (auto pInterface : *(*entityRef.m_pEntity)->m_pInterfaces)
 		{
-			for (auto pInterface : *(*entityRef.m_pEntity)->m_pInterfaces)
-			{
-				Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
-			}
-		}
-		catch (const std::exception& e)
-		{
-			Logger::Info("Error: {}", e.what());
-		}
-		catch (...)
-		{
-			Logger::Info("Error: Unknown error");
+			if(!pInterface || !pInterface.m_pTypeId || !pInterface.m_pTypeId->m_pType || !pInterface.m_pTypeId->m_pType->m_pTypeName)
+				continue;
+			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
 		}
 
 		m_knownOutputs[pinId] = true;
