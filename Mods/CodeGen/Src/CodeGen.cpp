@@ -28,6 +28,8 @@ void CodeGen::Generate()
 	m_ClassesFile.open("classes.txt", std::ofstream::out);
 	m_EnumsFile.open("enums.txt", std::ofstream::out);
 	
+	m_ClassesFile << "PIEMOD" << std::endl;
+	
 	m_SDKEnumsHeader.open("Enums.h", std::ofstream::out);
 
 	m_ReflectiveClassesHeaderFile.open("ZHMGen.h", std::ofstream::out);
