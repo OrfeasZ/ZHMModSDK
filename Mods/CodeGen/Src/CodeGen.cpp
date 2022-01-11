@@ -195,7 +195,15 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 	{
 		auto s_Input = s_Type->m_pInputs[i];
 
-		s_Stream << "\tchar void" << s_Input.m_nPinID << "();" << std::endl;
+		ZString* p_Name;
+		if (TryGetPinName(s_Input.m_nPinID, *p_Name))
+		{
+			s_Stream << "\tvoid " << p_Name->c_str << " " << "();" << std::endl;
+		}
+		else
+		{
+			s_Stream << "\tvoid " << s_Input.m_nPinID << " " << "();" << std::endl;
+		}
 	}
 
 	s_Stream << "};" << std::endl << std::endl;
