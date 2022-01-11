@@ -19,7 +19,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef zEntityRef, uint
 	return HookResult<bool>(HookAction::Return(), true);
 }
 
-DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
+DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
 	Logger::Debug("Pin Output: {}", pinId);
 
