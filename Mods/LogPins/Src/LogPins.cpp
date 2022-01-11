@@ -35,6 +35,17 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 		Logger::Info("Pin entity interfaces include:");
 
+		auto pInterface = *(*entityRef.m_pEntity)->m_pInterfaces[0];
+		
+		if (!pInterface.m_pTypeId ||
+				!pInterface.m_pTypeId->m_pType ||
+				!pInterface.m_pTypeId->m_pType->m_pTypeName
+			) {} else
+		{
+			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
+		}
+		
+		/*
 		for (auto pInterface : *(*entityRef.m_pEntity)->m_pInterfaces)
 		{
 			if (!pInterface.m_pTypeId ||
@@ -44,6 +55,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 				continue;
 			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
 		}
+		*/
 
 		m_knownOutputs[pinId] = true;
 	}
