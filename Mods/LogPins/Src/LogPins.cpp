@@ -5,6 +5,8 @@
 #include "Functions.h"
 
 #include <Glacier/ZScene.h>
+#include <Glacier/ZEntity.h>
+#include <Glacier/ZObject.h>
 
 void LogPins::PreInit()
 {
@@ -12,12 +14,12 @@ void LogPins::PreInit()
 	Hooks::SignalOutputPin->AddDetour(this, &LogPins::SignalOutputPin);
 }
 
-DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef zEntityRef, uint32_t pinId, const ZObjectRef& zObjectRef)
+DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
 	auto it = m_knownInputs.find(pinId);
 	if (it == m_knownInputs.end())
 	{
-		Logger::Info("Pin Input: {}", pinId);
+		Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 		
 		m_knownInputs[pinId] = true;
 	}
@@ -30,7 +32,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 	auto it = m_knownOutputs.find(pinId);
 	if (it == m_knownOutputs.end())
 	{
-		Logger::Info("Pin Output: {}", pinId);
+		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 		
 		m_knownOutputs[pinId] = true;
 	}
