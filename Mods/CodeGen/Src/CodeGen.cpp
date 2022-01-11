@@ -191,6 +191,8 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 		s_Stream << " // 0x" << std::hex << std::uppercase << s_Prop.m_nOffset << std::dec << std::endl;
 	}
 
+	s_Stream << std::endl;
+
 	for (uint16_t i = 0; i < s_Type->m_nInputCount; ++i)
 	{
 		auto s_Input = s_Type->m_pInputs[i];
@@ -198,11 +200,11 @@ void CodeGen::GenerateClass(STypeID* p_Type)
 		ZString p_Name;
 		if (TryGetPinName(s_Input.m_nPinID, p_Name))
 		{
-			s_Stream << "\tvoid " << p_Name.c_str() << " " << "();" << std::endl;
+			s_Stream << "\tvoid " << p_Name.c_str() << " " << "();" << " (Or:" << s_Input.m_pName << ")" << std::endl;
 		}
 		else
 		{
-			s_Stream << "\tvoid " << s_Input.m_nPinID << " " << "();" << std::endl;
+			s_Stream << "\tvoid " << s_Input.m_nPinID << " " << "();" << " (Or:" << s_Input.m_pName << ")" << std::endl;
 		}
 	}
 
