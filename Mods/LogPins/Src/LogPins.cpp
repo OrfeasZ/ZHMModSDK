@@ -33,6 +33,11 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 	if (it == m_knownOutputs.end())
 	{
 		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
+		Logger::Info("Pin entity interfaces include:");
+		for (auto pInterface : *(*entityRef.m_pEntity)->m_pInterfaces)
+		{
+			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
+		}
 		
 		m_knownOutputs[pinId] = true;
 	}
