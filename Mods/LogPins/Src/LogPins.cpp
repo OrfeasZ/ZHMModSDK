@@ -41,6 +41,39 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 	{
 		Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
 	}
+
+	std::ostringstream ss;
+
+	auto& s_Properties1 = (*entityRef.m_pEntity)->m_pProperties01;
+	auto& s_Properties2 = (*entityRef.m_pEntity)->m_pProperties02;
+
+	if (!s_Properties1)
+	{
+		ss << "";
+	}
+	else
+	{
+		for (auto& s_Property : *s_Properties1)
+		{
+			ss << " " << s_Property.m_pType->getPropertyInfo()->m_pName;
+		}
+	}
+
+	ss << " | ";
+
+	if (!s_Properties2)
+	{
+		ss << "";
+	}
+	else
+	{
+		for (auto& s_Property : *s_Properties2)
+		{
+			ss << " " << s_Property.m_pType->getPropertyInfo()->m_pName;
+		}
+	}
+
+	Logger::Info("Entity props:{}", ss.str());
 }
 
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
