@@ -53,12 +53,15 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 	}
 	else
 	{
-		for (auto& s_Property : *s_Properties1)
+		for (auto& s_Property = (*entityRef.m_pEntity)->m_pProperties01->begin(); it != (*entityRef.m_pEntity)->m_pProperties01->end(); ++it) {
 		{
 			try
 			{
-				if(!!s_Property.m_pType->getPropertyInfo() && !!s_Property.m_pType->getPropertyInfo()->m_pName)
-					ss << " " << s_Property.m_pType->getPropertyInfo()->m_pName;
+				if (!!s_Property.m_pType->getPropertyInfo() && !!s_Property.m_pType->getPropertyInfo()->m_pName)
+				{
+					auto pType = s_Property.m_pType->getPropertyInfo();
+					ss << " " << pType->m_pName;
+				}
 			}
 			catch (...)
 			{
@@ -74,7 +77,7 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 	}
 	else
 	{
-		for (auto& s_Property : *s_Properties2)
+		for (auto& s_Property = (*entityRef.m_pEntity)->m_pProperties02->begin(); it != (*entityRef.m_pEntity)->m_pProperties02->end(); ++it) {
 		{
 			try
 			{
