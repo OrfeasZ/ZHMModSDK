@@ -53,6 +53,11 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 	}
 	else
 	{
+		size_t aSize = (*entityRef.m_pEntity)->m_pProperties01->size();
+		size_t aCap = (*entityRef.m_pEntity)->m_pProperties01->capacity();
+
+		ss << aSize << "/" << aCap;
+
 		for (auto s_Property = (*entityRef.m_pEntity)->m_pProperties01->begin(); s_Property != (*entityRef.m_pEntity)->m_pProperties01->end(); ++s_Property)
 		{
 			if (!!s_Property->m_pType && !!s_Property->m_pType->getPropertyInfo() && !!s_Property->m_pType->getPropertyInfo()->m_pName)
