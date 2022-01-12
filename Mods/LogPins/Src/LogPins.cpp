@@ -18,6 +18,31 @@ void LogPins::PreInit()
 	Hooks::SignalOutputPin->AddDetour(this, &LogPins::SignalOutputPin);
 }
 
+void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
+{
+	auto pInterface = (*(*entityRef.m_pEntity)->m_pInterfaces)[0];
+
+	if (!pInterface.m_pTypeId ||
+		!pInterface.m_pTypeId->m_pType ||
+		!pInterface.m_pTypeId->m_pType->m_pTypeName
+		) {
+		Logger::Info("Pin entity class: UNKNOWN");
+	}
+	else
+	{
+		Logger::Info("Pin entity class: {}", pInterface.m_pTypeId->m_pType->m_pTypeName);
+	}
+
+	if (objectRef.IsEmpty())
+	{
+		Logger::Info("Parameter type: None");
+	}
+	else
+	{
+		Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
+	}
+}
+
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
 	std::ostringstream ss;
@@ -29,7 +54,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 	{
 		Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
-		LogPins::DumpDetails(entityRef, pinId, objectRef);
+		DumpDetails(entityRef, pinId, objectRef);
 		
 		m_knownInputs[s] = true;
 	}
@@ -48,7 +73,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 	{
 		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
-		LogPins::DumpDetails(entityRef, pinId, objectRef);
+		DumpDetails(entityRef, pinId, objectRef);
 
 		m_knownOutputs[s] = true;
 	}
