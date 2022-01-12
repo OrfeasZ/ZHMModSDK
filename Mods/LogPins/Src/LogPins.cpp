@@ -53,15 +53,12 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 	}
 	else
 	{
-		for (auto& s_Property = (*entityRef.m_pEntity)->m_pProperties01->begin(); it != (*entityRef.m_pEntity)->m_pProperties01->end(); ++it) {
+		for (auto s_Property = (*entityRef.m_pEntity)->m_pProperties01->begin(); s_Property != (*entityRef.m_pEntity)->m_pProperties01->end(); ++s_Property) {
 		{
 			try
 			{
-				if (!!s_Property.m_pType->getPropertyInfo() && !!s_Property.m_pType->getPropertyInfo()->m_pName)
-				{
-					auto pType = s_Property.m_pType->getPropertyInfo();
-					ss << " " << pType->m_pName;
-				}
+				if (!!s_Property->m_pType && !!s_Property->m_pType->getPropertyInfo() && !!s_Property->m_pType->getPropertyInfo()->m_pName)
+					ss << " " << s_Property->m_pType->getPropertyInfo()->m_pName;
 			}
 			catch (...)
 			{
@@ -77,12 +74,12 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 	}
 	else
 	{
-		for (auto& s_Property = (*entityRef.m_pEntity)->m_pProperties02->begin(); it != (*entityRef.m_pEntity)->m_pProperties02->end(); ++it) {
+		for (auto s_Property = (*entityRef.m_pEntity)->m_pProperties02->begin(); s_Property != (*entityRef.m_pEntity)->m_pProperties02->end(); ++s_Property) {
 		{
 			try
 			{
-				if (!!s_Property.m_pType->getPropertyInfo() && !!s_Property.m_pType->getPropertyInfo()->m_pName)
-					ss << " " << s_Property.m_pType->getPropertyInfo()->m_pName;
+				if (!!s_Property->m_pType && !!s_Property->m_pType->getPropertyInfo() && !!s_Property->m_pType->getPropertyInfo()->m_pName)
+					ss << " " << s_Property->m_pType->getPropertyInfo()->m_pName;
 			}
 			catch (...)
 			{
