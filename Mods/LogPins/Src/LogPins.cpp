@@ -33,6 +33,15 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 		{
 			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
 		}
+
+		if (objectRef.IsEmpty())
+		{
+			Logger::Info("Parameter type: None");
+		}
+		else
+		{
+			Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
+		}
 		
 		m_knownInputs[pinId] = true;
 	}
@@ -59,7 +68,16 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 		{
 			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
 		}
-		
+
+		if (objectRef.IsEmpty())
+		{
+			Logger::Info("Parameter type: None");
+		}
+		else
+		{
+			Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
+		}
+
 		m_knownOutputs[pinId] = true;
 	}
 
