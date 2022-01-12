@@ -17,7 +17,7 @@ void LogPins::PreInit()
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
 	auto pinIt = m_knownInputPins.find(pinId);
-	auto entIt = m_knownInputEntities.find(entityRef);
+	auto entIt = m_knownInputEntities.find((*entityRef.m_pEntity)->m_nEntityId);
 
 	if (pinIt == m_knownInputPins.end() && entIt == m_knownInputEntities.end())
 	{
@@ -45,7 +45,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 		}
 		
 		m_knownInputPins[pinId] = true;
-		m_knownInputEntities[entityRef] = true;
+		m_knownInputEntities[(*entityRef.m_pEntity)->m_nEntityId] = true;
 	}
 
 	return HookResult<bool>(HookAction::Continue());
@@ -54,7 +54,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
 	auto pinIt = m_knownOutputPins.find(pinId);
-	auto entIt = m_knownOutputEntities.find(entityRef);
+	auto entIt = m_knownOutputEntities.find((*entityRef.m_pEntity)->m_nEntityId);
 
 	if (pinIt == m_knownOutputPins.end() && entIt == m_knownOutputEntities.end())
 	{
@@ -82,7 +82,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 		}
 
 		m_knownOutputPins[pinId] = true;
-		m_knownOutputEntities[entityRef] = true;
+		m_knownOutputEntities[(*entityRef.m_pEntity)->m_nEntityId] = true;
 	}
 
 	return HookResult<bool>(HookAction::Continue());

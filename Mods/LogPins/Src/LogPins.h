@@ -16,9 +16,9 @@ private:
 	
 private:
 	std::unordered_map<uint32_t, bool> m_knownInputPins;
-	std::unordered_map<ZEntityRef, bool> m_knownInputEntities;
+	std::unordered_map<uint64_t, bool> m_knownInputEntities;
 	std::unordered_map<uint32_t, bool> m_knownOutputPins;
-	std::unordered_map<ZEntityRef, bool> m_knownOutputEntities;
+	std::unordered_map<uint64_t, bool> m_knownOutputEntities;
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)
