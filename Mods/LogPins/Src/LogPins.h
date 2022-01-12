@@ -5,6 +5,8 @@
 
 #include "IPluginInterface.h"
 
+#include <sstream>
+
 class LogPins : public IPluginInterface
 {
 public:
