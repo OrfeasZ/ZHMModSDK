@@ -50,7 +50,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 	std::string s = ss.str();
 
 	auto it = m_knownInputs.find(s);
-	if (it == m_knownInputs.end())
+	// if (it == m_knownInputs.end())
 	{
 		Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
@@ -69,7 +69,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 	std::string s = ss.str();
 
 	auto it = m_knownOutputs.find(s);
-	if (it == m_knownOutputs.end())
+	// if (it == m_knownOutputs.end())
 	{
 		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
