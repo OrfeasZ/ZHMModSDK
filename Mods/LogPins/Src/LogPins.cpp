@@ -29,26 +29,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 	{
 		Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
-		auto pInterface = (*(*entityRef.m_pEntity)->m_pInterfaces)[0];
-
-		if (!pInterface.m_pTypeId ||
-			!pInterface.m_pTypeId->m_pType ||
-			!pInterface.m_pTypeId->m_pType->m_pTypeName
-			) {
-		}
-		else
-		{
-			Logger::Info("Pin entity class: {}", pInterface.m_pTypeId->m_pType->m_pTypeName);
-		}
-
-		if (objectRef.IsEmpty())
-		{
-			Logger::Info("Parameter type: None");
-		}
-		else
-		{
-			Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
-		}
+		LogPins::DumpDetails(entityRef, pinId, objectRef);
 		
 		m_knownInputs[s] = true;
 	}
@@ -67,26 +48,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 	{
 		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
-		auto pInterface = (*(*entityRef.m_pEntity)->m_pInterfaces)[0];
-
-		if (!pInterface.m_pTypeId ||
-			!pInterface.m_pTypeId->m_pType ||
-			!pInterface.m_pTypeId->m_pType->m_pTypeName
-			) {
-		}
-		else
-		{
-			Logger::Info("Pin entity class: {}", pInterface.m_pTypeId->m_pType->m_pTypeName);
-		}
-
-		if (objectRef.IsEmpty())
-		{
-			Logger::Info("Parameter type: None");
-		}
-		else
-		{
-			Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
-		}
+		LogPins::DumpDetails(entityRef, pinId, objectRef);
 
 		m_knownOutputs[s] = true;
 	}
