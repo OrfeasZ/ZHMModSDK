@@ -16,11 +16,12 @@ void LogPins::PreInit()
 
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
-	auto it = m_knownInputs.find(pinId);
-	if (it == m_knownInputs.end())
+	auto pinIt = m_knownInputPins.find(pinId);
+	auto entIt = m_knownInputEntities.find(entityRef);
+
+	if (pinIt == m_knownInputPins.end() && entIt == m_knownInputEntities.end())
 	{
 		Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
-		Logger::Info("Pin entity interfaces include:");
 
 		auto pInterface = (*(*entityRef.m_pEntity)->m_pInterfaces)[0];
 
@@ -31,7 +32,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 		}
 		else
 		{
-			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
+			Logger::Info("Pin entity class: {}", pInterface.m_pTypeId->m_pType->m_pTypeName);
 		}
 
 		if (objectRef.IsEmpty())
@@ -43,7 +44,8 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 			Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
 		}
 		
-		m_knownInputs[pinId] = true;
+		m_knownInputPins[pinId] = true;
+		m_knownInputEntities[entityRef] = true;
 	}
 
 	return HookResult<bool>(HookAction::Continue());
@@ -51,11 +53,12 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
-	auto it = m_knownOutputs.find(pinId);
-	if (it == m_knownOutputs.end())
+	auto pinIt = m_knownOutputPins.find(pinId);
+	auto entIt = m_knownOutputEntities.find(entityRef);
+
+	if (pinIt == m_knownOutputPins.end() && entIt == m_knownOutputEntities.end())
 	{
 		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
-		Logger::Info("Pin entity interfaces include:");
 
 		auto pInterface = (*(*entityRef.m_pEntity)->m_pInterfaces)[0];
 
@@ -66,7 +69,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 		}
 		else
 		{
-			Logger::Info("{}", pInterface.m_pTypeId->m_pType->m_pTypeName);
+			Logger::Info("Pin entity class: {}", pInterface.m_pTypeId->m_pType->m_pTypeName);
 		}
 
 		if (objectRef.IsEmpty())
@@ -78,7 +81,8 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 			Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
 		}
 
-		m_knownOutputs[pinId] = true;
+		m_knownOutputPins[pinId] = true;
+		m_knownOutputEntities[entityRef] = true;
 	}
 
 	return HookResult<bool>(HookAction::Continue());
