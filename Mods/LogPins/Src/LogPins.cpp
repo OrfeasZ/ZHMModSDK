@@ -57,7 +57,7 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 		{
 			try
 			{
-				if(!!s_Property.m_pType->getPropertyInfo())
+				if(!!s_Property.m_pType->getPropertyInfo() && !!s_Property.m_pType->getPropertyInfo()->m_pName)
 					ss << " " << s_Property.m_pType->getPropertyInfo()->m_pName;
 			}
 			catch (...)
@@ -78,7 +78,7 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 		{
 			try
 			{
-				if (!!s_Property.m_pType->getPropertyInfo())
+				if (!!s_Property.m_pType->getPropertyInfo() && !!s_Property.m_pType->getPropertyInfo()->m_pName)
 					ss << " " << s_Property.m_pType->getPropertyInfo()->m_pName;
 			}
 			catch (...)
