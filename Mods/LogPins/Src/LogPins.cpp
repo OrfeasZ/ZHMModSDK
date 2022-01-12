@@ -14,12 +14,20 @@ void LogPins::PreInit()
 	Hooks::SignalOutputPin->AddDetour(this, &LogPins::SignalOutputPin);
 }
 
+// variadic template
+template < typename... Args >
+std::string sstr(Args &&... args)
+{
+	std::ostringstream sstr;
+	// fold expression
+	(sstr << std::dec << ... << args);
+	return sstr.str();
+}
+
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
-	auto pinIt = m_knownInputPins.find(pinId);
-	auto entIt = m_knownInputEntities.find((*entityRef.m_pEntity)->m_nEntityId);
-
-	if (pinIt == m_knownInputPins.end() && entIt == m_knownInputEntities.end())
+	auto it = m_knownInputs.find(sstr(pinId, "_", (*entityRef.m_pEntity)->m_nEntityId));
+	if (it == m_knownInputs.end())
 	{
 		Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
@@ -44,8 +52,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 			Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
 		}
 		
-		m_knownInputPins[pinId] = true;
-		m_knownInputEntities[(*entityRef.m_pEntity)->m_nEntityId] = true;
+		m_knownInputs[sstr(pinId, "_", (*entityRef.m_pEntity)->m_nEntityId)] = true;
 	}
 
 	return HookResult<bool>(HookAction::Continue());
@@ -53,10 +60,8 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
-	auto pinIt = m_knownOutputPins.find(pinId);
-	auto entIt = m_knownOutputEntities.find((*entityRef.m_pEntity)->m_nEntityId);
-
-	if (pinIt == m_knownOutputPins.end() && entIt == m_knownOutputEntities.end())
+	auto it = m_knownOutputs.find(sstr(pinId, "_", (*entityRef.m_pEntity)->m_nEntityId));
+	if (it == m_knownOutputs.end())
 	{
 		Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
@@ -81,8 +86,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 			Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
 		}
 
-		m_knownOutputPins[pinId] = true;
-		m_knownOutputEntities[(*entityRef.m_pEntity)->m_nEntityId] = true;
+		m_knownOutputs[sstr(pinId, "_", (*entityRef.m_pEntity)->m_nEntityId)] = true;
 	}
 
 	return HookResult<bool>(HookAction::Continue());
