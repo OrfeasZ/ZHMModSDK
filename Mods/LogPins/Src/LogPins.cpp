@@ -18,16 +18,6 @@ void LogPins::PreInit()
 	Hooks::SignalOutputPin->AddDetour(this, &LogPins::SignalOutputPin);
 }
 
-// variadic template
-template < typename... Args >
-std::string sstr(Args &&... args)
-{
-	std::ostringstream sstr;
-	// fold expression
-	(sstr << std::dec << ... << args);
-	return sstr.str();
-}
-
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
 	std::ostringstream ss;
