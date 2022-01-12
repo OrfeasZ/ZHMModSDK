@@ -15,10 +15,8 @@ private:
 	DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef, uint32_t, const ZObjectRef&);
 	
 private:
-	std::unordered_map<uint32_t, bool> m_knownInputPins;
-	std::unordered_map<uint64_t, bool> m_knownInputEntities;
-	std::unordered_map<uint32_t, bool> m_knownOutputPins;
-	std::unordered_map<uint64_t, bool> m_knownOutputEntities;
+	std::unordered_map<std::string, bool> m_knownInputs;
+	std::unordered_map<std::string, bool> m_knownOutputs;
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)
