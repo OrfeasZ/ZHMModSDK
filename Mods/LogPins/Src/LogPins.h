@@ -21,6 +21,7 @@ private:
 	std::unordered_map<std::string, bool> m_knownOutputs;
 
 	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
+	int SendToSocket(std::string);
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)

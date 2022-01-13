@@ -8,6 +8,15 @@
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZObject.h>
 
+#include<stdio.h>
+#include<winsock2.h>
+
+#pragma comment(lib,"ws2_32.lib") //Winsock Library
+
+#define DEFAULT_SERVER "127.0.0.1"
+#define DEFAULT_BUFLEN 512
+#define DEFAULT_PORT 27015
+
 
 #define SSTR( x ) static_cast< std::ostringstream & >( \
         ( std::ostringstream() << std::dec << x ) ).str()
@@ -16,6 +25,45 @@ void LogPins::PreInit()
 {
 	Hooks::SignalInputPin->AddDetour(this, &LogPins::SignalInputPin);
 	Hooks::SignalOutputPin->AddDetour(this, &LogPins::SignalOutputPin);
+
+	LogPins::SendToSocket("hello\r\n");
+}
+
+int LogPins::SendToSocket(std::string message)
+{
+	struct sockaddr_in si_other;
+	int s, slen = sizeof(si_other);
+	WSADATA wsa;
+
+	//Initialise winsock
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+	{
+		Logger::Info("Failed to initialise socket");
+	}
+
+	//create socket
+	if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR)
+	{
+		Logger::Info("Failed to create socket");
+	}
+
+	//setup address structure
+	memset((char *)&si_other, 0, sizeof(si_other));
+	si_other.sin_family = AF_INET;
+	si_other.sin_port = htons(DEFAULT_PORT);
+	si_other.sin_addr.S_un.S_addr = inet_addr(DEFAULT_SERVER);
+
+	//start communication
+	//send the message
+	if (sendto(s, message.c_str(), message.length, 0, (struct sockaddr *) &si_other, slen) == SOCKET_ERROR)
+	{
+		Logger::Info("sendto() failed with error code : {}", WSAGetLastError());
+	}
+
+	closesocket(s);
+	WSACleanup();
+
+	return 0;
 }
 
 void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
@@ -42,6 +90,7 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 		Logger::Info("Parameter type: {}", objectRef.m_pTypeID->m_pType->m_pTypeName);
 	}
 
+	/*
 	std::ostringstream ss;
 
 	auto& s_Properties1 = (*entityRef.m_pEntity)->m_pProperties01;
@@ -85,6 +134,7 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 	}
 
 	Logger::Info("Entity props:{}", ss.str());
+	*/
 }
 
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
@@ -99,7 +149,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 		Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
 
 		DumpDetails(entityRef, pinId, objectRef);
-		
+
 		m_knownInputs[s] = true;
 	}
 
@@ -124,5 +174,6 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 
 	return HookResult<bool>(HookAction::Continue());
 }
+
 
 DECLARE_ZHM_PLUGIN(LogPins);
