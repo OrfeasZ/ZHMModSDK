@@ -20,6 +20,9 @@ private:
 	std::unordered_map<std::string, bool> m_knownInputs;
 	std::unordered_map<std::string, bool> m_knownOutputs;
 
+	struct sockaddr_in si_other;
+	int s, slen;
+
 	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
 	int SendToSocket(std::string);
 };

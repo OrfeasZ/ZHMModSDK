@@ -22,13 +22,7 @@ void LogPins::PreInit()
 	Hooks::SignalInputPin->AddDetour(this, &LogPins::SignalInputPin);
 	Hooks::SignalOutputPin->AddDetour(this, &LogPins::SignalOutputPin);
 
-	LogPins::SendToSocket("hello\r\n");
-}
-
-int LogPins::SendToSocket(std::string message)
-{
-	struct sockaddr_in si_other;
-	int s, slen = sizeof(si_other);
+	s, slen = sizeof(si_other);
 	WSADATA wsa;
 
 	//Initialise winsock
@@ -49,15 +43,23 @@ int LogPins::SendToSocket(std::string message)
 	si_other.sin_port = htons(DEFAULT_PORT);
 	si_other.sin_addr.S_un.S_addr = inet_addr(DEFAULT_SERVER);
 
+	LogPins::SendToSocket("hello\r\n");
+
+	/*
+		closesocket(s);
+		WSACleanup();
+
+	*/
+}
+
+int LogPins::SendToSocket(std::string message)
+{
 	//start communication
 	//send the message
 	if (sendto(s, message.c_str(), message.length(), 0, (struct sockaddr *) &si_other, slen) == SOCKET_ERROR)
 	{
 		Logger::Info("sendto() failed with error code : {}", WSAGetLastError());
 	}
-
-	closesocket(s);
-	WSACleanup();
 
 	return 0;
 }
