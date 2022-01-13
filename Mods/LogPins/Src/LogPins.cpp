@@ -12,6 +12,7 @@
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT 27015
 
+#pragma comment(lib, "Ws2_32.lib")
 
 #define SSTR( x ) static_cast< std::ostringstream & >( \
         ( std::ostringstream() << std::dec << x ) ).str()
