@@ -8,10 +8,16 @@
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZObject.h>
 
-#include<stdio.h>
-#include<winsock2.h>
+#ifndef _WINDOWS_
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
+#endif
 
-#pragma comment(lib,"ws2_32.lib") //Winsock Library
+#include <winsock2.h>
+
+#pragma comment(lib, "ws2_32.lib")
+
 
 #define DEFAULT_SERVER "127.0.0.1"
 #define DEFAULT_BUFLEN 512
