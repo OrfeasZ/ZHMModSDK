@@ -50,7 +50,7 @@ int LogPins::SendToSocket(std::string message)
 
 	//start communication
 	//send the message
-	if (sendto(s, message.c_str(), message.length, 0, (struct sockaddr *) &si_other, slen) == SOCKET_ERROR)
+	if (sendto(s, message.c_str(), message.length(), 0, (struct sockaddr *) &si_other, slen) == SOCKET_ERROR)
 	{
 		Logger::Info("sendto() failed with error code : {}", WSAGetLastError());
 	}
