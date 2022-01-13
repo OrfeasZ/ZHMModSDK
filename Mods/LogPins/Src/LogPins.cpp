@@ -136,8 +136,10 @@ void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
 	std::ostringstream ss;
-	ss << "" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
+	ss << "I_" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
 	std::string s = ss.str();
+
+	LogPins::SendToSocket(s);
 
 	auto it = m_knownInputs.find(s);
 	if (it == m_knownInputs.end())
@@ -155,8 +157,10 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
 {
 	std::ostringstream ss;
-	ss << "" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
+	ss << "O_" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
 	std::string s = ss.str();
+
+	LogPins::SendToSocket(s);
 
 	auto it = m_knownOutputs.find(s);
 	if (it == m_knownOutputs.end())
