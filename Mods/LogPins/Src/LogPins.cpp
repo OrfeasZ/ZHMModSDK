@@ -18,8 +18,8 @@
 #define SSTR( x ) static_cast< std::ostringstream & >( \
         ( std::ostringstream() << std::dec << x ) ).str()
 
-static LogPins* instance;
-static std::vector<std::string> messages;
+LogPins* LogPins::instance;
+std::vector<std::string> LogPins::messages;
 
 void LogPins::PreInit()
 {
@@ -121,7 +121,7 @@ void LogPins::ReceiveFromSocket()
 	{
 		memset(buf, '\0', DEFAULT_BUFLEN);
 		//try to receive some data, this is a blocking call
-		if (recvfrom(LogPins::instance->s, buf, DEFAULT_BUFLEN, 0, (struct sockaddr *) &LogPins::instance->si_other, &LogPins::instance->slen) == SOCKET_ERROR)
+		if (recvfrom(instance->s, buf, DEFAULT_BUFLEN, 0, (struct sockaddr *) &instance->si_other, &instance->slen) == SOCKET_ERROR)
 		{
 			printf("ReceiveFromSocket() failed with error code : %d", WSAGetLastError());
 			exit(EXIT_FAILURE);
@@ -130,7 +130,7 @@ void LogPins::ReceiveFromSocket()
 		ss.clear();
 		ss << buf;
 
-		LogPins::messages.push_back(ss.str());
+		messages.push_back(ss.str());
 
 		// Logger::Info("ReceiveFromSocket got: {}", buf);
 	}
