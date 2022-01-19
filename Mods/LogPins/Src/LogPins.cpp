@@ -53,7 +53,7 @@ void LogPins::PreInit()
 		LogPins::SendToSocket("hello\r\n");
 
 		std::thread receiveFromSocketThread(&LogPins::ReceiveFromSocket);
-		receiveFromSocketThread.join();
+		receiveFromSocketThread.detach();
 	}
 
 
@@ -91,13 +91,11 @@ void LogPins::OnDraw3D(IRenderer* p_Renderer)
 
 	m_EntityMutex.unlock_shared();
 
-	/*
-	if (lastIndex < messages.size())
+	if (lastIndex < LogPins::messages.size())
 	{
-		Logger::Info("Received From Socket: {}", messages[lastIndex]);
+		Logger::Info("Received From Socket: {}", LogPins::messages[lastIndex]);
 		lastIndex++;
 	}
-	*/
 }
 
 int LogPins::SendToSocket(std::string message)
@@ -131,6 +129,8 @@ void LogPins::ReceiveFromSocket()
 
 		ss.clear();
 		ss << buf;
+
+		if (ss.str().rfind("exit") == 0) noError = false;
 
 		LogPins::messages.push_back(ss.str());
 	}
