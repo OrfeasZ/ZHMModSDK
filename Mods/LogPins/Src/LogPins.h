@@ -1,5 +1,6 @@
 #pragma once
 
+#include <shared_mutex>
 #include <random>
 #include <unordered_map>
 
@@ -11,6 +12,7 @@ class LogPins : public IPluginInterface
 {
 public:
 	void PreInit() override;
+	void OnDraw3D(IRenderer* p_Renderer) override;
 
 private:
 	DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef, uint32_t, const ZObjectRef&);
@@ -22,6 +24,9 @@ private:
 
 	struct sockaddr_in si_other;
 	int s, slen;
+
+	std::shared_mutex m_EntityMutex;
+	std::unordered_map<uint64_t, ZEntityRef> m_EntitiesToTrack;
 
 	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
 	int SendToSocket(std::string);
