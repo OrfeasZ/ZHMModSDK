@@ -37,14 +37,20 @@ void LogPins::PreInit()
 	{
 		Logger::Info("Failed to create socket");
 	}
+	else
+	{
+		//setup address structure
+		memset((char *)&si_other, 0, sizeof(si_other));
+		si_other.sin_family = AF_INET;
+		si_other.sin_port = htons(DEFAULT_PORT);
+		si_other.sin_addr.S_un.S_addr = inet_addr(DEFAULT_SERVER);
 
-	//setup address structure
-	memset((char *)&si_other, 0, sizeof(si_other));
-	si_other.sin_family = AF_INET;
-	si_other.sin_port = htons(DEFAULT_PORT);
-	si_other.sin_addr.S_un.S_addr = inet_addr(DEFAULT_SERVER);
+		LogPins::SendToSocket("hello\r\n");
 
-	LogPins::SendToSocket("hello\r\n");
+		std::thread receiveFromSocketThread(&ReceiveFromSocket);
+		receiveFromSocketThread.join();
+	}
+
 
 	/*
 		closesocket(s);
@@ -87,10 +93,29 @@ int LogPins::SendToSocket(std::string message)
 	//send the message
 	if (sendto(s, message.c_str(), message.length(), 0, (struct sockaddr *) &si_other, slen) == SOCKET_ERROR)
 	{
-		Logger::Info("sendto() failed with error code : {}", WSAGetLastError());
+		Logger::Info("SendToSocket() failed with error code : {}", WSAGetLastError());
 	}
 
 	return 0;
+}
+
+void LogPins::ReceiveFromSocket()
+{
+	bool noError = true;
+	char buf[DEFAULT_BUFLEN];
+
+	while (noError)
+	{
+		memset(buf, '\0', DEFAULT_BUFLEN);
+		//try to receive some data, this is a blocking call
+		if (recvfrom(s, buf, DEFAULT_BUFLEN, 0, (struct sockaddr *) &si_other, &slen) == SOCKET_ERROR)
+		{
+			printf("ReceiveFromSocket() failed with error code : %d", WSAGetLastError());
+			exit(EXIT_FAILURE);
+		}
+
+		Logger::Info("ReceiveFromSocket got: {}", buf);
+	}
 }
 
 void LogPins::DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)

@@ -3,10 +3,11 @@
 #include <shared_mutex>
 #include <random>
 #include <unordered_map>
+#include <sstream>
+#include <thread> 
 
 #include "IPluginInterface.h"
 
-#include <sstream>
 
 class LogPins : public IPluginInterface
 {
@@ -30,6 +31,7 @@ private:
 
 	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
 	int SendToSocket(std::string);
+	void ReceiveFromSocket();
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)
