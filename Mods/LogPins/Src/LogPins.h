@@ -31,7 +31,11 @@ private:
 
 	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
 	int SendToSocket(std::string);
-	void ReceiveFromSocket();
+
+	static void ReceiveFromSocket();
+	static LogPins* instance;
+	static std::vector<std::string> messages;
+	int lastIndex = 0;
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)

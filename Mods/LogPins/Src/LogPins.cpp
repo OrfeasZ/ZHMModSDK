@@ -32,6 +32,8 @@ void LogPins::PreInit()
 		Logger::Info("Failed to initialise socket");
 	}
 
+	instance = this;
+
 	//create socket
 	if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR)
 	{
@@ -47,7 +49,7 @@ void LogPins::PreInit()
 
 		LogPins::SendToSocket("hello\r\n");
 
-		std::thread receiveFromSocketThread(&ReceiveFromSocket);
+		std::thread receiveFromSocketThread(&LogPins::ReceiveFromSocket);
 		receiveFromSocketThread.join();
 	}
 
@@ -85,6 +87,12 @@ void LogPins::OnDraw3D(IRenderer* p_Renderer)
 	}
 
 	m_EntityMutex.unlock_shared();
+
+	if (lastIndex < messages.size())
+	{
+		Logger::Info("Received From Socket: {}", messages[lastIndex]);
+		lastIndex++;
+	}
 }
 
 int LogPins::SendToSocket(std::string message)
@@ -104,17 +112,24 @@ void LogPins::ReceiveFromSocket()
 	bool noError = true;
 	char buf[DEFAULT_BUFLEN];
 
+	std::ostringstream ss;
+
 	while (noError)
 	{
 		memset(buf, '\0', DEFAULT_BUFLEN);
 		//try to receive some data, this is a blocking call
-		if (recvfrom(s, buf, DEFAULT_BUFLEN, 0, (struct sockaddr *) &si_other, &slen) == SOCKET_ERROR)
+		if (recvfrom(instance->s, buf, DEFAULT_BUFLEN, 0, (struct sockaddr *) &instance->si_other, &instance->slen) == SOCKET_ERROR)
 		{
 			printf("ReceiveFromSocket() failed with error code : %d", WSAGetLastError());
 			exit(EXIT_FAILURE);
 		}
 
-		Logger::Info("ReceiveFromSocket got: {}", buf);
+		ss.clear();
+		ss << buf;
+
+		messages.push_back(ss.str());
+
+		// Logger::Info("ReceiveFromSocket got: {}", buf);
 	}
 }
 
