@@ -5,6 +5,8 @@
 
 #include "IPluginInterface.h"
 
+#include <sstream>
+
 class LogPins : public IPluginInterface
 {
 public:
@@ -15,8 +17,14 @@ private:
 	DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef, uint32_t, const ZObjectRef&);
 	
 private:
-	std::unordered_map<uint32_t, bool> m_knownInputs;
-	std::unordered_map<uint32_t, bool> m_knownOutputs;
+	std::unordered_map<std::string, bool> m_knownInputs;
+	std::unordered_map<std::string, bool> m_knownOutputs;
+
+	struct sockaddr_in si_other;
+	int s, slen;
+
+	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
+	int SendToSocket(std::string);
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)
