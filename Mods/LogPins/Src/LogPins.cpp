@@ -18,6 +18,9 @@
 #define SSTR( x ) static_cast< std::ostringstream & >( \
         ( std::ostringstream() << std::dec << x ) ).str()
 
+static LogPins* instance;
+static std::vector<std::string> messages;
+
 void LogPins::PreInit()
 {
 	Hooks::SignalInputPin->AddDetour(this, &LogPins::SignalInputPin);

@@ -33,8 +33,10 @@ private:
 	int SendToSocket(std::string);
 
 	static void ReceiveFromSocket();
+
 	static LogPins* instance;
 	static std::vector<std::string> messages;
+
 	int lastIndex = 0;
 };
 
