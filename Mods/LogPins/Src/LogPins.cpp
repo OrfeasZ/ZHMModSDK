@@ -91,11 +91,13 @@ void LogPins::OnDraw3D(IRenderer* p_Renderer)
 
 	m_EntityMutex.unlock_shared();
 
+	/*
 	if (lastIndex < messages.size())
 	{
 		Logger::Info("Received From Socket: {}", messages[lastIndex]);
 		lastIndex++;
 	}
+	*/
 }
 
 int LogPins::SendToSocket(std::string message)
@@ -121,18 +123,16 @@ void LogPins::ReceiveFromSocket()
 	{
 		memset(buf, '\0', DEFAULT_BUFLEN);
 		//try to receive some data, this is a blocking call
-		if (recvfrom(instance->s, buf, DEFAULT_BUFLEN, 0, (struct sockaddr *) &instance->si_other, &instance->slen) == SOCKET_ERROR)
+		if (recvfrom(LogPins::instance->s, buf, DEFAULT_BUFLEN, 0, (struct sockaddr *) &LogPins::instance->si_other, &LogPins::instance->slen) == SOCKET_ERROR)
 		{
 			printf("ReceiveFromSocket() failed with error code : %d", WSAGetLastError());
-			exit(EXIT_FAILURE);
+			noError = false;
 		}
 
 		ss.clear();
 		ss << buf;
 
-		messages.push_back(ss.str());
-
-		// Logger::Info("ReceiveFromSocket got: {}", buf);
+		LogPins::messages.push_back(ss.str());
 	}
 }
 
