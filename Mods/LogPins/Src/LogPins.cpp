@@ -208,7 +208,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 	if ((*entityRef.m_pEntity)->m_nEntityId == entId)
 	{
 		auto it = m_EntitiesToTrack.find(entId);
-		if (it != m_EntitiesToTrack.end())
+		if (it == m_EntitiesToTrack.end())
 		{
 			m_EntityMutex.lock();
 
