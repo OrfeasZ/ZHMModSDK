@@ -38,6 +38,8 @@ private:
 	static std::vector<std::string> messages;
 
 	int lastIndex = 0;
+
+	uint64_t entityToTrack = 0;
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)
