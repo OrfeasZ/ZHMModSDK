@@ -31,6 +31,7 @@ private:
 
 	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
 	int SendToSocket(std::string);
+	void ProcessSocketMessageQueue();
 
 	static void ReceiveFromSocket();
 
@@ -40,6 +41,10 @@ private:
 	int lastIndex = 0;
 
 	uint64_t entityToTrack = 0;
+
+	bool drawCoverPlane;
+	SMatrix coverPlanePos;
+	SVector3 coverPlaneSize;
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)
