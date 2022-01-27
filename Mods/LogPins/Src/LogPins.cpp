@@ -19,7 +19,7 @@
         ( std::ostringstream() << std::dec << x ) ).str()
 
 LogPins* LogPins::instance;
-std::vector<std::string> LogPins::messages;
+std::deque<std::string> LogPins::messages;
 
 void LogPins::PreInit()
 {
@@ -102,10 +102,10 @@ void LogPins::OnDraw3D(IRenderer* p_Renderer)
 
 void LogPins::ProcessSocketMessageQueue()
 {
-	if (lastIndex < LogPins::messages.size())
+	if (!LogPins::messages.empty())
 	{
-		std::string currentMessage = LogPins::messages[lastIndex];
-		lastIndex++;
+		std::string currentMessage = LogPins::messages.front();
+		LogPins::messages.pop_front();
 
 		Logger::Info("Received From Socket: {}", currentMessage);
 

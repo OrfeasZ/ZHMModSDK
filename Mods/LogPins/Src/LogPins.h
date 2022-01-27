@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <thread> 
+#include <deque> 
 
 #include "IPluginInterface.h"
 
@@ -36,7 +37,7 @@ private:
 	static void ReceiveFromSocket();
 
 	static LogPins* instance;
-	static std::vector<std::string> messages;
+	static std::deque<std::string> messages;
 
 	int lastIndex = 0;
 
