@@ -20,7 +20,7 @@
 #include "Glacier/ZHM5InputManager.h"
 
 FreeCam::FreeCam() :
-	m_FreeCamActive(false), m_ShouldToggle(false), m_ToggleFreecamAction("KBMButtonX")
+	m_FreeCamActive(false), m_ShouldToggle(false), m_ToggleFreecamAction("KBMButtonX"), m_FreezeFreecamAction("ActivateGameControl0")
 {
 }
 
@@ -100,21 +100,6 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 			s_Camera.m_pInterfaceRef->m_mTransform = s_CurrentCamera->m_mTransform;
 			
 			s_RenderDest.m_pInterfaceRef->SetSource(&s_Camera.m_ref);
-
-			// Disable Hitman input.
-			TEntityRef<ZHitman5> s_LocalHitman;
-			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-			if (s_LocalHitman)
-			{
-				auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
-
-				if (s_InputControl)
-				{
-					Logger::Debug("Got local hitman entity and input control! Disabling input. {} {}", fmt::ptr(s_InputControl), fmt::ptr(s_LocalHitman.m_pInterfaceRef));
-					s_InputControl->m_bActive = false;
-				}
-			}			
 		}
 		else
 		{
@@ -134,6 +119,21 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 					s_InputControl->m_bActive = true;
 				}
 			}
+		}
+	}
+
+	// While freecam is active, only enable hitman input when the "freeze camera" button (L1) is pressed.
+	if (m_FreeCamActive)
+	{
+		TEntityRef<ZHitman5> s_LocalHitman;
+		Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+		if (s_LocalHitman)
+		{
+			auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
+
+			if (s_InputControl)
+				s_InputControl->m_bActive = Functions::ZInputAction_Digital->Call(&m_FreezeFreecamAction, -1);
 		}
 	}
 }

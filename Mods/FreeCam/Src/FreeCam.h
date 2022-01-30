@@ -24,6 +24,7 @@ private:
 	volatile bool m_ShouldToggle;
 	ZEntityRef m_OriginalCam;
 	ZInputAction m_ToggleFreecamAction;
+	ZInputAction m_FreezeFreecamAction;
 };
 
 DEFINE_ZHM_PLUGIN(FreeCam)
