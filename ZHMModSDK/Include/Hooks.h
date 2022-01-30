@@ -35,6 +35,7 @@ class ZDynamicObject;
 class ZAchievementManagerSimple;
 class SOnlineEvent;
 class ZUpdateEventContainer;
+class ZInputAction;
 
 class ZHMSDK_API Hooks
 {
@@ -65,4 +66,5 @@ public:
 	static Hook<void(ZGameStatsManager* th)>* ZGameStatsManager_SendAISignals02;
 	static Hook<void(ZAchievementManagerSimple* th, const SOnlineEvent& event)>* ZAchievementManagerSimple_OnEventReceived;
 	static Hook<void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)>* ZAchievementManagerSimple_OnEventSent;
+	static Hook<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
 };

@@ -163,3 +163,9 @@ PATTERN_HOOK(
 	"xxxxxxxxxxx",
 	ZAchievementManagerSimple_OnEventSent, void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)
 );
+
+PATTERN_HOOK(
+	"\x40\x53\x41\x56\x48\x83\xEC\x00\x8B\xDA",
+	"xxxxxxx?xx",
+	ZInputAction_Digital, bool(ZInputAction* th, int a2)
+);
