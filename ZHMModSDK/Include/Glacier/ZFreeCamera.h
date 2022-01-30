@@ -16,5 +16,8 @@ public:
 class ZFreeCameraControlEntity :
 	public ZEntityImpl,
 	public IFreeCameraControl
-{	
+{
+public:
+	PAD(0x11); // 0x20
+	bool m_bFreezeCamera; // 0x31
 };

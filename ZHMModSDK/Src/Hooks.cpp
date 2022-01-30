@@ -81,7 +81,7 @@ PATTERN_HOOK(
 );
 
 PATTERN_HOOK(
-	"\x48\x89\x4C\x24\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x57\x48\x8D\xAC\x24\xF0\xF8\xFF\xFF",
+	"\x48\x89\x4C\x24\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x57\x48\x8D\xAC\x24\x50\xE6\xFF\xFF",
 	"xxxxxxxxxxxxxxxxxxxxxxx",
 	ZRenderDevice_ZRenderDevice, ZRenderDevice* (ZRenderDevice* th)
 );
@@ -115,8 +115,9 @@ PATTERN_HOOK(
 	ZKeyboardWindows_Update, void(ZKeyboardWindows* th, bool a2)
 );
 
+// 3 calls in same huge function, this is the first at around +13BB
 PATTERN_CALL_HOOK(
-	"\xE8\x00\x00\x00\x00\x49\x8B\xCF\xE8\x00\x00\x00\x00\x49\x8B\x8D\xC0\x07\x00\x00",
+	"\xE8\x00\x00\x00\x00\x49\x8B\xCF\xE8\x00\x00\x00\x00\x0F\x28\x85\xA0\x01\x00\x00",
 	"x????xxxx????xxxxxxx",
 	ZRenderContext_Unknown01, void(ZRenderContext* th)
 );
@@ -152,7 +153,7 @@ PATTERN_HOOK(
 );
 
 PATTERN_HOOK(
-	"\x48\x89\x5C\x24\x08\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\xD0\xFB\xFF\xFF",
+	"\x48\x89\x5C\x24\x08\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x00\xFC\xFF\xFF",
 	"xxxxxxxxxxxxxxxxxxxxxxxx",
 	ZAchievementManagerSimple_OnEventReceived, void(ZAchievementManagerSimple* th, const SOnlineEvent& event)
 );
@@ -161,4 +162,10 @@ PATTERN_HOOK(
 	"\x48\x8B\xC4\x55\x48\x8D\xA8\xE8\xFC\xFF\xFF",
 	"xxxxxxxxxxx",
 	ZAchievementManagerSimple_OnEventSent, void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)
+);
+
+PATTERN_HOOK(
+	"\x40\x53\x41\x56\x48\x83\xEC\x00\x8B\xDA",
+	"xxxxxxx?xx",
+	ZInputAction_Digital, bool(ZInputAction* th, int a2)
 );

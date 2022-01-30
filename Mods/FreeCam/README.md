@@ -7,6 +7,7 @@
 | Keys | Action |
 | ---- | ------ |
 | P | Toggle freecam |
+| F3 | Toggle camera lock and 47 input |
 | Ctrl + W/S | Change FOV |
 | Ctrl + A/D | Roll camera |
 | Alt + W/S | Change camera speed |
