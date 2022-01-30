@@ -19,7 +19,11 @@
         ( std::ostringstream() << std::dec << x ) ).str()
 
 LogPins* LogPins::instance;
-std::deque<std::string> LogPins::messages;
+std::deque<std::string> LogPins::receivedMessages;
+std::deque<std::string> LogPins::sendingMessages;
+
+std::mutex LogPins::sendingMutex;
+std::condition_variable LogPins::sendingCV;
 
 void LogPins::PreInit()
 {
@@ -50,9 +54,12 @@ void LogPins::PreInit()
 		si_other.sin_port = htons(DEFAULT_PORT);
 		si_other.sin_addr.S_un.S_addr = inet_addr(DEFAULT_SERVER);
 
-		LogPins::SendToSocket("hello\r\n");
+		LogPins::AddToSendList("hello\r\n");
 
-		std::thread receiveFromSocketThread(&LogPins::ReceiveFromSocket);
+		std::thread sendToSocketThread(&LogPins::SendToSocketThread);
+		sendToSocketThread.detach();
+
+		std::thread receiveFromSocketThread(&LogPins::ReceiveFromSocketThread);
 		receiveFromSocketThread.detach();
 	}
 
@@ -96,16 +103,16 @@ void LogPins::OnDraw3D(IRenderer* p_Renderer)
 
 	if (drawCoverPlane)
 	{
-		p_Renderer->DrawOBB3D(SVector3(-coverPlaneSize.x / 2.f, 0, 0), SVector3(coverPlaneSize.x / 2.f, -coverPlaneSize.y, coverPlaneSize.z), coverPlanePos, SVector4(0.f, 0.f, 1.f, 1.f));
+		p_Renderer->DrawOBB3D(SVector3(-coverPlaneSize.x / 2.f, -coverPlaneSize.y / 2.f, -coverPlaneSize.z / 2.f), SVector3(coverPlaneSize.x / 2.f, coverPlaneSize.y / 2.f, coverPlaneSize.z / 2.f), coverPlanePos, SVector4(0.f, 0.f, 1.f, 1.f));
 	}
 }
 
 void LogPins::ProcessSocketMessageQueue()
 {
-	if (!LogPins::messages.empty())
+	if (!LogPins::receivedMessages.empty())
 	{
-		std::string currentMessage = LogPins::messages.front();
-		LogPins::messages.pop_front();
+		std::string currentMessage = LogPins::receivedMessages.front();
+		LogPins::receivedMessages.pop_front();
 
 		Logger::Info("Received From Socket: {}", currentMessage);
 
@@ -228,36 +235,103 @@ void LogPins::ProcessSocketMessageQueue()
 
 				drawCoverPlane = true;
 			}
-			else if (params[0] == "HeroPosition")
+			else if (params[0] == "GetHeroPosition")
 			{
 				TEntityRef<ZHitman5> s_LocalHitman;
 				Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
 				const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
 				std::ostringstream ss;
-				ss << "HeroPosition_" << s_HitmanSpatial->m_mTransform.Trans.x << "_" << s_HitmanSpatial->m_mTransform.Trans.y << "_" << s_HitmanSpatial->m_mTransform.Trans.z;
-				LogPins::SendToSocket(ss.str());
+				ss << "GetHeroPosition_" << s_HitmanSpatial->m_mTransform.Trans.x << "_" << s_HitmanSpatial->m_mTransform.Trans.y << "_" << s_HitmanSpatial->m_mTransform.Trans.z;
+				LogPins::AddToSendList(ss.str());
+			}
+			else if (params[0] == "SetHeroPosition")
+			{
+				TEntityRef<ZHitman5> s_LocalHitman;
+				Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+				const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+
+				float32 x;
+				std::istringstream(params[2].c_str()) >> x;
+				float32 y;
+				std::istringstream(params[3].c_str()) >> y;
+				float32 z;
+				std::istringstream(params[4].c_str()) >> z;
+
+				float32 rX;
+				std::istringstream(params[5].c_str()) >> rX;
+				float32 rY;
+				std::istringstream(params[6].c_str()) >> rY;
+				float32 rZ;
+				std::istringstream(params[7].c_str()) >> rZ;
+
+				rX *= 3.14 / 180.f;
+				rY *= 3.14 / 180.f;
+				rZ *= 3.14 / 180.f;
+
+				/*
+				s_HitmanSpatial->m_mTransform.Trans.x = x;
+				s_HitmanSpatial->m_mTransform.Trans.y = y;
+				s_HitmanSpatial->m_mTransform.Trans.z = z;
+				*/
+				// s_HitmanSpatial->m_mTransform.Trans = SVector3(x, y, z);
+
+				s_LocalHitman.m_ref.GetBaseEntity()->Deactivate(6000);
+
+				SMatrix43 newTrans = SMatrix43();
+				newTrans.XAxis = SVector3(cos(rZ), -sin(rZ), 0);
+				newTrans.YAxis = SVector3(sin(rZ), cos(rZ), 0);
+				newTrans.ZAxis = SVector3(0, 0, 1);
+				newTrans.Trans = SVector3(x, y, z);
+
+				s_HitmanSpatial->m_mTransform = newTrans;
+
+
+				// s_HitmanSpatial->m_mTransform.XAxis.x = cos(rZ);
+				// s_HitmanSpatial->m_mTransform.XAxis.y = -sin(rZ);
+				// s_HitmanSpatial->m_mTransform.YAxis.x = sin(rZ);
+				// s_HitmanSpatial->m_mTransform.YAxis.y = cos(rZ);
 			}
 		}
 	}
 }
 
-int LogPins::SendToSocket(std::string message)
+int LogPins::AddToSendList(std::string message)
 {
-	//start communication
-	//send the message
-	if (sendto(s, message.c_str(), message.length(), 0, (struct sockaddr *) &si_other, slen) == SOCKET_ERROR)
-	{
-		Logger::Info("SendToSocket() failed with error code : {}", WSAGetLastError());
-	}
-
+	LogPins::sendingMessages.push_back(message);
+	LogPins::sendingCV.notify_one();
 	// Process here for now. Should be done on render!
 	LogPins::ProcessSocketMessageQueue();
 
 	return 0;
 }
 
-void LogPins::ReceiveFromSocket()
+void LogPins::SendToSocketThread()
+{
+	bool shouldSend = true;
+
+	while (shouldSend)
+	{
+		std::unique_lock<std::mutex> lk(LogPins::sendingMutex);
+		while (LogPins::sendingMessages.empty())
+		{
+			LogPins::sendingCV.wait(lk);
+			// std::this_thread::yield();
+		}
+
+		std::string currentMessage = LogPins::sendingMessages.front();
+		LogPins::sendingMessages.pop_front();
+
+		//start communication
+		//send the message
+		if (sendto(LogPins::instance->s, currentMessage.c_str(), currentMessage.length(), 0, (struct sockaddr*)&LogPins::instance->si_other, LogPins::instance->slen) == SOCKET_ERROR)
+		{
+			Logger::Info("AddToSendList() failed with error code : {}", WSAGetLastError());
+		}
+	}
+}
+
+void LogPins::ReceiveFromSocketThread()
 {
 	bool shouldReceive = true;
 	char buf[DEFAULT_BUFLEN];
@@ -280,7 +354,7 @@ void LogPins::ReceiveFromSocket()
 			}
 			else
 			{
-				LogPins::messages.push_back(message);
+				LogPins::receivedMessages.push_back(message);
 			}
 		}
 	}
@@ -317,7 +391,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint3
 	ss << "I_" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
 	std::string s = ss.str();
 
-	LogPins::SendToSocket(s);
+	LogPins::AddToSendList(s);
 
 	auto it = m_knownInputs.find(s);
 	if (it == m_knownInputs.end())
@@ -338,7 +412,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 	ss << "O_" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
 	std::string s = ss.str();
 
-	LogPins::SendToSocket(s);
+	LogPins::AddToSendList(s);
 
 	auto it = m_knownOutputs.find(s);
 	if (it == m_knownOutputs.end())

@@ -31,13 +31,18 @@ private:
 	std::unordered_map<uint64_t, ZEntityRef> m_EntitiesToTrack;
 
 	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
-	int SendToSocket(std::string);
+	int AddToSendList(std::string);
 	void ProcessSocketMessageQueue();
 
-	static void ReceiveFromSocket();
+	static void SendToSocketThread();
+	static void ReceiveFromSocketThread();
 
 	static LogPins* instance;
-	static std::deque<std::string> messages;
+	static std::deque<std::string> receivedMessages;
+	static std::deque<std::string> sendingMessages;
+
+	static std::mutex sendingMutex;
+	static std::condition_variable sendingCV;
 
 	int lastIndex = 0;
 
