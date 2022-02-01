@@ -169,3 +169,15 @@ PATTERN_HOOK(
 	"xxxxxxx?xx",
 	ZInputAction_Digital, bool(ZInputAction* th, int a2)
 );
+
+PATTERN_HOOK(
+	"\x4C\x89\x44\x24\x18\x55\x53\x56\x57\x41\x55\x41\x56\x48\x8D\x6C\x24\xD1\x48\x81\xEC\x00\x00\x00\x00\x80\x79\x48",
+	"xxxxxxxxxxxxxxxxxxxxx????xxx",
+	ZEntityManager_DeleteEntities, void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, void* a3)
+);
+
+PATTERN_HOOK(
+	"\x48\x89\x5C\x24\x10\x48\x89\x7C\x24\x18\x41\x56\x48\x83\xEC\x00\x80\x3D",
+	"xxxxxxxxxxxxxxx?xx",
+	ZEntityManager_ActivateEntity, void(ZEntityManager* th, ZEntityRef* entity, void* a3)
+);

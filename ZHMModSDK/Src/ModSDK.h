@@ -1,6 +1,8 @@
 #pragma once
 
+#include <map>
 #include <memory>
+#include <shared_mutex>
 #include <string>
 
 #include "IModSDK.h"
@@ -64,9 +66,13 @@ public:
 
 private:
 	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_ActivateEntity, ZEntityManager* th, ZEntityRef* entity, void* a3);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, void* a3);
 
 private:
-	ModLoader* m_ModLoader= nullptr;
+	ModLoader* m_ModLoader = nullptr;
+	std::multimap<uint64_t, ZEntityRef> m_Entities;
+	std::shared_mutex m_EntityMutex;
 
 #if _DEBUG
 	DebugConsole* m_DebugConsole = nullptr;
