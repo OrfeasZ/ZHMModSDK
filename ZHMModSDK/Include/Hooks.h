@@ -10,6 +10,8 @@
 #include <Glacier/EUpdateMode.h>
 #include <Glacier/ZDelegate.h>
 
+#include "Glacier/TArray.h"
+
 class ZActor;
 class ZComponentCreateInfo;
 class SGameUpdateEvent;
@@ -36,6 +38,7 @@ class ZAchievementManagerSimple;
 class SOnlineEvent;
 class ZUpdateEventContainer;
 class ZInputAction;
+class ZEntityManager;
 
 class ZHMSDK_API Hooks
 {
@@ -67,4 +70,6 @@ public:
 	static Hook<void(ZAchievementManagerSimple* th, const SOnlineEvent& event)>* ZAchievementManagerSimple_OnEventReceived;
 	static Hook<void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)>* ZAchievementManagerSimple_OnEventSent;
 	static Hook<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
+	static Hook<void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, void* a3)>* ZEntityManager_DeleteEntities;
+	static Hook<void(ZEntityManager* th, ZEntityRef* entity, void* a3)>* ZEntityManager_ActivateEntity;
 };
