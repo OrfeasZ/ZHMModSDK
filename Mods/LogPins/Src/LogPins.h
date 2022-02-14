@@ -15,11 +15,12 @@ class LogPins : public IPluginInterface
 public:
 	void PreInit() override;
 	void OnDraw3D(IRenderer* p_Renderer) override;
+	void OnDrawMenu() override;
 
 private:
 	DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef, uint32_t, const ZObjectRef&);
 	DEFINE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef, uint32_t, const ZObjectRef&);
-	
+
 private:
 	std::unordered_map<std::string, bool> m_knownInputs;
 	std::unordered_map<std::string, bool> m_knownOutputs;
@@ -41,6 +42,7 @@ private:
 	static std::deque<std::string> receivedMessages;
 	static std::deque<std::string> sendingMessages;
 
+	static bool sendingPinsEnabled;
 	static std::mutex sendingMutex;
 	static std::condition_variable sendingCV;
 
