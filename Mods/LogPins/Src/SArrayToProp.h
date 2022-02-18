@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <numbers>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -44,18 +45,26 @@ std::map<std::string, PropTypes> mapOfTypes = {
 
 inline SMatrix43 EularToMatrix43(float32 x, float32 y, float32 z, float32 rx, float32 ry, float32 rz)
 {
-	float32 cpsi = cos(rz * (3.14 / 180.f));
-	float32 spsi = sin(rz * (3.14 / 180.f));
-	float32 cth = cos(ry * (3.14 / 180.f));
-	float32 sth = sin(ry * (3.14 / 180.f));
-	float32 cphi = cos(rx * (3.14 / 180.f));
-	float32 sphi = sin(rx * (3.14 / 180.f));
+	float pitch = rx * std::numbers::pi / 180.f;
+	float roll = ry * std::numbers::pi / 180.f;
+	float yaw = rz * std::numbers::pi / 180.f;
+
+	float a = cos(pitch);
+	float b = sin(pitch);
+	float c = cos(roll);
+	float d = sin(roll);
+	float e = cos(yaw);
+	float f = sin(yaw);
+	float ae = a * e, af = a * f, be = b * e, bf = b * f;
 
 	SMatrix43 newTrans = SMatrix43();
-	newTrans.XAxis = SVector3(cpsi * cth, cpsi * sth * sphi - spsi * cphi, cpsi * sth * cphi + spsi * sphi);
-	newTrans.YAxis = SVector3(spsi * cth, spsi * sth * sphi + cpsi * cphi, spsi * sth * cphi - cpsi * sphi);
-	newTrans.ZAxis = SVector3(-sth, cth * sphi, cth * cphi);
+
+	newTrans.XAxis = SVector3(c * e, -c * f, d);
+	newTrans.YAxis = SVector3(af + be * d, ae - bf * d, -b * c);
+	newTrans.ZAxis = SVector3(bf - ae * d, be + af * d, a * c);
+
 	newTrans.Trans = SVector3(x, y, z);
+
 
 	return newTrans;
 }
