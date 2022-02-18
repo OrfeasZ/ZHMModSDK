@@ -13,7 +13,7 @@
 
 #define DEFAULT_SERVER "127.0.0.1"
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT 27015
+#define DEFAULT_PORT 37275
 
 #pragma comment(lib, "Ws2_32.lib")
 
