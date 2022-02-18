@@ -5,10 +5,9 @@
 #include <unordered_map>
 #include <sstream>
 #include <thread> 
-#include <deque> 
+#include <deque>
 
 #include "IPluginInterface.h"
-
 
 class LogPins : public IPluginInterface
 {
@@ -31,6 +30,7 @@ private:
 	std::shared_mutex m_EntityMutex;
 	std::unordered_map<uint64_t, ZEntityRef> m_EntitiesToTrack;
 
+	void UpdateTrackableMap(ZEntityRef entityRef);
 	void DumpDetails(ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef);
 	int AddToSendList(std::string);
 	void ProcessSocketMessageQueue();
@@ -53,6 +53,11 @@ private:
 	bool drawCoverPlane;
 	SMatrix coverPlanePos;
 	SVector3 coverPlaneSize;
+
+	int lastKnownActorId = 0;
+
+	// ZEntityType** ref;
+	ZEntityRef* ref;
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)

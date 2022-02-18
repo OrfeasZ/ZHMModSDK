@@ -1,4 +1,5 @@
 #include "LogPins.h"
+#include "SArrayToProp.h"
 
 #include "Hooks.h"
 #include "Logging.h"
@@ -8,6 +9,7 @@
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZSpatialEntity.h>
 #include <Glacier/ZObject.h>
+#include <Glacier/ZActor.h>
 
 #define DEFAULT_SERVER "127.0.0.1"
 #define DEFAULT_BUFLEN 512
@@ -77,6 +79,17 @@ void LogPins::PreInit()
 
 void LogPins::OnDraw3D(IRenderer* p_Renderer)
 {
+	LogPins::ProcessSocketMessageQueue();
+
+	for (int i = lastKnownActorId; i < *Globals::NextActorId; ++i)
+	{
+		auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+		ZEntityRef s_Ref;
+		s_Actor->GetID(&s_Ref);
+
+		LogPins::UpdateTrackableMap(s_Ref);
+	}
+
 	m_EntityMutex.lock_shared();
 
 	//for (auto& s_Entity : m_EntitiesToTrack)
@@ -155,58 +168,24 @@ void LogPins::ProcessSocketMessageQueue()
 				if (it != m_EntitiesToTrack.end())
 				{
 					auto requestedEnt = m_EntitiesToTrack[requestedEntityId];
+
 					auto s_EntitySpatial = requestedEnt.QueryInterface<ZSpatialEntity>();
 
 					SMatrix s_WorldTransform;
 					Functions::ZSpatialEntity_WorldTransform->Call(s_EntitySpatial, &s_WorldTransform);
-
-					float32 x;
-					std::istringstream(params[2].c_str()) >> x;
-					float32 y;
-					std::istringstream(params[3].c_str()) >> y;
-					float32 z;
-					std::istringstream(params[4].c_str()) >> z;
-
-					float32 rX;
-					std::istringstream(params[5].c_str()) >> rX;
-					float32 rY;
-					std::istringstream(params[6].c_str()) >> rY;
-					float32 rZ;
-					std::istringstream(params[7].c_str()) >> rZ;
-
-					rX *= 3.14 / 180.f;
-					rY *= 3.14 / 180.f;
-					rZ *= 3.14 / 180.f;
-
-					SMatrix43 newTrans = SMatrix43();
-					newTrans.XAxis = SVector3(cos(rZ), -sin(rZ), 0);
-					newTrans.YAxis = SVector3(sin(rZ), cos(rZ), 0);
-					newTrans.ZAxis = SVector3(0, 0, 1);
-					newTrans.Trans = SVector3(x, y, z);
-
-					requestedEnt.SetProperty("m_mTransform", newTrans);
+				
+					requestedEnt.SetProperty("m_mTransform", EularToMatrix43(
+						std::stod(params[2].c_str()),
+						std::stod(params[3].c_str()),
+						std::stod(params[4].c_str()),
+						std::stod(params[5].c_str()),
+						std::stod(params[6].c_str()),
+						std::stod(params[7].c_str())
+					));
 				}
 			}
 			else if (params[0] == "C")
 			{
-				float32 x;
-				std::istringstream(params[2].c_str()) >> x;
-				float32 y;
-				std::istringstream(params[3].c_str()) >> y;
-				float32 z;
-				std::istringstream(params[4].c_str()) >> z;
-
-				float32 rX;
-				std::istringstream(params[5].c_str()) >> rX;
-				float32 rY;
-				std::istringstream(params[6].c_str()) >> rY;
-				float32 rZ;
-				std::istringstream(params[7].c_str()) >> rZ;
-
-				rX *= 3.14 / 180.f;
-				rY *= 3.14 / 180.f;
-				rZ *= 3.14 / 180.f;
-
 				float32 sX;
 				std::istringstream(params[8].c_str()) >> sX;
 				float32 sY;
@@ -215,11 +194,14 @@ void LogPins::ProcessSocketMessageQueue()
 				std::istringstream(params[10].c_str()) >> sZ;
 				coverPlaneSize = SVector3(sX, sY, sZ);
 
-				SMatrix43 newTrans = SMatrix43();
-				newTrans.XAxis = SVector3(cos(rZ), -sin(rZ), 0);
-				newTrans.YAxis = SVector3(sin(rZ), cos(rZ), 0);
-				newTrans.ZAxis = SVector3(0, 0, 1);
-				newTrans.Trans = SVector3(x, y, z);
+				SMatrix43 newTrans = EularToMatrix43(
+					std::stod(params[2].c_str()),
+					std::stod(params[3].c_str()),
+					std::stod(params[4].c_str()),
+					std::stod(params[5].c_str()),
+					std::stod(params[6].c_str()),
+					std::stod(params[7].c_str())
+				);
 
 				Matrix43ToSMatrix(newTrans, &coverPlanePos);
 
@@ -231,8 +213,8 @@ void LogPins::ProcessSocketMessageQueue()
 				if (it != m_EntitiesToTrack.end())
 				{
 					auto requestedEnt = m_EntitiesToTrack[requestedEntityId];
-					bool shouldRotate = params[3] == "true";
-					requestedEnt.SetProperty(params[2].c_str(), shouldRotate);
+
+					SetPropertyFromVectorString(requestedEnt, params[2].c_str(), params[3].c_str(), params, 4, &m_EntitiesToTrack);
 				}
 			}
 			else if (params[0] == "GetHeroPosition")
@@ -251,46 +233,16 @@ void LogPins::ProcessSocketMessageQueue()
 				Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
 				const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
-				float32 x;
-				std::istringstream(params[2].c_str()) >> x;
-				float32 y;
-				std::istringstream(params[3].c_str()) >> y;
-				float32 z;
-				std::istringstream(params[4].c_str()) >> z;
-
-				float32 rX;
-				std::istringstream(params[5].c_str()) >> rX;
-				float32 rY;
-				std::istringstream(params[6].c_str()) >> rY;
-				float32 rZ;
-				std::istringstream(params[7].c_str()) >> rZ;
-
-				rX *= 3.14 / 180.f;
-				rY *= 3.14 / 180.f;
-				rZ *= 3.14 / 180.f;
-
-				/*
-				s_HitmanSpatial->m_mTransform.Trans.x = x;
-				s_HitmanSpatial->m_mTransform.Trans.y = y;
-				s_HitmanSpatial->m_mTransform.Trans.z = z;
-				*/
-				// s_HitmanSpatial->m_mTransform.Trans = SVector3(x, y, z);
-
 				s_LocalHitman.m_ref.GetBaseEntity()->Deactivate(6000);
 
-				SMatrix43 newTrans = SMatrix43();
-				newTrans.XAxis = SVector3(cos(rZ), -sin(rZ), 0);
-				newTrans.YAxis = SVector3(sin(rZ), cos(rZ), 0);
-				newTrans.ZAxis = SVector3(0, 0, 1);
-				newTrans.Trans = SVector3(x, y, z);
-
-				s_HitmanSpatial->m_mTransform = newTrans;
-
-
-				// s_HitmanSpatial->m_mTransform.XAxis.x = cos(rZ);
-				// s_HitmanSpatial->m_mTransform.XAxis.y = -sin(rZ);
-				// s_HitmanSpatial->m_mTransform.YAxis.x = sin(rZ);
-				// s_HitmanSpatial->m_mTransform.YAxis.y = cos(rZ);
+				s_HitmanSpatial->m_mTransform = EularToMatrix43(
+					std::stoul(params[2]),
+					std::stoul(params[3]),
+					std::stoul(params[4]),
+					std::stoul(params[5]),
+					std::stoul(params[6]),
+					std::stoul(params[7])
+				);
 			}
 		}
 	}
@@ -300,8 +252,6 @@ int LogPins::AddToSendList(std::string message)
 {
 	LogPins::sendingMessages.push_back(message);
 	LogPins::sendingCV.notify_one();
-	// Process here for now. Should be done on render!
-	LogPins::ProcessSocketMessageQueue();
 
 	return 0;
 }
@@ -313,7 +263,7 @@ void LogPins::SendToSocketThread()
 	while (runServer)
 	{
 		std::unique_lock<std::mutex> lk(LogPins::sendingMutex);
-		while (LogPins::sendingMessages.empty() || !LogPins::sendingPinsEnabled)
+		while (LogPins::sendingMessages.empty())
 		{
 			LogPins::sendingCV.wait(lk);
 			// std::this_thread::yield();
@@ -335,6 +285,7 @@ void LogPins::ReceiveFromSocketThread()
 {
 	bool shouldReceive = true;
 	char buf[DEFAULT_BUFLEN];
+	std::string pingGameResponse = "PingGame";
 
 	while (shouldReceive)
 	{
@@ -348,9 +299,16 @@ void LogPins::ReceiveFromSocketThread()
 		{
 			std::string message = buf;
 
-			if (message == "exit")
+			if (message == "Exit")
 			{
 				shouldReceive = false;
+			}
+			else if (message == "Ping")
+			{
+				if (sendto(LogPins::instance->s, pingGameResponse.c_str(), pingGameResponse.length(), 0, (struct sockaddr*)&LogPins::instance->si_other, LogPins::instance->slen) == SOCKET_ERROR)
+				{
+					Logger::Info("AddToSendList() failed with error code : {}", WSAGetLastError());
+				}
 			}
 			else
 			{
@@ -395,46 +353,8 @@ void LogPins::OnDrawMenu()
 	}
 }
 
-DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
+void LogPins::UpdateTrackableMap(ZEntityRef entityRef) // , const ZObjectRef& objectRef)
 {
-	std::ostringstream ss;
-	ss << "I_" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
-	std::string s = ss.str();
-
-	LogPins::AddToSendList(s);
-
-	auto pinsIt = m_knownInputs.find(s);
-	if (pinsIt == m_knownInputs.end())
-	{
-		// Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
-
-		// DumpDetails(entityRef, pinId, objectRef);
-
-		m_knownInputs[s] = true;
-	}
-
-	return HookResult<bool>(HookAction::Continue());
-}
-
-DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
-{
-	std::ostringstream ss;
-	ss << "O_" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
-	std::string s = ss.str();
-
-	LogPins::AddToSendList(s);
-
-	auto pinsIt = m_knownOutputs.find(s);
-	if (pinsIt == m_knownOutputs.end())
-	{
-		// Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
-
-		// DumpDetails(entityRef, pinId, objectRef);
-
-		m_knownOutputs[s] = true;
-	}
-
-
 	// Add entity to track
 	auto it = m_EntitiesToTrack.find((*entityRef.m_pEntity)->m_nEntityId);
 	if (it == m_EntitiesToTrack.end())
@@ -453,7 +373,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 				if (prop.m_pType == nullptr || prop.m_pType->getPropertyInfo() == nullptr) continue;
 				auto propInfo = prop.m_pType->getPropertyInfo();
 
-				std::string propTypeName;
+				std::string propName, propTypeName;
 				bool validPropName = false;
 				[&]()
 				{
@@ -461,6 +381,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 					{
 						[&]()
 						{
+							propName = propInfo->m_pName;
 							propTypeName = propInfo->m_pType->typeInfo()->m_pTypeName;
 							validPropName = true;
 						}();
@@ -473,11 +394,23 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 
 				if (propTypeName.empty() || !validPropName) continue;
 
-				if (propTypeName == "TEntityRef<ZSpatialEntity>")
+				if ((*entityRef.m_pEntity)->m_nEntityId == 12379770012806219889 && propName == "m_aValues")
 				{
-					auto propValue = reinterpret_cast<TEntityRef<ZSpatialEntity>*>(reinterpret_cast<uintptr_t>(entityRef.m_pEntity) + prop.m_nOffset);
+					auto* propValue = reinterpret_cast<TArray<TEntityRef<ZItemRepositoryKeyEntity>>*>(reinterpret_cast<uintptr_t>(entityRef.m_pEntity) + prop.m_nOffset);
 
-					auto propEnt = propValue->m_ref.m_pEntity;
+					// propValue->clear();
+					// propValue->resize(0);
+
+					// (*propValue) = *arr;
+
+					// entityRef.SetProperty(propName.c_str(), *propValue);
+				}
+
+				if (propTypeName.starts_with("TEntityRef<") && propTypeName.ends_with("Entity>")) // == "TEntityRef<ZSpatialEntity>")
+				{
+					auto propValue = reinterpret_cast<ZEntityRef*>(reinterpret_cast<uintptr_t>(entityRef.m_pEntity) + prop.m_nOffset);
+
+					auto propEnt = propValue->m_pEntity;
 
 					if (propEnt == nullptr) continue;
 
@@ -486,16 +419,16 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 					auto propIt = m_EntitiesToTrack.find((*propEnt)->m_nEntityId);
 					if (propIt == m_EntitiesToTrack.end())
 					{
-						m_EntitiesToTrack[(*propEnt)->m_nEntityId] = propValue->m_ref;
+						m_EntitiesToTrack[(*propEnt)->m_nEntityId] = *propValue;
 					}
 				}
-				else if (propTypeName == "TArray<TEntityRef<ZSpatialEntity>>")
+				else if (propTypeName.starts_with("TArray<TEntityRef<") && propTypeName.ends_with("Entity>>"))// propTypeName == "TArray<TEntityRef<ZSpatialEntity>>")
 				{
-					auto propValue = reinterpret_cast<TArray<TEntityRef<ZSpatialEntity>>*>(reinterpret_cast<uintptr_t>(entityRef.m_pEntity) + prop.m_nOffset);
+					auto propValue = reinterpret_cast<TArray<ZEntityRef>*>(reinterpret_cast<uintptr_t>(entityRef.m_pEntity) + prop.m_nOffset);
 
 					for (auto containedEnt : *propValue)
 					{
-						auto propEnt = containedEnt.m_ref.m_pEntity;
+						auto propEnt = containedEnt.m_pEntity;
 
 						if (propEnt == nullptr) continue;
 
@@ -503,7 +436,7 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 						auto propIt = m_EntitiesToTrack.find(entIt);
 						if (propIt == m_EntitiesToTrack.end())
 						{
-							m_EntitiesToTrack[entIt] = containedEnt.m_ref;
+							m_EntitiesToTrack[entIt] = containedEnt;
 						}
 					}
 				}
@@ -512,6 +445,57 @@ DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint
 
 		m_EntityMutex.unlock();
 	}
+}
+
+DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalInputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
+{
+	if (LogPins::sendingPinsEnabled)
+	{
+		std::ostringstream ss;
+		ss << "I_" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
+		std::string s = ss.str();
+
+		LogPins::AddToSendList(s);
+
+		auto pinsIt = m_knownInputs.find(s);
+		if (pinsIt == m_knownInputs.end())
+		{
+			// Logger::Info("Pin Input: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
+
+			// DumpDetails(entityRef, pinId, objectRef);
+
+			m_knownInputs[s] = true;
+		}
+	}
+
+	LogPins::UpdateTrackableMap(entityRef);
+
+	return HookResult<bool>(HookAction::Continue());
+}
+
+DECLARE_PLUGIN_DETOUR(LogPins, bool, SignalOutputPin, ZEntityRef entityRef, uint32_t pinId, const ZObjectRef& objectRef)
+{
+	if (LogPins::sendingPinsEnabled)
+	{
+		std::ostringstream ss;
+		ss << "O_" << pinId << "_" << (*entityRef.m_pEntity)->m_nEntityId;
+		std::string s = ss.str();
+
+		LogPins::AddToSendList(s);
+
+		auto pinsIt = m_knownOutputs.find(s);
+		if (pinsIt == m_knownOutputs.end())
+		{
+			// Logger::Info("Pin Output: {} on {}", pinId, (*entityRef.m_pEntity)->m_nEntityId);
+
+			// DumpDetails(entityRef, pinId, objectRef);
+
+			m_knownOutputs[s] = true;
+		}
+	}
+
+
+	LogPins::UpdateTrackableMap(entityRef);
 
 	return HookResult<bool>(HookAction::Continue());
 }
