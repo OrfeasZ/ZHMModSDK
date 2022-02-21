@@ -9,6 +9,8 @@
 
 #include "IPluginInterface.h"
 
+class IBoolCondition;
+
 class LogPins : public IPluginInterface
 {
 public:
@@ -41,6 +43,8 @@ private:
 	static LogPins* instance;
 	static std::deque<std::string> receivedMessages;
 	static std::deque<std::string> sendingMessages;
+	static std::shared_mutex receivedMessagesLock;
+	static std::shared_mutex sendingMessagesLock;
 
 	static bool sendingPinsEnabled;
 	static std::mutex sendingMutex;
@@ -56,8 +60,7 @@ private:
 
 	int lastKnownActorId = 0;
 
-	// ZEntityType** ref;
-	ZEntityRef* ref;
+	TArray<ZEntityRef>* propRef;
 };
 
 DEFINE_ZHM_PLUGIN(LogPins)

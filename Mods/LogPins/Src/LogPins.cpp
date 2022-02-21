@@ -26,6 +26,8 @@ class ZEntityBaseReplica : public ZEntityImpl {};
 LogPins* LogPins::instance;
 std::deque<std::string> LogPins::receivedMessages;
 std::deque<std::string> LogPins::sendingMessages;
+std::shared_mutex LogPins::receivedMessagesLock;
+std::shared_mutex LogPins::sendingMessagesLock;
 
 std::mutex LogPins::sendingMutex;
 std::condition_variable LogPins::sendingCV;
@@ -128,8 +130,10 @@ void LogPins::ProcessSocketMessageQueue()
 {
 	if (!LogPins::receivedMessages.empty())
 	{
+		LogPins::receivedMessagesLock.lock_shared();
 		std::string currentMessage = LogPins::receivedMessages.front();
 		LogPins::receivedMessages.pop_front();
+		LogPins::receivedMessagesLock.unlock_shared();
 
 		Logger::Info("Received From Socket: {}", currentMessage);
 
@@ -162,28 +166,6 @@ void LogPins::ProcessSocketMessageQueue()
 			{
 				entityToTrack = requestedEntityId;
 			}
-			else if (params[0] == "P")
-			{
-				auto it = m_EntitiesToTrack.find(requestedEntityId);
-				if (it != m_EntitiesToTrack.end())
-				{
-					auto requestedEnt = m_EntitiesToTrack[requestedEntityId];
-
-					auto s_EntitySpatial = requestedEnt.QueryInterface<ZSpatialEntity>();
-
-					SMatrix s_WorldTransform;
-					Functions::ZSpatialEntity_WorldTransform->Call(s_EntitySpatial, &s_WorldTransform);
-				
-					requestedEnt.SetProperty("m_mTransform", EularToMatrix43(
-						std::stod(params[2].c_str()),
-						std::stod(params[3].c_str()),
-						std::stod(params[4].c_str()),
-						std::stod(params[5].c_str()),
-						std::stod(params[6].c_str()),
-						std::stod(params[7].c_str())
-					));
-				}
-			}
 			else if (params[0] == "C")
 			{
 				float32 sX;
@@ -215,6 +197,32 @@ void LogPins::ProcessSocketMessageQueue()
 					auto requestedEnt = m_EntitiesToTrack[requestedEntityId];
 
 					SetPropertyFromVectorString(requestedEnt, params[2].c_str(), params[3].c_str(), params, 4, &m_EntitiesToTrack);
+				}
+			}
+			else if (params[0] == "SignalPin")
+			{
+				auto it = m_EntitiesToTrack.find(requestedEntityId);
+				if (it != m_EntitiesToTrack.end())
+				{
+					auto requestedEnt = m_EntitiesToTrack[requestedEntityId];
+
+					char* inputString = new char[params[3].size()];
+					for (int i = 0; i < params[3].size(); i++)
+					{
+						inputString[i] = params[3].c_str()[i];
+					}
+					inputString[params[3].size()] = '\0';
+
+					auto pinName = ZString(inputString);
+
+					if (params[2] == "Input")
+					{
+						requestedEnt.SignalInputPin(pinName);
+					}
+					else
+					{
+						requestedEnt.SignalOutputPin(pinName);
+					}
 				}
 			}
 			else if (params[0] == "GetHeroPosition")
@@ -250,7 +258,9 @@ void LogPins::ProcessSocketMessageQueue()
 
 int LogPins::AddToSendList(std::string message)
 {
+	LogPins::sendingMessagesLock.lock_shared();
 	LogPins::sendingMessages.push_back(message);
+	LogPins::sendingMessagesLock.unlock_shared();
 	LogPins::sendingCV.notify_one();
 
 	return 0;
@@ -269,8 +279,11 @@ void LogPins::SendToSocketThread()
 			// std::this_thread::yield();
 		}
 
+		LogPins::sendingMessagesLock.lock_shared();
+		if (LogPins::sendingMessages.empty()) continue;
 		std::string currentMessage = LogPins::sendingMessages.front();
 		LogPins::sendingMessages.pop_front();
+		LogPins::sendingMessagesLock.unlock_shared();
 
 		//start communication
 		//send the message
@@ -312,7 +325,9 @@ void LogPins::ReceiveFromSocketThread()
 			}
 			else
 			{
+				LogPins::receivedMessagesLock.lock_shared();
 				LogPins::receivedMessages.push_back(message);
+				LogPins::receivedMessagesLock.unlock_shared();
 			}
 		}
 	}
@@ -348,7 +363,9 @@ void LogPins::OnDrawMenu()
 {
 	if (ImGui::Button(LogPins::sendingPinsEnabled ? "DISABLE PINS" : "ENABLE PINS"))
 	{
+		LogPins::sendingMessagesLock.lock_shared();
 		LogPins::sendingMessages.clear();
+		LogPins::sendingMessagesLock.unlock_shared();
 		LogPins::sendingPinsEnabled = !LogPins::sendingPinsEnabled;
 	}
 }
@@ -394,17 +411,32 @@ void LogPins::UpdateTrackableMap(ZEntityRef entityRef) // , const ZObjectRef& ob
 
 				if (propTypeName.empty() || !validPropName) continue;
 
-				if ((*entityRef.m_pEntity)->m_nEntityId == 12379770012806219889 && propName == "m_aValues")
+				/*
+				if ((*entityRef.m_pEntity)->m_nEntityId == 12379792271061294201 && propName == "m_aValues")
 				{
-					auto* propValue = reinterpret_cast<TArray<TEntityRef<ZItemRepositoryKeyEntity>>*>(reinterpret_cast<uintptr_t>(entityRef.m_pEntity) + prop.m_nOffset);
+					auto* propValue = reinterpret_cast<TArray<ZEntityRef>*>(reinterpret_cast<uintptr_t>(entityRef.m_pEntity) + prop.m_nOffset);
+
+					// propValue->clear();
+					propValue->push_back(*propRef->begin());
+
+					// propValue[0] = propRef[0];
+
+					// auto val = propValue[0];
 
 					// propValue->clear();
 					// propValue->resize(0);
 
 					// (*propValue) = *arr;
 
-					// entityRef.SetProperty(propName.c_str(), *propValue);
+					// entityRef.SetProperty(propName.c_str(), *propRef);
 				}
+				else if ((*entityRef.m_pEntity)->m_nEntityId == 12379655700448744392 && propName == "m_aValues")
+				{
+					auto* propValue = reinterpret_cast<TArray<ZEntityRef>*>(reinterpret_cast<uintptr_t>(entityRef.m_pEntity) + prop.m_nOffset);
+
+					propRef = propValue;
+				}
+				*/
 
 				if (propTypeName.starts_with("TEntityRef<") && propTypeName.ends_with("Entity>")) // == "TEntityRef<ZSpatialEntity>")
 				{
