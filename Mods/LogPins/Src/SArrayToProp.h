@@ -25,6 +25,7 @@ enum class PropTypes
 	t_guid,
 	t_float,
 	t_color,
+	t_vector3,
 	t_matrix43,
 	t_entityRef,
 	t_arrayEntityRef,
@@ -38,6 +39,7 @@ std::map<std::string, PropTypes> mapOfTypes = {
 	{"ZString", PropTypes::t_string},
 	{"ZGuid", PropTypes::t_guid},
 	{"SColorRGB", PropTypes::t_color},
+	{"SVector3", PropTypes::t_vector3},
 	{"SMatrix43", PropTypes::t_matrix43},
 	{"SEntityTemplateReference", PropTypes::t_entityRef},
 	{"TArray<SEntityTemplateReference>", PropTypes::t_arrayEntityRef},
@@ -45,17 +47,17 @@ std::map<std::string, PropTypes> mapOfTypes = {
 
 inline SMatrix43 EularToMatrix43(float32 x, float32 y, float32 z, float32 rx, float32 ry, float32 rz)
 {
-	float pitch = rx * std::numbers::pi / 180.f;
-	float roll = ry * std::numbers::pi / 180.f;
-	float yaw = rz * std::numbers::pi / 180.f;
+	float32 pitch = rx * std::numbers::pi / 180.f;
+	float32 roll = ry * std::numbers::pi / 180.f;
+	float32 yaw = rz * std::numbers::pi / 180.f;
 
-	float a = cos(pitch);
-	float b = sin(pitch);
-	float c = cos(roll);
-	float d = sin(roll);
-	float e = cos(yaw);
-	float f = sin(yaw);
-	float ae = a * e, af = a * f, be = b * e, bf = b * f;
+	float32 a = cos(pitch);
+	float32 b = sin(pitch);
+	float32 c = cos(roll);
+	float32 d = sin(roll);
+	float32 e = cos(yaw);
+	float32 f = sin(yaw);
+	float32 ae = a * e, af = a * f, be = b * e, bf = b * f;
 
 	SMatrix43 newTrans = SMatrix43();
 
@@ -223,12 +225,17 @@ inline void SetPropertyFromVectorString(ZEntityRef entity, std::string propName,
 		{
 			auto color = SColorRGB();
 
-			color.r = std::stoul(values[firstIndex].substr(1, 2), nullptr, 16);
-			color.g = std::stoul(values[firstIndex].substr(3, 2), nullptr, 16);
-			color.b = std::stoul(values[firstIndex].substr(5, 2), nullptr, 16);
+			color.r = std::stoul(values[firstIndex].substr(1, 2), nullptr, 16) / 255.0;
+			color.g = std::stoul(values[firstIndex].substr(3, 2), nullptr, 16) / 255.0;
+			color.b = std::stoul(values[firstIndex].substr(5, 2), nullptr, 16) / 255.0;
 
 			entity.SetProperty(propName.c_str(), color);
 
+			break;
+		}
+		case PropTypes::t_vector3:
+		{
+			entity.SetProperty(propName.c_str(), SVector3(std::stod(values[firstIndex]), std::stod(values[firstIndex + 1]), std::stod(values[firstIndex + 2])));
 			break;
 		}
 		case PropTypes::t_matrix43:
