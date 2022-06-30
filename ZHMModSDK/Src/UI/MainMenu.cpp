@@ -24,6 +24,11 @@ void MainMenu::Draw(bool p_HasFocus)
 		ModSelector::Show();
 	}
 
+	if (ImGui::Button("TOGGLE DRAWING ENTITY BBOXES"))
+	{
+		ModSDK::GetInstance()->ToggleBboxDrawing();
+	}
+
 	ModSDK::GetInstance()->OnDrawMenu();
 
 	ImGui::EndMainMenuBar();

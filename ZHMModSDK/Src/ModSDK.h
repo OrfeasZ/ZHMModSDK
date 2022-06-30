@@ -47,6 +47,7 @@ public:
 	void OnImGuiInit();
 	void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
 	void OnModUnloaded(const std::string& p_Name);
+	void ToggleBboxDrawing();
 
 private:
 	void OnEngineInit();
@@ -83,4 +84,5 @@ private:
 	uint32_t m_SizeOfCode;
 	uint32_t m_ImageSize;
 	bool m_ImGuiInitialized = false;
+	bool m_DoDrawBboxes = true;
 };

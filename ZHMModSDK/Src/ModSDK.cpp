@@ -149,30 +149,33 @@ void ModSDK::OnDraw3D(IRenderer* p_Renderer)
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnDraw3D(p_Renderer);
 
-	m_EntityMutex.lock_shared();
-
-	for (auto s_Ref : m_Entities)
+	if (m_DoDrawBboxes)
 	{
-		auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+		m_EntityMutex.lock_shared();
 
-		if (!s_SpatialEntity)
-			continue;
+		for (auto s_Ref : m_Entities)
+		{
+			auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-		SMatrix s_Transform;
-		Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
-		
-		float4 s_Min, s_Max;
+			if (!s_SpatialEntity)
+				continue;
 
-		s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+			SMatrix s_Transform;
+			Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
 
-		p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(1.f, 0.f, 0.f, 1.f));
-		
-		SVector2 s_ScreenPos;
-		if (p_Renderer->WorldToScreen(SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos))
-			p_Renderer->DrawText2D(std::to_string((*s_Ref.m_pEntity)->m_nEntityId).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
+			float4 s_Min, s_Max;
+
+			s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+
+			p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(1.f, 0.f, 0.f, 1.f));
+
+			SVector2 s_ScreenPos;
+			if (p_Renderer->WorldToScreen(SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos))
+				p_Renderer->DrawText2D(std::to_string((*s_Ref.m_pEntity)->m_nEntityId).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
+		}
+
+		m_EntityMutex.unlock_shared();
 	}
-
-	m_EntityMutex.unlock_shared();
 }
 
 void ModSDK::OnImGuiInit()
@@ -203,6 +206,11 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
 void ModSDK::OnModUnloaded(const std::string& p_Name)
 {
 	
+}
+
+void ModSDK::ToggleBboxDrawing()
+{
+	m_DoDrawBboxes = !m_DoDrawBboxes;
 }
 
 void ModSDK::OnEngineInit()
