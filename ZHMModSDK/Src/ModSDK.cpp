@@ -151,7 +151,7 @@ void ModSDK::OnDraw3D(IRenderer* p_Renderer)
 
 	m_EntityMutex.lock_shared();
 
-	for (auto& [s_Id, s_Ref] : m_Entities)
+	for (auto s_Ref : m_Entities)
 	{
 		auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
@@ -169,7 +169,7 @@ void ModSDK::OnDraw3D(IRenderer* p_Renderer)
 		
 		SVector2 s_ScreenPos;
 		if (p_Renderer->WorldToScreen(SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos))
-			p_Renderer->DrawText2D(std::to_string(s_Id).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
+			p_Renderer->DrawText2D(std::to_string((*s_Ref.m_pEntity)->m_nEntityId).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
 	}
 
 	m_EntityMutex.unlock_shared();
@@ -305,7 +305,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_ActivateEntity, ZEntity
 	Logger::Trace("Activating entity of type '{}' with id '{:x}' at {}.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity->m_pEntity)->m_nEntityId, fmt::ptr(entity->m_pEntity));
 
 	m_EntityMutex.lock();
-	m_Entities.insert({ (*entity->m_pEntity)->m_nEntityId, *entity });
+	m_Entities.insert(*entity);
 	m_EntityMutex.unlock();
 
 	return HookResult<void>(HookAction::Continue());
@@ -320,19 +320,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntity
 		const auto& s_Interfaces = *(*entities[i].m_pEntity)->m_pInterfaces;
 		Logger::Trace("Deleting entity of type '{}' with id '{:x}' at {}.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entities[i].m_pEntity)->m_nEntityId, fmt::ptr(entities[i].m_pEntity));
 
-		auto s_BaseIt = m_Entities.equal_range((*entities[i].m_pEntity)->m_nEntityId);
-
-		for (auto s_It = s_BaseIt.first; s_It != s_BaseIt.second;)
-		{
-			if (s_It->second.m_pEntity == entities[i].m_pEntity)
-			{
-				s_It = m_Entities.erase(s_It);
-			}
-			else
-			{
-				++s_It;
-			}
-		}
+		m_Entities.erase(entities[i]);
 	}
 
 	m_EntityMutex.unlock();

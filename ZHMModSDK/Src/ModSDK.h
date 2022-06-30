@@ -1,12 +1,13 @@
 #pragma once
 
-#include <map>
+#include <unordered_set>
 #include <memory>
 #include <shared_mutex>
 #include <string>
 
 #include "IModSDK.h"
 #include "Hooks.h"
+#include "Glacier/ZEntity.h"
 
 class IRenderer;
 class IPluginInterface;
@@ -71,7 +72,7 @@ private:
 
 private:
 	ModLoader* m_ModLoader = nullptr;
-	std::multimap<uint64_t, ZEntityRef> m_Entities;
+	std::unordered_set<ZEntityRef, ZEntityRefHasher> m_Entities;
 	std::shared_mutex m_EntityMutex;
 
 #if _DEBUG

@@ -305,6 +305,23 @@ public:
 	{
 		return m_pEntity != nullptr && (*m_pEntity) != nullptr;
 	}
+
+	bool operator == (const ZEntityRef& right) const
+	{
+		return m_pEntity == right.m_pEntity;
+	}
+};
+
+class ZEntityRefHasher
+{
+public:
+	std::size_t operator()(ZEntityRef const& p_entityref) const
+	{
+		return m_hasher(p_entityref.m_pEntity);
+	}
+
+private:
+	std::hash<ZEntityType**> m_hasher;
 };
 
 template <typename T>
