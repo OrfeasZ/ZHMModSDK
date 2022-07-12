@@ -36,31 +36,14 @@ FreeCam::~FreeCam()
 	// Reset the camera to default when unloading with freecam active.
 	if (m_FreeCamActive)
 	{
-		TEntityRef<IRenderDestinationEntity> s_RenderDest;
-		Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
-
-		s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
-		
-		// Enable Hitman input.
-		TEntityRef<ZHitman5> s_LocalHitman;
-		Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-		if (s_LocalHitman)
-		{
-			auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
-
-			if (s_InputControl)
-			{
-				Logger::Debug("Got local hitman entity and input control! Enabling input. {} {}", fmt::ptr(s_InputControl), fmt::ptr(s_LocalHitman.m_pInterfaceRef));
-				s_InputControl->m_bActive = true;
-			}
-		}
+		FreeCam::DisableFreecam();
 	}
 }
 
 void FreeCam::PreInit()
 {
 	Hooks::ZInputAction_Digital->AddDetour(this, &FreeCam::ZInputAction_Digital);
+	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &FreeCam::OnLoadScene);
 }
 
 void FreeCam::OnEngineInitialized()
@@ -108,46 +91,44 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 		}
 		else
 		{
-			s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
-
-			// Enable Hitman input.
-			TEntityRef<ZHitman5> s_LocalHitman;
-			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-			if (s_LocalHitman)
-			{
-				auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
-
-				if (s_InputControl)
-				{
-					Logger::Debug("Got local hitman entity and input control! Enabling input. {} {}", fmt::ptr(s_InputControl), fmt::ptr(s_LocalHitman.m_pInterfaceRef));
-					s_InputControl->m_bActive = true;
-				}
-			}
+			FreeCam::DisableFreecam();
 		}
 	}
 
 	// While freecam is active, only enable hitman input when the "freeze camera" button is pressed.
+	bool s_FreezeFreeCam = false;
 	if (m_FreeCamActive)
 	{
 		if (Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionKb, -1))
 			m_FreeCamFrozen = !m_FreeCamFrozen;
 
-		const bool s_FreezeFreeCam = Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionGc, -1) || m_FreeCamFrozen;
+		s_FreezeFreeCam = Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionGc, -1) || m_FreeCamFrozen;
 		
 		(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->m_bFreezeCamera = s_FreezeFreeCam;
-
-		TEntityRef<ZHitman5> s_LocalHitman;
-		Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-		if (s_LocalHitman)
-		{
-			auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
-
-			if (s_InputControl)
-				s_InputControl->m_bActive = s_FreezeFreeCam;
-		}
 	}
+
+	TEntityRef<ZHitman5> s_LocalHitman;
+	Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+	if (s_LocalHitman)
+	{
+		auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
+
+		if (s_InputControl)
+			s_InputControl->m_bActive = !m_FreeCamActive || s_FreezeFreeCam;
+	}
+}
+
+void FreeCam::DisableFreecam()
+{
+	auto s_Camera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
+	TEntityRef<IRenderDestinationEntity> s_RenderDest;
+	Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
+
+	// If the current source is not our freecam, the game has changed it and we shouldn't touch it
+	if (s_RenderDest.m_pInterfaceRef && *s_RenderDest.m_pInterfaceRef->GetSource() == s_Camera.m_ref)
+		s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
+
+	m_FreeCamActive = false;
 }
 
 void FreeCam::OnDrawMenu()
@@ -168,6 +149,16 @@ DECLARE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int
 		return HookResult(HookAction::Return(), true);
 
 	return HookResult<bool>(HookAction::Continue());
+}
+
+DECLARE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
+{
+	if (m_FreeCamActive)
+	{
+		Logger::Debug("Scene changed, disabling freecam...");
+		FreeCam::DisableFreecam();
+	}
+	return HookResult<void>(HookAction::Continue());
 }
 
 DECLARE_ZHM_PLUGIN(FreeCam);
