@@ -84,5 +84,5 @@ private:
 	uint32_t m_SizeOfCode;
 	uint32_t m_ImageSize;
 	bool m_ImGuiInitialized = false;
-	bool m_DoDrawBboxes = true;
+	bool m_DoDrawBboxes = false;
 };
