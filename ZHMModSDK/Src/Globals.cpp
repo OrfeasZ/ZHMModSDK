@@ -30,9 +30,9 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
-	"\x48\x8D\x0D\x00\x00\x00\x00\x48\x89\x5D\x80",
-	"xxx????xxxx",
-	3,
+	"\x48\x8d\x55\x00\x89\x7d\x00\x48\x8d\x0d",
+	"xxxxxxxxxx",
+	10,
 	ZGameContext*, GameContext
 );
 

@@ -1,12 +1,13 @@
 #pragma once
 
-#include <map>
+#include <unordered_set>
 #include <memory>
 #include <shared_mutex>
 #include <string>
 
 #include "IModSDK.h"
 #include "Hooks.h"
+#include "Glacier/ZEntity.h"
 
 class IRenderer;
 class IPluginInterface;
@@ -46,6 +47,7 @@ public:
 	void OnImGuiInit();
 	void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
 	void OnModUnloaded(const std::string& p_Name);
+	void ToggleBboxDrawing();
 
 private:
 	void OnEngineInit();
@@ -71,7 +73,7 @@ private:
 
 private:
 	ModLoader* m_ModLoader = nullptr;
-	std::multimap<uint64_t, ZEntityRef> m_Entities;
+	std::unordered_set<ZEntityRef, ZEntityRefHasher> m_Entities;
 	std::shared_mutex m_EntityMutex;
 
 #if _DEBUG
@@ -82,4 +84,5 @@ private:
 	uint32_t m_SizeOfCode;
 	uint32_t m_ImageSize;
 	bool m_ImGuiInitialized = false;
+	bool m_DoDrawBboxes = false;
 };
