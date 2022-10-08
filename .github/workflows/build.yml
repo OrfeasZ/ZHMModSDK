@@ -36,7 +36,7 @@ jobs:
       run: |
         mkdir _build-${{ matrix.buildpreset }}
         cd _build-${{ matrix.buildpreset }}
-        cmake --preset ${{ matrix.buildpreset }}
+        cmake --preset ${{ matrix.buildpreset }} ..
 
     - name: Build
       run: |
