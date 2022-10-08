@@ -22,7 +22,7 @@
         },
         "VCPKG_TARGET_TRIPLET": "x64-windows",
         "VCPKG_HOST_TRIPLET": "x64-windows",
-        "DIRECTX_DXC_PATH": "$env{VCPKG_ROOT}/installed/x64-windows/tools/directx-dxc",
+        //"DIRECTX_DXC_PATH": "${sourceDir}/_build/${presetName}/vcpkg_installed/x64-windows/tools/directx-dxc",
         "BUILD_XAUDIO_WIN10": false,
         "BUILD_XAUDIO_REDIST": true
       },
