@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        buildtype: [ RelWithDebInfo, Debug ]
+        buildpreset: [ x64-Release, x64-Debug ]
 
     steps:
     - name: Get latest CMake and ninja
@@ -34,21 +34,17 @@ jobs:
 
     - name: Generate projects
       run: |
-        mkdir _build-${{ matrix.buildtype }}
-        cd _build-${{ matrix.buildtype }}
-        cmake -G Ninja `
-          -DCMAKE_BUILD_TYPE=${{ matrix.buildtype }} `
-          -DCMAKE_CXX_COMPILER=cl `
-          -DCMAKE_C_COMPILER=cl `
-          ..
+        mkdir _build-${{ matrix.buildpreset }}
+        cd _build-${{ matrix.buildpreset }}
+        cmake --preset ${{ matrix.buildpreset }}
 
     - name: Build
       run: |
-        cmake --build _build-${{ matrix.buildtype }}
+        cmake --build --preset ${{ matrix.buildpreset }}
 
     - name: Copy SDK and loader artifacts
       run: |
-        cd _build-${{ matrix.buildtype }}
+        cd _build-${{ matrix.buildpreset }}
         mkdir _sdk
         Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _sdk/
         Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/
@@ -58,7 +54,7 @@ jobs:
 
     - name: Copy devloader artifacts
       run: |
-        cd _build-${{ matrix.buildtype }}
+        cd _build-${{ matrix.buildpreset }}
         mkdir _devloader
         Copy-Item Tools/DevLoader/DevLoader.exe -Destination _devloader/
         Copy-Item Tools/DevLoader/DevLoader.pdb -Destination _devloader/
@@ -66,7 +62,7 @@ jobs:
 
     - name: Copy mod artifacts
       run: |
-        cd _build-${{ matrix.buildtype }}
+        cd _build-${{ matrix.buildpreset }}
         mkdir _mods
         Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_mods"  ($_.Name + ".dll")) }
         Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_mods"  ($_.Name + ".pdb")) }
@@ -75,24 +71,24 @@ jobs:
     - name: Archive SDK and loader
       uses: actions/upload-artifact@v2
       with:
-        name: mod-loader-${{ matrix.buildtype }}
+        name: mod-loader-${{ matrix.buildpreset }}
         path: |
-          _build-${{ matrix.buildtype }}/_sdk/*
+          _build-${{ matrix.buildpreset }}/_sdk/*
 
     - name: Archive mods
       uses: actions/upload-artifact@v2
       with:
-        name: mods-${{ matrix.buildtype }}
+        name: mods-${{ matrix.buildpreset }}
         path: |
-          _build-${{ matrix.buildtype }}/_mods/*
+          _build-${{ matrix.buildpreset }}/_mods/*
 
     - name: Archive devloader
       uses: actions/upload-artifact@v2
-      if: matrix.buildtype == 'Debug'
+      if: matrix.buildpreset == 'x64-Debug'
       with:
-        name: devloader-${{ matrix.buildtype }}
+        name: devloader-${{ matrix.buildpreset }}
         path: |
-          _build-${{ matrix.buildtype }}/_devloader/*
+          _build-${{ matrix.buildpreset }}/_devloader/*
 
   create_release:
     name: Create release
