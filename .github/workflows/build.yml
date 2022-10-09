@@ -38,7 +38,7 @@ jobs:
 
     - name: Build
       run: |
-        cmake --build _build/${{ matrix.buildpreset }}
+        cmake --build _build/${{ matrix.buildpreset }} --parallel
 
     - name: Copy SDK and loader artifacts
       run: |
