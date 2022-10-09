@@ -44,9 +44,9 @@ namespace Rendering
 
 		struct InstalledHook
 		{
-			uintptr_t* VTable;
+			void** VTable;
 			int Index;
-			uintptr_t OriginalAddr;
+			void* OriginalAddr;
 		};
 
 	public:
@@ -55,7 +55,7 @@ namespace Rendering
 
 	private:
 		static std::optional<VTables> GetVTables();
-		static void InstallHook(void* p_VTable, int p_Index, void* p_Target, void** p_Original);
+		static void InstallHook(void* p_VTable, int p_Index, void* p_Detour, void** p_Original);
 		static void RemoveHook(const InstalledHook& p_Hook);
 
 		DECLARE_D3D12_HOOK(HRESULT, IDXGISwapChain, Present, UINT SyncInterval, UINT Flags);

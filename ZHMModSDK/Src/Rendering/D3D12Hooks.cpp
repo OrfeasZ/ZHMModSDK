@@ -3,10 +3,12 @@
 #include <d3d12.h>
 #include <dxgi.h>
 #include <dxgi1_4.h>
+#include <filesystem>
 
 
 #include "D3DUtils.h"
 #include "Logging.h"
+#include "MinHook.h"
 #include "Renderers/DirectXTKRenderer.h"
 #include "Util/ProcessUtils.h"
 
@@ -183,10 +185,36 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	}
 #endif
 
+	static wchar_t s_SystemDir[8192];
+
+	if (!GetSystemDirectoryW(s_SystemDir, sizeof(s_SystemDir) / sizeof(wchar_t)))
+		return std::nullopt;
+
+	std::filesystem::path s_DxgiPath = s_SystemDir;
+	s_DxgiPath += "/dxgi.dll";
+
+	std::filesystem::path s_D3D12Path = s_SystemDir;
+	s_D3D12Path += "/d3d12.dll";
+
+	auto s_DxgiModule = LoadLibraryW(canonical(s_DxgiPath).c_str());
+	auto s_D3D12Module = LoadLibraryW(canonical(s_D3D12Path).c_str());
+
+	if (s_DxgiModule == nullptr || s_D3D12Module == nullptr)
+		return std::nullopt;
+
+	typedef HRESULT (WINAPI* CreateDXGIFactory1_t)(REFIID riid, _COM_Outptr_ void** ppFactory);
+	typedef HRESULT (WINAPI* D3D12CreateDevice_t)(_In_opt_ IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, _In_ REFIID riid, _COM_Outptr_opt_ void** ppDevice);
+
+	auto s_CreateDXGIFactory1 = reinterpret_cast<CreateDXGIFactory1_t>(GetProcAddress(s_DxgiModule, "CreateDXGIFactory1"));
+	auto s_D3D12CreateDevice = reinterpret_cast<D3D12CreateDevice_t>(GetProcAddress(s_D3D12Module, "D3D12CreateDevice"));
+
+	if (s_CreateDXGIFactory1 == nullptr || s_D3D12CreateDevice == nullptr)
+		return std::nullopt;
+
 	// If we don't, try to find them from scratch.
 	ScopedD3DRef<IDXGIFactory1> s_Factory;
 
-	if (CreateDXGIFactory1(REF_IID_PPV_ARGS(s_Factory)) != S_OK)
+	if (s_CreateDXGIFactory1(REF_IID_PPV_ARGS(s_Factory)) != S_OK)
 		return std::nullopt;
 
 	ScopedD3DRef<IDXGIAdapter> s_Adapter;
@@ -207,7 +235,7 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 	ScopedD3DRef<ID3D12Device> s_Device;
 
-	if (D3D12CreateDevice(s_Adapter, D3D_FEATURE_LEVEL_12_0, REF_IID_PPV_ARGS(s_Device)) != S_OK)
+	if (s_D3D12CreateDevice(s_Adapter, D3D_FEATURE_LEVEL_12_0, REF_IID_PPV_ARGS(s_Device)) != S_OK)
 		return std::nullopt;
 
 	Logger::Debug("[D3D12Hooks] Creating command queue.");
@@ -314,41 +342,41 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	return s_VTables;
 }
 
-void D3D12Hooks::InstallHook(void* p_VTable, int p_Index, void* p_Target, void** p_Original)
+void D3D12Hooks::InstallHook(void* p_VTable, int p_Index, void* p_Detour, void** p_Original)
 {
-	auto s_VTableEntries = static_cast<uintptr_t*>(p_VTable);
-	auto s_TargetAddr = reinterpret_cast<uintptr_t>(p_Target);
-
+	auto s_VTableEntries = static_cast<void**>(p_VTable);
 	auto s_OriginalAddr = s_VTableEntries[p_Index];
+	
+	auto s_Result = MH_CreateHook(s_OriginalAddr, p_Detour, p_Original);
 
-	DWORD s_OriginalProtection;
-	VirtualProtect(&s_VTableEntries[p_Index], sizeof(uintptr_t), PAGE_EXECUTE_READWRITE, &s_OriginalProtection);
+	if (s_Result != MH_OK)
+	{
+		Logger::Error("Could not create D3D12 vtable hook at address {}. Error code: {}.", fmt::ptr(s_OriginalAddr), s_Result);
+		return;
+	}
 
-	// Overwrite vtable.
-	s_VTableEntries[p_Index] = s_TargetAddr;
+	s_Result = MH_EnableHook(s_OriginalAddr);
 
-	// Restore memory protection flags.
-	VirtualProtect(&s_VTableEntries[p_Index], sizeof(uintptr_t), s_OriginalProtection, nullptr);
+	if (s_Result != MH_OK)
+	{
+		Logger::Error("Could install detour for D3D12 vtable hook at address {}. Error code: {}.", fmt::ptr(s_OriginalAddr), s_Result);
+		return;
+	}
 
 	InstalledHook s_Hook;
 	s_Hook.VTable = s_VTableEntries;
 	s_Hook.Index = p_Index;
 	s_Hook.OriginalAddr = s_OriginalAddr;
+	s_Result = MH_EnableHook(s_OriginalAddr);
 
 	m_InstalledHooks.push_back(s_Hook);
 
-	*p_Original = reinterpret_cast<void*>(s_OriginalAddr);
+	Logger::Debug("Successfully installed detour for D3D12 vtable hook address {}.", fmt::ptr(s_OriginalAddr));
 }
 
 void D3D12Hooks::RemoveHook(const InstalledHook& p_Hook)
 {
-	DWORD s_OriginalProtection;
-	VirtualProtect(&p_Hook.VTable[p_Hook.Index], sizeof(uintptr_t), PAGE_EXECUTE_READWRITE, &s_OriginalProtection);
-
-	// Overwrite vtable.
-	p_Hook.VTable[p_Hook.Index] = p_Hook.OriginalAddr;
-
-	// Restore memory protection flags.
-	VirtualProtect(&p_Hook.VTable[p_Hook.Index], sizeof(uintptr_t), s_OriginalProtection, nullptr);
+	MH_DisableHook(p_Hook.OriginalAddr);
+	MH_RemoveHook(p_Hook.OriginalAddr);
 }
 
