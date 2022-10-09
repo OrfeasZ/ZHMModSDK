@@ -48,7 +48,7 @@ jobs:
         Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/
         Copy-Item DirectInputProxy/dinput8.dll -Destination _sdk/
         Copy-Item DirectInputProxy/dinput8.pdb -Destination _sdk/
-        Copy-Item ../LICENSE -Destination _sdk/
+        Copy-Item ../../LICENSE -Destination _sdk/
 
     - name: Copy devloader artifacts
       run: |
@@ -56,7 +56,7 @@ jobs:
         mkdir _devloader
         Copy-Item Tools/DevLoader/DevLoader.exe -Destination _devloader/
         Copy-Item Tools/DevLoader/DevLoader.pdb -Destination _devloader/
-        Copy-Item ../LICENSE -Destination _sdk/
+        Copy-Item ../../LICENSE -Destination _sdk/
 
     - name: Copy mod artifacts
       run: |
@@ -64,7 +64,7 @@ jobs:
         mkdir _mods
         Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_mods"  ($_.Name + ".dll")) }
         Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_mods"  ($_.Name + ".pdb")) }
-        Copy-Item ../LICENSE -Destination _mods/
+        Copy-Item ../../LICENSE -Destination _mods/
 
     - name: Archive SDK and loader
       uses: actions/upload-artifact@v2
