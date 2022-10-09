@@ -32,9 +32,10 @@ PATTERN_HOOK(
 	ZUpdateEventContainer_RemoveDelegate, void(ZUpdateEventContainer* th, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)
 );
 
+// Look for ProfileWholeApplication string
 PATTERN_HOOK(
-	"\x48\x89\x54\x24\x10\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x68\xFB\xFF\xFF",
-	"xxxxxxxxxxxxxxxxxxxxxxxxx",
+	"\x48\x89\x54\x24\x10\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x78\xFB\xFF\xFF\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x1D",
+	"xxxxxxxxxxxxxxxxxxxxxxxxxxxx????xxx",
 	Engine_Init, bool(void*, void*)
 );
 
@@ -56,9 +57,10 @@ PATTERN_HOOK(
 	ZApplicationEngineWin32_OnMainWindowActivated, void(ZApplicationEngineWin32*, bool)
 );
 
+// Look for DefWindowProcW import
 PATTERN_HOOK(
-	"\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x48\x89\x7C\x24\x20\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xD1",
-	"xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+	"\x48\x89\x5C\x24\x10\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x40\xE2\xFF\xFF",
+	"xxxxxxxxxxxxxxxxxxxxxxxx",
 	ZApplicationEngineWin32_MainWindowProc, LRESULT(ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM)
 );
 
@@ -80,9 +82,10 @@ PATTERN_HOOK(
 	SignalInputPin, bool(ZEntityRef, uint32_t, const ZObjectRef&)
 );
 
+// Look for D3D12.dll string
 PATTERN_HOOK(
-	"\x48\x89\x4C\x24\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x57\x48\x8D\xAC\x24\x50\xE6\xFF\xFF",
-	"xxxxxxxxxxxxxxxxxxxxxxx",
+	"\x48\x89\x4C\x24\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x58\xE2\xFF\xFF",
+	"xxxxxxxxxxxxxxxxxxxxxxxxx",
 	ZRenderDevice_ZRenderDevice, ZRenderDevice* (ZRenderDevice* th)
 );
 
@@ -109,15 +112,16 @@ PATTERN_HOOK(
 	ZApplicationEngineWin32_OnDebugInfo, void(ZApplicationEngineWin32* th, const ZString& info, const ZString& details)
 );
 
+// Look for method that uses ??_7ZKeyboardWindows@@6B@ and calls GetAsyncKeyState(161)
 PATTERN_HOOK(
-	"\x40\x53\x41\x55\x48\x83\xEC\x00\x48\x83\xB9\xF8\x00\x00\x00",
+	"\x40\x53\x41\x55\x48\x83\xEC\x00\x48\x83\xB9\x00\x01\x00\x00",
 	"xxxxxxx?xxxxxxx",
 	ZKeyboardWindows_Update, void(ZKeyboardWindows* th, bool a2)
 );
 
-// 3 calls in same huge function, this is the first at around +13BB
+// 3 calls in same huge function, this is the first at around +1900
 PATTERN_CALL_HOOK(
-	"\xE8\x00\x00\x00\x00\x49\x8B\xCF\xE8\x00\x00\x00\x00\x0F\x28\x85\xA0\x01\x00\x00",
+	"\xE8\x00\x00\x00\x00\x49\x8B\xCF\xE8\x00\x00\x00\x00\x0F\x28\x85\x60\x02\x00\x00",
 	"x????xxxx????xxxxxxx",
 	ZRenderContext_Unknown01, void(ZRenderContext* th)
 );
@@ -152,8 +156,9 @@ PATTERN_HOOK(
 	ZGameStatsManager_SendAISignals02, void(ZGameStatsManager* th)
 );
 
+// Look for AchievementTopOfTheClass string
 PATTERN_HOOK(
-	"\x48\x89\x5C\x24\x08\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x00\xFC\xFF\xFF",
+	"\x48\x89\x5C\x24\x08\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\xD0\xFB\xFF\xFF",
 	"xxxxxxxxxxxxxxxxxxxxxxxx",
 	ZAchievementManagerSimple_OnEventReceived, void(ZAchievementManagerSimple* th, const SOnlineEvent& event)
 );

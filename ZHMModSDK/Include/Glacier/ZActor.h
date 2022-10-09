@@ -269,7 +269,7 @@ public:
 
 public:
 	PAD(0x25A0);
-	TEntityRef<ZActor> m_aActiveActors[1000]; // 0x25A8, ZActorManager destructor, last loop
+	TEntityRef<ZActor> m_aActiveActors[1000]; // 0x25A8, ZActorManager destructor, last if
 	/*PAD(0xAA20); // 0x5DE8
 	ZActorSavableHandler* m_pSavableHandler; // 0x10808*/
 };

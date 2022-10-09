@@ -29,9 +29,10 @@ PATTERN_RELATIVE_GLOBAL(
 	ZHitman5Module*, Hitman5Module
 );
 
+// Look for ??_7ZGameContext@@6B@
 PATTERN_RELATIVE_GLOBAL(
-	"\x48\x8D\x0D\x00\x00\x00\x00\x48\x89\x5D\x80",
-	"xxx????xxxx",
+	"\x48\x89\x05\x00\x00\x00\x00\x48\x8D\x55\x30\x48\x8D\x05\x00\x00\x00\x00\x4C\x89\x3D\x00\x00\x00\x00\x48\x89\x05",
+	"xxx????xxxxxxx????xxx????xxx",
 	3,
 	ZGameContext*, GameContext
 );
