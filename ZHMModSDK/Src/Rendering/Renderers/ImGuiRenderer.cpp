@@ -481,13 +481,13 @@ void ImGuiRenderer::OnReset()
 
 	Logger::Debug("Resetting ImGui renderer.");
 
-	m_RendererSetup = false;
-
 	if (m_RendererSetup)
 	{
 		ImGui_ImplDX12_InvalidateDeviceObjects();
 		ImGui_ImplDX12_Shutdown();
 	}
+
+	m_RendererSetup = false;
 
 	for (UINT i = 0; i < m_BufferCount; i++)
 	{
