@@ -92,7 +92,7 @@ void Console::Draw(bool p_HasFocus)
 
 		char s_Command[2048];
 		memset(s_Command, 0, sizeof(s_Command));
-		ImGui::InputText("", s_Command, IM_ARRAYSIZE(s_Command), ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::InputText("##consoleCommand", s_Command, IM_ARRAYSIZE(s_Command), ImGuiInputTextFlags_EnterReturnsTrue);
 
 		ImGui::SetItemDefaultFocus();
 	}
