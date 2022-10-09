@@ -40,8 +40,7 @@ jobs:
 
     - name: Build
       run: |
-        cd _build-${{ matrix.buildpreset }}
-        cmake --build --preset ${{ matrix.buildpreset }}
+        cmake --build _build-${{ matrix.buildpreset }}
 
     - name: Copy SDK and loader artifacts
       run: |
