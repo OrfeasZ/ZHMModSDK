@@ -1,7 +1,8 @@
-﻿#include <thread>
+#include <thread>
 #include <unordered_set>
 #include <Windows.h>
 #include <TlHelp32.h>
+#include <filesystem>
 
 static HMODULE g_OriginalDirectInput = nullptr;
 static HMODULE g_ZHMModSDK = nullptr;
@@ -69,16 +70,17 @@ void ResumeSuspendedThreads()
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
+	static wchar_t s_PathBuffer[8192];
+
 	if (fdwReason == DLL_PROCESS_ATTACH)
 	{
-		char s_Dinput8Path[MAX_PATH];
-
-		if (!GetSystemDirectoryA(s_Dinput8Path, sizeof(s_Dinput8Path)))
+		if (!GetSystemDirectoryW(s_PathBuffer, sizeof(s_PathBuffer) / sizeof(wchar_t)))
 			return false;
 
-		strcat_s(s_Dinput8Path, sizeof(s_Dinput8Path), "\\dinput8.dll");
+		std::filesystem::path s_Dinput8Path = s_PathBuffer;
+		s_Dinput8Path += "/dinput8.dll";
 
-		g_OriginalDirectInput = LoadLibraryA(s_Dinput8Path);
+		g_OriginalDirectInput = LoadLibraryW(canonical(s_Dinput8Path).c_str());
 
 		if (g_OriginalDirectInput == nullptr)
 			return false;
@@ -87,6 +89,18 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 
 		if (o_DirectInput8Create == nullptr)
 			return false;
+
+		// If this isn't the HITMAN3 executable then don't load the SDK.
+		if (!GetModuleFileNameW(nullptr, s_PathBuffer, sizeof(s_PathBuffer) / sizeof(wchar_t)))
+			return false;
+
+		std::filesystem::path s_ModuleFilePath = s_PathBuffer;
+		std::string s_ExecutableName = s_ModuleFilePath.filename().string();
+		std::transform(s_ExecutableName.begin(), s_ExecutableName.end(), s_ExecutableName.begin(), [](unsigned char c) { return std::tolower(c); });
+
+		// We return true here because if we return false then whatever app is loading this will crash.
+		if (s_ExecutableName != "hitman3.exe")
+			return true;
 
 		g_ZHMModSDK = LoadLibraryA("ZHMModSDK");
 
