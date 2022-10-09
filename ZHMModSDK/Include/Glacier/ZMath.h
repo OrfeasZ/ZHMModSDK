@@ -85,7 +85,20 @@ struct float4
 
 struct SMatrix
 {
-	float4 mat[4];
+	SMatrix() {}
+
+	union
+	{
+		float4 mat[4];
+
+		struct
+		{
+			float4 XAxis;
+			float4 YAxis;
+			float4 ZAxis;
+			float4 Trans;
+		};
+	};
 };
 
 class SMatrix44

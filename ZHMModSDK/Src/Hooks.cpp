@@ -119,13 +119,6 @@ PATTERN_HOOK(
 	ZKeyboardWindows_Update, void(ZKeyboardWindows* th, bool a2)
 );
 
-// 3 calls in same huge function, this is the first at around +1900
-PATTERN_CALL_HOOK(
-	"\xE8\x00\x00\x00\x00\x49\x8B\xCF\xE8\x00\x00\x00\x00\x0F\x28\x85\x60\x02\x00\x00",
-	"x????xxxx????xxxxxxx",
-	ZRenderContext_Unknown01, void(ZRenderContext* th)
-);
-
 PATTERN_HOOK(
 	"\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x89\x11",
 	"xxxxxxxxxxxxxx?xx",

@@ -61,7 +61,6 @@ public:
 	static Hook<bool(void*, void*)>* Check_SSL_Cert;
 	static Hook<void(ZApplicationEngineWin32* th, const ZString& info, const ZString& details)>* ZApplicationEngineWin32_OnDebugInfo;
 	static Hook<void(ZKeyboardWindows* th, bool a2)>* ZKeyboardWindows_Update;
-	static Hook<void(ZRenderContext* a1)>* ZRenderContext_Unknown01;
 	static Hook<void*(ZPackageManagerPackage* th, void* a2, const ZString& a3, int a4, int patchLevel)>* ZPackageManagerPackage_ZPackageManagerPackage;
 	static Hook<void(ZGameLoopManager* th, const ZString& a2)>* ZGameLoopManager_ReleasePause;
 	static Hook<bool(ZGameUIManagerEntity* th, EGameUIMenu menu, bool force)>* ZGameUIManagerEntity_TryOpenMenu;

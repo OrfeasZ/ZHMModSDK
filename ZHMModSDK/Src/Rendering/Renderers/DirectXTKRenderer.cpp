@@ -7,6 +7,7 @@
 #include "Logging.h"
 
 #include <Glacier/ZApplicationEngineWin32.h>
+#include <Glacier/ZDelegate.h>
 
 #include <UI/Console.h>
 
@@ -22,6 +23,7 @@
 #include "Rendering/D3DUtils.h"
 #include "Fonts.h"
 #include "ModSDK.h"
+#include "Glacier/ZGameLoopManager.h"
 
 using namespace Rendering::Renderers;
 
@@ -204,26 +206,26 @@ void DirectXTKRenderer::TKRendererInterface::DrawOBB3D(const SVector3& p_Min, co
 void DirectXTKRenderer::Init()
 {
 	m_RendererInterface = new TKRendererInterface();
-	Hooks::ZRenderContext_Unknown01->AddDetour(nullptr, &DirectXTKRenderer::ZRenderContext_Unknown01);
 }
 
 void DirectXTKRenderer::OnEngineInit()
 {
+	const ZStaticDelegate<void(const SGameUpdateEvent&)> s_Delegate(&DirectXTKRenderer::OnFrameUpdate);
+	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, INT_MAX, EUpdateMode::eUpdateAlways);
 }
 
-void DirectXTKRenderer::Shutdown()
+void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
-	m_Shutdown = true;
+	const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
-	Hooks::ZRenderContext_Unknown01->RemoveDetour(&DirectXTKRenderer::ZRenderContext_Unknown01);
+	if (!s_CurrentCamera)
+		return;
 
-	OnReset();
-}
+	const auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
+	const auto s_ProjectionMatrix = s_CurrentCamera->GetProjectionMatrix();
 
-DECLARE_STATIC_DETOUR(DirectXTKRenderer, void, ZRenderContext_Unknown01, ZRenderContext* a1)
-{
-	m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pRenderContext->m_mWorldToView);
-	m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pRenderContext->m_mViewToProjection);
+	m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_ViewMatrix);
+	m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(s_ProjectionMatrix);
 
 	m_ViewProjection = m_View * m_Projection;
 
@@ -232,8 +234,16 @@ DECLARE_STATIC_DETOUR(DirectXTKRenderer, void, ZRenderContext_Unknown01, ZRender
 		m_LineEffect->SetView(m_View);
 		m_LineEffect->SetProjection(m_Projection);
 	}
-	
-	return HookResult<void>(HookAction::Continue());
+}
+
+void DirectXTKRenderer::Shutdown()
+{
+	m_Shutdown = true;
+
+	const ZStaticDelegate<void(const SGameUpdateEvent&)> s_Delegate(&DirectXTKRenderer::OnFrameUpdate);
+	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
+
+	OnReset();
 }
 
 void DirectXTKRenderer::Draw(FrameContext* p_Frame)

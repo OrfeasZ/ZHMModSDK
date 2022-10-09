@@ -70,14 +70,12 @@ namespace Rendering::Renderers
 		static void OnReset();
 
 	private:
+		static void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 		static bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
 		static void WaitForGpu(FrameContext* p_Frame);
 		static void ExecuteCmdList(FrameContext* p_Frame);
 		static void Draw(FrameContext* p_Frame);
-
-	private:
-		DEFINE_STATIC_DETOUR(void, ZRenderContext_Unknown01, ZRenderContext* th);
-
+		
 	private:
 		static bool m_RendererSetup;
 		static UINT m_BufferCount;
