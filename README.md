@@ -15,7 +15,7 @@ Right now it's at a very early stage, with only a few aspects of the engine expo
 
 1. Download the latest version of the mod loader and the mods by going [here](https://github.com/OrfeasZ/ZHMModSDK/releases/latest), and downloading `mod-loader-RelWithDebInfo.zip` and `mods-RelWithDebInfo.zip`. These zip files contain the mod loader and a few mods respectively.
 
-2. Extract the contents of the `mod-loader-RelWithDebInfo.zip` archive to `<drive>:\Path\To\HITMAN3\Retail`, where `<drive>:\Path\To\HITMAN3` is the path to your Hitman 3 installation directory. This will be at `C:\Program Files\EpicGames\HITMAN3` by default. Make sure that you extract the files in the `Retail` folder and not the root `HITMAN3` folder.
+2. Extract the contents of the `mod-loader-RelWithDebInfo.zip` archive to `<drive>:\Path\To\HITMAN3\Retail`, where `<drive>:\Path\To\HITMAN3` is the path to your Hitman 3 installation directory. This will be at `C:\Program Files\EpicGames\HITMAN3` or `C:\Program Files (x86)\Steam\steamapps\common\HITMAN 3` by default. Make sure that you extract the files in the `Retail` folder and not the root `HITMAN3` folder.
 
 3. Create a new folder called `mods` inside the `Retail` folder you extracted the mod loader to.
 
