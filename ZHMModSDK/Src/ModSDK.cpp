@@ -15,6 +15,7 @@
 #include "Glacier/ZScene.h"
 #include "Glacier/ZGameUIManager.h"
 #include "Glacier/ZSpatialEntity.h"
+#include "Glacier/ZActor.h"
 
 #if _DEBUG
 #include "DebugConsole.h"
@@ -114,8 +115,10 @@ bool ModSDK::Startup()
 	Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
 
 	// Install hooks so we can keep track of entities.
-	Hooks::ZEntityManager_ActivateEntity->AddDetour(this, &ModSDK::ZEntityManager_ActivateEntity);
-	Hooks::ZEntityManager_DeleteEntities->AddDetour(this, &ModSDK::ZEntityManager_DeleteEntities);
+	//Hooks::ZEntityManager_ActivateEntity->AddDetour(this, &ModSDK::ZEntityManager_ActivateEntity);
+	//Hooks::ZEntityManager_DeleteEntities->AddDetour(this, &ModSDK::ZEntityManager_DeleteEntities);
+
+	Logger::Debug("Thing {}", offsetof(ZActorManager, m_aActiveActors));
 
 	return true;
 }
@@ -149,7 +152,7 @@ void ModSDK::OnDraw3D(IRenderer* p_Renderer)
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnDraw3D(p_Renderer);
 
-	m_EntityMutex.lock_shared();
+	/*m_EntityMutex.lock_shared();
 
 	for (auto& [s_Id, s_Ref] : m_Entities)
 	{
@@ -172,7 +175,7 @@ void ModSDK::OnDraw3D(IRenderer* p_Renderer)
 			p_Renderer->DrawText2D(std::to_string(s_Id).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
 	}
 
-	m_EntityMutex.unlock_shared();
+	m_EntityMutex.unlock_shared();*/
 }
 
 void ModSDK::OnImGuiInit()
