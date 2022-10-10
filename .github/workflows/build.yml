@@ -82,6 +82,7 @@ jobs:
 
   upload_release:
     name: Upload release artifacts
+    needs: build
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
 
