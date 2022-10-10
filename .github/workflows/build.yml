@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - master
-    tags:
-      - v*
+  release:
+    types: [ created ]
   pull_request:
     types: [ opened, synchronize, reopened ]
 
@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        buildpreset: [ x64-Release, x64-Debug ]
+        buildpreset: [ Release, Debug ]
 
     steps:
     - name: Get latest CMake and ninja
@@ -34,90 +34,60 @@ jobs:
 
     - name: Generate projects
       run: |
-        cmake --preset ${{ matrix.buildpreset }} .
+        cmake --preset x64-${{ matrix.buildpreset }} .
 
     - name: Build
       run: |
-        cmake --build _build/${{ matrix.buildpreset }} --parallel
+        cmake --build _build/x64-${{ matrix.buildpreset }} --parallel
 
     - name: Copy SDK and loader artifacts
       run: |
-        cd _build/${{ matrix.buildpreset }}
+        cd _build/x64-${{ matrix.buildpreset }}
         mkdir _sdk
         Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _sdk/
         Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/
         Copy-Item DirectInputProxy/dinput8.dll -Destination _sdk/
         Copy-Item DirectInputProxy/dinput8.pdb -Destination _sdk/
         Copy-Item ../../LICENSE -Destination _sdk/
+        
+    - name: Copy mod artifacts
+      run: |
+        cd _build/x64-${{ matrix.buildpreset }}
+        mkdir _sdk/mods
+        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_sdk/mods"  ($_.Name + ".dll")) }
+        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_sdk/mods"  ($_.Name + ".pdb")) }
 
     - name: Copy devloader artifacts
       run: |
-        cd _build/${{ matrix.buildpreset }}
+        cd _build/x64-${{ matrix.buildpreset }}
         mkdir _devloader
         Copy-Item Tools/DevLoader/DevLoader.exe -Destination _devloader/
         Copy-Item Tools/DevLoader/DevLoader.pdb -Destination _devloader/
-        Copy-Item ../../LICENSE -Destination _sdk/
+        Copy-Item ../../LICENSE -Destination _devloader/
 
-    - name: Copy mod artifacts
-      run: |
-        cd _build/${{ matrix.buildpreset }}
-        mkdir _mods
-        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_mods"  ($_.Name + ".dll")) }
-        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_mods"  ($_.Name + ".pdb")) }
-        Copy-Item ../../LICENSE -Destination _mods/
-
-    - name: Archive SDK and loader
+    - name: Archive SDK, loader, and mods
       uses: actions/upload-artifact@v2
       with:
-        name: mod-loader-${{ matrix.buildpreset }}
+        name: ZHMModSDK-${{ matrix.buildpreset }}
         path: |
-          _build/${{ matrix.buildpreset }}/_sdk/*
-
-    - name: Archive mods
-      uses: actions/upload-artifact@v2
-      with:
-        name: mods-${{ matrix.buildpreset }}
-        path: |
-          _build/${{ matrix.buildpreset }}/_mods/*
+          _build/x64-${{ matrix.buildpreset }}/_sdk/*
 
     - name: Archive devloader
       uses: actions/upload-artifact@v2
-      if: matrix.buildpreset == 'x64-Debug'
+      if: matrix.buildpreset == 'Debug'
       with:
-        name: devloader-${{ matrix.buildpreset }}
+        name: DevLoader
         path: |
-          _build/${{ matrix.buildpreset }}/_devloader/*
-
-  create_release:
-    name: Create release
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-
-    outputs:
-      upload_url: ${{ steps.create.outputs.upload_url }}
-
-    steps:
-    - name: Create release
-      id: create
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: ${{ github.ref }}
-        draft: false
-        prerelease: startsWith(github.ref, 'refs/tags/v0.')
+          _build/x64-${{ matrix.buildpreset }}/_devloader/*
 
   upload_release:
     name: Upload release artifacts
-    needs: create_release
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        artifact: [ mod-loader-RelWithDebInfo, mods-RelWithDebInfo, mod-loader-Debug, mods-Debug, devloader-Debug ]
+        artifact: [ ZHMModSDK-Release, ZHMModSDK-Debug, DevLoader ]
 
     steps:
     - name: Download artifact
@@ -130,13 +100,19 @@ jobs:
       run: |
         cd ${{ matrix.artifact }}
         zip -r ${{ matrix.artifact }}.zip *
+        
+    - name: Get release
+      id: get_release
+      uses: bruceadams/get-release@v1.2.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
 
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
+        upload_url: ${{ steps.get_release.outputs.upload_url }}
         asset_path: ${{ matrix.artifact }}/${{ matrix.artifact }}.zip
         asset_name: ${{ matrix.artifact }}.zip
         asset_content_type: application/zip
