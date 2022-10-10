@@ -31,7 +31,7 @@ public:
 	virtual void ZSpatialEntity_unk28() = 0;
 	virtual void ZSpatialEntity_unk29() = 0;
 	virtual void ZSpatialEntity_unk30() = 0;
-	virtual void ZSpatialEntity_unk31() = 0;
+	virtual void SetWorldMatrix(const SMatrix& matrix) = 0;
 	virtual void CalculateBounds(float4& min, float4& max, uint32_t a3, uint32_t a4) = 0;
 	virtual void ZSpatialEntity_unk33() = 0;
 	virtual void ZSpatialEntity_unk34() = 0;
