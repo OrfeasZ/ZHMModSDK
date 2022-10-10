@@ -1,49 +1,69 @@
-#include "DiscordRpc.h"
+#include "DiscordRichPresence.h"
 
 #include "Hooks.h"
 #include "Logging.h"
-#include "DiscordClient.h"
 #include "Glacier/ZGameLoopManager.h"
 
 #include <Glacier/ZScene.h>
 #include <regex>
 
+#include <discord.h>
 
-DiscordRpc::~DiscordRpc()
+static constexpr discord::ClientId APPLICATION_ID = 852754886197379103;
+
+DiscordRichPresence::DiscordRichPresence() :
+	m_DiscordCore(nullptr)
 {
-	m_DiscordClient.Teardown();
-
-	const ZMemberDelegate<DiscordRpc, void(const SGameUpdateEvent&)> s_Delegate(this, &DiscordRpc::OnFrameUpdate);
-	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdateAlways);
 }
 
-void DiscordRpc::PreInit()
+DiscordRichPresence::~DiscordRichPresence()
 {
-	m_DiscordClient.Initialize();
+	const ZMemberDelegate<DiscordRichPresence, void(const SGameUpdateEvent&)> s_Delegate(this, &DiscordRichPresence::OnFrameUpdate);
+	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdateAlways);
+
+	if (m_DiscordCore)
+		delete m_DiscordCore;
+}
+
+void DiscordRichPresence::PreInit()
+{
+	const auto s_DiscordCreateResult = discord::Core::Create(APPLICATION_ID, DiscordCreateFlags_NoRequireDiscord, &m_DiscordCore);
+
+	if (s_DiscordCreateResult != discord::Result::Ok)
+	{
+		Logger::Error("Discord init failed with result: {}", s_DiscordCreateResult);
+		m_DiscordCore = nullptr;
+		return;
+	}
+
 	PopulateScenes();
 	PopulateGameModes();
 	PopulateCodenameHints();
-	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &DiscordRpc::OnLoadScene);
+
+	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &DiscordRichPresence::OnLoadScene);
 }
 
-void DiscordRpc::OnEngineInitialized()
+void DiscordRichPresence::OnEngineInitialized()
 {
-	const ZMemberDelegate<DiscordRpc, void(const SGameUpdateEvent&)> s_Delegate(this, &DiscordRpc::OnFrameUpdate);
+	const ZMemberDelegate<DiscordRichPresence, void(const SGameUpdateEvent&)> s_Delegate(this, &DiscordRichPresence::OnFrameUpdate);
 	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdateAlways);
 }
 
-void DiscordRpc::PopulateScenes()
+void DiscordRichPresence::PopulateScenes()
 {
 	m_Scenes = {
 		// Menu
 		{ "boot.entity", "In Startup Screen" },
 		{ "mainmenu.entity", "In Menu" },
+
 		// Sniper Assassin
 		{ "hawk", "Himmelstein" },
 		{ "salty", "Hantu Port" },
 		{ "caged", "Siberia" },
+
 		// Prologue
 		{ "thefacility", "ICA Facility" },
+
 		// HITMAN
 		{ "paris", "Paris" },
 		{ "coastaltown", "Sapienza" },
@@ -51,6 +71,7 @@ void DiscordRpc::PopulateScenes()
 		{ "bangkok", "Bangkok" },
 		{ "colorado", "Colorado" },
 		{ "hokkaido", "Hokkaido" },
+
 		// HITMAN 2
 		{ "sheep", "Hawke's Bay" },
 		{ "miami", "Miami" },
@@ -60,18 +81,21 @@ void DiscordRpc::PopulateScenes()
 		{ "theark", "Isle of Sgàil" },
 		{ "greedy", "New York" },
 		{ "opulent", "Haven Island" },
+
 		// HITMAN 3
 		{ "golden", "Dubai" },
 		{ "ancestral", "Dartmoor" },
 		{ "edgy", "Berlin" },
 		{ "wet", "Chongqing" },
 		{ "elegant", "Mendoza" },
-		{ "trapped", "Carpathian Mountains" }
+		{ "trapped", "Carpathian Mountains" },
+		{ "rocky", "Ambrose Island" },
 	};
+
 	Logger::Trace("Finished populating scene map");
 }
 
-void DiscordRpc::PopulateGameModes()
+void DiscordRichPresence::PopulateGameModes()
 {
 	m_GameModes = {
 		{ "sniper", "Sniper Assassin" },
@@ -83,17 +107,19 @@ void DiscordRpc::PopulateGameModes()
 		{ "tutorial", "Mission" },
 		{ "campaign", "Mission" },
 		{ "escalation", "Escalation" },
-		{ "elusive", "Elusive Target" }
+		{ "elusive", "Elusive Target" },
 	};
+
 	Logger::Trace("Finished populating game modes");
 }
 
-void DiscordRpc::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
+void DiscordRichPresence::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
-	m_DiscordClient.Callback();
+	if (m_DiscordCore)
+		m_DiscordCore->RunCallbacks();
 }
 
-void DiscordRpc::PopulateCodenameHints()
+void DiscordRichPresence::PopulateCodenameHints()
 {
 	m_CodenameHints = {
 		{ "GarterSnake", "A Bitter Pill" },
@@ -133,25 +159,29 @@ void DiscordRpc::PopulateCodenameHints()
 		{ "Wolverine", "Untouchable" },
 		{ "Rabies", "The Vector" },
 		{ "Octopus", "World Of Tomorrow" },
+		{ "Dugong", "Shadows In The Water" },
+
 		// Sniper Assassin
 		{ "SC_Hawk", "The Last Yardbird" },
 		{ "SC_Seagull", "The Pen And The Sword" },
-		{ "SC_Falcon", "Crime And Punishment" }
+		{ "SC_Falcon", "Crime And Punishment" },
 	};
+
 	Logger::Trace("Finished populating codename hints");
 }
 
-std::string DiscordRpc::LowercaseString(const std::string& p_In)
+std::string DiscordRichPresence::LowercaseString(const std::string& p_In) const
 {
 	std::string s_Copy = p_In;
-	std::transform(s_Copy.begin(), s_Copy.end(), s_Copy.begin(), [](unsigned char p_C) { return std::tolower(p_C); });
+	std::ranges::transform(s_Copy, s_Copy.begin(), [](unsigned char c) { return std::tolower(c); });
 
 	return s_Copy;
 }
 
-std::string DiscordRpc::FindLocationForScene(ZString p_Scene)
+std::string DiscordRichPresence::FindLocationForScene(ZString p_Scene) const
 {
-	std::string s_LowercaseScene = LowercaseString(p_Scene.c_str());
+	const std::string s_LowercaseScene = LowercaseString(p_Scene.c_str());
+
 	for (auto& s_It : m_Scenes)
 	{
 		if (s_LowercaseScene.find(s_It.first) != std::string::npos)
@@ -163,11 +193,15 @@ std::string DiscordRpc::FindLocationForScene(ZString p_Scene)
 	return "ERR_UNKNOWN_LOCATION";
 }
 
-DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData)
+DECLARE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData)
 {
+	if (!m_DiscordCore)
+		return HookResult<void>(HookAction::Continue());
+
 	Logger::Trace("Scene: {}", sceneData.m_sceneName);
 	Logger::Trace("Codename: {}", sceneData.m_codeNameHint);
 	Logger::Trace("Type: {}", sceneData.m_type);
+
 	std::string s_Action = "";
 	std::string s_Details = "";
 	std::string s_Location = "";
@@ -192,6 +226,7 @@ DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZS
 		s_LocationKey = LowercaseString(s_LocationKey);
 
 		s_ImageKey = "location-" + s_LocationKey;
+
 		if (s_GameMode == "Mission" || s_GameMode == "Sniper Assassin")
 		{
 			auto s_MissionIt = m_CodenameHints.find(sceneData.m_codeNameHint.ToStringView());
@@ -208,11 +243,19 @@ DECLARE_PLUGIN_DETOUR(DiscordRpc, void, OnLoadScene, ZEntitySceneContext* th, ZS
 			s_Action = s_Location;
 		}
 	}
-	
 
-	m_DiscordClient.Update(s_Action, s_Details, s_ImageKey);
+	discord::Activity activity {};
+	activity.SetType(discord::ActivityType::Playing);
+	activity.SetState(s_Action.c_str());
+	activity.SetDetails(s_Details.c_str());
+	activity.GetAssets().SetLargeImage(s_ImageKey.c_str());
+
+	m_DiscordCore->ActivityManager().UpdateActivity(activity, [](discord::Result p_Result)
+	{
+		Logger::Trace("Activity Manager push completed with result: {}", p_Result);
+	});
 
 	return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_ZHM_PLUGIN(DiscordRpc);
+DECLARE_ZHM_PLUGIN(DiscordRichPresence);
