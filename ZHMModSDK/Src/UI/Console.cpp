@@ -24,12 +24,12 @@ void Console::Draw(bool p_HasFocus)
 		return;
 
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	auto s_Showing = ImGui::Begin("CONSOLE", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
+	const auto s_Showing = ImGui::Begin("CONSOLE", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	ImGui::SetWindowCollapsed(true, ImGuiCond_Once);
 
-	auto& s_ImGuiIO = ImGui::GetIO();
+	const auto& s_ImGuiIO = ImGui::GetIO();
 	ImGui::SetWindowSize(ImVec2(s_ImGuiIO.DisplaySize.x - 60, 400), ImGuiCond_Always);
 	ImGui::SetWindowPos(ImVec2(30, 80 * (s_ImGuiIO.DisplaySize.y / 2048.f)), ImGuiCond_Always);
 
@@ -37,12 +37,14 @@ void Console::Draw(bool p_HasFocus)
 	{
 		// Render the list of log lines.
 		const float s_FooterHeight = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -s_FooterHeight), false, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -s_FooterHeight), false);
 
 		AcquireSRWLockShared(&m_Lock);
 
 		if (m_LogLines)
 		{
+			ImGui::PushTextWrapPos();
+
 			for (auto& s_LogLine : *m_LogLines)
 			{
 				ImVec4 s_Color;
@@ -78,6 +80,8 @@ void Console::Draw(bool p_HasFocus)
 					ImGui::PopStyleColor();
 			}
 
+			ImGui::PopTextWrapPos();
+
 			// Auto scroll to bottom.
 			if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
 				ImGui::SetScrollHereY(1.0);
@@ -90,8 +94,7 @@ void Console::Draw(bool p_HasFocus)
 		// Render the text input.
 		ImGui::Separator();
 
-		char s_Command[2048];
-		memset(s_Command, 0, sizeof(s_Command));
+		char s_Command[2048] = {};
 		ImGui::InputText("##consoleCommand", s_Command, IM_ARRAYSIZE(s_Command), ImGuiInputTextFlags_EnterReturnsTrue);
 
 		ImGui::SetItemDefaultFocus();
