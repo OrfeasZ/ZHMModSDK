@@ -19,6 +19,7 @@ private:
 
 private:
 	DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+	DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext*, bool);
 
 private:
 	std::unordered_map<ZActor*, double> m_PacifiedTimes;
