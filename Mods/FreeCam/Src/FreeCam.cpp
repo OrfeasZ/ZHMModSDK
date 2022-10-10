@@ -24,8 +24,30 @@ FreeCam::FreeCam() :
 	m_FreeCamFrozen(false),
 	m_ToggleFreeCamAction("KBMButtonX"),
 	m_FreezeFreeCamActionGc("ActivateGameControl0"),
-	m_FreezeFreeCamActionKb("KBMInspectNode")
+	m_FreezeFreeCamActionKb("KBMInspectNode"),
+	m_ControlsVisible(false),
+	m_HasToggledFreecamBefore(false)
 {
+	m_PcControls = {
+		{ "P", "Toggle freecam" },
+		{ "F3", "Lock camera and enable 47 input" },
+		{ "Ctrl + W/S", "Change FOV" },
+		{ "Ctrl + A/D", "Roll camera" },
+		{ "Alt + W/S", "Change camera speed" },
+		{ "Space + Q/E", "Change camera height" },
+		{ "Space + W/S", "Move camera on axis" },
+		{ "Shift", "Increase camera speed" },
+	};
+
+	m_ControllerControls = {
+		{ "Y + L", "Change FOV" },
+		{ "A + L", "Roll camera" },
+		{ "A + L press", "Reset rotation" },
+		{ "B + R", "Change camera speed" },
+		{ "RT", "Increase camera speed" },
+		{ "LB", "Lock camera and enable 47 input" },
+		{ "LT + R", "Change camera height" },
+	};
 }
 
 FreeCam::~FreeCam()
@@ -84,8 +106,7 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 	
 	if (Functions::ZInputAction_Digital->Call(&m_ToggleFreeCamAction, -1))
 	{
-		m_FreeCamActive = !m_FreeCamActive;
-		m_ShouldToggle = true;
+		ToggleFreecam();
 	}
 	
 	if (m_ShouldToggle)
@@ -154,8 +175,70 @@ void FreeCam::OnDrawMenu()
 {
 	if (ImGui::Button("TOGGLE FREE CAM"))
 	{
-		m_FreeCamActive = !m_FreeCamActive;
-		m_ShouldToggle = true;
+		ToggleFreecam();
+	}
+
+	if (ImGui::Button("FREE CAM CONTROLS"))
+	{
+		m_ControlsVisible = !m_ControlsVisible;
+	}
+}
+
+void FreeCam::ToggleFreecam()
+{
+	m_FreeCamActive = !m_FreeCamActive;
+	m_ShouldToggle = true;
+
+	if (m_FreeCamActive && !m_HasToggledFreecamBefore)
+		m_ControlsVisible = true;
+
+	m_HasToggledFreecamBefore = true;
+}
+
+void FreeCam::OnDrawUI(bool p_HasFocus)
+{
+	if (m_ControlsVisible)
+	{
+		ImGui::PushFont(SDK()->GetImGuiBlackFont());
+		const auto s_ControlsExpanded = ImGui::Begin("Free Cam Controls", &m_ControlsVisible);
+		ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+		if (s_ControlsExpanded)
+		{
+			ImGui::TextUnformatted("PC Controls");
+
+			ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
+
+			for (auto& [s_Key, s_Description] : m_PcControls)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(s_Key.c_str());
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(s_Description.c_str());
+			}
+
+			ImGui::EndTable();
+
+			ImGui::TextUnformatted("Controller Controls");
+
+			ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
+
+			for (auto& [s_Key, s_Description] : m_ControllerControls)
+			{
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(s_Key.c_str());
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(s_Description.c_str());
+			}
+
+			ImGui::EndTable();
+		}
+
+		ImGui::PopFont();
+		ImGui::End();
+		ImGui::PopFont();
 	}
 }
 
