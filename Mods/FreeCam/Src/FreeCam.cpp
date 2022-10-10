@@ -179,6 +179,7 @@ void FreeCam::EnableFreecam()
 	m_OriginalCam = *s_RenderDest.m_pInterfaceRef->GetSource();
 
 	const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+	s_Camera.m_pInterfaceRef->SetWorldMatrix(s_CurrentCamera->GetWorldMatrix());
 
 	Logger::Debug("Camera trans: {}", fmt::ptr(&s_Camera.m_pInterfaceRef->m_mTransform.Trans));
 
