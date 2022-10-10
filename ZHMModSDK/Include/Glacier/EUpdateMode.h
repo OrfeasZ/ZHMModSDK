@@ -1,6 +1,6 @@
 #pragma once
 
-enum EUpdateMode
+enum class EUpdateMode
 {
 	eUpdatePlayMode = 0x0,
 	eUpdatePaused = 0x1,

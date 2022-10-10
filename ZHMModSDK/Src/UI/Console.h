@@ -24,7 +24,6 @@ namespace UI
 
 	private:
 		static std::vector<LogLine>* m_LogLines;
-		static bool m_ShouldScroll;
 		static SRWLOCK m_Lock;
 	};
 }

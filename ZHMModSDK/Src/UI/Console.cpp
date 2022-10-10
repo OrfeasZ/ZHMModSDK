@@ -7,7 +7,6 @@
 using namespace UI;
 
 std::vector<Console::LogLine>* Console::m_LogLines = nullptr;
-bool Console::m_ShouldScroll = false;
 SRWLOCK Console::m_Lock;
 
 void Console::Init()
@@ -78,12 +77,13 @@ void Console::Draw(bool p_HasFocus)
 				if (s_Colored)
 					ImGui::PopStyleColor();
 			}
+
+			// Auto scroll to bottom.
+			if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+				ImGui::SetScrollHereY(1.0);
 		}
 
 		ReleaseSRWLockShared(&m_Lock);
-
-		// Auto scroll to bottom.
-		ImGui::SetScrollHereY(1.0f);
 
 		ImGui::EndChild();
 
@@ -110,8 +110,6 @@ void Console::AddLogLine(spdlog::level::level_enum p_Level, const ZString& p_Tex
 		m_LogLines = new std::vector<LogLine>();
 	
 	m_LogLines->push_back(LogLine { p_Level, std::string(p_Text.c_str(), p_Text.size()) });
-
-	m_ShouldScroll = true;
-
+	
 	ReleaseSRWLockExclusive(&m_Lock);
 }
