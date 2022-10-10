@@ -21,6 +21,12 @@ PATTERN_HOOK(
 );
 
 PATTERN_HOOK(
+	"\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x00\x0F\xB6\xF2",
+	"xxxxxxxxxxxxxxxxxxxxxxxx?xxx",
+	ZEntitySceneContext_ClearScene, void(ZEntitySceneContext*, bool fullyClear)
+);
+
+PATTERN_HOOK(
 	"\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x56\x57\x41\x56\x48\x83\xEC\x00\x41\x0F\xB6\xE9",
 	"xxxxxxxxxxxxxxxxx?xxxx",
 	ZUpdateEventContainer_AddDelegate, void(ZUpdateEventContainer* th, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)
