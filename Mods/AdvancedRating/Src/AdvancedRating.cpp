@@ -42,27 +42,30 @@ void AdvancedRating::OnDrawUI(bool p_HasFocus)
 	sprintf_s(s_CurrentRating, sizeof(s_CurrentRating), "RATING: %s (%lld)###AdvancedRating", GetCurrentRating().c_str(), m_CurrentPoints);
 	
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	ImGui::Begin(s_CurrentRating, nullptr);
+	const auto s_WindowExpanded = ImGui::Begin(s_CurrentRating, nullptr);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-	ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY);
-
-	AcquireSRWLockShared(&m_EventLock);
-
-	for (auto& s_Event : m_EventHistory)
+	if (s_WindowExpanded)
 	{
-		auto s_TypeName = s_Event.TypeToString();
-		
-		ImGui::TableNextRow();
-		ImGui::TableNextColumn();
-		ImGui::TextUnformatted(s_TypeName.c_str(), s_TypeName.c_str() + s_TypeName.size());
-		ImGui::TableNextColumn();
-		ImGui::Text("%lld", s_Event.Points);
-	}
-	
-	ReleaseSRWLockShared(&m_EventLock);
+		ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY);
 
-	ImGui::EndTable();
+		AcquireSRWLockShared(&m_EventLock);
+
+		for (auto& s_Event : m_EventHistory)
+		{
+			auto s_TypeName = s_Event.TypeToString();
+
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(s_TypeName.c_str(), s_TypeName.c_str() + s_TypeName.size());
+			ImGui::TableNextColumn();
+			ImGui::Text("%lld", s_Event.Points);
+		}
+
+		ReleaseSRWLockShared(&m_EventLock);
+
+		ImGui::EndTable();
+	}
 
 	ImGui::PopFont();
 	ImGui::End();
