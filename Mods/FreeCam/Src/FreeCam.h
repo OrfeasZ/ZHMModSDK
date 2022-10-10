@@ -21,9 +21,13 @@ public:
 private:
 	void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 	void ToggleFreecam();
+	void EnableFreecam();
+	void DisableFreecam();
 
 private:
 	DEFINE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int a2);
+	DEFINE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+	DEFINE_PLUGIN_DETOUR(FreeCam, void, OnClearScene, ZEntitySceneContext*, bool);
 
 private:
 	volatile bool m_FreeCamActive;
