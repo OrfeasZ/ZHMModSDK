@@ -127,3 +127,10 @@ PATTERN_RELATIVE_GLOBAL(
 	3,
 	ZResourceContainer**, ResourceContainer
 );
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8B\x0D\x00\x00\x00\x00\x48\x8B\x01\x48\x3B\xC7\x0F\x85\x00\x00\x00\x00\xC7\x81\x08\x03\x00\x00",
+	"xxx????xxxxxxxx????xxxxxx",
+	3,
+	ZCollisionManager**, CollisionManager
+);

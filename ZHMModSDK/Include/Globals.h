@@ -3,6 +3,7 @@
 #include "Common.h"
 #include <cstdint>
 
+class ZCollisionManager;
 class ZResourceContainer;
 class ZResourceManager;
 class ZGameStatsManager;
@@ -42,4 +43,5 @@ public:
 	static ZHM5InputManager* InputManager;
 	static ZResourceContainer** ResourceContainer;
 	static ZResourceManager* ResourceManager;
+	static ZCollisionManager** CollisionManager;
 };
