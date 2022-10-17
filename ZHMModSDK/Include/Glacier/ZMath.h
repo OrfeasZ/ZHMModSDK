@@ -2,6 +2,8 @@
 
 #include "ZPrimitives.h"
 #include <emmintrin.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
 class SVector2
 {
@@ -63,11 +65,66 @@ public:
 	__m128 data[3];
 };
 
-struct float4
+struct alignas(16) float4
 {
 	float4() : m(_mm_setzero_ps()) {}
+
+	float4(__m128 p_Value) : m(p_Value) {}
 	
 	float4(float p_X, float p_Y, float p_Z, float p_W) : x(p_X), y(p_Y), z(p_Z), w(p_W) {}
+
+	float4 operator-(const float4& p_Vec) const
+	{
+		return _mm_sub_ps(m, p_Vec.m);
+	}
+
+	float4 operator+(const float4& p_Vec) const
+	{
+		return _mm_add_ps(m, p_Vec.m);
+	}
+
+	float4 operator*(const float4& p_Vec) const
+	{
+		return _mm_mul_ps(m, p_Vec.m);
+	}
+
+	float4 operator/(const float4& p_Vec) const
+	{
+		return _mm_div_ps(m, p_Vec.m);
+	}
+
+	float4 operator*(float p_Value) const
+	{
+		return _mm_mul_ps(m, _mm_load1_ps(&p_Value));
+	}
+
+	static float4 CrossProduct(float4& v1, float4& v2)
+	{
+		return _mm_sub_ps(
+			_mm_mul_ps(_mm_shuffle_ps(v1.m, v1.m, _MM_SHUFFLE(3, 0, 2, 1)), _mm_shuffle_ps(v2.m, v2.m, _MM_SHUFFLE(3, 1, 0, 2))),
+			_mm_mul_ps(_mm_shuffle_ps(v1.m, v1.m, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(v2.m, v2.m, _MM_SHUFFLE(3, 0, 2, 1)))
+		);
+	}
+
+	inline static float DotProduct(const float4& v1, const float4& v2)
+	{
+		return _mm_cvtss_f32(_mm_dp_ps(v1.m, v2.m, 0x71));
+	}
+
+	inline static float4 Dot3(const float4& v1, const float4& v2)
+	{
+		return _mm_dp_ps(v1.m, v2.m, 0x7F);
+	}
+
+	inline static float Norm(const float4& p_Vec)
+	{
+		return (float)sqrt(DotProduct(p_Vec, p_Vec));
+	}
+
+	inline static float Distance(const float4& p_From, const float4& p_To)
+	{
+		return Norm(p_From - p_To);
+	}
 	
 	union
 	{
@@ -83,9 +140,29 @@ struct float4
 	};
 };
 
+inline std::ostream& operator<<(std::ostream& p_Stream, const float4& p_Value)
+{
+	return p_Stream << "(" << p_Value.x << ", " << p_Value.y << ", " << p_Value.z << ", " << p_Value.w << ")";
+}
+
 struct SMatrix
 {
 	SMatrix() {}
+
+	float4 operator*(const float4& p_Other) const
+	{
+		const auto s_XAxis = XAxis * p_Other;
+		const auto s_YAxis = YAxis * p_Other;
+		const auto s_ZAxis = ZAxis * p_Other;
+		const auto s_Trans = Trans * p_Other;
+
+		return {
+			s_XAxis.x + s_YAxis.x + s_ZAxis.x + s_Trans.x,
+			s_XAxis.y + s_YAxis.y + s_ZAxis.y + s_Trans.y,
+			s_XAxis.z + s_YAxis.z + s_ZAxis.z + s_Trans.z,
+			s_XAxis.w + s_YAxis.w + s_ZAxis.w + s_Trans.w
+		};
+	}
 
 	union
 	{
@@ -100,6 +177,11 @@ struct SMatrix
 		};
 	};
 };
+
+inline std::ostream& operator<<(std::ostream& p_Stream, const SMatrix& p_Value)
+{
+	return p_Stream << "[ " << p_Value.XAxis << ", " << p_Value.YAxis << ", " << p_Value.ZAxis << ", " << p_Value.Trans << " ]";
+}
 
 class SMatrix44
 {
