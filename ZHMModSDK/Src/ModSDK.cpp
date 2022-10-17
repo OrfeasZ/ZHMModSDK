@@ -353,7 +353,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_ActivateEntity, ZEntityManager* th, ZEntityRef* entity, void* a3)
 {
 	const auto& s_Interfaces = *(*entity->m_pEntity)->m_pInterfaces;
-	Logger::Trace("Activating entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity->m_pEntity)->m_nEntityId);
+	//Logger::Trace("Activating entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity->m_pEntity)->m_nEntityId);
 
 	m_EntityMutex.lock();
 	m_Entities.insert(*entity);
@@ -369,7 +369,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntity
 	for (size_t i = 0; i < entities.size(); ++i)
 	{
 		const auto& s_Interfaces = *(*entities[i].m_pEntity)->m_pInterfaces;
-		Logger::Trace("Deleting entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entities[i].m_pEntity)->m_nEntityId);
+		//Logger::Trace("Deleting entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entities[i].m_pEntity)->m_nEntityId);
 
 		m_Entities.erase(entities[i]);
 	}

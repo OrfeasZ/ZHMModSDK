@@ -2,6 +2,9 @@
 
 #include "ZString.h"
 
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
+
 class ZRuntimeResourceID
 {
 public:
@@ -28,8 +31,18 @@ public:
 	};
 };
 
+inline std::ostream& operator<<(std::ostream& p_Stream, const ZRuntimeResourceID& p_Value)
+{
+	return p_Stream << fmt::format("RuntimeResId<{:08X}{:08X}>", p_Value.m_IDHigh, p_Value.m_IDLow);
+}
+
 class ZResourceID
 {
 public:
 	ZString m_uri;
 };
+
+inline std::ostream& operator<<(std::ostream& p_Stream, const ZResourceID& p_Value)
+{
+	return p_Stream << fmt::format("ResId<{}>", p_Value.m_uri);
+}
