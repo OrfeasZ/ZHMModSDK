@@ -58,8 +58,8 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-	"\x40\x53\x48\x83\xEC\x00\x80\x79\x2C\x00\x48\x8B\xD9\x74",
-	"xxxxx?xxx?xxxx",
+	"\x48\x89\x5C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\xDA",
+	"xxxxxxxxxx?xx",
 	ZInputAction_Analog,
 	double(ZInputAction* th, int a2)
 );
