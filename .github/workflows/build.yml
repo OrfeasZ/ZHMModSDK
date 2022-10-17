@@ -43,42 +43,43 @@ jobs:
     - name: Copy SDK and loader artifacts
       run: |
         cd _build/x64-${{ matrix.buildpreset }}
-        mkdir _sdk
-        Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _sdk/
-        Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/
-        Copy-Item DirectInputProxy/dinput8.dll -Destination _sdk/
-        Copy-Item DirectInputProxy/dinput8.pdb -Destination _sdk/
-        Copy-Item ../../LICENSE -Destination _sdk/
+        mkdir _dist
+        Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _dist/
+        Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _dist/
+        Copy-Item DirectInputProxy/dinput8.dll -Destination _dist/
+        Copy-Item DirectInputProxy/dinput8.pdb -Destination _dist/
+        Copy-Item ../../LICENSE -Destination _dist/
         
     - name: Copy mod artifacts
       run: |
         cd _build/x64-${{ matrix.buildpreset }}
-        mkdir _sdk/mods
-        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_sdk/mods"  ($_.Name + ".dll")) }
-        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_sdk/mods"  ($_.Name + ".pdb")) }
+        mkdir _dist/mods
+        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_dist/mods"  ($_.Name + ".dll")) }
+        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_dist/mods"  ($_.Name + ".pdb")) }
 
-    - name: Copy devloader artifacts
+    - name: Copy SDK dev artifacts
       run: |
         cd _build/x64-${{ matrix.buildpreset }}
-        mkdir _devloader
-        Copy-Item Tools/DevLoader/DevLoader.exe -Destination _devloader/
-        Copy-Item Tools/DevLoader/DevLoader.pdb -Destination _devloader/
-        Copy-Item ../../LICENSE -Destination _devloader/
+        mkdir _sdk
+        Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _sdk/bin
+        Copy-Item ZHMModSDK/ZHMModSDK.lib -Destination _sdk/lib
+        Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/bin
+        Copy-Item ../../ZHMModSDK/Include -Destination _sdk/include/
+        Copy-Item ../../LICENSE -Destination _sdk/
 
     - name: Archive SDK, loader, and mods
       uses: actions/upload-artifact@v2
       with:
         name: ZHMModSDK-${{ matrix.buildpreset }}
         path: |
-          _build/x64-${{ matrix.buildpreset }}/_sdk/*
+          _build/x64-${{ matrix.buildpreset }}/_dist/*
 
-    - name: Archive devloader
+    - name: Archive SDK dev package
       uses: actions/upload-artifact@v2
-      if: matrix.buildpreset == 'Debug'
       with:
-        name: DevLoader
+        name: DevPkg-ZHMModSDK-${{ matrix.buildpreset }}
         path: |
-          _build/x64-${{ matrix.buildpreset }}/_devloader/*
+          _build/x64-${{ matrix.buildpreset }}/_sdk/*
 
   upload_release:
     name: Upload release artifacts
@@ -88,7 +89,7 @@ jobs:
 
     strategy:
       matrix:
-        artifact: [ ZHMModSDK-Release, ZHMModSDK-Debug, DevLoader ]
+        artifact: [ ZHMModSDK-Release, ZHMModSDK-Debug, DevPkg-ZHMModSDK-Release, DevPkg-ZHMModSDK-Debug ]
 
     steps:
     - name: Download artifact
