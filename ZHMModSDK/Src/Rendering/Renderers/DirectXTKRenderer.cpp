@@ -27,190 +27,18 @@
 
 using namespace Rendering::Renderers;
 
-bool DirectXTKRenderer::m_RendererSetup = false;
-UINT DirectXTKRenderer::m_BufferCount = 0;
-ID3D12DescriptorHeap* DirectXTKRenderer::m_RtvDescriptorHeap = nullptr;
-//ID3D12CommandQueue* DirectXTKRenderer::m_CommandQueue = nullptr;
-DirectXTKRenderer::FrameContext* DirectXTKRenderer::m_FrameContext = nullptr;
-IDXGISwapChain3* DirectXTKRenderer::m_SwapChain = nullptr;
-HWND DirectXTKRenderer::m_Hwnd = nullptr;
-float DirectXTKRenderer::m_WindowWidth = 1.f;
-float DirectXTKRenderer::m_WindowHeight = 1.f;
-bool DirectXTKRenderer::m_Shutdown = false;
-
-std::unique_ptr<DirectX::GraphicsMemory> DirectXTKRenderer::m_GraphicsMemory;
-std::unique_ptr<DirectX::BasicEffect> DirectXTKRenderer::m_LineEffect;
-std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> DirectXTKRenderer::m_LineBatch;
-DirectX::SimpleMath::Matrix DirectXTKRenderer::m_World;
-DirectX::SimpleMath::Matrix DirectXTKRenderer::m_View;
-DirectX::SimpleMath::Matrix DirectXTKRenderer::m_Projection;
-DirectX::SimpleMath::Matrix DirectXTKRenderer::m_ViewProjection;
-
-std::unique_ptr<DirectX::DescriptorHeap> DirectXTKRenderer::m_ResourceDescriptors;
-std::unique_ptr<DirectX::SpriteFont> DirectXTKRenderer::m_Font;
-std::unique_ptr<DirectX::SpriteBatch> DirectXTKRenderer::m_SpriteBatch;
-
-DirectXTKRenderer::TKRendererInterface* DirectXTKRenderer::m_RendererInterface;
-
-SRWLOCK DirectXTKRenderer::m_Lock;
-
-
-void DirectXTKRenderer::TKRendererInterface::DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor)
+DirectXTKRenderer::DirectXTKRenderer()
 {
-	if (!m_RendererSetup)
-		return;
-
-	DirectX::VertexPositionColor s_From(
-		DirectX::SimpleMath::Vector3(p_From.x, p_From.y, p_From.z),
-		DirectX::SimpleMath::Vector4(p_FromColor.x, p_FromColor.y, p_FromColor.z, p_FromColor.w)
-	);
-	
-	DirectX::VertexPositionColor s_To(
-		DirectX::SimpleMath::Vector3(p_To.x, p_To.y, p_To.z),
-		DirectX::SimpleMath::Vector4(p_ToColor.x, p_ToColor.y, p_ToColor.z, p_ToColor.w)
-	);
-	
-	m_LineBatch->DrawLine(s_From, s_To);
 }
 
-void DirectXTKRenderer::TKRendererInterface::DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/, float p_Scale/* = 1.f*/, TextAlignment p_Alignment/* = TextAlignment::Center*/)
+DirectXTKRenderer::~DirectXTKRenderer()
 {
-	if (!m_RendererSetup)
-		return;
-
-	const std::string s_Text(p_Text.c_str(), p_Text.size());
-	const DirectX::SimpleMath::Vector2 s_StringSize = m_Font->MeasureString(s_Text.c_str());
-	
-	DirectX::SimpleMath::Vector2 s_Origin(0.f, 0.f);
-
-	if (p_Alignment == TextAlignment::Center)
-		s_Origin.x = s_StringSize.x / 2.f;
-	else if (p_Alignment == TextAlignment::Right)
-		s_Origin.x = s_StringSize.x;
-
-	m_Font->DrawString(
-		m_SpriteBatch.get(),
-		s_Text.c_str(),
-		DirectX::SimpleMath::Vector2(p_Pos.x, p_Pos.y),
-		DirectX::SimpleMath::Vector4(p_Color.x, p_Color.y, p_Color.z, p_Color.w),
-		p_Rotation,
-		s_Origin,
-		p_Scale
-	);
-}
-
-bool DirectXTKRenderer::TKRendererInterface::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out)
-{
-	if (!m_RendererSetup)
-		return false;
-	
-	const DirectX::SimpleMath::Vector4 s_World(p_WorldPos.x, p_WorldPos.y, p_WorldPos.z, 1.f);
-	const DirectX::SimpleMath::Vector4 s_Projected = DirectX::XMVector4Transform(s_World, m_ViewProjection);
-
-	if (s_Projected.w <= 0.000001f)
-		return false;
-	
-	const float s_InvertedZ = 1.f / s_Projected.w;
-	const DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
-
-	p_Out.x = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
-	p_Out.y = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
-
-	return true;
-}
-
-bool DirectXTKRenderer::TKRendererInterface::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_Out)
-{
-	if (!m_RendererSetup)
-		return false;
-
-	const DirectX::XMVECTOR s_ScreenPos = DirectX::XMLoadFloat2(reinterpret_cast<DirectX::XMFLOAT2*>(&p_Out));
-	DirectX::XMVectorSetY(s_ScreenPos, 1.f);
-
-	const auto s_Result = DirectX::XMVector3Unproject(s_ScreenPos, 0, 0, m_WindowWidth, m_WindowHeight, 0.f, 1.f, m_Projection, m_View, m_World);
-
-	p_Out.x = DirectX::XMVectorGetX(s_Result);
-	p_Out.y = DirectX::XMVectorGetY(s_Result);
-	p_Out.z = DirectX::XMVectorGetZ(s_Result);
-
-	return true;
-}
-
-void DirectXTKRenderer::TKRendererInterface::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color)
-{
-	SVector3 s_Corners[] = {
-		SVector3(p_Min.x, p_Min.y, p_Min.z),
-		SVector3(p_Min.x, p_Max.y, p_Min.z),
-		SVector3(p_Max.x, p_Max.y, p_Min.z),
-		SVector3(p_Max.x, p_Min.y, p_Min.z),
-		SVector3(p_Max.x, p_Max.y, p_Max.z),
-		SVector3(p_Min.x, p_Max.y, p_Max.z),
-		SVector3(p_Min.x, p_Min.y, p_Max.z),
-		SVector3(p_Max.x, p_Min.y, p_Max.z),
-	};
-
-	DrawLine3D(s_Corners[0], s_Corners[1], p_Color, p_Color);
-	DrawLine3D(s_Corners[1], s_Corners[2], p_Color, p_Color);
-	DrawLine3D(s_Corners[2], s_Corners[3], p_Color, p_Color);
-	DrawLine3D(s_Corners[3], s_Corners[0], p_Color, p_Color);
-
-	DrawLine3D(s_Corners[4], s_Corners[5], p_Color, p_Color);
-	DrawLine3D(s_Corners[5], s_Corners[6], p_Color, p_Color);
-	DrawLine3D(s_Corners[6], s_Corners[7], p_Color, p_Color);
-	DrawLine3D(s_Corners[7], s_Corners[4], p_Color, p_Color);
-
-	DrawLine3D(s_Corners[1], s_Corners[5], p_Color, p_Color);
-	DrawLine3D(s_Corners[0], s_Corners[6], p_Color, p_Color);
-
-	DrawLine3D(s_Corners[2], s_Corners[4], p_Color, p_Color);
-	DrawLine3D(s_Corners[3], s_Corners[7], p_Color, p_Color);
-}
-
-inline SVector3 XMVecToSVec3(const DirectX::XMVECTOR& p_Vec)
-{
-	return SVector3(DirectX::XMVectorGetX(p_Vec), DirectX::XMVectorGetY(p_Vec), DirectX::XMVectorGetZ(p_Vec));
-}
-
-void DirectXTKRenderer::TKRendererInterface::DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color)
-{
-	const auto s_Transform = *reinterpret_cast<DirectX::FXMMATRIX*>(&p_Transform);
-
-	DirectX::XMVECTOR s_Corners[] = {
-		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Min.y, p_Min.z), s_Transform),
-		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Max.y, p_Min.z), s_Transform),
-		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Max.y, p_Min.z), s_Transform),
-		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Min.y, p_Min.z), s_Transform),
-		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Max.y, p_Max.z), s_Transform),
-		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Max.y, p_Max.z), s_Transform),
-		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Min.y, p_Max.z), s_Transform),
-		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Min.y, p_Max.z), s_Transform),
-	};
-
-	DrawLine3D(XMVecToSVec3(s_Corners[0]), XMVecToSVec3(s_Corners[1]), p_Color, p_Color);
-	DrawLine3D(XMVecToSVec3(s_Corners[1]), XMVecToSVec3(s_Corners[2]), p_Color, p_Color);
-	DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[3]), p_Color, p_Color);
-	DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[0]), p_Color, p_Color);
-
-	DrawLine3D(XMVecToSVec3(s_Corners[4]), XMVecToSVec3(s_Corners[5]), p_Color, p_Color);
-	DrawLine3D(XMVecToSVec3(s_Corners[5]), XMVecToSVec3(s_Corners[6]), p_Color, p_Color);
-	DrawLine3D(XMVecToSVec3(s_Corners[6]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
-	DrawLine3D(XMVecToSVec3(s_Corners[7]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
-
-	DrawLine3D(XMVecToSVec3(s_Corners[1]), XMVecToSVec3(s_Corners[5]), p_Color, p_Color);
-	DrawLine3D(XMVecToSVec3(s_Corners[0]), XMVecToSVec3(s_Corners[6]), p_Color, p_Color);
-
-	DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
-	DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
-}
-
-void DirectXTKRenderer::Init()
-{
-	m_RendererInterface = new TKRendererInterface();
+	Shutdown();
 }
 
 void DirectXTKRenderer::OnEngineInit()
 {
-	const ZStaticDelegate<void(const SGameUpdateEvent&)> s_Delegate(&DirectXTKRenderer::OnFrameUpdate);
+	const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(this, &DirectXTKRenderer::OnFrameUpdate);
 	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, INT_MAX, EUpdateMode::eUpdateAlways);
 }
 
@@ -238,9 +66,7 @@ void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
 void DirectXTKRenderer::Shutdown()
 {
-	m_Shutdown = true;
-
-	const ZStaticDelegate<void(const SGameUpdateEvent&)> s_Delegate(&DirectXTKRenderer::OnFrameUpdate);
+	const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(this, &DirectXTKRenderer::OnFrameUpdate);
 	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
 
 	OnReset();
@@ -257,7 +83,7 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 
 	m_LineBatch->Begin(p_Frame->CommandList);
 
-	ModSDK::GetInstance()->OnDraw3D(m_RendererInterface);	
+	ModSDK::GetInstance()->OnDraw3D();
 
 	m_LineBatch->End();
 
@@ -267,9 +93,6 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
 	ScopedSharedGuard s_Guard(&m_Lock);
-
-	if (m_Shutdown)
-		return;
 
 	if (!Globals::RenderManager->m_pDevice->m_pCommandQueue)
 		return;
@@ -355,9 +178,6 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
 void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain)
 {
-	if (m_Shutdown)
-		return;
-
 	if (!Globals::RenderManager->m_pDevice->m_pCommandQueue || !m_SwapChain)
 		return;
 
@@ -627,4 +447,152 @@ void DirectXTKRenderer::ExecuteCmdList(FrameContext* p_Frame)
 	};
 
 	Globals::RenderManager->m_pDevice->m_pCommandQueue->ExecuteCommandLists(1, s_CommandLists);
+}
+
+void DirectXTKRenderer::DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor)
+{
+	if (!m_RendererSetup)
+		return;
+
+	DirectX::VertexPositionColor s_From(
+		DirectX::SimpleMath::Vector3(p_From.x, p_From.y, p_From.z),
+		DirectX::SimpleMath::Vector4(p_FromColor.x, p_FromColor.y, p_FromColor.z, p_FromColor.w)
+	);
+
+	DirectX::VertexPositionColor s_To(
+		DirectX::SimpleMath::Vector3(p_To.x, p_To.y, p_To.z),
+		DirectX::SimpleMath::Vector4(p_ToColor.x, p_ToColor.y, p_ToColor.z, p_ToColor.w)
+	);
+
+	m_LineBatch->DrawLine(s_From, s_To);
+}
+
+void DirectXTKRenderer::DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/, float p_Scale/* = 1.f*/, TextAlignment p_Alignment/* = TextAlignment::Center*/)
+{
+	if (!m_RendererSetup)
+		return;
+
+	const std::string s_Text(p_Text.c_str(), p_Text.size());
+	const DirectX::SimpleMath::Vector2 s_StringSize = m_Font->MeasureString(s_Text.c_str());
+
+	DirectX::SimpleMath::Vector2 s_Origin(0.f, 0.f);
+
+	if (p_Alignment == TextAlignment::Center)
+		s_Origin.x = s_StringSize.x / 2.f;
+	else if (p_Alignment == TextAlignment::Right)
+		s_Origin.x = s_StringSize.x;
+
+	m_Font->DrawString(
+		m_SpriteBatch.get(),
+		s_Text.c_str(),
+		DirectX::SimpleMath::Vector2(p_Pos.x, p_Pos.y),
+		DirectX::SimpleMath::Vector4(p_Color.x, p_Color.y, p_Color.z, p_Color.w),
+		p_Rotation,
+		s_Origin,
+		p_Scale
+	);
+}
+
+bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out)
+{
+	if (!m_RendererSetup)
+		return false;
+
+	const DirectX::SimpleMath::Vector4 s_World(p_WorldPos.x, p_WorldPos.y, p_WorldPos.z, 1.f);
+	const DirectX::SimpleMath::Vector4 s_Projected = DirectX::XMVector4Transform(s_World, m_ViewProjection);
+
+	if (s_Projected.w <= 0.000001f)
+		return false;
+
+	const float s_InvertedZ = 1.f / s_Projected.w;
+	const DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
+
+	p_Out.x = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
+	p_Out.y = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
+
+	return true;
+}
+
+bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_Out)
+{
+	if (!m_RendererSetup)
+		return false;
+
+	const DirectX::XMVECTOR s_ScreenPos = DirectX::XMLoadFloat2(reinterpret_cast<DirectX::XMFLOAT2*>(&p_Out));
+	DirectX::XMVectorSetY(s_ScreenPos, 1.f);
+
+	const auto s_Result = DirectX::XMVector3Unproject(s_ScreenPos, 0, 0, m_WindowWidth, m_WindowHeight, 0.f, 1.f, m_Projection, m_View, m_World);
+
+	p_Out.x = DirectX::XMVectorGetX(s_Result);
+	p_Out.y = DirectX::XMVectorGetY(s_Result);
+	p_Out.z = DirectX::XMVectorGetZ(s_Result);
+
+	return true;
+}
+
+void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color)
+{
+	SVector3 s_Corners[] = {
+		SVector3(p_Min.x, p_Min.y, p_Min.z),
+		SVector3(p_Min.x, p_Max.y, p_Min.z),
+		SVector3(p_Max.x, p_Max.y, p_Min.z),
+		SVector3(p_Max.x, p_Min.y, p_Min.z),
+		SVector3(p_Max.x, p_Max.y, p_Max.z),
+		SVector3(p_Min.x, p_Max.y, p_Max.z),
+		SVector3(p_Min.x, p_Min.y, p_Max.z),
+		SVector3(p_Max.x, p_Min.y, p_Max.z),
+	};
+
+	DrawLine3D(s_Corners[0], s_Corners[1], p_Color, p_Color);
+	DrawLine3D(s_Corners[1], s_Corners[2], p_Color, p_Color);
+	DrawLine3D(s_Corners[2], s_Corners[3], p_Color, p_Color);
+	DrawLine3D(s_Corners[3], s_Corners[0], p_Color, p_Color);
+
+	DrawLine3D(s_Corners[4], s_Corners[5], p_Color, p_Color);
+	DrawLine3D(s_Corners[5], s_Corners[6], p_Color, p_Color);
+	DrawLine3D(s_Corners[6], s_Corners[7], p_Color, p_Color);
+	DrawLine3D(s_Corners[7], s_Corners[4], p_Color, p_Color);
+
+	DrawLine3D(s_Corners[1], s_Corners[5], p_Color, p_Color);
+	DrawLine3D(s_Corners[0], s_Corners[6], p_Color, p_Color);
+
+	DrawLine3D(s_Corners[2], s_Corners[4], p_Color, p_Color);
+	DrawLine3D(s_Corners[3], s_Corners[7], p_Color, p_Color);
+}
+
+inline SVector3 XMVecToSVec3(const DirectX::XMVECTOR& p_Vec)
+{
+	return SVector3(DirectX::XMVectorGetX(p_Vec), DirectX::XMVectorGetY(p_Vec), DirectX::XMVectorGetZ(p_Vec));
+}
+
+void DirectXTKRenderer::DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color)
+{
+	const auto s_Transform = *reinterpret_cast<DirectX::FXMMATRIX*>(&p_Transform);
+
+	DirectX::XMVECTOR s_Corners[] = {
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Min.y, p_Min.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Max.y, p_Min.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Max.y, p_Min.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Min.y, p_Min.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Max.y, p_Max.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Max.y, p_Max.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Min.x, p_Min.y, p_Max.z), s_Transform),
+		DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Min.y, p_Max.z), s_Transform),
+	};
+
+	DrawLine3D(XMVecToSVec3(s_Corners[0]), XMVecToSVec3(s_Corners[1]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[1]), XMVecToSVec3(s_Corners[2]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[3]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[0]), p_Color, p_Color);
+
+	DrawLine3D(XMVecToSVec3(s_Corners[4]), XMVecToSVec3(s_Corners[5]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[5]), XMVecToSVec3(s_Corners[6]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[6]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[7]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
+
+	DrawLine3D(XMVecToSVec3(s_Corners[1]), XMVecToSVec3(s_Corners[5]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[0]), XMVecToSVec3(s_Corners[6]), p_Color, p_Color);
+
+	DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
+	DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
 }

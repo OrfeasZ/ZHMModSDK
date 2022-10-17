@@ -1,10 +1,12 @@
 #pragma once
 
+#include "Glacier/ZDelegate.h"
+
 namespace UI
 {
 	class MainMenu
 	{
 	public:
-		static void Draw(bool p_HasFocus);
+		void Draw(bool p_HasFocus);
 	};
 }

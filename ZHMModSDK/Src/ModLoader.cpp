@@ -65,7 +65,7 @@ void ModLoader::ScanAvailableMods()
 		Logger::Warn("Mod directory '{}' not found.", s_ModPath.string());
 	}
 
-	UI::ModSelector::UpdateAvailableMods(m_AvailableMods, GetActiveMods());
+	ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
 }
 
 std::unordered_set<std::string> ModLoader::GetActiveMods()
@@ -128,7 +128,7 @@ void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
 
 	s_File.generate(s_Ini, true);
 
-	UI::ModSelector::UpdateAvailableMods(m_AvailableMods, GetActiveMods());
+	ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
 }
 
 std::unordered_set<std::string> ModLoader::GetAvailableMods()
@@ -166,7 +166,7 @@ void ModLoader::LoadAllMods()
 		}
 	}
 
-	UI::ModSelector::UpdateAvailableMods(m_AvailableMods, GetActiveMods());
+	ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
 }
 
 void ModLoader::LoadMod(const std::string& p_Name, bool p_LiveLoad)

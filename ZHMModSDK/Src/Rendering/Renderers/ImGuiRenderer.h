@@ -4,6 +4,7 @@
 #include <dxgi1_4.h>
 
 #include "Hooks.h"
+#include "Glacier/ZInput.h"
 
 struct ImFont;
 
@@ -30,59 +31,61 @@ namespace Rendering::Renderers
 		};
 
 	public:
-		static void Init();
-		static void OnEngineInit();
-		static void Shutdown();
-		
-	public:
-		static void OnPresent(IDXGISwapChain3* p_SwapChain);
-		static void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
-		static void OnReset();
+		ImGuiRenderer();
+		~ImGuiRenderer();
 
 	public:
-		static ImFont* GetFontLight() { return m_FontLight; }
-		static ImFont* GetFontRegular() { return m_FontRegular; }
-		static ImFont* GetFontMedium() { return m_FontMedium; }
-		static ImFont* GetFontBold() { return m_FontBold; }
-		static ImFont* GetFontBlack() { return m_FontBlack; }
+		void OnEngineInit();
+		void Shutdown();
+		
+	public:
+		void OnPresent(IDXGISwapChain3* p_SwapChain);
+		void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
+		void OnReset();
 
-		static void SetFocus(bool p_Focused) { m_ImguiHasFocus = p_Focused; }
+	public:
+		ImFont* GetFontLight() { return m_FontLight; }
+		ImFont* GetFontRegular() { return m_FontRegular; }
+		ImFont* GetFontMedium() { return m_FontMedium; }
+		ImFont* GetFontBold() { return m_FontBold; }
+		ImFont* GetFontBlack() { return m_FontBlack; }
+
+		void SetFocus(bool p_Focused) { m_ImguiHasFocus = p_Focused; }
 		
 	private:
-		static bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
-		static void WaitForGpu(FrameContext* p_Frame);
-		static void ExecuteCmdList(FrameContext* p_Frame);
-		static void Draw();
-		static void SetupStyles();
+		bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
+		void WaitForGpu(FrameContext* p_Frame);
+		void ExecuteCmdList(FrameContext* p_Frame);
+		void Draw();
+		void SetupStyles();
 
 	private:
-		DEFINE_STATIC_DETOUR(LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM);
-		DEFINE_STATIC_DETOUR(void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool);
+		DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM);
+		DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool);
+		DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction*, int);
 
 	private:
-		static bool m_RendererSetup;
-		static bool m_ImguiInitialized;
+		bool m_RendererSetup = false;
 
-		static UINT m_BufferCount;
-		static ID3D12DescriptorHeap* m_RtvDescriptorHeap;
-		static ID3D12DescriptorHeap* m_SrvDescriptorHeap;
-		//static ID3D12CommandQueue* m_CommandQueue;
-		static FrameContext* m_FrameContext;
-		static IDXGISwapChain3* m_SwapChain;
-		static HWND m_Hwnd;
-		static bool m_Shutdown;
+		UINT m_BufferCount = 0;
+		ID3D12DescriptorHeap* m_RtvDescriptorHeap = nullptr;
+		ID3D12DescriptorHeap* m_SrvDescriptorHeap = nullptr;
+		//ID3D12CommandQueue* m_CommandQueue;
+		FrameContext* m_FrameContext = nullptr;
+		IDXGISwapChain3* m_SwapChain = nullptr;
+		HWND m_Hwnd = nullptr;
 
-		static int64_t m_Time;
-		static int64_t m_TicksPerSecond;
+		int64_t m_Time = 0;
+		int64_t m_TicksPerSecond = 0;
 
-		static ImFont* m_FontLight;
-		static ImFont* m_FontRegular;
-		static ImFont* m_FontMedium;
-		static ImFont* m_FontBold;
-		static ImFont* m_FontBlack;
+		ImFont* m_FontLight = nullptr;
+		ImFont* m_FontRegular = nullptr;
+		ImFont* m_FontMedium = nullptr;
+		ImFont* m_FontBold = nullptr;
+		ImFont* m_FontBlack = nullptr;
 
-		static volatile bool m_ImguiHasFocus;
+		volatile bool m_ImguiHasFocus = false;
 
-		static SRWLOCK m_Lock;
+		SRWLOCK m_Lock {};
 	};
 }

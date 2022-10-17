@@ -11,7 +11,9 @@
 #include <Glacier/ZDelegate.h>
 
 #include "Glacier/TArray.h"
+#include "Glacier/THashMap.h"
 
+class ZRuntimeResourceID;
 class ZActor;
 class ZComponentCreateInfo;
 class SGameUpdateEvent;
@@ -70,6 +72,7 @@ public:
 	static Hook<void(ZAchievementManagerSimple* th, const SOnlineEvent& event)>* ZAchievementManagerSimple_OnEventReceived;
 	static Hook<void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)>* ZAchievementManagerSimple_OnEventSent;
 	static Hook<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
-	static Hook<void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, void* a3)>* ZEntityManager_DeleteEntities;
+	static Hook<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
+	static Hook<void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>& references)>* ZEntityManager_DeleteEntities;
 	static Hook<void(ZEntityManager* th, ZEntityRef* entity, void* a3)>* ZEntityManager_ActivateEntity;
 };

@@ -21,7 +21,7 @@ void MainMenu::Draw(bool p_HasFocus)
 
 	if (ImGui::Button("SELECT MODS"))
 	{
-		ModSelector::Show();
+		ModSDK::GetInstance()->GetUIModSelector()->Show();
 	}
 
 	ModSDK::GetInstance()->OnDrawMenu();
