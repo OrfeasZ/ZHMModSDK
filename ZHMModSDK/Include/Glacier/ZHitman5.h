@@ -383,6 +383,19 @@ public:
 	virtual void ICharacterCameraState_unk00() = 0;
 };
 
+class ZPhysicsSystemEntity;
+class IChildNetworkEntity;
+class ZItemPlacementConfigurationEntity;
+class IVariationResourceEntity;
+class ZBodyPartEntity;
+class ZHeroGuideController;
+class ZHeroIKController;
+class ZCheatController;
+class ZHeroInteractionController;
+class ZHeroActorTagController;
+class ZCharacter;
+class ZHM5MainCamera;
+
 class ZHitman5 :
 	public ZHM5BaseCharacter,
 	public IFutureCameraState, // 720
@@ -406,4 +419,56 @@ class ZHitman5 :
 public:
 	PAD(0x3B8); // 0x358
 	ZRepositoryID m_InitialOutfitId; // 0x710
+	ZEntityRef m_MorphemeEntityID; // 0x720
+	ZEntityRef m_Animator; // 0x728
+	TEntityRef<ZPhysicsSystemEntity> m_rRagdollEntity; // 0x730
+	TEntityRef<IChildNetworkEntity> m_rDefaultPickupNetwork; // 0x740
+	TEntityRef<ZItemPlacementConfigurationEntity> m_placementconfiguration; // 0x750
+	bool m_bStreamableDisguiseGive; // 0x760
+	TEntityRef<IVariationResourceEntity> m_DefaultWeaponVariationResource; // 0x768
+	PAD(0x30); // 0x778
+	ZGuid m_CharacterId; // 0x7A8
+	PAD(0x78); // 0x7B8
+	TEntityRef<ZBodyPartEntity> m_pVRHeadReplacement; // 0x830
+	TEntityRef<ZBodyPartEntity> m_pVROldHeadReplacement; // 0x840
+	ZRuntimeResourceID m_SeasonOneHead1; // 0x850
+	ZRuntimeResourceID m_SeasonOneHead2; // 0x858
+	ZRuntimeResourceID m_SeasonOneHead3; // 0x860
+	ZRuntimeResourceID m_SeasonOneHead4; // 0x868
+	ZRuntimeResourceID m_SeasonOneHead5; // 0x870
+	PAD(0x4D0); // 0x878
+	bool m_bIsInvincible; // 0xD48
+	TEntityRef<ZHeroGuideController> m_pGuideController; // 0xD50
+	TEntityRef<ZHeroIKController> m_pIKController; // 0xD60
+	TEntityRef<ZCheatController> m_pCheatController; // 0xD70
+	TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xD80
+	TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xD90
+	TEntityRef<ZCharacter> m_pCharacter; // 0xDA0
+	PAD(0x398); // 0xDB0
+
+	union
+	{
+		uint32_t m_flags; // 0x1148
+
+		struct
+		{
+			bool m_bActivated : 1;
+			bool m_bActivatingHitman : 1;
+			bool m_bInEditMode : 1;
+			bool m_bUnknown01 : 1;
+		};
+	};
+
+	PAD(0x1C); // 0x114C
+	TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1168
+	PAD(0x98); // 0x1178
 };
+
+static_assert(offsetof(ZHitman5, m_InitialOutfitId) == 0x710);
+static_assert(offsetof(ZHitman5, m_CharacterId) == 0x7A8);
+static_assert(offsetof(ZHitman5, m_pVRHeadReplacement) == 0x830);
+static_assert(offsetof(ZHitman5, m_bIsInvincible) == 0xD48);
+static_assert(offsetof(ZHitman5, m_pCharacter) == 0xDA0);
+static_assert(offsetof(ZHitman5, m_flags) == 0x1148);
+static_assert(offsetof(ZHitman5, m_rMainCamera) == 0x1168);
+static_assert(sizeof(ZHitman5) == 0x1210);
