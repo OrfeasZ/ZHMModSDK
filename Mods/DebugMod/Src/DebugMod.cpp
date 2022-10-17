@@ -308,20 +308,20 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 		p_Renderer->DrawText2D("H", s_HitPos, SVector4(1, 1, 1, 1), 0, 0.5f);
 
 	p_Renderer->DrawBox3D(
-		SVector3(m_From.x - 0.05, m_From.y - 0.05, m_From.z - 0.05),
-		SVector3(m_From.x + 0.05, m_From.y + 0.05, m_From.z + 0.05),
+		SVector3(m_From.x - 0.05f, m_From.y - 0.05f, m_From.z - 0.05f),
+		SVector3(m_From.x + 0.05f, m_From.y + 0.05f, m_From.z + 0.05f),
 		SVector4(0.f, 0.f, 1.f, 1.0f)
 	);
 
 	p_Renderer->DrawBox3D(
-		SVector3(m_To.x - 0.05, m_To.y - 0.05, m_To.z - 0.05),
-		SVector3(m_To.x + 0.05, m_To.y + 0.05, m_To.z + 0.05),
+		SVector3(m_To.x - 0.05f, m_To.y - 0.05f, m_To.z - 0.05f),
+		SVector3(m_To.x + 0.05f, m_To.y + 0.05f, m_To.z + 0.05f),
 		SVector4(0.f, 1.f, 0.f, 1.0f)
 	);
 
 	p_Renderer->DrawBox3D(
-		SVector3(m_Hit.x - 0.05, m_Hit.y - 0.05, m_Hit.z - 0.05),
-		SVector3(m_Hit.x + 0.05, m_Hit.y + 0.05, m_Hit.z + 0.05),
+		SVector3(m_Hit.x - 0.05f, m_Hit.y - 0.05f, m_Hit.z - 0.05f),
+		SVector3(m_Hit.x + 0.05f, m_Hit.y + 0.05f, m_Hit.z + 0.05f),
 		SVector4(0.f, 1.f, 1.f, 1.0f)
 	);
 
@@ -333,7 +333,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 	);
 
 	p_Renderer->DrawLine3D(
-		SVector3(m_Hit.x + (m_Normal.x * 0.75), m_From.y + (m_Normal.y * 0.75), m_From.z + (m_Normal.z * 0.75)),
+		SVector3(m_Hit.x + (m_Normal.x * 0.15f), m_From.y + (m_Normal.y * 0.15f), m_From.z + (m_Normal.z * 0.15f)),
 		SVector3(m_Hit.x, m_Hit.y, m_Hit.z),
 		SVector4(0.63f, 0.13f, 0.94f, 1.f),
 		SVector4(0.63f, 0.13f, 0.94f, 1.f)
