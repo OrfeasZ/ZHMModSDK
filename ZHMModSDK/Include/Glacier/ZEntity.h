@@ -110,6 +110,12 @@ public:
 	ZEntityType** m_pEntity = nullptr;
 
 public:
+	ZEntityRef()
+	{		
+	}
+
+	bool operator==(const ZEntityRef&) const = default;
+	
 	ZEntityImpl* GetBaseEntity()
 	{
 		if (!m_pEntity || !*m_pEntity)
@@ -305,6 +311,14 @@ public:
 	{
 		return m_pEntity != nullptr && (*m_pEntity) != nullptr;
 	}
+
+	struct hasher
+	{
+		size_t operator()(const ZEntityRef& p_Ref) const noexcept
+		{
+			return reinterpret_cast<uintptr_t>(p_Ref.m_pEntity);
+		}
+	};
 };
 
 template <typename T>
