@@ -65,8 +65,8 @@ jobs:
         Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _sdk/bin/ZHMModSDK.dll
         Copy-Item ZHMModSDK/ZHMModSDK.lib -Destination _sdk/bin/ZHMModSDK.lib
         Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/bin/ZHMModSDK.pdb
-        Copy-Item ../../ZHMModSDK/Include/* -Destination _sdk/include -Recurse
-        Copy-Item ../../CMakeLists.dist.txt -Destination _sdk/CMakeLists.txt -Recurse
+        Copy-Item ../../ZHMModSDK/Include/ -Destination _sdk/include -Recurse
+        Copy-Item ../../CMakeLists.dist.txt -Destination _sdk/CMakeLists.txt
         Copy-Item ../../LICENSE -Destination _sdk/LICENSE
 
     - name: Archive SDK, loader, and mods
