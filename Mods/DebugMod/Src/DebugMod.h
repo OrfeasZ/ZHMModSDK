@@ -21,8 +21,15 @@ public:
 
 private:
 	void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
-	void DoRaycast();
+	void DoRaycast(float4 p_From, float4 p_To);
 	void MoveObject();
+	void CopyToClipboard(const std::string& p_String) const;
+
+private:
+	// UI Drawing
+	void DrawOptions(bool p_HasFocus);
+	void DrawPositionBox(bool p_HasFocus);
+	void DrawEntityBox(bool p_HasFocus);
 
 private:
 	bool m_MenuActive = false;

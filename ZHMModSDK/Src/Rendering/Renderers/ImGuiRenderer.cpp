@@ -681,6 +681,8 @@ DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAc
 	static std::unordered_set<std::string> s_BlockedInputs = {
 		"eIAKBMLookHorizontal",
 		"eIAKBMLookVertical",
+		"TiltCamera",
+		"TurnCamera",
 		"AnalogLeftX",
 		"AnalogLeftY",
 		"AnalogRightY",
