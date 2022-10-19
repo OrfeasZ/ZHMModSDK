@@ -5,6 +5,19 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 
+struct SViewport
+{
+	uint32_t x;
+	uint32_t y;
+	uint32_t w;
+	uint32_t h;
+};
+
+inline std::ostream& operator<<(std::ostream& p_Stream, const SViewport& p_Value)
+{
+	return p_Stream << "(" << p_Value.x << ", " << p_Value.y << ", " << p_Value.w << ", " << p_Value.h << ")";
+}
+
 class SVector2
 {
 public:
@@ -15,6 +28,11 @@ public:
 	float32 x; // 0x0
 	float32 y; // 0x4
 };
+
+inline std::ostream& operator<<(std::ostream& p_Stream, const SVector2& p_Value)
+{
+	return p_Stream << "(" << p_Value.x << ", " << p_Value.y << ")";
+}
 
 class SVector3
 {
@@ -28,6 +46,11 @@ public:
 	float32 z; // 0x8
 };
 
+inline std::ostream& operator<<(std::ostream& p_Stream, const SVector3& p_Value)
+{
+	return p_Stream << "(" << p_Value.x << ", " << p_Value.y << ", " << p_Value.z << ")";
+}
+
 class SVector4
 {
 public:
@@ -40,6 +63,11 @@ public:
 	float32 z; // 0x8
 	float32 w; // 0x10
 };
+
+inline std::ostream& operator<<(std::ostream& p_Stream, const SVector4& p_Value)
+{
+	return p_Stream << "(" << p_Value.x << ", " << p_Value.y << ", " << p_Value.z << ", " << p_Value.w << ")";
+}
 
 class SMatrix43
 {
@@ -151,10 +179,10 @@ struct SMatrix
 
 	float4 operator*(const float4& p_Other) const
 	{
-		const auto s_XAxis = XAxis * p_Other;
-		const auto s_YAxis = YAxis * p_Other;
-		const auto s_ZAxis = ZAxis * p_Other;
-		const auto s_Trans = Trans * p_Other;
+		const auto s_XAxis = XAxis * p_Other.x;
+		const auto s_YAxis = YAxis * p_Other.y;
+		const auto s_ZAxis = ZAxis * p_Other.z;
+		const auto s_Trans = Trans * p_Other.w;
 
 		return {
 			s_XAxis.x + s_YAxis.x + s_ZAxis.x + s_Trans.x,
@@ -167,6 +195,7 @@ struct SMatrix
 	union
 	{
 		float4 mat[4];
+		float flt[4 * 4];
 
 		struct
 		{

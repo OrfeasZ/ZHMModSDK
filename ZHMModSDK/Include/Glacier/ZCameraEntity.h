@@ -23,12 +23,12 @@ class ICameraEntity :
 public:
 	virtual void ICameraEntity_unk05() = 0;
 	virtual void ICameraEntity_unk06() = 0;
-	virtual void ICameraEntity_unk07() = 0;
+	virtual SViewport* GetViewport() = 0;
 	virtual void ICameraEntity_unk08() = 0;
 	virtual void ICameraEntity_unk09() = 0;
 	virtual void ICameraEntity_unk10() = 0;
-	virtual void ICameraEntity_unk11() = 0;
-	virtual void ICameraEntity_unk12() = 0;
+	virtual float GetNearZ() = 0;
+	virtual float GetFarZ() = 0;
 	virtual void ICameraEntity_unk13() = 0;
 	virtual void ICameraEntity_unk14() = 0;
 	virtual void ICameraEntity_unk15() = 0;
@@ -37,8 +37,8 @@ public:
 	virtual void ICameraEntity_unk18() = 0;
 	virtual SMatrix44* GetProjectionMatrix() = 0;
 	virtual SMatrix44* GetFPSProjectionMatrix() = 0;
-	virtual float4* Project(float4* result, const float4& pos);
-	virtual float4* Unproject(float4* result, const float4& pos);
+	virtual float4* Project(float4* result, const float4* pos);
+	virtual float4* Unproject(float4* result, const float4* pos);
 };
 
 class ZCameraEntity :

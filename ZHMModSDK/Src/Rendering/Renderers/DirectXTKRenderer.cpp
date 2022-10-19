@@ -44,24 +44,6 @@ void DirectXTKRenderer::OnEngineInit()
 
 void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
-	const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
-
-	if (!s_CurrentCamera)
-		return;
-
-	const auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
-	const auto s_ProjectionMatrix = s_CurrentCamera->GetProjectionMatrix();
-
-	m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_ViewMatrix);
-	m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(s_ProjectionMatrix);
-
-	m_ViewProjection = m_View * m_Projection;
-
-	if (m_RendererSetup)
-	{
-		m_LineEffect->SetView(m_View);
-		m_LineEffect->SetProjection(m_Projection);
-	}
 }
 
 void DirectXTKRenderer::Shutdown()
@@ -106,6 +88,24 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
 	if (m_SwapChain != p_SwapChain)
 		return;
+
+	if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call())
+	{
+		const auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
+		const auto s_ProjectionMatrix = s_CurrentCamera->GetProjectionMatrix();
+
+		m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_ViewMatrix);
+		m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(s_ProjectionMatrix);
+
+		m_ViewProjection = m_View * m_Projection;
+		m_ProjectionViewInverse = (m_Projection * m_View).Invert();
+
+		if (m_RendererSetup)
+		{
+			m_LineEffect->SetView(m_View);
+			m_LineEffect->SetProjection(m_Projection);
+		}
+	}
 
 	const auto s_BackBufferIndex = p_SwapChain->GetCurrentBackBufferIndex();
 	auto& s_Frame = m_FrameContext[s_BackBufferIndex];
@@ -513,19 +513,35 @@ bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Ou
 	return true;
 }
 
-bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_Out)
+bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut)
 {
 	if (!m_RendererSetup)
 		return false;
 
-	const DirectX::XMVECTOR s_ScreenPos = DirectX::XMLoadFloat2(reinterpret_cast<DirectX::XMFLOAT2*>(&p_Out));
-	DirectX::XMVectorSetY(s_ScreenPos, 1.f);
+	const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
-	const auto s_Result = DirectX::XMVector3Unproject(s_ScreenPos, 0, 0, m_WindowWidth, m_WindowHeight, 0.f, 1.f, m_Projection, m_View, m_World);
+	if (!s_CurrentCamera)
+		return false;
 
-	p_Out.x = DirectX::XMVectorGetX(s_Result);
-	p_Out.y = DirectX::XMVectorGetY(s_Result);
-	p_Out.z = DirectX::XMVectorGetZ(s_Result);
+	auto s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
+
+	auto s_ScreenPos = DirectX::SimpleMath::Vector3((2.0f * p_ScreenPos.x) / m_WindowWidth - 1.0f, 1.0f - (2.0f * p_ScreenPos.y) / m_WindowHeight, 1.f);
+	auto s_RayClip = DirectX::SimpleMath::Vector4(s_ScreenPos.x, s_ScreenPos.y, 0.f, 1.f);
+
+	DirectX::SimpleMath::Vector4 s_RayEye = DirectX::XMVector4Transform(s_RayClip, m_Projection.Invert());
+	s_RayEye.z = -1.f;
+	s_RayEye.w = 0.f;
+
+	DirectX::SimpleMath::Vector4 s_RayWorld = DirectX::XMVector4Transform(s_RayEye, m_View.Invert());
+	s_RayWorld.Normalize();
+
+	p_WorldPosOut.x = s_CameraTrans.Trans.x + s_RayWorld.x;
+	p_WorldPosOut.y = s_CameraTrans.Trans.y + s_RayWorld.y;
+	p_WorldPosOut.z = s_CameraTrans.Trans.z + s_RayWorld.z;
+
+	p_DirectionOut.x = s_RayWorld.x;
+	p_DirectionOut.y = s_RayWorld.y;
+	p_DirectionOut.z = s_RayWorld.z;
 
 	return true;
 }

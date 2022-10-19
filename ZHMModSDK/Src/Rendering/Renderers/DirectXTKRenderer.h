@@ -72,7 +72,7 @@ namespace Rendering::Renderers
 		void DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor) override;
 		void DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation = 0.f, float p_Scale = 1.f, TextAlignment p_Alignment = TextAlignment::Center) override;
 		bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
-		bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_Out) override;
+		bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
 		void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) override;
 		void DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color) override;
 		
@@ -96,6 +96,7 @@ namespace Rendering::Renderers
 		DirectX::SimpleMath::Matrix m_View {};
 		DirectX::SimpleMath::Matrix m_Projection {};
 		DirectX::SimpleMath::Matrix m_ViewProjection {};
+		DirectX::SimpleMath::Matrix m_ProjectionViewInverse {};
 
 		std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors {};
 		std::unique_ptr<DirectX::SpriteFont> m_Font {};
