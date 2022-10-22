@@ -1,16 +1,34 @@
+#define WIN32_LEAN_AND_MEAN 
 #include <thread>
 #include <unordered_set>
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <filesystem>
 
-static HMODULE g_OriginalDirectInput = nullptr;
 static HMODULE g_ZHMModSDK = nullptr;
 
-typedef HRESULT (__stdcall* DirectInput8Create_t)(HINSTANCE, DWORD, REFIID, LPVOID*, LPUNKNOWN);
-static DirectInput8Create_t o_DirectInput8Create = nullptr;
+
+HMODULE g_thisModule;
+bool o_loaded = false;
+HMODULE o_dll = NULL;
 
 static std::unordered_set<HANDLE>* g_SuspendedThreads = nullptr;
+
+#pragma comment(linker, "/export:DirectInput8Create=DirectInput8Create")
+#pragma comment(linker, "/export:DllCanUnloadNow=DllCanUnloadNow,PRIVATE")
+#pragma comment(linker, "/export:DllGetClassObject=DllGetClassObject,PRIVATE")
+#pragma comment(linker, "/export:DllRegisterServer=DllRegisterServer,PRIVATE")
+#pragma comment(linker, "/export:DllUnregisterServer=DllUnregisterServer,PRIVATE")
+#pragma comment(linker, "/export:GetdfDIJoystick=GetdfDIJoystick")
+
+typedef HRESULT(APIENTRY* o_DirectInput8Create )(HINSTANCE hinst, DWORD dwVersion, REFIID riidltf, LPVOID* ppvOut, void* punkOuter);
+
+o_DirectInput8Create  DirectInput8Create_t = NULL;
+FARPROC DllCanUnloadNow_t;
+FARPROC DllGetClassObject_t;
+FARPROC DllRegisterServer_t;
+FARPROC DllUnregisterServer_t;
+FARPROC GetdfDIJoystick_t;
 
 void SuspendAllThreadsButCurrent()
 {
@@ -68,27 +86,61 @@ void ResumeSuspendedThreads()
 	g_SuspendedThreads = nullptr;
 }
 
+
+std::wstring GetModuleFormSysdir()
+{
+	// get the filename of our DLL and try loading the DLL with the same name from system32
+	WCHAR modulePath[MAX_PATH] = { 0 };
+	if (!GetSystemDirectoryW(modulePath, _countof(modulePath)))
+	{
+		MessageBoxW(nullptr, L"GetSystemDirectoryW failed", L"Error", MB_ICONERROR);
+	}
+
+	// get filename of this DLL, which should be the original DLLs filename too
+	WCHAR ourModulePath[MAX_PATH] = { 0 };
+	GetModuleFileNameW(g_thisModule, ourModulePath, _countof(ourModulePath));
+
+	WCHAR exeName[MAX_PATH] = { 0 };
+	WCHAR extName[MAX_PATH] = { 0 };
+	_wsplitpath_s(ourModulePath, NULL, NULL, NULL, NULL, exeName, MAX_PATH, extName, MAX_PATH);
+
+	swprintf_s(modulePath, MAX_PATH, L"%ws\\%ws%ws", modulePath, exeName, extName);
+
+	std::wstring path = std::wstring(modulePath);
+
+	return path;
+};
+bool LoadProxiedDll()
+{
+	if (o_loaded)
+		return true;
+
+	o_dll = LoadLibraryW(GetModuleFormSysdir().c_str());
+	if (!o_dll)
+	{
+		MessageBoxW(nullptr, L"Could not load originial module", L"Error", MB_ICONERROR);
+		return false;
+	}
+
+	DirectInput8Create_t = (o_DirectInput8Create )GetProcAddress(o_dll, "DirectInput8Create");
+	DllCanUnloadNow_t = GetProcAddress(o_dll, "DllCanUnloadNow");
+	DllGetClassObject_t = GetProcAddress(o_dll, "DllGetClassObject");
+	DllRegisterServer_t = GetProcAddress(o_dll, "DllRegisterServer");
+	DllUnregisterServer_t = GetProcAddress(o_dll, "DllUnregisterServer");
+
+	o_loaded = true;
+	return true;
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
 	static wchar_t s_PathBuffer[8192];
 
 	if (fdwReason == DLL_PROCESS_ATTACH)
 	{
-		if (!GetSystemDirectoryW(s_PathBuffer, sizeof(s_PathBuffer) / sizeof(wchar_t)))
-			return false;
+		DisableThreadLibraryCalls(hinstDLL);
 
-		std::filesystem::path s_Dinput8Path = s_PathBuffer;
-		s_Dinput8Path += "/dinput8.dll";
-
-		g_OriginalDirectInput = LoadLibraryW(canonical(s_Dinput8Path).c_str());
-
-		if (g_OriginalDirectInput == nullptr)
-			return false;
-
-		o_DirectInput8Create = reinterpret_cast<DirectInput8Create_t>(GetProcAddress(g_OriginalDirectInput, "DirectInput8Create"));
-
-		if (o_DirectInput8Create == nullptr)
-			return false;
+		g_thisModule = hinstDLL;
 
 		// If this isn't the HITMAN3 executable then don't load the SDK.
 		if (!GetModuleFileNameW(nullptr, s_PathBuffer, sizeof(s_PathBuffer) / sizeof(wchar_t)))
@@ -102,7 +154,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 		if (s_ExecutableName != "hitman3.exe")
 			return true;
 
-		g_ZHMModSDK = LoadLibraryA("ZHMModSDK");
+		g_ZHMModSDK = LoadLibraryA("ZHMModSDK.dll");
 
 		if (g_ZHMModSDK == nullptr)
 			return false;
@@ -179,7 +231,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 					CloseHandle(s_UnloadedEvent);
 				}
 
-				g_ZHMModSDK = LoadLibraryA("ZHMModSDK");
+				g_ZHMModSDK = LoadLibraryA("ZHMModSDK.dll");
 
 				const auto s_LoadedEvent = OpenEventA(EVENT_MODIFY_STATE, false, "GLOBAL_ZHMSDK_Loaded_Signal");
 
@@ -194,12 +246,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	}
 	else if (fdwReason == DLL_PROCESS_DETACH)
 	{
-		if (g_OriginalDirectInput != nullptr)
+		if (o_dll)
 		{
-			o_DirectInput8Create = nullptr;
-			
-			FreeLibrary(g_OriginalDirectInput);
-			g_OriginalDirectInput = nullptr;
+			FreeLibrary(o_dll);
 		}
 
 		if (g_ZHMModSDK != nullptr)
@@ -212,10 +261,17 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 	return true;
 }
 
-extern "C" __declspec(dllexport) HRESULT DirectInput8Create(HINSTANCE hinst, DWORD dwVersion, REFIID riidltf, LPVOID* ppvOut, LPUNKNOWN punkOuter)
+extern "C" __declspec(dllexport) HRESULT DirectInput8Create(HINSTANCE hinst, DWORD dwVersion, REFIID riidltf, LPVOID * ppvOut, void* punkOuter)
 {
-	if (o_DirectInput8Create == nullptr)
-		return MAKE_HRESULT(SEVERITY_ERROR, FACILITY_WIN32, ERROR_NOT_READY); // DIERR_NOTINITIALIZED
 
-	return o_DirectInput8Create(hinst, dwVersion, riidltf, ppvOut, punkOuter);
+	if (!DirectInput8Create_t)
+		LoadProxiedDll();
+
+	return DirectInput8Create_t(hinst, dwVersion, riidltf, ppvOut, punkOuter);
 }
+
+extern "C" __declspec(dllexport) void APIENTRY DllCanUnloadNow() { DllCanUnloadNow_t(); }
+extern "C" __declspec(dllexport) void APIENTRY DllGetClassObject() { DllGetClassObject_t(); }
+extern "C" __declspec(dllexport) void APIENTRY DllRegisterServer() { DllRegisterServer_t(); }
+extern "C" __declspec(dllexport) void APIENTRY DllUnregisterServer() { DllUnregisterServer_t(); }
+extern "C" __declspec(dllexport) void APIENTRY GetdfDIJoystick() { GetdfDIJoystick_t(); }
