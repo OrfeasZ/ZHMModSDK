@@ -1,0 +1,9 @@
+{
+  "name": "zhmmodsdk",
+  "dependencies": [
+    "directx-headers",
+    "directx-dxc",
+    "directxmath",
+    "xaudio2redist"
+  ]
+}

@@ -20,7 +20,7 @@ class SGameUpdateEvent;
 
 namespace Rendering::Renderers
 {
-	class DirectXTKRenderer
+	class DirectXTKRenderer : public IRenderer
 	{
 	private:
 		struct FrameContext
@@ -47,66 +47,61 @@ namespace Rendering::Renderers
 			Count
 		};
 
-		class TKRendererInterface : public IRenderer
-		{
-		public:
-			void DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor) override;
-			void DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation = 0.f, float p_Scale = 1.f, TextAlignment p_Alignment = TextAlignment::Center) override;
-			bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
-			bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_Out) override;
-			void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) override;
-			void DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color) override;
-		};
+	public:
+		DirectXTKRenderer();
+		~DirectXTKRenderer();
 
 	public:
-		static void Init();
-		static void OnEngineInit();
-		static void Shutdown();
+		void OnEngineInit();
+		void Shutdown();
 
 	public:
-		static void OnPresent(IDXGISwapChain3* p_SwapChain);
-		static void PostPresent(IDXGISwapChain3* p_SwapChain);
-		static void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
-		static void OnReset();
+		void OnPresent(IDXGISwapChain3* p_SwapChain);
+		void PostPresent(IDXGISwapChain3* p_SwapChain);
+		void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
+		void OnReset();
 
 	private:
-		static bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
-		static void WaitForGpu(FrameContext* p_Frame);
-		static void ExecuteCmdList(FrameContext* p_Frame);
-		static void Draw(FrameContext* p_Frame);
+		void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
+		bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
+		void WaitForGpu(FrameContext* p_Frame);
+		void ExecuteCmdList(FrameContext* p_Frame);
+		void Draw(FrameContext* p_Frame);
 
-	private:
-		DEFINE_STATIC_DETOUR(void, ZRenderContext_Unknown01, ZRenderContext* th);
-
-	private:
-		static bool m_RendererSetup;
-		static UINT m_BufferCount;
-		static ID3D12DescriptorHeap* m_RtvDescriptorHeap;
-		//static ID3D12CommandQueue* m_CommandQueue;
-		static FrameContext* m_FrameContext;
-		static IDXGISwapChain3* m_SwapChain;
-		static HWND m_Hwnd;
-		static float m_WindowWidth;
-		static float m_WindowHeight;
-		static bool m_Shutdown;
-
-	private:
-		static std::unique_ptr<DirectX::GraphicsMemory> m_GraphicsMemory;
-		static std::unique_ptr<DirectX::BasicEffect> m_LineEffect;
-		static std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_LineBatch;
+	public:
+		void DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor) override;
+		void DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation = 0.f, float p_Scale = 1.f, TextAlignment p_Alignment = TextAlignment::Center) override;
+		bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
+		bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
+		void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) override;
+		void DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color) override;
 		
-		static DirectX::SimpleMath::Matrix m_World;
-		static DirectX::SimpleMath::Matrix m_View;
-		static DirectX::SimpleMath::Matrix m_Projection;
-		static DirectX::SimpleMath::Matrix m_ViewProjection;
+	private:
+		bool m_RendererSetup = false;
+		UINT m_BufferCount = 0;
+		ID3D12DescriptorHeap* m_RtvDescriptorHeap = nullptr;
+		//ID3D12CommandQueue* m_CommandQueue = nullptr;
+		FrameContext* m_FrameContext = nullptr;
+		IDXGISwapChain3* m_SwapChain = nullptr;
+		HWND m_Hwnd = nullptr;
+		float m_WindowWidth = 1;
+		float m_WindowHeight = 1;
 
-		static std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors;
-		static std::unique_ptr<DirectX::SpriteFont> m_Font;
-		static std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch;
+	private:
+		std::unique_ptr<DirectX::GraphicsMemory> m_GraphicsMemory {};
+		std::unique_ptr<DirectX::BasicEffect> m_LineEffect {};
+		std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_LineBatch {};
 		
-		static TKRendererInterface* m_RendererInterface;
-		static SRWLOCK m_Lock;
+		DirectX::SimpleMath::Matrix m_World {};
+		DirectX::SimpleMath::Matrix m_View {};
+		DirectX::SimpleMath::Matrix m_Projection {};
+		DirectX::SimpleMath::Matrix m_ViewProjection {};
+		DirectX::SimpleMath::Matrix m_ProjectionViewInverse {};
 
-		friend class TKRendererInterface;
+		std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors {};
+		std::unique_ptr<DirectX::SpriteFont> m_Font {};
+		std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch {};
+		
+		SRWLOCK m_Lock {};
 	};
 }

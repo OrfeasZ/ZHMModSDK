@@ -6,6 +6,7 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
+#include <ModSDK.h>
 #include <UI/Console.h>
 
 static std::vector<spdlog::logger*>* g_Loggers;
@@ -31,7 +32,7 @@ public:
 		spdlog::memory_buf_t s_Formatted;
 		spdlog::sinks::base_sink<Mutex>::formatter_->format(p_Message, s_Formatted);
 		
-		UI::Console::AddLogLine(p_Message.level, ZString(s_Formatted.data(), s_Formatted.size()));
+		ModSDK::GetInstance()->GetUIConsole()->AddLogLine(p_Message.level, ZString(s_Formatted.data(), s_Formatted.size()));
 	}
 
 	void flush_() override

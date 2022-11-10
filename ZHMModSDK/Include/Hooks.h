@@ -11,7 +11,9 @@
 #include <Glacier/ZDelegate.h>
 
 #include "Glacier/TArray.h"
+#include "Glacier/THashMap.h"
 
+class ZRuntimeResourceID;
 class ZActor;
 class ZComponentCreateInfo;
 class SGameUpdateEvent;
@@ -45,6 +47,7 @@ class ZHMSDK_API Hooks
 public:
 	static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
 	static Hook<void(ZEntitySceneContext*, ZSceneData&)>* ZEntitySceneContext_LoadScene;
+	static Hook<void(ZEntitySceneContext*, bool fullyClear)>* ZEntitySceneContext_ClearScene;
 	static Hook<void(ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)>* ZUpdateEventContainer_AddDelegate;
 	static Hook<void(ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)>* ZUpdateEventContainer_RemoveDelegate;
 	static Hook<bool(void*, void*)>* Engine_Init;
@@ -61,7 +64,6 @@ public:
 	static Hook<bool(void*, void*)>* Check_SSL_Cert;
 	static Hook<void(ZApplicationEngineWin32* th, const ZString& info, const ZString& details)>* ZApplicationEngineWin32_OnDebugInfo;
 	static Hook<void(ZKeyboardWindows* th, bool a2)>* ZKeyboardWindows_Update;
-	static Hook<void(ZRenderContext* a1)>* ZRenderContext_Unknown01;
 	static Hook<void*(ZPackageManagerPackage* th, void* a2, const ZString& a3, int a4, int patchLevel)>* ZPackageManagerPackage_ZPackageManagerPackage;
 	static Hook<void(ZGameLoopManager* th, const ZString& a2)>* ZGameLoopManager_ReleasePause;
 	static Hook<bool(ZGameUIManagerEntity* th, EGameUIMenu menu, bool force)>* ZGameUIManagerEntity_TryOpenMenu;
@@ -70,6 +72,7 @@ public:
 	static Hook<void(ZAchievementManagerSimple* th, const SOnlineEvent& event)>* ZAchievementManagerSimple_OnEventReceived;
 	static Hook<void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)>* ZAchievementManagerSimple_OnEventSent;
 	static Hook<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
-	static Hook<void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, void* a3)>* ZEntityManager_DeleteEntities;
+	static Hook<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
+	static Hook<void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>& references)>* ZEntityManager_DeleteEntities;
 	static Hook<void(ZEntityManager* th, ZEntityRef* entity, void* a3)>* ZEntityManager_ActivateEntity;
 };

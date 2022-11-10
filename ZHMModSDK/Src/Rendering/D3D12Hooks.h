@@ -44,19 +44,22 @@ namespace Rendering
 
 		struct InstalledHook
 		{
-			uintptr_t* VTable;
+			void** VTable;
 			int Index;
-			uintptr_t OriginalAddr;
+			void* OriginalAddr;
 		};
 
 	public:
-		static void InstallHooks();
-		static void RemoveHooks();
+		~D3D12Hooks();
+
+	public:
+		void InstallHooks();
+		void RemoveHooks();
 
 	private:
-		static std::optional<VTables> GetVTables();
-		static void InstallHook(void* p_VTable, int p_Index, void* p_Target, void** p_Original);
-		static void RemoveHook(const InstalledHook& p_Hook);
+		std::optional<VTables> GetVTables();
+		void InstallHook(void* p_VTable, int p_Index, void* p_Detour, void** p_Original);
+		void RemoveHook(const InstalledHook& p_Hook);
 
 		DECLARE_D3D12_HOOK(HRESULT, IDXGISwapChain, Present, UINT SyncInterval, UINT Flags);
 		DECLARE_D3D12_HOOK(HRESULT, IDXGISwapChain, ResizeBuffers, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
@@ -64,6 +67,6 @@ namespace Rendering
 		DECLARE_D3D12_HOOK(void, ID3D12CommandQueue, ExecuteCommandLists, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists);
 
 	private:
-		static std::vector<InstalledHook> m_InstalledHooks;
+		std::vector<InstalledHook> m_InstalledHooks;
 	};
 }

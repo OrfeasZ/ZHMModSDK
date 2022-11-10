@@ -15,20 +15,22 @@ namespace UI
 			std::string Name;
 			bool Enabled;
 		};
+
+	public:
+		ModSelector();
 		
 	public:
-		static void Init();
-		static void Draw(bool p_HasFocus);
-		static void UpdateAvailableMods(const std::unordered_set<std::string>& p_Mods, const std::unordered_set<std::string>& p_ActiveMods);
-		static void Show() { m_Open = true; }
+		void Draw(bool p_HasFocus);
+		void UpdateAvailableMods(const std::unordered_set<std::string>& p_Mods, const std::unordered_set<std::string>& p_ActiveMods);
+		void Show() { m_Open = true; }
 
 	private:
-		static void ApplySelectedMods();
+		void ApplySelectedMods();
 
 	private:
-		static bool m_Open;
-		static SRWLOCK m_Lock;
-		static std::vector<AvailableMod> m_AvailableMods;
-		static bool m_ShouldShow;
+		bool m_Open = false;
+		SRWLOCK m_Lock {};
+		std::vector<AvailableMod> m_AvailableMods;
+		bool m_ShouldShow = false;
 	};
 }

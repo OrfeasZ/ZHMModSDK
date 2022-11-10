@@ -29,10 +29,11 @@ PATTERN_RELATIVE_GLOBAL(
 	ZHitman5Module*, Hitman5Module
 );
 
+// Look for ??_7ZGameContext@@6B@
 PATTERN_RELATIVE_GLOBAL(
-	"\x48\x8d\x55\x00\x89\x7d\x00\x48\x8d\x0d",
-	"xxxxxxxxxx",
-	10,
+	"\x48\x89\x05\x00\x00\x00\x00\x48\x8D\x55\x30\x48\x8D\x05\x00\x00\x00\x00\x4C\x89\x3D\x00\x00\x00\x00\x48\x89\x05",
+	"xxx????xxxxxxx????xxx????xxx",
+	3,
 	ZGameContext*, GameContext
 );
 
@@ -125,4 +126,11 @@ PATTERN_RELATIVE_GLOBAL(
 	"xxx????xxxxxx",
 	3,
 	ZResourceContainer**, ResourceContainer
+);
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8B\x0D\x00\x00\x00\x00\x48\x8B\x01\x48\x3B\xC7\x0F\x85\x00\x00\x00\x00\xC7\x81\x08\x03\x00\x00",
+	"xxx????xxxxxxxx????xxxxxx",
+	3,
+	ZCollisionManager**, CollisionManager
 );

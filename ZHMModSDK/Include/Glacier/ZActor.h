@@ -195,8 +195,8 @@ public:
 	bool m_bUnk32 : 1; // 0x115C
 	bool m_bUnk33 : 1;
 	bool m_bUnk34 : 1;
+	bool m_bUnk35 : 1;
 	bool m_bBodyHidden : 1;
-	bool m_bUnk36 : 1;
 	bool m_bUnk37 : 1;
 	bool m_bUnk38 : 1;
 	bool m_bUnk39 : 1;
@@ -209,10 +209,14 @@ public:
 			m_bUnk00, m_bUnk01, m_bUnk02, m_bUnk03, m_bUnk04, m_bUnk05, m_bIsBeingDragged, m_bIsBeingDumped, m_bUnk08, m_bUnk09,
 			m_bUnk10, m_bUnk11, m_bUnk12, m_bUnk13, m_bUnk14, m_bUnk15, m_bUnk16, m_bUnk17, m_bUnk18, m_bUnk19,
 			m_bUnk20, m_bUnk21, m_bUnk22, m_bUnk23, m_bUnk24, m_bUnk25, m_bUnk26, m_bUnk27, m_bUnk28, m_bUnk29,
-			m_bUnk30, m_bUnk31, m_bUnk32, m_bUnk33, m_bUnk34, m_bBodyHidden, m_bUnk36, m_bUnk37, m_bUnk38, m_bUnk39
+			m_bUnk30, m_bUnk31, m_bUnk32, m_bUnk33, m_bUnk34, m_bUnk35, m_bBodyHidden, m_bUnk37, m_bUnk38, m_bUnk39
 		);
 	}
 };
+
+static_assert(offsetof(ZActor, m_OutfitRepositoryID) == 0x420);
+static_assert(offsetof(ZActor, m_sActorName) == 0x488);
+static_assert(offsetof(ZActor, m_DomainConfig) == 0x4D0);
 
 class ZActorSavableHandler;
 
@@ -269,7 +273,7 @@ public:
 
 public:
 	PAD(0x25A0);
-	TEntityRef<ZActor> m_aActiveActors[1000]; // 0x25A8, ZActorManager destructor, last loop
+	TEntityRef<ZActor> m_aActiveActors[1000]; // 0x25A8, ZActorManager destructor, last if
 	/*PAD(0xAA20); // 0x5DE8
 	ZActorSavableHandler* m_pSavableHandler; // 0x10808*/
 };

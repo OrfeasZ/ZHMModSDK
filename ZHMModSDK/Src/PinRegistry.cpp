@@ -1566,7 +1566,6 @@ std::unordered_map<int32_t, ZString> g_PinRegistry
 	{ -1686475288, "SoundSignalEmitted" },
 	{ -2039808820, "SoundTensionAmbient" },
 	{ -380133019, "SpatialEntity" },
-	{ -2112938315, "SpawnItem" },
 	{ -629426625, "SpawnPhysicsClip" },
 	{ 755042572, "Speaking" },
 	{ 632825129, "SplashAtPos" },

@@ -58,8 +58,8 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-	"\x40\x53\x48\x83\xEC\x00\x80\x79\x2C\x00\x48\x8B\xD9\x74",
-	"xxxxx?xxx?xxxx",
+	"\x48\x89\x5C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\xDA",
+	"xxxxxxxxxx?xx",
 	ZInputAction_Analog,
 	double(ZInputAction* th, int a2)
 );
@@ -97,4 +97,12 @@ PATTERN_FUNCTION(
 	"xxxxxxxxxxxxxxx",
 	ZEntityManager_NewEntity,
 	void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef& parent, void* a6, int64_t a7)
+);
+
+// Look for camAlign_ string, go to parent xref of function using said string: function called in if flag check.
+PATTERN_FUNCTION(
+	"\x48\x8B\xC4\x53\x48\x81\xEC\x00\x00\x00\x00\xF7\x41\x6C\x00\x00\x00\x00\x48\x8B\xD9\x0F\x84",
+	"xxxxxxx????xxx????xxxxx",
+	ZSpatialEntity_UnknownTransformUpdate,
+	void(ZSpatialEntity* th)
 );

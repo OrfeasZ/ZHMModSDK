@@ -6,7 +6,7 @@ endif()
 
 project(ZHMMods CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(VCPKG_CRT_LINKAGE "static")
@@ -36,7 +36,6 @@ add_subdirectory("Mods/DebugMod")
 add_subdirectory("Mods/AdvancedRating")
 add_subdirectory("Mods/FreeCam")
 add_subdirectory("Mods/DiscordRichPresence")
-add_subdirectory("Mods/LogPins")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -55,5 +54,4 @@ add_dependencies(DevLoader
 	AdvancedRating
 	FreeCam
 	DiscordRichPresence
-	LogPins
 )

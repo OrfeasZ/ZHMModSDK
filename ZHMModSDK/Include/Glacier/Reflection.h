@@ -110,7 +110,7 @@ class SInputPinEntry
 {
 public:
 	const char* m_pName;
-	uint32_t m_nPinID;
+	unsigned int m_nPinID;
 	PAD(32);
 };
 

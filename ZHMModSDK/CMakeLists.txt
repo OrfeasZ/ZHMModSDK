@@ -27,7 +27,7 @@ target_compile_definitions(ZHMModSDK PRIVATE
 
 target_link_libraries(ZHMModSDK PUBLIC
 	minhook
-	spdlog
+	spdlog_header_only
 	imgui
 	DirectXTK12
 	d3d12.lib

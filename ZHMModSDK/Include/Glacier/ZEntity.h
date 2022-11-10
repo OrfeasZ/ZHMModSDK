@@ -110,6 +110,12 @@ public:
 	ZEntityType** m_pEntity = nullptr;
 
 public:
+	ZEntityRef()
+	{		
+	}
+
+	bool operator==(const ZEntityRef&) const = default;
+	
 	ZEntityImpl* GetBaseEntity()
 	{
 		if (!m_pEntity || !*m_pEntity)
@@ -306,22 +312,13 @@ public:
 		return m_pEntity != nullptr && (*m_pEntity) != nullptr;
 	}
 
-	bool operator == (const ZEntityRef& right) const
+	struct hasher
 	{
-		return m_pEntity == right.m_pEntity;
-	}
-};
-
-class ZEntityRefHasher
-{
-public:
-	std::size_t operator()(ZEntityRef const& p_entityref) const
-	{
-		return m_hasher(p_entityref.m_pEntity);
-	}
-
-private:
-	std::hash<ZEntityType**> m_hasher;
+		size_t operator()(const ZEntityRef& p_Ref) const noexcept
+		{
+			return reinterpret_cast<uintptr_t>(p_Ref.m_pEntity);
+		}
+	};
 };
 
 template <typename T>

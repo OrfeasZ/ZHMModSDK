@@ -26,38 +26,10 @@
 
 using namespace Rendering::Renderers;
 
-bool ImGuiRenderer::m_RendererSetup = false;
-bool ImGuiRenderer::m_ImguiInitialized = false;
-
-UINT ImGuiRenderer::m_BufferCount = 0;
-ID3D12DescriptorHeap* ImGuiRenderer::m_RtvDescriptorHeap = nullptr;
-ID3D12DescriptorHeap* ImGuiRenderer::m_SrvDescriptorHeap = nullptr;
-//ID3D12CommandQueue* ImGuiRenderer::m_CommandQueue = nullptr;
-ImGuiRenderer::FrameContext* ImGuiRenderer::m_FrameContext = nullptr;
-IDXGISwapChain3* ImGuiRenderer::m_SwapChain = nullptr;
-HWND ImGuiRenderer::m_Hwnd = nullptr;
-bool ImGuiRenderer::m_Shutdown = false;
-
-int64_t ImGuiRenderer::m_Time = 0;
-int64_t ImGuiRenderer::m_TicksPerSecond = 0;
-
-ImFont* ImGuiRenderer::m_FontLight = nullptr;
-ImFont* ImGuiRenderer::m_FontRegular = nullptr;
-ImFont* ImGuiRenderer::m_FontMedium = nullptr;
-ImFont* ImGuiRenderer::m_FontBold = nullptr;
-ImFont* ImGuiRenderer::m_FontBlack = nullptr;
-
-volatile bool ImGuiRenderer::m_ImguiHasFocus = false;
-
-SRWLOCK ImGuiRenderer::m_Lock;
-
-void ImGuiRenderer::Init()
+ImGuiRenderer::ImGuiRenderer()
 {
 	InitializeSRWLock(&m_Lock);
-	
-	UI::Console::Init();
-	UI::ModSelector::Init();
-	
+
 	QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
 	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
 
@@ -66,7 +38,7 @@ void ImGuiRenderer::Init()
 
 	ImGuiIO& s_ImGuiIO = ImGui::GetIO();
 	s_ImGuiIO.IniFilename = nullptr;
-	
+
 	ImGui::StyleColorsDark();
 
 	s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
@@ -107,15 +79,13 @@ void ImGuiRenderer::Init()
 	m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 32.f);
 
 	s_ImGuiIO.FontDefault = m_FontRegular;
-	
+
 	SetupStyles();
+}
 
-	ModSDK::GetInstance()->OnImGuiInit();
-
-	m_ImguiInitialized = true;
-
-	Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(nullptr, &ImGuiRenderer::WndProc);
-	Hooks::ZKeyboardWindows_Update->AddDetour(nullptr, &ImGuiRenderer::ZKeyboardWindows_Update);
+ImGuiRenderer::~ImGuiRenderer()
+{
+	Shutdown();
 }
 
 void ImGuiRenderer::SetupStyles()
@@ -203,22 +173,16 @@ void ImGuiRenderer::SetupStyles()
 	s_Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 }
 
-
 void ImGuiRenderer::OnEngineInit()
 {
-	
+	Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(this, &ImGuiRenderer::WndProc);
+	Hooks::ZKeyboardWindows_Update->AddDetour(this, &ImGuiRenderer::ZKeyboardWindows_Update);
+	Hooks::ZInputAction_Analog->AddDetour(this, &ImGuiRenderer::ZInputAction_Analog);
 }
 
 void ImGuiRenderer::Shutdown()
 {
-	m_Shutdown = true;
-
-	Hooks::ZApplicationEngineWin32_MainWindowProc->RemoveDetour(&ImGuiRenderer::WndProc);
-	Hooks::ZKeyboardWindows_Update->RemoveDetour(&ImGuiRenderer::ZKeyboardWindows_Update);
-
 	OnReset();
-	
-	UI::Console::Shutdown();
 }
 
 void ImGuiRenderer::Draw()
@@ -260,19 +224,12 @@ void ImGuiRenderer::Draw()
 
 	ImGui::GetStyle().Alpha = m_ImguiHasFocus ? 1.f : 0.3f;
 
-	UI::MainMenu::Draw(m_ImguiHasFocus);
-	UI::Console::Draw(m_ImguiHasFocus);
-	UI::ModSelector::Draw(m_ImguiHasFocus);
-
 	ModSDK::GetInstance()->OnDrawUI(m_ImguiHasFocus);
 }
 
 void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
 	ScopedSharedGuard s_Guard(&m_Lock);
-
-	if (m_Shutdown)
-		return;
 	
 	if (!SetupRenderer(p_SwapChain))
 	{
@@ -481,13 +438,13 @@ void ImGuiRenderer::OnReset()
 
 	Logger::Debug("Resetting ImGui renderer.");
 
-	m_RendererSetup = false;
-
 	if (m_RendererSetup)
 	{
 		ImGui_ImplDX12_InvalidateDeviceObjects();
 		ImGui_ImplDX12_Shutdown();
 	}
+
+	m_RendererSetup = false;
 
 	for (UINT i = 0; i < m_BufferCount; i++)
 	{
@@ -599,7 +556,7 @@ void ImGuiRenderer::ExecuteCmdList(FrameContext* p_Frame)
 	Globals::RenderManager->m_pDevice->m_pCommandQueue->ExecuteCommandLists(1, s_CommandLists);
 }
 
-DECLARE_STATIC_DETOUR(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
+DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
 {
 	if (ImGui::GetCurrentContext() == nullptr)
 		return HookResult<LRESULT>(HookAction::Continue());
@@ -710,11 +667,42 @@ DECLARE_STATIC_DETOUR(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* 
 	return HookResult<LRESULT>(HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam));
 }
 
-DECLARE_STATIC_DETOUR(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
+DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
 {
 	// Don't process input while the imgui overlay has focus.
 	if (m_ImguiHasFocus)
 		return HookResult<void>(HookAction::Return());
 
 	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction* th, int a2)
+{
+	static std::unordered_set<std::string> s_BlockedInputs = {
+		"eIAKBMLookHorizontal",
+		"eIAKBMLookVertical",
+		"TiltCamera",
+		"TurnCamera",
+		"AnalogLeftX",
+		"AnalogLeftY",
+		"AnalogRightY",
+		"AnalogRightX",
+		"eIAStickRightHorizontal_Analog",
+		"eIAStickRightVertical_Analog",
+		"eIAStickLeftHorizontal_Analog",
+		"eIAStickLeftVertical_Analog",
+		"eIAStickLeftHorizontal_Raw",
+		"eIAStickLeftVertical_Raw",
+		"eIAStickRightHorizontal_Raw",
+		"eIAStickRightVertical_Raw",
+	};
+
+	// Don't allow moving the camera / character while the imgui overlay has focus.
+	if (m_ImguiHasFocus)
+	{
+		if (s_BlockedInputs.contains(th->m_szName))
+			return HookResult(HookAction::Return(), 0.0);
+	}
+
+	return HookResult<double>(HookAction::Continue());
 }

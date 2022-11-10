@@ -9,12 +9,21 @@
 #include "IPluginInterface.h"
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
-#include "Rendering/D3D12Renderer.h"
+
+#include "Rendering/Renderers/DirectXTKRenderer.h"
 #include "Rendering/Renderers/ImGuiRenderer.h"
+
+#include "Rendering/D3D12Hooks.h"
+
+#include "UI/Console.h"
+#include "UI/MainMenu.h"
+#include "UI/ModSelector.h"
+
 #include "Glacier/ZModule.h"
 #include "Glacier/ZScene.h"
 #include "Glacier/ZGameUIManager.h"
 #include "Glacier/ZSpatialEntity.h"
+#include "Glacier/ZActor.h"
 
 #if _DEBUG
 #include "DebugConsole.h"
@@ -66,13 +75,21 @@ ModSDK::ModSDK()
 	g_Instance = this;
 
 #if _DEBUG
-	m_DebugConsole = new DebugConsole();
+	m_DebugConsole = std::make_shared<DebugConsole>();
 	SetupLogging(spdlog::level::trace);
 #else
 	SetupLogging(spdlog::level::info);
 #endif
 
-	m_ModLoader = new ModLoader();
+	m_ModLoader = std::make_shared<ModLoader>();
+
+	m_UIConsole = std::make_shared<UI::Console>();
+	m_UIMainMenu = std::make_shared<UI::MainMenu>();
+	m_UIModSelector = std::make_shared<UI::ModSelector>();
+
+	m_DirectXTKRenderer = std::make_shared<Rendering::Renderers::DirectXTKRenderer>();
+	m_ImguiRenderer = std::make_shared<Rendering::Renderers::ImGuiRenderer>();
+	m_D3D12Hooks = std::make_shared<Rendering::D3D12Hooks>();
 
 	HMODULE s_Module = GetModuleHandleA(nullptr);
 
@@ -84,10 +101,8 @@ ModSDK::ModSDK()
 ModSDK::~ModSDK()
 {
 	m_ImGuiInitialized = false;
-
-	Rendering::D3D12Renderer::Shutdown();
-
-	delete m_ModLoader;
+	
+	m_ModLoader.reset();
 
 	HookRegistry::DestroyHooks();
 	Trampolines::ClearTrampolines();
@@ -96,7 +111,7 @@ ModSDK::~ModSDK()
 	FlushLoggers();
 	ClearLoggers();
 
-	delete m_DebugConsole;
+	m_DebugConsole.reset();
 #endif
 }
 
@@ -116,15 +131,21 @@ bool ModSDK::Startup()
 	// Install hooks so we can keep track of entities.
 	Hooks::ZEntityManager_ActivateEntity->AddDetour(this, &ModSDK::ZEntityManager_ActivateEntity);
 	Hooks::ZEntityManager_DeleteEntities->AddDetour(this, &ModSDK::ZEntityManager_DeleteEntities);
-
+	
 	return true;
 }
 
 void ModSDK::ThreadedStartup()
 {
-	Rendering::D3D12Renderer::Init();
+	m_D3D12Hooks->InstallHooks();
 
-	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
+	for (const auto& s_Mod : m_ModLoader->GetLoadedMods())
+	{
+		s_Mod->SetupUI();
+		s_Mod->Init();
+	}
+
+	for (const auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->Init();
 
 	// If the engine is already initialized, inform the mods.
@@ -140,50 +161,43 @@ void ModSDK::OnDrawMenu()
 
 void ModSDK::OnDrawUI(bool p_HasFocus)
 {
+	m_UIConsole->Draw(p_HasFocus);
+	m_UIMainMenu->Draw(p_HasFocus);
+	m_UIModSelector->Draw(p_HasFocus);
+
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnDrawUI(p_HasFocus);
 }
 
-void ModSDK::OnDraw3D(IRenderer* p_Renderer)
+void ModSDK::OnDraw3D()
 {
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
-		s_Mod->OnDraw3D(p_Renderer);
+		s_Mod->OnDraw3D(m_DirectXTKRenderer.get());
 
-	if (m_DoDrawBboxes)
+	/*m_EntityMutex.lock_shared();
+
+	for (auto s_EntityRef : m_Entities)
 	{
-		m_EntityMutex.lock_shared();
+		auto* s_SpatialEntity = s_EntityRef.QueryInterface<ZSpatialEntity>();
 
-		for (auto s_Ref : m_Entities)
-		{
-			auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+		if (!s_SpatialEntity)
+			continue;
 
-			if (!s_SpatialEntity)
-				continue;
+		SMatrix s_Transform;
+		Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
+		
+		float4 s_Min, s_Max;
 
-			SMatrix s_Transform;
-			Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
+		s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
 
-			float4 s_Min, s_Max;
-
-			s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
-
-			p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(1.f, 0.f, 0.f, 1.f));
-
-			SVector2 s_ScreenPos;
-			if (p_Renderer->WorldToScreen(SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos))
-				p_Renderer->DrawText2D(std::to_string((*s_Ref.m_pEntity)->m_nEntityId).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
-		}
-
-		m_EntityMutex.unlock_shared();
+		p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(1.f, 0.f, 0.f, 1.f));
+		
+		SVector2 s_ScreenPos;
+		if (p_Renderer->WorldToScreen(SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos))
+			p_Renderer->DrawText2D(std::to_string((*s_EntityRef.m_pEntity)->m_nEntityId).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
 	}
-}
 
-void ModSDK::OnImGuiInit()
-{
-	m_ImGuiInitialized = true;
-
-	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
-		s_Mod->SetupUI();
+	m_EntityMutex.unlock_shared();*/
 }
 
 void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad)
@@ -208,29 +222,48 @@ void ModSDK::OnModUnloaded(const std::string& p_Name)
 	
 }
 
-void ModSDK::ToggleBboxDrawing()
-{
-	m_DoDrawBboxes = !m_DoDrawBboxes;
-}
-
 void ModSDK::OnEngineInit()
 {
 	Logger::Debug("Engine was initialized.");
 
-	Rendering::D3D12Renderer::OnEngineInit();
+	m_DirectXTKRenderer->OnEngineInit();
+	m_ImguiRenderer->OnEngineInit();
 
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnEngineInitialized();
 }
 
+void ModSDK::OnPresent(IDXGISwapChain3* p_SwapChain)
+{
+	m_DirectXTKRenderer->OnPresent(p_SwapChain);
+	m_ImguiRenderer->OnPresent(p_SwapChain);
+}
+
+void ModSDK::PostPresent(IDXGISwapChain3* p_SwapChain)
+{
+	m_DirectXTKRenderer->PostPresent(p_SwapChain);
+}
+
+void ModSDK::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
+{
+	m_DirectXTKRenderer->SetCommandQueue(p_CommandQueue);
+	m_ImguiRenderer->SetCommandQueue(p_CommandQueue);
+}
+
+void ModSDK::OnReset()
+{
+	m_DirectXTKRenderer->OnReset();
+	m_ImguiRenderer->OnReset();
+}
+
 void ModSDK::RequestUIFocus()
 {
-	Rendering::Renderers::ImGuiRenderer::SetFocus(true);
+	m_ImguiRenderer->SetFocus(true);
 }
 
 void ModSDK::ReleaseUIFocus()
 {
-	Rendering::Renderers::ImGuiRenderer::SetFocus(false);
+	m_ImguiRenderer->SetFocus(false);
 }
 
 ImGuiContext* ModSDK::GetImGuiContext()
@@ -270,32 +303,42 @@ void* ModSDK::GetImGuiAllocatorUserData()
 
 ImFont* ModSDK::GetImGuiLightFont()
 {
-	return Rendering::Renderers::ImGuiRenderer::GetFontLight();
+	return m_ImguiRenderer->GetFontLight();
 }
 
 ImFont* ModSDK::GetImGuiRegularFont()
 {
-	return Rendering::Renderers::ImGuiRenderer::GetFontRegular();
+	return m_ImguiRenderer->GetFontRegular();
 }
 
 ImFont* ModSDK::GetImGuiMediumFont()
 {
-	return Rendering::Renderers::ImGuiRenderer::GetFontMedium();
+	return m_ImguiRenderer->GetFontMedium();
 }
 
 ImFont* ModSDK::GetImGuiBoldFont()
 {
-	return Rendering::Renderers::ImGuiRenderer::GetFontBold();
+	return m_ImguiRenderer->GetFontBold();
 }
 
 ImFont* ModSDK::GetImGuiBlackFont()
 {
-	return Rendering::Renderers::ImGuiRenderer::GetFontBlack();
+	return m_ImguiRenderer->GetFontBlack();
 }
 
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name)
 {
 	return TryGetPinName(p_PinId, p_Name);
+}
+
+bool ModSDK::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut)
+{
+	return m_DirectXTKRenderer->ScreenToWorld(p_ScreenPos, p_WorldPosOut, p_DirectionOut);
+}
+
+bool ModSDK::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out)
+{
+	return m_DirectXTKRenderer->WorldToScreen(p_WorldPos, p_Out);
 }
 
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
@@ -310,7 +353,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_ActivateEntity, ZEntityManager* th, ZEntityRef* entity, void* a3)
 {
 	const auto& s_Interfaces = *(*entity->m_pEntity)->m_pInterfaces;
-	Logger::Trace("Activating entity of type '{}' with id '{:x}' at {}.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity->m_pEntity)->m_nEntityId, fmt::ptr(entity->m_pEntity));
+	//Logger::Trace("Activating entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity->m_pEntity)->m_nEntityId);
 
 	m_EntityMutex.lock();
 	m_Entities.insert(*entity);
@@ -319,14 +362,14 @@ DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_ActivateEntity, ZEntity
 	return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, void* a3)
+DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>& references)
 {
 	m_EntityMutex.lock();
 
 	for (size_t i = 0; i < entities.size(); ++i)
 	{
 		const auto& s_Interfaces = *(*entities[i].m_pEntity)->m_pInterfaces;
-		Logger::Trace("Deleting entity of type '{}' with id '{:x}' at {}.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entities[i].m_pEntity)->m_nEntityId, fmt::ptr(entities[i].m_pEntity));
+		//Logger::Trace("Deleting entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entities[i].m_pEntity)->m_nEntityId);
 
 		m_Entities.erase(entities[i]);
 	}

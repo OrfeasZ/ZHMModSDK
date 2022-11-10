@@ -8,12 +8,7 @@
 
 using namespace UI;
 
-SRWLOCK ModSelector::m_Lock;
-std::vector<ModSelector::AvailableMod> ModSelector::m_AvailableMods;
-bool ModSelector::m_Open = false;
-bool ModSelector::m_ShouldShow = false;
-
-void ModSelector::Init()
+ModSelector::ModSelector()
 {
 	InitializeSRWLock(&m_Lock);
 }

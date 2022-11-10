@@ -9,16 +9,16 @@ template <class T>
 class THashMapNode
 {
 public:
-	int32_t m_nNextIndex;
+	int32_t m_nNextIndex = 0;
 	T m_value;
 };
 
 template <class T>
 struct SHashMapInfo
 {
-	uint32_t m_nBucketCount;
-	uint32_t* m_pBuckets;
-	THashMapNode<T>* m_pNodes;
+	uint32_t m_nBucketCount = 0;
+	uint32_t* m_pBuckets = nullptr;
+	THashMapNode<T>* m_pNodes = nullptr;
 };
 
 template <class T>
@@ -116,8 +116,8 @@ public:
 	}
 
 public:
-	SHashMapInfo<T>* m_pMapInfo;
-	uint32_t m_nBucket;
+	SHashMapInfo<T>* m_pMapInfo = nullptr;
+	uint32_t m_nBucket = 0;
 
 	template <class K, class V, class H>
 	friend class THashMap;
@@ -185,7 +185,7 @@ public:
 	}
 
 public:
-	uint32_t m_nSize;
-	uint32_t m_nFreeSlots;
+	uint32_t m_nSize = 0;
+	uint32_t m_nFreeSlots = -1;
 	SHashMapInfo<value_type> m_Info;
 };

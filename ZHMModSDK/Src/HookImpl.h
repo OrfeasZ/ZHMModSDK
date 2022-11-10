@@ -449,8 +449,6 @@ private:
 		if (m_Target == 0)
 			return nullptr;
 
-		Logger::Debug("Found pattern for call to '{}' at address {}.", p_HookName, fmt::ptr(reinterpret_cast<void*>(m_Target)));
-
 		// Real function location will be at instruction + 5 + offset.
 		// Offset is a 32-bit signed integer at instruction + 1.
 		const uintptr_t s_OriginalFunction = m_Target + 5 + *reinterpret_cast<int32_t*>(m_Target + 1);

@@ -10,6 +10,25 @@ class ZDelegate;
 template <class ReturnType, class... Args>
 class ZDelegate<ReturnType(Args...)>
 {
+public:
+	ZDelegate() :
+		m_mfp(nullptr),
+		m_pad(nullptr),
+		pStaticFunc(nullptr),
+		pInst(nullptr)
+	{
+	}
+
+	ReturnType operator()(Args... p_Args)
+	{
+		// We're only targeting x64 msvc, so calling convention for both static
+		// and member functions is the same (__fastcall).
+		if (m_mfp)
+			return reinterpret_cast<ReturnType(*)(void*, Args...)>(m_mfp)(pInst, p_Args...);
+
+		return pStaticFunc(p_Args...);
+	}
+
 protected:
 	typedef ReturnType(* MemberCallback_t)(void*, Args...);
 	typedef ReturnType(* StaticCallback_t)(Args...);

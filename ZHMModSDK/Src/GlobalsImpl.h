@@ -20,8 +20,6 @@ T PatternGlobalRelative(const char* p_GlobalName, const char* p_Pattern, const c
 		return nullptr;
 	}
 
-	Logger::Debug("Found pattern for global '{}' at address {}.", p_GlobalName, fmt::ptr(reinterpret_cast<void*>(s_Target)));
-
 	uintptr_t s_RelAddrPtr = s_Target + p_Offset;
 	int32_t s_RelAddr = *reinterpret_cast<int32_t*>(s_RelAddrPtr);
 

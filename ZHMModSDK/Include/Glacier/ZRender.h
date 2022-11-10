@@ -56,11 +56,11 @@ public:
 	virtual ~ZRenderDevice() = default;
 
 public:
-	PAD(0x540);
-	ZRenderSwapChain* m_pSwapChain; // 0x548, look for ZRenderSwapChain constructor; ZRenderSwapChain_Resize called from ZRenderDevice function
-	ID3D12Device* m_pDevice; // 0x550
-	PAD(0x30E9D90); // 0x558
-	ID3D12CommandQueue* m_pCommandQueue; // 0x30EA2E8, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
+	PAD(0x408);
+	ZRenderSwapChain* m_pSwapChain; // 0x410, look for ZRenderSwapChain constructor
+	ID3D12Device* m_pDevice; // 0x418
+	PAD(0x30FA350); // 0x420
+	ID3D12CommandQueue* m_pCommandQueue; // 0x30FA770, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
 };
 
 class ZRenderContext
@@ -80,6 +80,6 @@ public:
 public:
 	PAD(0x14170);
 	ZRenderDevice* m_pDevice; // 0x14178, look for ZRenderDevice constructor
-	PAD(0x1E0); // 0x14180
-	ZRenderContext* m_pRenderContext; // 0x14360, look for "ZRenderManager::RenderThread" string, first thing being constructed and assigned
+	PAD(0x100); // 0x14180
+	ZRenderContext* m_pRenderContext; // 0x14280, look for "ZRenderManager::RenderThread" string, first thing being constructed and assigned
 };

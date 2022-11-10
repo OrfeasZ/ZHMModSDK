@@ -13,21 +13,17 @@ Right now it's at a very early stage, with only a few aspects of the engine expo
 
 ## Usage (mod loader & mods)
 
-1. Download the latest version of the mod loader and the mods by going [here](https://github.com/OrfeasZ/ZHMModSDK/releases/latest), and downloading `mod-loader-RelWithDebInfo.zip` and `mods-RelWithDebInfo.zip`. These zip files contain the mod loader and a few mods respectively.
+1. Download the latest version of the mod loader and the mods by going [here](https://github.com/OrfeasZ/ZHMModSDK/releases/latest), and downloading `ZHMModSDK-Release.zip`. This zip file contains the mod loader and a few sample mods.
 
-2. Extract the contents of the `mod-loader-RelWithDebInfo.zip` archive to `<drive>:\Path\To\HITMAN3\Retail`, where `<drive>:\Path\To\HITMAN3` is the path to your Hitman 3 installation directory. This will be at `C:\Program Files\EpicGames\HITMAN3` by default. Make sure that you extract the files in the `Retail` folder and not the root `HITMAN3` folder.
+2. Extract the contents of the `ZHMModSDK-Release.zip` archive to `<drive>:\Path\To\HITMAN3\Retail`, where `<drive>:\Path\To\HITMAN3` is the path to your Hitman 3 installation directory. This will be at `C:\Program Files\EpicGames\HITMAN3` or `C:\Program Files (x86)\Steam\steamapps\common\HITMAN 3` by default. Make sure that you extract the files in the `Retail` folder and not the root `HITMAN3` folder.
 
-3. Create a new folder called `mods` inside the `Retail` folder you extracted the mod loader to.
+3. Run the game like you normally would.
 
-4. Extract the `.dll` files from the `mods-RelWithDebInfo.zip` archive to the `mods` folder you created in the previous step. You can find a description of what each mod does below.
+4. When the game opens, you'll see a dialog asking you which mods you'd like to use. Select them and press OK. You might need to restart your game for some of them to work.
 
-5. Run the game like you normally would.
+5. ...
 
-6. When the game opens, you'll see a dialog asking you which mods you'd like to use. Select them and press OK. You might need to restart your game for some of them to work.
-
-7. ...
-
-8. Profit?
+6. Profit?
 
 > NOTE: You can at any time change the mods you're using by pressing the `~` key and selecting them, or by editing the `mods.ini` file inside your game's `Retail` folder.
 

@@ -1564,7 +1564,6 @@ enum class ZHMPin
 	SoundSignalEmitted = -1686475288,
 	SoundTensionAmbient = -2039808820,
 	SpatialEntity = -380133019,
-	SpawnItem = -2112938315,
 	SpawnPhysicsClip = -629426625,
 	Speaking = 755042572,
 	SplashAtPos = 632825129,

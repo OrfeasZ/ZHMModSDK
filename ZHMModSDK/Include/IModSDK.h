@@ -4,6 +4,9 @@
 #include "Common.h"
 #include "imgui.h"
 
+class SVector2;
+class SVector3;
+
 class IModSDK
 {
 public:
@@ -19,6 +22,8 @@ public:
 	virtual ImFont* GetImGuiBoldFont() = 0;
 	virtual ImFont* GetImGuiBlackFont() = 0;
 	virtual bool GetPinName(int32_t p_PinId, ZString& p_Name) = 0;
+	virtual bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) = 0;
+	virtual bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) = 0;
 };
 
 ZHMSDK_API IModSDK* SDK();
