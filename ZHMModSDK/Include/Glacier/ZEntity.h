@@ -97,6 +97,18 @@ public:
 	virtual ZEntityRef* GetID(ZEntityRef* result) = 0;
 	virtual void Activate(int) = 0;
 	virtual void Deactivate(int) = 0;
+	virtual void ZEntityImpl_unk08() = 0;
+	virtual void ZEntityImpl_unk09() = 0;
+	virtual void ZEntityImpl_unk10() = 0;
+	virtual void ZEntityImpl_unk11() = 0;
+	virtual void ZEntityImpl_unk12() = 0;
+	virtual void ZEntityImpl_unk13() = 0;
+	virtual void ZEntityImpl_unk14() = 0;
+	virtual void Start() = 0;
+	virtual void ZEntityImpl_unk16() = 0;
+	virtual void ZEntityImpl_unk17() = 0;
+	virtual void ZEntityImpl_unk18() = 0;
+	virtual void ZEntityImpl_unk19() = 0;
 
 public:
 	ZEntityType* m_pType;

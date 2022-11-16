@@ -3,6 +3,7 @@
 #include "ZString.h"
 #include "TArray.h"
 #include "TMap.h"
+#include "ZBuffer.h"
 
 class ZHttpResultBase;
 
@@ -128,4 +129,14 @@ class ZHttpRequestWindows :
 	public IHttpRequest
 {
 
+};
+
+class ZHttpResultDynamicObject
+{
+public:
+	virtual ~ZHttpResultDynamicObject() = default;
+
+public:
+	PAD(0x38);
+	ZBuffer m_buffer;
 };

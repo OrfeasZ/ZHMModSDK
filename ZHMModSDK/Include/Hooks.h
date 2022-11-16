@@ -41,6 +41,7 @@ class SOnlineEvent;
 class ZUpdateEventContainer;
 class ZInputAction;
 class ZEntityManager;
+class ZHttpResultDynamicObject;
 
 class ZHMSDK_API Hooks
 {
@@ -75,4 +76,6 @@ public:
 	static Hook<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
 	static Hook<void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>& references)>* ZEntityManager_DeleteEntities;
 	static Hook<void(ZEntityManager* th, ZEntityRef* entity, void* a3)>* ZEntityManager_ActivateEntity;
+	static Hook<void(void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int param_6)>* Http_WinHttpCallback;
+	static Hook<void(ZHttpResultDynamicObject* th)>* ZHttpResultDynamicObject_OnBufferReady;
 };

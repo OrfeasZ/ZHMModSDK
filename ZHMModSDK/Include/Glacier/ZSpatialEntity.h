@@ -8,18 +8,6 @@ class ZSpatialEntity :
 	public ZEntityImpl
 {
 public:
-	virtual void ZSpatialEntity_unk08() = 0;
-	virtual void ZSpatialEntity_unk09() = 0;
-	virtual void ZSpatialEntity_unk10() = 0;
-	virtual void ZSpatialEntity_unk11() = 0;
-	virtual void ZSpatialEntity_unk12() = 0;
-	virtual void ZSpatialEntity_unk13() = 0;
-	virtual void ZSpatialEntity_unk14() = 0;
-	virtual void ZSpatialEntity_unk15() = 0;
-	virtual void ZSpatialEntity_unk16() = 0;
-	virtual void ZSpatialEntity_unk17() = 0;
-	virtual void ZSpatialEntity_unk18() = 0;
-	virtual void ZSpatialEntity_unk19() = 0;
 	virtual void ZSpatialEntity_unk20() = 0;
 	virtual void ZSpatialEntity_unk21() = 0;
 	virtual void ZSpatialEntity_unk22() = 0;
@@ -42,7 +30,6 @@ public:
 	virtual void ZSpatialEntity_unk39() = 0;
 	virtual void ZSpatialEntity_unk40() = 0;
 	virtual void ZSpatialEntity_unk41() = 0;
-	virtual void ZSpatialEntity_unk42() = 0;
 
 public:
 	SMatrix GetWorldMatrix()

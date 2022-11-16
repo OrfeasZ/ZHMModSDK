@@ -14,6 +14,7 @@ class DebugMod : public IPluginInterface
 public:
 	~DebugMod() override;
 
+	void PreInit() override;
 	void OnEngineInitialized() override;
 	void OnDrawMenu() override;
 	void OnDrawUI(bool p_HasFocus) override;
@@ -30,6 +31,9 @@ private:
 	void DrawOptions(bool p_HasFocus);
 	void DrawPositionBox(bool p_HasFocus);
 	void DrawEntityBox(bool p_HasFocus);
+
+	DEFINE_PLUGIN_DETOUR(DebugMod, void, ZHttpBufferReady, ZHttpResultDynamicObject* th);
+	DEFINE_PLUGIN_DETOUR(DebugMod, void, WinHttpCallback, void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int length_param_6);
 
 private:
 	bool m_MenuActive = false;

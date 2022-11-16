@@ -12,15 +12,23 @@
 #include <Glacier/ZGameLoopManager.h>
 #include <Glacier/ZModule.h>
 #include <Glacier/ZHitman5.h>
+#include <Glacier/ZHttp.h>
 #include <Functions.h>
 #include <Globals.h>
 
+#include <winhttp.h>
 #include <numbers>
 
 DebugMod::~DebugMod()
 {
 	const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
 	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+}
+
+void DebugMod::PreInit()
+{
+	Hooks::ZHttpResultDynamicObject_OnBufferReady->AddDetour(this, &DebugMod::ZHttpBufferReady);
+	Hooks::Http_WinHttpCallback->AddDetour(this, &DebugMod::WinHttpCallback);
 }
 
 void DebugMod::OnEngineInitialized()
@@ -673,6 +681,34 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 		SVector4(0.63f, 0.13f, 0.94f, 1.f),
 		SVector4(0.63f, 0.13f, 0.94f, 1.f)
 	);*/
+}
+
+DECLARE_PLUGIN_DETOUR(DebugMod, void, ZHttpBufferReady, ZHttpResultDynamicObject* th)
+{
+	/*Logger::Debug("ZHttp thing wow wow {} {} {} {}", fmt::ptr(th), offsetof(ZHttpResultDynamicObject, m_buffer), fmt::ptr(&th->m_buffer), fmt::ptr(th->m_buffer.data()));
+
+	std::string s_Data(static_cast<char*>(th->m_buffer.data()), th->m_buffer.size());
+
+	Logger::Debug("Some shit: {}", s_Data);
+
+	th->m_buffer = ZBuffer::FromData(s_Data);
+
+	std::string s_Data2(static_cast<char*>(th->m_buffer.data()), th->m_buffer.size());
+
+	Logger::Debug("Explosions shit: {}", s_Data2);*/
+
+	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_PLUGIN_DETOUR(DebugMod, void, WinHttpCallback, void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int length_param_6)
+{
+	/*if (dwInternetStatus == WINHTTP_CALLBACK_STATUS_SENDING_REQUEST)
+	{
+		WinHttpAddRequestHeaders(hInternet, L"Accept-Encoding: identity", (ULONG)-1L, WINHTTP_ADDREQ_FLAG_REPLACE);
+		Logger::Info("header set");
+	}*/
+
+	return HookResult<void>(HookAction::Continue());
 }
 
 DECLARE_ZHM_PLUGIN(DebugMod);
