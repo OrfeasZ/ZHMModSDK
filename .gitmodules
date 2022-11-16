@@ -13,3 +13,6 @@
 [submodule "External/mINI"]
 	path = External/mINI
 	url = https://github.com/pulzed/mINI.git
+[submodule "External/vcpkg"]
+	path = External/vcpkg
+	url = https://github.com/microsoft/vcpkg.git
