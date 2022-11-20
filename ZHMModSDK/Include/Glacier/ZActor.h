@@ -272,8 +272,13 @@ public:
 
 
 public:
+#if CTT
+	PAD(0x1F60);
+	TEntityRef<ZActor> m_aActiveActors[1000]; // 0x1F68, ZActorManager destructor, last if
+#else
 	PAD(0x25A0);
 	TEntityRef<ZActor> m_aActiveActors[1000]; // 0x25A8, ZActorManager destructor, last if
+#endif
 	/*PAD(0xAA20); // 0x5DE8
 	ZActorSavableHandler* m_pSavableHandler; // 0x10808*/
 };

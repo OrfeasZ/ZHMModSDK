@@ -25,6 +25,10 @@ target_compile_definitions(ZHMModSDK PRIVATE
 	LOADER_EXPORTS
 )
 
+if (CTT)
+	target_compile_definitions(ZHMModSDK PUBLIC CTT)
+endif()
+
 target_link_libraries(ZHMModSDK PUBLIC
 	minhook
 	spdlog_header_only

@@ -6,6 +6,8 @@ endif()
 
 project(ZHMMods CXX)
 
+set(CTT OFF CACHE BOOL "Build with support for the Hitman 3 CTT.")
+
 set(CMAKE_CXX_STANDARD 23)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

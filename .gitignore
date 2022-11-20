@@ -376,3 +376,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /_build/
 /_install/
+
+out/

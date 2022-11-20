@@ -16,7 +16,11 @@ jobs:
 
     strategy:
       matrix:
-        buildpreset: [ Release, Debug ]
+        buildpreset: 
+        - Release
+        - Debug
+        - Release-CTT
+        - Debug-CTT
 
     steps:
     - name: Get latest CMake and ninja
@@ -94,7 +98,15 @@ jobs:
 
     strategy:
       matrix:
-        artifact: [ ZHMModSDK-Release, ZHMModSDK-Debug, DevPkg-ZHMModSDK-Release, DevPkg-ZHMModSDK-Debug ]
+        artifact:
+        - ZHMModSDK-Release
+        - ZHMModSDK-Debug
+        - DevPkg-ZHMModSDK-Release
+        - DevPkg-ZHMModSDK-Debug
+        - ZHMModSDK-Release-CTT
+        - ZHMModSDK-Debug-CTT
+        - DevPkg-ZHMModSDK-Release-CTT
+        - DevPkg-ZHMModSDK-Debug-CTT
 
     steps:
     - name: Download artifact
