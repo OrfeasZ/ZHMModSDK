@@ -8,14 +8,16 @@ class ZBuffer
 public:
 	static ZBuffer FromData(const std::string& p_Data)
 	{
-		const auto s_DataBuffer = (*Globals::MemoryManager)->m_pNormalAllocator->Allocate(sizeof(ZBuffer) + p_Data.size());
+		const auto s_Size = static_cast<uint32_t>(p_Data.size());
+
+		const auto s_DataBuffer = (*Globals::MemoryManager)->m_pNormalAllocator->Allocate(sizeof(ZBuffer) + s_Size);
 
 		const auto s_Data = new (s_DataBuffer) SBufferData();
 		s_Data->m_nRefCount = 1;
-		s_Data->m_nSize = p_Data.size();
+		s_Data->m_nSize = s_Size;
 
 		ZBuffer s_Buffer(s_Data);
-		memcpy(s_Buffer.data(), p_Data.data(), p_Data.size());
+		memcpy(s_Buffer.data(), p_Data.data(), s_Size);
 		return s_Buffer;
 	}
 

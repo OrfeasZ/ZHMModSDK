@@ -21,6 +21,7 @@
 #include "Rendering/D3DUtils.h"
 #include "Fonts.h"
 #include "Globals.h"
+#include "HookImpl.h"
 #include "ModSDK.h"
 #include "Glacier/ZRender.h"
 
@@ -182,6 +183,7 @@ void ImGuiRenderer::OnEngineInit()
 
 void ImGuiRenderer::Shutdown()
 {
+	HookRegistry::ClearDetoursWithContext(this);
 	OnReset();
 }
 

@@ -101,25 +101,10 @@ PATTERN_HOOK(
 	bool(ZEntityRef, uint32_t, const ZObjectRef&)
 );
 
-// Look for D3D12.dll string
-PATTERN_HOOK(
-	"\x48\x89\x4C\x24\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x58\xE2\xFF\xFF",
-	"xxxxxxxxxxxxxxxxxxxxxxxxx",
-	ZRenderDevice_ZRenderDevice,
-	ZRenderDevice* (ZRenderDevice* th)
-);
-
 MODULE_HOOK(
 	"d3d12.dll", "D3D12CreateDevice",
 	D3D12CreateDevice,
 	HRESULT(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
-);
-
-PATTERN_HOOK(
-	"\x44\x88\x44\x24\x18\x57\x41\x54",
-	"xxxxxxxx",
-	ZRenderSwapChain_Resize,
-	void(ZRenderSwapChain* th, void* a2, bool a3)
 );
 
 PATTERN_HOOK(

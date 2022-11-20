@@ -222,16 +222,46 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	if (s_Factory->EnumAdapters(0, &s_Adapter.Ref) == DXGI_ERROR_NOT_FOUND)
 		return std::nullopt;
 
-	Logger::Debug("[D3D12Hooks] Creating D3D12 device.");
-
 #if _DEBUG
-	/*ID3D12Debug* s_Debug = nullptr;
+	ID3D12Debug* s_Debug = nullptr;
+	uint32_t s_ThingResult = D3D12GetDebugInterface(IID_PPV_ARGS(&s_Debug));
 
-	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&s_Debug))))
+	if (SUCCEEDED(s_ThingResult))
+	{
+		Logger::Debug("[D3D12Hooks] Enabling D3D12 debug layer.");
+
 		s_Debug->EnableDebugLayer();
 
-	s_Debug->Release();*/
+		ID3D12Debug1* s_Debug1 = nullptr;
+
+		if (SUCCEEDED(s_Debug->QueryInterface(IID_PPV_ARGS(&s_Debug1))))
+		{
+			Logger::Debug("[D3D12Hooks] Enabling D3D12 gpu-based validation.");
+
+			s_Debug1->SetEnableGPUBasedValidation(true);
+			s_Debug1->Release();
+		}
+
+		s_Debug->Release();
+	}
+	else
+	{
+		Logger::Error("[D3D12Hooks] Could not get debug interface with error: {:X}", s_ThingResult);
+	}
+
+	ID3D12DeviceRemovedExtendedDataSettings* s_DredSettings;
+
+	// Turn on auto-breadcrumbs and page fault reporting.
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&s_DredSettings))))
+	{
+		Logger::Debug("[D3D12Hooks] Enabling D3D12 breadcrumbs and page fault reporting.");
+		s_DredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+		s_DredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+		s_DredSettings->Release();
+	}
 #endif
+
+	Logger::Debug("[D3D12Hooks] Creating D3D12 device.");
 
 	ScopedD3DRef<ID3D12Device> s_Device;
 

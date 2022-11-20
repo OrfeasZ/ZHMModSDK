@@ -104,6 +104,12 @@ ModSDK::~ModSDK()
 	
 	m_ModLoader.reset();
 
+	HookRegistry::ClearDetoursWithContext(this);
+
+	m_D3D12Hooks.reset();
+	m_ImguiRenderer.reset();
+	m_DirectXTKRenderer.reset();
+
 	HookRegistry::DestroyHooks();
 	Trampolines::ClearTrampolines();
 
