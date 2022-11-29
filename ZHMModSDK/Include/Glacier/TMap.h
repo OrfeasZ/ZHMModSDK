@@ -6,38 +6,50 @@ template <typename T>
 class TBinaryTreeNode
 {
 public:
-	inline TBinaryTreeNode<T>* GetNextNode()
+	static TBinaryTreeNode* GetNextNode(TBinaryTreeNode* pNode)
 	{
-		if (m_pRight)
+		TBinaryTreeNode* result = pNode->m_pRight;
+
+		if (result)
 		{
-			auto v2 = m_pRight;
-
-			for (auto i = v2->m_pLeft; i; i = i->m_pLeft)
-				v2 = i;
-
-			return v2;
-		}
-
-		auto v1 = this;
-
-		if (m_pParent)
-		{
-			if (m_pParent->m_pLeft == this)
-				return m_pParent;
-
-			for (auto i = m_pParent; i; i = i->m_pParent)
+			for (TBinaryTreeNode* i = result->m_pLeft; i; i = i->m_pLeft)
 			{
-				if (i->m_pLeft == this)
-					break;
+				result = i;
+			}
+		}
+		else
+		{
+			result = pNode->m_pParent;
 
-				v1 = i;
+			if (result)
+			{
+				if (result->m_pLeft == pNode)
+				{
+					return result;
+				}
+
+				do
+				{
+					if (result->m_pLeft == pNode)
+					{
+						break;
+					}
+
+					pNode = result;
+					result = result->m_pParent;
+				}
+				while (result);
+			}
+
+			result = pNode->m_pParent;
+
+			if (!result)
+			{
+				return pNode;
 			}
 		}
 
-		if (v1->m_pParent)
-			v1 = v1->m_pParent;
-
-		return v1;
+		return result;
 	}
 
 public:
@@ -52,16 +64,24 @@ template <typename T>
 class TBinaryTreeIterator
 {
 public:
+	inline TBinaryTreeIterator() :
+		m_pCurrent(nullptr)
+	{
+
+	}
+
 	inline TBinaryTreeIterator(T* ptr) :
 		m_pCurrent(ptr)
 	{
 	}
 
-	inline TBinaryTreeIterator<T>* operator++()
+	inline TBinaryTreeIterator<T>& operator++()
 	{
-		auto node = reinterpret_cast<TBinaryTreeNode<T>*>((char*)this - offsetof(TBinaryTreeNode<T>, m_data));
-		m_pCurrent = &node->m_data;
-		return this;
+		TBinaryTreeNode<T>* node = reinterpret_cast<TBinaryTreeNode<T>*>(reinterpret_cast<char*>(this->m_pCurrent) - offsetof(TBinaryTreeNode<T>, TBinaryTreeNode<T>::m_data));
+
+		this->m_pCurrent = &TBinaryTreeNode<T>::GetNextNode(node)->m_data;
+
+		return *this;
 	}
 
 	inline bool operator==(const TBinaryTreeIterator<T>& other) const
@@ -84,7 +104,7 @@ public:
 		return m_pCurrent;
 	}
 
-protected:
+public:
 	T* m_pCurrent;
 };
 
@@ -104,17 +124,25 @@ public:
 	typedef const TBinaryTreeIterator<T> const_iterator;
 
 public:
-	inline iterator end() const
+	inline iterator end()
 	{
-		return (T*)&m_nSize;
+		return reinterpret_cast<T*>(&m_nSize);
 	}
 
-	inline iterator begin() const
+	inline iterator begin()
 	{
-		if (m_tree.m_pLeftRoot)
-			return &m_tree.m_pLeftRoot->GetNextNode()->m_data;
+		iterator result;
 
-		return end();
+		if (m_tree.m_pLeftRoot)
+		{
+			result.m_pCurrent = &TBinaryTreeNode<T>::GetNextNode(reinterpret_cast<TBinaryTreeNode<T>*>(this))->m_data;
+		}
+		else
+		{
+			result.m_pCurrent = reinterpret_cast<T*>(&m_nSize);
+		}
+
+		return result;
 	}
 
 public:
@@ -138,46 +166,41 @@ public:
 	typedef const TBinaryTreeIterator<value_type> const_iterator;
 
 public:
-	inline iterator end() const
+	inline iterator end()
 	{
 		return m_container.end();
 	}
 
-	inline iterator begin() const
+	inline iterator begin()
 	{
 		return m_container.begin();
 	}
 
-	inline iterator find(const T& key) const
+	inline iterator find(const T& key)
 	{
-		auto it = m_container.m_tree.m_pLeftRoot;
+		TBinaryTreeNode<value_type>* node = find(m_container.m_tree.m_pLeftRoot, key);
 
-		if (!it)
-			return end();
-
-		while (true)
+		if (node)
 		{
-			while (it->m_data.m_key < key)
-			{
-				it = it->m_pRight;
-
-				if (!it)
-					return end();
-			}
-
-			if (!(key < it->m_data.m_key))
-				return end();
-
-			it = it->m_pLeft;
-
-			if (!it)
-				return end();
+			return &node->m_data;
 		}
 
-		if (!it)
-			return end();
+		return end();
+	}
 
-		return &it->m_data;
+	inline TBinaryTreeNode<value_type>* find(TBinaryTreeNode<value_type>* root, const T& key)
+	{
+		if (!root || root->m_data.first == key)
+		{
+			return root;
+		}
+
+		if (root->m_data.first < key)
+		{
+			return find(root->m_pRight, key);
+		}
+
+		return find(root->m_pLeft, key);
 	}
 
 	inline size_t size() const
