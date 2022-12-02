@@ -78,6 +78,7 @@ namespace detail
 	{
 		constexpr auto s_ClassPrefix = std::string_view("class ");
 		constexpr auto s_StructPrefix = std::string_view("struct ");
+		constexpr auto s_EnumPrefix = std::string_view("enum ");
 
 		auto s_ZHMTypeNameStorage = std::array<char, N>();
 
@@ -96,6 +97,13 @@ namespace detail
 				p_TypeName.substr(i, s_StructPrefix.size()) == s_StructPrefix)
 			{
 				i += s_StructPrefix.size() - 1;
+				continue;
+			}
+
+			if (p_TypeName[i] == 'e' && i + s_EnumPrefix.size() < N &&
+				p_TypeName.substr(i, s_EnumPrefix.size()) == s_EnumPrefix)
+			{
+				i += s_EnumPrefix.size() - 1;
 				continue;
 			}
 
