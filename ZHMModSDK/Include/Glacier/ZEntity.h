@@ -253,6 +253,50 @@ public:
 		return std::move(GetProperty(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size())));
 	}*/
 
+	template <typename T>
+	ZVariant<T> GetProperty(const uint32_t nPropertyID) const
+	{
+		ZObjectRef property;
+
+		for (uint32_t i = 0; i < m_pEntity[0]->m_pProperties01->size(); ++i)
+		{
+			ZEntityProperty* entityProperty = &m_pEntity[0]->m_pProperties01->operator[](i);
+
+			if (entityProperty->m_nPropertyId == nPropertyID)
+			{
+				ZClassProperty* classProperty = entityProperty->m_pType->getPropertyInfo();
+				char* property2 = reinterpret_cast<char*>(m_pEntity) + entityProperty->m_nOffset;
+
+				uint16_t typeSize = classProperty->m_pType->typeInfo()->m_nTypeSize;
+				uint16_t typeAlignment = classProperty->m_pType->typeInfo()->m_nTypeAlignment;
+				auto* data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(typeSize, typeAlignment);;
+
+				if (classProperty->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
+				{
+					classProperty->get(property2, data, classProperty->m_nOffset);
+				}
+				else
+				{
+					classProperty->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(data, property2);
+				}
+
+				property.Assign(classProperty->m_pType, data);
+
+				break;
+			}
+		}
+
+		return std::move(ZVariant<T>(property));
+	}
+
+	template <typename T>
+	ZVariant<T> GetProperty(const ZString& p_PropertyName) const
+	{
+		uint32_t nPropertyID = Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size());
+
+		return std::move(GetProperty<T>(nPropertyID));
+	}
+
 	bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true)
 	{
 		return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);

@@ -114,6 +114,16 @@ public:
 	PAD(32);
 };
 
+enum EPropertyInfoFlags
+{
+	E_RUNTIME_EDITABLE = 1,
+	E_CONST_AFTER_START = 2,
+	E_STREAMABLE = 4,
+	E_MEDIA_STREAMABLE = 8,
+	E_HAS_GETTER_SETTER = 16,
+	E_WEAK_REFERENCE = 32
+};
+
 class ZClassProperty
 {
 public:
@@ -121,7 +131,7 @@ public:
 	uint32_t m_nPropertyID;
 	STypeID* m_pType;
 	uint64_t m_nOffset;
-	uint32_t m_nFlags;
+	EPropertyInfoFlags m_nFlags;
 	void (*set)(void*, void*, uint64_t, bool);
 	void (*get)(void*, void*, uint64_t);
 };

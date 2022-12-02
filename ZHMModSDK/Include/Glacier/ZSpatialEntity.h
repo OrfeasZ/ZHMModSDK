@@ -8,6 +8,13 @@ class ZSpatialEntity :
 	public ZEntityImpl
 {
 public:
+	enum ERoomBehaviour
+	{
+		ROOM_STATIC = 0,
+		ROOM_DYNAMIC = 1,
+		ROOM_STATIC_OUTSIDE_CLIENT = 2
+	};
+
 	virtual void ZSpatialEntity_unk20() = 0;
 	virtual void ZSpatialEntity_unk21() = 0;
 	virtual void ZSpatialEntity_unk22() = 0;
@@ -65,7 +72,8 @@ public:
 	SMatrix m_mTransform; // 0x20
 	PAD(0x0C); // 0x60
 	uint32_t m_nUnknownFlags; // 0x6C
-	PAD(0x30); // 0x70
+	TEntityRef<ZSpatialEntity> m_eidParent; // 0x70
+	PAD(0x20);
 };
 
 static_assert(offsetof(ZSpatialEntity, m_mTransform) == 0x20);

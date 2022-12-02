@@ -70,6 +70,11 @@ class ZVariant :
 	public ZObjectRef
 {
 public:
+	ZVariant(ZObjectRef objectRef) : ZObjectRef(objectRef)
+	{
+
+	}
+
 	ZVariant() :
 		ZObjectRef(GetTypeId(), nullptr)
 	{
