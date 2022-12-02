@@ -9,7 +9,7 @@ int main(int argc, char* argv[])
 	// NOTE: This app assumes that it's launched from its build directory.
 	// If it isn't then the copying steps will fail.
 
-	std::string s_HitmanPathStr = "O:\\Games\\HITMAN3_CTT";
+	std::string s_HitmanPathStr = "O:\\Games\\HITMAN3";
 	std::string s_EpicUsername = "NoFaTe";
 	std::string s_EpicUserId = "29438d6d19854c498ff2e7b77e2e5c07";
 

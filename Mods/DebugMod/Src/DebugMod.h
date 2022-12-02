@@ -9,6 +9,8 @@
 #include <Glacier/ZInput.h>
 #include <Glacier/ZEntity.h>
 
+#include "Glacier/ZScene.h"
+
 class DebugMod : public IPluginInterface
 {
 public:
@@ -22,9 +24,8 @@ public:
 
 private:
 	void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
-	void DoRaycast(float4 p_From, float4 p_To);
-	void MoveObject();
 	void CopyToClipboard(const std::string& p_String) const;
+	void OnMouseDown(SVector2 p_Pos, bool p_FirstClick);
 
 private:
 	// UI Drawing
@@ -34,12 +35,14 @@ private:
 
 	DEFINE_PLUGIN_DETOUR(DebugMod, void, ZHttpBufferReady, ZHttpResultDynamicObject* th);
 	DEFINE_PLUGIN_DETOUR(DebugMod, void, WinHttpCallback, void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int length_param_6);
+	DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
 
 private:
 	bool m_MenuActive = false;
 	bool m_RenderNpcBoxes = false;
 	bool m_RenderNpcNames = false;
 	bool m_RenderNpcRepoIds = false;
+	bool m_RenderRaycast = false;
 
 	float4 m_From;
 	float4 m_To;
@@ -48,6 +51,7 @@ private:
 
 	bool m_Moving = false;
 	float m_MoveDistance = 0.0f;
+	bool m_HoldingMouse = false;
 
 	ZEntityRef m_SelectedEntity;
 	std::shared_mutex m_EntityMutex;

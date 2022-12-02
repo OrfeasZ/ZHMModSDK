@@ -29,6 +29,7 @@ void DebugMod::PreInit()
 {
 	Hooks::ZHttpResultDynamicObject_OnBufferReady->AddDetour(this, &DebugMod::ZHttpBufferReady);
 	Hooks::Http_WinHttpCallback->AddDetour(this, &DebugMod::WinHttpCallback);
+	Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &DebugMod::OnClearScene);
 }
 
 void DebugMod::OnEngineInitialized()
@@ -49,38 +50,6 @@ void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 			DoRaycast(s_From, s_To);
 		}
 	}*/
-}
-
-void DebugMod::MoveObject()
-{
-	if (!m_SelectedEntity)
-	{
-		Logger::Warn("No entity selected.");
-		return;
-	}
-
-	auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>();
-
-	if (!s_SpatialEntity)
-	{
-		Logger::Error("Not a spatial entity.");
-		return;
-	}
-
-	auto s_EntityWorldMatrix = s_SpatialEntity->GetWorldMatrix();
-
-	const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
-
-	if (!s_CurrentCamera)
-	{
-		Logger::Error("No camera spawned.");
-		return;
-	}
-
-	auto s_Transform = s_CurrentCamera->GetWorldMatrix();
-	s_EntityWorldMatrix.Trans = s_Transform.Trans - (s_Transform.ZAxis * float4::Distance(m_From, m_Hit));
-
-	s_SpatialEntity->SetWorldMatrix(s_EntityWorldMatrix);
 }
 
 void DebugMod::OnDrawMenu()
@@ -192,51 +161,6 @@ void DebugMod::OnDrawMenu()
 	}*/
 }
 
-void DebugMod::DoRaycast(float4 p_From, float4 p_To)
-{
-	if (!*Globals::CollisionManager)
-	{
-		Logger::Error("Collision manager not found.");
-		return;
-	}
-
-	m_From = p_From;
-	m_To = p_To;
-
-	ZRayQueryInput s_RayInput {
-		.m_vFrom = m_From,
-		.m_vTo = m_To,
-	};
-
-	ZRayQueryOutput s_RayOutput {};
-
-	Logger::Debug("RayCasting from {} to {}.", m_From, m_To);
-
-	if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput))
-	{
-		Logger::Error("Raycast failed.");
-		return;
-	}
-
-	Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
-
-	m_Hit = s_RayOutput.m_vPosition;
-	m_Normal = s_RayOutput.m_vNormal;
-
-	m_EntityMutex.lock();
-	
-	if (s_RayOutput.m_BlockingEntity)
-	{
-		const auto& s_Interfaces = *(*s_RayOutput.m_BlockingEntity.m_pEntity)->m_pInterfaces;
-		Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*s_RayOutput.m_BlockingEntity.m_pEntity)->m_nEntityId);
-	}
-
-	m_SelectedEntity = s_RayOutput.m_BlockingEntity;
-
-	m_EntityMutex.unlock();
-}
-
-
 void DebugMod::OnDrawUI(bool p_HasFocus)
 {
 	DrawOptions(p_HasFocus);
@@ -251,17 +175,97 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 		{
 			const auto s_MousePos = ImGui::GetMousePos();
 			
-			SVector3 s_World;
-			SVector3 s_Direction;
-			SDK()->ScreenToWorld(SVector2(s_MousePos.x, s_MousePos.y), s_World, s_Direction);
+			OnMouseDown(SVector2(s_MousePos.x, s_MousePos.y), !m_HoldingMouse);
 
-			float4 s_DirectionVec(s_Direction.x, s_Direction.y, s_Direction.z, 1.f);
-			
-			float4 s_From = float4(s_World.x, s_World.y, s_World.z, 1.f);
-			float4 s_To = s_From + (s_DirectionVec * 200.f);
-
-			DoRaycast(s_From, s_To);
+			m_HoldingMouse = true;
 		}
+		else
+		{
+			// If we stopped clicking, update collisions.
+			if (m_HoldingMouse && *Globals::CollisionManager)
+			{
+				m_EntityMutex.lock_shared();
+
+				if (m_SelectedEntity)
+				{
+				}
+
+				m_EntityMutex.lock_shared();
+			}
+
+			m_HoldingMouse = false;
+		}
+	}
+}
+
+void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
+{
+	SVector3 s_World;
+	SVector3 s_Direction;
+	SDK()->ScreenToWorld(p_Pos, s_World, s_Direction);
+
+	float4 s_DirectionVec(s_Direction.x, s_Direction.y, s_Direction.z, 1.f);
+
+	float4 s_From = float4(s_World.x, s_World.y, s_World.z, 1.f);
+	float4 s_To = s_From + (s_DirectionVec * 200.f);
+
+	if (!*Globals::CollisionManager)
+	{
+		Logger::Error("Collision manager not found.");
+		return;
+	}
+
+	ZRayQueryInput s_RayInput {
+		.m_vFrom = s_From,
+		.m_vTo = s_To,
+	};
+
+	ZRayQueryOutput s_RayOutput {};
+
+	Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
+
+	if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput))
+	{
+		Logger::Error("Raycast failed.");
+		return;
+	}
+
+	Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
+
+	m_From = s_From;
+	m_To = s_To;
+	m_Hit = s_RayOutput.m_vPosition;
+	m_Normal = s_RayOutput.m_vNormal;
+
+	if (p_FirstClick)
+	{
+		m_EntityMutex.lock();
+
+		if (s_RayOutput.m_BlockingEntity)
+		{
+			const auto& s_Interfaces = *(*s_RayOutput.m_BlockingEntity.m_pEntity)->m_pInterfaces;
+			Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*s_RayOutput.m_BlockingEntity.m_pEntity)->m_nEntityId);
+		}
+
+		m_SelectedEntity = s_RayOutput.m_BlockingEntity;
+
+		m_EntityMutex.unlock();
+	}
+	else
+	{
+		m_EntityMutex.lock_shared();
+
+		if (m_SelectedEntity)
+		{
+			if (auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
+			{
+				auto s_EntityWorldMatrix = s_SpatialEntity->GetWorldMatrix();				
+				s_EntityWorldMatrix.Trans = m_Hit;
+				s_SpatialEntity->SetWorldMatrix(s_EntityWorldMatrix);
+			}
+		}
+
+		m_EntityMutex.unlock_shared();
 	}
 }
 
@@ -290,6 +294,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 {
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
 	const auto s_Showing = ImGui::Begin("POSITIONS");
+	ImGui::SetWindowCollapsed(true, ImGuiCond_FirstUseEver);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	if (s_Showing)
@@ -437,11 +442,11 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 	ImGui::PopFont();
 }
 
-
 void DebugMod::DrawEntityBox(bool p_HasFocus)
 {
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
 	const auto s_Showing = ImGui::Begin("SELECTED ENTITY");
+	ImGui::SetWindowCollapsed(true, ImGuiCond_FirstUseEver);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	if (s_Showing)
@@ -640,7 +645,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 
 	/*SVector2 s_StartPos;
 	if (p_Renderer->WorldToScreen(SVector3(m_From.x, m_From.y, m_From.z), s_StartPos))
-		p_Renderer->DrawText2D("0", s_StartPos, SVector4(1, 1, 1, 1), 0, 0.5f);*/
+		p_Renderer->DrawText2D("0", s_StartPos, SVector4(1, 1, 1, 1), 0, 0.5f);
 
 	SVector2 s_EndPos;
 	if (p_Renderer->WorldToScreen(SVector3(m_To.x, m_To.y, m_To.z), s_EndPos))
@@ -650,17 +655,17 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 	if (p_Renderer->WorldToScreen(SVector3(m_Hit.x, m_Hit.y, m_Hit.z), s_HitPos))
 		p_Renderer->DrawText2D("x", s_HitPos, SVector4(1, 1, 1, 1), 0, 0.25f);
 
-	/*p_Renderer->DrawBox3D(
+	p_Renderer->DrawBox3D(
 		SVector3(m_From.x - 0.05f, m_From.y - 0.05f, m_From.z - 0.05f),
 		SVector3(m_From.x + 0.05f, m_From.y + 0.05f, m_From.z + 0.05f),
 		SVector4(0.f, 0.f, 1.f, 1.0f)
-	);*/
+	);
 
-	/*p_Renderer->DrawBox3D(
+	p_Renderer->DrawBox3D(
 		SVector3(m_To.x - 0.05f, m_To.y - 0.05f, m_To.z - 0.05f),
 		SVector3(m_To.x + 0.05f, m_To.y + 0.05f, m_To.z + 0.05f),
 		SVector4(0.f, 1.f, 0.f, 1.0f)
-	);*/
+	);
 
 	p_Renderer->DrawBox3D(
 		SVector3(m_Hit.x - 0.01f, m_Hit.y - 0.01f, m_Hit.z - 0.01f),
@@ -675,7 +680,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 		SVector4(1.f, 1.f, 1.f, 1.f)
 	);
 
-	/*p_Renderer->DrawLine3D(
+	p_Renderer->DrawLine3D(
 		SVector3(m_Hit.x + (m_Normal.x * 0.15f), m_From.y + (m_Normal.y * 0.15f), m_From.z + (m_Normal.z * 0.15f)),
 		SVector3(m_Hit.x, m_Hit.y, m_Hit.z),
 		SVector4(0.63f, 0.13f, 0.94f, 1.f),
@@ -707,6 +712,15 @@ DECLARE_PLUGIN_DETOUR(DebugMod, void, WinHttpCallback, void* dwContext, void* hI
 		WinHttpAddRequestHeaders(hInternet, L"Accept-Encoding: identity", (ULONG)-1L, WINHTTP_ADDREQ_FLAG_REPLACE);
 		Logger::Info("header set");
 	}*/
+
+	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+{
+	m_EntityMutex.lock();
+	m_SelectedEntity = ZEntityRef();
+	m_EntityMutex.unlock();
 
 	return HookResult<void>(HookAction::Continue());
 }
