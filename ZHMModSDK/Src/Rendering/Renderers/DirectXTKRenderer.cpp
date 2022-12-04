@@ -92,10 +92,10 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 	if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call())
 	{
 		const auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
-		const auto s_ProjectionMatrix = s_CurrentCamera->GetProjectionMatrix();
+		const SMatrix s_ProjectionMatrix = *s_CurrentCamera->GetProjectionMatrix();
 
 		m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_ViewMatrix);
-		m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(s_ProjectionMatrix);
+		m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_ProjectionMatrix);
 
 		m_ViewProjection = m_View * m_Projection;
 		m_ProjectionViewInverse = (m_Projection * m_View).Invert();
