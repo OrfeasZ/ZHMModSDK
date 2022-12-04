@@ -12,9 +12,9 @@ class IRenderDestinationEntity :
 {
 public:
 	virtual ZEntityRef* GetSource() = 0;
-	virtual void IRenderDestinationEntity_unk06() = 0;
-	virtual void IRenderDestinationEntity_unk07() = 0;
-	virtual void IRenderDestinationEntity_unk08() = 0;
+	virtual void IRenderDestinationEntity_unk6() = 0;
+	virtual void IRenderDestinationEntity_unk7() = 0;
+	virtual void IRenderDestinationEntity_unk8() = 0;
 	virtual void SetSource(ZEntityRef*) = 0;
 	virtual void IRenderDestinationEntity_unk10() = 0;
 	virtual void IRenderDestinationEntity_unk11() = 0;

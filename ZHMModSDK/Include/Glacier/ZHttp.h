@@ -89,12 +89,12 @@ public:
 class SHttpRequestBehavior
 {
 public:
-	void (*unk00)();
-	void (*unk01)();
-	void (*unk02)();
-	void (*unk03)();
-	void (*unk04)();
-	void (*unk05)();
+	void (*unk0)();
+	void (*unk1)();
+	void (*unk2)();
+	void (*unk3)();
+	void (*unk4)();
+	void (*unk5)();
 };
 
 class ZHttpRequestParams
@@ -115,10 +115,10 @@ public:
 	virtual ~IHttpRequest() = 0;
 
 public:
-	int32_t m_nUnk00;
-	int32_t m_nUnk01;
-	bool m_bUnk02;
-	int32_t m_nUnk03;
+	int32_t m_nUnk0x0;
+	int32_t m_nUnk0x4;
+	bool m_bUnk0x8;
+	int32_t m_nUnk0xC;
 	PAD(0x1C);
 	ZHttpUrl m_url;
 	PAD(0x08);

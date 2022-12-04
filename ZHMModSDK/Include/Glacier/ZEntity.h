@@ -22,16 +22,16 @@ class ZPinFunctions
 {
 public:
 	void (*trigger)();
-	void (*unk00)();
-	void (*unk01)();
-	void (*unk02)();
+	void (*unk1)();
+	void (*unk2)();
+	void (*unk3)();
 	int32_t m_nPin;
 };
 
 class ZPinData
 {
 public:
-	int32_t m_unk00;
+	int32_t m_unk0x0;
 	IType* m_pType;
 };
 
@@ -41,7 +41,7 @@ public:
 	int64_t m_nObjectOffset;
 	ZPinFunctions* m_pPinFunctions;
 	ZPinData* m_pPinData;
-	void* m_unk00;
+	void* m_unk0x18;
 	int32_t m_nPin;
 };
 
@@ -75,7 +75,7 @@ public:
 class ZEntityType
 {
 public:
-	uint64_t m_nUnk01;
+	uint64_t m_nUnk0x0;
 	TArray<ZEntityProperty>* m_pProperties01;
 	TArray<ZEntityProperty>* m_pProperties02;
 	PAD(0x08);
@@ -97,8 +97,8 @@ public:
 	virtual ZEntityRef* GetID(ZEntityRef* result) = 0;
 	virtual void Activate(int) = 0;
 	virtual void Deactivate(int) = 0;
-	virtual void ZEntityImpl_unk08() = 0;
-	virtual void ZEntityImpl_unk09() = 0;
+	virtual void ZEntityImpl_unk8() = 0;
+	virtual void ZEntityImpl_unk9() = 0;
 	virtual void ZEntityImpl_unk10() = 0;
 	virtual void ZEntityImpl_unk11() = 0;
 	virtual void ZEntityImpl_unk12() = 0;
@@ -112,8 +112,8 @@ public:
 
 public:
 	ZEntityType* m_pType;
-	uint32_t m_unk00;
-	uint32_t m_unk01;
+	uint32_t m_unk0x10;
+	uint32_t m_unk0x14;
 };
 
 class ZEntityRef

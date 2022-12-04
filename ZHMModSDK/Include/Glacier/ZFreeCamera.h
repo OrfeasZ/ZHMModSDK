@@ -6,11 +6,11 @@
 class IFreeCameraControl
 {
 public:
-	virtual void IFreeCameraControl_unk00() = 0;
+	virtual void IFreeCameraControl_unk0() = 0;
 	virtual void SetActive(bool active) = 0;
-	virtual void IFreeCameraControl_unk02() = 0;
+	virtual void IFreeCameraControl_unk2() = 0;
 	virtual void SetCameraEntity(const TEntityRef<ZCameraEntity>& entity) = 0;
-	virtual void IFreeCameraControl_unk04() = 0;
+	virtual void IFreeCameraControl_unk4() = 0;
 };
 
 class ZFreeCameraControlEntity :

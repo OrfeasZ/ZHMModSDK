@@ -7,7 +7,7 @@ class ZGameUIManagerEntity;
 class IUITextureRequestResolver
 {
 public:
-	virtual void IUITextureRequestResolver_unk00() = 0;
+	virtual void IUITextureRequestResolver_unk0() = 0;
 };
 
 class ZGameUIManager :

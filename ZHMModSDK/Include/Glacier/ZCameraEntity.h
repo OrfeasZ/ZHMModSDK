@@ -23,11 +23,11 @@ class ICameraEntity :
 	public IRenderDestinationSource
 {
 public:
-	virtual void ICameraEntity_unk05() = 0;
-	virtual void ICameraEntity_unk06() = 0;
+	virtual void ICameraEntity_unk5() = 0;
+	virtual void ICameraEntity_unk6() = 0;
 	virtual SViewport* GetViewport() = 0;
-	virtual void ICameraEntity_unk08() = 0;
-	virtual void ICameraEntity_unk09() = 0;
+	virtual void ICameraEntity_unk8() = 0;
+	virtual void ICameraEntity_unk9() = 0;
 	virtual void ICameraEntity_unk10() = 0;
 	virtual float GetNearZ() = 0;
 	virtual float GetFarZ() = 0;

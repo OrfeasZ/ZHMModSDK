@@ -18,13 +18,13 @@ class IPageAllocator
 {
 public:
 	virtual ~IPageAllocator() = default;
-	virtual void IPageAllocator_unk01() = 0;
-	virtual void IPageAllocator_unk02() = 0;
-	virtual void IPageAllocator_unk03() = 0;
-	virtual void IPageAllocator_unk04() = 0;
-	virtual void IPageAllocator_unk05() = 0;
-	virtual void IPageAllocator_unk06() = 0;
-	virtual void IPageAllocator_unk07() = 0;
+	virtual void IPageAllocator_unk1() = 0;
+	virtual void IPageAllocator_unk2() = 0;
+	virtual void IPageAllocator_unk3() = 0;
+	virtual void IPageAllocator_unk4() = 0;
+	virtual void IPageAllocator_unk5() = 0;
+	virtual void IPageAllocator_unk6() = 0;
+	virtual void IPageAllocator_unk7() = 0;
 	virtual IAllocator* GetAllocator(void* object) = 0;
 };
 

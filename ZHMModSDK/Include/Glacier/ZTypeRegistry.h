@@ -19,8 +19,8 @@ class ZTypeRegistry
 public:
 	virtual int addRef() = 0;
 	virtual int release() = 0;
-	virtual void Unk00() = 0;
-	virtual void Unk01() = 0;
+	virtual void ZTypeRegistry_unk2() = 0;
+	virtual void ZTypeRegistry_unk3() = 0;
 	virtual ~ZTypeRegistry() = 0;
 
 public:

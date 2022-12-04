@@ -13,6 +13,7 @@
 #include <Glacier/ZModule.h>
 #include <Glacier/ZHitman5.h>
 #include <Glacier/ZHttp.h>
+#include <Glacier/ZPhysics.h>
 #include <Functions.h>
 #include <Globals.h>
 

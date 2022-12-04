@@ -23,22 +23,22 @@ class ICharacterCollision :
 {
 public:
 	virtual ~ICharacterCollision() {}
-	virtual void ICharacterCollision_unk00() = 0;
+	virtual void ICharacterCollision_unk0() = 0;
 };
 
 class IActor
 {
 public:
-	virtual void IActor_unk00() = 0;
+	virtual void IActor_unk0() = 0;
 	virtual void RequestDisable() = 0;
-	virtual void IActor_unk02() = 0;
-	virtual void IActor_unk03() = 0;
-	virtual void IActor_unk04() = 0;
-	virtual void IActor_unk05() = 0;
-	virtual void IActor_unk06() = 0;
-	virtual void IActor_unk07() = 0;
-	virtual void IActor_unk08() = 0;
-	virtual void IActor_unk09() = 0;
+	virtual void IActor_unk2() = 0;
+	virtual void IActor_unk3() = 0;
+	virtual void IActor_unk4() = 0;
+	virtual void IActor_unk5() = 0;
+	virtual void IActor_unk6() = 0;
+	virtual void IActor_unk7() = 0;
+	virtual void IActor_unk8() = 0;
+	virtual void IActor_unk9() = 0;
 	virtual bool IsDead() = 0;
 	virtual bool IsAlive() = 0;
 	virtual bool IsPacified() = 0;
@@ -91,15 +91,15 @@ class IActorProxy :
 {
 public:
 	virtual ~IActorProxy() {}
-	virtual void IActorProxy_unk00() = 0;
+	virtual void IActorProxy_unk0() = 0;
 };
 
 class ISequenceTarget
 {
 public:
-	virtual void ISequenceTarget_unk00() = 0;
-	virtual void ISequenceTarget_unk01() = 0;
-	virtual void ISequenceTarget_unk02() = 0;
+	virtual void ISequenceTarget_unk0() = 0;
+	virtual void ISequenceTarget_unk1() = 0;
+	virtual void ISequenceTarget_unk2() = 0;
 };
 
 class ISequenceAudioPlayer :
@@ -107,10 +107,10 @@ class ISequenceAudioPlayer :
 {
 public:
 	virtual ~ISequenceAudioPlayer() {}
-	virtual void ISequenceAudioPlayer_unk00() = 0;
-	virtual void ISequenceAudioPlayer_unk01() = 0;
-	virtual void ISequenceAudioPlayer_unk02() = 0;
-	virtual void ISequenceAudioPlayer_unk03() = 0;
+	virtual void ISequenceAudioPlayer_unk0() = 0;
+	virtual void ISequenceAudioPlayer_unk1() = 0;
+	virtual void ISequenceAudioPlayer_unk2() = 0;
+	virtual void ISequenceAudioPlayer_unk3() = 0;
 };
 
 class ICrowdAIActor :
@@ -118,9 +118,9 @@ class ICrowdAIActor :
 {
 public:
 	virtual ~ICrowdAIActor() {}
-	virtual void ICrowdAIActor_unk00() = 0;
-	virtual void ICrowdAIActor_unk01() = 0;
-	virtual void ICrowdAIActor_unk02() = 0;
+	virtual void ICrowdAIActor_unk0() = 0;
+	virtual void ICrowdAIActor_unk1() = 0;
+	virtual void ICrowdAIActor_unk2() = 0;
 };
 
 // Size = 0x1410
@@ -160,16 +160,16 @@ public:
 	PAD(0xBC8); // 0x4E0
 	ZAnimatedActor* m_pAnimatedActor; // 0x10A8
 	PAD(0xA8);
-	bool m_bUnk00 : 1; // 0x1158
-	bool m_bUnk01 : 1;
-	bool m_bUnk02 : 1;
-	bool m_bUnk03 : 1;
-	bool m_bUnk04 : 1;
-	bool m_bUnk05 : 1;
+	bool m_bUnk0 : 1; // 0x1158
+	bool m_bUnk1 : 1;
+	bool m_bUnk2 : 1;
+	bool m_bUnk3 : 1;
+	bool m_bUnk4 : 1;
+	bool m_bUnk5 : 1;
 	bool m_bIsBeingDragged : 1;
 	bool m_bIsBeingDumped : 1;
-	bool m_bUnk08 : 1; // 0x1159
-	bool m_bUnk09 : 1;
+	bool m_bUnk8 : 1; // 0x1159
+	bool m_bUnk9 : 1;
 	bool m_bUnk10 : 1;
 	bool m_bUnk11 : 1;
 	bool m_bUnk12 : 1;
@@ -206,7 +206,7 @@ public:
 	void PrintBitflags()
 	{
 		Logger::Debug("0:{} 1:{} 2:{} 3:{} 4:{} 5:{} 6:{} 7:{} 8:{} 9:{} 10:{} 11:{} 12:{} 13:{} 14:{} 15:{} 16:{} 17:{} 18:{} 19:{} 20:{} 21:{} 22:{} 23:{} 24:{} 25:{} 26:{} 27:{} 28:{} 29:{} 30:{} 31:{} 32:{} 33:{} 34:{} 35:{} 36:{} 37:{} 38:{} 39:{}",
-			m_bUnk00, m_bUnk01, m_bUnk02, m_bUnk03, m_bUnk04, m_bUnk05, m_bIsBeingDragged, m_bIsBeingDumped, m_bUnk08, m_bUnk09,
+			m_bUnk0, m_bUnk1, m_bUnk2, m_bUnk3, m_bUnk4, m_bUnk5, m_bIsBeingDragged, m_bIsBeingDumped, m_bUnk8, m_bUnk9,
 			m_bUnk10, m_bUnk11, m_bUnk12, m_bUnk13, m_bUnk14, m_bUnk15, m_bUnk16, m_bUnk17, m_bUnk18, m_bUnk19,
 			m_bUnk20, m_bUnk21, m_bUnk22, m_bUnk23, m_bUnk24, m_bUnk25, m_bUnk26, m_bUnk27, m_bUnk28, m_bUnk29,
 			m_bUnk30, m_bUnk31, m_bUnk32, m_bUnk33, m_bUnk34, m_bUnk35, m_bBodyHidden, m_bUnk37, m_bUnk38, m_bUnk39

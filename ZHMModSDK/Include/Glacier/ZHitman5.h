@@ -17,24 +17,24 @@ class IFutureCameraState :
 {
 public:
 	virtual ~IFutureCameraState() {}
-	virtual void IFutureCameraState_unk00() = 0;
-	virtual void IFutureCameraState_unk01() = 0;
-	virtual void IFutureCameraState_unk02() = 0;
-	virtual void IFutureCameraState_unk03() = 0;
+	virtual void IFutureCameraState_unk0() = 0;
+	virtual void IFutureCameraState_unk1() = 0;
+	virtual void IFutureCameraState_unk2() = 0;
+	virtual void IFutureCameraState_unk3() = 0;
 };
 
 class IInventoryOwner
 {
 public:
-	virtual void IInventoryOwner_unk00() = 0;
-	virtual void IInventoryOwner_unk01() = 0;
-	virtual void IInventoryOwner_unk02() = 0;
-	virtual void IInventoryOwner_unk03() = 0;
-	virtual void IInventoryOwner_unk04() = 0;
-	virtual void IInventoryOwner_unk05() = 0;
-	virtual void IInventoryOwner_unk06() = 0;
-	virtual void IInventoryOwner_unk07() = 0;
-	virtual void IInventoryOwner_unk08() = 0;
+	virtual void IInventoryOwner_unk0() = 0;
+	virtual void IInventoryOwner_unk1() = 0;
+	virtual void IInventoryOwner_unk2() = 0;
+	virtual void IInventoryOwner_unk3() = 0;
+	virtual void IInventoryOwner_unk4() = 0;
+	virtual void IInventoryOwner_unk5() = 0;
+	virtual void IInventoryOwner_unk6() = 0;
+	virtual void IInventoryOwner_unk7() = 0;
+	virtual void IInventoryOwner_unk8() = 0;
 };
 
 class IIKControllerOwner :
@@ -42,16 +42,16 @@ class IIKControllerOwner :
 {
 public:
 	virtual ~IIKControllerOwner() {}
-	virtual void IIKControllerOwner_unk00() = 0;
-	virtual void IIKControllerOwner_unk01() = 0;
-	virtual void IIKControllerOwner_unk02() = 0;
-	virtual void IIKControllerOwner_unk03() = 0;
-	virtual void IIKControllerOwner_unk04() = 0;
-	virtual void IIKControllerOwner_unk05() = 0;
-	virtual void IIKControllerOwner_unk06() = 0;
-	virtual void IIKControllerOwner_unk07() = 0;
-	virtual void IIKControllerOwner_unk08() = 0;
-	virtual void IIKControllerOwner_unk09() = 0;
+	virtual void IIKControllerOwner_unk0() = 0;
+	virtual void IIKControllerOwner_unk1() = 0;
+	virtual void IIKControllerOwner_unk2() = 0;
+	virtual void IIKControllerOwner_unk3() = 0;
+	virtual void IIKControllerOwner_unk4() = 0;
+	virtual void IIKControllerOwner_unk5() = 0;
+	virtual void IIKControllerOwner_unk6() = 0;
+	virtual void IIKControllerOwner_unk7() = 0;
+	virtual void IIKControllerOwner_unk8() = 0;
+	virtual void IIKControllerOwner_unk9() = 0;
 	virtual void IIKControllerOwner_unk10() = 0;
 	virtual void IIKControllerOwner_unk11() = 0;
 	virtual void IIKControllerOwner_unk12() = 0;
@@ -84,15 +84,15 @@ class IControllableCharacter :
 {
 public:
 	virtual ~IControllableCharacter() {}
-	virtual void IControllableCharacter_unk00() = 0;
-	virtual void IControllableCharacter_unk01() = 0;
-	virtual void IControllableCharacter_unk02() = 0;
-	virtual void IControllableCharacter_unk03() = 0;
-	virtual void IControllableCharacter_unk04() = 0;
-	virtual void IControllableCharacter_unk05() = 0;
-	virtual void IControllableCharacter_unk06() = 0;
-	virtual void IControllableCharacter_unk07() = 0;
-	virtual void IControllableCharacter_unk08() = 0;
+	virtual void IControllableCharacter_unk0() = 0;
+	virtual void IControllableCharacter_unk1() = 0;
+	virtual void IControllableCharacter_unk2() = 0;
+	virtual void IControllableCharacter_unk3() = 0;
+	virtual void IControllableCharacter_unk4() = 0;
+	virtual void IControllableCharacter_unk5() = 0;
+	virtual void IControllableCharacter_unk6() = 0;
+	virtual void IControllableCharacter_unk7() = 0;
+	virtual void IControllableCharacter_unk8() = 0;
 };
 
 class IHM5ActionEntityListener :
@@ -100,12 +100,12 @@ class IHM5ActionEntityListener :
 {
 public:
 	virtual ~IHM5ActionEntityListener() {}
-	virtual void IHM5ActionEntityListener_unk00() = 0;
-	virtual void IHM5ActionEntityListener_unk01() = 0;
-	virtual void IHM5ActionEntityListener_unk02() = 0;
-	virtual void IHM5ActionEntityListener_unk03() = 0;
-	virtual void IHM5ActionEntityListener_unk04() = 0;
-	virtual void IHM5ActionEntityListener_unk05() = 0;
+	virtual void IHM5ActionEntityListener_unk0() = 0;
+	virtual void IHM5ActionEntityListener_unk1() = 0;
+	virtual void IHM5ActionEntityListener_unk2() = 0;
+	virtual void IHM5ActionEntityListener_unk3() = 0;
+	virtual void IHM5ActionEntityListener_unk4() = 0;
+	virtual void IHM5ActionEntityListener_unk5() = 0;
 };
 
 class ISavableEntity :
@@ -113,8 +113,8 @@ class ISavableEntity :
 {
 public:
 	virtual ~ISavableEntity() {}
-	virtual void ISavableEntity_unk00() = 0;
-	virtual void ISavableEntity_unk01() = 0;
+	virtual void ISavableEntity_unk0() = 0;
+	virtual void ISavableEntity_unk1() = 0;
 };
 
 class IAIGameplayConcept :
@@ -122,7 +122,7 @@ class IAIGameplayConcept :
 {
 public:
 	virtual ~IAIGameplayConcept() {}
-	virtual void IAIGameplayConcept_unk00() = 0;
+	virtual void IAIGameplayConcept_unk0() = 0;
 };
 
 class ICharacterMovementState :
@@ -130,16 +130,16 @@ class ICharacterMovementState :
 {
 public:
 	virtual ~ICharacterMovementState() {}
-	virtual void ICharacterMovementState_unk00() = 0;
-	virtual void ICharacterMovementState_unk01() = 0;
-	virtual void ICharacterMovementState_unk02() = 0;
-	virtual void ICharacterMovementState_unk03() = 0;
-	virtual void ICharacterMovementState_unk04() = 0;
-	virtual void ICharacterMovementState_unk05() = 0;
-	virtual void ICharacterMovementState_unk06() = 0;
-	virtual void ICharacterMovementState_unk07() = 0;
-	virtual void ICharacterMovementState_unk08() = 0;
-	virtual void ICharacterMovementState_unk09() = 0;
+	virtual void ICharacterMovementState_unk0() = 0;
+	virtual void ICharacterMovementState_unk1() = 0;
+	virtual void ICharacterMovementState_unk2() = 0;
+	virtual void ICharacterMovementState_unk3() = 0;
+	virtual void ICharacterMovementState_unk4() = 0;
+	virtual void ICharacterMovementState_unk5() = 0;
+	virtual void ICharacterMovementState_unk6() = 0;
+	virtual void ICharacterMovementState_unk7() = 0;
+	virtual void ICharacterMovementState_unk8() = 0;
+	virtual void ICharacterMovementState_unk9() = 0;
 	virtual void ICharacterMovementState_unk10() = 0;
 	virtual void ICharacterMovementState_unk11() = 0;
 	virtual void ICharacterMovementState_unk12() = 0;
@@ -200,16 +200,16 @@ class ICharacterCombatState :
 {
 public:
 	virtual ~ICharacterCombatState() {}
-	virtual void ICharacterCombatState_unk00() = 0;
-	virtual void ICharacterCombatState_unk01() = 0;
-	virtual void ICharacterCombatState_unk02() = 0;
-	virtual void ICharacterCombatState_unk03() = 0;
-	virtual void ICharacterCombatState_unk04() = 0;
-	virtual void ICharacterCombatState_unk05() = 0;
-	virtual void ICharacterCombatState_unk06() = 0;
-	virtual void ICharacterCombatState_unk07() = 0;
-	virtual void ICharacterCombatState_unk08() = 0;
-	virtual void ICharacterCombatState_unk09() = 0;
+	virtual void ICharacterCombatState_unk0() = 0;
+	virtual void ICharacterCombatState_unk1() = 0;
+	virtual void ICharacterCombatState_unk2() = 0;
+	virtual void ICharacterCombatState_unk3() = 0;
+	virtual void ICharacterCombatState_unk4() = 0;
+	virtual void ICharacterCombatState_unk5() = 0;
+	virtual void ICharacterCombatState_unk6() = 0;
+	virtual void ICharacterCombatState_unk7() = 0;
+	virtual void ICharacterCombatState_unk8() = 0;
+	virtual void ICharacterCombatState_unk9() = 0;
 	virtual void ICharacterCombatState_unk10() = 0;
 	virtual void ICharacterCombatState_unk11() = 0;
 	virtual void ICharacterCombatState_unk12() = 0;
@@ -237,13 +237,13 @@ class ICharacterCoreInventoryState :
 {
 public:
 	virtual ~ICharacterCoreInventoryState() {}
-	virtual void ICharacterCoreInventoryState_unk00() = 0;
-	virtual void ICharacterCoreInventoryState_unk01() = 0;
-	virtual void ICharacterCoreInventoryState_unk02() = 0;
-	virtual void ICharacterCoreInventoryState_unk03() = 0;
-	virtual void ICharacterCoreInventoryState_unk04() = 0;
-	virtual void ICharacterCoreInventoryState_unk05() = 0;
-	virtual void ICharacterCoreInventoryState_unk06() = 0;
+	virtual void ICharacterCoreInventoryState_unk0() = 0;
+	virtual void ICharacterCoreInventoryState_unk1() = 0;
+	virtual void ICharacterCoreInventoryState_unk2() = 0;
+	virtual void ICharacterCoreInventoryState_unk3() = 0;
+	virtual void ICharacterCoreInventoryState_unk4() = 0;
+	virtual void ICharacterCoreInventoryState_unk5() = 0;
+	virtual void ICharacterCoreInventoryState_unk6() = 0;
 };
 
 class ICharacterInventoryState :
@@ -251,16 +251,16 @@ class ICharacterInventoryState :
 {
 public:
 	virtual ~ICharacterInventoryState() {}
-	virtual void ICharacterInventoryState_unk00() = 0;
-	virtual void ICharacterInventoryState_unk01() = 0;
-	virtual void ICharacterInventoryState_unk02() = 0;
-	virtual void ICharacterInventoryState_unk03() = 0;
-	virtual void ICharacterInventoryState_unk04() = 0;
-	virtual void ICharacterInventoryState_unk05() = 0;
-	virtual void ICharacterInventoryState_unk06() = 0;
-	virtual void ICharacterInventoryState_unk07() = 0;
-	virtual void ICharacterInventoryState_unk08() = 0;
-	virtual void ICharacterInventoryState_unk09() = 0;
+	virtual void ICharacterInventoryState_unk0() = 0;
+	virtual void ICharacterInventoryState_unk1() = 0;
+	virtual void ICharacterInventoryState_unk2() = 0;
+	virtual void ICharacterInventoryState_unk3() = 0;
+	virtual void ICharacterInventoryState_unk4() = 0;
+	virtual void ICharacterInventoryState_unk5() = 0;
+	virtual void ICharacterInventoryState_unk6() = 0;
+	virtual void ICharacterInventoryState_unk7() = 0;
+	virtual void ICharacterInventoryState_unk8() = 0;
+	virtual void ICharacterInventoryState_unk9() = 0;
 	virtual void ICharacterInventoryState_unk10() = 0;
 	virtual void ICharacterInventoryState_unk11() = 0;
 	virtual void ICharacterInventoryState_unk12() = 0;
@@ -291,16 +291,16 @@ class ICharacterFriskingState :
 {
 public:
 	virtual ~ICharacterFriskingState() {}
-	virtual void ICharacterFriskingState_unk00() = 0;
-	virtual void ICharacterFriskingState_unk01() = 0;
-	virtual void ICharacterFriskingState_unk02() = 0;
-	virtual void ICharacterFriskingState_unk03() = 0;
-	virtual void ICharacterFriskingState_unk04() = 0;
-	virtual void ICharacterFriskingState_unk05() = 0;
-	virtual void ICharacterFriskingState_unk06() = 0;
-	virtual void ICharacterFriskingState_unk07() = 0;
-	virtual void ICharacterFriskingState_unk08() = 0;
-	virtual void ICharacterFriskingState_unk09() = 0;
+	virtual void ICharacterFriskingState_unk0() = 0;
+	virtual void ICharacterFriskingState_unk1() = 0;
+	virtual void ICharacterFriskingState_unk2() = 0;
+	virtual void ICharacterFriskingState_unk3() = 0;
+	virtual void ICharacterFriskingState_unk4() = 0;
+	virtual void ICharacterFriskingState_unk5() = 0;
+	virtual void ICharacterFriskingState_unk6() = 0;
+	virtual void ICharacterFriskingState_unk7() = 0;
+	virtual void ICharacterFriskingState_unk8() = 0;
+	virtual void ICharacterFriskingState_unk9() = 0;
 	virtual void ICharacterFriskingState_unk10() = 0;
 	virtual void ICharacterFriskingState_unk11() = 0;
 	virtual void ICharacterFriskingState_unk12() = 0;
@@ -329,14 +329,14 @@ class ICharacterShowItemState :
 {
 public:
 	virtual ~ICharacterShowItemState() {}
-	virtual void ICharacterShowItemState_unk00() = 0;
-	virtual void ICharacterShowItemState_unk01() = 0;
-	virtual void ICharacterShowItemState_unk02() = 0;
-	virtual void ICharacterShowItemState_unk03() = 0;
-	virtual void ICharacterShowItemState_unk04() = 0;
-	virtual void ICharacterShowItemState_unk05() = 0;
-	virtual void ICharacterShowItemState_unk06() = 0;
-	virtual void ICharacterShowItemState_unk07() = 0;
+	virtual void ICharacterShowItemState_unk0() = 0;
+	virtual void ICharacterShowItemState_unk1() = 0;
+	virtual void ICharacterShowItemState_unk2() = 0;
+	virtual void ICharacterShowItemState_unk3() = 0;
+	virtual void ICharacterShowItemState_unk4() = 0;
+	virtual void ICharacterShowItemState_unk5() = 0;
+	virtual void ICharacterShowItemState_unk6() = 0;
+	virtual void ICharacterShowItemState_unk7() = 0;
 };
 
 class ICharacterArrestState :
@@ -344,10 +344,10 @@ class ICharacterArrestState :
 {
 public:
 	virtual ~ICharacterArrestState() {}
-	virtual void ICharacterArrestState_unk00() = 0;
-	virtual void ICharacterArrestState_unk01() = 0;
-	virtual void ICharacterArrestState_unk02() = 0;
-	virtual void ICharacterArrestState_unk03() = 0;
+	virtual void ICharacterArrestState_unk0() = 0;
+	virtual void ICharacterArrestState_unk1() = 0;
+	virtual void ICharacterArrestState_unk2() = 0;
+	virtual void ICharacterArrestState_unk3() = 0;
 };
 
 class ICharacterIllegalInteractionsState :
@@ -355,12 +355,12 @@ class ICharacterIllegalInteractionsState :
 {
 public:
 	virtual ~ICharacterIllegalInteractionsState() {}
-	virtual void ICharacterIllegalInteractionsState_unk00() = 0;
-	virtual void ICharacterIllegalInteractionsState_unk01() = 0;
-	virtual void ICharacterIllegalInteractionsState_unk02() = 0;
-	virtual void ICharacterIllegalInteractionsState_unk03() = 0;
-	virtual void ICharacterIllegalInteractionsState_unk04() = 0;
-	virtual void ICharacterIllegalInteractionsState_unk05() = 0;
+	virtual void ICharacterIllegalInteractionsState_unk0() = 0;
+	virtual void ICharacterIllegalInteractionsState_unk1() = 0;
+	virtual void ICharacterIllegalInteractionsState_unk2() = 0;
+	virtual void ICharacterIllegalInteractionsState_unk3() = 0;
+	virtual void ICharacterIllegalInteractionsState_unk4() = 0;
+	virtual void ICharacterIllegalInteractionsState_unk5() = 0;
 };
 
 class ICharacterLocationState :
@@ -368,11 +368,11 @@ class ICharacterLocationState :
 {
 public:
 	virtual ~ICharacterLocationState() {}
-	virtual void ICharacterLocationState_unk00() = 0;
-	virtual void ICharacterLocationState_unk01() = 0;
-	virtual void ICharacterLocationState_unk02() = 0;
-	virtual void ICharacterLocationState_unk03() = 0;
-	virtual void ICharacterLocationState_unk04() = 0;
+	virtual void ICharacterLocationState_unk0() = 0;
+	virtual void ICharacterLocationState_unk1() = 0;
+	virtual void ICharacterLocationState_unk2() = 0;
+	virtual void ICharacterLocationState_unk3() = 0;
+	virtual void ICharacterLocationState_unk4() = 0;
 };
 
 class ICharacterCameraState :
@@ -380,7 +380,7 @@ class ICharacterCameraState :
 {
 public:
 	virtual ~ICharacterCameraState() {}
-	virtual void ICharacterCameraState_unk00() = 0;
+	virtual void ICharacterCameraState_unk0() = 0;
 };
 
 class ZPhysicsSystemEntity;
@@ -455,7 +455,7 @@ public:
 			bool m_bActivated : 1;
 			bool m_bActivatingHitman : 1;
 			bool m_bInEditMode : 1;
-			bool m_bUnknown01 : 1;
+			bool m_bUnk3 : 1;
 		};
 	};
 

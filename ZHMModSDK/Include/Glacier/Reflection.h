@@ -140,7 +140,7 @@ class ZClassConstructorInfo
 {
 public:
 	uint64_t m_nArgumentCount;
-	void (*UnkFn00)();
+	void (*m_fUnk0x8)();
 	STypeID* m_pReturnType;
 	STypeID* m_pArgType;
 };
