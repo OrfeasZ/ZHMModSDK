@@ -14,6 +14,7 @@
 #include <Glacier/ZHitman5.h>
 #include <Glacier/ZHttp.h>
 #include <Glacier/ZPhysics.h>
+#include <Glacier/ZSetpieceEntity.h>
 #include <Functions.h>
 #include <Globals.h>
 
@@ -62,7 +63,7 @@ void DebugMod::OnDrawMenu()
 		m_MenuActive = !m_MenuActive;
 	}
 
-	/*if (ImGui::Button("BADABING BADABOOM"))
+	if (ImGui::Button("SPAWN CANON"))
 	{
 		auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
@@ -73,9 +74,10 @@ void DebugMod::OnDrawMenu()
 		else
 		{
 			//const auto s_ID = ResId<"[assembly:/_pro/environment/templates/props/containers/military_containers_a.template?/military_box_metal_e_00.entitytemplate].pc_entitytype">;
-			const auto s_ID = ResId<"[assembly:/deeznuts.entitytemplate].pc_entitytype">;
+			//const auto s_ID = ResId<"[assembly:/deeznuts.entitytemplate].pc_entitytype">;
 			//const auto s_ID = ResId<"[assembly:/templates/gameplay/ai2/actors.template?/npcactor.entitytemplate].pc_entitytype">;
 			//const auto s_ID = ResId<"[assembly:/_pro/characters/templates/hero/agent47/agent47.template?/agent47_default.entitytemplate].pc_entitytype">;
+			const auto s_ID = ResId<"[assembly:/_pro/design/setpieces/unique/setpiece_italy_unique.template?/setpiece_italy_unique_cannon_fortress_a.entitytemplate].pc_entitytype">;
 
 			Logger::Debug("Getting resource wew: {}", s_ID);
 
@@ -84,13 +86,13 @@ void DebugMod::OnDrawMenu()
 
 			Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex, fmt::ptr(s_Resource.GetResource()));
 
-			const auto s_BrickID = ResId<"[assembly:/_pro/scenes/missions/paris/_scene_lumumba.brick].pc_entitytype">;
+			/*const auto s_BrickID = ResId<"[assembly:/_pro/scenes/missions/paris/_scene_lumumba.brick].pc_entitytype">;
 			Logger::Debug("Getting brick resource wew: {}", s_BrickID);
 
 			TResourcePtr<ZTemplateEntityFactory> s_BrickResource;
 			Globals::ResourceManager->GetResourcePtr(s_BrickResource, s_BrickID, 0);
 
-			Logger::Debug("Brick resource: {} {}", s_BrickResource.m_nResourceIndex, fmt::ptr(s_BrickResource.GetResource()));
+			Logger::Debug("Brick resource: {} {}", s_BrickResource.m_nResourceIndex, fmt::ptr(s_BrickResource.GetResource()));*/
 
 			if (!s_Resource)
 			{
@@ -108,10 +110,16 @@ void DebugMod::OnDrawMenu()
 				}
 				else
 				{
+					s_NewEntity.SetProperty("m_eRoomBehaviour", ZSpatialEntity::ERoomBehaviour::ROOM_DYNAMIC);
+
+					m_EntityMutex.lock();
+					m_SelectedEntity = s_NewEntity;
+					m_EntityMutex.unlock();
+
+					/*
 					TEntityRef<ZHitman5> s_LocalHitman;
 					Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-					/*auto s_Actor = s_NewEntity.QueryInterface<ZActor>();
+					auto s_Actor = s_NewEntity.QueryInterface<ZActor>();
 
 					Logger::Debug("Spawned entity {}!", fmt::ptr(s_Actor));
 
@@ -157,11 +165,11 @@ void DebugMod::OnDrawMenu()
 
 					m_SelectedEntity = s_NewEntity;
 
-					m_EntityMutex.unlock();
+					m_EntityMutex.unlock();*/
 				}
 			}
 		}
-	}*/
+	}
 }
 
 void DebugMod::OnDrawUI(bool p_HasFocus)
@@ -516,6 +524,52 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 			ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName).c_str());
 			ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", (*m_SelectedEntity.m_pEntity)->m_nEntityId).c_str());
 
+			std::string s_InterfacesStr;
+
+			for (const auto& s_Interface : s_Interfaces)
+			{
+				if (s_Interface.m_pTypeId->typeInfo() == nullptr)
+					continue;
+
+				if (!s_InterfacesStr.empty())
+					s_InterfacesStr += ", ";
+
+				s_InterfacesStr += s_Interface.m_pTypeId->typeInfo()->m_pTypeName;
+			}
+
+			ImGui::TextUnformatted(fmt::format("Entity Interfaces: {}", s_InterfacesStr).c_str());
+
+			std::string s_Properties01;
+
+			for (const auto& s_Property : *(*m_SelectedEntity.m_pEntity)->m_pProperties01)
+			{
+				if (!s_Property.m_pType->getPropertyInfo()->m_pName)
+					continue;
+
+				if (!s_Properties01.empty())
+					s_Properties01 += ", ";
+
+				s_Properties01 += s_Property.m_pType->getPropertyInfo()->m_pName;
+			}
+
+			ImGui::TextUnformatted(fmt::format("Entity Properties1: {}", s_Properties01).c_str());
+
+			std::string s_Properties02;
+
+			for (const auto& s_Property : *(*m_SelectedEntity.m_pEntity)->m_pProperties02)
+			{
+				if (!s_Property.m_pType->getPropertyInfo()->m_pName)
+					continue;
+
+				if (!s_Properties02.empty())
+					s_Properties02 += ", ";
+
+				s_Properties02 += s_Property.m_pType->getPropertyInfo()->m_pName;
+			}
+
+			ImGui::TextUnformatted(fmt::format("Entity Properties2: {}", s_Properties02).c_str());
+		
+
 			if (const auto s_Spatial = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
 			{
 				const auto s_Trans = s_Spatial->GetWorldMatrix();
@@ -583,6 +637,19 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 				if (ImGui::Button("Copy ID"))
 				{
 					CopyToClipboard(fmt::format("{:016x}", (*m_SelectedEntity.m_pEntity)->m_nEntityId));
+				}
+
+				if (ImGui::Button("Move to Hitman"))
+				{
+					TEntityRef<ZHitman5> s_LocalHitman;
+					Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+					auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+
+					s_Spatial->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());
+
+					if (const auto s_PhysicsAspect = m_SelectedEntity.QueryInterface<ZStaticPhysicsAspect>())
+						s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_Spatial->GetWorldMatrix());
 				}
 			}
 		}
