@@ -190,7 +190,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 				{
 				}
 
-				m_EntityMutex.lock_shared();
+				m_EntityMutex.unlock_shared();
 			}
 
 			m_HoldingMouse = false;
