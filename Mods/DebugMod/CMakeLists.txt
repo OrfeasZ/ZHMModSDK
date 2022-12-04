@@ -19,4 +19,5 @@ target_include_directories(DebugMod PRIVATE
 target_link_libraries(DebugMod PRIVATE
 	ZHMModSDK
 	winhttp
+	imguizmo
 )

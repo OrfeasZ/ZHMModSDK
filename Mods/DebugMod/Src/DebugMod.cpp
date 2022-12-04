@@ -17,6 +17,8 @@
 #include <Functions.h>
 #include <Globals.h>
 
+#include <ImGuizmo.h>
+
 #include <winhttp.h>
 #include <numbers>
 
@@ -164,14 +166,16 @@ void DebugMod::OnDrawMenu()
 
 void DebugMod::OnDrawUI(bool p_HasFocus)
 {
+	ImGuizmo::BeginFrame();
+
 	DrawOptions(p_HasFocus);
 	DrawPositionBox(p_HasFocus);
 	DrawEntityBox(p_HasFocus);
 
+	auto s_ImgGuiIO = ImGui::GetIO();
+
 	if (p_HasFocus)
 	{
-		auto s_ImgGuiIO = ImGui::GetIO();
-
 		if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && !s_ImgGuiIO.WantCaptureMouse)
 		{
 			const auto s_MousePos = ImGui::GetMousePos();
@@ -182,7 +186,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 		}
 		else
 		{
-			// If we stopped clicking, update collisions.
+			/*// If we stopped clicking, update collisions.
 			if (m_HoldingMouse && *Globals::CollisionManager)
 			{
 				m_EntityMutex.lock_shared();
@@ -200,11 +204,50 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 				}
 
 				m_EntityMutex.unlock_shared();
-			}
+			}*/
 
 			m_HoldingMouse = false;
 		}
+
+		if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Tab]))
+		{
+			if (m_GizmoMode == ImGuizmo::TRANSLATE)
+				m_GizmoMode = ImGuizmo::ROTATE;
+			else if (m_GizmoMode == ImGuizmo::ROTATE)
+				m_GizmoMode = ImGuizmo::SCALE;
+			else if (m_GizmoMode == ImGuizmo::SCALE)
+				m_GizmoMode = ImGuizmo::TRANSLATE;
+		}
 	}
+
+	ImGuizmo::Enable(p_HasFocus);
+
+	m_EntityMutex.lock_shared();
+
+	if (m_SelectedEntity)
+	{
+		if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call())
+		{
+			if (const auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
+			{
+				auto s_ModelMatrix = s_SpatialEntity->GetWorldMatrix();
+				auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
+				const SMatrix s_ProjectionMatrix = *s_CurrentCamera->GetProjectionMatrix();
+
+				ImGuizmo::SetRect(0, 0, s_ImgGuiIO.DisplaySize.x, s_ImgGuiIO.DisplaySize.y);
+
+				if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, ImGuizmo::MODE::WORLD, &s_ModelMatrix.XAxis.x))
+				{
+					s_SpatialEntity->SetWorldMatrix(s_ModelMatrix);
+
+					if (const auto s_PhysicsAspect = m_SelectedEntity.QueryInterface<ZStaticPhysicsAspect>())
+						s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+				}
+			}
+		}
+	}
+
+	m_EntityMutex.unlock_shared();
 }
 
 void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
@@ -262,7 +305,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 	}
 	else
 	{
-		m_EntityMutex.lock_shared();
+		/*m_EntityMutex.lock_shared();
 
 		if (m_SelectedEntity)
 		{
@@ -274,7 +317,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 			}
 		}
 
-		m_EntityMutex.unlock_shared();
+		m_EntityMutex.unlock_shared();*/
 	}
 }
 

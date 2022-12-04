@@ -9,6 +9,7 @@
 #include <Glacier/ZInput.h>
 #include <Glacier/ZEntity.h>
 
+#include "ImGuizmo.h"
 #include "Glacier/ZScene.h"
 
 class DebugMod : public IPluginInterface
@@ -55,6 +56,8 @@ private:
 
 	ZEntityRef m_SelectedEntity;
 	std::shared_mutex m_EntityMutex;
+
+	ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
 
 	ZInputAction m_RaycastAction = "SkipLoadingAction"; // space
 	ZInputAction m_DeleteAction = "TemporaryCamSpeedMultiplier0"; // shift
