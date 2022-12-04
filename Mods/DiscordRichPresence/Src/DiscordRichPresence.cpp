@@ -25,7 +25,7 @@ DiscordRichPresence::~DiscordRichPresence()
 		delete m_DiscordCore;
 }
 
-void DiscordRichPresence::PreInit()
+void DiscordRichPresence::Init()
 {
 	const auto s_DiscordCreateResult = discord::Core::Create(APPLICATION_ID, DiscordCreateFlags_NoRequireDiscord, &m_DiscordCore);
 

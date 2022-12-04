@@ -5,7 +5,7 @@
 
 #include <Glacier/ZScene.h>
 
-void SkipIntro::PreInit()
+void SkipIntro::Init()
 {
 	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &SkipIntro::OnLoadScene);
 }

@@ -25,7 +25,7 @@ WakingUpNpcs::~WakingUpNpcs()
 	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 0, EUpdateMode::eUpdatePlayMode);
 }
 
-void WakingUpNpcs::PreInit()
+void WakingUpNpcs::Init()
 {
 	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &WakingUpNpcs::OnLoadScene);
 	Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &WakingUpNpcs::OnClearScene);

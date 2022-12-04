@@ -110,7 +110,6 @@ private:
 	uintptr_t m_ModuleBase;
 	uint32_t m_SizeOfCode;
 	uint32_t m_ImageSize;
-	bool m_ImGuiInitialized = false;
 
 	std::shared_ptr<ModLoader> m_ModLoader {};
 

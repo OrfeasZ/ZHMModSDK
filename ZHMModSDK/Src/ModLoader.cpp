@@ -72,8 +72,12 @@ std::unordered_set<std::string> ModLoader::GetActiveMods()
 {
 	std::unordered_set<std::string> s_Mods;
 
+	LockRead();
+
 	for (auto& s_LoadedMod : m_LoadedMods)
 		s_Mods.insert(s_LoadedMod.first);
+
+	UnlockRead();
 
 	return s_Mods;
 }
@@ -88,22 +92,35 @@ void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
 	// First unload any mods that don't exist in the new list.
 	std::vector<std::string> s_ModsToUnload;
 
+	LockRead();
+
 	for (auto& s_Pair : m_LoadedMods)
 		if (!s_LowerModNames.contains(s_Pair.first))
 			s_ModsToUnload.push_back(s_Pair.first);
 
+	UnlockRead();
+
 	for (auto& s_Mod : s_ModsToUnload)
 		UnloadMod(s_Mod);
+
+	std::vector<std::string> s_ModsToLoad;
+
+	LockRead();
 
 	// Then load any mods that aren't already loaded.
 	for (auto& s_Mod : s_LowerModNames)
 	{
 		// Mod is already loaded; skip.
-		if (m_LoadedMods.find(s_Mod) != m_LoadedMods.end())
+		if (m_LoadedMods.contains(s_Mod))
 			continue;
 
-		LoadMod(s_Mod, true);
+		s_ModsToLoad.push_back(s_Mod);
 	}
+
+	UnlockRead();
+
+	for (auto& s_Mod : s_ModsToLoad)
+		LoadMod(s_Mod, true);
 
 	// And persist the mods to the ini file.
 	char s_ExePathStr[MAX_PATH];
@@ -171,9 +188,11 @@ void ModLoader::LoadAllMods()
 
 void ModLoader::LoadMod(const std::string& p_Name, bool p_LiveLoad)
 {
+	std::unique_lock s_Lock(m_Mutex);
+
 	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
-	if (m_LoadedMods.find(s_Name) != m_LoadedMods.end())
+	if (m_LoadedMods.contains(s_Name))
 	{
 		Logger::Warn("A mod with the same name ({}) is already loaded. Skipping.", p_Name);
 		return;
@@ -238,6 +257,8 @@ void ModLoader::LoadMod(const std::string& p_Name, bool p_LiveLoad)
 
 void ModLoader::UnloadMod(const std::string& p_Name)
 {
+	std::unique_lock s_Lock(m_Mutex);
+
 	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
 	auto s_ModMapIt = m_LoadedMods.find(s_Name);
@@ -268,6 +289,8 @@ void ModLoader::UnloadMod(const std::string& p_Name)
 
 void ModLoader::ReloadMod(const std::string& p_Name)
 {
+	LockRead();
+
 	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
 	auto it = m_LoadedMods.find(s_Name);
@@ -275,8 +298,11 @@ void ModLoader::ReloadMod(const std::string& p_Name)
 	if (it == m_LoadedMods.end())
 	{
 		Logger::Warn("Could not find mod '{}' to reload.", p_Name);
+		UnlockRead();
 		return;
 	}
+
+	UnlockRead();
 
 	UnloadMod(p_Name);
 	LoadMod(p_Name, true);
@@ -284,10 +310,14 @@ void ModLoader::ReloadMod(const std::string& p_Name)
 
 void ModLoader::UnloadAllMods()
 {
+	LockRead();
+
 	std::vector<std::string> s_ModNames;
 
 	for (auto& s_Pair : m_LoadedMods)
 		s_ModNames.push_back(s_Pair.first);
+
+	UnlockRead();
 
 	for (auto& s_Mod : s_ModNames)
 		UnloadMod(s_Mod);
@@ -295,10 +325,14 @@ void ModLoader::UnloadAllMods()
 
 void ModLoader::ReloadAllMods()
 {
+	LockRead();
+
 	std::vector<std::string> s_ModNames;
 
 	for (auto& s_Pair : m_LoadedMods)
 		s_ModNames.push_back(s_Pair.first);
+
+	UnlockRead();
 
 	for (auto& s_Mod : s_ModNames)
 		ReloadMod(s_Mod);
@@ -306,6 +340,8 @@ void ModLoader::ReloadAllMods()
 
 IPluginInterface* ModLoader::GetModByName(const std::string& p_Name)
 {
+	std::shared_lock s_Lock(m_Mutex);
+
 	std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
 	auto it = m_LoadedMods.find(s_Name);

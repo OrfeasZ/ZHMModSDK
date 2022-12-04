@@ -100,8 +100,6 @@ ModSDK::ModSDK()
 
 ModSDK::~ModSDK()
 {
-	m_ImGuiInitialized = false;
-	
 	m_ModLoader.reset();
 
 	HookRegistry::ClearDetoursWithContext(this);
@@ -145,14 +143,15 @@ void ModSDK::ThreadedStartup()
 {
 	m_D3D12Hooks->InstallHooks();
 
+	m_ModLoader->LockRead();
+
 	for (const auto& s_Mod : m_ModLoader->GetLoadedMods())
 	{
 		s_Mod->SetupUI();
 		s_Mod->Init();
 	}
 
-	for (const auto& s_Mod : m_ModLoader->GetLoadedMods())
-		s_Mod->Init();
+	m_ModLoader->UnlockRead();
 
 	// If the engine is already initialized, inform the mods.
 	if (Globals::Hitman5Module->IsEngineInitialized())
@@ -161,8 +160,12 @@ void ModSDK::ThreadedStartup()
 
 void ModSDK::OnDrawMenu()
 {
+	m_ModLoader->LockRead();
+
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnDrawMenu();
+
+	m_ModLoader->UnlockRead();
 }
 
 void ModSDK::OnDrawUI(bool p_HasFocus)
@@ -171,14 +174,22 @@ void ModSDK::OnDrawUI(bool p_HasFocus)
 	m_UIMainMenu->Draw(p_HasFocus);
 	m_UIModSelector->Draw(p_HasFocus);
 
+	m_ModLoader->LockRead();
+
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnDrawUI(p_HasFocus);
+
+	m_ModLoader->UnlockRead();
 }
 
 void ModSDK::OnDraw3D()
 {
+	m_ModLoader->LockRead();
+
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnDraw3D(m_DirectXTKRenderer.get());
+
+	m_ModLoader->UnlockRead();
 
 	/*m_EntityMutex.lock_shared();
 
@@ -208,19 +219,13 @@ void ModSDK::OnDraw3D()
 
 void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad)
 {
-	if (m_ImGuiInitialized)
-		p_Mod->SetupUI();
-
-	p_Mod->PreInit();
+	p_Mod->SetupUI();
+	p_Mod->Init();
 
 	if (p_LiveLoad && Globals::Hitman5Module->IsEngineInitialized())
-	{
-		p_Mod->Init();
 		p_Mod->OnEngineInitialized();
-	}
 
-	if (m_ImGuiInitialized)
-		p_Mod->SetupUI();
+	Logger::Info("Mod {} successfully loaded.", p_Name);
 }
 
 void ModSDK::OnModUnloaded(const std::string& p_Name)
@@ -235,8 +240,12 @@ void ModSDK::OnEngineInit()
 	m_DirectXTKRenderer->OnEngineInit();
 	m_ImguiRenderer->OnEngineInit();
 
+	m_ModLoader->LockRead();
+
 	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnEngineInitialized();
+
+	m_ModLoader->UnlockRead();
 }
 
 void ModSDK::OnPresent(IDXGISwapChain3* p_SwapChain)

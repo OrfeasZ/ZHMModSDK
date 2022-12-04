@@ -8,7 +8,7 @@
 class CertPinBypass : public IPluginInterface
 {
 public:
-	void PreInit() override;
+	void Init() override;
 
 private:
 	DEFINE_PLUGIN_DETOUR(CertPinBypass, bool, On_Check_SSL_Cert, void*, void*);

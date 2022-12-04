@@ -15,7 +15,7 @@ class DiscordRichPresence : public IPluginInterface
 public:
 	DiscordRichPresence();
 	~DiscordRichPresence() override;
-	void PreInit() override;
+	void Init() override;
 	void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 	void OnEngineInitialized() override;
 

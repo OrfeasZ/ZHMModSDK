@@ -25,7 +25,7 @@ DebugMod::~DebugMod()
 	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
 
-void DebugMod::PreInit()
+void DebugMod::Init()
 {
 	Hooks::ZHttpResultDynamicObject_OnBufferReady->AddDetour(this, &DebugMod::ZHttpBufferReady);
 	Hooks::Http_WinHttpCallback->AddDetour(this, &DebugMod::WinHttpCallback);

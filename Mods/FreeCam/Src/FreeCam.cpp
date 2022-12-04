@@ -80,7 +80,7 @@ FreeCam::~FreeCam()
 	}
 }
 
-void FreeCam::PreInit()
+void FreeCam::Init()
 {
 	Hooks::ZInputAction_Digital->AddDetour(this, &FreeCam::ZInputAction_Digital);
 	Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &FreeCam::OnLoadScene);

@@ -10,7 +10,7 @@
 
 #include "json.hpp"
 
-void AdvancedRating::PreInit()
+void AdvancedRating::Init()
 {
 	InitializeSRWLock(&m_EventLock);
 

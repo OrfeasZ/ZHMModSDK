@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <shared_mutex>
 #include <unordered_map>
 #include <unordered_set>
 #include <Windows.h>
@@ -38,10 +39,31 @@ public:
 	{
 		return m_ModList;
 	}
+
+	void LockRead()
+	{
+		m_Mutex.lock_shared();
+	}
+
+	void UnlockRead()
+	{
+		m_Mutex.unlock_shared();
+	}
+
+	void Lock()
+	{
+		m_Mutex.lock();
+	}
+
+	void Unlock()
+	{
+		m_Mutex.unlock();
+	}
 	
 private:
 	std::unordered_set<std::string> m_AvailableMods;
 	std::unordered_set<std::string> m_AvailableModsLower;
 	std::vector<IPluginInterface*> m_ModList;
 	std::unordered_map<std::string, LoadedMod> m_LoadedMods;
+	std::shared_mutex m_Mutex;
 };

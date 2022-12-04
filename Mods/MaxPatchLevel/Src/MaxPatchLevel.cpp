@@ -5,7 +5,7 @@
 
 #include <Glacier/ZScene.h>
 
-void MaxPatchLevel::PreInit()
+void MaxPatchLevel::Init()
 {
 	Hooks::ZPackageManagerPackage_ZPackageManagerPackage->AddDetour(this, &MaxPatchLevel::ZPackageManagerPackage_ZPackageManagerPackage);
 }

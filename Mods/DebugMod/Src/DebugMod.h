@@ -16,7 +16,7 @@ class DebugMod : public IPluginInterface
 public:
 	~DebugMod() override;
 
-	void PreInit() override;
+	void Init() override;
 	void OnEngineInitialized() override;
 	void OnDrawMenu() override;
 	void OnDrawUI(bool p_HasFocus) override;

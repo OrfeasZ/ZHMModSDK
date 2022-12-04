@@ -3,7 +3,7 @@
 
 #include <Glacier/ZString.h>
 
-void NoPause::PreInit()
+void NoPause::Init()
 {
 	Hooks::GetApplicationOptionBool->AddDetour(this, &NoPause::GetOption);
 	Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(this, &NoPause::WndProc);

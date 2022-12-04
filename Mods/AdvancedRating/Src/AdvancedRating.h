@@ -73,7 +73,7 @@ private:
 	};
 	
 public:
-	void PreInit() override;
+	void Init() override;
 	void OnDrawUI(bool p_HasFocus) override;
 
 private:

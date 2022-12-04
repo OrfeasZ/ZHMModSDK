@@ -22,7 +22,6 @@ private:
 	}
 
 public:
-	virtual void PreInit() {}
 	virtual void Init() {}
 	virtual void OnEngineInitialized() {}
 	virtual void OnDrawUI(bool p_HasFocus) {}
