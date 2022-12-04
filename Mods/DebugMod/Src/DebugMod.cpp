@@ -189,6 +189,14 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 
 				if (m_SelectedEntity)
 				{
+					if (const auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
+					{
+						if (const auto s_PhysicsAspect = m_SelectedEntity.QueryInterface<ZStaticPhysicsAspect>())
+						{
+							Logger::Debug("Found physics aspect. Updating its transform.");
+							s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+						}
+					}
 				}
 
 				m_EntityMutex.unlock_shared();
@@ -258,7 +266,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 
 		if (m_SelectedEntity)
 		{
-			if (auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
+			if (const auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
 			{
 				auto s_EntityWorldMatrix = s_SpatialEntity->GetWorldMatrix();				
 				s_EntityWorldMatrix.Trans = m_Hit;
