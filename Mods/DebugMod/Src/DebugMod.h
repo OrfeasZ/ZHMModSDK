@@ -44,6 +44,9 @@ private:
 	bool m_RenderNpcNames = false;
 	bool m_RenderNpcRepoIds = false;
 	bool m_RenderRaycast = false;
+	bool m_useSnap = false;
+
+	float m_SnapValue[3] = { 1.0f, 1.0f, 1.0f };
 
 	float4 m_From;
 	float4 m_To;
@@ -58,6 +61,7 @@ private:
 	std::shared_mutex m_EntityMutex;
 
 	ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
+	ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;
 
 	ZInputAction m_RaycastAction = "SkipLoadingAction"; // space
 	ZInputAction m_DeleteAction = "TemporaryCamSpeedMultiplier0"; // shift
