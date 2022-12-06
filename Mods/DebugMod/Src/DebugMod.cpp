@@ -226,6 +226,11 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 			else if (m_GizmoMode == ImGuizmo::SCALE)
 				m_GizmoMode = ImGuizmo::TRANSLATE;
 		}
+
+		if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Space]))
+		{
+			m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+		}
 	}
 
 	ImGuizmo::Enable(p_HasFocus);
@@ -244,7 +249,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 
 				ImGuizmo::SetRect(0, 0, s_ImgGuiIO.DisplaySize.x, s_ImgGuiIO.DisplaySize.y);
 
-				if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, ImGuizmo::MODE::WORLD, &s_ModelMatrix.XAxis.x))
+				if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_useSnap ? &m_SnapValue[0] : NULL))
 				{
 					s_SpatialEntity->SetWorldMatrix(s_ModelMatrix);
 
@@ -495,6 +500,10 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 				s_CameraTrans.Trans.x, s_CameraTrans.Trans.y, s_CameraTrans.Trans.z
 			));
 		}
+		
+		ImGui::Checkbox("Use Snap", &m_useSnap);
+		ImGui::SameLine();
+		ImGui::InputFloat3("", m_SnapValue);
 	}
 
 	ImGui::PopFont();
