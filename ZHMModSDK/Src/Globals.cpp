@@ -134,3 +134,17 @@ PATTERN_RELATIVE_GLOBAL(
 	3,
 	ZCollisionManager**, CollisionManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x05\x00\x00\x00\x00\x48\x8B\x4F\x60\x48\x89\x45\x30\xE8\x00\x00\x00\x00\x48\x8B\x0D",
+	"xxx????xxxxxxxxx????xxx",
+	3,
+	ZContentKitManager*, ContentKitManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x0D\x00\x00\x00\x00\x48\x83\xC4\x00\x5B\xE9\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\xB9\x91\x01\x00\x00",
+	"xxx????xxx?xx???????????xxxxxx",
+	3,
+	ZHM5ActionManager*, HM5ActionManager
+);

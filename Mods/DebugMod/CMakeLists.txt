@@ -20,4 +20,5 @@ target_link_libraries(DebugMod PRIVATE
 	ZHMModSDK
 	winhttp
 	imguizmo
+	lz4
 )

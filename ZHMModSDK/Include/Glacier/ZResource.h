@@ -6,17 +6,39 @@
 
 class ZRuntimeResourceID;
 
+class ZResourceIndex
+{
+public:
+	int val;
+};
+
+enum EResourceStatus
+{
+	RESOURCE_STATUS_UNKNOWN = 0,
+	RESOURCE_STATUS_LOADING = 1,
+	RESOURCE_STATUS_INSTALLING = 2,
+	RESOURCE_STATUS_FAILED = 3,
+	RESOURCE_STATUS_VALID = 4,
+};
+
 class ZResourceContainer : IComponentInterface
 {
 public:
-	// sizeof = 64
 	struct SResourceInfo
 	{
-		PAD(0x08);
-		void* resourceData; // 0x08
-		PAD(0x14); // 0x10
-		long refCount; // 0x24
-		PAD(0x18);
+		ZRuntimeResourceID rid;
+		void* resourceData;
+		unsigned long long dataOffset;
+		unsigned int finalDataSize;
+		unsigned int dataSize;
+		EResourceStatus status;
+		long refCount;
+		ZResourceIndex nextNewestIndex;
+		unsigned int firstReferenceIndex;
+		unsigned int numReferences;
+		unsigned int resourceType;
+		short priority;
+		int monitorId;
 	};
 
 public:
@@ -38,6 +60,13 @@ public:
 	}
 
 public:
+	ZResourceContainer::SResourceInfo& GetResourceInfo() const
+	{
+		auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex];
+
+		return s_ResourceInfo;
+	}
+
 	void* GetResourceData() const
 	{
 		if (m_nResourceIndex < 0)

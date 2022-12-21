@@ -33,6 +33,15 @@ struct TDefaultHashMapPolicy<ZString>
 	}
 };
 
+template <>
+struct TDefaultHashMapPolicy<ZRepositoryID>
+{
+	uint64_t operator()(const ZRepositoryID& p_Value) const
+	{
+		return p_Value.GetHashCode();
+	}
+};
+
 template <class T>
 class THashMapIterator : public TIterator<THashMapNode<T>>
 {

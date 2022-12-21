@@ -21,6 +21,8 @@ class ZGameUIManager;
 class ZCameraManager;
 class ZPlayerRegistry;
 class ZHM5InputManager;
+class ZContentKitManager;
+class ZHM5ActionManager;
 
 class ZHMSDK_API Globals
 {
@@ -44,4 +46,6 @@ public:
 	static ZResourceContainer** ResourceContainer;
 	static ZResourceManager* ResourceManager;
 	static ZCollisionManager** CollisionManager;
+	static ZContentKitManager* ContentKitManager;
+	static ZHM5ActionManager* HM5ActionManager;
 };

@@ -40,6 +40,17 @@ class SVector3
 public:
 	SVector3() : x(0.f), y(0.f), z(0.f) {}
 	SVector3(float p_X, float p_Y, float p_Z) : x(p_X), y(p_Y), z(p_Z) {}
+
+	SVector3 operator-(const SVector3& other)
+	{
+		SVector3 result;
+
+		result.x = x - other.x;
+		result.y = y - other.y;
+		result.z = z - other.z;
+
+		return result;
+	}
 	
 public:
 	float32 x; // 0x0

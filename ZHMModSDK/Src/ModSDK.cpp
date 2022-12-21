@@ -346,14 +346,19 @@ bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name)
 	return TryGetPinName(p_PinId, p_Name);
 }
 
+bool ModSDK::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out)
+{
+	return m_DirectXTKRenderer->WorldToScreen(p_WorldPos, p_Out);
+}
+
 bool ModSDK::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut)
 {
 	return m_DirectXTKRenderer->ScreenToWorld(p_ScreenPos, p_WorldPosOut, p_DirectionOut);
 }
 
-bool ModSDK::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out)
+bool ModSDK::LoadTextureFromMemory(std::vector<char>& resourceData, D3D12_GPU_DESCRIPTOR_HANDLE* textureSrvGPUHandle, int& width, int& height)
 {
-	return m_DirectXTKRenderer->WorldToScreen(p_WorldPos, p_Out);
+	return m_ImguiRenderer->LoadTextureFromMemory(resourceData, textureSrvGPUHandle, width, height);
 }
 
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)

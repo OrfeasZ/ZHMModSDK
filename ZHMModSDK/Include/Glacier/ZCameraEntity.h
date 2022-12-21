@@ -2,15 +2,7 @@
 
 #include "ZEntity.h"
 #include "ZSpatialEntity.h"
-
-class ZRenderableEntity :
-	public ZBoundedEntity
-{
-public:
-	PAD(0x18);
-};
-
-static_assert(sizeof(ZRenderableEntity) == 0xD0);
+#include "ZGeomEntity.h"
 
 class IRenderDestinationSource :
 	public IComponentInterface

@@ -8,6 +8,13 @@
 class ZRuntimeResourceID
 {
 public:
+	constexpr ZRuntimeResourceID() :
+		m_IDHigh(-1),
+		m_IDLow(-1)
+	{
+
+	}
+
 	constexpr ZRuntimeResourceID(uint64_t p_ID) :
 		m_IDHigh(p_ID >> 32),
 		m_IDLow(p_ID & 0xFFFFFFFF)
@@ -18,6 +25,11 @@ public:
 		m_IDHigh(p_IDHigh),
 		m_IDLow(p_IDLow)
 	{
+	}
+
+	unsigned long long GetID() const
+	{
+		return (static_cast<unsigned long long>(m_IDHigh) << 32) | m_IDLow;
 	}
 
 public:
