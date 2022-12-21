@@ -395,7 +395,8 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC s_Desc = {};
 		s_Desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		s_Desc.NumDescriptors = 1;
+		//s_Desc.NumDescriptors = 1;
+		s_Desc.NumDescriptors = 2;
 		s_Desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		s_Desc.NodeMask = 0;
 
