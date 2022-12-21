@@ -747,16 +747,17 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
 		{
 			static bool isInvincible = s_LocalHitman.m_ref.GetProperty<bool>("m_bIsInvincible").Get();
 
-			if (isInvincible)
+			if (ImGui::Checkbox("Is Invincible", &isInvincible))
 			{
-				s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", false);
+				if (isInvincible)
+				{
+					s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", true);
+				}
+				else
+				{
+					s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", false);
+				}
 			}
-			else
-			{
-				s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", true);
-			}
-
-			ImGui::Checkbox("Is Invincible", &isInvincible);
 		}
 
 		static char outfitName[256] { "" };
