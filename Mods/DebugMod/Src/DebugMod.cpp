@@ -749,14 +749,7 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
 
 			if (ImGui::Checkbox("Is Invincible", &isInvincible))
 			{
-				if (isInvincible)
-				{
-					s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", true);
-				}
-				else
-				{
-					s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", false);
-				}
+				s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", isInvincible);
 			}
 		}
 
