@@ -19,7 +19,8 @@
 #include <Glacier/ZAction.h>
 #include <Glacier/ZItem.h>
 #include <Glacier/ZInventory.h>
-#include <ZBinaryReader.h>
+#include <IO/ZBinaryReader.h>
+#include <IO/ZBinaryDeserializer.h>
 #include <Crypto.h>
 
 #include <Functions.h>
@@ -32,6 +33,8 @@
 #include <numbers>
 #include <filesystem>
 #include <imgui_internal.h>
+
+#pragma comment(lib, "urlmon.lib")
 
 DebugMod::~DebugMod()
 {
@@ -50,6 +53,10 @@ void DebugMod::OnEngineInitialized()
 {
 	const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
 	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+
+	std::thread thread(LoadHashMap);
+
+	thread.detach();
 }
 
 void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
@@ -101,6 +108,11 @@ void DebugMod::OnDrawMenu()
 	if (ImGui::Button("NPCs MENU"))
 	{
 		m_NPCsMenuActive = !m_NPCsMenuActive;
+	}
+
+	if (ImGui::Button("SCENE MENU"))
+	{
+		m_SceneMenuActive = !m_SceneMenuActive;
 	}
 
 	if (ImGui::Button("SPAWN CANON"))
@@ -223,6 +235,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
 	DrawItemsBox(p_HasFocus);
 	DrawAssetsBox(p_HasFocus);
 	DrawNPCsBox(p_HasFocus);
+	DrawSceneBox(p_HasFocus);
 
 	auto s_ImgGuiIO = ImGui::GetIO();
 
@@ -357,6 +370,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 		}
 
 		m_SelectedEntity = s_RayOutput.m_BlockingEntity;
+		selectedEntityName.clear();
 
 		m_EntityMutex.unlock();
 	}
@@ -582,10 +596,93 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 		}
 		else
 		{
+			if (brickHashes.empty())
+			{
+				ZEntitySceneContext* entitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
+
+				for (size_t i = 0; i < entitySceneContext->m_aLoadedBricks.size(); ++i)
+				{
+					ZRuntimeResourceID runtimeResourceID = entitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
+
+					brickHashes.insert(runtimeResourceID.GetID());
+				}
+			}
+
+			if (selectedEntityName.empty())
+			{
+				ZEntityType** parentEntityType = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(m_SelectedEntity.m_pEntity) + m_SelectedEntity.m_pEntity[0]->m_nLogicalParentEntityOffset);
+				entityID = m_SelectedEntity.m_pEntity[0]->m_nEntityId;
+				unsigned long long parentEntityID = parentEntityType[0]->m_nEntityId;
+				ZEntityType** parentEntityType2 = parentEntityType;
+
+				while (true)
+				{
+					parentEntityType2 = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(parentEntityType2) + parentEntityType2[0]->m_nLogicalParentEntityOffset);
+					unsigned long long entityID2 = (*reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(parentEntityType2) + parentEntityType2[0]->m_nLogicalParentEntityOffset))->m_nEntityId;
+
+					if (brickHashes.contains(entityID2))
+					{
+						brickEntityID = entityID2;
+						selectedEntityName = GetEntityName(entityID2, entityID, selectedResourceHash);
+
+						if (selectedEntityName.empty())
+						{
+							entityID = parentEntityType[0]->m_nEntityId;
+							selectedEntityName = GetEntityName(entityID2, entityID, selectedResourceHash);
+						}
+
+						if (selectedEntityName.empty() && m_SelectedEntity.m_pEntity[0]->m_nEntityId == 0x01e018a77e7655ca) //Case when NPC is added by another brick
+						{
+							selectedEntityName = FindNPCEntityNameInBrickBackReferences(entityID2, entityID, selectedResourceHash);
+						}
+
+						break;
+					}
+				}
+			}
+
+			ImGui::TextUnformatted(fmt::format("Entity Name: {}", selectedEntityName).c_str());
+			ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", entityID).c_str());
+
+			if (runtimeResourceIDsToResourceIDs.contains(selectedResourceHash))
+			{
+				ImGui::TextUnformatted(fmt::format("Template Entity: {}", runtimeResourceIDsToResourceIDs[selectedResourceHash]).c_str());
+			}
+			else
+			{
+				ImGui::TextUnformatted(fmt::format("Template Entity: {}", selectedResourceHash).c_str());
+			}
+
+			if (runtimeResourceIDsToResourceIDs.contains(brickEntityID))
+			{
+				ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", runtimeResourceIDsToResourceIDs[brickEntityID]).c_str());
+			}
+			else
+			{
+				ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", brickEntityID).c_str());
+			}
+
+			const ZGeomEntity* geomEntity = m_SelectedEntity.QueryInterface<ZGeomEntity>();
+
+			if (geomEntity)
+			{
+				ZVariant<ZResourcePtr> property = m_SelectedEntity.GetProperty<ZResourcePtr>("m_ResourceID");
+				ZResourceContainer::SResourceInfo primResourceInfo = (*Globals::ResourceContainer)->m_resources[property.Get().m_nResourceIndex];
+				unsigned long long primHash = primResourceInfo.rid.GetID();
+
+				if (runtimeResourceIDsToResourceIDs.contains(primHash))
+				{
+					ImGui::TextUnformatted(fmt::format("PRIM Assembly Path: {}", runtimeResourceIDsToResourceIDs[primHash]).c_str());
+				}
+				else
+				{
+					ImGui::TextUnformatted(fmt::format("PRIM Assembly Path: {}", primHash).c_str());
+				}
+			}
+
 			const auto& s_Interfaces = *(*m_SelectedEntity.m_pEntity)->m_pInterfaces;
 
 			ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName).c_str());
-			ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", (*m_SelectedEntity.m_pEntity)->m_nEntityId).c_str());
 
 			std::string s_InterfacesStr;
 
@@ -606,6 +703,9 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
 			for (const auto& s_Property : *(*m_SelectedEntity.m_pEntity)->m_pProperties01)
 			{
+				if (!s_Property.m_pType->getPropertyInfo())
+					continue;
+
 				if (!s_Property.m_pType->getPropertyInfo()->m_pName)
 					continue;
 
@@ -621,6 +721,9 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
 			for (const auto& s_Property : *(*m_SelectedEntity.m_pEntity)->m_pProperties02)
 			{
+				if (!s_Property.m_pType->getPropertyInfo())
+					continue;
+
 				if (!s_Property.m_pType->getPropertyInfo()->m_pName)
 					continue;
 
@@ -631,7 +734,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 			}
 
 			ImGui::TextUnformatted(fmt::format("Entity Properties2: {}", s_Properties02).c_str());
-		
+
 
 			if (const auto s_Spatial = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
 			{
@@ -1121,7 +1224,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 		{
 			unsigned long long ddsTextureHash = GetDDSTextureHash(image);
 
-			LoadResource(ddsTextureHash, textureResourceData);
+			LoadResourceData(ddsTextureHash, textureResourceData);
 
 			SDK()->LoadTextureFromMemory(textureResourceData, &textureSrvGPUHandle, width, height);
 		}
@@ -1744,6 +1847,60 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
 	ImGui::PopFont();
 }
 
+void DebugMod::DrawSceneBox(bool p_HasFocus)
+{
+	if (!p_HasFocus || !m_SceneMenuActive)
+	{
+		return;
+	}
+
+	ImGui::PushFont(SDK()->GetImGuiBlackFont());
+	const auto s_Showing = ImGui::Begin("SCENE", &m_SceneMenuActive);
+	ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+	if (s_Showing)
+	{
+		static size_t selected = 0;
+		ZEntitySceneContext* entitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
+		std::string entityTemplate = runtimeResourceIDsToResourceIDs[entitySceneContext->m_SceneConfig.m_ridSceneFactory.GetID()];
+		std::string entityBlueprint = std::format("{}.pc_entityblueprint", entityTemplate.substr(0, entityTemplate.find_last_of(".")));
+
+		ImGui::Text("Scene name: %s", entitySceneContext->m_sceneData.m_sceneName.c_str());
+		ImGui::Text("Type: %s", entitySceneContext->m_sceneData.m_type.c_str());
+		ImGui::Text("Code Name Hint: %s", entitySceneContext->m_sceneData.m_codeNameHint.c_str());
+		ImGui::Text("Entity Template: %s", entityTemplate);
+		ImGui::Text("Entity Blueprint: %s", entityBlueprint);
+
+		ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+		for (int i = 0; i < entitySceneContext->m_aLoadedBricks.size(); ++i)
+		{
+			ZRuntimeResourceID runtimeResourceID = entitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
+			std::string resourceID = runtimeResourceIDsToResourceIDs[runtimeResourceID.GetID()];
+
+			if (ImGui::Selectable(resourceID.c_str(), selected == i))
+			{
+				selected = i;
+			}
+		}
+
+		ImGui::EndChild();
+		ImGui::SameLine();
+
+		ImGui::BeginGroup();
+		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
+
+		ImGui::Text("TEXT");
+
+		ImGui::EndChild();
+		ImGui::EndGroup();
+	}
+
+	ImGui::PopFont();
+	ImGui::End();
+	ImGui::PopFont();
+}
+
 void DebugMod::EquipOutfit(TEntityRef<ZGlobalOutfitKit>& globalOutfitKit, unsigned int currentCharacterSetIndex, const char* currentcharSetCharacterType, unsigned int currentOutfitVariationIndex, ZHitman5* localHitman)
 {
 	std::vector<ZRuntimeResourceID> heroOutfitVariations;
@@ -1964,7 +2121,7 @@ void DebugMod::SpawnNonRepositoryProp(const char* propAssemblyPath)
 
 			propSpatialEntity->SetWorldMatrix(hitmanSpatialEntity->GetWorldMatrix());
 
-			ZSetpieceEntity* setPieceEntity = newEntity.QueryInterface<ZSetpieceEntity>();
+			/*ZSetpieceEntity* setPieceEntity = newEntity.QueryInterface<ZSetpieceEntity>();
 
 			if (setPieceEntity)
 			{
@@ -1973,7 +2130,7 @@ void DebugMod::SpawnNonRepositoryProp(const char* propAssemblyPath)
 			else
 			{
 				newEntity.GetBaseEntity()->Activate(0);
-			}
+			}*/
 		}
 	}
 }
@@ -2077,6 +2234,206 @@ void DebugMod::LoadRepositoryProps()
 	}
 }
 
+void DebugMod::LoadHashMap()
+{
+	if (!std::filesystem::exists("hash_list.txt"))
+	{
+		DownloadHashMap();
+
+		LZMA::Extract();
+	}
+
+	std::ifstream inputFile = std::ifstream("hash_list.txt", std::ios::binary | std::ios::ate);
+	uint64_t fileSize = (uint64_t)inputFile.tellg();
+
+	inputFile.seekg(0, inputFile.beg);
+
+	std::vector<char> data(fileSize, 0);
+
+	inputFile.read(data.data(), fileSize);
+
+	uint64_t position = 0;
+	uint64_t lastPosition = 0;
+	uint64_t lineCount = 0;
+
+	mutex.lock();
+
+	while (position < data.size())
+	{
+		if (data[position] == 0x0A)
+		{
+			lineCount++;
+
+			data[position] = 0x0;
+
+			if (lineCount > 3)
+			{
+				std::string_view stringView = std::string_view(reinterpret_cast<char*>(&data[lastPosition]));
+				size_t index = stringView.find_first_of(',');
+
+				std::string hash = std::string(stringView.substr(0, (index - 5)));
+				std::string resourceID = std::string(stringView.substr(index + 1, stringView.length() - (index + 1)));
+
+				runtimeResourceIDsToResourceIDs[std::stoull(hash, nullptr, 16)] = resourceID;
+
+			}
+
+			lastPosition = position + 1;
+		}
+
+		position++;
+	}
+
+	mutex.unlock();
+}
+
+void DebugMod::DownloadHashMap()
+{
+	std::string folderPath = std::format("{}\\latest-hashes.7z", std::filesystem::current_path().string());
+
+	HRESULT result = URLDownloadToFileA(nullptr, "https://hitmandb.glaciermodding.org/latest-hashes.7z", folderPath.c_str(), 0, nullptr);
+}
+
+std::string DebugMod::GetEntityName(unsigned long long tempBrickHash, unsigned long long entityID, unsigned long long& resourceHash)
+{
+	std::string entityName = "";
+	TResourcePtr<ZTemplateEntityFactory> tempBrickResource;
+
+	Globals::ResourceManager->GetResourcePtr(tempBrickResource, ZRuntimeResourceID(tempBrickHash), 0);
+
+	ZResourceContainer::SResourceInfo tempBrickResourceInfo = (*Globals::ResourceContainer)->m_resources[tempBrickResource.m_nResourceIndex];
+	ZTemplateEntityFactory* resource = tempBrickResource.GetResource();
+
+	if (!resource)
+	{
+		return entityName;
+	}
+
+	ZResourceContainer::SResourceInfo tbluBrickResourceInfo = (*Globals::ResourceContainer)->m_resources[resource->m_blueprintResource.m_nResourceIndex];
+
+	unsigned int entityIndex = -1;
+	static unsigned long long dataSectionOffset = 0x10;
+	std::vector<char> tempBrickResourceData;
+	std::vector<char> tbluBrickResourceData;
+
+	TArray<ZString>* mountedPackages = &(*Globals::ResourceContainer)->m_MountedPackages;
+	std::string rpkgFilePath = (*mountedPackages)[mountedPackages->size() - 1].c_str();
+
+	LoadResourceData(tempBrickHash, tempBrickResourceData, rpkgFilePath);
+	LoadResourceData(tbluBrickResourceInfo.rid.GetID(), tbluBrickResourceData, rpkgFilePath);
+
+	ZBinaryReader binaryReader = ZBinaryReader(&tbluBrickResourceData);
+
+	binaryReader.Seek(dataSectionOffset + 0x8);
+
+	unsigned long long subEntitiesStartOffset = binaryReader.Read<unsigned long long>();
+	unsigned long long subEntitiesEndOffset = binaryReader.Read<unsigned long long>();
+	unsigned int subEntityCount = static_cast<unsigned int>((subEntitiesEndOffset - subEntitiesStartOffset) / 0xA8); //0xA8 is size of STemplateBlueprintSubEntity
+
+	for (unsigned int i = 0; i < subEntityCount; ++i)
+	{
+		binaryReader.Seek(dataSectionOffset + subEntitiesStartOffset + i * 0xA8 + 0x28);
+
+		unsigned long long entityID2 = binaryReader.Read<unsigned long long>();
+
+		if (entityID == entityID2)
+		{
+			binaryReader.Skip(0x10);
+
+			unsigned long long entityNameOffset = binaryReader.Read<unsigned long long>();
+
+			binaryReader.Seek(entityNameOffset + dataSectionOffset - 4);
+
+			int stringLength = binaryReader.Read<unsigned int>();
+			entityName = binaryReader.ReadString(stringLength - 1);
+			entityIndex = i;
+
+			break;
+		}
+	}
+
+	if (entityIndex != -1)
+	{
+		ZBinaryReader binaryReader2 = ZBinaryReader(&tempBrickResourceData);
+
+		binaryReader2.Seek(dataSectionOffset + 0x10);
+
+		unsigned long long subEntitiesStartOffset2 = binaryReader2.Read<unsigned long long>();
+		unsigned long long subEntityOffset = dataSectionOffset + subEntitiesStartOffset2 + entityIndex * 0x70; //0x70 is size of STemplateFactorySubEntity
+
+		binaryReader2.Seek(subEntityOffset + 0x20);
+
+		int entityTypeResourceIndex = binaryReader2.Read<unsigned int>();
+
+		TArray<ZResourceIndex> referenceIndices;
+		TArray<unsigned char> referenceFlags;
+
+		Functions::ZResourceContainer_GetResourceReferences->Call(*Globals::ResourceContainer, ZResourceIndex(tempBrickResource.m_nResourceIndex), referenceIndices, referenceFlags);
+
+		ZResourceContainer::SResourceInfo referenceInfo = (*Globals::ResourceContainer)->m_resources[referenceIndices[entityTypeResourceIndex].val];
+
+		resourceHash = referenceInfo.rid.GetID();
+	}
+
+	return entityName;
+}
+
+
+std::string DebugMod::FindNPCEntityNameInBrickBackReferences(unsigned long long tempBrickHash, unsigned long long entityID, unsigned long long& resourceHash)
+{
+	std::string entityName;
+	ZResourceContainer* resourceContainer = *Globals::ResourceContainer;
+
+	for (unsigned int i = 0; i < resourceContainer->m_resourcesSize; ++i)
+	{
+		ZResourceContainer::SResourceInfo* resourceInfo = &resourceContainer->m_resources[i];
+		unsigned long long resourceHash2 = resourceInfo->rid.GetID();
+
+		if (resourceInfo->resourceType == 'TEMP' &&
+			resourceInfo->numReferences > 0 &&
+			runtimeResourceIDsToResourceIDs.contains(resourceHash2) &&
+			runtimeResourceIDsToResourceIDs[resourceHash2].ends_with(".brick].pc_entitytype") &&
+			runtimeResourceIDsToResourceIDs[resourceHash2].contains("/npc_"))
+		{
+			ZResourceIndex resourceIndex = resourceContainer->m_indices.find(resourceInfo->rid)->second;
+			TArray<ZResourceIndex> referenceIndices;
+			TArray<unsigned char> referenceFlags;
+
+			Functions::ZResourceContainer_GetResourceReferences->Call(resourceContainer, ZResourceIndex(resourceIndex), referenceIndices, referenceFlags);
+
+			for (size_t j = 0; j < referenceIndices.size(); ++j)
+			{
+				size_t referenceIndex = referenceIndices[j].val;
+
+				if (referenceIndex == -1)
+				{
+					continue;
+				}
+
+				ZResourceContainer::SResourceInfo referenceInfo = resourceContainer->m_resources[referenceIndex];
+				unsigned long long referenceHash = referenceInfo.rid.GetID();
+
+				if (referenceHash == tempBrickHash)
+				{
+					entityName = GetEntityName(resourceHash2, entityID, resourceHash);
+
+					if (!entityName.empty())
+					{
+						break;
+					}
+				}
+			}
+		}
+
+		if (!entityName.empty())
+		{
+			break;
+		}
+	}
+
+	return entityName;
+}
+
 std::string DebugMod::ConvertDynamicObjectValueTString(ZDynamicObject* dynamicObject)
 {
 	std::string result;
@@ -2115,22 +2472,55 @@ std::string DebugMod::ConvertDynamicObjectValueTString(ZDynamicObject* dynamicOb
 	return result;
 }
 
-void DebugMod::LoadResource(unsigned long long hash, std::vector<char>& resourceData)
+void DebugMod::LoadResourceData(unsigned long long hash, std::vector<char>& resourceData)
 {
 	static std::string rpkgFilePath = GetPatchRPKGFilePath();
+
+	LoadResourceData(hash, resourceData, rpkgFilePath);
+}
+
+void DebugMod::LoadResourceData(unsigned long long hash, std::vector<char>& resourceData, const std::string& rpkgFilePath)
+{
 	ZBinaryReader binaryReader = ZBinaryReader(rpkgFilePath);
 
 	binaryReader.Seek(0xD);
 
 	unsigned int resourceCount = binaryReader.Read<unsigned int>();
-
-	binaryReader.Seek(0x19);
-
+	unsigned int resourceHeadersChunkSize = binaryReader.Read<unsigned int>();
+	unsigned int resourcesChunkSize = binaryReader.Read<unsigned int>();
 	unsigned int patchDeletionEntryCount = binaryReader.Read<unsigned int>();
+	bool isPatchFile = false;
 
-	binaryReader.Seek(0x1D + 8 * patchDeletionEntryCount);
+	if (patchDeletionEntryCount * 8 + 0x2D >= binaryReader.GetSize())
+	{
+		isPatchFile = false;
+	}
+	else
+	{
+		binaryReader.Seek(patchDeletionEntryCount * 8 + 0x24);
 
-	while (true)
+		unsigned char testZeroValue = binaryReader.Read<unsigned char>();
+		unsigned long long testHeaderOffset = binaryReader.Read<unsigned long long>();
+
+		if (testHeaderOffset == (resourceHeadersChunkSize + resourcesChunkSize + patchDeletionEntryCount * 8 + 0x1D) && testZeroValue == 0)
+		{
+			isPatchFile = true;
+		}
+	}
+
+	if (isPatchFile)
+	{
+		binaryReader.Seek(0x1D);
+		binaryReader.Skip(8 * patchDeletionEntryCount);
+	}
+	else
+	{
+		binaryReader.Seek(0x19);
+	}
+
+	unsigned int i = 0;
+
+	while (i < resourceCount)
 	{
 		unsigned long long hash2 = binaryReader.Read<unsigned long long>();
 
@@ -2188,6 +2578,8 @@ void DebugMod::LoadResource(unsigned long long hash, std::vector<char>& resource
 		size_t currentPositon = binaryReader.GetPosition();
 
 		binaryReader.Seek(currentPositon + 12);
+
+		i++;
 	}
 }
 
@@ -2226,7 +2618,7 @@ unsigned long long DebugMod::GetDDSTextureHash(const std::string image)
 		unsigned long long oresHash = resourceInfo.rid.GetID();
 		std::vector<char> oresResourceData;
 
-		LoadResource(oresHash, oresResourceData);
+		LoadResourceData(oresHash, oresResourceData);
 
 		ZBinaryReader binaryReader = ZBinaryReader(&oresResourceData);
 

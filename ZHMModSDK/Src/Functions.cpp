@@ -134,3 +134,10 @@ PATTERN_FUNCTION(
 	ZCharacterSubcontrollerInventory_AddDynamicItemToInventory,
 	unsigned long long(ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId, void* unknown, unsigned int unknown2)
 );
+
+PATTERN_FUNCTION(
+	"\x40\x53\x48\x83\xEC\x00\x48\x8B\x05\x00\x00\x00\x00\x48\x89\x74\x24\x60",
+	"xxxxx?xxx????xxxxx",
+	ZResourceContainer_GetResourceReferences,
+	void(ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags)
+);

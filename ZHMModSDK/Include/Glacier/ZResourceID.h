@@ -27,9 +27,19 @@ public:
 	{
 	}
 
+	bool operator==(const ZRuntimeResourceID& rhs) const
+	{
+		return GetID() == rhs.GetID();
+	}
+
 	unsigned long long GetID() const
 	{
 		return (static_cast<unsigned long long>(m_IDHigh) << 32) | m_IDLow;
+	}
+
+	unsigned int GetHashCode() const
+	{
+		return m_IDHigh ^ m_IDLow;
 	}
 
 public:

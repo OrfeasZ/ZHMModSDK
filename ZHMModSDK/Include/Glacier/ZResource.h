@@ -9,6 +9,11 @@ class ZRuntimeResourceID;
 class ZResourceIndex
 {
 public:
+	ZResourceIndex(int val) : val(val)
+	{
+
+	}
+
 	int val;
 };
 
@@ -21,7 +26,7 @@ enum EResourceStatus
 	RESOURCE_STATUS_VALID = 4,
 };
 
-class ZResourceContainer : IComponentInterface
+class ZResourceContainer
 {
 public:
 	struct SResourceInfo
@@ -42,7 +47,12 @@ public:
 	};
 
 public:
+	unsigned int m_resourcesSize;
+	unsigned int m_Unknown;
 	TArray<SResourceInfo> m_resources;
+	TArray<unsigned int> m_references;
+	THashMap<ZRuntimeResourceID, ZResourceIndex, TDefaultHashMapPolicy<ZRuntimeResourceID>> m_indices;
+	TArray<ZString> m_MountedPackages;
 };
 
 class ZResourcePtr
@@ -84,10 +94,10 @@ public:
 	
 public:
 	int32_t m_nResourceIndex = -1;
-	PAD(0x04);
+	uint32_t m_Padding;
 };
 
-template<typename T>
+template <typename T>
 class TResourcePtr : public ZResourcePtr
 {
 public:

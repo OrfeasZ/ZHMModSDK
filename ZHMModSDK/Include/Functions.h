@@ -23,6 +23,9 @@ struct SMatrix;
 class ZGlobalOutfitKit;
 class ZItemSpawner;
 class ZCharacterSubcontrollerInventory;
+class ZResourceContainer;
+class ZResourceIndex;
+class ZHM5CrippleBox;
 
 class ZHMSDK_API Functions
 {
@@ -47,4 +50,5 @@ public:
 	static EngineFunction<void(ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int m_nOutfitCharset, int m_nOutfitVariation, bool bNude)>* ZActor_SetOutfit;
 	static EngineFunction<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
 	static EngineFunction<unsigned long long(ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId, void* unknown, unsigned int unknown2)>* ZCharacterSubcontrollerInventory_AddDynamicItemToInventory;
+	static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags)>* ZResourceContainer_GetResourceReferences;
 };

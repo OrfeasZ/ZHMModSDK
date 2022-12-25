@@ -358,11 +358,11 @@ namespace Hash
 		// Add length in bits to end.
 		s_Data[s_DataSize - 8] = s_LenInBits & 0x00000000000000FF;
 		s_Data[s_DataSize - 7] = (s_LenInBits & 0x000000000000FF00) >> 8;
-		s_Data[s_DataSize - 6] = (s_LenInBits & 0x0000000000FF0000) >> 16;
+		s_Data[s_DataSize - 6] = static_cast<uint8_t>((s_LenInBits & 0x0000000000FF0000) >> 16);
 		s_Data[s_DataSize - 5] = (s_LenInBits & 0x00000000FF000000) >> 24;
-		s_Data[s_DataSize - 4] = (s_LenInBits & 0x000000FF00000000) >> 32;
-		s_Data[s_DataSize - 3] = (s_LenInBits & 0x0000FF0000000000) >> 40;
-		s_Data[s_DataSize - 2] = (s_LenInBits & 0x00FF000000000000) >> 48;
+		s_Data[s_DataSize - 4] = static_cast<uint8_t>((s_LenInBits & 0x000000FF00000000) >> 32);
+		s_Data[s_DataSize - 3] = static_cast<uint8_t>((s_LenInBits & 0x0000FF0000000000) >> 40);
+		s_Data[s_DataSize - 2] = static_cast<uint8_t>((s_LenInBits & 0x00FF000000000000) >> 48);
 		s_Data[s_DataSize - 1] = (s_LenInBits & 0xFF00000000000000) >> 56;
 
 		for (size_t s_Group = 0; s_Group < s_GroupCount; ++s_Group)
