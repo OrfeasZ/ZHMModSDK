@@ -19,6 +19,7 @@
 #include <Glacier/ZAction.h>
 #include <Glacier/ZItem.h>
 #include <Glacier/ZInventory.h>
+#include <Glacier/ZHM5CrippleBox.h>
 #include <IO/ZBinaryReader.h>
 #include <IO/ZBinaryDeserializer.h>
 #include <Crypto.h>
@@ -853,6 +854,11 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
 			if (ImGui::Checkbox("Is Invincible", &isInvincible))
 			{
 				s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", isInvincible);
+			}
+
+			if (ImGui::Button("Enable Infinite Ammo"))
+			{
+				EnableInfiniteAmmo();
 			}
 		}
 
@@ -2650,6 +2656,52 @@ unsigned long long DebugMod::GetDDSTextureHash(const std::string image)
 	}
 
 	return oresEntries[image];
+}
+
+void DebugMod::EnableInfiniteAmmo()
+{
+	auto scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+	if (!scene)
+	{
+		Logger::Debug("Scene not loaded.");
+	}
+	else
+	{
+		const auto runtimeResourceID = ResId<"[modules:/zhm5cripplebox.class].pc_entitytype">;
+
+		TResourcePtr<ZTemplateEntityFactory> resource;
+
+		Globals::ResourceManager->GetResourcePtr(resource, runtimeResourceID, 0);
+
+		if (!resource)
+		{
+			Logger::Debug("Resource is not loaded.");
+		}
+		else
+		{
+			ZEntityRef s_NewEntity;
+
+			Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, s_NewEntity, "", resource, scene.m_ref, nullptr, -1);
+
+			if (!s_NewEntity)
+			{
+				Logger::Debug("Failed to spawn entity.");
+			}
+
+			TEntityRef<ZHitman5> s_LocalHitman;
+
+			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+			ZHM5CrippleBox* hm5CrippleBox = s_NewEntity.QueryInterface<ZHM5CrippleBox>();
+
+			hm5CrippleBox->m_bActivateOnStart = true;
+			hm5CrippleBox->m_rHitmanCharacter = s_LocalHitman;
+			hm5CrippleBox->m_bLimitedAmmo = false;
+
+			hm5CrippleBox->Activate(0);
+		}
+	}
 }
 
 void DebugMod::CopyToClipboard(const std::string& p_String) const

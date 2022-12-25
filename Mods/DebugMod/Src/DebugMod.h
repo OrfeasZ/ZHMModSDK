@@ -64,6 +64,8 @@ private:
 	std::string GetPatchRPKGFilePath();
 	unsigned long long GetDDSTextureHash(const std::string image);
 
+	void EnableInfiniteAmmo();
+
 	DEFINE_PLUGIN_DETOUR(DebugMod, void, ZHttpBufferReady, ZHttpResultDynamicObject* th);
 	DEFINE_PLUGIN_DETOUR(DebugMod, void, WinHttpCallback, void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int length_param_6);
 	DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
@@ -119,6 +121,8 @@ private:
 
 	inline static std::unordered_map<unsigned long long, std::string> runtimeResourceIDsToResourceIDs;
 	inline static std::mutex mutex;
+
+	ZHM5CrippleBox* hm5CrippleBox;
 };
 
 DEFINE_ZHM_PLUGIN(DebugMod)
