@@ -21,4 +21,5 @@ target_link_libraries(DebugMod PRIVATE
 	winhttp
 	imguizmo
 	lz4
+	lzma
 )
