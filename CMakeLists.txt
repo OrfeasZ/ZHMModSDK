@@ -24,8 +24,6 @@ add_subdirectory("External/minhook")
 add_subdirectory("External/imgui")
 add_subdirectory("External/imguizmo")
 add_subdirectory("External/DirectXTK12")
-add_subdirectory("External/lz4")
-add_subdirectory("External/lzma")
 
 # Core modules.
 add_subdirectory("ZHMModSDK")
