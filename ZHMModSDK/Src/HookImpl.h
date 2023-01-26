@@ -525,6 +525,41 @@ private:
 };
 
 template <class T>
+class PatternVtableHook;
+
+template <class ReturnType, class... Args>
+class PatternVtableHook<ReturnType(Args...)> final : public HookImpl<ReturnType(Args...)>
+{
+public:
+	PatternVtableHook(const char* p_HookName, const char* p_Pattern, const char* p_Mask, size_t p_VtableIndex, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
+		HookImpl<ReturnType(Args...)>(p_HookName, GetTarget(p_HookName, p_Pattern, p_Mask, p_VtableIndex), p_Detour)
+	{
+	}
+
+private:
+	void* GetTarget(const char* p_HookName, const char* p_Pattern, const char* p_Mask, size_t p_VtableIndex) const
+	{
+		const auto* s_Pattern = reinterpret_cast<const uint8_t*>(p_Pattern);
+		auto s_Target = Util::ProcessUtils::SearchPattern(ModSDK::GetInstance()->GetModuleBase(), ModSDK::GetInstance()->GetSizeOfCode(), s_Pattern, p_Mask);
+
+		// We expect this to have an REX prefix (0x48).
+		if (s_Target != 0 && *reinterpret_cast<uint8_t*>(s_Target) != 0x48)
+		{
+			Logger::Error("Expected a rex prefix for vtable hook '{}' at address {} but instead got 0x{:02X}.", p_HookName, fmt::ptr(reinterpret_cast<void*>(s_Target)), *reinterpret_cast<uint8_t*>(s_Target));
+			return nullptr;
+		}
+
+		if (s_Target == 0)
+			return nullptr;
+
+		const uintptr_t s_VtableAddr = s_Target + 7 + *reinterpret_cast<int32_t*>(s_Target + 3);
+		const uintptr_t s_VtableFuncOffset = s_VtableAddr + (p_VtableIndex * sizeof(void*));
+		
+		return *reinterpret_cast<void**>(s_VtableFuncOffset);
+	}
+};
+
+template <class T>
 class ModuleHook;
 
 template <class ReturnType, class... Args>
@@ -564,6 +599,13 @@ private:
 	Hook<HookType>* Hooks::HookName = new PatternHook<HookType>(\
 		#HookName, \
 		Pattern, Mask, \
+		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
+	);
+
+#define PATTERN_VTABLE_HOOK(Pattern, Mask, VtableIndex, HookName, HookType) \
+	Hook<HookType>* Hooks::HookName = new PatternVtableHook<HookType>(\
+		#HookName, \
+		Pattern, Mask, VtableIndex, \
 		(typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
 	);
 

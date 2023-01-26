@@ -41,6 +41,15 @@ class ZUpdateEventContainer;
 class ZInputAction;
 class ZEntityManager;
 class ZHttpResultDynamicObject;
+class ZTemplateEntityFactory;
+class ZCppEntityFactory;
+class ZBehaviorTreeEntityFactory;
+class ZAudioSwitchEntityFactory;
+class ZAudioStateEntityFactory;
+class ZAspectEntityFactory;
+class ZUIControlEntityFactory;
+class ZRenderMaterialEntityFactory;
+class ZExtendedCppEntityFactory;
 
 class ZHMSDK_API Hooks
 {
@@ -75,4 +84,10 @@ public:
 	static Hook<void(ZEntityManager* th, ZEntityRef* entity, void* a3)>* ZEntityManager_ActivateEntity;
 	static Hook<void(void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int param_6)>* Http_WinHttpCallback;
 	static Hook<void(ZHttpResultDynamicObject* th)>* ZHttpResultDynamicObject_OnBufferReady;
+	static Hook<void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZTemplateEntityFactory_ConfigureEntity;
+	static Hook<void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZCppEntityFactory_ConfigureEntity;
+	static Hook<void(ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZBehaviorTreeEntityFactory_ConfigureEntity;
+	static Hook<void(ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZAudioSwitchEntityFactory_ConfigureEntity;
+	static Hook<void(ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZAspectEntityFactory_ConfigureEntity;
+	static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZRenderMaterialEntityFactory_ConfigureEntity;
 };

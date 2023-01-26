@@ -102,6 +102,12 @@ private:
 	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
 	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_ActivateEntity, ZEntityManager* th, ZEntityRef* entity, void* a3);
 	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>& references);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZTemplateEntityFactory_ConfigureEntity, ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZCppEntityFactory_ConfigureEntity, ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZBehaviorTreeEntityFactory_ConfigureEntity, ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAudioSwitchEntityFactory_ConfigureEntity, ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAspectEntityFactory_ConfigureEntity, ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZRenderMaterialEntityFactory_ConfigureEntity, ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
 
 private:
 	std::unordered_set<ZEntityRef, ZEntityRef::hasher> m_Entities;

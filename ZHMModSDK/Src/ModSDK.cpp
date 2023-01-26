@@ -135,6 +135,12 @@ bool ModSDK::Startup()
 	// Install hooks so we can keep track of entities.
 	Hooks::ZEntityManager_ActivateEntity->AddDetour(this, &ModSDK::ZEntityManager_ActivateEntity);
 	Hooks::ZEntityManager_DeleteEntities->AddDetour(this, &ModSDK::ZEntityManager_DeleteEntities);
+	//Hooks::ZTemplateEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZTemplateEntityFactory_ConfigureEntity);
+	//Hooks::ZCppEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZCppEntityFactory_ConfigureEntity);
+	//Hooks::ZBehaviorTreeEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZBehaviorTreeEntityFactory_ConfigureEntity);
+	//Hooks::ZAudioSwitchEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZAudioSwitchEntityFactory_ConfigureEntity);
+	//Hooks::ZAspectEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZAspectEntityFactory_ConfigureEntity);
+	//Hooks::ZRenderMaterialEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZRenderMaterialEntityFactory_ConfigureEntity);
 	
 	return true;
 }
@@ -388,6 +394,78 @@ DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntity
 
 		m_Entities.erase(entities[i]);
 	}
+
+	m_EntityMutex.unlock();
+
+	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZTemplateEntityFactory_ConfigureEntity, ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+{
+	m_EntityMutex.lock();
+
+	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
+	Logger::Trace("Configuring ZTemplateEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
+
+	m_EntityMutex.unlock();
+
+	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZCppEntityFactory_ConfigureEntity, ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+{
+	m_EntityMutex.lock();
+
+	//const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
+	//Logger::Trace("Configuring ZCppEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
+
+	m_EntityMutex.unlock();
+
+	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZBehaviorTreeEntityFactory_ConfigureEntity, ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+{
+	m_EntityMutex.lock();
+
+	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
+	Logger::Trace("Configuring ZBehaviorTreeEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
+
+	m_EntityMutex.unlock();
+
+	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAudioSwitchEntityFactory_ConfigureEntity, ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+{
+	m_EntityMutex.lock();
+
+	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
+	Logger::Trace("Configuring ZAudioSwitchEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
+
+	m_EntityMutex.unlock();
+
+	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAspectEntityFactory_ConfigureEntity, ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+{
+	m_EntityMutex.lock();
+
+	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
+	Logger::Trace("Configuring ZAspectEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
+
+	m_EntityMutex.unlock();
+
+	return HookResult<void>(HookAction::Continue());
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZRenderMaterialEntityFactory_ConfigureEntity, ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+{
+	m_EntityMutex.lock();
+
+	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
+	Logger::Trace("Configuring ZRenderMaterialEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
 
 	m_EntityMutex.unlock();
 
