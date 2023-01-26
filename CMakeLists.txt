@@ -6,7 +6,6 @@ endif()
 
 project(ZHMMods CXX C)
 
-set(CTT OFF CACHE BOOL "Build with support for the Hitman 3 CTT.")
 set(INSTALL_PATH "" CACHE PATH "Path to Hitman 3 retail folder to install the SDK in.")
 
 set(CMAKE_CXX_STANDARD 23)
