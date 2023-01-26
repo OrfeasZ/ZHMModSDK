@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <d3d12.h>
 #include <dxgi1_4.h>
 
@@ -51,7 +52,10 @@ namespace Rendering::Renderers
 		ImFont* GetFontBlack() { return m_FontBlack; }
 
 		void SetFocus(bool p_Focused) { m_ImguiHasFocus = p_Focused; }
-		
+
+	public:
+		bool LoadTextureFromMemory(std::vector<char>& resourceData, D3D12_GPU_DESCRIPTOR_HANDLE* textureSrvGPUHandle, int& width, int& height);
+
 	private:
 		bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
 		void WaitForGpu(FrameContext* p_Frame);

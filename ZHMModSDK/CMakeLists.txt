@@ -5,7 +5,8 @@ file(GLOB_RECURSE SRC_FILES
 	Src/*.cpp
 	Src/*.c
 	Src/*.hpp
-	Src/*.h
+	Src/*.h,
+	Include/*.h
 )
 
 add_library(ZHMModSDK SHARED

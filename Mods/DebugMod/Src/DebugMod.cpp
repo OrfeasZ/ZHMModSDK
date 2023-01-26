@@ -15,13 +15,27 @@
 #include <Glacier/ZHttp.h>
 #include <Glacier/ZPhysics.h>
 #include <Glacier/ZSetpieceEntity.h>
+#include <Glacier/ZContentKitManager.h>
+#include <Glacier/ZAction.h>
+#include <Glacier/ZItem.h>
+#include <Glacier/ZInventory.h>
+#include <Glacier/ZHM5CrippleBox.h>
+#include <IO/ZBinaryReader.h>
+#include <IO/ZBinaryDeserializer.h>
+#include <Crypto.h>
+
 #include <Functions.h>
 #include <Globals.h>
 
 #include <ImGuizmo.h>
+#include <lz4.h>
 
 #include <winhttp.h>
 #include <numbers>
+#include <filesystem>
+#include <imgui_internal.h>
+
+#pragma comment(lib, "urlmon.lib")
 
 DebugMod::~DebugMod()
 {
@@ -40,6 +54,10 @@ void DebugMod::OnEngineInitialized()
 {
 	const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
 	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+
+	std::thread thread(LoadHashMap);
+
+	thread.detach();
 }
 
 void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
@@ -60,7 +78,42 @@ void DebugMod::OnDrawMenu()
 {
 	if (ImGui::Button("DEBUG MENU"))
 	{
-		m_MenuActive = !m_MenuActive;
+		m_DebugMenuActive = !m_DebugMenuActive;
+	}
+
+	if (ImGui::Button("POSITIONS MENU"))
+	{
+		m_PositionsMenuActive = !m_PositionsMenuActive;
+	}
+
+	if (ImGui::Button("ENTITY MENU"))
+	{
+		m_EntityMenuActive = !m_EntityMenuActive;
+	}
+
+	if (ImGui::Button("PLAYER MENU"))
+	{
+		m_PlayerMenuActive = !m_PlayerMenuActive;
+	}
+
+	if (ImGui::Button("ITEMS MENU"))
+	{
+		m_ItemsMenuActive = !m_ItemsMenuActive;
+	}
+
+	if (ImGui::Button("ASSETS MENU"))
+	{
+		m_AssetsMenuActive = !m_AssetsMenuActive;
+	}
+
+	if (ImGui::Button("NPCs MENU"))
+	{
+		m_NPCsMenuActive = !m_NPCsMenuActive;
+	}
+
+	if (ImGui::Button("SCENE MENU"))
+	{
+		m_SceneMenuActive = !m_SceneMenuActive;
 	}
 
 	if (ImGui::Button("SPAWN CANON"))
@@ -313,6 +366,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 		}
 
 		m_SelectedEntity = s_RayOutput.m_BlockingEntity;
+		selectedEntityName.clear();
 
 		m_EntityMutex.unlock();
 	}
@@ -336,11 +390,13 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 
 void DebugMod::DrawOptions(bool p_HasFocus)
 {
-	if (!p_HasFocus || !m_MenuActive)
+	if (!p_HasFocus || !m_DebugMenuActive)
+	{
 		return;
+	}
 
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	auto s_Showing = ImGui::Begin("DEBUG MENU", &m_MenuActive);
+	auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	if (s_Showing)
@@ -357,9 +413,13 @@ void DebugMod::DrawOptions(bool p_HasFocus)
 
 void DebugMod::DrawPositionBox(bool p_HasFocus)
 {
+	if (!p_HasFocus || !m_PositionsMenuActive)
+	{
+		return;
+	}
+
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	const auto s_Showing = ImGui::Begin("POSITIONS");
-	ImGui::SetWindowCollapsed(true, ImGuiCond_FirstUseEver);
+	const auto s_Showing = ImGui::Begin("POSITIONS", &m_PositionsMenuActive);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	if (s_Showing)
@@ -513,9 +573,13 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 
 void DebugMod::DrawEntityBox(bool p_HasFocus)
 {
+	if (!p_HasFocus || !m_EntityMenuActive)
+	{
+		return;
+	}
+
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	const auto s_Showing = ImGui::Begin("SELECTED ENTITY");
-	ImGui::SetWindowCollapsed(true, ImGuiCond_FirstUseEver);
+	const auto s_Showing = ImGui::Begin("SELECTED ENTITY", &m_EntityMenuActive);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	if (s_Showing)
@@ -528,6 +592,90 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 		}
 		else
 		{
+			if (brickHashes.empty())
+			{
+				ZEntitySceneContext* entitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
+
+				for (size_t i = 0; i < entitySceneContext->m_aLoadedBricks.size(); ++i)
+				{
+					ZRuntimeResourceID runtimeResourceID = entitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
+
+					brickHashes.insert(runtimeResourceID.GetID());
+				}
+			}
+
+			if (selectedEntityName.empty())
+			{
+				ZEntityType** parentEntityType = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(m_SelectedEntity.m_pEntity) + m_SelectedEntity.m_pEntity[0]->m_nLogicalParentEntityOffset);
+				entityID = m_SelectedEntity.m_pEntity[0]->m_nEntityId;
+				unsigned long long parentEntityID = parentEntityType[0]->m_nEntityId;
+				ZEntityType** parentEntityType2 = parentEntityType;
+
+				while (true)
+				{
+					parentEntityType2 = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(parentEntityType2) + parentEntityType2[0]->m_nLogicalParentEntityOffset);
+					unsigned long long entityID2 = (*reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(parentEntityType2) + parentEntityType2[0]->m_nLogicalParentEntityOffset))->m_nEntityId;
+
+					if (brickHashes.contains(entityID2))
+					{
+						brickEntityID = entityID2;
+						selectedEntityName = GetEntityName(entityID2, entityID, selectedResourceHash);
+
+						if (selectedEntityName.empty())
+						{
+							entityID = parentEntityType[0]->m_nEntityId;
+							selectedEntityName = GetEntityName(entityID2, entityID, selectedResourceHash);
+						}
+
+						if (selectedEntityName.empty() && m_SelectedEntity.m_pEntity[0]->m_nEntityId == 0x01e018a77e7655ca) //Case when NPC is added by another brick
+						{
+							selectedEntityName = FindNPCEntityNameInBrickBackReferences(entityID2, entityID, selectedResourceHash);
+						}
+
+						break;
+					}
+				}
+			}
+
+			ImGui::TextUnformatted(fmt::format("Entity Name: {}", selectedEntityName).c_str());
+			ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", entityID).c_str());
+
+			if (runtimeResourceIDsToResourceIDs.contains(selectedResourceHash))
+			{
+				ImGui::TextUnformatted(fmt::format("Template Entity: {}", runtimeResourceIDsToResourceIDs[selectedResourceHash]).c_str());
+			}
+			else
+			{
+				ImGui::TextUnformatted(fmt::format("Template Entity: {}", selectedResourceHash).c_str());
+			}
+
+			if (runtimeResourceIDsToResourceIDs.contains(brickEntityID))
+			{
+				ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", runtimeResourceIDsToResourceIDs[brickEntityID]).c_str());
+			}
+			else
+			{
+				ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", brickEntityID).c_str());
+			}
+
+			const ZGeomEntity* geomEntity = m_SelectedEntity.QueryInterface<ZGeomEntity>();
+
+			if (geomEntity)
+			{
+				ZVariant<ZResourcePtr> property = m_SelectedEntity.GetProperty<ZResourcePtr>("m_ResourceID");
+				ZResourceContainer::SResourceInfo primResourceInfo = (*Globals::ResourceContainer)->m_resources[property.Get().m_nResourceIndex];
+				unsigned long long primHash = primResourceInfo.rid.GetID();
+
+				if (runtimeResourceIDsToResourceIDs.contains(primHash))
+				{
+					ImGui::TextUnformatted(fmt::format("PRIM Assembly Path: {}", runtimeResourceIDsToResourceIDs[primHash]).c_str());
+				}
+				else
+				{
+					ImGui::TextUnformatted(fmt::format("PRIM Assembly Path: {}", primHash).c_str());
+				}
+			}
+
 			const auto& s_Interfaces = *(*m_SelectedEntity.m_pEntity)->m_pInterfaces;
 
 			ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName).c_str());
@@ -548,10 +696,13 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
 			ImGui::TextUnformatted(fmt::format("Entity Interfaces: {}", s_InterfacesStr).c_str());
 
-			/*std::string s_Properties01;
+			std::string s_Properties01;
 
 			for (const auto& s_Property : *(*m_SelectedEntity.m_pEntity)->m_pProperties01)
 			{
+				if (!s_Property.m_pType->getPropertyInfo())
+					continue;
+
 				if (!s_Property.m_pType->getPropertyInfo()->m_pName)
 					continue;
 
@@ -567,6 +718,9 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
 			for (const auto& s_Property : *(*m_SelectedEntity.m_pEntity)->m_pProperties02)
 			{
+				if (!s_Property.m_pType->getPropertyInfo())
+					continue;
+
 				if (!s_Property.m_pType->getPropertyInfo()->m_pName)
 					continue;
 
@@ -576,7 +730,8 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 				s_Properties02 += s_Property.m_pType->getPropertyInfo()->m_pName;
 			}
 
-			ImGui::TextUnformatted(fmt::format("Entity Properties2: {}", s_Properties02).c_str());	*/	
+			ImGui::TextUnformatted(fmt::format("Entity Properties2: {}", s_Properties02).c_str());
+
 
 			if (const auto s_Spatial = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
 			{
@@ -668,6 +823,1881 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 	ImGui::PopFont();
 	ImGui::End();
 	ImGui::PopFont();
+}
+
+void DebugMod::DrawPlayerBox(bool p_HasFocus)
+{
+	if (!p_HasFocus || !m_PlayerMenuActive)
+	{
+		return;
+	}
+
+	ZContentKitManager* contentKitManager = Globals::ContentKitManager;
+	TEntityRef<ZHitman5> s_LocalHitman;
+
+	Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+	ImGui::PushFont(SDK()->GetImGuiBlackFont());
+	const auto s_Showing = ImGui::Begin("PLAYER", &m_PlayerMenuActive);
+	ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+	if (s_Showing)
+	{
+		if (s_LocalHitman.m_pInterfaceRef)
+		{
+			static bool isInvincible = s_LocalHitman.m_ref.GetProperty<bool>("m_bIsInvincible").Get();
+
+			if (ImGui::Checkbox("Is Invincible", &isInvincible))
+			{
+				s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", isInvincible);
+			}
+
+			if (ImGui::Button("Enable Infinite Ammo"))
+			{
+				EnableInfiniteAmmo();
+			}
+		}
+
+		static char outfitName[256] { "" };
+
+		ImGui::Text("Outfit");
+		ImGui::SameLine();
+
+		const bool isInputTextEnterPressed = ImGui::InputText("##OutfitName", outfitName, sizeof(outfitName), ImGuiInputTextFlags_EnterReturnsTrue);
+		const bool isInputTextActive = ImGui::IsItemActive();
+		const bool isInputTextActivated = ImGui::IsItemActivated();
+
+		if (isInputTextActivated)
+		{
+			ImGui::OpenPopup("##popup");
+		}
+
+		ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
+		ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
+
+		static TEntityRef<ZGlobalOutfitKit>* globalOutfitKit = nullptr;
+		static char currentCharacterSetIndex[3] { "0" };
+		static const char* currentcharSetCharacterType = "HeroA";
+		static const char* currentcharSetCharacterType2 = "HeroA";
+		static char currentOutfitVariationIndex[3] { "0" };
+
+		if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
+		{
+			for (auto it = contentKitManager->m_repositoryGlobalOutfitKits.begin(); it != contentKitManager->m_repositoryGlobalOutfitKits.end(); ++it)
+			{
+				TEntityRef<ZGlobalOutfitKit>* globalOutfitKit2 = &it->second;
+				const char* outfitName2 = globalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
+
+				if (!strstr(outfitName2, outfitName))
+				{
+					continue;
+				}
+
+				if (ImGui::Selectable(outfitName2))
+				{
+					ImGui::ClearActiveID();
+					strcpy_s(outfitName, outfitName2);
+
+					EquipOutfit(it->second, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), s_LocalHitman.m_pInterfaceRef);
+
+					globalOutfitKit = globalOutfitKit2;
+				}
+			}
+
+			if (isInputTextEnterPressed || (!isInputTextActive && !ImGui::IsWindowFocused()))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		ImGui::Text("Character Set Index");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##CharacterSetIndex", currentCharacterSetIndex))
+		{
+			if (globalOutfitKit)
+			{
+				for (size_t i = 0; i < globalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i)
+				{
+					std::string characterSetIndex = std::to_string(i);
+					bool isSelected = currentCharacterSetIndex == characterSetIndex.c_str();
+
+					if (ImGui::Selectable(characterSetIndex.c_str(), isSelected))
+					{
+						strcpy_s(currentCharacterSetIndex, characterSetIndex.c_str());
+
+						if (globalOutfitKit)
+						{
+							EquipOutfit(*globalOutfitKit, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), s_LocalHitman.m_pInterfaceRef);
+						}
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Text("CharSet Character Type");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##CharSetCharacterType", currentcharSetCharacterType))
+		{
+			if (globalOutfitKit)
+			{
+				for (size_t i = 0; i < 3; ++i)
+				{
+					bool isSelected = currentcharSetCharacterType == charSetCharacterTypes[i];
+
+					if (ImGui::Selectable(charSetCharacterTypes[i], isSelected))
+					{
+						currentcharSetCharacterType = charSetCharacterTypes[i];
+
+						if (globalOutfitKit)
+						{
+							EquipOutfit(*globalOutfitKit, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), s_LocalHitman.m_pInterfaceRef);
+						}
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Text("Outfit Variation");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##OutfitVariation", currentOutfitVariationIndex))
+		{
+			if (globalOutfitKit)
+			{
+				unsigned int currentCharacterSetIndex2 = std::stoi(currentCharacterSetIndex);
+				size_t variationCount = globalOutfitKit->m_pInterfaceRef->m_aCharSets[currentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->m_aVariations.size();
+
+				for (size_t i = 0; i < variationCount; ++i)
+				{
+					std::string outfitVariationIndex = std::to_string(i);
+					bool isSelected = currentOutfitVariationIndex == outfitVariationIndex.c_str();
+
+					if (ImGui::Selectable(outfitVariationIndex.c_str(), isSelected))
+					{
+						strcpy_s(currentOutfitVariationIndex, outfitVariationIndex.c_str());
+
+						if (globalOutfitKit)
+						{
+							EquipOutfit(*globalOutfitKit, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), s_LocalHitman.m_pInterfaceRef);
+						}
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		static bool weaponsAllowed = false;
+		static bool authorityFigure = false;
+
+		if (globalOutfitKit)
+		{
+			ImGui::Checkbox("Weapons Allowed", &globalOutfitKit->m_pInterfaceRef->m_bWeaponsAllowed);
+			ImGui::Checkbox("Authority Figure", &globalOutfitKit->m_pInterfaceRef->m_bAuthorityFigure);
+		}
+
+		ImGui::Separator();
+
+		static char npcName[256] { "" };
+
+		ImGui::Text("NPC Name");
+		ImGui::SameLine();
+
+		ImGui::InputText("##NPCName", npcName, sizeof(npcName));
+		ImGui::SameLine();
+
+		if (ImGui::Button("Get NPC Outfit"))
+		{
+			ZActor* actor = Globals::ActorManager->GetActorByName(npcName);
+
+			if (actor)
+			{
+				EquipOutfit(actor->m_rOutfit, actor->m_nOutfitCharset, currentcharSetCharacterType2, actor->m_nOutfitVariation, s_LocalHitman.m_pInterfaceRef);
+			}
+		}
+
+		if (ImGui::Button("Get Nearest NPC's Outfit"))
+		{
+			ZSpatialEntity* hitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+
+			for (int i = 0; i < *Globals::NextActorId; ++i)
+			{
+				ZActor* actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+				ZEntityRef s_Ref;
+
+				actor->GetID(&s_Ref);
+
+				ZSpatialEntity* actorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+
+				SVector3 temp = actorSpatialEntity->m_mTransform.Trans - hitmanSpatialEntity->m_mTransform.Trans;
+				float distance = sqrt(temp.x * temp.x + temp.y * temp.y + temp.z * temp.z);
+
+				if (distance <= 3.0f)
+				{
+					EquipOutfit(actor->m_rOutfit, actor->m_nOutfitCharset, currentcharSetCharacterType2, actor->m_nOutfitVariation, s_LocalHitman.m_pInterfaceRef);
+
+					break;
+				}
+			}
+		}
+
+		ImGui::Text("CharSet Character Type");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##CharSetCharacterType2", currentcharSetCharacterType2))
+		{
+			if (globalOutfitKit)
+			{
+				for (size_t i = 0; i < 3; ++i)
+				{
+					bool isSelected = currentcharSetCharacterType2 == charSetCharacterTypes[i];
+
+					if (ImGui::Selectable(charSetCharacterTypes[i], isSelected))
+					{
+						currentcharSetCharacterType2 = charSetCharacterTypes[i];
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::Button("Teleport All Items To Player"))
+		{
+			ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+			ZHM5ActionManager* hm5ActionManager = Globals::HM5ActionManager;
+
+			for (unsigned int i = 0; i < hm5ActionManager->m_Actions.size(); ++i)
+			{
+				ZHM5Action* action = hm5ActionManager->m_Actions[i];
+
+				if (action->m_eActionType == EActionType::AT_PICKUP)
+				{
+					ZHM5Item* item = action->m_Object.QueryInterface<ZHM5Item>();
+
+					item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());
+				}
+			}
+		}
+
+		if (ImGui::Button("Teleport All NPCs To Player"))
+		{
+			TEntityRef<ZHitman5> localHitman;
+
+			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &localHitman);
+
+			ZSpatialEntity* hitmanSpatialEntity = localHitman.m_ref.QueryInterface<ZSpatialEntity>();
+
+			for (int i = 0; i < *Globals::NextActorId; ++i)
+			{
+				ZActor* actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+				ZEntityRef s_Ref;
+
+				actor->GetID(&s_Ref);
+
+				ZSpatialEntity* actorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+
+				actorSpatialEntity->SetWorldMatrix(hitmanSpatialEntity->GetWorldMatrix());
+			}
+		}
+	}
+
+	ImGui::PopFont();
+	ImGui::End();
+	ImGui::PopFont();
+}
+
+void DebugMod::DrawItemsBox(bool p_HasFocus)
+{
+	if (!p_HasFocus || !m_ItemsMenuActive)
+	{
+		return;
+	}
+
+	ImGui::PushFont(SDK()->GetImGuiBlackFont());
+	const auto s_Showing = ImGui::Begin("ITEMS", &m_ItemsMenuActive);
+	ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+	if (s_Showing && p_HasFocus)
+	{
+		THashMap<ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>* repositoryData = nullptr;
+
+		if (repositoryResource.m_nResourceIndex == -1)
+		{
+			const auto s_ID = ResId<"[assembly:/repository/pro.repo].pc_repo">;
+
+			Globals::ResourceManager->GetResourcePtr(repositoryResource, s_ID, 0);
+		}
+
+		if (repositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID)
+		{
+			repositoryData = static_cast<THashMap<ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(repositoryResource.GetResourceData());
+		}
+		else
+		{
+			ImGui::PopFont();
+			ImGui::End();
+			ImGui::PopFont();
+
+			return;
+		}
+
+		ZContentKitManager* contentKitManager = Globals::ContentKitManager;
+		TEntityRef<ZHitman5> s_LocalHitman;
+
+		Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+		ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+		ZHM5ActionManager* hm5ActionManager = Globals::HM5ActionManager;
+		std::vector<ZHM5Action*> actions;
+
+		if (hm5ActionManager->m_Actions.size() == 0)
+		{
+			ImGui::PopFont();
+			ImGui::End();
+			ImGui::PopFont();
+
+			return;
+		}
+
+		for (unsigned int i = 0; i < hm5ActionManager->m_Actions.size(); ++i)
+		{
+			ZHM5Action* action = hm5ActionManager->m_Actions[i];
+
+			if (action && action->m_eActionType == EActionType::AT_PICKUP)
+			{
+				actions.push_back(action);
+			}
+		}
+
+		static size_t selected = 0;
+		size_t count = actions.size();
+
+		ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+		for (size_t i = 0; i < count; i++)
+		{
+			ZHM5Action* action = actions[i];
+			ZHM5Item* item = action->m_Object.QueryInterface<ZHM5Item>();
+			std::string title = std::format("{} {}", item->m_pItemConfigDescriptor->m_sTitle.c_str(), i + 1);
+
+			if (ImGui::Selectable(title.c_str(), selected == i))
+			{
+				selected = i;
+				textureResourceData.clear();
+			}
+		}
+
+		ImGui::EndChild();
+		ImGui::SameLine();
+
+		ImGui::BeginGroup();
+		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
+
+		ZHM5Action* action = actions[selected];
+		ZHM5Item* item = action->m_Object.QueryInterface<ZHM5Item>();
+		ZDynamicObject* dynamicObject = &repositoryData->find(item->m_pItemConfigDescriptor->m_RepositoryId)->second;
+		TArray<SDynamicObjectKeyValuePair>* entries = dynamicObject->As<TArray<SDynamicObjectKeyValuePair>>();
+		std::string image;
+
+		for (size_t i = 0; i < entries->size(); ++i)
+		{
+			std::string key = entries->operator[](i).sKey.c_str();
+
+			if (key == "Image")
+			{
+				image = ConvertDynamicObjectValueTString(&entries->operator[](i).value);
+
+				break;
+			}
+		}
+
+		if (textureResourceData.size() == 0)
+		{
+			unsigned long long ddsTextureHash = GetDDSTextureHash(image);
+
+			LoadResourceData(ddsTextureHash, textureResourceData);
+
+			SDK()->LoadTextureFromMemory(textureResourceData, &textureSrvGPUHandle, width, height);
+		}
+
+		ImGui::Image(reinterpret_cast<ImTextureID>(textureSrvGPUHandle.ptr), ImVec2(static_cast<float>(width / 2), static_cast<float>(height / 2)));
+
+		for (unsigned int i = 0; i < entries->size(); ++i)
+		{
+			std::string key = std::format("{}:", entries->operator[](i).sKey.c_str());
+			IType* type = entries->operator[](i).value.m_pTypeID->typeInfo();
+
+			if (strcmp(type->m_pTypeName, "TArray<ZDynamicObject>") == 0)
+			{
+				key += " [";
+
+				ImGui::Text(key.c_str());
+
+				TArray<ZDynamicObject>* array = entries->operator[](i).value.As<TArray<ZDynamicObject>>();
+
+				for (unsigned int j = 0; j < array->size(); ++j)
+				{
+					std::string value = ConvertDynamicObjectValueTString(&array->operator[](j));
+
+					if (!value.empty())
+					{
+						ImGui::Text(std::format("\t{}", value).c_str());
+					}
+				}
+
+				ImGui::Text("]");
+			}
+			else
+			{
+				ImGui::Text(key.c_str());
+
+				std::string value = ConvertDynamicObjectValueTString(&entries->operator[](i).value);
+
+				ImGui::SameLine();
+				ImGui::Text(value.c_str());
+			}
+		}
+
+		if (ImGui::Button("Teleport Item To Player"))
+		{
+			ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+			//ZGeomEntity* geomEntity = s_LocalHitman.m_ref.QueryInterface<ZGeomEntity>();
+
+			//ZEntityRef entityRef;
+
+			//geomEntity->GetID(&entityRef);
+
+			//item->m_pGeomEntity.m_ref = entityRef;
+			//item->m_pGeomEntity.m_pInterfaceRef = geomEntity;
+			item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());
+		}
+
+		ImGui::EndChild();
+		ImGui::EndGroup();
+	}
+
+	ImGui::PopFont();
+	ImGui::End();
+	ImGui::PopFont();
+}
+
+void DebugMod::DrawAssetsBox(bool p_HasFocus)
+{
+	if (!p_HasFocus || !m_AssetsMenuActive)
+	{
+		return;
+	}
+
+	ImGui::PushFont(SDK()->GetImGuiBlackFont());
+	const auto s_Showing = ImGui::Begin("ASSETS", &m_AssetsMenuActive);
+	ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+	if (s_Showing && p_HasFocus)
+	{
+		if (repositoryProps.size() == 0)
+		{
+			LoadRepositoryProps();
+		}
+
+		ZContentKitManager* contentKitManager = Globals::ContentKitManager;
+		static char propTitle[36] { "" };
+		static char propAssemblyPath[512] { "" };
+		static char numberOfPropsToSpawn[5] { "1" };
+		static char numberOfPropsToSpawn2[5] { "1" };
+		static char numberOfPropsToSpawn3[5] { "1" };
+		static int button = 1;
+		static char npcName[100] {};
+
+		ImGui::Text("Repository Props");
+		ImGui::Text("");
+		ImGui::Text("Prop Title");
+		ImGui::SameLine();
+
+		const bool isInputTextEnterPressed = ImGui::InputText("##PropRepositoryID", propTitle, sizeof(propTitle), ImGuiInputTextFlags_EnterReturnsTrue);
+		const bool isInputTextActive = ImGui::IsItemActive();
+		const bool isInputTextActivated = ImGui::IsItemActivated();
+
+		if (isInputTextActivated)
+		{
+			ImGui::OpenPopup("##popup");
+		}
+
+		ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
+		ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
+
+		if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
+		{
+			for (auto it = repositoryProps.begin(); it != repositoryProps.end(); ++it)
+			{
+				const char* propTitle2 = it->first.c_str();
+
+				if (!strstr(propTitle2, propTitle))
+				{
+					continue;
+				}
+
+				if (ImGui::Selectable(propTitle2))
+				{
+					ImGui::ClearActiveID();
+					strcpy_s(propTitle, propTitle2);
+
+					int numberOfPropsToSpawn2 = std::atoi(numberOfPropsToSpawn);
+
+					for (int i = 0; i < numberOfPropsToSpawn2; ++i)
+					{
+						SpawnRepositoryProp(it->second, button == 1);
+					}
+				}
+			}
+
+			if (isInputTextEnterPressed || (!isInputTextActive && !ImGui::IsWindowFocused()))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		if (ImGui::RadioButton("Add To World", button == 1))
+		{
+			button = 1;
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::RadioButton("Add To Inventory", button == 2))
+		{
+			button = 2;
+		}
+
+		ImGui::Text("Number Of Props To Spawn");
+		ImGui::SameLine();
+
+		ImGui::InputText("##NumberOfPropsToSpawn", numberOfPropsToSpawn, sizeof(numberOfPropsToSpawn));
+
+		ImGui::Separator();
+		ImGui::Text("Non Repository Props");
+		ImGui::Text("");
+		ImGui::Text("Prop Assembly Path");
+		ImGui::SameLine();
+
+		ImGui::InputText("##Prop Assembly Path", propAssemblyPath, sizeof(propAssemblyPath));
+		ImGui::SameLine();
+
+		if (ImGui::Button("Spawn Prop"))
+		{
+			int numberOfPropsToSpawn3 = std::atoi(numberOfPropsToSpawn2);
+
+			for (int i = 0; i < numberOfPropsToSpawn3; ++i)
+			{
+				SpawnNonRepositoryProp(propAssemblyPath);
+			}
+		}
+
+		ImGui::Text("Number Of Props To Spawn");
+		ImGui::SameLine();
+
+		ImGui::InputText("##NumberOfPropsToSpawn2", numberOfPropsToSpawn2, sizeof(numberOfPropsToSpawn2));
+		ImGui::Separator();
+
+		ImGui::Text("NPCs");
+		ImGui::Text("");
+		ImGui::Text("NPC Name");
+		ImGui::SameLine();
+
+		ImGui::InputText("##NPCName", npcName, sizeof(npcName));
+
+		static char outfitName[256] { "" };
+
+		ImGui::Text("Outfit");
+		ImGui::SameLine();
+
+		const bool isInputTextEnterPressed2 = ImGui::InputText("##OutfitName", outfitName, sizeof(outfitName), ImGuiInputTextFlags_EnterReturnsTrue);
+		const bool isInputTextActive2 = ImGui::IsItemActive();
+		const bool isInputTextActivated2 = ImGui::IsItemActivated();
+
+		if (isInputTextActivated2)
+		{
+			ImGui::OpenPopup("##popup2");
+		}
+
+		ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
+		ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
+
+		static ZRepositoryID repositoryID = ZRepositoryID("");
+		static TEntityRef<ZGlobalOutfitKit>* globalOutfitKit = nullptr;
+		static char currentCharacterSetIndex[3] { "0" };
+		static const char* currentcharSetCharacterType = "HeroA";
+		static char currentOutfitVariationIndex[3] { "0" };
+
+		if (ImGui::BeginPopup("##popup2", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
+		{
+			for (auto it = contentKitManager->m_repositoryGlobalOutfitKits.begin(); it != contentKitManager->m_repositoryGlobalOutfitKits.end(); ++it)
+			{
+				TEntityRef<ZGlobalOutfitKit>* globalOutfitKit2 = &it->second;
+				const char* outfitName2 = globalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
+
+				if (!strstr(outfitName2, outfitName))
+				{
+					continue;
+				}
+
+				if (ImGui::Selectable(outfitName2))
+				{
+					ImGui::ClearActiveID();
+					strcpy_s(outfitName, outfitName2);
+
+					repositoryID = it->first;
+					globalOutfitKit = globalOutfitKit2;
+				}
+			}
+
+			if (isInputTextEnterPressed2 || (!isInputTextActive2 && !ImGui::IsWindowFocused()))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		ImGui::Text("Character Set Index");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##CharacterSetIndex", currentCharacterSetIndex))
+		{
+			if (globalOutfitKit)
+			{
+				for (size_t i = 0; i < globalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i)
+				{
+					std::string characterSetIndex = std::to_string(i);
+					bool isSelected = currentCharacterSetIndex == characterSetIndex.c_str();
+
+					if (ImGui::Selectable(characterSetIndex.c_str(), isSelected))
+					{
+						strcpy_s(currentCharacterSetIndex, characterSetIndex.c_str());
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Text("CharSet Character Type");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##CharSetCharacterType", currentcharSetCharacterType))
+		{
+			if (globalOutfitKit)
+			{
+				for (size_t i = 0; i < 3; ++i)
+				{
+					bool isSelected = currentcharSetCharacterType == charSetCharacterTypes[i];
+
+					if (ImGui::Selectable(charSetCharacterTypes[i], isSelected))
+					{
+						currentcharSetCharacterType = charSetCharacterTypes[i];
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Text("Outfit Variation");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##OutfitVariation", currentOutfitVariationIndex))
+		{
+			if (globalOutfitKit)
+			{
+				unsigned int currentCharacterSetIndex2 = std::stoi(currentCharacterSetIndex);
+				size_t variationCount = globalOutfitKit->m_pInterfaceRef->m_aCharSets[currentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->m_aVariations.size();
+
+				for (size_t i = 0; i < variationCount; ++i)
+				{
+					std::string outfitVariationIndex = std::to_string(i);
+					bool isSelected = currentOutfitVariationIndex == outfitVariationIndex.c_str();
+
+					if (ImGui::Selectable(outfitVariationIndex.c_str(), isSelected))
+					{
+						strcpy_s(currentOutfitVariationIndex, outfitVariationIndex.c_str());
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Text("Number Of Props To Spawn");
+		ImGui::SameLine();
+
+		ImGui::InputText("##NumberOfPropsToSpawn3", numberOfPropsToSpawn3, sizeof(numberOfPropsToSpawn3));
+
+		if (ImGui::Button("Spawn NPC"))
+		{
+			int numberOfPropsToSpawn4 = std::atoi(numberOfPropsToSpawn3);
+
+			for (int i = 0; i < numberOfPropsToSpawn4; ++i)
+			{
+				SpawnNPC(npcName, repositoryID, globalOutfitKit, currentCharacterSetIndex, currentcharSetCharacterType, currentOutfitVariationIndex);
+			}
+		}
+	}
+
+	ImGui::PopFont();
+	ImGui::End();
+	ImGui::PopFont();
+}
+
+void DebugMod::DrawNPCsBox(bool p_HasFocus)
+{
+	if (!p_HasFocus || !m_NPCsMenuActive)
+	{
+		return;
+	}
+
+	ImGui::PushFont(SDK()->GetImGuiBlackFont());
+	const auto s_Showing = ImGui::Begin("NPCs", &m_NPCsMenuActive);
+	ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+	if (s_Showing && p_HasFocus)
+	{
+		ZContentKitManager* contentKitManager = Globals::ContentKitManager;
+		static size_t selected = 0;
+
+		ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+		static char npcName[256] { "" };
+
+		ImGui::Text("NPC Name");
+		ImGui::SameLine();
+
+		ImGui::InputText("##NPCName", npcName, sizeof(npcName));
+
+		for (int i = 0; i < *Globals::NextActorId; ++i)
+		{
+			ZActor* actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+			std::string npcName2 = actor->m_sActorName.c_str();
+
+			if (!strstr(npcName2.c_str(), npcName))
+			{
+				continue;
+			}
+
+			if (ImGui::Selectable(npcName2.c_str(), selected == i))
+			{
+				selected = i;
+			}
+		}
+
+		ImGui::EndChild();
+		ImGui::SameLine();
+
+		ImGui::BeginGroup();
+		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
+
+		ZActor* actor = Globals::ActorManager->m_aActiveActors[selected].m_pInterfaceRef;
+		static char outfitName[256] { "" };
+
+		ImGui::Text("Outfit");
+		ImGui::SameLine();
+
+		const bool isInputTextEnterPressed = ImGui::InputText("##OutfitName", outfitName, sizeof(outfitName), ImGuiInputTextFlags_EnterReturnsTrue);
+		const bool isInputTextActive = ImGui::IsItemActive();
+		const bool isInputTextActivated = ImGui::IsItemActivated();
+
+		if (isInputTextActivated)
+		{
+			ImGui::OpenPopup("##popup");
+		}
+
+		ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
+		ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
+
+		static TEntityRef<ZGlobalOutfitKit>* globalOutfitKit = nullptr;
+		static char currentCharacterSetIndex[3] { "0" };
+		static const char* currentcharSetCharacterType = "Actor";
+		static const char* currentcharSetCharacterType2 = "Actor";
+		static char currentOutfitVariationIndex[3] { "0" };
+
+		if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
+		{
+			for (auto it = contentKitManager->m_repositoryGlobalOutfitKits.begin(); it != contentKitManager->m_repositoryGlobalOutfitKits.end(); ++it)
+			{
+				TEntityRef<ZGlobalOutfitKit>* globalOutfitKit2 = &it->second;
+				const char* outfitName2 = globalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
+
+				if (!strstr(outfitName2, outfitName))
+				{
+					continue;
+				}
+
+				if (ImGui::Selectable(outfitName2))
+				{
+					ImGui::ClearActiveID();
+					strcpy_s(outfitName, outfitName2);
+
+					EquipOutfit(it->second, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), actor);
+
+					globalOutfitKit = globalOutfitKit2;
+				}
+			}
+
+			if (isInputTextEnterPressed || (!isInputTextActive && !ImGui::IsWindowFocused()))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		ImGui::Text("Character Set Index");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##CharacterSetIndex", currentCharacterSetIndex))
+		{
+			if (globalOutfitKit)
+			{
+				for (size_t i = 0; i < globalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i)
+				{
+					std::string characterSetIndex = std::to_string(i);
+					bool isSelected = currentCharacterSetIndex == characterSetIndex.c_str();
+
+					if (ImGui::Selectable(characterSetIndex.c_str(), isSelected))
+					{
+						strcpy_s(currentCharacterSetIndex, characterSetIndex.c_str());
+
+						if (globalOutfitKit)
+						{
+							EquipOutfit(*globalOutfitKit, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), actor);
+						}
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Text("CharSet Character Type");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##CharSetCharacterType", currentcharSetCharacterType))
+		{
+			if (globalOutfitKit)
+			{
+				for (size_t i = 0; i < 3; ++i)
+				{
+					bool isSelected = currentcharSetCharacterType == charSetCharacterTypes[i];
+
+					if (ImGui::Selectable(charSetCharacterTypes[i], isSelected))
+					{
+						currentcharSetCharacterType = charSetCharacterTypes[i];
+
+						if (globalOutfitKit)
+						{
+							EquipOutfit(*globalOutfitKit, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), actor);
+						}
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		ImGui::Text("Outfit Variation");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##OutfitVariation", currentOutfitVariationIndex))
+		{
+			if (globalOutfitKit)
+			{
+				unsigned int currentCharacterSetIndex2 = std::stoi(currentCharacterSetIndex);
+				size_t variationCount = globalOutfitKit->m_pInterfaceRef->m_aCharSets[currentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->m_aVariations.size();
+
+				for (size_t i = 0; i < variationCount; ++i)
+				{
+					std::string outfitVariationIndex = std::to_string(i);
+					bool isSelected = currentOutfitVariationIndex == outfitVariationIndex.c_str();
+
+					if (ImGui::Selectable(outfitVariationIndex.c_str(), isSelected))
+					{
+						strcpy_s(currentOutfitVariationIndex, outfitVariationIndex.c_str());
+
+						if (globalOutfitKit)
+						{
+							EquipOutfit(*globalOutfitKit, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), actor);
+						}
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		static bool weaponsAllowed = false;
+		static bool authorityFigure = false;
+
+		if (globalOutfitKit)
+		{
+			ImGui::Checkbox("Weapons Allowed", &globalOutfitKit->m_pInterfaceRef->m_bWeaponsAllowed);
+			ImGui::Checkbox("Authority Figure", &globalOutfitKit->m_pInterfaceRef->m_bAuthorityFigure);
+		}
+
+		ImGui::Separator();
+
+		static char npcName2[256] { "" };
+
+		ImGui::Text("NPC Name");
+		ImGui::SameLine();
+
+		ImGui::InputText("##NPCName", npcName2, sizeof(npcName2));
+		ImGui::SameLine();
+
+		if (ImGui::Button("Get NPC Outfit"))
+		{
+			ZActor* actor2 = Globals::ActorManager->GetActorByName(npcName2);
+
+			if (actor2)
+			{
+				EquipOutfit(actor2->m_rOutfit, actor2->m_nOutfitCharset, currentcharSetCharacterType2, actor2->m_nOutfitVariation, actor);
+			}
+		}
+
+		if (ImGui::Button("Get Nearest NPC's Outfit"))
+		{
+			ZEntityRef s_Ref;
+
+			actor->GetID(&s_Ref);
+
+			ZSpatialEntity* actorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+
+			for (int i = 0; i < *Globals::NextActorId; ++i)
+			{
+				ZActor* actor2 = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+				ZEntityRef s_Ref;
+
+				actor2->GetID(&s_Ref);
+
+				ZSpatialEntity* actorSpatialEntity2 = s_Ref.QueryInterface<ZSpatialEntity>();
+
+				SVector3 temp = actorSpatialEntity->m_mTransform.Trans - actorSpatialEntity2->m_mTransform.Trans;
+				float distance = sqrt(temp.x * temp.x + temp.y * temp.y + temp.z * temp.z);
+
+				if (distance <= 3.0f)
+				{
+					EquipOutfit(actor2->m_rOutfit, actor2->m_nOutfitCharset, currentcharSetCharacterType2, actor2->m_nOutfitVariation, actor);
+
+					break;
+				}
+			}
+		}
+
+		ImGui::Text("CharSet Character Type");
+		ImGui::SameLine();
+
+		if (ImGui::BeginCombo("##CharSetCharacterType", currentcharSetCharacterType2))
+		{
+			if (globalOutfitKit)
+			{
+				for (size_t i = 0; i < 3; ++i)
+				{
+					bool isSelected = currentcharSetCharacterType2 == charSetCharacterTypes[i];
+
+					if (ImGui::Selectable(charSetCharacterTypes[i], isSelected))
+					{
+						currentcharSetCharacterType2 = charSetCharacterTypes[i];
+					}
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		if (ImGui::Button("Teleport NPC To Player"))
+		{
+			TEntityRef<ZHitman5> localHitman;
+
+			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &localHitman);
+
+			ZEntityRef s_Ref;
+
+			actor->GetID(&s_Ref);
+
+			ZSpatialEntity* hitmanSpatialEntity = localHitman.m_ref.QueryInterface<ZSpatialEntity>();
+			ZSpatialEntity* actorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+
+			actorSpatialEntity->SetWorldMatrix(hitmanSpatialEntity->GetWorldMatrix());
+		}
+
+		ImGui::EndChild();
+		ImGui::EndGroup();
+	}
+
+	ImGui::PopFont();
+	ImGui::End();
+	ImGui::PopFont();
+}
+
+void DebugMod::DrawSceneBox(bool p_HasFocus)
+{
+	if (!p_HasFocus || !m_SceneMenuActive)
+	{
+		return;
+	}
+
+	ImGui::PushFont(SDK()->GetImGuiBlackFont());
+	const auto s_Showing = ImGui::Begin("SCENE", &m_SceneMenuActive);
+	ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+	if (s_Showing)
+	{
+		static size_t selected = 0;
+		ZEntitySceneContext* entitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
+		std::string entityTemplate = runtimeResourceIDsToResourceIDs[entitySceneContext->m_SceneConfig.m_ridSceneFactory.GetID()];
+		std::string entityBlueprint = std::format("{}.pc_entityblueprint", entityTemplate.substr(0, entityTemplate.find_last_of(".")));
+
+		ImGui::Text("Scene name: %s", entitySceneContext->m_sceneData.m_sceneName.c_str());
+		ImGui::Text("Type: %s", entitySceneContext->m_sceneData.m_type.c_str());
+		ImGui::Text("Code Name Hint: %s", entitySceneContext->m_sceneData.m_codeNameHint.c_str());
+		ImGui::Text("Entity Template: %s", entityTemplate);
+		ImGui::Text("Entity Blueprint: %s", entityBlueprint);
+
+		ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+		for (int i = 0; i < entitySceneContext->m_aLoadedBricks.size(); ++i)
+		{
+			ZRuntimeResourceID runtimeResourceID = entitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
+			std::string resourceID = runtimeResourceIDsToResourceIDs[runtimeResourceID.GetID()];
+
+			if (ImGui::Selectable(resourceID.c_str(), selected == i))
+			{
+				selected = i;
+			}
+		}
+
+		ImGui::EndChild();
+		ImGui::SameLine();
+
+		ImGui::BeginGroup();
+		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
+
+		ImGui::Text("TEXT");
+
+		ImGui::EndChild();
+		ImGui::EndGroup();
+	}
+
+	ImGui::PopFont();
+	ImGui::End();
+	ImGui::PopFont();
+}
+
+void DebugMod::EquipOutfit(TEntityRef<ZGlobalOutfitKit>& globalOutfitKit, unsigned int currentCharacterSetIndex, const char* currentcharSetCharacterType, unsigned int currentOutfitVariationIndex, ZHitman5* localHitman)
+{
+	std::vector<ZRuntimeResourceID> heroOutfitVariations;
+
+	if (strcmp(currentcharSetCharacterType, "HeroA") != 0)
+	{
+		ZOutfitVariationCollection* outfitVariationCollection = globalOutfitKit.m_pInterfaceRef->m_aCharSets[currentCharacterSetIndex].m_pInterfaceRef;
+		TEntityRef<ZCharsetCharacterType>* charsetCharacterType = nullptr;
+		TEntityRef<ZCharsetCharacterType>* charsetCharacterType2 = &outfitVariationCollection->m_aCharacters[2];
+
+		if (strcmp(currentcharSetCharacterType, "Actor") == 0)
+		{
+			charsetCharacterType = &outfitVariationCollection->m_aCharacters[0];
+		}
+		else if (strcmp(currentcharSetCharacterType, "Nude") == 0)
+		{
+			charsetCharacterType = &outfitVariationCollection->m_aCharacters[1];
+		}
+
+		for (size_t i = 0; i < charsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i)
+		{
+			heroOutfitVariations.push_back(charsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit);
+		}
+
+		if (charsetCharacterType)
+		{
+			for (size_t i = 0; i < charsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i)
+			{
+				charsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit = charsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit;
+			}
+		}
+	}
+
+	Functions::ZHitman5_SetOutfit->Call(localHitman, globalOutfitKit, currentCharacterSetIndex, currentOutfitVariationIndex, false, false);
+
+	if (strcmp(currentcharSetCharacterType, "HeroA") != 0)
+	{
+		ZOutfitVariationCollection* outfitVariationCollection = globalOutfitKit.m_pInterfaceRef->m_aCharSets[currentCharacterSetIndex].m_pInterfaceRef;
+		TEntityRef<ZCharsetCharacterType>* charsetCharacterType = &outfitVariationCollection->m_aCharacters[2];
+
+		for (size_t i = 0; i < heroOutfitVariations.size(); ++i)
+		{
+			charsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit = heroOutfitVariations[i];
+		}
+	}
+}
+
+void DebugMod::EquipOutfit(TEntityRef<ZGlobalOutfitKit>& globalOutfitKit, unsigned int currentCharacterSetIndex, const char* currentcharSetCharacterType, unsigned int currentOutfitVariationIndex, ZActor* actor)
+{
+	std::vector<ZRuntimeResourceID> actorOutfitVariations;
+
+	if (strcmp(currentcharSetCharacterType, "Actor") != 0)
+	{
+		ZOutfitVariationCollection* outfitVariationCollection = globalOutfitKit.m_pInterfaceRef->m_aCharSets[currentCharacterSetIndex].m_pInterfaceRef;
+
+		TEntityRef<ZCharsetCharacterType>* charsetCharacterType = nullptr;
+		TEntityRef<ZCharsetCharacterType>* charsetCharacterType2 = &outfitVariationCollection->m_aCharacters[0];
+
+		if (strcmp(currentcharSetCharacterType, "Nude") == 0)
+		{
+			charsetCharacterType = &outfitVariationCollection->m_aCharacters[1];
+		}
+		else if (strcmp(currentcharSetCharacterType, "HeroA") == 0)
+		{
+			charsetCharacterType = &outfitVariationCollection->m_aCharacters[2];
+		}
+
+		for (size_t i = 0; i < charsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i)
+		{
+			actorOutfitVariations.push_back(charsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit);
+		}
+
+		if (charsetCharacterType)
+		{
+			for (size_t i = 0; i < charsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i)
+			{
+				charsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit = charsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit;
+			}
+		}
+	}
+
+	Functions::ZActor_SetOutfit->Call(actor, globalOutfitKit, currentCharacterSetIndex, currentOutfitVariationIndex, false);
+
+	if (strcmp(currentcharSetCharacterType, "Actor") != 0)
+	{
+		ZOutfitVariationCollection* outfitVariationCollection = globalOutfitKit.m_pInterfaceRef->m_aCharSets[currentCharacterSetIndex].m_pInterfaceRef;
+		TEntityRef<ZCharsetCharacterType>* charsetCharacterType = &outfitVariationCollection->m_aCharacters[0];
+
+		for (size_t i = 0; i < actorOutfitVariations.size(); ++i)
+		{
+			charsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit = actorOutfitVariations[i];
+		}
+	}
+}
+
+void DebugMod::SpawnRepositoryProp(const ZRepositoryID& repositoryID, bool addToWorld)
+{
+	TEntityRef<ZHitman5> localHitman;
+
+	Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &localHitman);
+
+	if (addToWorld)
+	{
+		auto scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+		if (!scene)
+		{
+			Logger::Debug("Scene not loaded.");
+		}
+		else
+		{
+			const auto s_ID = ResId<"[modules:/zitemspawner.class].pc_entitytype">;
+			const auto s_ID2 = ResId<"[modules:/zitemrepositorykeyentity.class].pc_entitytype">;
+
+			TResourcePtr<ZTemplateEntityFactory> s_Resource, s_Resource2;
+
+			Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
+			Globals::ResourceManager->GetResourcePtr(s_Resource2, s_ID2, 0);
+
+			Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex, fmt::ptr(s_Resource.GetResource()));
+
+			if (!s_Resource)
+			{
+				Logger::Debug("Resource is not loaded.");
+			}
+			else
+			{
+				ZEntityRef newEntity, newEntity2;
+
+				Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, newEntity, "", s_Resource, scene.m_ref, nullptr, -1);
+				Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, newEntity2, "", s_Resource2, scene.m_ref, nullptr, -1);
+
+				if (!newEntity)
+				{
+					Logger::Debug("Failed to spawn entity.");
+				}
+
+				if (!newEntity2)
+				{
+					Logger::Debug("Failed to spawn entity2.");
+				}
+
+				const auto hitmanSpatialEntity = localHitman.m_ref.QueryInterface<ZSpatialEntity>();
+				ZItemSpawner* itemSpawner = newEntity.QueryInterface<ZItemSpawner>();
+
+				itemSpawner->m_ePhysicsMode = ZItemSpawner::EPhysicsMode::EPM_KINEMATIC;
+				itemSpawner->m_rMainItemKey.m_ref = newEntity2;
+				itemSpawner->m_rMainItemKey.m_pInterfaceRef = newEntity2.QueryInterface<ZItemRepositoryKeyEntity>();
+				itemSpawner->m_rMainItemKey.m_pInterfaceRef->m_RepositoryId = repositoryID;
+				itemSpawner->m_bUsePlacementAttach = false;
+				itemSpawner->SetWorldMatrix(hitmanSpatialEntity->GetWorldMatrix());
+
+				Functions::ZItemSpawner_RequestContentLoad->Call(itemSpawner);
+			}
+		}
+	}
+	else
+	{
+		TArray<TEntityRef<ZCharacterSubcontroller>>* controllers = &localHitman.m_pInterfaceRef->m_pCharacter.m_pInterfaceRef->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
+		ZCharacterSubcontrollerInventory* inventory = static_cast<ZCharacterSubcontrollerInventory*>(controllers->operator[](6).m_pInterfaceRef);
+		TArray<ZRepositoryID> aModifierIds;
+
+		unsigned long long result = Functions::ZCharacterSubcontrollerInventory_AddDynamicItemToInventory->Call(inventory, repositoryID, "", &aModifierIds, 2);
+	}
+}
+
+void DebugMod::SpawnNonRepositoryProp(const char* propAssemblyPath)
+{
+	auto scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+	if (!scene)
+	{
+		Logger::Debug("Scene not loaded.");
+	}
+	else
+	{
+		Hash::MD5Hash hash = Hash::MD5(std::string_view(propAssemblyPath, strlen(propAssemblyPath)));
+
+		uint32_t idHigh = ((hash.A >> 24) & 0x000000FF)
+			| ((hash.A >> 8) & 0x0000FF00)
+			| ((hash.A << 8) & 0x00FF0000);
+
+		uint32_t idLow = ((hash.B >> 24) & 0x000000FF)
+			| ((hash.B >> 8) & 0x0000FF00)
+			| ((hash.B << 8) & 0x00FF0000)
+			| ((hash.B << 24) & 0xFF000000);
+
+		ZRuntimeResourceID runtimeResourceID = ZRuntimeResourceID(idHigh, idLow);
+		TResourcePtr<ZTemplateEntityFactory> resource;
+
+		Globals::ResourceManager->GetResourcePtr(resource, runtimeResourceID, 0);
+
+		if (!resource)
+		{
+			Logger::Debug("Resource is not loaded.");
+		}
+		else
+		{
+			ZEntityRef newEntity;
+
+			Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, newEntity, "", resource, scene.m_ref, nullptr, -1);
+
+			if (!newEntity)
+			{
+				Logger::Debug("Failed to spawn entity.");
+			}
+			else
+			{
+				newEntity.SetProperty("m_eRoomBehaviour", ZSpatialEntity::ERoomBehaviour::ROOM_DYNAMIC);
+			}
+
+			TEntityRef<ZHitman5> localHitman;
+
+			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &localHitman);
+
+			const auto hitmanSpatialEntity = localHitman.m_ref.QueryInterface<ZSpatialEntity>();
+			const auto propSpatialEntity = newEntity.QueryInterface<ZSpatialEntity>();
+
+			propSpatialEntity->SetWorldMatrix(hitmanSpatialEntity->GetWorldMatrix());
+
+			/*ZSetpieceEntity* setPieceEntity = newEntity.QueryInterface<ZSetpieceEntity>();
+
+			if (setPieceEntity)
+			{
+				setPieceEntity->Activate(0);
+			}
+			else
+			{
+				newEntity.GetBaseEntity()->Activate(0);
+			}*/
+		}
+	}
+}
+
+void DebugMod::SpawnNPC(const char* npcName, const ZRepositoryID& repositoryID, TEntityRef<ZGlobalOutfitKit>* globalOutfitKit, const char* currentCharacterSetIndex, const char* currentcharSetCharacterType, const char* currentOutfitVariationIndex)
+{
+	auto scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+	if (!scene)
+	{
+		Logger::Debug("Scene not loaded.");
+	}
+	else
+	{
+		const auto runtimeResourceID = ResId<"[assembly:/templates/gameplay/ai2/actors.template?/npcactor.entitytemplate].pc_entitytype">;
+		TResourcePtr<ZTemplateEntityFactory> resource;
+
+		Globals::ResourceManager->GetResourcePtr(resource, runtimeResourceID, 0);
+
+		if (!resource)
+		{
+			Logger::Debug("Resource is not loaded.");
+		}
+		else
+		{
+			ZEntityRef newEntity;
+
+			Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, newEntity, "", resource, scene.m_ref, nullptr, -1);
+
+			if (newEntity)
+			{
+				TEntityRef<ZHitman5> localHitman;
+
+				Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &localHitman);
+
+				ZActor* actor = newEntity.QueryInterface<ZActor>();
+
+				actor->m_sActorName = npcName;
+				actor->m_bStartEnabled = true;
+				actor->m_nOutfitCharset = std::stoi(currentCharacterSetIndex);
+				actor->m_nOutfitVariation = std::stoi(currentOutfitVariationIndex);
+				actor->m_OutfitRepositoryID = repositoryID;
+				actor->m_eRequiredVoiceVariation = EActorVoiceVariation::eAVV_Undefined;
+
+				actor->Activate(0);
+
+				ZSpatialEntity* actorSpatialEntity = newEntity.QueryInterface<ZSpatialEntity>();
+				ZSpatialEntity* hitmanSpatialEntity = localHitman.m_ref.QueryInterface<ZSpatialEntity>();
+
+				actorSpatialEntity->SetWorldMatrix(hitmanSpatialEntity->GetWorldMatrix());
+
+				if (globalOutfitKit)
+				{
+					EquipOutfit(*globalOutfitKit, std::stoi(currentCharacterSetIndex), currentcharSetCharacterType, std::stoi(currentOutfitVariationIndex), actor);
+				}
+			}
+		}
+	}
+}
+
+void DebugMod::LoadRepositoryProps()
+{
+	THashMap<ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>* repositoryData = nullptr;
+
+	if (repositoryResource.m_nResourceIndex == -1)
+	{
+		const auto s_ID = ResId<"[assembly:/repository/pro.repo].pc_repo">;
+
+		Globals::ResourceManager->GetResourcePtr(repositoryResource, s_ID, 0);
+	}
+
+	if (repositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID)
+	{
+		repositoryData = static_cast<THashMap<ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(repositoryResource.GetResourceData());
+
+		for (auto it = repositoryData->begin(); it != repositoryData->end(); ++it)
+		{
+			ZDynamicObject* dynamicObject = &it->second;
+			TArray<SDynamicObjectKeyValuePair>* entries = dynamicObject->As<TArray<SDynamicObjectKeyValuePair>>();
+			std::string id;
+
+			for (size_t i = 0; i < entries->size(); ++i)
+			{
+				std::string key = entries->operator[](i).sKey.c_str();
+
+				if (key == "ID_")
+				{
+					id = ConvertDynamicObjectValueTString(&entries->operator[](i).value);
+				}
+
+				if (key == "Title")
+				{
+					std::string title = ConvertDynamicObjectValueTString(&entries->operator[](i).value);
+
+					repositoryProps.insert(std::make_pair(title, ZRepositoryID(id.c_str())));
+
+					break;
+				}
+			}
+		}
+	}
+}
+
+void DebugMod::LoadHashMap()
+{
+	if (!std::filesystem::exists("hash_list.txt"))
+	{
+		DownloadHashMap();
+
+		LZMA::Extract();
+	}
+
+	std::ifstream inputFile = std::ifstream("hash_list.txt", std::ios::binary | std::ios::ate);
+	uint64_t fileSize = (uint64_t)inputFile.tellg();
+
+	inputFile.seekg(0, inputFile.beg);
+
+	std::vector<char> data(fileSize, 0);
+
+	inputFile.read(data.data(), fileSize);
+
+	uint64_t position = 0;
+	uint64_t lastPosition = 0;
+	uint64_t lineCount = 0;
+
+	mutex.lock();
+
+	while (position < data.size())
+	{
+		if (data[position] == 0x0A)
+		{
+			lineCount++;
+
+			data[position] = 0x0;
+
+			if (lineCount > 3)
+			{
+				std::string_view stringView = std::string_view(reinterpret_cast<char*>(&data[lastPosition]));
+				size_t index = stringView.find_first_of(',');
+
+				std::string hash = std::string(stringView.substr(0, (index - 5)));
+				std::string resourceID = std::string(stringView.substr(index + 1, stringView.length() - (index + 1)));
+
+				runtimeResourceIDsToResourceIDs[std::stoull(hash, nullptr, 16)] = resourceID;
+
+			}
+
+			lastPosition = position + 1;
+		}
+
+		position++;
+	}
+
+	mutex.unlock();
+}
+
+void DebugMod::DownloadHashMap()
+{
+	std::string folderPath = std::format("{}\\latest-hashes.7z", std::filesystem::current_path().string());
+
+	HRESULT result = URLDownloadToFileA(nullptr, "https://hitmandb.glaciermodding.org/latest-hashes.7z", folderPath.c_str(), 0, nullptr);
+}
+
+std::string DebugMod::GetEntityName(unsigned long long tempBrickHash, unsigned long long entityID, unsigned long long& resourceHash)
+{
+	std::string entityName = "";
+	TResourcePtr<ZTemplateEntityFactory> tempBrickResource;
+
+	Globals::ResourceManager->GetResourcePtr(tempBrickResource, ZRuntimeResourceID(tempBrickHash), 0);
+
+	ZResourceContainer::SResourceInfo tempBrickResourceInfo = (*Globals::ResourceContainer)->m_resources[tempBrickResource.m_nResourceIndex];
+	ZTemplateEntityFactory* resource = tempBrickResource.GetResource();
+
+	if (!resource)
+	{
+		return entityName;
+	}
+
+	ZResourceContainer::SResourceInfo tbluBrickResourceInfo = (*Globals::ResourceContainer)->m_resources[resource->m_blueprintResource.m_nResourceIndex];
+
+	unsigned int entityIndex = -1;
+	static unsigned long long dataSectionOffset = 0x10;
+	std::vector<char> tempBrickResourceData;
+	std::vector<char> tbluBrickResourceData;
+
+	TArray<ZString>* mountedPackages = &(*Globals::ResourceContainer)->m_MountedPackages;
+	std::string rpkgFilePath = (*mountedPackages)[mountedPackages->size() - 1].c_str();
+
+	LoadResourceData(tempBrickHash, tempBrickResourceData, rpkgFilePath);
+	LoadResourceData(tbluBrickResourceInfo.rid.GetID(), tbluBrickResourceData, rpkgFilePath);
+
+	ZBinaryReader binaryReader = ZBinaryReader(&tbluBrickResourceData);
+
+	binaryReader.Seek(dataSectionOffset + 0x8);
+
+	unsigned long long subEntitiesStartOffset = binaryReader.Read<unsigned long long>();
+	unsigned long long subEntitiesEndOffset = binaryReader.Read<unsigned long long>();
+	unsigned int subEntityCount = static_cast<unsigned int>((subEntitiesEndOffset - subEntitiesStartOffset) / 0xA8); //0xA8 is size of STemplateBlueprintSubEntity
+
+	for (unsigned int i = 0; i < subEntityCount; ++i)
+	{
+		binaryReader.Seek(dataSectionOffset + subEntitiesStartOffset + i * 0xA8 + 0x28);
+
+		unsigned long long entityID2 = binaryReader.Read<unsigned long long>();
+
+		if (entityID == entityID2)
+		{
+			binaryReader.Skip(0x10);
+
+			unsigned long long entityNameOffset = binaryReader.Read<unsigned long long>();
+
+			binaryReader.Seek(entityNameOffset + dataSectionOffset - 4);
+
+			int stringLength = binaryReader.Read<unsigned int>();
+			entityName = binaryReader.ReadString(stringLength - 1);
+			entityIndex = i;
+
+			break;
+		}
+	}
+
+	if (entityIndex != -1)
+	{
+		ZBinaryReader binaryReader2 = ZBinaryReader(&tempBrickResourceData);
+
+		binaryReader2.Seek(dataSectionOffset + 0x10);
+
+		unsigned long long subEntitiesStartOffset2 = binaryReader2.Read<unsigned long long>();
+		unsigned long long subEntityOffset = dataSectionOffset + subEntitiesStartOffset2 + entityIndex * 0x70; //0x70 is size of STemplateFactorySubEntity
+
+		binaryReader2.Seek(subEntityOffset + 0x20);
+
+		int entityTypeResourceIndex = binaryReader2.Read<unsigned int>();
+
+		TArray<ZResourceIndex> referenceIndices;
+		TArray<unsigned char> referenceFlags;
+
+		Functions::ZResourceContainer_GetResourceReferences->Call(*Globals::ResourceContainer, ZResourceIndex(tempBrickResource.m_nResourceIndex), referenceIndices, referenceFlags);
+
+		ZResourceContainer::SResourceInfo referenceInfo = (*Globals::ResourceContainer)->m_resources[referenceIndices[entityTypeResourceIndex].val];
+
+		resourceHash = referenceInfo.rid.GetID();
+	}
+
+	return entityName;
+}
+
+
+std::string DebugMod::FindNPCEntityNameInBrickBackReferences(unsigned long long tempBrickHash, unsigned long long entityID, unsigned long long& resourceHash)
+{
+	std::string entityName;
+	ZResourceContainer* resourceContainer = *Globals::ResourceContainer;
+
+	for (unsigned int i = 0; i < resourceContainer->m_resourcesSize; ++i)
+	{
+		ZResourceContainer::SResourceInfo* resourceInfo = &resourceContainer->m_resources[i];
+		unsigned long long resourceHash2 = resourceInfo->rid.GetID();
+
+		if (resourceInfo->resourceType == 'TEMP' &&
+			resourceInfo->numReferences > 0 &&
+			runtimeResourceIDsToResourceIDs.contains(resourceHash2) &&
+			runtimeResourceIDsToResourceIDs[resourceHash2].ends_with(".brick].pc_entitytype") &&
+			runtimeResourceIDsToResourceIDs[resourceHash2].contains("/npc_"))
+		{
+			ZResourceIndex resourceIndex = resourceContainer->m_indices.find(resourceInfo->rid)->second;
+			TArray<ZResourceIndex> referenceIndices;
+			TArray<unsigned char> referenceFlags;
+
+			Functions::ZResourceContainer_GetResourceReferences->Call(resourceContainer, ZResourceIndex(resourceIndex), referenceIndices, referenceFlags);
+
+			for (size_t j = 0; j < referenceIndices.size(); ++j)
+			{
+				size_t referenceIndex = referenceIndices[j].val;
+
+				if (referenceIndex == -1)
+				{
+					continue;
+				}
+
+				ZResourceContainer::SResourceInfo referenceInfo = resourceContainer->m_resources[referenceIndex];
+				unsigned long long referenceHash = referenceInfo.rid.GetID();
+
+				if (referenceHash == tempBrickHash)
+				{
+					entityName = GetEntityName(resourceHash2, entityID, resourceHash);
+
+					if (!entityName.empty())
+					{
+						break;
+					}
+				}
+			}
+		}
+
+		if (!entityName.empty())
+		{
+			break;
+		}
+	}
+
+	return entityName;
+}
+
+std::string DebugMod::ConvertDynamicObjectValueTString(ZDynamicObject* dynamicObject)
+{
+	std::string result;
+	IType* type = dynamicObject->m_pTypeID->typeInfo();
+
+	if (strcmp(type->m_pTypeName, "ZString") == 0)
+	{
+		ZString* value = dynamicObject->As<ZString>();
+
+		result = value->c_str();
+	}
+	else if (strcmp(type->m_pTypeName, "bool") == 0)
+	{
+		bool value = *dynamicObject->As<bool>();
+
+		if (value)
+		{
+			result = "true";
+		}
+		else
+		{
+			result = "false";
+		}
+	}
+	else if (strcmp(type->m_pTypeName, "float64") == 0)
+	{
+		double value = *dynamicObject->As<double>();
+
+		result = std::to_string(value).c_str();
+	}
+	else
+	{
+		Logger::Debug(type->m_pTypeName);
+	}
+
+	return result;
+}
+
+void DebugMod::LoadResourceData(unsigned long long hash, std::vector<char>& resourceData)
+{
+	static std::string rpkgFilePath = GetPatchRPKGFilePath();
+
+	LoadResourceData(hash, resourceData, rpkgFilePath);
+}
+
+void DebugMod::LoadResourceData(unsigned long long hash, std::vector<char>& resourceData, const std::string& rpkgFilePath)
+{
+	ZBinaryReader binaryReader = ZBinaryReader(rpkgFilePath);
+
+	binaryReader.Seek(0xD);
+
+	unsigned int resourceCount = binaryReader.Read<unsigned int>();
+	unsigned int resourceHeadersChunkSize = binaryReader.Read<unsigned int>();
+	unsigned int resourcesChunkSize = binaryReader.Read<unsigned int>();
+	unsigned int patchDeletionEntryCount = binaryReader.Read<unsigned int>();
+	bool isPatchFile = false;
+
+	if (patchDeletionEntryCount * 8 + 0x2D >= binaryReader.GetSize())
+	{
+		isPatchFile = false;
+	}
+	else
+	{
+		binaryReader.Seek(patchDeletionEntryCount * 8 + 0x24);
+
+		unsigned char testZeroValue = binaryReader.Read<unsigned char>();
+		unsigned long long testHeaderOffset = binaryReader.Read<unsigned long long>();
+
+		if (testHeaderOffset == (resourceHeadersChunkSize + resourcesChunkSize + patchDeletionEntryCount * 8 + 0x1D) && testZeroValue == 0)
+		{
+			isPatchFile = true;
+		}
+	}
+
+	if (isPatchFile)
+	{
+		binaryReader.Seek(0x1D);
+		binaryReader.Skip(8 * patchDeletionEntryCount);
+	}
+	else
+	{
+		binaryReader.Seek(0x19);
+	}
+
+	unsigned int i = 0;
+
+	while (i < resourceCount)
+	{
+		unsigned long long hash2 = binaryReader.Read<unsigned long long>();
+
+		if (hash2 == hash)
+		{
+			unsigned long long resourceDataOffset = binaryReader.Read<unsigned long long>();
+			unsigned int dataSize = binaryReader.Read<unsigned int>();
+
+			bool isResourceEncrypted = (dataSize & 0x80000000) == 0x80000000;
+			bool isResourceCompressed = (dataSize & 0x3FFFFFFF) != 0;
+
+			binaryReader.Seek(resourceDataOffset);
+
+			TResourcePtr<ZTemplateEntityFactory> resource;
+
+			Globals::ResourceManager->GetResourcePtr(resource, ZRuntimeResourceID(hash), 0);
+
+			ZResourceContainer::SResourceInfo resourceInfo = (*Globals::ResourceContainer)->m_resources[resource.m_nResourceIndex];
+
+			if (isResourceEncrypted)
+			{
+				dataSize &= 0x3FFFFFFF;
+			}
+			else
+			{
+				dataSize = resourceInfo.finalDataSize;
+			}
+
+			std::vector<char> inputResourceData;
+
+			inputResourceData.reserve(dataSize);
+			binaryReader.ReadBytes(inputResourceData.data(), dataSize);
+
+			if (isResourceEncrypted)
+			{
+				Crypto::XORData(inputResourceData.data(), dataSize);
+			}
+
+			std::vector<char> outputResourceData = std::vector<char>(resourceInfo.finalDataSize, 0);
+
+			if (isResourceCompressed)
+			{
+				LZ4_decompress_safe(inputResourceData.data(), outputResourceData.data(), dataSize, resourceInfo.finalDataSize);
+
+				resourceData = outputResourceData;
+			}
+			else
+			{
+				resourceData = inputResourceData;
+			}
+
+			break;
+		}
+
+		size_t currentPositon = binaryReader.GetPosition();
+
+		binaryReader.Seek(currentPositon + 12);
+
+		i++;
+	}
+}
+
+std::string DebugMod::GetPatchRPKGFilePath()
+{
+	std::string rpkgFilePath;
+
+	for (const auto& entry : std::filesystem::directory_iterator("../Runtime"))
+	{
+		if (entry.path().string().starts_with("../Runtime\\chunk0"))
+		{
+			rpkgFilePath = entry.path().string();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return rpkgFilePath;
+}
+
+unsigned long long DebugMod::GetDDSTextureHash(const std::string image)
+{
+	static std::unordered_map<std::string, unsigned long long> oresEntries;
+
+	if (oresEntries.empty())
+	{
+		const auto s_ID = ResId<"[assembly:/_pro/online/default/offlineconfig/config.blobs].pc_blobs">;
+		TResourcePtr<ZTemplateEntityFactory> resource;
+
+		Globals::ResourceManager->GetResourcePtr(resource, s_ID, 0);
+
+		ZResourceContainer::SResourceInfo resourceInfo = (*Globals::ResourceContainer)->m_resources[resource.m_nResourceIndex];
+
+		unsigned long long oresHash = resourceInfo.rid.GetID();
+		std::vector<char> oresResourceData;
+
+		LoadResourceData(oresHash, oresResourceData);
+
+		ZBinaryReader binaryReader = ZBinaryReader(&oresResourceData);
+
+		binaryReader.Seek(0x10);
+		binaryReader.Seek(binaryReader.Read<unsigned int>() + 0xC);
+
+		unsigned resourceCount = binaryReader.Read<unsigned int>();
+
+		for (unsigned int i = 0; i < resourceCount; ++i)
+		{
+			unsigned int stringLength = binaryReader.Read<unsigned int>();
+
+			binaryReader.Seek(0x4, ZBinaryReader::ESeekOrigin::current);
+
+			unsigned long long stringOffset = binaryReader.Read<unsigned long long>();
+			ZRuntimeResourceID runtimeResourceID = binaryReader.Read<ZRuntimeResourceID>();
+
+			size_t currentPosition = binaryReader.GetPosition();
+
+			binaryReader.Seek(stringOffset + 0x10 - 0x4);
+
+			unsigned int stringLength2 = binaryReader.Read<unsigned int>();
+			std::string image2 = binaryReader.ReadString(stringLength2 - 1);
+
+			binaryReader.Seek(currentPosition);
+
+			oresEntries[image2.c_str()] = runtimeResourceID.GetID();
+		}
+	}
+
+	return oresEntries[image];
+}
+
+void DebugMod::EnableInfiniteAmmo()
+{
+	auto scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+	if (!scene)
+	{
+		Logger::Debug("Scene not loaded.");
+	}
+	else
+	{
+		const auto runtimeResourceID = ResId<"[modules:/zhm5cripplebox.class].pc_entitytype">;
+
+		TResourcePtr<ZTemplateEntityFactory> resource;
+
+		Globals::ResourceManager->GetResourcePtr(resource, runtimeResourceID, 0);
+
+		if (!resource)
+		{
+			Logger::Debug("Resource is not loaded.");
+		}
+		else
+		{
+			ZEntityRef s_NewEntity;
+
+			Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, s_NewEntity, "", resource, scene.m_ref, nullptr, -1);
+
+			if (!s_NewEntity)
+			{
+				Logger::Debug("Failed to spawn entity.");
+			}
+
+			TEntityRef<ZHitman5> s_LocalHitman;
+
+			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+			ZHM5CrippleBox* hm5CrippleBox = s_NewEntity.QueryInterface<ZHM5CrippleBox>();
+
+			hm5CrippleBox->m_bActivateOnStart = true;
+			hm5CrippleBox->m_rHitmanCharacter = s_LocalHitman;
+			hm5CrippleBox->m_bLimitedAmmo = false;
+
+			hm5CrippleBox->Activate(0);
+		}
+	}
 }
 
 void DebugMod::CopyToClipboard(const std::string& p_String) const

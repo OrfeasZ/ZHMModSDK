@@ -8,6 +8,9 @@
 
 #include <imgui.h>
 #include <backends/imgui_impl_dx12.h>
+#include <DDSTextureLoader.h>
+#include <ResourceUploadBatch.h>
+#include <DirectXHelpers.h>
 
 #include "Hooks.h"
 #include "Logging.h"
@@ -314,6 +317,46 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 		s_Frame.FenceValue = s_SyncValue;
 }
 
+bool ImGuiRenderer::LoadTextureFromMemory(std::vector<char>& resourceData, D3D12_GPU_DESCRIPTOR_HANDLE* textureSrvGPUHandle, int& width, int& height)
+{
+	ScopedD3DRef<ID3D12Device> s_Device;
+
+	if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK)
+	{
+		return false;
+	}
+
+	// Get CPU/GPU handles for the shader resource view
+	// Normally your engine will have some sort of allocator for these - here we assume that there's an SRV descriptor heap in
+	// g_pd3dSrvDescHeap with at least two descriptors allocated, and descriptor 1 is unused
+	UINT handleIncrement = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	int descriptorIndex = 1; // The descriptor table index to use (not normally a hard-coded constant, but in this case we'll assume we have slot 1 reserved for us)
+	D3D12_CPU_DESCRIPTOR_HANDLE textureSrvCPUHandle = m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+	textureSrvCPUHandle.ptr += handleIncrement * descriptorIndex;
+	*textureSrvGPUHandle = m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+	textureSrvGPUHandle->ptr += handleIncrement * descriptorIndex;
+
+	DirectX::ResourceUploadBatch resourceUpload(s_Device);
+	ID3D12Resource* texture = nullptr;
+
+	resourceUpload.Begin();
+
+	DirectX::CreateDDSTextureFromMemory(s_Device, resourceUpload, reinterpret_cast<unsigned char*>(resourceData.data()), resourceData.size(), &texture);
+	DirectX::CreateShaderResourceView(s_Device, texture, textureSrvCPUHandle);
+
+	D3D12_RESOURCE_DESC textureDesc = texture->GetDesc();
+
+	width = static_cast<int>(textureDesc.Width);
+	height = static_cast<int>(textureDesc.Height);
+
+	auto uploadResourcesFinished = resourceUpload.End(Globals::RenderManager->m_pDevice->m_pCommandQueue);
+
+	uploadResourcesFinished.wait();
+
+	return true;
+}
+
 bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 {
 	if (m_RendererSetup)
@@ -352,7 +395,8 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC s_Desc = {};
 		s_Desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		s_Desc.NumDescriptors = 1;
+		//s_Desc.NumDescriptors = 1;
+		s_Desc.NumDescriptors = 2;
 		s_Desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		s_Desc.NodeMask = 0;
 

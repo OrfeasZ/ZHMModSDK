@@ -157,7 +157,9 @@ public:
 	bool m_bEnableOutfitModifiers; // 0x4BD
 	TEntityRef<ZAIVisionConfigurationEntity> m_AgentVisionConfiguration; // 0x4C0
 	TEntityRef<ZHTNDomainEntity> m_DomainConfig; // 0x4D0
-	PAD(0xBC8); // 0x4E0
+	PAD(0xB08); // 0x4E0
+	TEntityRef<ZGlobalOutfitKit> m_rOutfit; //0xFE8
+	PAD(0xB0); // 0xFF8
 	ZAnimatedActor* m_pAnimatedActor; // 0x10A8
 	PAD(0xA8);
 	bool m_bUnk0 : 1; // 0x1158

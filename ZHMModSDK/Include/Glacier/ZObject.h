@@ -179,3 +179,10 @@ class ZDynamicObject :
 	public ZObjectRef
 {
 };
+
+class SDynamicObjectKeyValuePair
+{
+public:
+	ZString sKey; // 0x0
+	ZDynamicObject value; // 0x10
+};

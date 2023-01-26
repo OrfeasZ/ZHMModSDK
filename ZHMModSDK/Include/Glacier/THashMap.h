@@ -4,6 +4,7 @@
 #include "ZString.h"
 #include "TPair.h"
 #include "TArray.h"
+#include "ZResourceID.h"
 
 template <class T>
 class THashMapNode
@@ -30,6 +31,24 @@ struct TDefaultHashMapPolicy<ZString>
 	uint64_t operator()(const ZString& p_Value) const
 	{
 		return Hash::Fnv1a64(p_Value.c_str(), p_Value.size());
+	}
+};
+
+template <>
+struct TDefaultHashMapPolicy<ZRepositoryID>
+{
+	uint64_t operator()(const ZRepositoryID& p_Value) const
+	{
+		return p_Value.GetHashCode();
+	}
+};
+
+template <>
+struct TDefaultHashMapPolicy<ZRuntimeResourceID>
+{
+	uint64_t operator()(const ZRuntimeResourceID& p_Value) const
+	{
+		return p_Value.GetHashCode();
 	}
 };
 

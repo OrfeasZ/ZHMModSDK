@@ -4,6 +4,7 @@
 #include "Reflection.h"
 #include "TArray.h"
 #include "ZEntity.h"
+#include "EntityFactory.h"
 
 class ZEntityScope;
 
@@ -26,6 +27,25 @@ public:
 	bool m_unk0x29; // 0x29
 	ZString m_type; // 0x30
 	ZString m_codeNameHint; // 0x40
+};
+
+class ZSceneConfiguration
+{
+public:
+	ZRuntimeResourceID m_ridSceneFactory; //0x0
+	TArray<ZRuntimeResourceID> m_aAdditionalBrickFactoryRIDs; //0x8
+	TResourcePtr<IEntityFactory> m_sceneFactoryResource; //0x20
+	TArray<TResourcePtr<IEntityFactory>> m_aAdditionalBrickFactories; //0x28
+	TResourcePtr<IEntityBlueprintFactory> m_sceneBlueprint; //0x40
+	TArray<TResourcePtr<IEntityBlueprintFactory>> m_aAdditionalBrickBlueprints; //0x48
+};
+
+class ZBrickData
+{
+public:
+	ZEntityRef entityRef;
+	ZRuntimeResourceID runtimeResourceID;
+	PAD(0x18);
 };
 
 class ZEntitySceneContext :
@@ -64,8 +84,9 @@ public:
 
 public:
 	PAD(0x08);
-	ZSceneData m_sceneData;
-	PAD(120); // 96
-	TEntityRef<ISceneEntity> m_pScene; // 216
-	ZEntityScope* m_pEntityScope; // 232
+	ZSceneData m_sceneData; //0x10
+	ZSceneConfiguration m_SceneConfig; //0x60
+	TArray<ZBrickData> m_aLoadedBricks; //0xC0
+	TEntityRef<ISceneEntity> m_pScene; //0xD8
+	ZEntityScope* m_pEntityScope; //0xE8
 };

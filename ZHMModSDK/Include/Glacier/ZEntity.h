@@ -83,8 +83,8 @@ public:
 	PAD(0x10);
 	TArray<ZPin>* m_pInputs;
 	TArray<ZPin>* m_pOutputs;
-	int64_t m_nOffsetToEntity;
-	int64_t m_nOffsetToBase;
+	int64_t m_nLogicalParentEntityOffset;
+	int64_t m_nOwningEntityOffset;
 	uint64_t m_nEntityId;
 };
 
@@ -93,6 +93,17 @@ class ZEntityImpl :
 	public IEntity
 {
 public:
+	enum class EEntityFlags
+	{
+		ENTITYFLAG_INITIALIZED = 1,
+		ENTITYFLAG_POSTINITIALIZED = 2,
+		ENTITYFLAG_ACTIVATED = 4,
+		ENTITYFLAG_PREDELETED = 8,
+		ENTITYFLAG_EDITMODE = 16,
+		ENTITYFLAG_READONLY_FLAG_SET = 32,
+		ENTITYFLAG_READONLY = 64
+	};
+
 	virtual ~ZEntityImpl() {}
 	virtual ZEntityRef* GetID(ZEntityRef* result) = 0;
 	virtual void Activate(int) = 0;
@@ -112,8 +123,8 @@ public:
 
 public:
 	ZEntityType* m_pType;
-	uint32_t m_unk0x10;
-	uint32_t m_unk0x14;
+	uint32_t m_nEntityPtrIndex;
+	uint32_t m_nEntityFlags;
 };
 
 class ZEntityRef

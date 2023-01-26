@@ -6,21 +6,53 @@
 
 class ZRuntimeResourceID;
 
-class ZResourceContainer : IComponentInterface
+class ZResourceIndex
 {
 public:
-	// sizeof = 64
+	ZResourceIndex(int val) : val(val)
+	{
+
+	}
+
+	int val;
+};
+
+enum EResourceStatus
+{
+	RESOURCE_STATUS_UNKNOWN = 0,
+	RESOURCE_STATUS_LOADING = 1,
+	RESOURCE_STATUS_INSTALLING = 2,
+	RESOURCE_STATUS_FAILED = 3,
+	RESOURCE_STATUS_VALID = 4,
+};
+
+class ZResourceContainer
+{
+public:
 	struct SResourceInfo
 	{
-		PAD(0x08);
-		void* resourceData; // 0x08
-		PAD(0x14); // 0x10
-		long refCount; // 0x24
-		PAD(0x18);
+		ZRuntimeResourceID rid;
+		void* resourceData;
+		unsigned long long dataOffset;
+		unsigned int finalDataSize;
+		unsigned int dataSize;
+		EResourceStatus status;
+		long refCount;
+		ZResourceIndex nextNewestIndex;
+		unsigned int firstReferenceIndex;
+		unsigned int numReferences;
+		unsigned int resourceType;
+		short priority;
+		int monitorId;
 	};
 
 public:
+	unsigned int m_resourcesSize;
+	unsigned int m_Unknown;
 	TArray<SResourceInfo> m_resources;
+	TArray<unsigned int> m_references;
+	THashMap<ZRuntimeResourceID, ZResourceIndex, TDefaultHashMapPolicy<ZRuntimeResourceID>> m_indices;
+	TArray<ZString> m_MountedPackages;
 };
 
 class ZResourcePtr
@@ -38,6 +70,13 @@ public:
 	}
 
 public:
+	ZResourceContainer::SResourceInfo& GetResourceInfo() const
+	{
+		auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex];
+
+		return s_ResourceInfo;
+	}
+
 	void* GetResourceData() const
 	{
 		if (m_nResourceIndex < 0)
@@ -55,10 +94,10 @@ public:
 	
 public:
 	int32_t m_nResourceIndex = -1;
-	PAD(0x04);
+	uint32_t m_Padding;
 };
 
-template<typename T>
+template <typename T>
 class TResourcePtr : public ZResourcePtr
 {
 public:

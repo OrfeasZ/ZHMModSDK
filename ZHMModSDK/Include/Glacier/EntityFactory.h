@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Reflection.h"
+#include "ZResource.h"
 
 class IEntityFactory : public IComponentInterface
 {

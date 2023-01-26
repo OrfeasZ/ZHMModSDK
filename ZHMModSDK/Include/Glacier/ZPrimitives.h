@@ -48,40 +48,96 @@ public:
 		FromString(p_Data, GuidFormat::Dashes);
 	}
 
+	bool operator<(const ZGuid& rhs) const
+	{
+		if (data1 != rhs.data1)
+		{
+			return data1 < rhs.data1;
+		}
+
+		if (data2 != rhs.data2)
+		{
+			return data2 < rhs.data2;
+		}
+
+		if (data3 != rhs.data3)
+		{
+			return data3 < rhs.data3;
+		}
+
+		for (unsigned int i = 0; i < sizeof(data4); ++i)
+		{
+			if (data4[i] != rhs.data4[i])
+			{
+				return data4[i] < rhs.data4[i];
+			}
+		}
+
+		return false;
+	}
+
+	bool operator==(const ZGuid& rhs) const
+	{
+		if (data1 != rhs.data1)
+		{
+			return false;
+		}
+
+		if (data2 != rhs.data2)
+		{
+			return false;
+		}
+
+		if (data3 != rhs.data3)
+		{
+			return false;
+		}
+
+		for (unsigned int i = 0; i < sizeof(data4); ++i)
+		{
+			if (data4[i] != rhs.data4[i])
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	void FromString(const ZString& p_Data, GuidFormat p_Format = GuidFormat::Dashes)
 	{
 #pragma warning(disable:4477)
 		if (p_Format == GuidFormat::Dashes)
 		{
-			sscanf_s(p_Data.c_str(),
-				"%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+			sscanf_s(p_Data.c_str(), "%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX",
 				&data1, &data2, &data3,
-				&data4[0], &data4[1], &data4[2], &data4[3],
-				&data4[4], &data4[5], &data4[6], &data4[7]);
+				&data4[0], &data4[1], &data4[2],
+				&data4[3], &data4[4], &data4[5],
+				&data4[6], &data4[7]);
 		}
 		else if (p_Format == GuidFormat::NoDashes)
 		{
-			sscanf_s(p_Data.c_str(),
-				"%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
+			sscanf_s(p_Data.c_str(), "%08lX%04hX%04hX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX",
 				&data1, &data2, &data3,
-				&data4[0], &data4[1], &data4[2], &data4[3],
-				&data4[4], &data4[5], &data4[6], &data4[7]);
+				&data4[0], &data4[1], &data4[2],
+				&data4[3], &data4[4], &data4[5],
+				&data4[6], &data4[7]);
 		}
 		else if (p_Format == GuidFormat::Brackets)
 		{
-			sscanf_s(p_Data.c_str(),
-				"{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}",
+			sscanf_s(p_Data.c_str(), "{%08lX%04hX%04hX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
 				&data1, &data2, &data3,
-				&data4[0], &data4[1], &data4[2], &data4[3],
-				&data4[4], &data4[5], &data4[6], &data4[7]);
+				&data4[0], &data4[1], &data4[2],
+				&data4[3], &data4[4], &data4[5],
+				&data4[6], &data4[7]);
 		}
 		else if (p_Format == GuidFormat::Parentheses)
 		{
-			sscanf_s(p_Data.c_str(),
-				"(%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X)",
+			sscanf_s(p_Data.c_str(), "(%08lX%04hX%04hX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX)",
 				&data1, &data2, &data3,
-				&data4[0], &data4[1], &data4[2], &data4[3],
-				&data4[4], &data4[5], &data4[6], &data4[7]);
+				&data4[0], &data4[1], &data4[2],
+				&data4[3], &data4[4], &data4[5],
+				&data4[6], &data4[7]);
 		}
 #pragma warning(default:4477)
 	}
@@ -132,6 +188,11 @@ public:
 		return ZString::CopyFrom(s_GUID);
 	}
 
+	unsigned int GetHashCode() const
+	{
+		return this->data1 ^ (this->data3 | (this->data2 << 16)) ^ (this->data4[7] | (this->data4[2] << 24));
+	}
+
 public:
 	union
 	{
@@ -168,7 +229,6 @@ public:
 	{
 		FromString(p_Data, GuidFormat::Dashes);
 	}
-
 };
 
 class STokenID

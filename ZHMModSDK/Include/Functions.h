@@ -20,6 +20,12 @@ class ZEntityRef;
 class ZEntityManager;
 class IEntityFactory;
 struct SMatrix;
+class ZGlobalOutfitKit;
+class ZItemSpawner;
+class ZCharacterSubcontrollerInventory;
+class ZResourceContainer;
+class ZResourceIndex;
+class ZHM5CrippleBox;
 
 class ZHMSDK_API Functions
 {
@@ -40,5 +46,9 @@ public:
 	static EngineFunction<void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef& parent, void* a6, int64_t a7)>* ZEntityManager_NewEntity;
 	static EngineFunction<void(ZSpatialEntity* th)>* ZSpatialEntity_UnknownTransformUpdate;
 	static EngineFunction<void(ZEntityManager* th, const ZEntityRef& entity, THashMap<ZRuntimeResourceID, ZEntityRef>& references)>* ZEntityManager_DeleteEntity;
-
+	static EngineFunction<void(ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation, bool unk0, bool unk2)>* ZHitman5_SetOutfit;
+	static EngineFunction<void(ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int m_nOutfitCharset, int m_nOutfitVariation, bool bNude)>* ZActor_SetOutfit;
+	static EngineFunction<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
+	static EngineFunction<unsigned long long(ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId, void* unknown, unsigned int unknown2)>* ZCharacterSubcontrollerInventory_AddDynamicItemToInventory;
+	static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags)>* ZResourceContainer_GetResourceReferences;
 };

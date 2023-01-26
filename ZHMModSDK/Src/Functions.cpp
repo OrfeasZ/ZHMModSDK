@@ -106,3 +106,38 @@ PATTERN_FUNCTION(
 	ZSpatialEntity_UnknownTransformUpdate,
 	void(ZSpatialEntity* th)
 );
+
+PATTERN_FUNCTION(
+	"\x4C\x8B\xDC\x49\x89\x73\x20\x55\x57\x41\x54",
+	"xxxxxxxxxxx",
+	ZHitman5_SetOutfit,
+	void(ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation, bool unk0, bool unk2)
+);
+
+PATTERN_FUNCTION(
+	"\x48\x89\x5C\x24\x20\x55\x56\x57\x41\x54\x41\x56\x48\x8B\xEC",
+	"xxxxxxxxxxxxxxx",
+	ZActor_SetOutfit,
+	void(ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int m_nOutfitCharset, int m_nOutfitVariation, bool bNude)
+);
+
+PATTERN_FUNCTION(
+	"\x40\x55\x53\x48\x8D\x6C\x24\xB1\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xD9\x8B\x49\x14",
+	"xxxxxxxxxxx????xxxxxx",
+	ZItemSpawner_RequestContentLoad,
+	void(ZItemSpawner* th)
+);
+
+PATTERN_FUNCTION(
+	"\x48\x8B\xC4\x48\x89\x58\x20\x55\x56\x57\x41\x54\x41\x57\x48\x8D\x68\xA9",
+	"xxxxxxxxxxxxxxxxxx",
+	ZCharacterSubcontrollerInventory_AddDynamicItemToInventory,
+	unsigned long long(ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId, void* unknown, unsigned int unknown2)
+);
+
+PATTERN_FUNCTION(
+	"\x40\x53\x48\x83\xEC\x00\x48\x8B\x05\x00\x00\x00\x00\x48\x89\x74\x24\x60",
+	"xxxxx?xxx????xxxxx",
+	ZResourceContainer_GetResourceReferences,
+	void(ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags)
+);

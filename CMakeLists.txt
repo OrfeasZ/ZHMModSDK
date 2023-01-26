@@ -4,7 +4,7 @@ if(POLICY CMP0091)
 	cmake_policy(SET CMP0091 NEW)
 endif()
 
-project(ZHMMods CXX)
+project(ZHMMods CXX C)
 
 set(CTT OFF CACHE BOOL "Build with support for the Hitman 3 CTT.")
 set(INSTALL_PATH "" CACHE PATH "Path to Hitman 3 retail folder to install the SDK in.")

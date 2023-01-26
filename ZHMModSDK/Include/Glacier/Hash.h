@@ -27,6 +27,7 @@ SOFTWARE.
 #include <cctype>
 #include <cstdint>
 #include <array>
+#include <vector>
 
 namespace Hash
 {
@@ -274,6 +275,94 @@ namespace Hash
 		s_Data[s_DataSize - 4] = (s_LenInBits & 0x000000FF00000000) >> 32;
 		s_Data[s_DataSize - 3] = (s_LenInBits & 0x0000FF0000000000) >> 40;
 		s_Data[s_DataSize - 2] = (s_LenInBits & 0x00FF000000000000) >> 48;
+		s_Data[s_DataSize - 1] = (s_LenInBits & 0xFF00000000000000) >> 56;
+
+		for (size_t s_Group = 0; s_Group < s_GroupCount; ++s_Group)
+		{
+			std::array<uint32_t, 16> M {};
+
+			for (size_t j = 0; j < 16; ++j)
+			{
+				M[j] = s_Data[(s_Group * 64) + (j * 4)]
+					| s_Data[(s_Group * 64) + (j * 4) + 1] << 8
+					| s_Data[(s_Group * 64) + (j * 4) + 2] << 16
+					| s_Data[(s_Group * 64) + (j * 4) + 3] << 24;
+			}
+
+			uint32_t A = a0;
+			uint32_t B = b0;
+			uint32_t C = c0;
+			uint32_t D = d0;
+
+			for (uint32_t i = 0; i < 64; ++i)
+			{
+				uint32_t F, g;
+
+				if (i <= 15)
+				{
+					F = (B & C) | (~B & D);
+					g = i;
+				}
+				else if (i <= 31)
+				{
+					F = (D & B) | (~D & C);
+					g = ((i * 5) + 1) % 16;
+				}
+				else if (i <= 47)
+				{
+					F = B ^ C ^ D;
+					g = ((i * 3) + 5) % 16;
+				}
+				else
+				{
+					F = C ^ (B | ~D);
+					g = (i * 7) % 16;
+				}
+
+				F += (A + MD5_K[i] + M[g]);
+				A = D;
+				D = C;
+				C = B;
+				B += (F << MD5_s[i]) | (F >> (32 - MD5_s[i]));
+			}
+
+			a0 += A;
+			b0 += B;
+			c0 += C;
+			d0 += D;
+		}
+
+		return MD5Hash { a0, b0, c0, d0 };
+	}
+
+	constexpr MD5Hash MD5(std::string_view p_Str)
+	{
+		uint32_t a0 = 0x67452301;
+		uint32_t b0 = 0xefcdab89;
+		uint32_t c0 = 0x98badcfe;
+		uint32_t d0 = 0x10325476;
+
+		size_t length = p_Str.length();
+		size_t s_GroupCount = ((length + 8) / 64) + 1;
+		size_t s_DataSize = s_GroupCount * 64;
+		std::vector<uint8_t> s_Data(s_DataSize);
+
+		for (size_t i = 0; i < length; ++i)
+			s_Data[i] = p_Str[i];
+
+		// Add a single 1 bit.
+		s_Data[length] = 0x80;
+
+		uint64_t s_LenInBits = length * 8;
+
+		// Add length in bits to end.
+		s_Data[s_DataSize - 8] = s_LenInBits & 0x00000000000000FF;
+		s_Data[s_DataSize - 7] = (s_LenInBits & 0x000000000000FF00) >> 8;
+		s_Data[s_DataSize - 6] = static_cast<uint8_t>((s_LenInBits & 0x0000000000FF0000) >> 16);
+		s_Data[s_DataSize - 5] = (s_LenInBits & 0x00000000FF000000) >> 24;
+		s_Data[s_DataSize - 4] = static_cast<uint8_t>((s_LenInBits & 0x000000FF00000000) >> 32);
+		s_Data[s_DataSize - 3] = static_cast<uint8_t>((s_LenInBits & 0x0000FF0000000000) >> 40);
+		s_Data[s_DataSize - 2] = static_cast<uint8_t>((s_LenInBits & 0x00FF000000000000) >> 48);
 		s_Data[s_DataSize - 1] = (s_LenInBits & 0xFF00000000000000) >> 56;
 
 		for (size_t s_Group = 0; s_Group < s_GroupCount; ++s_Group)
