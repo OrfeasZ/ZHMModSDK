@@ -17,10 +17,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	string(REPLACE "/MDd" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
 endif()
 
-add_compile_definitions(
-	FMT_CONSTEVAL=
-)
-
 # Dependencies.
 find_package(7zip CONFIG REQUIRED)
 find_package(directxtk12 CONFIG REQUIRED)

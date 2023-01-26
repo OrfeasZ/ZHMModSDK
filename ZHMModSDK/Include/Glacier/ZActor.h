@@ -6,6 +6,8 @@
 #include "ZHM5BaseCharacter.h"
 #include "ZResource.h"
 
+#include <Logging.h>
+
 class ZCharacterTemplateAspect;
 class ZCostumeFeatureCollection;
 class ZAccessoryItemPool;

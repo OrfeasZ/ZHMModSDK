@@ -976,7 +976,7 @@ std::string DebugMod::ConvertDynamicObjectValueTString(ZDynamicObject* dynamicOb
 	}
 	else
 	{
-		Logger::Debug(type->m_pTypeName);
+		Logger::Debug("{}", type->m_pTypeName);
 	}
 
 	return result;
