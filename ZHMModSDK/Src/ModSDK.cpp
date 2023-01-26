@@ -362,11 +362,6 @@ bool ModSDK::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut,
 	return m_DirectXTKRenderer->ScreenToWorld(p_ScreenPos, p_WorldPosOut, p_DirectionOut);
 }
 
-bool ModSDK::LoadTextureFromMemory(std::vector<char>& resourceData, D3D12_GPU_DESCRIPTOR_HANDLE* textureSrvGPUHandle, int& width, int& height)
-{
-	return m_ImguiRenderer->LoadTextureFromMemory(resourceData, textureSrvGPUHandle, width, height);
-}
-
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
 {
 	auto s_Result = p_Hook->CallOriginal(th, a2);

@@ -25,7 +25,6 @@ public:
 	virtual bool GetPinName(int32_t p_PinId, ZString& p_Name) = 0;
 	virtual bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) = 0;
 	virtual bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) = 0;
-	virtual bool LoadTextureFromMemory(std::vector<char>& resourceData, D3D12_GPU_DESCRIPTOR_HANDLE* textureSrvGPUHandle, int& width, int& height) = 0;
 };
 
 ZHMSDK_API IModSDK* SDK();

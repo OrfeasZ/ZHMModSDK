@@ -28,44 +28,44 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 		}
 		else
 		{
-			if (brickHashes.empty())
+			if (m_BrickHashes.empty())
 			{
-				ZEntitySceneContext* entitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
+				ZEntitySceneContext* s_EntitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
 
-				for (size_t i = 0; i < entitySceneContext->m_aLoadedBricks.size(); ++i)
+				for (size_t i = 0; i < s_EntitySceneContext->m_aLoadedBricks.size(); ++i)
 				{
-					ZRuntimeResourceID runtimeResourceID = entitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
+					ZRuntimeResourceID s_RuntimeResourceId = s_EntitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
 
-					brickHashes.insert(runtimeResourceID.GetID());
+					m_BrickHashes.insert(s_RuntimeResourceId.GetID());
 				}
 			}
 
-			if (selectedEntityName.empty())
+			if (m_SelectedEntityName.empty())
 			{
-				ZEntityType** parentEntityType = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(m_SelectedEntity.m_pEntity) + m_SelectedEntity.m_pEntity[0]->m_nLogicalParentEntityOffset);
-				entityID = m_SelectedEntity.m_pEntity[0]->m_nEntityId;
-				unsigned long long parentEntityID = parentEntityType[0]->m_nEntityId;
-				ZEntityType** parentEntityType2 = parentEntityType;
+				auto s_ParentEntityType = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(m_SelectedEntity.m_pEntity) + m_SelectedEntity.m_pEntity[0]->m_nLogicalParentEntityOffset);
+				m_EntityId = m_SelectedEntity.m_pEntity[0]->m_nEntityId;
+				s_ParentEntityType[0]->m_nEntityId;
+				ZEntityType** s_ParentEntityType2 = s_ParentEntityType;
 
 				while (true)
 				{
-					parentEntityType2 = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(parentEntityType2) + parentEntityType2[0]->m_nLogicalParentEntityOffset);
-					unsigned long long entityID2 = (*reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(parentEntityType2) + parentEntityType2[0]->m_nLogicalParentEntityOffset))->m_nEntityId;
+					s_ParentEntityType2 = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(s_ParentEntityType2) + s_ParentEntityType2[0]->m_nLogicalParentEntityOffset);
+					unsigned long long s_EntityId2 = (*reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(s_ParentEntityType2) + s_ParentEntityType2[0]->m_nLogicalParentEntityOffset))->m_nEntityId;
 
-					if (brickHashes.contains(entityID2))
+					if (m_BrickHashes.contains(s_EntityId2))
 					{
-						brickEntityID = entityID2;
-						selectedEntityName = GetEntityName(entityID2, entityID, selectedResourceHash);
+						m_BrickEntityId = s_EntityId2;
+						m_SelectedEntityName = GetEntityName(s_EntityId2, m_EntityId, m_SelectedResourceHash);
 
-						if (selectedEntityName.empty())
+						if (m_SelectedEntityName.empty())
 						{
-							entityID = parentEntityType[0]->m_nEntityId;
-							selectedEntityName = GetEntityName(entityID2, entityID, selectedResourceHash);
+							m_EntityId = s_ParentEntityType[0]->m_nEntityId;
+							m_SelectedEntityName = GetEntityName(s_EntityId2, m_EntityId, m_SelectedResourceHash);
 						}
 
-						if (selectedEntityName.empty() && m_SelectedEntity.m_pEntity[0]->m_nEntityId == 0x01e018a77e7655ca) //Case when NPC is added by another brick
+						if (m_SelectedEntityName.empty() && m_SelectedEntity.m_pEntity[0]->m_nEntityId == 0x01e018a77e7655ca) //Case when NPC is added by another brick
 						{
-							selectedEntityName = FindNPCEntityNameInBrickBackReferences(entityID2, entityID, selectedResourceHash);
+							m_SelectedEntityName = FindNPCEntityNameInBrickBackReferences(s_EntityId2, m_EntityId, m_SelectedResourceHash);
 						}
 
 						break;
@@ -73,42 +73,42 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 				}
 			}
 
-			ImGui::TextUnformatted(fmt::format("Entity Name: {}", selectedEntityName).c_str());
-			ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", entityID).c_str());
+			ImGui::TextUnformatted(fmt::format("Entity Name: {}", m_SelectedEntityName).c_str());
+			ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", m_EntityId).c_str());
 
-			if (runtimeResourceIDsToResourceIDs.contains(selectedResourceHash))
+			if (m_RuntimeResourceIDsToResourceIDs.contains(m_SelectedResourceHash))
 			{
-				ImGui::TextUnformatted(fmt::format("Template Entity: {}", runtimeResourceIDsToResourceIDs[selectedResourceHash]).c_str());
+				ImGui::TextUnformatted(fmt::format("Template Entity: {}", m_RuntimeResourceIDsToResourceIDs[m_SelectedResourceHash]).c_str());
 			}
 			else
 			{
-				ImGui::TextUnformatted(fmt::format("Template Entity: {}", selectedResourceHash).c_str());
+				ImGui::TextUnformatted(fmt::format("Template Entity: {}", m_SelectedResourceHash).c_str());
 			}
 
-			if (runtimeResourceIDsToResourceIDs.contains(brickEntityID))
+			if (m_RuntimeResourceIDsToResourceIDs.contains(m_BrickEntityId))
 			{
-				ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", runtimeResourceIDsToResourceIDs[brickEntityID]).c_str());
+				ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", m_RuntimeResourceIDsToResourceIDs[m_BrickEntityId]).c_str());
 			}
 			else
 			{
-				ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", brickEntityID).c_str());
+				ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", m_BrickEntityId).c_str());
 			}
 
-			const ZGeomEntity* geomEntity = m_SelectedEntity.QueryInterface<ZGeomEntity>();
+			const ZGeomEntity* s_GeomEntity = m_SelectedEntity.QueryInterface<ZGeomEntity>();
 
-			if (geomEntity)
+			if (s_GeomEntity)
 			{
-				ZVariant<ZResourcePtr> property = m_SelectedEntity.GetProperty<ZResourcePtr>("m_ResourceID");
-				ZResourceContainer::SResourceInfo primResourceInfo = (*Globals::ResourceContainer)->m_resources[property.Get().m_nResourceIndex];
-				unsigned long long primHash = primResourceInfo.rid.GetID();
+				ZVariant<ZResourcePtr> s_Property = m_SelectedEntity.GetProperty<ZResourcePtr>("m_ResourceID");
+				ZResourceContainer::SResourceInfo s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_Property.Get().m_nResourceIndex];
+				unsigned long long s_PrimHash = s_PrimResourceInfo.rid.GetID();
 
-				if (runtimeResourceIDsToResourceIDs.contains(primHash))
+				if (m_RuntimeResourceIDsToResourceIDs.contains(s_PrimHash))
 				{
-					ImGui::TextUnformatted(fmt::format("PRIM Assembly Path: {}", runtimeResourceIDsToResourceIDs[primHash]).c_str());
+					ImGui::TextUnformatted(fmt::format("PRIM Assembly Path: {}", m_RuntimeResourceIDsToResourceIDs[s_PrimHash]).c_str());
 				}
 				else
 				{
-					ImGui::TextUnformatted(fmt::format("PRIM Assembly Path: {}", primHash).c_str());
+					ImGui::TextUnformatted(fmt::format("PRIM Assembly Path: {}", s_PrimHash).c_str());
 				}
 			}
 
@@ -132,7 +132,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
 			ImGui::TextUnformatted(fmt::format("Entity Interfaces: {}", s_InterfacesStr).c_str());
 
-			std::string s_Properties01;
+			/*std::string s_Properties01;
 
 			for (const auto& s_Property : *(*m_SelectedEntity.m_pEntity)->m_pProperties01)
 			{
@@ -166,7 +166,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 				s_Properties02 += s_Property.m_pType->getPropertyInfo()->m_pName;
 			}
 
-			ImGui::TextUnformatted(fmt::format("Entity Properties2: {}", s_Properties02).c_str());
+			ImGui::TextUnformatted(fmt::format("Entity Properties2: {}", s_Properties02).c_str());*/
 
 
 			if (const auto s_Spatial = m_SelectedEntity.QueryInterface<ZSpatialEntity>())

@@ -16,30 +16,30 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
 	if (s_Showing && p_HasFocus)
 	{
-		if (repositoryProps.size() == 0)
+		if (m_RepositoryProps.size() == 0)
 		{
 			LoadRepositoryProps();
 		}
 
-		ZContentKitManager* contentKitManager = Globals::ContentKitManager;
-		static char propTitle[36] { "" };
-		static char propAssemblyPath[512] { "" };
-		static char numberOfPropsToSpawn[5] { "1" };
-		static char numberOfPropsToSpawn2[5] { "1" };
-		static char numberOfPropsToSpawn3[5] { "1" };
-		static int button = 1;
-		static char npcName[100] {};
+		ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
+
+		static char s_PropTitle[36] { "" };
+		static char s_PropAssemblyPath[512] { "" };
+		static char s_NumberOfPropsToSpawn[5] { "1" };
+		static char s_NumberOfPropsToSpawn2[5] { "1" };
+		static char s_NumberOfPropsToSpawn3[5] { "1" };
+		static int s_Button = 1;
+		static char s_NpcName[100] {};
 
 		ImGui::Text("Repository Props");
 		ImGui::Text("");
 		ImGui::Text("Prop Title");
 		ImGui::SameLine();
 
-		const bool isInputTextEnterPressed = ImGui::InputText("##PropRepositoryID", propTitle, sizeof(propTitle), ImGuiInputTextFlags_EnterReturnsTrue);
-		const bool isInputTextActive = ImGui::IsItemActive();
-		const bool isInputTextActivated = ImGui::IsItemActivated();
+		const bool s_IsInputTextEnterPressed = ImGui::InputText("##PropRepositoryID", s_PropTitle, sizeof(s_PropTitle), ImGuiInputTextFlags_EnterReturnsTrue);
+		const bool s_IsInputTextActive = ImGui::IsItemActive();
 
-		if (isInputTextActivated)
+		if (ImGui::IsItemActivated())
 		{
 			ImGui::OpenPopup("##popup");
 		}
@@ -49,30 +49,30 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
 		if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
 		{
-			for (auto it = repositoryProps.begin(); it != repositoryProps.end(); ++it)
+			for (auto it = m_RepositoryProps.begin(); it != m_RepositoryProps.end(); ++it)
 			{
-				const char* propTitle2 = it->first.c_str();
+				const char* s_PropTitle2 = it->first.c_str();
 
-				if (!strstr(propTitle2, propTitle))
+				if (!strstr(s_PropTitle2, s_PropTitle))
 				{
 					continue;
 				}
 
-				if (ImGui::Selectable(propTitle2))
+				if (ImGui::Selectable(s_PropTitle2))
 				{
 					ImGui::ClearActiveID();
-					strcpy_s(propTitle, propTitle2);
+					strcpy_s(s_PropTitle, s_PropTitle2);
 
-					int numberOfPropsToSpawn2 = std::atoi(numberOfPropsToSpawn);
+					const int s_NumberOfPropsToSpawn22 = std::atoi(s_NumberOfPropsToSpawn);
 
-					for (int i = 0; i < numberOfPropsToSpawn2; ++i)
+					for (int i = 0; i < s_NumberOfPropsToSpawn22; ++i)
 					{
-						SpawnRepositoryProp(it->second, button == 1);
+						SpawnRepositoryProp(it->second, s_Button == 1);
 					}
 				}
 			}
 
-			if (isInputTextEnterPressed || (!isInputTextActive && !ImGui::IsWindowFocused()))
+			if (s_IsInputTextEnterPressed || (!s_IsInputTextActive && !ImGui::IsWindowFocused()))
 			{
 				ImGui::CloseCurrentPopup();
 			}
@@ -80,22 +80,22 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 			ImGui::EndPopup();
 		}
 
-		if (ImGui::RadioButton("Add To World", button == 1))
+		if (ImGui::RadioButton("Add To World", s_Button == 1))
 		{
-			button = 1;
+			s_Button = 1;
 		}
 
 		ImGui::SameLine();
 
-		if (ImGui::RadioButton("Add To Inventory", button == 2))
+		if (ImGui::RadioButton("Add To Inventory", s_Button == 2))
 		{
-			button = 2;
+			s_Button = 2;
 		}
 
 		ImGui::Text("Number Of Props To Spawn");
 		ImGui::SameLine();
 
-		ImGui::InputText("##NumberOfPropsToSpawn", numberOfPropsToSpawn, sizeof(numberOfPropsToSpawn));
+		ImGui::InputText("##NumberOfPropsToSpawn", s_NumberOfPropsToSpawn, sizeof(s_NumberOfPropsToSpawn));
 
 		ImGui::Separator();
 		ImGui::Text("Non Repository Props");
@@ -103,23 +103,23 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 		ImGui::Text("Prop Assembly Path");
 		ImGui::SameLine();
 
-		ImGui::InputText("##Prop Assembly Path", propAssemblyPath, sizeof(propAssemblyPath));
+		ImGui::InputText("##Prop Assembly Path", s_PropAssemblyPath, sizeof(s_PropAssemblyPath));
 		ImGui::SameLine();
 
 		if (ImGui::Button("Spawn Prop"))
 		{
-			int numberOfPropsToSpawn3 = std::atoi(numberOfPropsToSpawn2);
+			const int s_NumberOfPropsToSpawn33 = std::atoi(s_NumberOfPropsToSpawn2);
 
-			for (int i = 0; i < numberOfPropsToSpawn3; ++i)
+			for (int i = 0; i < s_NumberOfPropsToSpawn33; ++i)
 			{
-				SpawnNonRepositoryProp(propAssemblyPath);
+				SpawnNonRepositoryProp(s_PropAssemblyPath);
 			}
 		}
 
 		ImGui::Text("Number Of Props To Spawn");
 		ImGui::SameLine();
 
-		ImGui::InputText("##NumberOfPropsToSpawn2", numberOfPropsToSpawn2, sizeof(numberOfPropsToSpawn2));
+		ImGui::InputText("##NumberOfPropsToSpawn2", s_NumberOfPropsToSpawn2, sizeof(s_NumberOfPropsToSpawn2));
 		ImGui::Separator();
 
 		ImGui::Text("NPCs");
@@ -127,18 +127,17 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 		ImGui::Text("NPC Name");
 		ImGui::SameLine();
 
-		ImGui::InputText("##NPCName", npcName, sizeof(npcName));
+		ImGui::InputText("##NPCName", s_NpcName, sizeof(s_NpcName));
 
 		static char outfitName[256] { "" };
 
 		ImGui::Text("Outfit");
 		ImGui::SameLine();
 
-		const bool isInputTextEnterPressed2 = ImGui::InputText("##OutfitName", outfitName, sizeof(outfitName), ImGuiInputTextFlags_EnterReturnsTrue);
-		const bool isInputTextActive2 = ImGui::IsItemActive();
-		const bool isInputTextActivated2 = ImGui::IsItemActivated();
+		const bool s_IsInputTextEnterPressed2 = ImGui::InputText("##OutfitName", outfitName, sizeof(outfitName), ImGuiInputTextFlags_EnterReturnsTrue);
+		const bool s_IsInputTextActive2 = ImGui::IsItemActive();
 
-		if (isInputTextActivated2)
+		if (ImGui::IsItemActivated())
 		{
 			ImGui::OpenPopup("##popup2");
 		}
@@ -146,18 +145,18 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 		ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
 		ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
 
-		static ZRepositoryID repositoryID = ZRepositoryID("");
-		static TEntityRef<ZGlobalOutfitKit>* globalOutfitKit = nullptr;
-		static char currentCharacterSetIndex[3] { "0" };
-		static const char* currentcharSetCharacterType = "HeroA";
-		static char currentOutfitVariationIndex[3] { "0" };
+		static ZRepositoryID s_RepositoryId = ZRepositoryID("");
+		static TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit = nullptr;
+		static char s_CurrentCharacterSetIndex[3] { "0" };
+		static const char* s_CurrentcharSetCharacterType = "HeroA";
+		static char s_CurrentOutfitVariationIndex[3] { "0" };
 
 		if (ImGui::BeginPopup("##popup2", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
 		{
-			for (auto it = contentKitManager->m_repositoryGlobalOutfitKits.begin(); it != contentKitManager->m_repositoryGlobalOutfitKits.end(); ++it)
+			for (auto it = s_ContentKitManager->m_repositoryGlobalOutfitKits.begin(); it != s_ContentKitManager->m_repositoryGlobalOutfitKits.end(); ++it)
 			{
-				TEntityRef<ZGlobalOutfitKit>* globalOutfitKit2 = &it->second;
-				const char* outfitName2 = globalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
+				TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit2 = &it->second;
+				const char* outfitName2 = s_GlobalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
 
 				if (!strstr(outfitName2, outfitName))
 				{
@@ -169,12 +168,12 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 					ImGui::ClearActiveID();
 					strcpy_s(outfitName, outfitName2);
 
-					repositoryID = it->first;
-					globalOutfitKit = globalOutfitKit2;
+					s_RepositoryId = it->first;
+					s_GlobalOutfitKit = s_GlobalOutfitKit2;
 				}
 			}
 
-			if (isInputTextEnterPressed2 || (!isInputTextActive2 && !ImGui::IsWindowFocused()))
+			if (s_IsInputTextEnterPressed2 || (!s_IsInputTextActive2 && !ImGui::IsWindowFocused()))
 			{
 				ImGui::CloseCurrentPopup();
 			}
@@ -185,18 +184,18 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 		ImGui::Text("Character Set Index");
 		ImGui::SameLine();
 
-		if (ImGui::BeginCombo("##CharacterSetIndex", currentCharacterSetIndex))
+		if (ImGui::BeginCombo("##CharacterSetIndex", s_CurrentCharacterSetIndex))
 		{
-			if (globalOutfitKit)
+			if (s_GlobalOutfitKit)
 			{
-				for (size_t i = 0; i < globalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i)
+				for (size_t i = 0; i < s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i)
 				{
-					std::string characterSetIndex = std::to_string(i);
-					bool isSelected = currentCharacterSetIndex == characterSetIndex.c_str();
+					std::string s_CharacterSetIndex = std::to_string(i);
+					const bool s_IsSelected = s_CurrentCharacterSetIndex == s_CharacterSetIndex.c_str();
 
-					if (ImGui::Selectable(characterSetIndex.c_str(), isSelected))
+					if (ImGui::Selectable(s_CharacterSetIndex.c_str(), s_IsSelected))
 					{
-						strcpy_s(currentCharacterSetIndex, characterSetIndex.c_str());
+						strcpy_s(s_CurrentCharacterSetIndex, s_CharacterSetIndex.c_str());
 					}
 				}
 			}
@@ -207,17 +206,17 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 		ImGui::Text("CharSet Character Type");
 		ImGui::SameLine();
 
-		if (ImGui::BeginCombo("##CharSetCharacterType", currentcharSetCharacterType))
+		if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentcharSetCharacterType))
 		{
-			if (globalOutfitKit)
+			if (s_GlobalOutfitKit)
 			{
 				for (size_t i = 0; i < 3; ++i)
 				{
-					bool isSelected = currentcharSetCharacterType == charSetCharacterTypes[i];
+					const bool s_IsSelected = s_CurrentcharSetCharacterType == m_CharSetCharacterTypes[i];
 
-					if (ImGui::Selectable(charSetCharacterTypes[i], isSelected))
+					if (ImGui::Selectable(m_CharSetCharacterTypes[i], s_IsSelected))
 					{
-						currentcharSetCharacterType = charSetCharacterTypes[i];
+						s_CurrentcharSetCharacterType = m_CharSetCharacterTypes[i];
 					}
 				}
 			}
@@ -228,21 +227,21 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 		ImGui::Text("Outfit Variation");
 		ImGui::SameLine();
 
-		if (ImGui::BeginCombo("##OutfitVariation", currentOutfitVariationIndex))
+		if (ImGui::BeginCombo("##OutfitVariation", s_CurrentOutfitVariationIndex))
 		{
-			if (globalOutfitKit)
+			if (s_GlobalOutfitKit)
 			{
-				unsigned int currentCharacterSetIndex2 = std::stoi(currentCharacterSetIndex);
-				size_t variationCount = globalOutfitKit->m_pInterfaceRef->m_aCharSets[currentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->m_aVariations.size();
+				const unsigned int s_CurrentCharacterSetIndex2 = std::stoi(s_CurrentCharacterSetIndex);
+				const size_t s_VariationCount = s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->m_aVariations.size();
 
-				for (size_t i = 0; i < variationCount; ++i)
+				for (size_t i = 0; i < s_VariationCount; ++i)
 				{
-					std::string outfitVariationIndex = std::to_string(i);
-					bool isSelected = currentOutfitVariationIndex == outfitVariationIndex.c_str();
+					std::string s_OutfitVariationIndex = std::to_string(i);
+					const bool s_IsSelected = s_CurrentOutfitVariationIndex == s_OutfitVariationIndex.c_str();
 
-					if (ImGui::Selectable(outfitVariationIndex.c_str(), isSelected))
+					if (ImGui::Selectable(s_OutfitVariationIndex.c_str(), s_IsSelected))
 					{
-						strcpy_s(currentOutfitVariationIndex, outfitVariationIndex.c_str());
+						strcpy_s(s_CurrentOutfitVariationIndex, s_OutfitVariationIndex.c_str());
 					}
 				}
 			}
@@ -253,15 +252,15 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 		ImGui::Text("Number Of Props To Spawn");
 		ImGui::SameLine();
 
-		ImGui::InputText("##NumberOfPropsToSpawn3", numberOfPropsToSpawn3, sizeof(numberOfPropsToSpawn3));
+		ImGui::InputText("##NumberOfPropsToSpawn3", s_NumberOfPropsToSpawn3, sizeof(s_NumberOfPropsToSpawn3));
 
 		if (ImGui::Button("Spawn NPC"))
 		{
-			int numberOfPropsToSpawn4 = std::atoi(numberOfPropsToSpawn3);
+			const int s_NumberOfPropsToSpawn4 = std::atoi(s_NumberOfPropsToSpawn3);
 
-			for (int i = 0; i < numberOfPropsToSpawn4; ++i)
+			for (int i = 0; i < s_NumberOfPropsToSpawn4; ++i)
 			{
-				SpawnNPC(npcName, repositoryID, globalOutfitKit, currentCharacterSetIndex, currentcharSetCharacterType, currentOutfitVariationIndex);
+				SpawnNPC(s_NpcName, s_RepositoryId, s_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType, s_CurrentOutfitVariationIndex);
 			}
 		}
 	}

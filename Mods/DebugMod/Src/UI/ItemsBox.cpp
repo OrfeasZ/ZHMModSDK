@@ -18,16 +18,16 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 	{
 		THashMap<ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>* repositoryData = nullptr;
 
-		if (repositoryResource.m_nResourceIndex == -1)
+		if (m_RepositoryResource.m_nResourceIndex == -1)
 		{
 			const auto s_ID = ResId<"[assembly:/repository/pro.repo].pc_repo">;
 
-			Globals::ResourceManager->GetResourcePtr(repositoryResource, s_ID, 0);
+			Globals::ResourceManager->GetResourcePtr(m_RepositoryResource, s_ID, 0);
 		}
 
-		if (repositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID)
+		if (m_RepositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID)
 		{
-			repositoryData = static_cast<THashMap<ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(repositoryResource.GetResourceData());
+			repositoryData = static_cast<THashMap<ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.GetResourceData());
 		}
 		else
 		{
@@ -37,17 +37,11 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 
 			return;
 		}
+		
+		const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
+		std::vector<ZHM5Action*> s_Actions;
 
-		ZContentKitManager* contentKitManager = Globals::ContentKitManager;
-		TEntityRef<ZHitman5> s_LocalHitman;
-
-		Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-		ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
-		ZHM5ActionManager* hm5ActionManager = Globals::HM5ActionManager;
-		std::vector<ZHM5Action*> actions;
-
-		if (hm5ActionManager->m_Actions.size() == 0)
+		if (s_Hm5ActionManager->m_Actions.size() == 0)
 		{
 			ImGui::PopFont();
 			ImGui::End();
@@ -56,31 +50,31 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 			return;
 		}
 
-		for (unsigned int i = 0; i < hm5ActionManager->m_Actions.size(); ++i)
+		for (unsigned int i = 0; i < s_Hm5ActionManager->m_Actions.size(); ++i)
 		{
-			ZHM5Action* action = hm5ActionManager->m_Actions[i];
+			ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
 
-			if (action && action->m_eActionType == EActionType::AT_PICKUP)
+			if (s_Action && s_Action->m_eActionType == EActionType::AT_PICKUP)
 			{
-				actions.push_back(action);
+				s_Actions.push_back(s_Action);
 			}
 		}
 
-		static size_t selected = 0;
-		size_t count = actions.size();
+		static size_t s_Selected = 0;
+		size_t count = s_Actions.size();
 
 		ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
 		for (size_t i = 0; i < count; i++)
 		{
-			ZHM5Action* action = actions[i];
-			ZHM5Item* item = action->m_Object.QueryInterface<ZHM5Item>();
-			std::string title = std::format("{} {}", item->m_pItemConfigDescriptor->m_sTitle.c_str(), i + 1);
+			ZHM5Action* s_Action = s_Actions[i];
+			const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
+			std::string s_Title = std::format("{} {}", s_Item->m_pItemConfigDescriptor->m_sTitle.c_str(), i + 1);
 
-			if (ImGui::Selectable(title.c_str(), selected == i))
+			if (ImGui::Selectable(s_Title.c_str(), s_Selected == i))
 			{
-				selected = i;
-				textureResourceData.clear();
+				s_Selected = i;
+				m_TextureResourceData.clear();
 			}
 		}
 
@@ -90,55 +84,55 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 		ImGui::BeginGroup();
 		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
 
-		ZHM5Action* action = actions[selected];
-		ZHM5Item* item = action->m_Object.QueryInterface<ZHM5Item>();
-		ZDynamicObject* dynamicObject = &repositoryData->find(item->m_pItemConfigDescriptor->m_RepositoryId)->second;
-		TArray<SDynamicObjectKeyValuePair>* entries = dynamicObject->As<TArray<SDynamicObjectKeyValuePair>>();
-		std::string image;
+		ZHM5Action* s_Action = s_Actions[s_Selected];
+		const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
+		const ZDynamicObject* s_DynamicObject = &repositoryData->find(s_Item->m_pItemConfigDescriptor->m_RepositoryId)->second;
+		const auto s_Entries = s_DynamicObject->As<TArray<SDynamicObjectKeyValuePair>>();
+		std::string s_Image;
 
-		for (size_t i = 0; i < entries->size(); ++i)
+		for (size_t i = 0; i < s_Entries->size(); ++i)
 		{
-			std::string key = entries->operator[](i).sKey.c_str();
+			std::string s_Key = s_Entries->operator[](i).sKey.c_str();
 
-			if (key == "Image")
+			if (s_Key == "Image")
 			{
-				image = ConvertDynamicObjectValueTString(&entries->operator[](i).value);
+				s_Image = ConvertDynamicObjectValueTString(&s_Entries->operator[](i).value);
 
 				break;
 			}
 		}
 
-		if (textureResourceData.size() == 0)
+		/*if (m_TextureResourceData.size() == 0)
 		{
-			unsigned long long ddsTextureHash = GetDDSTextureHash(image);
+			const unsigned long long s_DdsTextureHash = GetDDSTextureHash(s_Image);
 
-			LoadResourceData(ddsTextureHash, textureResourceData);
+			LoadResourceData(s_DdsTextureHash, m_TextureResourceData);
 
-			SDK()->LoadTextureFromMemory(textureResourceData, &textureSrvGPUHandle, width, height);
+			SDK()->LoadTextureFromMemory(m_TextureResourceData, &m_TextureSrvGpuHandle, m_Width, m_Height);
 		}
 
-		ImGui::Image(reinterpret_cast<ImTextureID>(textureSrvGPUHandle.ptr), ImVec2(static_cast<float>(width / 2), static_cast<float>(height / 2)));
+		ImGui::Image(reinterpret_cast<ImTextureID>(m_TextureSrvGpuHandle.ptr), ImVec2(static_cast<float>(m_Width / 2), static_cast<float>(m_Height / 2)));*/
 
-		for (unsigned int i = 0; i < entries->size(); ++i)
+		for (unsigned int i = 0; i < s_Entries->size(); ++i)
 		{
-			std::string key = std::format("{}:", entries->operator[](i).sKey.c_str());
-			IType* type = entries->operator[](i).value.m_pTypeID->typeInfo();
+			std::string s_Key = std::format("{}:", s_Entries->operator[](i).sKey.c_str());
+			const IType* s_Type = s_Entries->operator[](i).value.m_pTypeID->typeInfo();
 
-			if (strcmp(type->m_pTypeName, "TArray<ZDynamicObject>") == 0)
+			if (strcmp(s_Type->m_pTypeName, "TArray<ZDynamicObject>") == 0)
 			{
-				key += " [";
+				s_Key += " [";
 
-				ImGui::Text(key.c_str());
+				ImGui::Text(s_Key.c_str());
 
-				TArray<ZDynamicObject>* array = entries->operator[](i).value.As<TArray<ZDynamicObject>>();
+				const TArray<ZDynamicObject>* s_Array = s_Entries->operator[](i).value.As<TArray<ZDynamicObject>>();
 
-				for (unsigned int j = 0; j < array->size(); ++j)
+				for (unsigned int j = 0; j < s_Array->size(); ++j)
 				{
-					std::string value = ConvertDynamicObjectValueTString(&array->operator[](j));
+					std::string s_Value = ConvertDynamicObjectValueTString(&s_Array->operator[](j));
 
-					if (!value.empty())
+					if (!s_Value.empty())
 					{
-						ImGui::Text(std::format("\t{}", value).c_str());
+						ImGui::Text(std::format("\t{}", s_Value).c_str());
 					}
 				}
 
@@ -146,27 +140,25 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 			}
 			else
 			{
-				ImGui::Text(key.c_str());
+				ImGui::Text(s_Key.c_str());
 
-				std::string value = ConvertDynamicObjectValueTString(&entries->operator[](i).value);
+				std::string s_Value = ConvertDynamicObjectValueTString(&s_Entries->operator[](i).value);
 
 				ImGui::SameLine();
-				ImGui::Text(value.c_str());
+				ImGui::Text(s_Value.c_str());
 			}
 		}
 
 		if (ImGui::Button("Teleport Item To Player"))
 		{
-			ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
-			//ZGeomEntity* geomEntity = s_LocalHitman.m_ref.QueryInterface<ZGeomEntity>();
+			TEntityRef<ZHitman5> s_LocalHitman;
+			Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
 
-			//ZEntityRef entityRef;
-
-			//geomEntity->GetID(&entityRef);
-
-			//item->m_pGeomEntity.m_ref = entityRef;
-			//item->m_pGeomEntity.m_pInterfaceRef = geomEntity;
-			item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());
+			if (s_LocalHitman)
+			{
+				ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+				s_Item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());
+			}
 		}
 
 		ImGui::EndChild();

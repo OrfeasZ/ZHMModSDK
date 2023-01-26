@@ -15,27 +15,27 @@ void DebugMod::DrawSceneBox(bool p_HasFocus)
 
 	if (s_Showing)
 	{
-		static size_t selected = 0;
-		ZEntitySceneContext* entitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
-		std::string entityTemplate = runtimeResourceIDsToResourceIDs[entitySceneContext->m_SceneConfig.m_ridSceneFactory.GetID()];
-		std::string entityBlueprint = std::format("{}.pc_entityblueprint", entityTemplate.substr(0, entityTemplate.find_last_of(".")));
+		static size_t s_Selected = 0;
+		const ZEntitySceneContext* s_EntitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
+		const std::string s_EntityTemplate = m_RuntimeResourceIDsToResourceIDs[s_EntitySceneContext->m_SceneConfig.m_ridSceneFactory.GetID()];
+		const std::string s_EntityBlueprint = std::format("{}.pc_entityblueprint", s_EntityTemplate.substr(0, s_EntityTemplate.find_last_of(".")));
 
-		ImGui::Text("Scene name: %s", entitySceneContext->m_sceneData.m_sceneName.c_str());
-		ImGui::Text("Type: %s", entitySceneContext->m_sceneData.m_type.c_str());
-		ImGui::Text("Code Name Hint: %s", entitySceneContext->m_sceneData.m_codeNameHint.c_str());
-		ImGui::Text("Entity Template: %s", entityTemplate);
-		ImGui::Text("Entity Blueprint: %s", entityBlueprint);
+		ImGui::Text("Scene name: %s", s_EntitySceneContext->m_sceneData.m_sceneName.c_str());
+		ImGui::Text("Type: %s", s_EntitySceneContext->m_sceneData.m_type.c_str());
+		ImGui::Text("Code Name Hint: %s", s_EntitySceneContext->m_sceneData.m_codeNameHint.c_str());
+		ImGui::Text("Entity Template: %s", s_EntityTemplate);
+		ImGui::Text("Entity Blueprint: %s", s_EntityBlueprint);
 
 		ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-		for (int i = 0; i < entitySceneContext->m_aLoadedBricks.size(); ++i)
+		for (int i = 0; i < s_EntitySceneContext->m_aLoadedBricks.size(); ++i)
 		{
-			ZRuntimeResourceID runtimeResourceID = entitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
-			std::string resourceID = runtimeResourceIDsToResourceIDs[runtimeResourceID.GetID()];
+			ZRuntimeResourceID s_RuntimeResourceId = s_EntitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
+			std::string s_ResourceId = m_RuntimeResourceIDsToResourceIDs[s_RuntimeResourceId.GetID()];
 
-			if (ImGui::Selectable(resourceID.c_str(), selected == i))
+			if (ImGui::Selectable(s_ResourceId.c_str(), s_Selected == i))
 			{
-				selected = i;
+				s_Selected = i;
 			}
 		}
 

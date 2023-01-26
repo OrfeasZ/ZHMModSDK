@@ -154,7 +154,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 			));
 		}
 		
-		ImGui::Checkbox("Use Snap", &m_useSnap);
+		ImGui::Checkbox("Use Snap", &m_UseSnap);
 		ImGui::SameLine();
 		ImGui::InputFloat3("", m_SnapValue);
 	}

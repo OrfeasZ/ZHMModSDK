@@ -11,7 +11,6 @@
 #include <Glacier/ZInput.h>
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZResource.h>
-#include <7zUtil.h>
 
 #include "ImGuizmo.h"
 #include "Glacier/ZScene.h"
@@ -47,29 +46,26 @@ private:
 	void DrawNPCsBox(bool p_HasFocus);
 	void DrawSceneBox(bool p_HasFocus);
 
-	void EquipOutfit(TEntityRef<ZGlobalOutfitKit>& globalOutfitKit, unsigned int currentCharacterSetIndex, const char* currentcharSetCharacterType, unsigned int currentOutfitVariationIndex, ZHitman5* localHitman);
-	void EquipOutfit(TEntityRef<ZGlobalOutfitKit>& globalOutfitKit, unsigned int currentCharacterSetIndex, const char* currentcharSetCharacterType, unsigned int currentOutfitVariationIndex, ZActor* actor);
-	void SpawnRepositoryProp(const ZRepositoryID& repositoryID, bool addToWorld);
-	void SpawnNonRepositoryProp(const char* propAssemblyPath);
-	void SpawnNPC(const char* npcName, const ZRepositoryID& repositoryID, TEntityRef<ZGlobalOutfitKit>* globalOutfitKit, const char* currentCharacterSetIndex, const char* currentcharSetCharacterType, const char* currentOutfitVariationIndex);
+	void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, unsigned int p_CurrentCharSetIndex, const char* p_CurrentCharSetCharacterType, unsigned int p_CurrentOutfitVariationIndex, ZHitman5* p_LocalHitman);
+	void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, unsigned int p_CurrentCharSetIndex, const char* p_CurrentCharSetCharacterType, unsigned int p_CurrentOutfitVariationindex, ZActor* p_Actor);
+	void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, bool addToWorld);
+	void SpawnNonRepositoryProp(const char* p_PropAssemblyPath);
+	void SpawnNPC(const char* p_NpcName, const ZRepositoryID& repositoryID, const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, const char* p_CurrentCharacterSetIndex, const char* p_CurrentcharSetCharacterType, const char* p_CurrentOutfitVariationIndex);
 	void LoadRepositoryProps();
 	static void LoadHashMap();
 	static void DownloadHashMap();
-	std::string GetEntityName(unsigned long long tempBrickHash, unsigned long long entityID, unsigned long long& resourceHash);
-	std::string FindNPCEntityNameInBrickBackReferences(unsigned long long tempBrickHash, unsigned long long entityID, unsigned long long& resourceHash);
+	std::string GetEntityName(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
+	std::string FindNPCEntityNameInBrickBackReferences(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
 
-	std::string ConvertDynamicObjectValueTString(ZDynamicObject* dynamicObject);
-	void LoadResourceData(unsigned long long hash, std::vector<char>& resourceData);
-	void LoadResourceData(unsigned long long hash, std::vector<char>& resourceData, const std::string& rpkgFilePath);
+	std::string ConvertDynamicObjectValueTString(ZDynamicObject* p_DynamicObject);
+	void LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData);
+	void LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData, const std::string& p_RpkgFilePath);
 	std::string GetPatchRPKGFilePath();
-	unsigned long long GetDDSTextureHash(const std::string image);
+	unsigned long long GetDDSTextureHash(const std::string p_Image);
 
 	void EnableInfiniteAmmo();
-
-	DEFINE_PLUGIN_DETOUR(DebugMod, void, ZHttpBufferReady, ZHttpResultDynamicObject* th);
-	DEFINE_PLUGIN_DETOUR(DebugMod, void, WinHttpCallback, void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int length_param_6);
+	
 	DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
-	//DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
 
 private:
 	bool m_DebugMenuActive = false;
@@ -84,7 +80,7 @@ private:
 	bool m_RenderNpcNames = false;
 	bool m_RenderNpcRepoIds = false;
 	bool m_RenderRaycast = false;
-	bool m_useSnap = false;
+	bool m_UseSnap = false;
 
 	float m_SnapValue[3] = { 1.0f, 1.0f, 1.0f };
 
@@ -99,11 +95,11 @@ private:
 
 	ZEntityRef m_SelectedEntity;
 	std::shared_mutex m_EntityMutex;
-	std::string selectedEntityName;
-	unsigned long long selectedResourceHash;
-	unsigned long long entityID;
-	unsigned long long brickEntityID;
-	std::set<unsigned long long> brickHashes;
+	std::string m_SelectedEntityName;
+	unsigned long long m_SelectedResourceHash = 0;
+	unsigned long long m_EntityId = 0;
+	unsigned long long m_BrickEntityId = 0;
+	std::set<unsigned long long> m_BrickHashes;
 
 	ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
 	ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;
@@ -111,18 +107,18 @@ private:
 	ZInputAction m_RaycastAction = "SkipLoadingAction"; // space
 	ZInputAction m_DeleteAction = "TemporaryCamSpeedMultiplier0"; // shift
 
-	D3D12_GPU_DESCRIPTOR_HANDLE textureSrvGPUHandle;
-	int width = 0;
-	int height = 0;
-	TResourcePtr<ZTemplateEntityFactory> repositoryResource;
-	std::vector<char> textureResourceData;
-	std::multimap<std::string, ZRepositoryID> repositoryProps;
-	const char* charSetCharacterTypes[3] = { "Actor", "Nude", "HeroA" };
+	D3D12_GPU_DESCRIPTOR_HANDLE m_TextureSrvGpuHandle {};
+	int m_Width = 0;
+	int m_Height = 0;
+	TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
+	std::vector<char> m_TextureResourceData;
+	std::multimap<std::string, ZRepositoryID> m_RepositoryProps;
+	const char* m_CharSetCharacterTypes[3] = { "Actor", "Nude", "HeroA" };
 
-	inline static std::unordered_map<unsigned long long, std::string> runtimeResourceIDsToResourceIDs;
-	inline static std::mutex mutex;
+	inline static std::unordered_map<unsigned long long, std::string> m_RuntimeResourceIDsToResourceIDs;
+	inline static std::mutex m_Mutex;
 
-	ZHM5CrippleBox* hm5CrippleBox;
+	ZHM5CrippleBox* m_Hm5CrippleBox = nullptr;
 };
 
 DEFINE_ZHM_PLUGIN(DebugMod)
