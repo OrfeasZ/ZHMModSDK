@@ -1,15 +1,6 @@
-[submodule "External/spdlog"]
-	path = External/spdlog
-	url = https://github.com/gabime/spdlog.git
-[submodule "External/minhook"]
-	path = External/minhook
-	url = https://github.com/TsudaKageyu/minhook.git
 [submodule "External/imgui/source"]
 	path = External/imgui/source
 	url = https://github.com/ocornut/imgui.git
-[submodule "External/DirectXTK12"]
-	path = External/DirectXTK12
-	url = https://github.com/microsoft/DirectXTK12.git
 [submodule "External/mINI"]
 	path = External/mINI
 	url = https://github.com/pulzed/mINI.git
