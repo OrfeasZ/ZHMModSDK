@@ -17,12 +17,17 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	string(REPLACE "/MDd" "" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
 endif()
 
+add_compile_definitions(
+	FMT_CONSTEVAL=
+)
+
 # Dependencies.
-add_subdirectory("External/spdlog")
-add_subdirectory("External/minhook")
+find_package(7zip CONFIG REQUIRED)
+find_package(directxtk12 CONFIG REQUIRED)
+find_package(minhook CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 add_subdirectory("External/imgui")
 add_subdirectory("External/imguizmo")
-add_subdirectory("External/DirectXTK12")
 
 # Core modules.
 add_subdirectory("ZHMModSDK")

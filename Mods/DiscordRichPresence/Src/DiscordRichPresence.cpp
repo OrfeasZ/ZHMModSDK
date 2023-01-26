@@ -31,7 +31,7 @@ void DiscordRichPresence::Init()
 
 	if (s_DiscordCreateResult != discord::Result::Ok)
 	{
-		Logger::Error("Discord init failed with result: {}", s_DiscordCreateResult);
+		Logger::Error("Discord init failed with result: {}", static_cast<int>(s_DiscordCreateResult));
 		m_DiscordCore = nullptr;
 		return;
 	}
@@ -252,7 +252,7 @@ DECLARE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContex
 
 	m_DiscordCore->ActivityManager().UpdateActivity(activity, [](discord::Result p_Result)
 	{
-		Logger::Trace("Activity Manager push completed with result: {}", p_Result);
+		Logger::Trace("Activity Manager push completed with result: {}", static_cast<int>(p_Result));
 	});
 
 	return HookResult<void>(HookAction::Continue());

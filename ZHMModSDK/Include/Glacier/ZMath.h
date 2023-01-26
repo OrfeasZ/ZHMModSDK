@@ -200,6 +200,20 @@ inline std::ostream& operator<<(std::ostream& p_Stream, const float4& p_Value)
 	return p_Stream << "(" << p_Value.x << ", " << p_Value.y << ", " << p_Value.z << ", " << p_Value.w << ")";
 }
 
+template <>
+struct fmt::formatter<float4>
+{
+	constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator
+	{
+		return ctx.begin();
+	}
+
+	auto format(const float4& m, format_context& ctx) const -> format_context::iterator
+	{
+		return fmt::format_to(ctx.out(), "({}, {}, {}, {})", m.x, m.y, m.z, m.w);
+	}
+};
+
 struct SMatrix
 {
 	SMatrix() :
@@ -279,6 +293,19 @@ inline std::ostream& operator<<(std::ostream& p_Stream, const SMatrix& p_Value)
 	return p_Stream << "[ " << p_Value.XAxis << ", " << p_Value.YAxis << ", " << p_Value.ZAxis << ", " << p_Value.Trans << " ]";
 }
 
+template <>
+struct fmt::formatter<SMatrix>
+{
+	constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator
+	{
+		return ctx.begin();
+	}
+
+	auto format(const SMatrix& m, format_context& ctx) const -> format_context::iterator
+	{
+		return fmt::format_to(ctx.out(), "[{}, {}, {}, {}]", m.XAxis, m.YAxis, m.ZAxis, m.Trans);
+	}
+};
 
 static_assert(alignof(SMatrix) == 16);
 static_assert(alignof(SMatrix43) == 4);
