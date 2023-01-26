@@ -548,7 +548,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
 			ImGui::TextUnformatted(fmt::format("Entity Interfaces: {}", s_InterfacesStr).c_str());
 
-			std::string s_Properties01;
+			/*std::string s_Properties01;
 
 			for (const auto& s_Property : *(*m_SelectedEntity.m_pEntity)->m_pProperties01)
 			{
@@ -576,8 +576,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 				s_Properties02 += s_Property.m_pType->getPropertyInfo()->m_pName;
 			}
 
-			ImGui::TextUnformatted(fmt::format("Entity Properties2: {}", s_Properties02).c_str());
-		
+			ImGui::TextUnformatted(fmt::format("Entity Properties2: {}", s_Properties02).c_str());	*/	
 
 			if (const auto s_Spatial = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
 			{
