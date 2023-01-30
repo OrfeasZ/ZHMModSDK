@@ -5,6 +5,7 @@
 #include "Globals.h"
 #include "HookImpl.h"
 #include "Hooks.h"
+#include "ini.h"
 #include "Logging.h"
 #include "IPluginInterface.h"
 #include "PinRegistry.h"
@@ -24,6 +25,7 @@
 #include "Glacier/ZGameUIManager.h"
 #include "Glacier/ZSpatialEntity.h"
 #include "Glacier/ZActor.h"
+#include "Util/StringUtils.h"
 
 #if _DEBUG
 #include "DebugConsole.h"
@@ -74,6 +76,8 @@ ModSDK::ModSDK()
 {
 	g_Instance = this;
 
+	LoadConfiguration();
+
 #if _DEBUG
 	m_DebugConsole = std::make_shared<DebugConsole>();
 	SetupLogging(spdlog::level::trace);
@@ -119,6 +123,39 @@ ModSDK::~ModSDK()
 #endif
 }
 
+void ModSDK::LoadConfiguration()
+{
+	char s_ExePathStr[MAX_PATH];
+	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+
+	if (s_PathSize == 0)
+		return;
+
+	std::filesystem::path s_ExePath(s_ExePathStr);
+	auto s_ExeDir = s_ExePath.parent_path();
+
+	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
+
+	mINI::INIFile s_File(s_IniPath.string());
+	mINI::INIStructure s_Ini;
+
+	// now we can read the file
+	s_File.read(s_Ini);
+
+	for (auto& s_Mod : s_Ini)
+	{
+		// We are looking for the sdk entry.
+		if (Util::StringUtils::ToLowerCase(s_Mod.first) != "sdk")
+			continue;
+
+		if (s_Mod.second.has("noui") && s_Mod.second.get("noui") == "true")
+		{
+			m_UiEnabled = false;
+			MessageBoxA(nullptr, "WARNING: The mod SDK UI is currently disabled!\n\nIf you want to re-enable it, remove the 'noui = true' line from Retail/mods.ini and restart your game.", "Mod SDK Warning", MB_OK | MB_ICONWARNING);
+		}
+	}
+}
+
 bool ModSDK::Startup()
 {
 	Util::ProcessUtils::ResumeSuspendedThreads();
@@ -126,6 +163,7 @@ bool ModSDK::Startup()
 #if _DEBUG
 	m_DebugConsole->StartRedirecting();
 #endif
+
 
 	m_ModLoader->Startup();
 	
@@ -147,7 +185,8 @@ bool ModSDK::Startup()
 
 void ModSDK::ThreadedStartup()
 {
-	m_D3D12Hooks->InstallHooks();
+	if (m_UiEnabled)
+		m_D3D12Hooks->InstallHooks();
 
 	m_ModLoader->LockRead();
 
@@ -243,8 +282,11 @@ void ModSDK::OnEngineInit()
 {
 	Logger::Debug("Engine was initialized.");
 
-	m_DirectXTKRenderer->OnEngineInit();
-	m_ImguiRenderer->OnEngineInit();
+	if (m_UiEnabled)
+	{
+		m_DirectXTKRenderer->OnEngineInit();
+		m_ImguiRenderer->OnEngineInit();
+	}
 
 	m_ModLoader->LockRead();
 
@@ -279,11 +321,17 @@ void ModSDK::OnReset()
 
 void ModSDK::RequestUIFocus()
 {
+	if (!m_UiEnabled)
+		return;
+
 	m_ImguiRenderer->SetFocus(true);
 }
 
 void ModSDK::ReleaseUIFocus()
 {
+	if (!m_UiEnabled)
+		return;
+
 	m_ImguiRenderer->SetFocus(false);
 }
 

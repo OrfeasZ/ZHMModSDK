@@ -135,7 +135,17 @@ void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
 	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
 
 	mINI::INIFile s_File(s_IniPath.string());
+
 	mINI::INIStructure s_Ini;
+
+	if (is_regular_file(s_IniPath))
+	{
+		mINI::INIStructure s_OldIni;
+		s_File.read(s_OldIni);
+
+		if (s_OldIni.has("sdk"))
+			s_Ini.set("sdk", s_OldIni.get("sdk"));
+	}
 
 	for (auto& s_Mod : p_Mods)
 	{
@@ -177,6 +187,10 @@ void ModLoader::LoadAllMods()
 
 	for (auto& s_Mod : s_Ini)
 	{
+		// Ignore the SDK entry. It's used for configuring the SDK itself.
+		if (Util::StringUtils::ToLowerCase(s_Mod.first) == "sdk")
+			continue;
+
 		if (m_AvailableModsLower.contains(Util::StringUtils::ToLowerCase(s_Mod.first)))
 		{
 			LoadMod(s_Mod.first, false);

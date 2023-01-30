@@ -52,6 +52,9 @@ public:
 	uintptr_t GetModuleBase() const { return m_ModuleBase; }
 	uint32_t GetSizeOfCode() const { return m_SizeOfCode; }
 	uint32_t GetImageSize() const { return m_ImageSize; }
+
+private:
+	void LoadConfiguration();
 	
 public:
 	void OnEngineInit();
@@ -113,6 +116,7 @@ private:
 	std::unordered_set<ZEntityRef, ZEntityRef::hasher> m_Entities;
 	std::shared_mutex m_EntityMutex;
 
+	bool m_UiEnabled = true;
 	uintptr_t m_ModuleBase;
 	uint32_t m_SizeOfCode;
 	uint32_t m_ImageSize;
