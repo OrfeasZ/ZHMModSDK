@@ -171,8 +171,8 @@ bool ModSDK::Startup()
 	Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
 
 	// Install hooks so we can keep track of entities.
-	Hooks::ZEntityManager_ActivateEntity->AddDetour(this, &ModSDK::ZEntityManager_ActivateEntity);
-	Hooks::ZEntityManager_DeleteEntities->AddDetour(this, &ModSDK::ZEntityManager_DeleteEntities);
+	//Hooks::ZEntityManager_ActivateEntity->AddDetour(this, &ModSDK::ZEntityManager_ActivateEntity);
+	//Hooks::ZEntityManager_DeleteEntities->AddDetour(this, &ModSDK::ZEntityManager_DeleteEntities);
 	//Hooks::ZTemplateEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZTemplateEntityFactory_ConfigureEntity);
 	//Hooks::ZCppEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZCppEntityFactory_ConfigureEntity);
 	//Hooks::ZBehaviorTreeEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZBehaviorTreeEntityFactory_ConfigureEntity);
