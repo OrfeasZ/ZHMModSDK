@@ -56,15 +56,15 @@ public:
 	virtual ~ZRenderDevice() = default;
 
 public:
-	PAD(0x10A08);
-	ZRenderSwapChain* m_pSwapChain; // 0x10A10, look for ZRenderSwapChain constructor
-	ID3D12Device* m_pDevice; // 0x10A18
-	PAD(0x30E9D90); // 0x10A20
-	ID3D12CommandQueue* m_pCommandQueue; // 0x30FA7B0, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
+	//PAD(0x10A08);
+	//ZRenderSwapChain* m_pSwapChain; // 0x10A10, look for ZRenderSwapChain constructor
+	//ID3D12Device* m_pDevice; // 0x10A18
+	//PAD(0x30E9D90); // 0x10A20
+	//ID3D12CommandQueue* m_pCommandQueue; // 0x30FA7B0, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
 };
 
-static_assert(offsetof(ZRenderDevice, m_pSwapChain) == 0x10A10);
-static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA7B0);
+//static_assert(offsetof(ZRenderDevice, m_pSwapChain) == 0x10A10);
+//static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA7B0);
 
 class ZRenderContext
 {

@@ -52,6 +52,12 @@ void DirectXTKRenderer::Shutdown()
 	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
 
 	OnReset();
+
+	if (m_CommandQueue)
+	{
+		m_CommandQueue->Release();
+		m_CommandQueue = nullptr;
+	}
 }
 
 void DirectXTKRenderer::Draw(FrameContext* p_Frame)
@@ -74,17 +80,17 @@ void DirectXTKRenderer::Draw(FrameContext* p_Frame)
 
 void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
-	ScopedSharedGuard s_Guard(&m_Lock);
-
-	if (!Globals::RenderManager->m_pDevice->m_pCommandQueue)
+	if (!m_CommandQueue)
 		return;
-	
+
 	if (!SetupRenderer(p_SwapChain))
 	{
 		Logger::Error("Failed to set up DirectXTK renderer.");
 		OnReset();
 		return;
 	}
+
+	ScopedSharedGuard s_Guard(&m_Lock);
 
 	if (m_SwapChain != p_SwapChain)
 		return;
@@ -172,16 +178,16 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
 	const auto s_SyncValue = s_Frame.FenceValue + 1;
 
-	if (SUCCEEDED(Globals::RenderManager->m_pDevice->m_pCommandQueue->Signal(s_Frame.Fence, s_SyncValue)))
+	if (SUCCEEDED(m_CommandQueue->Signal(s_Frame.Fence, s_SyncValue)))
 		s_Frame.FenceValue = s_SyncValue;
 }
 
 void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain)
 {
-	if (!Globals::RenderManager->m_pDevice->m_pCommandQueue || !m_SwapChain)
+	if (!m_RendererSetup || !m_CommandQueue || !m_SwapChain)
 		return;
 
-	m_GraphicsMemory->Commit(Globals::RenderManager->m_pDevice->m_pCommandQueue);
+	m_GraphicsMemory->Commit(m_CommandQueue);
 }
 
 bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
@@ -197,7 +203,6 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
 	if (p_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK)
 		return false;
-
 	DXGI_SWAP_CHAIN_DESC1 s_SwapChainDesc;
 
 	if (p_SwapChain->GetDesc1(&s_SwapChainDesc) != S_OK)
@@ -311,7 +316,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 		DirectX::SpriteBatchPipelineStateDescription s_Desc(s_RtState);
 		m_SpriteBatch = std::make_unique<DirectX::SpriteBatch>(s_Device, s_ResourceUpload, s_Desc);
 
-		s_ResourceUpload.End(Globals::RenderManager->m_pDevice->m_pCommandQueue).wait();
+		s_ResourceUpload.End(m_CommandQueue).wait();
 		
 		D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
 		m_SpriteBatch->SetViewport(s_Viewport);
@@ -392,8 +397,6 @@ void DirectXTKRenderer::OnReset()
 	delete[] m_FrameContext;
 	m_FrameContext = nullptr;
 
-	//m_CommandQueue = nullptr;
-
 	if (m_RtvDescriptorHeap)
 	{
 		m_RtvDescriptorHeap->Release();
@@ -407,13 +410,20 @@ void DirectXTKRenderer::OnReset()
 
 void DirectXTKRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 {
-	/*if (m_Shutdown)
+	ScopedExclusiveGuard s_Guard(&m_Lock);
+
+	if (m_CommandQueue == p_CommandQueue)
 		return;
 
 	if (m_CommandQueue)
-		return;
+	{
+		m_CommandQueue->Release();
+		m_CommandQueue = nullptr;
+	}
 
-	m_CommandQueue = Globals::RenderManager->m_pDevice->m_pCommandQueue;*/
+	Logger::Debug("Setting up DirectXTK command queue.");
+	m_CommandQueue = p_CommandQueue;
+	m_CommandQueue->AddRef();
 }
 
 void DirectXTKRenderer::WaitForGpu(FrameContext* p_Frame)
@@ -421,12 +431,12 @@ void DirectXTKRenderer::WaitForGpu(FrameContext* p_Frame)
 	if (p_Frame->Recording)
 		ExecuteCmdList(p_Frame);
 
-	if (!p_Frame->FenceEvent || !Globals::RenderManager->m_pDevice->m_pCommandQueue)
+	if (!p_Frame->FenceEvent || !m_CommandQueue)
 		return;
 
 	const auto s_SyncValue = p_Frame->FenceValue + 1;
 
-	if (FAILED(Globals::RenderManager->m_pDevice->m_pCommandQueue->Signal(p_Frame->Fence, s_SyncValue)))
+	if (FAILED(m_CommandQueue->Signal(p_Frame->Fence, s_SyncValue)))
 		return;
 
 	if (SUCCEEDED(p_Frame->Fence->SetEventOnCompletion(s_SyncValue, p_Frame->FenceEvent)))
@@ -446,7 +456,7 @@ void DirectXTKRenderer::ExecuteCmdList(FrameContext* p_Frame)
 		p_Frame->CommandList,
 	};
 
-	Globals::RenderManager->m_pDevice->m_pCommandQueue->ExecuteCommandLists(1, s_CommandLists);
+	m_CommandQueue->ExecuteCommandLists(1, s_CommandLists);
 }
 
 void DirectXTKRenderer::DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor)

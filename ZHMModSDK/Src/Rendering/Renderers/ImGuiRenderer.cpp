@@ -32,8 +32,6 @@ using namespace Rendering::Renderers;
 
 ImGuiRenderer::ImGuiRenderer()
 {
-	InitializeSRWLock(&m_Lock);
-
 	QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
 	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
 
@@ -187,7 +185,14 @@ void ImGuiRenderer::OnEngineInit()
 void ImGuiRenderer::Shutdown()
 {
 	HookRegistry::ClearDetoursWithContext(this);
-	OnReset();
+
+	// TODO: Clean everything up.
+
+	if (m_CommandQueue)
+	{
+		m_CommandQueue->Release();
+		m_CommandQueue = nullptr;
+	}
 }
 
 void ImGuiRenderer::Draw()
@@ -232,89 +237,80 @@ void ImGuiRenderer::Draw()
 	ModSDK::GetInstance()->OnDrawUI(m_ImguiHasFocus);
 }
 
+static thread_local volatile ImGuiRenderer::FrameContext* m_LastFrame = nullptr;
+
 void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
-	ScopedSharedGuard s_Guard(&m_Lock);
-	
+	if (!m_CommandQueue)
+		return;
+
 	if (!SetupRenderer(p_SwapChain))
 	{
 		Logger::Error("Failed to set up ImGui renderer.");
-		OnReset();
 		return;
 	}
-
-	if (m_SwapChain != p_SwapChain)
+	
+	if (!m_CommandQueue)
 		return;
-
-	if (!Globals::RenderManager->m_pDevice->m_pCommandQueue)
-		return;
-
-	const auto s_BackBufferIndex = p_SwapChain->GetCurrentBackBufferIndex();
-	auto& s_Frame = m_FrameContext[s_BackBufferIndex];
-
-	if (s_Frame.Fence->GetCompletedValue() < s_Frame.FenceValue)
-	{
-		if (SUCCEEDED(s_Frame.Fence->SetEventOnCompletion(s_Frame.FenceValue, s_Frame.FenceEvent)))
-		{
-			WaitForSingleObject(s_Frame.FenceEvent, INFINITE);
-		}
-	}
-
-	if (!s_Frame.Recording)
-	{
-		s_Frame.CommandAllocator->Reset();
-
-		s_Frame.Recording = SUCCEEDED(s_Frame.CommandList->Reset(s_Frame.CommandAllocator, nullptr));
-
-		if (s_Frame.Recording)
-			s_Frame.CommandList->SetPredication(nullptr, 0, D3D12_PREDICATION_OP_EQUAL_ZERO);
-
-		if (!s_Frame.Recording)
-		{
-			Logger::Warn("Could not reset command list of frame {}.", s_BackBufferIndex);
-			return;
-		}
-	}
-
-	{
-		D3D12_RESOURCE_BARRIER s_Barrier = {};
-		s_Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		s_Barrier.Transition.pResource = s_Frame.BackBuffer;
-		s_Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		s_Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-		s_Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		s_Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-
-		s_Frame.CommandList->ResourceBarrier(1, &s_Barrier);
-	}
-
-	// Render
-	s_Frame.CommandList->OMSetRenderTargets(1, &s_Frame.DescriptorHandle, false, nullptr);
-	s_Frame.CommandList->SetDescriptorHeaps(1, &m_SrvDescriptorHeap);
 
 	Draw();
 
 	ImGui::Render();
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), s_Frame.CommandList);
+	
+	UINT nextFrameIndex = m_FrameIndex + 1;
+	m_FrameIndex = nextFrameIndex;
 
+	HANDLE waitableObjects[] = { m_FrameLatencyWaitable, nullptr };
+	DWORD numWaitableObjects = 1;
+
+	FrameContext* frameCtx = &m_FrameContext[nextFrameIndex % FRAME_COUNT];
+	UINT64 fenceValue = frameCtx->FenceValue;
+	if (fenceValue != 0) // means no fence was signaled
 	{
-		D3D12_RESOURCE_BARRIER s_Barrier = {};
-		s_Barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		s_Barrier.Transition.pResource = s_Frame.BackBuffer;
-		s_Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		s_Barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		s_Barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-		s_Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-
-		s_Frame.CommandList->ResourceBarrier(1, &s_Barrier);
+		frameCtx->FenceValue = 0;
+		m_Fence->SetEventOnCompletion(fenceValue, m_FenceEvent);
+		waitableObjects[1] = m_FenceEvent;
+		numWaitableObjects = 2;
 	}
 
-	ExecuteCmdList(&s_Frame);
+	WaitForMultipleObjects(numWaitableObjects, waitableObjects, TRUE, INFINITE);
+	
+	INT backBufferIdx = p_SwapChain->GetCurrentBackBufferIndex();
+	frameCtx->CommandAllocator->Reset();
 
-	const auto s_SyncValue = s_Frame.FenceValue + 1;
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = m_BackBuffers[backBufferIdx];
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	m_CommandList->Reset(frameCtx->CommandAllocator, NULL);
+	m_CommandList->ResourceBarrier(1, &barrier);
 
-	if (SUCCEEDED(Globals::RenderManager->m_pDevice->m_pCommandQueue->Signal(s_Frame.Fence, s_SyncValue)))
-		s_Frame.FenceValue = s_SyncValue;
+	// Render Dear ImGui graphics
+	m_CommandList->OMSetRenderTargets(1, &m_DescriptorHandles[backBufferIdx], FALSE, NULL);
+	m_CommandList->SetDescriptorHeaps(1, &m_SrvDescriptorHeap);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList);
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+	m_CommandList->ResourceBarrier(1, &barrier);
+	m_CommandList->Close();
+
+	m_CommandQueue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(&m_CommandList));
+
+	m_LastFrame = frameCtx;
+}
+
+void ImGuiRenderer::PostPresent(IDXGISwapChain3* p_SwapChain)
+{
+	if (!m_CommandQueue || !m_RendererSetup)
+		return;
+
+	UINT64 fenceValue = m_FenceLastSignaledValue + 1;
+	m_CommandQueue->Signal(m_Fence, fenceValue);
+	m_FenceLastSignaledValue = fenceValue;
+	m_LastFrame->FenceValue = fenceValue;
 }
 
 bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
@@ -324,20 +320,22 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
 	Logger::Debug("Setting up ImGui renderer.");
 
-	m_SwapChain = p_SwapChain;
-
 	ScopedD3DRef<ID3D12Device> s_Device;
 
 	if (p_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK)
 		return false;
-
+	
 	DXGI_SWAP_CHAIN_DESC1 s_SwapChainDesc;
 
 	if (p_SwapChain->GetDesc1(&s_SwapChainDesc) != S_OK)
 		return false;
 
+	m_SwapChain = p_SwapChain;
+	m_FrameLatencyWaitable = p_SwapChain->GetFrameLatencyWaitableObject();
+
 	m_BufferCount = s_SwapChainDesc.BufferCount;
-	m_FrameContext = new FrameContext[m_BufferCount];
+
+	Logger::Debug("Imgui buffer count: {}", m_BufferCount);
 
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC s_Desc = {};
@@ -355,7 +353,6 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC s_Desc = {};
 		s_Desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		//s_Desc.NumDescriptors = 1;
 		s_Desc.NumDescriptors = 2;
 		s_Desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		s_Desc.NodeMask = 0;
@@ -366,21 +363,11 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 		D3D_SET_OBJECT_NAME_A(m_SrvDescriptorHeap, "ZHMModSDK ImGui Srv Descriptor Heap");
 	}
 
-	const auto s_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-
-	for (UINT i = 0; i < m_BufferCount; ++i)
+	for (int i = 0; i < FRAME_COUNT; ++i)
 	{
 		auto& s_Frame = m_FrameContext[i];
 
 		s_Frame.Index = i;
-
-		if (s_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&s_Frame.Fence)) != S_OK)
-			return false;
-
-		char s_FenceDebugName[128];
-		sprintf_s(s_FenceDebugName, sizeof(s_FenceDebugName), "ZHMModSDK ImGui Fence #%u", i);
-		D3D_SET_OBJECT_NAME_A(s_Frame.Fence, s_FenceDebugName);
 
 		if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&s_Frame.CommandAllocator)) != S_OK)
 			return false;
@@ -389,25 +376,41 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 		sprintf_s(s_CmdAllocDebugName, sizeof(s_CmdAllocDebugName), "ZHMModSDK ImGui Command Allocator #%u", i);
 		D3D_SET_OBJECT_NAME_A(s_Frame.CommandAllocator, s_CmdAllocDebugName);
 
-		if (s_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, s_Frame.CommandAllocator, nullptr, IID_PPV_ARGS(&s_Frame.CommandList)) != S_OK ||
-			s_Frame.CommandList->Close() != S_OK)
-			return false;
-
-		char s_CmdListDebugName[128];
-		sprintf_s(s_CmdListDebugName, sizeof(s_CmdListDebugName), "ZHMModSDK ImGui Command List #%u", i);
-		D3D_SET_OBJECT_NAME_A(s_Frame.CommandList, s_CmdListDebugName);
-
-		if (p_SwapChain->GetBuffer(i, IID_PPV_ARGS(&s_Frame.BackBuffer)) != S_OK)
-			return false;
-
-		s_Frame.DescriptorHandle.ptr = s_RtvHandle.ptr + (i * s_RtvDescriptorSize);
-
-		s_Device->CreateRenderTargetView(s_Frame.BackBuffer, nullptr, s_Frame.DescriptorHandle);
-
 		s_Frame.FenceValue = 0;
-		s_Frame.FenceEvent = CreateEventA(nullptr, false, false, nullptr);
-
 		s_Frame.Recording = false;
+	}
+
+	if (s_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr, IID_PPV_ARGS(&m_CommandList)) != S_OK ||
+		m_CommandList->Close() != S_OK)
+		return false;
+
+	char s_CmdListDebugName[128];
+	sprintf_s(s_CmdListDebugName, sizeof(s_CmdListDebugName), "ZHMModSDK ImGui Command List");
+	D3D_SET_OBJECT_NAME_A(m_CommandList, s_CmdListDebugName);
+
+	if (s_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)) != S_OK)
+		return false;
+
+	char s_FenceDebugName[128];
+	sprintf_s(s_FenceDebugName, sizeof(s_FenceDebugName), "ZHMModSDK ImGui Fence");
+	D3D_SET_OBJECT_NAME_A(m_Fence, s_FenceDebugName);
+
+	m_FenceEvent = CreateEventA(nullptr, false, false, nullptr);
+
+	m_BackBuffers = new ID3D12Resource*[m_BufferCount];
+	m_DescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[m_BufferCount];
+
+	const auto s_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+	for (UINT i = 0; i < m_BufferCount; ++i)
+	{
+		if (p_SwapChain->GetBuffer(i, IID_PPV_ARGS(&m_BackBuffers[i])) != S_OK)
+			return false;
+
+		m_DescriptorHandles[i].ptr = s_RtvHandle.ptr + (i * s_RtvDescriptorSize);
+
+		s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, m_DescriptorHandles[i]);
 	}
 
 	if (p_SwapChain->GetHwnd(&m_Hwnd) != S_OK)
@@ -440,126 +443,95 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
 void ImGuiRenderer::OnReset()
 {
-	ScopedExclusiveGuard s_Guard(&m_Lock);
+	if (!m_RendererSetup)
+		return;
 
-	Logger::Debug("Resetting ImGui renderer.");
+	// Wait for last frame.
+	FrameContext* frameCtx = &m_FrameContext[m_FrameIndex % FRAME_COUNT];
 
-	if (m_RendererSetup)
+	UINT64 fenceValue = frameCtx->FenceValue;
+
+	if (fenceValue != 0)
 	{
-		ImGui_ImplDX12_InvalidateDeviceObjects();
-		ImGui_ImplDX12_Shutdown();
-	}
+		frameCtx->FenceValue = 0;
 
-	m_RendererSetup = false;
+		if (m_Fence->GetCompletedValue() < fenceValue)
+		{
+			m_Fence->SetEventOnCompletion(fenceValue, m_FenceEvent);
+			WaitForSingleObject(m_FenceEvent, INFINITE);
+		}
+	}
 
 	for (UINT i = 0; i < m_BufferCount; i++)
 	{
-		auto& s_Frame = m_FrameContext[i];
-
-		if (m_SwapChain && m_SwapChain->GetCurrentBackBufferIndex() != s_Frame.Index)
-			s_Frame.Recording = false;
-
-		WaitForGpu(&s_Frame);
-
-		if (s_Frame.CommandList)
-		{
-			s_Frame.CommandList->Release();
-			s_Frame.CommandList = nullptr;
-		}
-
-		if (s_Frame.CommandAllocator)
-		{
-			s_Frame.CommandAllocator->Release();
-			s_Frame.CommandAllocator = nullptr;
-		}
-
-		if (s_Frame.BackBuffer)
-		{
-			s_Frame.BackBuffer->Release();
-			s_Frame.BackBuffer = nullptr;
-		}
-
-		if (s_Frame.Fence)
-		{
-			s_Frame.Fence->Release();
-			s_Frame.Fence = nullptr;
-		}
-
-		if (s_Frame.FenceEvent)
-		{
-			CloseHandle(s_Frame.FenceEvent);
-			s_Frame.FenceEvent = nullptr;
-		}
-
-		s_Frame.FenceValue = 0;
-		s_Frame.Recording = false;
-		s_Frame.DescriptorHandle = { 0 };
+		m_BackBuffers[i]->Release();
+		m_BackBuffers[i] = nullptr;
 	}
 
-	delete[] m_FrameContext;
-	m_FrameContext = nullptr;
+	delete[] m_BackBuffers;
+	delete[] m_DescriptorHandles;
+}
 
-	//m_CommandQueue = nullptr;
+void ImGuiRenderer::PostReset()
+{
+	if (!m_RendererSetup)
+		return;
 
-	if (m_RtvDescriptorHeap)
+	DXGI_SWAP_CHAIN_DESC1 s_SwapChainDesc;
+
+	if (m_SwapChain->GetDesc1(&s_SwapChainDesc) != S_OK)
+		return;
+
+	ScopedD3DRef<ID3D12Device> s_Device;
+
+	if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK)
+		return;
+
+	m_BufferCount = s_SwapChainDesc.BufferCount;
+
+	Logger::Debug("Imgui buffer count: {}", m_BufferCount);
+
+	m_BackBuffers = new ID3D12Resource * [m_BufferCount];
+	m_DescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[m_BufferCount];
+
+	const auto s_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+	for (UINT i = 0; i < m_BufferCount; ++i)
 	{
-		m_RtvDescriptorHeap->Release();
-		m_RtvDescriptorHeap = nullptr;
+		if (m_SwapChain->GetBuffer(i, IID_PPV_ARGS(&m_BackBuffers[i])) != S_OK)
+			return;
+
+		m_DescriptorHandles[i].ptr = s_RtvHandle.ptr + (i * s_RtvDescriptorSize);
+
+		s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, m_DescriptorHandles[i]);
 	}
 
-	if (m_SrvDescriptorHeap)
-	{
-		m_SrvDescriptorHeap->Release();
-		m_SrvDescriptorHeap = nullptr;
-	}
+	ImGuiIO& s_ImGuiIO = ImGui::GetIO();
 
-	m_SwapChain = nullptr;
-	m_BufferCount = 0;
-	m_Hwnd = nullptr;
+	RECT s_Rect = { 0, 0, 0, 0 };
+	GetClientRect(m_Hwnd, &s_Rect);
+
+	s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
+	s_ImGuiIO.ImeWindowHandle = m_Hwnd;
+
+	s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
 }
 
 void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 {
-	/*if (m_Shutdown)
+	if (m_CommandQueue == p_CommandQueue)
 		return;
 
-	if (!m_RendererSetup || m_CommandQueue || !m_SwapChain)
-		return;
-	
-	m_CommandQueue = Globals::RenderManager->m_pDevice->m_pCommandQueue;*/
-}
+	if (m_CommandQueue)
+	{
+		m_CommandQueue->Release();
+		m_CommandQueue = nullptr;
+	}
 
-void ImGuiRenderer::WaitForGpu(FrameContext* p_Frame)
-{
-	if (p_Frame->Recording)
-		ExecuteCmdList(p_Frame);
-
-	if (!p_Frame->FenceEvent || !Globals::RenderManager->m_pDevice->m_pCommandQueue)
-		return;
-
-	const auto s_SyncValue = p_Frame->FenceValue + 1;
-
-	if (FAILED(Globals::RenderManager->m_pDevice->m_pCommandQueue->Signal(p_Frame->Fence, s_SyncValue)))
-		return;
-
-	if (SUCCEEDED(p_Frame->Fence->SetEventOnCompletion(s_SyncValue, p_Frame->FenceEvent)))
-		WaitForSingleObject(p_Frame->FenceEvent, INFINITE);
-
-	p_Frame->FenceValue = s_SyncValue;
-}
-
-void ImGuiRenderer::ExecuteCmdList(FrameContext* p_Frame)
-{
-	if (FAILED(p_Frame->CommandList->Close()))
-		return;
-
-	p_Frame->Recording = false;
-
-	ID3D12CommandList* const s_CommandLists[] = {
-		p_Frame->CommandList,
-	};
-
-	Globals::RenderManager->m_pDevice->m_pCommandQueue->ExecuteCommandLists(1, s_CommandLists);
+	Logger::Debug("Setting up ImGui command queue.");
+	m_CommandQueue = p_CommandQueue;
+	m_CommandQueue->AddRef();
 }
 
 DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)

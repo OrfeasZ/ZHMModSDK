@@ -15,6 +15,7 @@
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/_install/${presetName}",
         "DIRECTX_ARCH": "x64",
+        "CMAKE_C_COMPILER": "cl.exe",
         "CMAKE_CXX_COMPILER": "cl.exe",
         "CMAKE_TOOLCHAIN_FILE": {
           "value": "${sourceDir}/External/vcpkg/scripts/buildsystems/vcpkg.cmake",

@@ -69,9 +69,9 @@ HRESULT D3D12Hooks::Detour_IDXGISwapChain_Present(IDXGISwapChain* th, UINT SyncI
 		return Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
 
 	ModSDK::GetInstance()->OnPresent(s_SwapChain3);
-
+	
 	auto s_Result = Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
-
+	
 	ModSDK::GetInstance()->PostPresent(s_SwapChain3);
 
 	return s_Result;
@@ -79,16 +79,34 @@ HRESULT D3D12Hooks::Detour_IDXGISwapChain_Present(IDXGISwapChain* th, UINT SyncI
 
 HRESULT D3D12Hooks::Detour_IDXGISwapChain_ResizeBuffers(IDXGISwapChain* th, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	ModSDK::GetInstance()->OnReset();
+	ScopedD3DRef<IDXGISwapChain3> s_SwapChain3;
 
-	return Original_IDXGISwapChain_ResizeBuffers(th, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+	if (th->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
+		return Original_IDXGISwapChain_ResizeBuffers(th, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+
+	ModSDK::GetInstance()->OnReset(s_SwapChain3);
+
+	auto s_Result = Original_IDXGISwapChain_ResizeBuffers(th, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+
+	ModSDK::GetInstance()->PostReset(s_SwapChain3);
+
+	return s_Result;
 }
 
 HRESULT D3D12Hooks::Detour_IDXGISwapChain_ResizeTarget(IDXGISwapChain* th, const DXGI_MODE_DESC* pNewTargetParameters)
 {
-	ModSDK::GetInstance()->OnReset();
+	ScopedD3DRef<IDXGISwapChain3> s_SwapChain3;
 
-	return Original_IDXGISwapChain_ResizeTarget(th, pNewTargetParameters);
+	if (th->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
+		return Original_IDXGISwapChain_ResizeTarget(th, pNewTargetParameters);
+
+	ModSDK::GetInstance()->OnReset(s_SwapChain3);
+
+	auto s_Result = Original_IDXGISwapChain_ResizeTarget(th, pNewTargetParameters);
+
+	ModSDK::GetInstance()->PostReset(s_SwapChain3);
+
+	return s_Result;
 }
 
 void D3D12Hooks::Detour_ID3D12CommandQueue_ExecuteCommandLists(ID3D12CommandQueue* th, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)

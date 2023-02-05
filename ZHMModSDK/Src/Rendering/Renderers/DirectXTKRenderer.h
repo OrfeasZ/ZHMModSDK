@@ -80,7 +80,7 @@ namespace Rendering::Renderers
 		bool m_RendererSetup = false;
 		UINT m_BufferCount = 0;
 		ID3D12DescriptorHeap* m_RtvDescriptorHeap = nullptr;
-		//ID3D12CommandQueue* m_CommandQueue = nullptr;
+		ID3D12CommandQueue* m_CommandQueue = nullptr;
 		FrameContext* m_FrameContext = nullptr;
 		IDXGISwapChain3* m_SwapChain = nullptr;
 		HWND m_Hwnd = nullptr;

@@ -25,6 +25,7 @@
 #include "Glacier/ZGameUIManager.h"
 #include "Glacier/ZSpatialEntity.h"
 #include "Glacier/ZActor.h"
+#include "Rendering/D3DUtils.h"
 #include "Util/StringUtils.h"
 
 #if _DEBUG
@@ -296,27 +297,79 @@ void ModSDK::OnEngineInit()
 	m_ModLoader->UnlockRead();
 }
 
+static IDXGISwapChain* g_SwapChain = nullptr;
+static ID3D12CommandQueue* g_CommandQueue = nullptr;
+
 void ModSDK::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
-	m_DirectXTKRenderer->OnPresent(p_SwapChain);
+	if (g_SwapChain == nullptr)
+	{
+		Logger::Debug("Setting swap chain to {}.", fmt::ptr(p_SwapChain));
+		g_SwapChain = p_SwapChain;
+	}
+
+	if (g_SwapChain != p_SwapChain)
+		return;
+
+	//m_DirectXTKRenderer->OnPresent(p_SwapChain);
 	m_ImguiRenderer->OnPresent(p_SwapChain);
 }
 
 void ModSDK::PostPresent(IDXGISwapChain3* p_SwapChain)
 {
-	m_DirectXTKRenderer->PostPresent(p_SwapChain);
+	if (g_SwapChain != p_SwapChain)
+		return;
+
+	m_ImguiRenderer->PostPresent(p_SwapChain);
+	//m_DirectXTKRenderer->PostPresent(p_SwapChain);
 }
 
 void ModSDK::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 {
-	m_DirectXTKRenderer->SetCommandQueue(p_CommandQueue);
+	if (!g_SwapChain)
+		return;
+
+	if (g_CommandQueue != nullptr)
+		return;
+
+	if (p_CommandQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT)
+		return;
+
+	Rendering::ScopedD3DRef<ID3D12Device> s_Device;
+
+	if (g_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK)
+		return;
+
+	Rendering::ScopedD3DRef<ID3D12Device> s_CommandQueueDevice;
+
+	if (p_CommandQueue->GetDevice(REF_IID_PPV_ARGS(s_CommandQueueDevice)) != S_OK)
+		return;
+
+	if (s_Device.Ref != s_CommandQueueDevice.Ref)
+		return;
+
+	g_CommandQueue = p_CommandQueue;
+	
+	//m_DirectXTKRenderer->SetCommandQueue(p_CommandQueue);
 	m_ImguiRenderer->SetCommandQueue(p_CommandQueue);
 }
 
-void ModSDK::OnReset()
+void ModSDK::OnReset(IDXGISwapChain3* p_SwapChain)
 {
-	m_DirectXTKRenderer->OnReset();
+	if (g_SwapChain != p_SwapChain)
+		return;
+
+	//m_DirectXTKRenderer->OnReset();
 	m_ImguiRenderer->OnReset();
+}
+
+void ModSDK::PostReset(IDXGISwapChain3* p_SwapChain)
+{
+	if (g_SwapChain != p_SwapChain)
+		return;
+
+	//m_DirectXTKRenderer->PostReset();
+	m_ImguiRenderer->PostReset();
 }
 
 void ModSDK::RequestUIFocus()

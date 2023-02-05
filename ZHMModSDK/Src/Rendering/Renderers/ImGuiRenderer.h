@@ -13,25 +13,15 @@ namespace Rendering::Renderers
 {
 	class ImGuiRenderer
 	{
-	private:
+	public:
 		struct FrameContext
 		{
 			size_t Index = 0;
-
-			ID3D12CommandAllocator* CommandAllocator = nullptr;
-			ID3D12GraphicsCommandList* CommandList = nullptr;
-
-			ID3D12Resource* BackBuffer = nullptr;
-			D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHandle = { 0 };
-
-			ID3D12Fence* Fence = nullptr;
-			HANDLE FenceEvent = nullptr;
+			ID3D12CommandAllocator* CommandAllocator = nullptr;			
 			volatile uint64_t FenceValue = 0;
-
 			volatile bool Recording = false;
 		};
 
-	public:
 		ImGuiRenderer();
 		~ImGuiRenderer();
 
@@ -41,8 +31,10 @@ namespace Rendering::Renderers
 		
 	public:
 		void OnPresent(IDXGISwapChain3* p_SwapChain);
+		void PostPresent(IDXGISwapChain3* p_SwapChain);
 		void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
 		void OnReset();
+		void PostReset();
 
 	public:
 		ImFont* GetFontLight() { return m_FontLight; }
@@ -55,8 +47,6 @@ namespace Rendering::Renderers
 		
 	private:
 		bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
-		void WaitForGpu(FrameContext* p_Frame);
-		void ExecuteCmdList(FrameContext* p_Frame);
 		void Draw();
 		void SetupStyles();
 
@@ -68,16 +58,32 @@ namespace Rendering::Renderers
 	private:
 		bool m_RendererSetup = false;
 
-		UINT m_BufferCount = 0;
+		IDXGISwapChain3* m_SwapChain = nullptr;
+		HANDLE m_FrameLatencyWaitable = nullptr;
+		ID3D12CommandQueue* m_CommandQueue = nullptr;
+		HWND m_Hwnd = nullptr;
+
 		ID3D12DescriptorHeap* m_RtvDescriptorHeap = nullptr;
 		ID3D12DescriptorHeap* m_SrvDescriptorHeap = nullptr;
-		//ID3D12CommandQueue* m_CommandQueue;
-		FrameContext* m_FrameContext = nullptr;
-		IDXGISwapChain3* m_SwapChain = nullptr;
-		HWND m_Hwnd = nullptr;
+
+		constexpr static int FRAME_COUNT = 2;
+
+		FrameContext m_FrameContext[FRAME_COUNT] = { };
+
+		ID3D12GraphicsCommandList* m_CommandList = nullptr;
+
+		ID3D12Fence* m_Fence = nullptr;
+		HANDLE m_FenceEvent = nullptr;
+
+		UINT m_BufferCount = 0;
+		ID3D12Resource** m_BackBuffers = nullptr;
+		D3D12_CPU_DESCRIPTOR_HANDLE* m_DescriptorHandles = nullptr;
 
 		int64_t m_Time = 0;
 		int64_t m_TicksPerSecond = 0;
+
+		volatile uint64_t m_FenceLastSignaledValue = 0;
+		volatile uint32_t m_FrameIndex = 0;
 
 		ImFont* m_FontLight = nullptr;
 		ImFont* m_FontRegular = nullptr;
@@ -86,7 +92,5 @@ namespace Rendering::Renderers
 		ImFont* m_FontBlack = nullptr;
 
 		volatile bool m_ImguiHasFocus = false;
-
-		SRWLOCK m_Lock {};
 	};
 }
