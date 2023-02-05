@@ -25,7 +25,7 @@ Right now it's at a very early stage, with only a few aspects of the engine expo
 
 6. Profit?
 
-> NOTE: You can at any time change the mods you're using by pressing the `~` key and selecting them, or by editing the `mods.ini` file inside your game's `Retail` folder.
+> NOTE: You can at any time change the mods you're using by pressing the `~` key (`^` on QWERTZ layouts) and selecting them, or by editing the `mods.ini` file inside your game's `Retail` folder.
 
 ## Sample mods
 
