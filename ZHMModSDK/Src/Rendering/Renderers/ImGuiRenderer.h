@@ -20,7 +20,6 @@ namespace Rendering::Renderers
 			size_t Index = 0;
 			ScopedD3DRef<ID3D12CommandAllocator> CommandAllocator = nullptr;
 			volatile uint64_t FenceValue = 0;
-			ScopedD3DRef<ID3D12Resource> BackBuffer;
 		};
 
 		ImGuiRenderer();
@@ -49,6 +48,7 @@ namespace Rendering::Renderers
 		bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
 		void Draw();
 		void SetupStyles();
+		void WaitForCurrentFrameToFinish() const;
 
 	private:
 		DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM);
@@ -65,7 +65,11 @@ namespace Rendering::Renderers
 		ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
 		ScopedD3DRef<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
 
+		/** The maximum number of frames that can be buffered for render. */
+		inline constexpr static size_t MaxRenderedFrames = 4;
 		std::vector<FrameContext> m_FrameContext;
+
+		std::vector<ScopedD3DRef<ID3D12Resource>> m_BackBuffers;
 
 		ScopedD3DRef<ID3D12GraphicsCommandList> m_CommandList;
 
@@ -77,7 +81,8 @@ namespace Rendering::Renderers
 		int64_t m_Time = 0;
 		int64_t m_TicksPerSecond = 0;
 		
-		volatile uint32_t m_FrameIndex = 0;
+		volatile uint32_t m_FrameCounter = 0;
+		volatile uint64_t m_FenceValue = 0;
 
 		ImFont* m_FontLight = nullptr;
 		ImFont* m_FontRegular = nullptr;
