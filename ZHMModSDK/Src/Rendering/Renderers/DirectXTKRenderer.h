@@ -53,7 +53,6 @@ namespace Rendering::Renderers
 
 	public:
 		void OnEngineInit();
-		void Shutdown();
 
 	public:
 		void OnPresent(IDXGISwapChain3* p_SwapChain);

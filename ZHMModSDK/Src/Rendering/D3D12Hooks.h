@@ -28,12 +28,16 @@ namespace Rendering
 			IDXGISwapChain_ResizeBuffers = 13,
 			IDXGISwapChain_ResizeTarget = 14,
 			ID3D12CommandQueue_ExecuteCommandLists = 10,
+			IDXGIFactory_CreateSwapChain = 10,
+			IDXGIFactory2_CreateSwapChainForHwnd = 15,
+			IDXGIFactory2_CreateSwapChainForCoreWindow = 16,
+			IDXGIFactory2_CreateSwapChainForComposition = 24,
 		};
 
 	private:
 		struct VTables
 		{
-			void* IDXGIFactory1Vtbl;
+			void* IDXGIFactoryVtbl;
 			void* IDXGIAdapterVtbl;
 			void* ID3D12DeviceVtbl;
 			void* ID3D12CommandQueueVtbl;
@@ -61,9 +65,7 @@ namespace Rendering
 		void InstallHook(void* p_VTable, int p_Index, void* p_Detour, void** p_Original);
 		void RemoveHook(const InstalledHook& p_Hook);
 
-		DECLARE_D3D12_HOOK(HRESULT, IDXGISwapChain, Present, UINT SyncInterval, UINT Flags);
-		DECLARE_D3D12_HOOK(HRESULT, IDXGISwapChain, ResizeBuffers, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
-		DECLARE_D3D12_HOOK(HRESULT, IDXGISwapChain, ResizeTarget, const DXGI_MODE_DESC* pNewTargetParameters);
+		DECLARE_D3D12_HOOK(HRESULT, IDXGIFactory, CreateSwapChain, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain);
 		DECLARE_D3D12_HOOK(void, ID3D12CommandQueue, ExecuteCommandLists, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists);
 
 	private:

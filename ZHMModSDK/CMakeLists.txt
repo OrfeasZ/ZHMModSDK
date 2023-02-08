@@ -30,6 +30,8 @@ target_link_libraries(ZHMModSDK PUBLIC
 	minhook::minhook
 	spdlog::spdlog_header_only
 	Microsoft::DirectXTK12
+	Microsoft::DirectX-Guids
+	Microsoft::DirectX-Headers
 	imgui
 	d3d12.lib
 	dxgi.lib

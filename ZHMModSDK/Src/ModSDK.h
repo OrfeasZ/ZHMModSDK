@@ -66,7 +66,7 @@ public:
 
 public:
 	void OnPresent(IDXGISwapChain3* p_SwapChain);
-	void PostPresent(IDXGISwapChain3* p_SwapChain);
+	void PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult);
 	void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
 	void OnReset(IDXGISwapChain3* p_SwapChain);
 	void PostReset(IDXGISwapChain3* p_SwapChain);

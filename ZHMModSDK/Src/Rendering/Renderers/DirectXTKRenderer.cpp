@@ -33,21 +33,6 @@ DirectXTKRenderer::DirectXTKRenderer()
 
 DirectXTKRenderer::~DirectXTKRenderer()
 {
-	Shutdown();
-}
-
-void DirectXTKRenderer::OnEngineInit()
-{
-	const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(this, &DirectXTKRenderer::OnFrameUpdate);
-	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, INT_MAX, EUpdateMode::eUpdateAlways);
-}
-
-void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
-{
-}
-
-void DirectXTKRenderer::Shutdown()
-{
 	const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(this, &DirectXTKRenderer::OnFrameUpdate);
 	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
 
@@ -58,6 +43,16 @@ void DirectXTKRenderer::Shutdown()
 		m_CommandQueue->Release();
 		m_CommandQueue = nullptr;
 	}
+}
+
+void DirectXTKRenderer::OnEngineInit()
+{
+	const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(this, &DirectXTKRenderer::OnFrameUpdate);
+	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, INT_MAX, EUpdateMode::eUpdateAlways);
+}
+
+void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
+{
 }
 
 void DirectXTKRenderer::Draw(FrameContext* p_Frame)

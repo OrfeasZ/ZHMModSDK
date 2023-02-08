@@ -22,6 +22,7 @@ find_package(7zip CONFIG REQUIRED)
 find_package(directxtk12 CONFIG REQUIRED)
 find_package(minhook CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+find_package(directx-headers CONFIG REQUIRED)
 add_subdirectory("External/imgui")
 add_subdirectory("External/imguizmo")
 

@@ -315,13 +315,13 @@ void ModSDK::OnPresent(IDXGISwapChain3* p_SwapChain)
 	m_ImguiRenderer->OnPresent(p_SwapChain);
 }
 
-void ModSDK::PostPresent(IDXGISwapChain3* p_SwapChain)
+void ModSDK::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult)
 {
 	if (g_SwapChain != p_SwapChain)
 		return;
 
-	m_ImguiRenderer->PostPresent(p_SwapChain);
-	//m_DirectXTKRenderer->PostPresent(p_SwapChain);
+	m_ImguiRenderer->PostPresent(p_SwapChain, p_PresentResult);
+	//m_DirectXTKRenderer->PostPresent(p_SwapChain, p_PresentResult);
 }
 
 void ModSDK::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)

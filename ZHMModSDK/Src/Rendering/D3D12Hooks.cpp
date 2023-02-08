@@ -6,6 +6,7 @@
 #include <filesystem>
 
 
+#include "D3D12SwapChain.h"
 #include "D3DUtils.h"
 #include "Logging.h"
 #include "MinHook.h"
@@ -17,9 +18,7 @@
 
 using namespace Rendering;
 
-DEFINE_D3D12_HOOK(IDXGISwapChain, Present);
-DEFINE_D3D12_HOOK(IDXGISwapChain, ResizeBuffers);
-DEFINE_D3D12_HOOK(IDXGISwapChain, ResizeTarget);
+DEFINE_D3D12_HOOK(IDXGIFactory, CreateSwapChain);
 DEFINE_D3D12_HOOK(ID3D12CommandQueue, ExecuteCommandLists);
 
 D3D12Hooks::~D3D12Hooks()
@@ -39,9 +38,7 @@ void D3D12Hooks::InstallHooks()
 
 	Util::ProcessUtils::SuspendAllThreadsButCurrent();
 
-	INSTALL_D3D12_HOOK(IDXGISwapChain, Present);
-	INSTALL_D3D12_HOOK(IDXGISwapChain, ResizeBuffers);
-	INSTALL_D3D12_HOOK(IDXGISwapChain, ResizeTarget);
+	INSTALL_D3D12_HOOK(IDXGIFactory, CreateSwapChain);
 	INSTALL_D3D12_HOOK(ID3D12CommandQueue, ExecuteCommandLists);
 
 	Util::ProcessUtils::ResumeSuspendedThreads();
@@ -61,52 +58,31 @@ void D3D12Hooks::RemoveHooks()
 	Util::ProcessUtils::ResumeSuspendedThreads();
 }
 
-HRESULT D3D12Hooks::Detour_IDXGISwapChain_Present(IDXGISwapChain* th, UINT SyncInterval, UINT Flags)
+HRESULT D3D12Hooks::Detour_IDXGIFactory_CreateSwapChain(IDXGIFactory* th, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
 {
+	Logger::Debug("[D3D12Hooks] Creating swap chain.");
+
+	IDXGISwapChain* s_SwapChain = nullptr;
+
+	auto s_Result = Original_IDXGIFactory_CreateSwapChain(th, pDevice, pDesc, &s_SwapChain);
+
+	if (s_Result != S_OK)
+		return s_Result;
+
 	ScopedD3DRef<IDXGISwapChain3> s_SwapChain3;
 
-	if (th->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
-		return Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
+	if (s_SwapChain->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
+	{
+		Logger::Warn("[D3D12Hooks] Swap chain was not version 3. Not touching.");
+		*ppSwapChain = s_SwapChain;
+		return S_OK;
+	}
 
-	ModSDK::GetInstance()->OnPresent(s_SwapChain3);
-	
-	auto s_Result = Original_IDXGISwapChain_Present(th, SyncInterval, Flags);
-	
-	ModSDK::GetInstance()->PostPresent(s_SwapChain3);
+	Logger::Debug("[D3D12Hooks] Wrapping swap chain.");
+	*ppSwapChain = new D3D12SwapChain(s_SwapChain3.Ref);
+	(*ppSwapChain)->AddRef();
 
-	return s_Result;
-}
-
-HRESULT D3D12Hooks::Detour_IDXGISwapChain_ResizeBuffers(IDXGISwapChain* th, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
-{
-	ScopedD3DRef<IDXGISwapChain3> s_SwapChain3;
-
-	if (th->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
-		return Original_IDXGISwapChain_ResizeBuffers(th, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-
-	ModSDK::GetInstance()->OnReset(s_SwapChain3);
-
-	auto s_Result = Original_IDXGISwapChain_ResizeBuffers(th, BufferCount, Width, Height, NewFormat, SwapChainFlags);
-
-	ModSDK::GetInstance()->PostReset(s_SwapChain3);
-
-	return s_Result;
-}
-
-HRESULT D3D12Hooks::Detour_IDXGISwapChain_ResizeTarget(IDXGISwapChain* th, const DXGI_MODE_DESC* pNewTargetParameters)
-{
-	ScopedD3DRef<IDXGISwapChain3> s_SwapChain3;
-
-	if (th->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
-		return Original_IDXGISwapChain_ResizeTarget(th, pNewTargetParameters);
-
-	ModSDK::GetInstance()->OnReset(s_SwapChain3);
-
-	auto s_Result = Original_IDXGISwapChain_ResizeTarget(th, pNewTargetParameters);
-
-	ModSDK::GetInstance()->PostReset(s_SwapChain3);
-
-	return s_Result;
+	return S_OK;
 }
 
 void D3D12Hooks::Detour_ID3D12CommandQueue_ExecuteCommandLists(ID3D12CommandQueue* th, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
@@ -254,9 +230,9 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 		if (SUCCEEDED(s_Debug->QueryInterface(IID_PPV_ARGS(&s_Debug1))))
 		{
-			Logger::Debug("[D3D12Hooks] Enabling D3D12 gpu-based validation.");
+			//Logger::Debug("[D3D12Hooks] Enabling D3D12 gpu-based validation.");
 
-			s_Debug1->SetEnableGPUBasedValidation(true);
+			//s_Debug1->SetEnableGPUBasedValidation(true);
 			s_Debug1->Release();
 		}
 
@@ -357,7 +333,7 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 		return std::nullopt;
 
 	VTables s_VTables {};
-	s_VTables.IDXGIFactory1Vtbl = s_Factory.VTable();
+	s_VTables.IDXGIFactoryVtbl = s_Factory.VTable();
 	s_VTables.IDXGIAdapterVtbl = s_Adapter.VTable();
 	s_VTables.ID3D12DeviceVtbl = s_Device.VTable();
 	s_VTables.ID3D12CommandQueueVtbl = s_CommandQueue.VTable();

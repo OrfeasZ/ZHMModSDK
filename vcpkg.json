@@ -5,6 +5,7 @@
     "7zip",
     "spdlog",
     "minhook",
-    "lz4"
+    "lz4",
+    "directx-headers"
   ]
 }
