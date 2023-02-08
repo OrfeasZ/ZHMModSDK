@@ -165,7 +165,6 @@ bool ModSDK::Startup()
 	m_DebugConsole->StartRedirecting();
 #endif
 
-
 	m_ModLoader->Startup();
 	
 	// Notify all loaded mods that the engine has intialized once it has.
@@ -311,7 +310,7 @@ void ModSDK::OnPresent(IDXGISwapChain3* p_SwapChain)
 	if (g_SwapChain != p_SwapChain)
 		return;
 
-	//m_DirectXTKRenderer->OnPresent(p_SwapChain);
+	m_DirectXTKRenderer->OnPresent(p_SwapChain);
 	m_ImguiRenderer->OnPresent(p_SwapChain);
 }
 
@@ -321,7 +320,7 @@ void ModSDK::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult)
 		return;
 
 	m_ImguiRenderer->PostPresent(p_SwapChain, p_PresentResult);
-	//m_DirectXTKRenderer->PostPresent(p_SwapChain, p_PresentResult);
+	m_DirectXTKRenderer->PostPresent(p_SwapChain, p_PresentResult);
 }
 
 void ModSDK::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
@@ -350,7 +349,7 @@ void ModSDK::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 
 	g_CommandQueue = p_CommandQueue;
 	
-	//m_DirectXTKRenderer->SetCommandQueue(p_CommandQueue);
+	m_DirectXTKRenderer->SetCommandQueue(p_CommandQueue);
 	m_ImguiRenderer->SetCommandQueue(p_CommandQueue);
 }
 
@@ -359,7 +358,7 @@ void ModSDK::OnReset(IDXGISwapChain3* p_SwapChain)
 	if (g_SwapChain != p_SwapChain)
 		return;
 
-	//m_DirectXTKRenderer->OnReset();
+	m_DirectXTKRenderer->OnReset();
 	m_ImguiRenderer->OnReset();
 }
 
@@ -368,8 +367,8 @@ void ModSDK::PostReset(IDXGISwapChain3* p_SwapChain)
 	if (g_SwapChain != p_SwapChain)
 		return;
 
-	//m_DirectXTKRenderer->PostReset();
 	m_ImguiRenderer->PostReset();
+	m_DirectXTKRenderer->PostReset();
 }
 
 void ModSDK::RequestUIFocus()

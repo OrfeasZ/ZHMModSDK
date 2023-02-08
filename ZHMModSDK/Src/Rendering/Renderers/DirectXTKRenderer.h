@@ -15,6 +15,7 @@
 #include "Hooks.h"
 #include "IRenderer.h"
 #include "SpriteFont.h"
+#include "Rendering/D3DUtils.h"
 
 class SGameUpdateEvent;
 
@@ -25,19 +26,8 @@ namespace Rendering::Renderers
 	private:
 		struct FrameContext
 		{
-			size_t Index = 0;
-
-			ID3D12CommandAllocator* CommandAllocator = nullptr;
-			ID3D12GraphicsCommandList* CommandList = nullptr;
-
-			ID3D12Resource* BackBuffer = nullptr;
-			D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHandle = { 0 };
-
-			ID3D12Fence* Fence = nullptr;
-			HANDLE FenceEvent = nullptr;
+			ScopedD3DRef<ID3D12CommandAllocator> CommandAllocator;
 			volatile uint64_t FenceValue = 0;
-
-			volatile bool Recording = false;
 		};
 
 		enum class Descriptors : int
@@ -56,16 +46,16 @@ namespace Rendering::Renderers
 
 	public:
 		void OnPresent(IDXGISwapChain3* p_SwapChain);
-		void PostPresent(IDXGISwapChain3* p_SwapChain);
+		void PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult);
 		void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
 		void OnReset();
+		void PostReset();
 
 	private:
 		void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 		bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
-		void WaitForGpu(FrameContext* p_Frame);
-		void ExecuteCmdList(FrameContext* p_Frame);
-		void Draw(FrameContext* p_Frame);
+		void Draw();
+		void WaitForCurrentFrameToFinish() const;
 
 	public:
 		void DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor) override;
@@ -77,16 +67,31 @@ namespace Rendering::Renderers
 		
 	private:
 		bool m_RendererSetup = false;
-		UINT m_BufferCount = 0;
-		ID3D12DescriptorHeap* m_RtvDescriptorHeap = nullptr;
-		ID3D12CommandQueue* m_CommandQueue = nullptr;
-		FrameContext* m_FrameContext = nullptr;
-		IDXGISwapChain3* m_SwapChain = nullptr;
+
+		ScopedD3DRef<ID3D12CommandQueue> m_CommandQueue;
+		ScopedD3DRef<IDXGISwapChain3> m_SwapChain;
 		HWND m_Hwnd = nullptr;
+
+		uint32_t m_RtvDescriptorSize = 0;
+		ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
+
+		/** The maximum number of frames that can be buffered for render. */
+		inline constexpr static size_t MaxRenderedFrames = 4;
+		std::vector<FrameContext> m_FrameContext;
+
+		std::vector<ScopedD3DRef<ID3D12Resource>> m_BackBuffers;
+
+		ScopedD3DRef<ID3D12GraphicsCommandList> m_CommandList;
+
+		ScopedD3DRef<ID3D12Fence> m_Fence;
+		SafeHandle m_FenceEvent;
+
+		volatile uint32_t m_FrameCounter = 0;
+		volatile uint64_t m_FenceValue = 0;
+
 		float m_WindowWidth = 1;
 		float m_WindowHeight = 1;
-
-	private:
+		
 		std::unique_ptr<DirectX::GraphicsMemory> m_GraphicsMemory {};
 		std::unique_ptr<DirectX::BasicEffect> m_LineEffect {};
 		std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_LineBatch {};
@@ -100,7 +105,5 @@ namespace Rendering::Renderers
 		std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors {};
 		std::unique_ptr<DirectX::SpriteFont> m_Font {};
 		std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch {};
-		
-		SRWLOCK m_Lock {};
 	};
 }

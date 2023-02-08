@@ -17,8 +17,7 @@ namespace Rendering::Renderers
 	public:
 		struct FrameContext
 		{
-			size_t Index = 0;
-			ScopedD3DRef<ID3D12CommandAllocator> CommandAllocator = nullptr;
+			ScopedD3DRef<ID3D12CommandAllocator> CommandAllocator;
 			volatile uint64_t FenceValue = 0;
 		};
 
@@ -62,6 +61,7 @@ namespace Rendering::Renderers
 		ScopedD3DRef<ID3D12CommandQueue> m_CommandQueue;
 		HWND m_Hwnd = nullptr;
 
+		uint32_t m_RtvDescriptorSize = 0;
 		ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
 		ScopedD3DRef<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
 
@@ -76,13 +76,11 @@ namespace Rendering::Renderers
 		ScopedD3DRef<ID3D12Fence> m_Fence;
 		SafeHandle m_FenceEvent;
 
-		uint32_t m_RtvDescriptorSize = 0;
+		volatile uint32_t m_FrameCounter = 0;
+		volatile uint64_t m_FenceValue = 0;
 
 		int64_t m_Time = 0;
 		int64_t m_TicksPerSecond = 0;
-		
-		volatile uint32_t m_FrameCounter = 0;
-		volatile uint64_t m_FenceValue = 0;
 
 		ImFont* m_FontLight = nullptr;
 		ImFont* m_FontRegular = nullptr;

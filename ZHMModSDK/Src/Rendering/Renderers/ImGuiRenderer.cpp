@@ -238,9 +238,6 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 		return;
 	}
 	
-	if (!m_CommandQueue)
-		return;
-
 	Draw();
 
 	ImGui::Render();
@@ -376,9 +373,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	for (UINT i = 0; i < MaxRenderedFrames; ++i)
 	{
 		FrameContext s_Frame {};
-
-		s_Frame.Index = i;
-
+		
 		if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(s_Frame.CommandAllocator.ReleaseAndGetPtr())) != S_OK)
 			return false;
 
