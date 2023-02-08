@@ -226,15 +226,15 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 		s_Debug->EnableDebugLayer();
 
-		ID3D12Debug1* s_Debug1 = nullptr;
+		/*ID3D12Debug1* s_Debug1 = nullptr;
 
 		if (SUCCEEDED(s_Debug->QueryInterface(IID_PPV_ARGS(&s_Debug1))))
 		{
-			//Logger::Debug("[D3D12Hooks] Enabling D3D12 gpu-based validation.");
+			Logger::Debug("[D3D12Hooks] Enabling D3D12 gpu-based validation.");
 
-			//s_Debug1->SetEnableGPUBasedValidation(true);
+			s_Debug1->SetEnableGPUBasedValidation(true);
 			s_Debug1->Release();
-		}
+		}*/
 
 		s_Debug->Release();
 	}
