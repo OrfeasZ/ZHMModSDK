@@ -1,5 +1,6 @@
 #include "ModSelector.h"
 
+#include "IconsMaterialDesign.h"
 #include "imgui.h"
 #include "IModSDK.h"
 #include "ModSDK.h"
@@ -45,7 +46,7 @@ void ModSelector::Draw(bool p_HasFocus)
 	const auto s_WasOpen = m_Open;
 	
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	const auto s_Showing = ImGui::Begin("MODS", &m_Open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+	const auto s_Showing = ImGui::Begin(ICON_MD_TOKEN " MODS", &m_Open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	if (s_Showing)

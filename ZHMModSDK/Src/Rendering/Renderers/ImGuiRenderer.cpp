@@ -27,6 +27,7 @@
 #include "ModSDK.h"
 #include "Glacier/ZRender.h"
 
+#include <IconsMaterialDesign.h>
 
 using namespace Rendering::Renderers;
 
@@ -74,11 +75,32 @@ ImGuiRenderer::ImGuiRenderer()
 	s_ImGuiIO.BackendRendererName = "imgui_impl_dx12";
 	s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
+	// Here we merge the material icon glyphs into each of our other fonts.
+	ImFontConfig s_IconsConfig {};
+	s_IconsConfig.MergeMode = true;
+	s_IconsConfig.GlyphOffset = { 0.f, 6.f };
+
+	static constexpr ImWchar c_IconRanges[] = { ICON_MIN_MD, ICON_MAX_16_MD, 0 };
+
 	m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoLight_compressed_data, RobotoLight_compressed_size, 32.f);
+	s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+	s_ImGuiIO.Fonts->Build();
+
 	m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data, RobotoRegular_compressed_size, 32.f);
+	s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+	s_ImGuiIO.Fonts->Build();
+
 	m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoMedium_compressed_data, RobotoMedium_compressed_size, 32.f);
+	s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+	s_ImGuiIO.Fonts->Build();
+
 	m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBold_compressed_data, RobotoBold_compressed_size, 32.f);
+	s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+	s_ImGuiIO.Fonts->Build();
+
 	m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 32.f);
+	s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+	s_ImGuiIO.Fonts->Build();
 
 	s_ImGuiIO.FontDefault = m_FontRegular;
 

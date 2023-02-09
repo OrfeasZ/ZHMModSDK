@@ -20,6 +20,7 @@ target_include_directories(ZHMModSDK PRIVATE
 
 target_include_directories(ZHMModSDK PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/Include
+	${CMAKE_SOURCE_DIR}/External/IconFontCppHeaders
 )
 
 target_compile_definitions(ZHMModSDK PRIVATE

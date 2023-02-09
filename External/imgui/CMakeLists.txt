@@ -18,3 +18,7 @@ add_library(imgui STATIC
 target_include_directories(imgui PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/source
 )
+
+add_executable(binary_to_compressed_c
+	source/misc/fonts/binary_to_compressed_c.cpp
+)

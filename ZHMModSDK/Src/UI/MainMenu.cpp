@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "IconsMaterialDesign.h"
 #include "ModSDK.h"
 #include "ModSelector.h"
 
@@ -17,9 +18,9 @@ void MainMenu::Draw(bool p_HasFocus)
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
 	ImGui::Text("ZHM MOD SDK");
 	ImGui::PopFont();
-	ImGui::Text("Press the ~ key (under ESC) to open this menu");
+	ImGui::Text("~ or ^ (under ESC) to toggle this menu");
 
-	if (ImGui::Button("SELECT MODS"))
+	if (ImGui::Button(ICON_MD_TOKEN " MODS"))
 	{
 		ModSDK::GetInstance()->GetUIModSelector()->Show();
 	}
