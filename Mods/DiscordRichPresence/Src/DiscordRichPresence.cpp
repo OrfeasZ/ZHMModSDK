@@ -90,6 +90,9 @@ void DiscordRichPresence::PopulateScenes()
 		{ "elegant", "Mendoza" },
 		{ "trapped", "Carpathian Mountains" },
 		{ "rocky", "Ambrose Island" },
+
+		// FREELANCER
+		{ "snug", "Safehouse" },
 	};
 
 	Logger::Trace("Finished populating scene map");
@@ -108,6 +111,7 @@ void DiscordRichPresence::PopulateGameModes()
 		{ "campaign", "Mission" },
 		{ "escalation", "Escalation" },
 		{ "elusive", "Elusive Target" },
+		{ "evergreen", "Freelancer" },
 	};
 
 	Logger::Trace("Finished populating game modes");
