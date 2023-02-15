@@ -1,7 +1,7 @@
 root = true
 
-[*.{c++,cc,cpp,cxx,h,h++,hh,hpp,hxx,inl,ipp,tlh,tli}]
-indent_style = tab
+[*.{c,c++,cc,cpp,cxx,h,h++,hh,hpp,hxx,inl,ipp,tlh,tli}]
+indent_style = space
 indent_size = 4
 end_of_line = lf
 charset = utf-8

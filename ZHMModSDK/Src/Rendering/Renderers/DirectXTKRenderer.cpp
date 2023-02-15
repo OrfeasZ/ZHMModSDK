@@ -224,6 +224,9 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 		D3D_SET_OBJECT_NAME_A(m_RtvDescriptorHeap, "ZHMModSDK DirectXTK Rtv Descriptor Heap");
 	}
 
+	OutputDebugStringA(fmt::format("DXTK heaps {} vtbl {}\n", fmt::ptr(m_RtvDescriptorHeap.Ref), fmt::ptr(m_RtvDescriptorHeap.VTable())).c_str());
+	Logger::Debug("DXTK heaps {} vtbl {}", fmt::ptr(m_RtvDescriptorHeap.Ref), fmt::ptr(m_RtvDescriptorHeap.VTable()));
+
 	m_FrameContext.clear();
 
 	for (UINT i = 0; i < MaxRenderedFrames; ++i)

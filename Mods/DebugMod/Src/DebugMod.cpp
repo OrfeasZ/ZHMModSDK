@@ -228,8 +228,8 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 
 		if (s_RayOutput.m_BlockingEntity)
 		{
-			const auto& s_Interfaces = *(*s_RayOutput.m_BlockingEntity.m_pEntity)->m_pInterfaces;
-			Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*s_RayOutput.m_BlockingEntity.m_pEntity)->m_nEntityId);
+			const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
+			Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
 		}
 
 		m_SelectedEntity = s_RayOutput.m_BlockingEntity;
@@ -1183,7 +1183,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 
 		p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(0.f, 0.f, 1.f, 1.f));
 	}
-	
+
 	m_EntityMutex.unlock_shared();
 
 	/*SVector2 s_StartPos;

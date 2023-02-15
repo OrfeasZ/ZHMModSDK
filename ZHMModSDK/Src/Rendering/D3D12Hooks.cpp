@@ -16,6 +16,8 @@
 
 #include "Renderers/ImGuiRenderer.h"
 
+#include <HookImpl.h>
+
 using namespace Rendering;
 
 DEFINE_D3D12_HOOK(IDXGIFactory, CreateSwapChain);
@@ -24,38 +26,41 @@ DEFINE_D3D12_HOOK(ID3D12CommandQueue, ExecuteCommandLists);
 D3D12Hooks::~D3D12Hooks()
 {
 	RemoveHooks();
+    HookRegistry::ClearDetoursWithContext(this);
 }
 
-void D3D12Hooks::InstallHooks()
+void D3D12Hooks::Startup()
 {
-	const auto s_VTables = GetVTables();
+    Hooks::D3D12CreateDevice->AddDetour(this, &D3D12Hooks::D3D12CreateDevice);
+    Hooks::CreateDXGIFactory1->AddDetour(this, &D3D12Hooks::CreateDXGIFactory1);
 
-	if (!s_VTables)
-	{
-		Logger::Error("Could not get D3D vtables. Custom rendering will not work.");
-		return;
-	}
+}
 
-	Util::ProcessUtils::SuspendAllThreadsButCurrent();
-
+void D3D12Hooks::Install()
+{
+    if (m_Installed)
+    {
+        Logger::Warn("Already installed. Skipping.");
+        return;
+    }
+    
+    const auto s_VTables = &m_VTables;
+    
 	INSTALL_D3D12_HOOK(IDXGIFactory, CreateSwapChain);
 	INSTALL_D3D12_HOOK(ID3D12CommandQueue, ExecuteCommandLists);
 
-	Util::ProcessUtils::ResumeSuspendedThreads();
+    m_Installed = true;
 
 	Logger::Debug("Installed D3D hooks.");
 }
 
 void D3D12Hooks::RemoveHooks()
 {
-	Util::ProcessUtils::SuspendAllThreadsButCurrent();
-
 	for (auto& s_Hook : m_InstalledHooks)
 		RemoveHook(s_Hook);
 
 	m_InstalledHooks.clear();
-
-	Util::ProcessUtils::ResumeSuspendedThreads();
+    m_Installed = true;
 }
 
 HRESULT D3D12Hooks::Detour_IDXGIFactory_CreateSwapChain(IDXGIFactory* th, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain)
@@ -145,79 +150,12 @@ struct ScopedWindow
  * custom hooks and do custom rendering stuffs. These are immediately
  * destroyed before this function returns.
  */
-std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
+bool D3D12Hooks::GetVTables(ID3D12Device* p_Device)
 {
 	Logger::Debug("[D3D12Hooks] Locating D3D12 vtable addresses.");
-
+    
 #if _DEBUG
-	// See if we already have a cached version of these for this process.
-	char s_SharedMemoryName[256];
-	sprintf_s(s_SharedMemoryName, sizeof(s_SharedMemoryName), "ZHModSDK_D3D12Hooks_Vtbl_%llu_%lu", sizeof(VTables), GetCurrentProcessId());
-
-	{
-		auto* s_Mapping = OpenFileMappingA(FILE_MAP_READ, false, s_SharedMemoryName);
-
-		if (s_Mapping != nullptr)
-		{
-			auto* s_Buffer = MapViewOfFile(s_Mapping, FILE_MAP_READ, 0, 0, sizeof(VTables));
-
-			if (s_Buffer != nullptr)
-			{
-				Logger::Debug("[D3D12Hooks] Found cached vtable info. Re-using.");
-
-				VTables s_VTables {};
-				memcpy(&s_VTables, s_Buffer, sizeof(VTables));
-
-				UnmapViewOfFile(s_Buffer);
-				CloseHandle(s_Mapping);
-
-				return s_VTables;
-			}
-
-			CloseHandle(s_Mapping);
-		}
-	}
-#endif
-
-	static wchar_t s_SystemDir[8192];
-
-	if (!GetSystemDirectoryW(s_SystemDir, sizeof(s_SystemDir) / sizeof(wchar_t)))
-		return std::nullopt;
-
-	std::filesystem::path s_DxgiPath = s_SystemDir;
-	s_DxgiPath += "/dxgi.dll";
-
-	std::filesystem::path s_D3D12Path = s_SystemDir;
-	s_D3D12Path += "/d3d12.dll";
-
-	auto s_DxgiModule = LoadLibraryW(canonical(s_DxgiPath).c_str());
-	auto s_D3D12Module = LoadLibraryW(canonical(s_D3D12Path).c_str());
-
-	if (s_DxgiModule == nullptr || s_D3D12Module == nullptr)
-		return std::nullopt;
-
-	typedef HRESULT (WINAPI* CreateDXGIFactory1_t)(REFIID riid, _COM_Outptr_ void** ppFactory);
-	typedef HRESULT (WINAPI* D3D12CreateDevice_t)(_In_opt_ IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, _In_ REFIID riid, _COM_Outptr_opt_ void** ppDevice);
-
-	auto s_CreateDXGIFactory1 = reinterpret_cast<CreateDXGIFactory1_t>(GetProcAddress(s_DxgiModule, "CreateDXGIFactory1"));
-	auto s_D3D12CreateDevice = reinterpret_cast<D3D12CreateDevice_t>(GetProcAddress(s_D3D12Module, "D3D12CreateDevice"));
-
-	if (s_CreateDXGIFactory1 == nullptr || s_D3D12CreateDevice == nullptr)
-		return std::nullopt;
-
-	// If we don't, try to find them from scratch.
-	ScopedD3DRef<IDXGIFactory1> s_Factory;
-
-	if (s_CreateDXGIFactory1(REF_IID_PPV_ARGS(s_Factory)) != S_OK)
-		return std::nullopt;
-
-	ScopedD3DRef<IDXGIAdapter> s_Adapter;
-
-	if (s_Factory->EnumAdapters(0, &s_Adapter.Ref) == DXGI_ERROR_NOT_FOUND)
-		return std::nullopt;
-
-#if _DEBUG
-	ID3D12Debug* s_Debug = nullptr;
+	/*ID3D12Debug* s_Debug = nullptr;
 	uint32_t s_ThingResult = D3D12GetDebugInterface(IID_PPV_ARGS(&s_Debug));
 
 	if (SUCCEEDED(s_ThingResult))
@@ -226,7 +164,7 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 		s_Debug->EnableDebugLayer();
 
-		/*ID3D12Debug1* s_Debug1 = nullptr;
+		ID3D12Debug1* s_Debug1 = nullptr;
 
 		if (SUCCEEDED(s_Debug->QueryInterface(IID_PPV_ARGS(&s_Debug1))))
 		{
@@ -234,7 +172,7 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 
 			s_Debug1->SetEnableGPUBasedValidation(true);
 			s_Debug1->Release();
-		}*/
+		}
 
 		s_Debug->Release();
 	}
@@ -252,37 +190,29 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 		s_DredSettings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
 		s_DredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
 		s_DredSettings->Release();
-	}
+	}*/
 #endif
-
-	Logger::Debug("[D3D12Hooks] Creating D3D12 device.");
-
-	ScopedD3DRef<ID3D12Device> s_Device;
-
-	if (s_D3D12CreateDevice(s_Adapter, D3D_FEATURE_LEVEL_12_0, REF_IID_PPV_ARGS(s_Device)) != S_OK)
-		return std::nullopt;
-
 	Logger::Debug("[D3D12Hooks] Creating command queue.");
 
 	D3D12_COMMAND_QUEUE_DESC s_CommandQueueDesc {};
 	ScopedD3DRef<ID3D12CommandQueue> s_CommandQueue;
 
-	if (s_Device->CreateCommandQueue(&s_CommandQueueDesc, REF_IID_PPV_ARGS(s_CommandQueue)) != S_OK)
-		return std::nullopt;
+	if (p_Device->CreateCommandQueue(&s_CommandQueueDesc, REF_IID_PPV_ARGS(s_CommandQueue)) != S_OK)
+        return false;
 
 	Logger::Debug("[D3D12Hooks] Creating command allocator.");
 
 	ScopedD3DRef<ID3D12CommandAllocator> s_CommandAllocator;
 
-	if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, REF_IID_PPV_ARGS(s_CommandAllocator)) != S_OK)
-		return std::nullopt;
+	if (p_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, REF_IID_PPV_ARGS(s_CommandAllocator)) != S_OK)
+        return false;
 
 	Logger::Debug("[D3D12Hooks] Creating command list.");
 
 	ScopedD3DRef<ID3D12GraphicsCommandList> s_GraphicsCommandList;
 
-	if (s_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, s_CommandAllocator, nullptr, REF_IID_PPV_ARGS(s_GraphicsCommandList)) != S_OK)
-		return std::nullopt;
+	if (p_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, s_CommandAllocator, nullptr, REF_IID_PPV_ARGS(s_GraphicsCommandList)) != S_OK)
+        return false;
 
 	// Create a temporary window for our swap chain.
 	ScopedWindowClass s_WindowClass;
@@ -299,7 +229,7 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	ScopedWindow s_Window = CreateWindowA(s_WindowClass->lpszClassName, "ZHMModSDK_D3D", WS_OVERLAPPEDWINDOW, 0, 0, 256, 256, nullptr, nullptr, s_WindowClass->hInstance, nullptr);
 
 	if (!s_Window)
-		return std::nullopt;
+        return false;
 
 	DXGI_RATIONAL s_RefreshRateRational {};
 	s_RefreshRateRational.Numerator = 60;
@@ -325,45 +255,23 @@ std::optional<D3D12Hooks::VTables> D3D12Hooks::GetVTables()
 	s_SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	s_SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-	ScopedD3DRef<IDXGISwapChain> s_SwapChain;
+    ScopedD3DRef<IDXGISwapChain> s_SwapChain;
 
-	Logger::Debug("[D3D12Hooks] Creating swap chain.");
+    Logger::Debug("[D3D12Hooks] Creating swap chain.");
 
-	if (s_Factory->CreateSwapChain(s_CommandQueue, &s_SwapChainDesc, &s_SwapChain.Ref) != S_OK)
-		return std::nullopt;
-
-	VTables s_VTables {};
-	s_VTables.IDXGIFactoryVtbl = s_Factory.VTable();
-	s_VTables.IDXGIAdapterVtbl = s_Adapter.VTable();
-	s_VTables.ID3D12DeviceVtbl = s_Device.VTable();
-	s_VTables.ID3D12CommandQueueVtbl = s_CommandQueue.VTable();
-	s_VTables.ID3D12CommandAllocatorVtbl = s_CommandAllocator.VTable();
-	s_VTables.ID3D12GraphicsCommandListVtbl = s_GraphicsCommandList.VTable();
-	s_VTables.IDXGISwapChainVtbl = s_SwapChain.VTable();
+    if (m_Factory->CreateSwapChain(s_CommandQueue, &s_SwapChainDesc, &s_SwapChain.Ref) != S_OK)
+        return false;
+    
+    m_VTables.IDXGIFactoryVtbl = *reinterpret_cast<void**>(m_Factory);
+    m_VTables.ID3D12DeviceVtbl = *reinterpret_cast<void**>(p_Device);
+    m_VTables.ID3D12CommandQueueVtbl = s_CommandQueue.VTable();
+    m_VTables.ID3D12CommandAllocatorVtbl = s_CommandAllocator.VTable();
+    m_VTables.ID3D12GraphicsCommandListVtbl = s_GraphicsCommandList.VTable();
+    m_VTables.IDXGISwapChainVtbl = s_SwapChain.VTable();
 
 	Logger::Debug("[D3D12Hooks] Located all D3D12 vtable addresses.");
 
-#if _DEBUG
-	// Cache this in case we need to reload.
-	auto* s_Mapping = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(VTables), s_SharedMemoryName);
-
-	if (s_Mapping != nullptr)
-	{
-		auto* s_Buffer = MapViewOfFile(s_Mapping, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(VTables));
-
-		if (s_Buffer != nullptr)
-		{
-			memcpy(s_Buffer, &s_VTables, sizeof(VTables));
-			UnmapViewOfFile(s_Buffer);
-
-			Logger::Debug("[D3D12Hooks] Cached vtable addresses in shared memory.");
-		}
-
-		// NOTE: We don't close the handle since we want this to be found in the future.
-	}
-#endif	
-
-	return s_VTables;
+    return true;
 }
 
 void D3D12Hooks::InstallHook(void* p_VTable, int p_Index, void* p_Detour, void** p_Original)
@@ -403,3 +311,21 @@ void D3D12Hooks::RemoveHook(const InstalledHook& p_Hook)
 	MH_RemoveHook(p_Hook.OriginalAddr);
 }
 
+DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
+{
+    const auto s_Result = p_Hook->CallOriginal(pAdapter, MinimumFeatureLevel, riid, ppDevice);
+
+    GetVTables(static_cast<ID3D12Device*>(*ppDevice));
+    Install();
+
+    m_Factory = nullptr;
+
+    return HookResult(HookAction::Return(), s_Result);
+}
+
+DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, CreateDXGIFactory1, REFIID riid, void** ppFactory)
+{
+    const auto s_Result = p_Hook->CallOriginal(riid, ppFactory);
+    m_Factory = static_cast<IDXGIFactory1*>(*ppFactory);
+    return HookResult(HookAction::Return(), s_Result);
+}

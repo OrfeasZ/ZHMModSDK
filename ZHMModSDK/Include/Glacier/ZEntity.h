@@ -12,6 +12,50 @@ class ZActor;
 class STypeID;
 class ZEntityRef;
 
+class IEntityFactory : public IComponentInterface
+{
+public:
+    virtual void IEntityFactory_unk5() = 0;
+    virtual void ConfigureEntity() = 0;
+    virtual void IEntityFactory_unk7() = 0;
+    virtual IEntityBlueprintFactory* GetBlueprint() = 0;
+    virtual void IEntityFactory_unk9() = 0;
+    virtual void IEntityFactory_unk10() = 0;
+};
+
+class IEntityBlueprintFactory : public IComponentInterface
+{
+public:
+    virtual void GetMemoryRequirements(uint32_t&, uint32_t&, int64_t&) = 0;
+    virtual void IEntityBlueprintFactory_unk6() = 0;
+    virtual void IEntityBlueprintFactory_unk7() = 0;
+    virtual void IEntityBlueprintFactory_unk8() = 0;
+    virtual void IEntityBlueprintFactory_unk9() = 0;
+    virtual void IEntityBlueprintFactory_unk10() = 0;
+    virtual void IEntityBlueprintFactory_unk11() = 0;
+    virtual void IEntityBlueprintFactory_unk12() = 0;
+    virtual void IEntityBlueprintFactory_unk13() = 0;
+    virtual void IEntityBlueprintFactory_unk14() = 0;
+    virtual void IEntityBlueprintFactory_unk15() = 0;
+    virtual void IEntityBlueprintFactory_unk16() = 0;
+    virtual void IEntityBlueprintFactory_unk17() = 0;
+    virtual void IEntityBlueprintFactory_unk18() = 0;
+    virtual void IEntityBlueprintFactory_unk19() = 0;
+    virtual bool IEntityBlueprintFactory_unk20() = 0;
+    virtual int64_t GetSubEntitiesCount() = 0;
+    virtual void IEntityBlueprintFactory_unk22() = 0;
+    virtual void IEntityBlueprintFactory_unk23() = 0;
+    virtual void IEntityBlueprintFactory_unk24() = 0;
+    virtual void IEntityBlueprintFactory_unk25() = 0;
+    virtual void IEntityBlueprintFactory_unk26() = 0;
+    virtual void IEntityBlueprintFactory_unk27() = 0;
+    virtual void IEntityBlueprintFactory_unk28() = 0;
+    virtual void IEntityBlueprintFactory_unk29() = 0;
+    virtual void IEntityBlueprintFactory_unk30() = 0;
+    virtual void IEntityBlueprintFactory_unk31() = 0;
+    virtual void IEntityBlueprintFactory_unk32() = 0;
+};
+
 class IEntity :
 	public IComponentInterface
 {
@@ -202,6 +246,56 @@ public:
         return GetLogicalParent().GetClosestParentWithBlueprintFactory();
     }
 
+    IEntityBlueprintFactory* GetBlueprintFactory() const
+    {
+        const auto* s_Entity = GetEntity();
+
+        if (!s_Entity)
+            return nullptr;
+
+        const auto* s_Type = s_Entity->GetType();
+
+        if ((s_Type->m_nUnkFlags & 0x200) == 0) // IsRootFactoryEntity or something
+            return nullptr;
+
+        auto s_RootEntity = QueryInterface<void>();
+
+        if (!s_RootEntity)
+            return nullptr;
+
+        // Pointer to IEntityBlueprintFactory stored right before the start of this entity.
+        return *reinterpret_cast<IEntityBlueprintFactory**>(reinterpret_cast<uintptr_t>(s_RootEntity) - sizeof(uintptr_t));
+    }
+
+    IEntityFactory* GetFactory() const
+    {
+        const auto* s_Entity = GetEntity();
+
+        if (!s_Entity)
+            return nullptr;
+
+        const auto* s_Type = s_Entity->GetType();
+
+        if ((s_Type->m_nUnkFlags & 0x200) == 0) // IsRootFactoryEntity or something
+            return nullptr;
+
+        auto s_RootEntity = QueryInterface<void>();
+
+        if (!s_RootEntity)
+            return nullptr;
+
+        auto s_BpFactory = GetBlueprintFactory();
+
+        uint32_t s_EntityBytes, s_EntityAlignment;
+        int64_t s_EntityOffset;
+        s_BpFactory->GetMemoryRequirements(s_EntityBytes, s_EntityAlignment, s_EntityOffset);
+
+        auto* s_OriginalMemoryBlock = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(s_RootEntity) - s_EntityAlignment);
+        const auto s_BlockSize = (*Globals::MemoryManager)->m_pNormalAllocator->GetAllocationSize(s_OriginalMemoryBlock);
+        
+        return *reinterpret_cast<IEntityFactory**>((reinterpret_cast<uintptr_t>(s_OriginalMemoryBlock) + s_BlockSize) - sizeof(uintptr_t));
+    }
+
 	template <class T>
 	T* QueryInterface() const
 	{
@@ -225,27 +319,6 @@ public:
 
 		return nullptr;
 	}
-
-    IEntityBlueprintFactory* GetBlueprintFactory() const
-    {
-        const auto* s_Entity = GetEntity();
-
-        if (!s_Entity)
-            return nullptr;
-
-        const auto* s_Type = s_Entity->GetType();
-
-        if ((s_Type->m_nUnkFlags & 0x200) == 0) // IsRootFactoryEntity or something
-            return nullptr;
-
-        auto s_RootEntity = QueryInterface<void>();
-
-        if (!s_RootEntity)
-            return nullptr;
-
-        // Pointer to IEntityBlueprintFactory stored right before the start of this entity.
-        return *reinterpret_cast<IEntityBlueprintFactory**>(reinterpret_cast<uintptr_t>(s_RootEntity) - sizeof(uintptr_t));
-    }
 
 	template <class T>
 	bool HasInterface() const

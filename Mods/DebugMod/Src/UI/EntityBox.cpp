@@ -42,8 +42,8 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
 			if (m_SelectedEntityName.empty())
 			{
-				auto s_ParentEntityType = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(m_SelectedEntity.m_pEntity) + m_SelectedEntity.m_pEntity[0]->m_nLogicalParentEntityOffset);
-				m_EntityId = m_SelectedEntity.m_pEntity[0]->m_nEntityId;
+				auto s_ParentEntityType = reinterpret_cast<ZEntityType**>(reinterpret_cast<char*>(&m_SelectedEntity->m_pType) + m_SelectedEntity->GetType()->m_nLogicalParentEntityOffset);
+				m_EntityId = m_SelectedEntity->GetType()->m_nEntityId;
 				s_ParentEntityType[0]->m_nEntityId;
 				ZEntityType** s_ParentEntityType2 = s_ParentEntityType;
 
@@ -63,7 +63,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 							m_SelectedEntityName = GetEntityName(s_EntityId2, m_EntityId, m_SelectedResourceHash);
 						}
 
-						if (m_SelectedEntityName.empty() && m_SelectedEntity.m_pEntity[0]->m_nEntityId == 0x01e018a77e7655ca) //Case when NPC is added by another brick
+						if (m_SelectedEntityName.empty() && m_SelectedEntity->GetType()->m_nEntityId == 0x01e018a77e7655ca) //Case when NPC is added by another brick
 						{
 							m_SelectedEntityName = FindNPCEntityNameInBrickBackReferences(s_EntityId2, m_EntityId, m_SelectedResourceHash);
 						}
@@ -112,10 +112,10 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 				}
 			}
 
-			const auto& s_Interfaces = *(*m_SelectedEntity.m_pEntity)->m_pInterfaces;
+			const auto& s_Interfaces = *m_SelectedEntity->GetType()->m_pInterfaces;
 
 			ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName).c_str());
-			ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", (*m_SelectedEntity.m_pEntity)->m_nEntityId).c_str());
+			ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", m_SelectedEntity->GetType()->m_nEntityId).c_str());
 
 			std::string s_InterfacesStr;
 
@@ -235,7 +235,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
 				if (ImGui::Button("Copy ID"))
 				{
-					CopyToClipboard(fmt::format("{:016x}", (*m_SelectedEntity.m_pEntity)->m_nEntityId));
+					CopyToClipboard(fmt::format("{:016x}", m_SelectedEntity->GetType()->m_nEntityId));
 				}
 
 				if (ImGui::Button("Move to Hitman"))

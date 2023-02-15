@@ -65,12 +65,8 @@ public:
 		for (auto s_Hook : *g_Hooks)
 			s_Hook->RemoveAllDetours();
 		
-		Util::ProcessUtils::SuspendAllThreadsButCurrent();
-
 		for (auto s_Hook : *g_Hooks)
 			s_Hook->Remove();
-		
-		Util::ProcessUtils::ResumeSuspendedThreads();
 	}
 };
 
@@ -190,8 +186,6 @@ protected:
 	HookImpl(const char* p_HookName, void* p_Target, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
 		m_Target(p_Target)
 	{
-		Util::ProcessUtils::SuspendAllThreadsButCurrent();
-
 		InitializeSRWLock(&m_Lock);
 
 		HookRegistry::RegisterHook(this);
@@ -235,8 +229,6 @@ protected:
 	HookImpl(const char* p_HookName, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Original) :
 		m_Target(nullptr)
 	{
-		Util::ProcessUtils::SuspendAllThreadsButCurrent();
-
 		InitializeSRWLock(&m_Lock);
 
 		HookRegistry::RegisterHook(this);
@@ -416,8 +408,6 @@ public:
 
 	void Remove() override
 	{
-		Util::ProcessUtils::SuspendAllThreadsButCurrent();
-
 		// Restore the original call.
 		const ptrdiff_t s_Distance = reinterpret_cast<uintptr_t>(this->m_OriginalFunc) - (m_Target + 5);
 
@@ -429,8 +419,6 @@ public:
 		*reinterpret_cast<int32_t*>(m_Target + 1) = static_cast<int32_t>(s_Distance);
 
 		VirtualProtect(reinterpret_cast<void*>(m_Target), 5, s_OldProtect, nullptr);
-
-		Util::ProcessUtils::ResumeSuspendedThreads();
 	}
 
 private:

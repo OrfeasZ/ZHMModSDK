@@ -101,20 +101,44 @@ public:
 	bool GetPinName(int32_t p_PinId, ZString& p_Name) override;
 	bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
 	bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
+    std::unordered_set<ZEntityImpl*> GetEntitiesById(uint64_t p_EntityId) override
+    {
+        std::unordered_set<ZEntityImpl*> s_FoundEntities;
+
+        m_EntityMutex.lock_shared();
+
+        const auto& s_Entities = m_EntitiesById.find(p_EntityId);
+
+        if (s_Entities != m_EntitiesById.end())
+        {
+            s_FoundEntities = s_Entities->second;
+        }
+
+        m_EntityMutex.unlock_shared();
+
+        return s_FoundEntities;
+    }
+
+private:
+    void TrackEntity(ZEntityRef p_Entity);
+    void UntrackEntity(ZEntityRef p_Entity);
 
 private:
 	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
 	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_ActivateEntity, ZEntityManager* th, ZEntityRef* entity, void* a3);
 	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>& references);
-	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZTemplateEntityFactory_ConfigureEntity, ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
-	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZCppEntityFactory_ConfigureEntity, ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
-	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZBehaviorTreeEntityFactory_ConfigureEntity, ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
-	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAudioSwitchEntityFactory_ConfigureEntity, ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
-	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAspectEntityFactory_ConfigureEntity, ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
-	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZRenderMaterialEntityFactory_ConfigureEntity, ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	DEFINE_DETOUR_WITH_CONTEXT(ModSDK, ZEntityType**, ZEntityManager_ConstructUninitializedEntity, ZEntityManager* th, const ZString& sDebugName, IEntityFactory* pEntityFactory, const ZEntityRef& logicalParent, void* pMemBlock, void* a6, void* a7);
+	//DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZTemplateEntityFactory_ConfigureEntity, ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	//DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZCppEntityFactory_ConfigureEntity, ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	//DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZBehaviorTreeEntityFactory_ConfigureEntity, ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	//DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAudioSwitchEntityFactory_ConfigureEntity, ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	//DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAspectEntityFactory_ConfigureEntity, ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	//DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZRenderMaterialEntityFactory_ConfigureEntity, ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4);
+	//DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZCppEntityBlueprintFactory_DestroyEntity, ZCppEntityBlueprintFactory* th, ZEntityRef entity, void* a3);
 
 private:
-	std::unordered_set<ZEntityRef, ZEntityRef::hasher> m_Entities;
+	std::unordered_set<ZEntityImpl*> m_Entities;
+	std::unordered_map<uint64_t, std::unordered_set<ZEntityImpl*>> m_EntitiesById;
 	std::shared_mutex m_EntityMutex;
 
 	bool m_UiEnabled = true;

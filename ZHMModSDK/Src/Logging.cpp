@@ -5,6 +5,7 @@
 #include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/msvc_sink.h"
 
 #include <ModSDK.h>
 #include <UI/Console.h>
@@ -81,6 +82,11 @@ void SetupLogging(spdlog::level::level_enum p_LogLevel)
 	auto s_ConsoleDistSink = std::make_shared<spdlog::sinks::dist_sink_mt>();
 	auto s_StdoutSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 	auto s_UiConsoleSink = std::make_shared<ConsoleSink_mt>();
+
+#if _DEBUG
+    auto s_DebugSink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
+    s_ConsoleDistSink->add_sink(s_DebugSink);
+#endif
 
 	s_ConsoleDistSink->add_sink(s_StdoutSink);
 	s_ConsoleDistSink->add_sink(s_UiConsoleSink);

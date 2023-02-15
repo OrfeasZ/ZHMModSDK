@@ -159,8 +159,6 @@ void ModSDK::LoadConfiguration()
 
 bool ModSDK::Startup()
 {
-	Util::ProcessUtils::ResumeSuspendedThreads();
-
 #if _DEBUG
 	m_DebugConsole->StartRedirecting();
 #endif
@@ -171,23 +169,24 @@ bool ModSDK::Startup()
 	Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
 
 	// Install hooks so we can keep track of entities.
-	//Hooks::ZEntityManager_ActivateEntity->AddDetour(this, &ModSDK::ZEntityManager_ActivateEntity);
-	//Hooks::ZEntityManager_DeleteEntities->AddDetour(this, &ModSDK::ZEntityManager_DeleteEntities);
+	Hooks::ZEntityManager_ActivateEntity->AddDetour(this, &ModSDK::ZEntityManager_ActivateEntity);
+	Hooks::ZEntityManager_DeleteEntities->AddDetour(this, &ModSDK::ZEntityManager_DeleteEntities);
+    Hooks::ZEntityManager_ConstructUninitializedEntity->AddDetour(this, &ModSDK::ZEntityManager_ConstructUninitializedEntity);
 	//Hooks::ZTemplateEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZTemplateEntityFactory_ConfigureEntity);
 	//Hooks::ZCppEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZCppEntityFactory_ConfigureEntity);
 	//Hooks::ZBehaviorTreeEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZBehaviorTreeEntityFactory_ConfigureEntity);
 	//Hooks::ZAudioSwitchEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZAudioSwitchEntityFactory_ConfigureEntity);
 	//Hooks::ZAspectEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZAspectEntityFactory_ConfigureEntity);
 	//Hooks::ZRenderMaterialEntityFactory_ConfigureEntity->AddDetour(this, &ModSDK::ZRenderMaterialEntityFactory_ConfigureEntity);
-	
+	//Hooks::ZCppEntityBlueprintFactory_DestroyEntity->AddDetour(this, &ModSDK::ZCppEntityBlueprintFactory_DestroyEntity);
+
+    m_D3D12Hooks->Startup();
+
 	return true;
 }
 
 void ModSDK::ThreadedStartup()
 {
-	if (m_UiEnabled)
-		m_D3D12Hooks->InstallHooks();
-
 	m_ModLoader->LockRead();
 
 	for (const auto& s_Mod : m_ModLoader->GetLoadedMods())
@@ -462,6 +461,53 @@ bool ModSDK::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut,
 	return m_DirectXTKRenderer->ScreenToWorld(p_ScreenPos, p_WorldPosOut, p_DirectionOut);
 }
 
+void ModSDK::TrackEntity(ZEntityRef p_Entity)
+{
+    m_EntityMutex.lock();
+
+    const auto& s_Interfaces = *p_Entity->GetType()->m_pInterfaces;
+    Logger::Trace("Tracking entity of type '{}' ({}) with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, fmt::ptr(p_Entity.GetEntity()), p_Entity->GetType()->m_nEntityId);
+
+    m_Entities.insert(p_Entity.GetEntity());
+
+    if (!m_EntitiesById.contains(p_Entity->GetType()->m_nEntityId))
+    {
+        m_EntitiesById[p_Entity->GetType()->m_nEntityId] = { p_Entity.GetEntity() };
+    }
+    else
+    {
+        m_EntitiesById[p_Entity->GetType()->m_nEntityId].insert(p_Entity.GetEntity());
+    }
+
+    if (p_Entity.QueryInterface<ZPFObstacleEntity>())
+    {
+        obstacles.insert(p_Entity.QueryInterface<ZPFObstacleEntity>());
+    }
+
+    count = m_Entities.size();
+
+    m_EntityMutex.unlock();
+}
+
+void ModSDK::UntrackEntity(ZEntityRef p_Entity)
+{
+    m_EntityMutex.lock();
+
+    //const auto& s_Interfaces = *p_Entity->GetType()->m_pInterfaces;
+    //Logger::Trace("Untracking entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, entity->GetType()->m_nEntityId);
+
+    m_Entities.erase(p_Entity.GetEntity());
+
+    if (m_EntitiesById.contains(p_Entity->GetType()->m_nEntityId))
+    {
+        m_EntitiesById[p_Entity->GetType()->m_nEntityId].erase(p_Entity.GetEntity());
+    }
+
+    count = m_Entities.size();
+
+    m_EntityMutex.unlock();
+}
+
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
 {
 	auto s_Result = p_Hook->CallOriginal(th, a2);
@@ -473,101 +519,107 @@ DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
 
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_ActivateEntity, ZEntityManager* th, ZEntityRef* entity, void* a3)
 {
-	const auto& s_Interfaces = *(*entity->m_pEntity)->m_pInterfaces;
-	//Logger::Trace("Activating entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity->m_pEntity)->m_nEntityId);
+    //const auto& s_Interfaces = *entity->GetEntity()->GetType()->m_pInterfaces;
+	//Logger::Trace("Activating entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, entity->GetEntity()->GetType()->m_nEntityId);
 
-	m_EntityMutex.lock();
-	m_Entities.insert(*entity);
-	m_EntityMutex.unlock();
+	/*m_EntityMutex.lock();
+	m_Entities.insert(entity->GetEntity());
+	m_EntityMutex.unlock();*/
 
 	return HookResult<void>(HookAction::Continue());
 }
 
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntityManager_DeleteEntities, ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>& references)
 {
-	m_EntityMutex.lock();
-
 	for (size_t i = 0; i < entities.size(); ++i)
 	{
-		const auto& s_Interfaces = *(*entities[i].m_pEntity)->m_pInterfaces;
-		//Logger::Trace("Deleting entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entities[i].m_pEntity)->m_nEntityId);
-
-		m_Entities.erase(entities[i]);
+		//const auto& s_Interfaces = *entities[i]->GetType()->m_pInterfaces;
+		//Logger::Trace("Deleting entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, entities[i]->GetType()->m_nEntityId);
+        UntrackEntity(entities[i]);
 	}
-
-	m_EntityMutex.unlock();
-
+    
 	return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZTemplateEntityFactory_ConfigureEntity, ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+DECLARE_DETOUR_WITH_CONTEXT(ModSDK, ZEntityType**, ZEntityManager_ConstructUninitializedEntity, ZEntityManager* th, const ZString& sDebugName, IEntityFactory* pEntityFactory, const ZEntityRef& logicalParent, void* pMemBlock, void* a6, void* a7)
 {
-	m_EntityMutex.lock();
+    const auto s_BlueprintFactory = pEntityFactory->GetBlueprint();
 
-	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
-	Logger::Trace("Configuring ZTemplateEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
+    uint32_t s_EntityBytes, s_EntityAlignment;
+    int64_t s_EntityOffset;
+    s_BlueprintFactory->GetMemoryRequirements(s_EntityBytes, s_EntityAlignment, s_EntityOffset);
+    
+    const auto s_RealMemory = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(pMemBlock) - s_EntityAlignment);
+    const auto s_AllocSize = (*Globals::MemoryManager)->m_pNormalAllocator->GetAllocationSize(s_RealMemory);
 
-	m_EntityMutex.unlock();
+    //Logger::Trace("Constructing uninitialized entity with memblock {} (real = {}, a6 = {}) of size {}.", fmt::ptr(pMemBlock), fmt::ptr(s_RealMemory), fmt::ptr(a6), s_AllocSize);
 
-	return HookResult<void>(HookAction::Continue());
+    // Allocate a new block of memory for this entity (and its subentities)
+    // with sizeof(uintptr_t) bytes extra for a pointer to its entity factory.
+    const auto s_NewData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+        s_EntityBytes + s_EntityAlignment + sizeof(uintptr_t),
+        s_EntityAlignment
+    );
+
+    // Copy over the original data and then free the original memory block.
+    memcpy(s_NewData, s_RealMemory, s_EntityBytes + s_EntityAlignment);
+    (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_RealMemory);
+
+    // Set the entity factory pointer.
+    const auto s_NewAllocationSize = (*Globals::MemoryManager)->m_pNormalAllocator->GetAllocationSize(s_NewData);
+    *reinterpret_cast<IEntityFactory**>((reinterpret_cast<uintptr_t>(s_NewData) + s_NewAllocationSize) - sizeof(uintptr_t)) = pEntityFactory;
+
+    // Set new memblock address.
+    pMemBlock = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(s_NewData) + s_EntityAlignment);
+
+    // Continue execution with our custom memory.
+    const auto s_Result = p_Hook->CallOriginal(th, sDebugName, pEntityFactory, logicalParent, pMemBlock, a6, a7);
+
+    // And register the entity to our list.
+    TrackEntity(s_Result);
+
+    return HookResult(HookAction::Return(), s_Result);
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZCppEntityFactory_ConfigureEntity, ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
-{
-	m_EntityMutex.lock();
-
-	//const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
-	//Logger::Trace("Configuring ZCppEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
-
-	m_EntityMutex.unlock();
-
-	return HookResult<void>(HookAction::Continue());
-}
-
-DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZBehaviorTreeEntityFactory_ConfigureEntity, ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
-{
-	m_EntityMutex.lock();
-
-	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
-	Logger::Trace("Configuring ZBehaviorTreeEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
-
-	m_EntityMutex.unlock();
-
-	return HookResult<void>(HookAction::Continue());
-}
-
-DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAudioSwitchEntityFactory_ConfigureEntity, ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
-{
-	m_EntityMutex.lock();
-
-	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
-	Logger::Trace("Configuring ZAudioSwitchEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
-
-	m_EntityMutex.unlock();
-
-	return HookResult<void>(HookAction::Continue());
-}
-
-DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAspectEntityFactory_ConfigureEntity, ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
-{
-	m_EntityMutex.lock();
-
-	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
-	Logger::Trace("Configuring ZAspectEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
-
-	m_EntityMutex.unlock();
-
-	return HookResult<void>(HookAction::Continue());
-}
-
-DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZRenderMaterialEntityFactory_ConfigureEntity, ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
-{
-	m_EntityMutex.lock();
-
-	const auto& s_Interfaces = *(*entity.m_pEntity)->m_pInterfaces;
-	Logger::Trace("Configuring ZRenderMaterialEntityFactory entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, (*entity.m_pEntity)->m_nEntityId);
-
-	m_EntityMutex.unlock();
-
-	return HookResult<void>(HookAction::Continue());
-}
+//DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZTemplateEntityFactory_ConfigureEntity, ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+//{
+//    TrackEntity(entity);
+//	return HookResult<void>(HookAction::Continue());
+//}
+//
+//DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZCppEntityFactory_ConfigureEntity, ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+//{
+//    TrackEntity(entity);
+//	return HookResult<void>(HookAction::Continue());
+//}
+//
+//DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZBehaviorTreeEntityFactory_ConfigureEntity, ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+//{
+//    TrackEntity(entity);
+//	return HookResult<void>(HookAction::Continue());
+//}
+//
+//DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAudioSwitchEntityFactory_ConfigureEntity, ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+//{
+//    TrackEntity(entity);
+//	return HookResult<void>(HookAction::Continue());
+//}
+//
+//DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZAspectEntityFactory_ConfigureEntity, ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+//{
+//    TrackEntity(entity);
+//	return HookResult<void>(HookAction::Continue());
+//}
+//
+//DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZRenderMaterialEntityFactory_ConfigureEntity, ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+//{
+//    TrackEntity(entity);
+//	return HookResult<void>(HookAction::Continue());
+//}
+//
+//
+//DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZCppEntityBlueprintFactory_DestroyEntity, ZCppEntityBlueprintFactory* th, ZEntityRef entity, void* a3)
+//{
+//    UntrackEntity(entity);
+//	return HookResult<void>(HookAction::Continue());
+//}

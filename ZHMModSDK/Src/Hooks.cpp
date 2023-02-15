@@ -107,6 +107,12 @@ MODULE_HOOK(
 	HRESULT(IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 );
 
+MODULE_HOOK(
+	"dxgi.dll", "CreateDXGIFactory1",
+    CreateDXGIFactory1,
+    HRESULT(REFIID riid, void** ppFactory)
+);
+
 PATTERN_HOOK(
 	"\x48\x89\x54\x24\x10\x48\x89\x4C\x24\x08\x55\x53\x41\x57",
 	"xxxxxxxxxxxxxx",
@@ -223,7 +229,7 @@ PATTERN_HOOK(
 	void(ZHttpResultDynamicObject* th)
 );
 
-// Vtable index 6
+/*// Vtable index 6
 PATTERN_VTABLE_HOOK(
 	"\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x4D\x8B\xE8",
 	"xxx????xxxxxx",
@@ -270,4 +276,19 @@ PATTERN_VTABLE_HOOK(
 	6,
 	ZRenderMaterialEntityFactory_ConfigureEntity,
 	void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+);
+
+PATTERN_VTABLE_HOOK(
+    "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x79\x10",
+    "xxx????xxxxxx????xxxx",
+    7,
+    ZCppEntityBlueprintFactory_DestroyEntity,
+    void(ZCppEntityBlueprintFactory* th, ZEntityRef entity, void* a3)
+);*/
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x83\xEC\x00\x49\x8B\x00\x49\x8B\xC8",
+    "xxxxxxxxxxxxxxxxxxxxxxxxx?xxxxxx",
+    ZEntityManager_ConstructUninitializedEntity,
+    ZEntityType**(ZEntityManager* th, const ZString& sDebugName, IEntityFactory* pEntityFactory, const ZEntityRef& logicalParent, void* pMemBlock, void* a6, void* a7)
 );

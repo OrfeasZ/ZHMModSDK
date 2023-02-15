@@ -27,6 +27,11 @@ target_compile_definitions(ZHMModSDK PRIVATE
 	LOADER_EXPORTS
 )
 
+target_link_options(ZHMModSDK PRIVATE
+	/DELAYLOAD:d3d12.dll
+	/DELAYLOAD:dxgi.dll
+)
+
 target_link_libraries(ZHMModSDK PUBLIC
 	minhook::minhook
 	spdlog::spdlog_header_only
@@ -34,8 +39,7 @@ target_link_libraries(ZHMModSDK PUBLIC
 	Microsoft::DirectX-Guids
 	Microsoft::DirectX-Headers
 	imgui
-	d3d12.lib
-	dxgi.lib
-	dxguid.lib
-	runtimeobject.lib
+	d3d12
+	dxgi
+	delayimp
 )
