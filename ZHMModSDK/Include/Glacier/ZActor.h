@@ -267,7 +267,7 @@ public:
 			ZEntityRef s_EntRef;
 			s_Actor->GetID(&s_EntRef);
 
-			if ((*s_EntRef.m_pEntity)->m_nEntityId == p_Id)
+			if (s_EntRef->GetType()->m_nEntityId == p_Id)
 				return s_Actor;
 		}
 

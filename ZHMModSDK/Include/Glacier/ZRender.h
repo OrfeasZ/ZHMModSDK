@@ -7,13 +7,26 @@
 
 #include "ZMath.h"
 
+class IRenderRefCount
+{
+public:
+	virtual ~IRenderRefCount() = 0;
+	virtual void AddRef() = 0;
+	virtual uint32_t Release() = 0;
+};
+
+class IRenderDestination : public IRenderRefCount
+{
+	
+};
+
 class IRenderDestinationEntity :
 	public IComponentInterface
 {
 public:
 	virtual ZEntityRef* GetSource() = 0;
 	virtual void IRenderDestinationEntity_unk6() = 0;
-	virtual void IRenderDestinationEntity_unk7() = 0;
+	virtual IRenderDestination* GetRenderDestination() const = 0;
 	virtual void IRenderDestinationEntity_unk8() = 0;
 	virtual void SetSource(ZEntityRef*) = 0;
 	virtual void IRenderDestinationEntity_unk10() = 0;

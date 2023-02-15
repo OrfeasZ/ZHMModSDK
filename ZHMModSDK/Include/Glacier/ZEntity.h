@@ -6,6 +6,7 @@
 #include "ZObject.h"
 #include "Hooks.h"
 
+class IEntityBlueprintFactory;
 class ZEntityType;
 class ZActor;
 class STypeID;
@@ -75,7 +76,7 @@ public:
 class ZEntityType
 {
 public:
-	uint64_t m_nUnk0x0;
+	uint32_t m_nUnkFlags;
 	TArray<ZEntityProperty>* m_pProperties01;
 	TArray<ZEntityProperty>* m_pProperties02;
 	PAD(0x08);
@@ -121,6 +122,16 @@ public:
 	virtual void ZEntityImpl_unk18() = 0;
 	virtual void ZEntityImpl_unk19() = 0;
 
+    inline ZEntityType* GetType() const
+    {
+        if ((reinterpret_cast<ptrdiff_t>(m_pType) & 1) == 0)
+            return m_pType;
+        
+        return *reinterpret_cast<ZEntityType**>(
+            reinterpret_cast<intptr_t>(&m_pType) + (reinterpret_cast<ptrdiff_t>(m_pType) >> 1)
+        );
+    }
+
 public:
 	ZEntityType* m_pType;
 	uint32_t m_nEntityPtrIndex;
@@ -137,48 +148,74 @@ public:
 	{		
 	}
 
-	bool operator==(const ZEntityRef&) const = default;
-	
-	ZEntityImpl* GetBaseEntity()
+	ZEntityRef(ZEntityType** p_EntityRef) :
+        m_pEntity(p_EntityRef)
 	{
-		if (!m_pEntity || !*m_pEntity)
-			return nullptr;
+	}
 
-		/*if (!(*m_pEntity)->m_pInterfaces)
-			return nullptr;
+	bool operator==(const ZEntityRef&) const = default;
 
-		for (auto& s_Interface : *(*m_pEntity)->m_pInterfaces)
-		{
-			if (!s_Interface.m_pTypeId || !s_Interface.m_pTypeId->typeInfo())
-				continue;
-
-			// TODO: Cache the type instead.
-			if (s_Interface.m_pTypeId->typeInfo()->m_pTypeName == std::string("void"))
-			{
-				auto s_RealPtr = reinterpret_cast<uintptr_t>(m_pEntity) + s_Interface.m_nOffset;
-				return reinterpret_cast<ZEntityImpl*>(s_RealPtr);
-			}
-		}*/
+    operator bool() const
+    {
+        return GetEntity() != nullptr;
+    }
+	
+	ZEntityImpl* GetEntity() const
+	{
+		if (!m_pEntity)
+            return nullptr;
 
 		auto s_RealPtr = reinterpret_cast<uintptr_t>(m_pEntity) - sizeof(uintptr_t);
 		return reinterpret_cast<ZEntityImpl*>(s_RealPtr);
 	}
 
-	template <class T>
-	T* QueryInterface()
+    ZEntityImpl* operator->() const
 	{
-		if (!m_pEntity || !*m_pEntity || !(*m_pEntity)->m_pInterfaces)
+        return GetEntity();
+	}
+
+    ZEntityRef GetLogicalParent() const
+	{
+        const auto s_Entity = GetEntity();
+
+        if (!s_Entity || s_Entity->GetType()->m_nLogicalParentEntityOffset == 0)
+            return {};
+        
+        return { reinterpret_cast<ZEntityType**>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Entity->GetType()->m_nLogicalParentEntityOffset) };
+	}
+
+    ZEntityRef GetOwningEntity() const
+	{
+        const auto s_Entity = GetEntity();
+
+        if (!s_Entity || s_Entity->GetType()->m_nOwningEntityOffset == 0)
+            return {};
+        
+        return { reinterpret_cast<ZEntityType**>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Entity->GetType()->m_nOwningEntityOffset) };
+	}
+
+    ZEntityRef GetClosestParentWithBlueprintFactory() const
+    {
+        if (GetLogicalParent().GetBlueprintFactory())
+            return GetLogicalParent();
+
+        return GetLogicalParent().GetClosestParentWithBlueprintFactory();
+    }
+
+	template <class T>
+	T* QueryInterface() const
+	{
+        const auto s_Entity = GetEntity();
+
+		if (!s_Entity || !*Globals::TypeRegistry)
 			return nullptr;
 
-		if (!*Globals::TypeRegistry)
-			return nullptr;
-
-		auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+		const auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
 
 		if (it == (*Globals::TypeRegistry)->m_types.end())
 			return nullptr;
 
-		for (auto& s_Interface : *(*m_pEntity)->m_pInterfaces)
+		for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces)
 		{
 			if (s_Interface.m_pTypeId == it->second)
 			{
@@ -189,21 +226,41 @@ public:
 		return nullptr;
 	}
 
+    IEntityBlueprintFactory* GetBlueprintFactory() const
+    {
+        const auto* s_Entity = GetEntity();
+
+        if (!s_Entity)
+            return nullptr;
+
+        const auto* s_Type = s_Entity->GetType();
+
+        if ((s_Type->m_nUnkFlags & 0x200) == 0) // IsRootFactoryEntity or something
+            return nullptr;
+
+        auto s_RootEntity = QueryInterface<void>();
+
+        if (!s_RootEntity)
+            return nullptr;
+
+        // Pointer to IEntityBlueprintFactory stored right before the start of this entity.
+        return *reinterpret_cast<IEntityBlueprintFactory**>(reinterpret_cast<uintptr_t>(s_RootEntity) - sizeof(uintptr_t));
+    }
+
 	template <class T>
 	bool HasInterface() const
 	{
-		if (!m_pEntity || !*m_pEntity || !(*m_pEntity)->m_pInterfaces)
-			return false;
+        const auto s_Entity = GetEntity();
 
-		if (!*Globals::TypeRegistry)
-			return false;
+        if (!s_Entity || !*Globals::TypeRegistry)
+            return nullptr;
 
-		auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+        const auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
 
 		if (it == (*Globals::TypeRegistry)->m_types.end())
 			return false;
 
-		for (auto& s_Interface : *(*m_pEntity)->m_pInterfaces)
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces)
 		{
 			if (s_Interface.m_pTypeId == it->second)
 			{
@@ -214,98 +271,54 @@ public:
 		return false;
 	}
 
-	/*template <class T>
-	ZVariant<T> GetProperty(uint32_t p_PropertyId) const
-	{
-		// TODO: Type checks?
-		ZVariant<T> s_Property;
-		Hooks::GetPropertyValue->Call(*this, p_PropertyId, s_Property.As<T>());
-		return std::move(s_Property);
-	}
-
-	template <class T>
-	ZVariant<T> GetProperty(const ZString& p_PropertyName) const
-	{
-		return std::move(GetProperty<T>(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size())));
-	}
-
-	ZObjectRef GetProperty(uint32_t p_PropertyId) const
-	{
-		ZObjectRef s_Property;
-
-		if (!(*m_pEntity)->m_pProperties01)
-			return std::move(s_Property);
-
-		for (auto& s_PropertyType : *(*m_pEntity)->m_pProperties01)
-		{
-			if (s_PropertyType.m_nPropertyId != p_PropertyId)
-				continue;
-
-			auto* s_Type = s_PropertyType.m_pType->getPropertyInfo()->m_pType;
-
-			auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-				s_Type->typeInfo()->m_nTypeSize,
-				s_Type->typeInfo()->m_nTypeAlignment
-			);
-
-			// TODO: Re-implement this.
-			//Hooks::GetPropertyValue->Call(*this, p_PropertyId, s_Data);
-
-			s_Property.Assign(s_Type, s_Data);
-
-			break;
-		}
-
-		return std::move(s_Property);
-	}
-
-	ZObjectRef GetProperty(const ZString& p_PropertyName) const
-	{
-		return std::move(GetProperty(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size())));
-	}*/
-
 	template <typename T>
 	ZVariant<T> GetProperty(const uint32_t nPropertyID) const
 	{
-		ZObjectRef property;
+        ZObjectRef s_PropertyVal;
 
-		for (uint32_t i = 0; i < m_pEntity[0]->m_pProperties01->size(); ++i)
+        const auto s_Entity = GetEntity();
+
+        if (!s_Entity || !*Globals::MemoryManager)
+            return ZVariant<T>(std::move(s_PropertyVal));
+
+        const auto s_Type = s_Entity->GetType();
+
+		for (uint32_t i = 0; i < s_Type->m_pProperties01->size(); ++i)
 		{
-			ZEntityProperty* entityProperty = &m_pEntity[0]->m_pProperties01->operator[](i);
+            const ZEntityProperty* s_Property = &s_Type->m_pProperties01->operator[](i);
 
-			if (entityProperty->m_nPropertyId == nPropertyID)
-			{
-				ZClassProperty* classProperty = entityProperty->m_pType->getPropertyInfo();
-				char* property2 = reinterpret_cast<char*>(m_pEntity) + entityProperty->m_nOffset;
+			if (s_Property->m_nPropertyId != nPropertyID)
+                continue;
 
-				uint16_t typeSize = classProperty->m_pType->typeInfo()->m_nTypeSize;
-				uint16_t typeAlignment = classProperty->m_pType->typeInfo()->m_nTypeAlignment;
-				auto* data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(typeSize, typeAlignment);;
+            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+            const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(m_pEntity) + s_Property->m_nOffset;
 
-				if (classProperty->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
-				{
-					classProperty->get(property2, data, classProperty->m_nOffset);
-				}
-				else
-				{
-					classProperty->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(data, property2);
-				}
+            const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
+            const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
-				property.Assign(classProperty->m_pType, data);
+            auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
-				break;
-			}
-		}
+            if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
+            {
+                s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
+            }
+            else
+            {
+                s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(s_Data, reinterpret_cast<void*>(s_PropertyAddress));
+            }
 
-		return std::move(ZVariant<T>(property));
+            s_PropertyVal.Assign(s_PropertyInfo->m_pType, s_Data);
+
+            break;
+        }
+
+		return ZVariant<T>(std::move(s_PropertyVal));
 	}
 
 	template <typename T>
 	ZVariant<T> GetProperty(const ZString& p_PropertyName) const
 	{
-		uint32_t nPropertyID = Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size());
-
-		return std::move(GetProperty<T>(nPropertyID));
+		return GetProperty<T>(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()));
 	}
 
 	bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true)
@@ -372,11 +385,6 @@ public:
 	void SignalOutputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const
 	{
 		Hooks::SignalOutputPin->Call(*this, p_PinId, p_Data);
-	}
-
-	operator bool() const
-	{
-		return m_pEntity != nullptr && (*m_pEntity) != nullptr;
 	}
 
 	struct hasher
