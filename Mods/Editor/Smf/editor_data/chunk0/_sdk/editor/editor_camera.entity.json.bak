@@ -1,0 +1,72 @@
+{
+    "tempHash": "0090c1894a66bcdb",
+    "tbluHash": "008bc66414a3dcb2",
+    "rootEntity": "fffffffffffffffe",
+    "entities": {
+        "fffffffffffffffe": {
+            "parent": null,
+            "name": "Camera",
+            "factory": "[modules:/zcameraentity.class].pc_entitytype",
+            "blueprint": "[modules:/zcameraentity.class].pc_entityblueprint",
+            "properties": {
+                "m_eRoomBehaviour": {
+                    "type": "ZSpatialEntity.ERoomBehaviour",
+                    "value": "ROOM_DYNAMIC"
+                },
+                "m_bAllowAutoCameraCuts": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_fNearZ": {
+                    "type": "float32",
+                    "value": 0.5
+                },
+                "m_fAspectWByH": {
+                    "type": "float32",
+                    "value": 1
+                },
+                "m_fFovYDeg": {
+                    "type": "float32",
+                    "value": 35
+                },
+                "m_fFarZ": {
+                    "type": "float32",
+                    "value": 250
+                },
+                "m_bIsUICamera": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_mTransform": {
+                    "type": "SMatrix43",
+                    "value": {
+                        "rotation": {
+                            "x": 0,
+                            "y": 0,
+                            "z": 0
+                        },
+                        "position": {
+                            "x": 0,
+                            "y": 0,
+                            "z": 0
+                        }
+                    }
+                },
+                "m_bForceVisible": {
+                    "type": "bool",
+                    "value": true
+                }
+            }
+        }
+    },
+    "propertyOverrides": [],
+    "overrideDeletes": [],
+    "pinConnectionOverrides": [],
+    "pinConnectionOverrideDeletes": [],
+    "externalScenes": [],
+    "subType": "brick",
+    "quickEntityVersion": 3.1,
+    "extraFactoryDependencies": [],
+    "extraBlueprintDependencies": [],
+    "comments": []
+}

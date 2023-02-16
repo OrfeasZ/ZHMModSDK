@@ -41,6 +41,7 @@ add_subdirectory("Mods/DebugMod")
 add_subdirectory("Mods/AdvancedRating")
 add_subdirectory("Mods/FreeCam")
 add_subdirectory("Mods/DiscordRichPresence")
+add_subdirectory("Mods/Editor")
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
@@ -59,6 +60,7 @@ add_dependencies(DevLoader
 	AdvancedRating
 	FreeCam
 	DiscordRichPresence
+	Editor
 )
 
 if (EXISTS "${INSTALL_PATH}")
@@ -66,7 +68,7 @@ if (EXISTS "${INSTALL_PATH}")
 		RUNTIME DESTINATION "${INSTALL_PATH}"
 	)
 
-	install(TARGETS WakingUpNpcs NoPause SkipIntro CodeGen CertPinBypass MaxPatchLevel DebugMod AdvancedRating FreeCam DiscordRichPresence 
+	install(TARGETS WakingUpNpcs NoPause SkipIntro CodeGen CertPinBypass MaxPatchLevel DebugMod AdvancedRating FreeCam DiscordRichPresence Editor
 		RUNTIME DESTINATION "${INSTALL_PATH}/mods"
 	)
 endif()

@@ -1,0 +1,25 @@
+{
+	"version": "1.0.0",
+	"id": "SDK.Editor",
+	"name": "Editor",
+	"authors": [
+		"NoFaTe"
+	],
+	"frameworkVersion": "2.14.0",
+	"description": "Provides supporting content for the SDK-based editor.",
+	"contentFolders": [
+		"editor_data"
+	],
+	"packagedefinition": [
+		{
+			"type": "entity",
+			"partition": "super",
+			"path": "[assembly:/_sdk/editor/editor_camera.brick].entitytype"
+		},		
+		{
+			"type": "entity",
+			"partition": "super",
+			"path": "[assembly:/_sdk/editor/camera_texture.brick].entitytype"
+		}
+	]
+}

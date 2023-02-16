@@ -1,0 +1,10 @@
+{
+    "tempHash": "00097AA87B144150",
+    "tbluHash": "00E738E7CF7A35E1",
+    "patch": [
+        {
+            "AddExternalScene": "[assembly:/_sdk/editor/editor_data.brick].pc_entitytype"
+        }
+    ],
+    "patchVersion": 6
+}

@@ -1,0 +1,107 @@
+{
+    "tempHash": "00a0e7801d5d4852",
+    "tbluHash": "008d72a87720dc3c",
+    "rootEntity": "fffffffffffffffe",
+    "entities": {
+        "fffffffffffffffe": {
+            "parent": null,
+            "name": "camera_texture",
+            "factory": "[modules:/zrenderdestinationtextureentity.class].pc_entitytype",
+            "blueprint": "[modules:/zrenderdestinationtextureentity.class].pc_entityblueprint",
+          "properties": {
+            "m_aMultiSource": {
+              "type": "TArray<SEntityTemplateReference>",
+              "value": []
+            },
+            "m_nWidth": {
+              "type": "uint32",
+              "value": 1024
+            },
+            "m_nHeight": {
+              "type": "uint32",
+              "value": 1024
+            },
+            "m_fOutputScale": {
+              "type": "float32",
+              "value": 1.0
+            },
+            "m_bUseSimpleRendering": {
+              "type": "bool",
+              "value": false
+            },
+            "m_bIsHDR": {
+              "type": "bool",
+              "value": false
+            },
+            "m_bSharedResource": {
+              "type": "bool",
+              "value": false
+            },
+            "m_bNeedsGamma": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bUseBGRA": {
+              "type": "bool",
+              "value": false
+            },
+            "m_bIsPIP": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawShadows": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawCrowds": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawWater": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawDecals": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawScatter": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawTransparent": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawGates": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawRefractions": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawAtmosphericScattering": {
+              "type": "bool",
+              "value": true
+            },
+            "m_bDrawUI": {
+              "type": "bool",
+              "value": true
+            }
+          }
+        }
+    },
+    "propertyOverrides": [],
+    "overrideDeletes": [],
+    "pinConnectionOverrides": [],
+    "pinConnectionOverrideDeletes": [],
+    "externalScenes": [
+        "[assembly:/_sdk/editor/editor_camera.brick].pc_entitytype"
+    ],
+    "subType": "brick",
+    "quickEntityVersion": 3.1,
+    "extraFactoryDependencies": [],
+    "extraBlueprintDependencies": [],
+    "comments": []
+}
