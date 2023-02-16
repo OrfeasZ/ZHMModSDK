@@ -315,10 +315,13 @@ DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pA
 {
     const auto s_Result = p_Hook->CallOriginal(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 
-    GetVTables(static_cast<ID3D12Device*>(*ppDevice));
-    Install();
+    if (!m_Installed && m_Factory)
+    {
+        GetVTables(static_cast<ID3D12Device*>(*ppDevice));
+        Install();
 
-    m_Factory = nullptr;
+        m_Factory = nullptr;
+    }
 
     return HookResult(HookAction::Return(), s_Result);
 }
