@@ -6,7 +6,7 @@
 
 #include "Hooks.h"
 #include "Glacier/ZInput.h"
-#include "../D3DUtils.h"
+#include "D3DUtils.h"
 
 struct ImFont;
 

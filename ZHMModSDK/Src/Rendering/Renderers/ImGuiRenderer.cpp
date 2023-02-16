@@ -16,13 +16,9 @@
 
 #include <Glacier/ZApplicationEngineWin32.h>
 
-#include "UI/Console.h"
-#include "UI/MainMenu.h"
-#include "UI/ModSelector.h"
-
-#include "Rendering/D3DUtils.h"
+#include "D3DUtils.h"
 #include "Fonts.h"
-#include "Globals.h"
+#include "Functions.h"
 #include "HookImpl.h"
 #include "ModSDK.h"
 #include "Glacier/ZRender.h"
@@ -469,7 +465,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	s_MainViewport->PlatformHandle = s_MainViewport->PlatformHandleRaw = m_Hwnd;
 
 	m_RendererSetup = true;
-
+    
 	Logger::Debug("ImGui renderer successfully set up.");
 
 	return true;

@@ -22,7 +22,7 @@
 #include "Glacier/ZActor.h"
 #include "Glacier/ZRender.h"
 #include "Glacier/ZCameraEntity.h"
-#include "Rendering/D3DUtils.h"
+#include "D3DUtils.h"
 #include "Fonts.h"
 #include "ModSDK.h"
 #include "Glacier/ZGameLoopManager.h"

@@ -99,3 +99,45 @@ public:
 	PAD(0xF8); // 0x14188
 	ZRenderContext* m_pRenderContext; // 0x14280, look for "ZRenderManager::RenderThread" string, first thing being constructed and assigned
 };
+
+
+class ZRenderTexture2D
+{
+public:
+    virtual ~ZRenderTexture2D() = 0;
+
+public:
+    ID3D12Resource* m_pResource;
+};
+
+class ZRenderTargetView;
+
+class ZRenderShaderResourceView
+{
+public:
+    virtual ~ZRenderShaderResourceView() = 0;
+
+public:
+    PAD(0x30); // 0x08
+    D3D12_CPU_DESCRIPTOR_HANDLE m_Handle; // 0x38
+};
+
+class ZRenderDestination : public IRenderDestination
+{
+public:
+    uint32_t m_nRefCount; // 0x08
+    PAD(0x60); // 0x10
+    ZRenderDevice* m_pDevice; // 0x70
+    PAD(0x68); // 0x78
+    ZRenderTexture2D* m_pTexture2D; // 0xE0 look for ZRenderDestination destructor, vtable check at the end
+    ZRenderTargetView* m_pRenderTargetView; // 0xE8
+    PAD(0x98); // 0xF0
+    ZRenderShaderResourceView* m_pSRV1; // 0x188
+    PAD(0x48); // 0x190
+    ZRenderShaderResourceView* m_pSRV2; // 0x1D8
+};
+
+static_assert(offsetof(ZRenderDestination, m_pDevice) == 0x70);
+static_assert(offsetof(ZRenderDestination, m_pTexture2D) == 0xE0);
+static_assert(offsetof(ZRenderDestination, m_pSRV1) == 0x188);
+static_assert(offsetof(ZRenderDestination, m_pSRV2) == 0x1D8);

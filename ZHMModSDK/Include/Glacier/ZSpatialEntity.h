@@ -3,6 +3,7 @@
 #include "ZEntity.h"
 #include "ZPrimitives.h"
 #include "ZMath.h"
+#include "ZResource.h"
 
 class ZSpatialEntity :
 	public ZEntityImpl

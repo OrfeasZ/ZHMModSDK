@@ -54,6 +54,9 @@ class ZUIControlBlueprintFactory;
 class ZCppEntityBlueprintFactory;
 class IEntityFactory;
 class ZEntityType;
+class ZTemplateEntityBlueprintFactory;
+class STemplateEntityBlueprint;
+class ZResourcePending;
 
 class ZHMSDK_API Hooks
 {
@@ -89,7 +92,7 @@ public:
 	static Hook<void(ZEntityManager* th, ZEntityRef* entity, void* a3)>* ZEntityManager_ActivateEntity;
 	static Hook<void(void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int param_6)>* Http_WinHttpCallback;
 	static Hook<void(ZHttpResultDynamicObject* th)>* ZHttpResultDynamicObject_OnBufferReady;
-    static Hook<ZEntityType**(ZEntityManager* th, const ZString& sDebugName, IEntityFactory* pEntityFactory, const ZEntityRef& logicalParent, void* pMemBlock, void* a6, void* a7)>* ZEntityManager_ConstructUninitializedEntity;
+    static Hook<ZTemplateEntityBlueprintFactory*(ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)>* ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory;
 	//static Hook<void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZTemplateEntityFactory_ConfigureEntity;
 	//static Hook<void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZCppEntityFactory_ConfigureEntity;
 	//static Hook<void(ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZBehaviorTreeEntityFactory_ConfigureEntity;

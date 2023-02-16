@@ -287,8 +287,8 @@ PATTERN_VTABLE_HOOK(
 );*/
 
 PATTERN_HOOK(
-    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x83\xEC\x00\x49\x8B\x00\x49\x8B\xC8",
-    "xxxxxxxxxxxxxxxxxxxxxxxxx?xxxxxx",
-    ZEntityManager_ConstructUninitializedEntity,
-    ZEntityType**(ZEntityManager* th, const ZString& sDebugName, IEntityFactory* pEntityFactory, const ZEntityRef& logicalParent, void* pMemBlock, void* a6, void* a7)
+    "\x4C\x89\x44\x24\x18\x48\x89\x54\x24\x10\x48\x89\x4C\x24\x08\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xD8",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory,
+    ZTemplateEntityBlueprintFactory*(ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)
 );

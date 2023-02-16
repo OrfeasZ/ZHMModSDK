@@ -15,7 +15,7 @@
 #include "Hooks.h"
 #include "IRenderer.h"
 #include "SpriteFont.h"
-#include "Rendering/D3DUtils.h"
+#include "D3DUtils.h"
 
 class SGameUpdateEvent;
 
