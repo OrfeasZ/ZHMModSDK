@@ -29,7 +29,12 @@ static_assert(offsetof(ZGeomEntity, m_ResourceID) == 0x188);
 
 class IRenderDestinationTextureEntity : public IRenderDestinationEntity
 {
-
+public:
+    virtual void IRenderDestinationTextureEntity_unk32() = 0;
+    virtual TArray<ZEntityRef>* GetClients() = 0;
+    virtual void AddClient(const ZEntityRef&) = 0;
+    virtual void RemoveClient(const ZEntityRef&) = 0;
+    virtual void IRenderDestinationTextureEntity_unk36() = 0;
 };
 
 class ZRenderDestinationTextureEntity : public ZRenderableEntity, public IRenderDestinationTextureEntity

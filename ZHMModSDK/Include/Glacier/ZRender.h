@@ -118,9 +118,14 @@ public:
     virtual ~ZRenderShaderResourceView() = 0;
 
 public:
-    PAD(0x30); // 0x08
+    PAD(0xC); // 0x08
+    int32_t m_nHeapDescriptorIndex; // 0x14
+    PAD(0x20); // 0x18
     D3D12_CPU_DESCRIPTOR_HANDLE m_Handle; // 0x38
 };
+
+static_assert(offsetof(ZRenderShaderResourceView, m_nHeapDescriptorIndex) == 0x14);
+static_assert(offsetof(ZRenderShaderResourceView, m_Handle) == 0x38);
 
 class ZRenderDestination : public IRenderDestination
 {
@@ -132,12 +137,9 @@ public:
     ZRenderTexture2D* m_pTexture2D; // 0xE0 look for ZRenderDestination destructor, vtable check at the end
     ZRenderTargetView* m_pRenderTargetView; // 0xE8
     PAD(0x98); // 0xF0
-    ZRenderShaderResourceView* m_pSRV1; // 0x188
-    PAD(0x48); // 0x190
-    ZRenderShaderResourceView* m_pSRV2; // 0x1D8
+    ZRenderShaderResourceView* m_pSRV; // 0x188
 };
 
 static_assert(offsetof(ZRenderDestination, m_pDevice) == 0x70);
 static_assert(offsetof(ZRenderDestination, m_pTexture2D) == 0xE0);
-static_assert(offsetof(ZRenderDestination, m_pSRV1) == 0x188);
-static_assert(offsetof(ZRenderDestination, m_pSRV2) == 0x1D8);
+static_assert(offsetof(ZRenderDestination, m_pSRV) == 0x188);
