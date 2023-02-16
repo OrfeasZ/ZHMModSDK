@@ -124,7 +124,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
 
 	if (m_CameraRT)
 	{
-        ImGui::Begin("RT Texture");
+        /*ImGui::Begin("RT Texture");
 
 		const auto s_CameraRTEntity = m_CameraRT.QueryInterface<ZRenderDestinationTextureEntity>();
 		const auto s_RT = reinterpret_cast<ZRenderDestination*>(s_CameraRTEntity->GetRenderDestination());
@@ -151,7 +151,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
 	    {
 			const auto s_CmdList = reinterpret_cast<ID3D12GraphicsCommandList*>(p_CmdList);
 			s_CmdList->SetDescriptorHeaps(1, &SDK()->thing);
-		}, nullptr);*/
+		}, nullptr);#1#
 
 		ImGui::Image(reinterpret_cast<ImTextureID>(s_Handle.ptr), ImVec2(static_cast<float>(s_CameraRTEntity->m_nWidth), static_cast<float>(s_CameraRTEntity->m_nHeight)));
 
@@ -159,9 +159,9 @@ void Editor::OnDrawUI(bool p_HasFocus)
 	    {
 			const auto s_CmdList = reinterpret_cast<ID3D12GraphicsCommandList*>(p_CmdList);
             s_CmdList->SetDescriptorHeaps(1, &SDK()->thing2);
-		}, nullptr);*/
+		}, nullptr);#1#
 
-        ImGui::End();
+        ImGui::End();*/
 	}
 }
 
