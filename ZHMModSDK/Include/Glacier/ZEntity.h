@@ -275,6 +275,9 @@ public:
 
         const auto* s_Type = s_Entity->GetType();
 
+        if (!s_Type)
+            return nullptr;
+
         if ((s_Type->m_nUnkFlags & 0x200) == 0) // IsRootFactoryEntity or something
             return nullptr;
 
@@ -292,7 +295,7 @@ public:
 	{
         const auto s_Entity = GetEntity();
 
-		if (!s_Entity || !*Globals::TypeRegistry)
+		if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
 			return nullptr;
 
 		const auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
@@ -346,6 +349,9 @@ public:
             return ZVariant<T>(std::move(s_PropertyVal));
 
         const auto s_Type = s_Entity->GetType();
+
+        if (!s_Type)
+            return ZVariant<T>(std::move(s_PropertyVal));
 
 		for (uint32_t i = 0; i < s_Type->m_pProperties01->size(); ++i)
 		{

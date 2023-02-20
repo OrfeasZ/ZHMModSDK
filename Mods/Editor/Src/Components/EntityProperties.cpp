@@ -13,7 +13,7 @@ void Editor::DrawEntityProperties()
 
     ImGui::SetNextWindowPos({ s_ImgGuiIO.DisplaySize.x - 400, 110 });
     ImGui::SetNextWindowSize({ 400, 600 });
-    ImGui::Begin("Entity Info", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Begin(ICON_MD_TUNE " Entity Properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
 
@@ -132,7 +132,7 @@ void Editor::DrawEntityProperties()
                 ));
             }
 
-            if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move to Hitman"))
+            if (ImGui::Button(ICON_MD_PERSON_PIN " Move to Hitman"))
             {
                 TEntityRef<ZHitman5> s_LocalHitman;
                 Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
@@ -144,17 +144,75 @@ void Editor::DrawEntityProperties()
                 if (const auto s_PhysicsAspect = m_SelectedEntity.QueryInterface<ZStaticPhysicsAspect>())
                     s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_Spatial->GetWorldMatrix());
             }
+
+            if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move Hitman to"))
+            {
+                TEntityRef<ZHitman5> s_LocalHitman;
+                Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+                auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+
+                s_HitmanSpatial->SetWorldMatrix(s_Spatial->GetWorldMatrix());
+            }
         }
 
-        if (ImGui::Button(ICON_MD_SUPERVISOR_ACCOUNT" Select Logical Parent"))
+        static char s_InputPinInput[1024] = {};
+
+        if (ImGui::Button(ICON_MD_BOLT "##fireInputPin"))
         {
+            m_SelectedEntity.SignalInputPin(s_InputPinInput);
+            s_InputPinInput[0] = '\0';
+        }
+
+        ImGui::SameLine(0, 5);
+
+        if (ImGui::InputText("In", s_InputPinInput, IM_ARRAYSIZE(s_InputPinInput), ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            m_SelectedEntity.SignalInputPin(s_InputPinInput);
+            s_InputPinInput[0] = '\0';
+        }
+
+
+        static char s_OutputPinInput[1024] = {};
+
+        if (ImGui::Button(ICON_MD_BOLT "##fireOutputPin"))
+        {
+            m_SelectedEntity.SignalOutputPin(s_OutputPinInput);
+            s_OutputPinInput[0] = '\0';
+        }
+
+        ImGui::SameLine(0, 5);
+
+        if (ImGui::InputText("Out", s_OutputPinInput, IM_ARRAYSIZE(s_OutputPinInput), ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            m_SelectedEntity.SignalOutputPin(s_OutputPinInput);
+            s_OutputPinInput[0] = '\0';
+        }
+
+
+        if (ImGui::Button(ICON_MD_SUPERVISOR_ACCOUNT))
             m_SelectedEntity = m_SelectedEntity.GetLogicalParent();
-        }
-        
-        if (ImGui::Button(ICON_MD_BRANDING_WATERMARK " Select Owning Entity(Brick)"))
-        {
+
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select Logical Parent");
+
+
+        ImGui::SameLine(0, 5);
+
+        if (ImGui::Button(ICON_MD_BRANDING_WATERMARK))
             m_SelectedEntity = m_SelectedEntity.GetOwningEntity();
-        }
+
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select Owning Entity (Brick)");
+
+
+        ImGui::SameLine(0, 5);
+
+        if (ImGui::Button(ICON_MD_DESELECT))
+            m_SelectedEntity = {};
+
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Deselect");
     }
 
     ImGui::End();

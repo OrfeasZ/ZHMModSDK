@@ -1,6 +1,5 @@
 #pragma once
 
-#include <d3d12.h>
 #include "Glacier/ZPrimitives.h"
 #include "Common.h"
 #include "imgui.h"
@@ -26,8 +25,6 @@ public:
 	virtual bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) = 0;
 	virtual bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) = 0;
     virtual bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize) = 0;
-	ID3D12DescriptorHeap* thing = nullptr;
-	ID3D12DescriptorHeap* thing2 = nullptr;
 };
 
 ZHMSDK_API IModSDK* SDK();

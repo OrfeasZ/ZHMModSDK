@@ -3,6 +3,7 @@
 #include <Glacier/EntityFactory.h>
 #include <Glacier/ZModule.h>
 
+#include "IconsMaterialDesign.h"
 #include "Logging.h"
 
 bool HasChildEntity(ZEntityRef p_Entity, ZEntityRef p_ChildEntity, IEntityBlueprintFactory* p_Factory, ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity)
@@ -138,6 +139,7 @@ void Editor::RenderBrick(ZEntityRef p_Entity)
 
         if (i == s_BpFactory->m_rootEntityIndex || !s_SubEntity.GetLogicalParent())
         {
+            // NOLINT(readability-suspicious-call-argument)
             RenderEntity(
                 i,
                 s_SubEntity,
@@ -150,22 +152,75 @@ void Editor::RenderBrick(ZEntityRef p_Entity)
     }
 }
 
+bool Editor::SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId)
+{
+    if (!p_BrickFactory || !p_BrickEntity)
+        return false;
+    
+    const auto s_EntIndex = p_BrickFactory->GetSubEntityIndex(p_EntityId);
+
+    if (s_EntIndex != -1)
+    {
+        m_SelectedEntity = p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, s_EntIndex);
+        m_ShouldScrollToEntity = true;
+        return true;
+    }
+
+    for (int i = 0; i < p_BrickFactory->GetSubEntitiesCount(); ++i)
+    {
+        const auto& s_SubEntity = p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, i);
+
+        if (!s_SubEntity)
+            continue;
+
+        const auto s_SubFactory = p_BrickFactory->GetSubEntityBlueprint(i);
+
+        if (s_SubFactory && s_SubFactory->GetSubEntitiesCount() > 0)
+        {
+            if (SearchForEntityById(reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SubFactory), s_SubEntity, p_EntityId))
+                return true;
+        }
+    }
+
+    return false;
+
+}
+
+
 void Editor::DrawEntityTree()
 {
     ImGui::SetNextWindowPos({ 0, 110 });
     ImGui::SetNextWindowSize({ 700, ImGui::GetIO().DisplaySize.y - 110 });
-    ImGui::Begin("Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Begin(ICON_MD_CATEGORY " Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
 
     if (s_SceneCtx && s_SceneCtx->m_pScene)
     {
+        static char s_EntitySearchInput[17] = {};
+        if (ImGui::InputText(ICON_MD_SEARCH " Search for entity by ID", s_EntitySearchInput, IM_ARRAYSIZE(s_EntitySearchInput), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsNoBlank))
+        {
+            const auto s_EntityId = std::strtoull(s_EntitySearchInput, nullptr, 16);
+
+            for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i)
+            {
+                const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
+                auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.GetBlueprintFactory());
+
+                if (SearchForEntityById(s_BpFactory, s_Brick.entityRef, s_EntityId))
+                {
+                    m_SelectedBrickIndex = i;
+                    break;
+                }
+            }
+        }
+
         std::string s_PreviewLabel = "No bricks loaded";
 
         if (s_SceneCtx->m_aLoadedBricks.size() > 0)
             s_PreviewLabel = fmt::format("{:016X}", s_SceneCtx->m_aLoadedBricks[m_SelectedBrickIndex].runtimeResourceID.GetID());
 
-        if (ImGui::BeginCombo("Bricks", s_PreviewLabel.c_str()))
+        if (ImGui::BeginCombo(ICON_MD_GRID_VIEW " Bricks", s_PreviewLabel.c_str()))
         {
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i)
             {
@@ -186,6 +241,10 @@ void Editor::DrawEntityTree()
         {
             RenderBrick(s_SceneCtx->m_aLoadedBricks[m_SelectedBrickIndex].entityRef);
         }
+    }
+    else
+    {
+        ImGui::Text("No scene loaded.");
     }
 
     ImGui::End();

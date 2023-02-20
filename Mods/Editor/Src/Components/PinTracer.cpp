@@ -1,18 +1,20 @@
 #include <Editor.h>
 
+#include "IconsMaterialDesign.h"
+
 void Editor::DrawPinTracer()
 {
     auto s_ImgGuiIO = ImGui::GetIO();
 
     ImGui::SetNextWindowPos({ s_ImgGuiIO.DisplaySize.x - 400, 710 });
     ImGui::SetNextWindowSize({ 400, s_ImgGuiIO.DisplaySize.y - 710 });
-    ImGui::Begin("Pin Tracer", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Begin(ICON_MD_PUSH_PIN " Pin Tracer", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     auto s_Now = std::chrono::system_clock::now();
 
-    ImGui::Text("Input Pins");
+    ImGui::Text(ICON_MD_LOGIN " Input Pins");
 
-    ImGui::BeginChild("input pins", { 360, 150 }, true);
+    ImGui::BeginChild("input pins", { 360, 80 }, true);
 
     for (auto it = m_FiredInputPins.begin(); it != m_FiredInputPins.end();)
     {
@@ -57,7 +59,7 @@ void Editor::DrawPinTracer()
 
     ImGui::EndChild();
 
-    ImGui::Text("Output Pins");
+    ImGui::Text(ICON_MD_LOGOUT " Output Pins");
 
     ImGui::BeginChild("output pins", { 360.f, 0.f }, true);
 

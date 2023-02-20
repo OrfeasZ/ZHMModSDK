@@ -22,7 +22,7 @@
 Editor::Editor()
 {
     // Disable ZTemplateEntityBlueprintFactory freeing its associated data.    
-    uint8_t s_Nop[15] = {};
+    uint8_t s_Nop[21] = {};
     memset(s_Nop, 0x90, sizeof(s_Nop));
 
     if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x49\xC7\x86\xA0\x01\x00\x00", "xxxx?x????xxxxxxx", s_Nop, sizeof(s_Nop)))
@@ -47,7 +47,7 @@ void Editor::Init()
 
 void Editor::OnDrawMenu()
 {
-	if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR"))
+	/*if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR"))
 	{
 		const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
@@ -101,7 +101,7 @@ void Editor::OnDrawMenu()
                 break;
             }
 		}
-	}
+	}*/
 }
 
 
