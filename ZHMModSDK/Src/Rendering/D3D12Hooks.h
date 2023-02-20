@@ -75,7 +75,7 @@ namespace Rendering
 		DECLARE_D3D12_HOOK(void, ID3D12CommandQueue, ExecuteCommandLists, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists);
 
         DEFINE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice);
-        DEFINE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, CreateDXGIFactory1, REFIID riid, void** ppFactory);
+
 	private:
 		std::vector<InstalledHook> m_InstalledHooks;
         bool m_Installed = false;

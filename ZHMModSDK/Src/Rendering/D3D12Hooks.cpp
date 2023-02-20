@@ -12,9 +12,6 @@
 #include "MinHook.h"
 #include "ModSDK.h"
 #include "Renderers/DirectXTKRenderer.h"
-#include "Util/ProcessUtils.h"
-
-#include "Renderers/ImGuiRenderer.h"
 
 #include <HookImpl.h>
 
@@ -32,8 +29,6 @@ D3D12Hooks::~D3D12Hooks()
 void D3D12Hooks::Startup()
 {
     Hooks::D3D12CreateDevice->AddDetour(this, &D3D12Hooks::D3D12CreateDevice);
-    Hooks::CreateDXGIFactory1->AddDetour(this, &D3D12Hooks::CreateDXGIFactory1);
-
 }
 
 void D3D12Hooks::Install()
@@ -326,12 +321,5 @@ DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pA
         Install();
     }
 
-    return HookResult(HookAction::Return(), s_Result);
-}
-
-DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, CreateDXGIFactory1, REFIID riid, void** ppFactory)
-{
-    const auto s_Result = p_Hook->CallOriginal(riid, ppFactory);
-    
     return HookResult(HookAction::Return(), s_Result);
 }

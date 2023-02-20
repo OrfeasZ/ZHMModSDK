@@ -69,7 +69,6 @@ void Editor::OnDrawMenu()
                     Logger::Debug("Found RT at index {}.", s_Index);
                     m_CameraRT = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
 
-
                     const auto s_CameraRTEntity = m_CameraRT.QueryInterface<ZRenderDestinationTextureEntity>();
                     const auto s_RT = reinterpret_cast<ZRenderDestination*>(s_CameraRTEntity->GetRenderDestination());
 
@@ -167,7 +166,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
     DrawEntityManipulator(p_HasFocus);
     DrawPinTracer();
 
-	/*if (m_CameraRT && m_Camera)
+	if (m_CameraRT && m_Camera)
 	{
         ImGui::Begin("RT Texture");
 
@@ -177,30 +176,11 @@ void Editor::OnDrawUI(bool p_HasFocus)
         m_CameraRT.SetProperty("m_bVisible", true);
         m_Camera.SetProperty("m_bVisible", true);
 
-        ID3D12Device* s_Device = nullptr;
-        SDK()->thing->GetDevice(IID_PPV_ARGS(&s_Device));
-
-        const auto s_HandleIncrementSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        
-        D3D12_GPU_DESCRIPTOR_HANDLE s_Handle {};
-	    s_Handle.ptr = SDK()->thing->GetGPUDescriptorHandleForHeapStart().ptr + (s_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
-
-		ImGui::GetWindowDrawList()->AddCallback([](const ImDrawList* p_DrawList, const ImDrawCmd* p_Cmd, void* p_CmdList)
-	    {
-			const auto s_CmdList = reinterpret_cast<ID3D12GraphicsCommandList*>(p_CmdList);
-			s_CmdList->SetDescriptorHeaps(1, &SDK()->thing);
-		}, nullptr);
-
-		ImGui::Image(reinterpret_cast<ImTextureID>(s_Handle.ptr), ImVec2(static_cast<float>(s_CameraRTEntity->m_nWidth), static_cast<float>(s_CameraRTEntity->m_nHeight)));
-
-		ImGui::GetWindowDrawList()->AddCallback([](const ImDrawList* p_DrawList, const ImDrawCmd* p_Cmd, void* p_CmdList)
-	    {
-			const auto s_CmdList = reinterpret_cast<ID3D12GraphicsCommandList*>(p_CmdList);
-            s_CmdList->SetDescriptorHeaps(1, &SDK()->thing2);
-		}, nullptr);
+        if (s_RT)
+            SDK()->ImGuiGameRenderTarget(s_RT);
 
         ImGui::End();
-	}*/
+	}
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
@@ -332,9 +312,9 @@ void Editor::SpawnCameras()
 
 DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
 {
-    //if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
+    if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
 	//	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
-	//	p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
+		p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
 
 	return HookResult<void>(HookAction::Continue());
 }
@@ -365,11 +345,6 @@ DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinI
         };
     }
 
-    if (pinId == 0x145358F7 || pinId == 0xF7585314)
-    {
-        Logger::Error("MA DONG BONG DONG");
-    }
-
     return { HookAction::Continue() };
 }
 
@@ -381,12 +356,7 @@ DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pin
             .m_FireTime = std::chrono::system_clock::now(),
         };
     }
-
-    if (pinId == 0x145358F7 || pinId == 0xF7585314)
-    {
-        Logger::Error("MA DONG BONG DONG");
-    }
-
+    
     return { HookAction::Continue() };
 }
 

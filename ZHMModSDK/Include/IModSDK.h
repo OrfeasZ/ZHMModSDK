@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "imgui.h"
 
+class ZRenderDestination;
 class SVector2;
 class SVector3;
 
@@ -25,6 +26,7 @@ public:
 	virtual bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) = 0;
 	virtual bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) = 0;
     virtual bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize) = 0;
+    virtual void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) = 0;
 };
 
 ZHMSDK_API IModSDK* SDK();

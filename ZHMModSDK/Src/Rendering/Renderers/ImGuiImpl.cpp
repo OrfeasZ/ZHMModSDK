@@ -38,6 +38,9 @@
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <d3dcompiler.h>
+
+#include "Globals.h"
+#include "Glacier/ZRender.h"
 #ifdef _MSC_VER
 #pragma comment(lib, "d3dcompiler") // Automatically link with d3dcompiler.lib as we are using D3DCompile() below.
 #endif
@@ -131,7 +134,7 @@ static void ImGui_ImplDX12_SetupRenderState(ImDrawData* draw_data, ID3D12Graphic
 }
 
 // Render function
-void ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandList* ctx)
+void ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandList* ctx, ID3D12DescriptorHeap* desc_heap)
 {
     // Avoid rendering when minimized
     if (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f)
@@ -230,9 +233,21 @@ void ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandL
                 // User callback, registered via ImDrawList::AddCallback()
                 // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
                 if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+                {
                     ImGui_ImplDX12_SetupRenderState(draw_data, ctx, fr);
+                }
+                else if (pcmd->UserCallback == ImDrawCallback_SetGameDescriptorHeap)
+                {
+                    ctx->SetDescriptorHeaps(1, &Globals::RenderManager->m_pDevice->m_pFrameHeapCBVSRVUAV);
+                }
+                else if (pcmd->UserCallback == ImDrawCallback_ResetDescriptorHeap)
+                {
+                    ctx->SetDescriptorHeaps(1, &desc_heap);
+                }
                 else
+                {
                     pcmd->UserCallback(cmd_list, pcmd);
+                }
             }
             else
             {

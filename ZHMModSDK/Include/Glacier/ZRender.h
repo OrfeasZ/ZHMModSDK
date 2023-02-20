@@ -1,11 +1,12 @@
 #pragma once
 
-#include "ZPrimitives.h"
-
 #include <d3d12.h>
 #include <dxgi.h>
 
 #include "ZMath.h"
+#include "Reflection.h"
+
+class ZEntityRef;
 
 class IRenderRefCount
 {
@@ -69,15 +70,19 @@ public:
 	virtual ~ZRenderDevice() = default;
 
 public:
-	//PAD(0x10A08);
-	//ZRenderSwapChain* m_pSwapChain; // 0x10A10, look for ZRenderSwapChain constructor
-	//ID3D12Device* m_pDevice; // 0x10A18
-	//PAD(0x30E9D90); // 0x10A20
-	//ID3D12CommandQueue* m_pCommandQueue; // 0x30FA7B0, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
+	PAD(0x10A08);
+	ZRenderSwapChain* m_pSwapChain; // 0x10A10, look for ZRenderSwapChain constructor
+    PAD(0x08); // 0x10A18
+	ID3D12Device* m_pDevice; // 0x10A20
+	PAD(0x30E9D88); // 0x10A28
+	ID3D12CommandQueue* m_pCommandQueue; // 0x30FA7B0, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
+    PAD(0x180FC8); // 0x30FA7B8
+    ID3D12DescriptorHeap* m_pFrameHeapCBVSRVUAV; // 0x327B780, look for "m_pFrameHeapCBVSRVUAV" string, first argument
 };
 
-//static_assert(offsetof(ZRenderDevice, m_pSwapChain) == 0x10A10);
-//static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA7B0);
+static_assert(offsetof(ZRenderDevice, m_pSwapChain) == 0x10A10);
+static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA7B0);
+static_assert(offsetof(ZRenderDevice, m_pFrameHeapCBVSRVUAV) == 0x327B780);
 
 class ZRenderContext
 {

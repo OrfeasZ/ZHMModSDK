@@ -26,6 +26,8 @@
 #include "Glacier/ZSpatialEntity.h"
 #include "Glacier/ZActor.h"
 #include "D3DUtils.h"
+#include "Glacier/ZRender.h"
+#include "Rendering/Renderers/ImGuiImpl.h"
 #include "Util/StringUtils.h"
 
 #if _DEBUG
@@ -480,6 +482,30 @@ bool ModSDK::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut,
 {
 	return m_DirectXTKRenderer->ScreenToWorld(p_ScreenPos, p_WorldPosOut, p_DirectionOut);
 }
+
+void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size)
+{
+    if (!p_RT)
+        return;
+
+    auto s_Size = p_Size;
+
+    if (s_Size.x == 0 && s_Size.y == 0)
+    {
+        const auto s_Desc = p_RT->m_pTexture2D->m_pResource->GetDesc();
+        s_Size = { static_cast<float>(s_Desc.Width), static_cast<float>(s_Desc.Height) };
+    }
+    
+    const auto s_HandleIncrementSize = Globals::RenderManager->m_pDevice->m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    D3D12_GPU_DESCRIPTOR_HANDLE s_Handle {};
+    s_Handle.ptr = Globals::RenderManager->m_pDevice->m_pFrameHeapCBVSRVUAV->GetGPUDescriptorHandleForHeapStart().ptr + (p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
+
+    ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_SetGameDescriptorHeap, nullptr);
+    ImGui::Image(reinterpret_cast<ImTextureID>(s_Handle.ptr), s_Size);
+    ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetDescriptorHeap, nullptr);
+}
+
 
 DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
 {

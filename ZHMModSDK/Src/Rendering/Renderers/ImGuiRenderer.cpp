@@ -293,7 +293,7 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 	m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, FALSE, nullptr);
 	m_CommandList->SetDescriptorHeaps(1, &m_SrvDescriptorHeap.Ref);
 
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList);
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList, m_SrvDescriptorHeap);
 
 	const D3D12_RESOURCE_BARRIER s_PresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 		m_BackBuffers[s_BackBufferIndex],
