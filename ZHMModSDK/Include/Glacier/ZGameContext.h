@@ -7,11 +7,11 @@ class ZSceneData;
 class IGameContext
 {
 public:
-	virtual void SetPendingTransition(const ZSceneData& data) = 0;
+    virtual void SetPendingTransition(const ZSceneData& data) = 0;
 };
 
 class ZGameContext :
-	public IComponentInterface,
-	public IGameContext
+    public IComponentInterface,
+    public IGameContext
 {
 };

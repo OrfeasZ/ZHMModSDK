@@ -6,5 +6,5 @@
 class ZHMSDK_API Events
 {
 public:
-	static EventDispatcher<void>* OnConsoleCommand;
+    static EventDispatcher<void>* OnConsoleCommand;
 };

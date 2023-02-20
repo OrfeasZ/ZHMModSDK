@@ -18,350 +18,350 @@ ModLoader::ModLoader()
 
 ModLoader::~ModLoader()
 {
-	Hooks::Engine_Init->RemoveDetoursWithContext(this);
-	UnloadAllMods();
+    Hooks::Engine_Init->RemoveDetoursWithContext(this);
+    UnloadAllMods();
 }
 
 void ModLoader::Startup()
 {
-	LoadAllMods();
+    LoadAllMods();
 }
 
 void ModLoader::ScanAvailableMods()
 {
-	m_AvailableMods.clear();
-	m_AvailableModsLower.clear();
-	
-	// Discover and load mods.
-	char s_ExePathStr[MAX_PATH];
-	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+    m_AvailableMods.clear();
+    m_AvailableModsLower.clear();
 
-	if (s_PathSize == 0)
-		return;
+    // Discover and load mods.
+    char s_ExePathStr[MAX_PATH];
+    auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
 
-	std::filesystem::path s_ExePath(s_ExePathStr);
-	auto s_ExeDir = s_ExePath.parent_path();
+    if (s_PathSize == 0)
+        return;
 
-	const auto s_ModPath = absolute(s_ExeDir / "mods");
+    std::filesystem::path s_ExePath(s_ExePathStr);
+    auto s_ExeDir = s_ExePath.parent_path();
 
-	if (exists(s_ModPath) && is_directory(s_ModPath))
-	{
-		Logger::Debug("Looking for mods in '{}'...", s_ModPath.string());
+    const auto s_ModPath = absolute(s_ExeDir / "mods");
 
-		for (const auto& s_Entry : std::filesystem::directory_iterator(s_ModPath))
-		{
-			if (!s_Entry.is_regular_file())
-				continue;
+    if (exists(s_ModPath) && is_directory(s_ModPath))
+    {
+        Logger::Debug("Looking for mods in '{}'...", s_ModPath.string());
 
-			if (s_Entry.path().extension() != ".dll")
-				continue;
+        for (const auto& s_Entry : std::filesystem::directory_iterator(s_ModPath))
+        {
+            if (!s_Entry.is_regular_file())
+                continue;
 
-			m_AvailableMods.insert(s_Entry.path().filename().stem().string());
-			m_AvailableModsLower.insert(Util::StringUtils::ToLowerCase(s_Entry.path().filename().stem().string()));
-		}
-	}
-	else
-	{
-		Logger::Warn("Mod directory '{}' not found.", s_ModPath.string());
-	}
+            if (s_Entry.path().extension() != ".dll")
+                continue;
 
-	ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
+            m_AvailableMods.insert(s_Entry.path().filename().stem().string());
+            m_AvailableModsLower.insert(Util::StringUtils::ToLowerCase(s_Entry.path().filename().stem().string()));
+        }
+    }
+    else
+    {
+        Logger::Warn("Mod directory '{}' not found.", s_ModPath.string());
+    }
+
+    ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
 }
 
 std::unordered_set<std::string> ModLoader::GetActiveMods()
 {
-	std::unordered_set<std::string> s_Mods;
+    std::unordered_set<std::string> s_Mods;
 
-	LockRead();
+    LockRead();
 
-	for (auto& s_LoadedMod : m_LoadedMods)
-		s_Mods.insert(s_LoadedMod.first);
+    for (auto& s_LoadedMod : m_LoadedMods)
+        s_Mods.insert(s_LoadedMod.first);
 
-	UnlockRead();
+    UnlockRead();
 
-	return s_Mods;
+    return s_Mods;
 }
 
 void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
 {
-	std::unordered_set<std::string> s_LowerModNames;
+    std::unordered_set<std::string> s_LowerModNames;
 
-	for (auto& s_Mod : p_Mods)
-		s_LowerModNames.insert(Util::StringUtils::ToLowerCase(s_Mod));
-	
-	// First unload any mods that don't exist in the new list.
-	std::vector<std::string> s_ModsToUnload;
+    for (auto& s_Mod : p_Mods)
+        s_LowerModNames.insert(Util::StringUtils::ToLowerCase(s_Mod));
 
-	LockRead();
+    // First unload any mods that don't exist in the new list.
+    std::vector<std::string> s_ModsToUnload;
 
-	for (auto& s_Pair : m_LoadedMods)
-		if (!s_LowerModNames.contains(s_Pair.first))
-			s_ModsToUnload.push_back(s_Pair.first);
+    LockRead();
 
-	UnlockRead();
+    for (auto& s_Pair : m_LoadedMods)
+        if (!s_LowerModNames.contains(s_Pair.first))
+            s_ModsToUnload.push_back(s_Pair.first);
 
-	for (auto& s_Mod : s_ModsToUnload)
-		UnloadMod(s_Mod);
+    UnlockRead();
 
-	std::vector<std::string> s_ModsToLoad;
+    for (auto& s_Mod : s_ModsToUnload)
+        UnloadMod(s_Mod);
 
-	LockRead();
+    std::vector<std::string> s_ModsToLoad;
 
-	// Then load any mods that aren't already loaded.
-	for (auto& s_Mod : s_LowerModNames)
-	{
-		// Mod is already loaded; skip.
-		if (m_LoadedMods.contains(s_Mod))
-			continue;
+    LockRead();
 
-		s_ModsToLoad.push_back(s_Mod);
-	}
+    // Then load any mods that aren't already loaded.
+    for (auto& s_Mod : s_LowerModNames)
+    {
+        // Mod is already loaded; skip.
+        if (m_LoadedMods.contains(s_Mod))
+            continue;
 
-	UnlockRead();
+        s_ModsToLoad.push_back(s_Mod);
+    }
 
-	for (auto& s_Mod : s_ModsToLoad)
-		LoadMod(s_Mod, true);
+    UnlockRead();
 
-	// And persist the mods to the ini file.
-	char s_ExePathStr[MAX_PATH];
-	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+    for (auto& s_Mod : s_ModsToLoad)
+        LoadMod(s_Mod, true);
 
-	if (s_PathSize == 0)
-		return;
+    // And persist the mods to the ini file.
+    char s_ExePathStr[MAX_PATH];
+    auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
 
-	std::filesystem::path s_ExePath(s_ExePathStr);
-	auto s_ExeDir = s_ExePath.parent_path();
+    if (s_PathSize == 0)
+        return;
 
-	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
+    std::filesystem::path s_ExePath(s_ExePathStr);
+    auto s_ExeDir = s_ExePath.parent_path();
 
-	mINI::INIFile s_File(s_IniPath.string());
+    const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
 
-	mINI::INIStructure s_Ini;
+    mINI::INIFile s_File(s_IniPath.string());
 
-	if (is_regular_file(s_IniPath))
-	{
-		mINI::INIStructure s_OldIni;
-		s_File.read(s_OldIni);
+    mINI::INIStructure s_Ini;
 
-		if (s_OldIni.has("sdk"))
-			s_Ini.set("sdk", s_OldIni.get("sdk"));
-	}
+    if (is_regular_file(s_IniPath))
+    {
+        mINI::INIStructure s_OldIni;
+        s_File.read(s_OldIni);
 
-	for (auto& s_Mod : p_Mods)
-	{
-		mINI::INIMap<std::string> s_EmptyMap;
-		s_Ini.set(s_Mod, s_EmptyMap);
-	}
+        if (s_OldIni.has("sdk"))
+            s_Ini.set("sdk", s_OldIni.get("sdk"));
+    }
 
-	s_File.generate(s_Ini, true);
+    for (auto& s_Mod : p_Mods)
+    {
+        mINI::INIMap<std::string> s_EmptyMap;
+        s_Ini.set(s_Mod, s_EmptyMap);
+    }
 
-	ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
+    s_File.generate(s_Ini, true);
+
+    ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
 }
 
 std::unordered_set<std::string> ModLoader::GetAvailableMods()
 {
-	return m_AvailableMods;
+    return m_AvailableMods;
 }
 
 void ModLoader::LoadAllMods()
 {
-	ScanAvailableMods();
+    ScanAvailableMods();
 
-	// Get the mods we want to load.
-	char s_ExePathStr[MAX_PATH];
-	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+    // Get the mods we want to load.
+    char s_ExePathStr[MAX_PATH];
+    auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
 
-	if (s_PathSize == 0)
-		return;
+    if (s_PathSize == 0)
+        return;
 
-	std::filesystem::path s_ExePath(s_ExePathStr);
-	auto s_ExeDir = s_ExePath.parent_path();
+    std::filesystem::path s_ExePath(s_ExePathStr);
+    auto s_ExeDir = s_ExePath.parent_path();
 
-	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
+    const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
 
-	mINI::INIFile s_File(s_IniPath.string());
-	mINI::INIStructure s_Ini;
+    mINI::INIFile s_File(s_IniPath.string());
+    mINI::INIStructure s_Ini;
 
-	// now we can read the file
-	s_File.read(s_Ini);
+    // now we can read the file
+    s_File.read(s_Ini);
 
-	for (auto& s_Mod : s_Ini)
-	{
-		// Ignore the SDK entry. It's used for configuring the SDK itself.
-		if (Util::StringUtils::ToLowerCase(s_Mod.first) == "sdk")
-			continue;
+    for (auto& s_Mod : s_Ini)
+    {
+        // Ignore the SDK entry. It's used for configuring the SDK itself.
+        if (Util::StringUtils::ToLowerCase(s_Mod.first) == "sdk")
+            continue;
 
-		if (m_AvailableModsLower.contains(Util::StringUtils::ToLowerCase(s_Mod.first)))
-		{
-			LoadMod(s_Mod.first, false);
-		}
-	}
+        if (m_AvailableModsLower.contains(Util::StringUtils::ToLowerCase(s_Mod.first)))
+        {
+            LoadMod(s_Mod.first, false);
+        }
+    }
 
-	ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
+    ModSDK::GetInstance()->GetUIModSelector()->UpdateAvailableMods(m_AvailableMods, GetActiveMods());
 }
 
 void ModLoader::LoadMod(const std::string& p_Name, bool p_LiveLoad)
 {
-	std::unique_lock s_Lock(m_Mutex);
+    std::unique_lock s_Lock(m_Mutex);
 
-	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
+    const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
-	if (m_LoadedMods.contains(s_Name))
-	{
-		Logger::Warn("A mod with the same name ({}) is already loaded. Skipping.", p_Name);
-		return;
-	}
+    if (m_LoadedMods.contains(s_Name))
+    {
+        Logger::Warn("A mod with the same name ({}) is already loaded. Skipping.", p_Name);
+        return;
+    }
 
-	char s_ExePathStr[MAX_PATH];
-	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+    char s_ExePathStr[MAX_PATH];
+    auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
 
-	if (s_PathSize == 0)
-		return;
+    if (s_PathSize == 0)
+        return;
 
-	std::filesystem::path s_ExePath(s_ExePathStr);
-	auto s_ExeDir = s_ExePath.parent_path();
+    std::filesystem::path s_ExePath(s_ExePathStr);
+    auto s_ExeDir = s_ExePath.parent_path();
 
-	const auto s_ModulePath = absolute(s_ExeDir / ("mods/" + p_Name + ".dll"));
+    const auto s_ModulePath = absolute(s_ExeDir / ("mods/" + p_Name + ".dll"));
 
-	if (!exists(s_ModulePath) || !is_regular_file(s_ModulePath))
-	{
-		Logger::Warn("Could not find mod '{}'.", p_Name);
-	}
+    if (!exists(s_ModulePath) || !is_regular_file(s_ModulePath))
+    {
+        Logger::Warn("Could not find mod '{}'.", p_Name);
+    }
 
-	Logger::Info("Attempting to load mod '{}'.", p_Name);
-	Logger::Debug("Module path is '{}'.", s_ModulePath.string());
+    Logger::Info("Attempting to load mod '{}'.", p_Name);
+    Logger::Debug("Module path is '{}'.", s_ModulePath.string());
 
-	const auto s_Module = LoadLibraryA(s_ModulePath.string().c_str());
+    const auto s_Module = LoadLibraryA(s_ModulePath.string().c_str());
 
-	if (s_Module == nullptr)
-	{
-		Logger::Warn("Failed to load mod. Error: {}", GetLastError());
-		return;
-	}
+    if (s_Module == nullptr)
+    {
+        Logger::Warn("Failed to load mod. Error: {}", GetLastError());
+        return;
+    }
 
-	const auto s_GetPluginInterfaceAddr = GetProcAddress(s_Module, "GetPluginInterface");
+    const auto s_GetPluginInterfaceAddr = GetProcAddress(s_Module, "GetPluginInterface");
 
-	if (s_GetPluginInterfaceAddr == nullptr)
-	{
-		Logger::Warn("Could not find plugin interface for mod. Make sure that the 'GetPluginInterface' method is exported.");
-		FreeLibrary(s_Module);
-		return;
-	}
+    if (s_GetPluginInterfaceAddr == nullptr)
+    {
+        Logger::Warn("Could not find plugin interface for mod. Make sure that the 'GetPluginInterface' method is exported.");
+        FreeLibrary(s_Module);
+        return;
+    }
 
-	const auto s_GetPluginInterface = reinterpret_cast<GetPluginInterface_t>(s_GetPluginInterfaceAddr);
+    const auto s_GetPluginInterface = reinterpret_cast<GetPluginInterface_t>(s_GetPluginInterfaceAddr);
 
-	auto* s_PluginInterface = s_GetPluginInterface();
+    auto* s_PluginInterface = s_GetPluginInterface();
 
-	if (s_PluginInterface == nullptr)
-	{
-		Logger::Warn("Mod returned a null plugin interface.");
-		FreeLibrary(s_Module);
-		return;
-	}
+    if (s_PluginInterface == nullptr)
+    {
+        Logger::Warn("Mod returned a null plugin interface.");
+        FreeLibrary(s_Module);
+        return;
+    }
 
-	LoadedMod s_Mod {};
-	s_Mod.Module = s_Module;
-	s_Mod.PluginInterface = s_PluginInterface;
+    LoadedMod s_Mod {};
+    s_Mod.Module = s_Module;
+    s_Mod.PluginInterface = s_PluginInterface;
 
-	m_LoadedMods[s_Name] = s_Mod;
-	m_ModList.push_back(s_PluginInterface);
+    m_LoadedMods[s_Name] = s_Mod;
+    m_ModList.push_back(s_PluginInterface);
 
-	ModSDK::GetInstance()->OnModLoaded(s_Name, s_PluginInterface, p_LiveLoad);
+    ModSDK::GetInstance()->OnModLoaded(s_Name, s_PluginInterface, p_LiveLoad);
 }
 
 void ModLoader::UnloadMod(const std::string& p_Name)
 {
-	std::unique_lock s_Lock(m_Mutex);
+    std::unique_lock s_Lock(m_Mutex);
 
-	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
+    const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
-	auto s_ModMapIt = m_LoadedMods.find(s_Name);
+    auto s_ModMapIt = m_LoadedMods.find(s_Name);
 
-	if (s_ModMapIt == m_LoadedMods.end())
-		return;
+    if (s_ModMapIt == m_LoadedMods.end())
+        return;
 
-	Logger::Info("Unloading mod '{}'.", p_Name);
+    Logger::Info("Unloading mod '{}'.", p_Name);
 
-	HookRegistry::ClearDetoursWithContext(s_ModMapIt->second.PluginInterface);
-	EventDispatcherRegistry::ClearPluginListeners(s_ModMapIt->second.PluginInterface);
+    HookRegistry::ClearDetoursWithContext(s_ModMapIt->second.PluginInterface);
+    EventDispatcherRegistry::ClearPluginListeners(s_ModMapIt->second.PluginInterface);
 
-	for (auto it = m_ModList.begin(); it != m_ModList.end();)
-	{
-		if (*it == s_ModMapIt->second.PluginInterface)
-			it = m_ModList.erase(it);
-		else
-			++it;
-	}
-	
-	delete s_ModMapIt->second.PluginInterface;
-	FreeLibrary(s_ModMapIt->second.Module);
+    for (auto it = m_ModList.begin(); it != m_ModList.end();)
+    {
+        if (*it == s_ModMapIt->second.PluginInterface)
+            it = m_ModList.erase(it);
+        else
+            ++it;
+    }
 
-	m_LoadedMods.erase(s_ModMapIt);
+    delete s_ModMapIt->second.PluginInterface;
+    FreeLibrary(s_ModMapIt->second.Module);
 
-	ModSDK::GetInstance()->OnModUnloaded(s_Name);
+    m_LoadedMods.erase(s_ModMapIt);
+
+    ModSDK::GetInstance()->OnModUnloaded(s_Name);
 }
 
 void ModLoader::ReloadMod(const std::string& p_Name)
 {
-	LockRead();
+    LockRead();
 
-	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
+    const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
-	auto it = m_LoadedMods.find(s_Name);
+    auto it = m_LoadedMods.find(s_Name);
 
-	if (it == m_LoadedMods.end())
-	{
-		Logger::Warn("Could not find mod '{}' to reload.", p_Name);
-		UnlockRead();
-		return;
-	}
+    if (it == m_LoadedMods.end())
+    {
+        Logger::Warn("Could not find mod '{}' to reload.", p_Name);
+        UnlockRead();
+        return;
+    }
 
-	UnlockRead();
+    UnlockRead();
 
-	UnloadMod(p_Name);
-	LoadMod(p_Name, true);
+    UnloadMod(p_Name);
+    LoadMod(p_Name, true);
 }
 
 void ModLoader::UnloadAllMods()
 {
-	LockRead();
+    LockRead();
 
-	std::vector<std::string> s_ModNames;
+    std::vector<std::string> s_ModNames;
 
-	for (auto& s_Pair : m_LoadedMods)
-		s_ModNames.push_back(s_Pair.first);
+    for (auto& s_Pair : m_LoadedMods)
+        s_ModNames.push_back(s_Pair.first);
 
-	UnlockRead();
+    UnlockRead();
 
-	for (auto& s_Mod : s_ModNames)
-		UnloadMod(s_Mod);
+    for (auto& s_Mod : s_ModNames)
+        UnloadMod(s_Mod);
 }
 
 void ModLoader::ReloadAllMods()
 {
-	LockRead();
+    LockRead();
 
-	std::vector<std::string> s_ModNames;
+    std::vector<std::string> s_ModNames;
 
-	for (auto& s_Pair : m_LoadedMods)
-		s_ModNames.push_back(s_Pair.first);
+    for (auto& s_Pair : m_LoadedMods)
+        s_ModNames.push_back(s_Pair.first);
 
-	UnlockRead();
+    UnlockRead();
 
-	for (auto& s_Mod : s_ModNames)
-		ReloadMod(s_Mod);
+    for (auto& s_Mod : s_ModNames)
+        ReloadMod(s_Mod);
 }
 
 IPluginInterface* ModLoader::GetModByName(const std::string& p_Name)
 {
-	std::shared_lock s_Lock(m_Mutex);
+    std::shared_lock s_Lock(m_Mutex);
 
-	std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
+    std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
 
-	auto it = m_LoadedMods.find(s_Name);
+    auto it = m_LoadedMods.find(s_Name);
 
-	if (it == m_LoadedMods.end())
-		return nullptr;
+    if (it == m_LoadedMods.end())
+        return nullptr;
 
-	return it->second.PluginInterface;
+    return it->second.PluginInterface;
 }

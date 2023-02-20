@@ -156,7 +156,7 @@ bool Editor::SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory
 {
     if (!p_BrickFactory || !p_BrickEntity)
         return false;
-    
+
     const auto s_EntIndex = p_BrickFactory->GetSubEntityIndex(p_EntityId);
 
     if (s_EntIndex != -1)
@@ -252,4 +252,3 @@ void Editor::DrawEntityTree()
     if (m_ShouldScrollToEntity)
         m_ShouldScrollToEntity = false;
 }
-

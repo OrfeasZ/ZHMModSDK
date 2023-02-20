@@ -6,6 +6,6 @@
 class SOnlineEvent
 {
 public:
-	ZString sName; // 0x0
-	ZDynamicObject data; // 0x10
+    ZString sName; // 0x0
+    ZDynamicObject data; // 0x10
 };

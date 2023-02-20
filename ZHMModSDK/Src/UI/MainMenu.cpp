@@ -10,22 +10,22 @@ using namespace UI;
 
 void MainMenu::Draw(bool p_HasFocus)
 {
-	if (!p_HasFocus)
-		return;
-	
-	ImGui::BeginMainMenuBar();
+    if (!p_HasFocus)
+        return;
 
-	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	ImGui::Text("ZHM MOD SDK");
-	ImGui::PopFont();
-	ImGui::Text("~ or ^ (under ESC) to toggle this menu");
+    ImGui::BeginMainMenuBar();
 
-	if (ImGui::Button(ICON_MD_TOKEN " MODS"))
-	{
-		ModSDK::GetInstance()->GetUIModSelector()->Show();
-	}
+    ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    ImGui::Text("ZHM MOD SDK");
+    ImGui::PopFont();
+    ImGui::Text("~ or ^ (under ESC) to toggle this menu");
 
-	ModSDK::GetInstance()->OnDrawMenu();
+    if (ImGui::Button(ICON_MD_TOKEN " MODS"))
+    {
+        ModSDK::GetInstance()->GetUIModSelector()->Show();
+    }
 
-	ImGui::EndMainMenuBar();
+    ModSDK::GetInstance()->OnDrawMenu();
+
+    ImGui::EndMainMenuBar();
 }

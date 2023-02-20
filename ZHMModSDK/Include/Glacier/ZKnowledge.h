@@ -5,7 +5,7 @@
 class ZKnowledge
 {
 public:
-	PAD(100);
-	float m_fHMAttention;
-	float m_fHMAttentionLastUpdate;
+    PAD(100);
+    float m_fHMAttention;
+    float m_fHMAttentionLastUpdate;
 };

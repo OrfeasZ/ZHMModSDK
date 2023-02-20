@@ -8,5 +8,5 @@
 class ZContentKitManager : public IComponentInterface
 {
 public:
-	TMap<ZRepositoryID const, TEntityRef<ZGlobalOutfitKit>> m_repositoryGlobalOutfitKits;
+    TMap<ZRepositoryID const, TEntityRef<ZGlobalOutfitKit>> m_repositoryGlobalOutfitKits;
 };

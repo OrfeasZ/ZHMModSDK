@@ -49,4 +49,3 @@ IMGUI_IMPL_API bool     ImGui_ImplDX12_CreateDeviceObjects();
 #ifdef _MSC_VER
 #pragma warning (pop)
 #endif
-

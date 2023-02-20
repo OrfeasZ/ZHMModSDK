@@ -14,13 +14,13 @@ class Editor : public IPluginInterface
 public:
     Editor();
 
-	void Init() override;
-	void OnDrawMenu() override;
-	void OnDrawUI(bool p_HasFocus) override;
+    void Init() override;
+    void OnDrawMenu() override;
+    void OnDrawUI(bool p_HasFocus) override;
     void OnDraw3D(IRenderer* p_Renderer) override;
 
 private:
-	void SpawnCameras();
+    void SpawnCameras();
     void CopyToClipboard(const std::string& p_String) const;
     void OnMouseDown(SVector2 p_Pos, bool p_FirstClick);
 
@@ -40,15 +40,15 @@ private:
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
 private:
-	DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
     DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
-	DEFINE_PLUGIN_DETOUR(Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor, ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending);
-	DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
-	DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
+    DEFINE_PLUGIN_DETOUR(Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor, ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending);
+    DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
+    DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
 
 private:
-	ZEntityRef m_Camera;
-	ZEntityRef m_CameraRT;
+    ZEntityRef m_Camera;
+    ZEntityRef m_CameraRT;
 
     bool m_HoldingMouse = false;
     bool m_UseSnap = false;

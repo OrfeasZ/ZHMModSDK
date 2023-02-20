@@ -5,9 +5,9 @@
 #include "ZObject.h"
 
 class ZGameStats :
-	public TMap<ZString, ZObjectRef>
+    public TMap<ZString, ZObjectRef>
 {
 public:
-	virtual ~ZGameStats() = 0;
-	virtual void unk01() = 0;
+    virtual ~ZGameStats() = 0;
+    virtual void unk01() = 0;
 };

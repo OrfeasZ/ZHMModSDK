@@ -8,23 +8,23 @@
 class WakingUpNpcs : public IPluginInterface
 {
 public:
-	WakingUpNpcs();
-	~WakingUpNpcs() override;
+    WakingUpNpcs();
+    ~WakingUpNpcs() override;
 
-	void Init() override;
-	void OnEngineInitialized() override;
-
-private:
-	void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
+    void Init() override;
+    void OnEngineInitialized() override;
 
 private:
-	DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
-	DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext*, bool);
+    void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
 private:
-	std::unordered_map<ZActor*, double> m_PacifiedTimes;
-	std::random_device m_RandomDevice;
-	std::mt19937 m_Generator;
+    DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext*, bool);
+
+private:
+    std::unordered_map<ZActor*, double> m_PacifiedTimes;
+    std::random_device m_RandomDevice;
+    std::mt19937 m_Generator;
 };
 
 DEFINE_ZHM_PLUGIN(WakingUpNpcs)

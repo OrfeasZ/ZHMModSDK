@@ -7,8 +7,8 @@ class ZEntitySceneContext;
 class ZEntityManager
 {
 public:
-	virtual ~ZEntityManager() {}
+    virtual ~ZEntityManager() {}
 
 public:
-	ZEntitySceneContext* m_pContext;
+    ZEntitySceneContext* m_pContext;
 };

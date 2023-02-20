@@ -7,9 +7,9 @@ class ZLevelSavableHandler;
 class ZLevelManager
 {
 public:
-	virtual ~ZLevelManager() {}
+    virtual ~ZLevelManager() {}
 
 public:
-	PAD(0x160);
-	ZLevelSavableHandler* m_pSavableHandler;
+    PAD(0x160);
+    ZLevelSavableHandler* m_pSavableHandler;
 };

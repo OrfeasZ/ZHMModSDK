@@ -4,9 +4,9 @@
 
 namespace UI
 {
-	class MainMenu
-	{
-	public:
-		void Draw(bool p_HasFocus);
-	};
+    class MainMenu
+    {
+    public:
+        void Draw(bool p_HasFocus);
+    };
 }

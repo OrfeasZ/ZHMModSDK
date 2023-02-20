@@ -26,57 +26,57 @@
 class IDestructible
 {
 public:
-	virtual ~IDestructible() = default;
+    virtual ~IDestructible() = default;
 };
 
 class ScopedDestructible
 {
 public:
-	ScopedDestructible(IDestructible** p_Destructible) :
-		m_Destructible(p_Destructible)
-	{
-	}
+    ScopedDestructible(IDestructible** p_Destructible) :
+        m_Destructible(p_Destructible)
+    {
+    }
 
-	~ScopedDestructible()
-	{
-		if (*m_Destructible)
-			delete* m_Destructible;
-	}
+    ~ScopedDestructible()
+    {
+        if (*m_Destructible)
+            delete* m_Destructible;
+    }
 
 private:
-	IDestructible** m_Destructible;
+    IDestructible** m_Destructible;
 };
 
 class ScopedSharedGuard
 {
 public:
-	ScopedSharedGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock)
-	{
-		AcquireSRWLockShared(m_Lock);
-	}
+    ScopedSharedGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock)
+    {
+        AcquireSRWLockShared(m_Lock);
+    }
 
-	~ScopedSharedGuard()
-	{
-		ReleaseSRWLockShared(m_Lock);
-	}
+    ~ScopedSharedGuard()
+    {
+        ReleaseSRWLockShared(m_Lock);
+    }
 
 private:
-	SRWLOCK* m_Lock;
+    SRWLOCK* m_Lock;
 };
 
 class ScopedExclusiveGuard
 {
 public:
-	ScopedExclusiveGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock)
-	{
-		AcquireSRWLockExclusive(m_Lock);
-	}
+    ScopedExclusiveGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock)
+    {
+        AcquireSRWLockExclusive(m_Lock);
+    }
 
-	~ScopedExclusiveGuard()
-	{
-		ReleaseSRWLockExclusive(m_Lock);
-	}
+    ~ScopedExclusiveGuard()
+    {
+        ReleaseSRWLockExclusive(m_Lock);
+    }
 
 private:
-	SRWLOCK* m_Lock;
+    SRWLOCK* m_Lock;
 };

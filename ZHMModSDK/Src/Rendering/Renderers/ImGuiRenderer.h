@@ -12,82 +12,82 @@ struct ImFont;
 
 namespace Rendering::Renderers
 {
-	class ImGuiRenderer
-	{
-	public:
-		struct FrameContext
-		{
-			ScopedD3DRef<ID3D12CommandAllocator> CommandAllocator;
-			volatile uint64_t FenceValue = 0;
-		};
+    class ImGuiRenderer
+    {
+    public:
+        struct FrameContext
+        {
+            ScopedD3DRef<ID3D12CommandAllocator> CommandAllocator;
+            volatile uint64_t FenceValue = 0;
+        };
 
-		ImGuiRenderer();
-		~ImGuiRenderer();
+        ImGuiRenderer();
+        ~ImGuiRenderer();
 
-	public:
-		void OnEngineInit();
-		
-	public:
-		void OnPresent(IDXGISwapChain3* p_SwapChain);
-		void PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult);
-		void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
-		void OnReset();
-		void PostReset();
+    public:
+        void OnEngineInit();
 
-	public:
-		ImFont* GetFontLight() { return m_FontLight; }
-		ImFont* GetFontRegular() { return m_FontRegular; }
-		ImFont* GetFontMedium() { return m_FontMedium; }
-		ImFont* GetFontBold() { return m_FontBold; }
-		ImFont* GetFontBlack() { return m_FontBlack; }
+    public:
+        void OnPresent(IDXGISwapChain3* p_SwapChain);
+        void PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult);
+        void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
+        void OnReset();
+        void PostReset();
 
-		void SetFocus(bool p_Focused) { m_ImguiHasFocus = p_Focused; }
-		
-	private:
-		bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
-		void Draw();
-		void SetupStyles();
-		void WaitForCurrentFrameToFinish() const;
+    public:
+        ImFont* GetFontLight() { return m_FontLight; }
+        ImFont* GetFontRegular() { return m_FontRegular; }
+        ImFont* GetFontMedium() { return m_FontMedium; }
+        ImFont* GetFontBold() { return m_FontBold; }
+        ImFont* GetFontBlack() { return m_FontBlack; }
 
-	private:
-		DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM);
-		DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool);
-		DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction*, int);
+        void SetFocus(bool p_Focused) { m_ImguiHasFocus = p_Focused; }
 
-	private:
-		bool m_RendererSetup = false;
+    private:
+        bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
+        void Draw();
+        void SetupStyles();
+        void WaitForCurrentFrameToFinish() const;
 
-		ScopedD3DRef<IDXGISwapChain3> m_SwapChain;
-		ScopedD3DRef<ID3D12CommandQueue> m_CommandQueue;
-		HWND m_Hwnd = nullptr;
+    private:
+        DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM);
+        DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool);
+        DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction*, int);
 
-		uint32_t m_RtvDescriptorSize = 0;
-		ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
-		ScopedD3DRef<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
+    private:
+        bool m_RendererSetup = false;
 
-		/** The maximum number of frames that can be buffered for render. */
-		inline constexpr static size_t MaxRenderedFrames = 4;
-		std::vector<FrameContext> m_FrameContext;
+        ScopedD3DRef<IDXGISwapChain3> m_SwapChain;
+        ScopedD3DRef<ID3D12CommandQueue> m_CommandQueue;
+        HWND m_Hwnd = nullptr;
 
-		std::vector<ScopedD3DRef<ID3D12Resource>> m_BackBuffers;
+        uint32_t m_RtvDescriptorSize = 0;
+        ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
+        ScopedD3DRef<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
 
-		ScopedD3DRef<ID3D12GraphicsCommandList> m_CommandList;
+        /** The maximum number of frames that can be buffered for render. */
+        inline constexpr static size_t MaxRenderedFrames = 4;
+        std::vector<FrameContext> m_FrameContext;
 
-		ScopedD3DRef<ID3D12Fence> m_Fence;
-		SafeHandle m_FenceEvent;
+        std::vector<ScopedD3DRef<ID3D12Resource>> m_BackBuffers;
 
-		volatile uint32_t m_FrameCounter = 0;
-		volatile uint64_t m_FenceValue = 0;
+        ScopedD3DRef<ID3D12GraphicsCommandList> m_CommandList;
 
-		int64_t m_Time = 0;
-		int64_t m_TicksPerSecond = 0;
+        ScopedD3DRef<ID3D12Fence> m_Fence;
+        SafeHandle m_FenceEvent;
 
-		ImFont* m_FontLight = nullptr;
-		ImFont* m_FontRegular = nullptr;
-		ImFont* m_FontMedium = nullptr;
-		ImFont* m_FontBold = nullptr;
-		ImFont* m_FontBlack = nullptr;
+        volatile uint32_t m_FrameCounter = 0;
+        volatile uint64_t m_FenceValue = 0;
 
-		volatile bool m_ImguiHasFocus = false;
-	};
+        int64_t m_Time = 0;
+        int64_t m_TicksPerSecond = 0;
+
+        ImFont* m_FontLight = nullptr;
+        ImFont* m_FontRegular = nullptr;
+        ImFont* m_FontMedium = nullptr;
+        ImFont* m_FontBold = nullptr;
+        ImFont* m_FontBlack = nullptr;
+
+        volatile bool m_ImguiHasFocus = false;
+    };
 }

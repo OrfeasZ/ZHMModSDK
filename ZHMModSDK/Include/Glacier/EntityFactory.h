@@ -97,7 +97,7 @@ public:
     ZRuntimeResourceID m_ridResource;
     PAD(0x10);
     int32_t m_rootEntityIndex; // 0x20
-	PAD(0x20); // 0x24
+    PAD(0x20); // 0x24
 };
 
 static_assert(offsetof(ZEntityBlueprintFactoryBase, m_rootEntityIndex) == 0x20);
@@ -105,7 +105,7 @@ static_assert(offsetof(ZEntityBlueprintFactoryBase, m_rootEntityIndex) == 0x20);
 class ZCompositeEntityBlueprintFactoryBase : public ZEntityBlueprintFactoryBase
 {
 public:
-	TArray<int64_t> m_aSubEntityOffsets; // 0x48
+    TArray<int64_t> m_aSubEntityOffsets; // 0x48
 };
 
 static_assert(offsetof(ZCompositeEntityBlueprintFactoryBase, m_aSubEntityOffsets) == 0x48);
@@ -122,8 +122,8 @@ static_assert(offsetof(ZTemplateEntityBlueprintFactory, m_pTemplateEntityBluepri
 class ZTemplateEntityFactory : public IEntityFactory
 {
 public:
-	PAD(0x30);
-	TResourcePtr<ZTemplateEntityBlueprintFactory> m_blueprintResource; // 0x38
+    PAD(0x30);
+    TResourcePtr<ZTemplateEntityBlueprintFactory> m_blueprintResource; // 0x38
 };
 
 static_assert(offsetof(ZTemplateEntityFactory, m_blueprintResource) == 0x38);

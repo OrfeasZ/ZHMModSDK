@@ -5,23 +5,23 @@
 class DebugConsole
 {
 public:
-	DebugConsole();
-	~DebugConsole();
+    DebugConsole();
+    ~DebugConsole();
 
 public:
-	void StartRedirecting();
+    void StartRedirecting();
 
 private:
-	void StopRedirecting();
+    void StopRedirecting();
 
 private:
-	std::thread m_InputThread;
-	volatile bool m_Running;
+    std::thread m_InputThread;
+    volatile bool m_Running;
 
-	int m_OriginalStdin;
-	int m_OriginalStdout;
-	int m_OriginalStderr;
+    int m_OriginalStdin;
+    int m_OriginalStdout;
+    int m_OriginalStderr;
 
-	bool m_Redirected;
+    bool m_Redirected;
 };
 #endif

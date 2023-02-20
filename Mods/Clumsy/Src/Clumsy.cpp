@@ -13,7 +13,7 @@
 
 Clumsy::Clumsy()
 {
-    
+
 }
 
 Clumsy::~Clumsy()
@@ -30,7 +30,7 @@ void Clumsy::OnEngineInitialized()
 
 void Clumsy::Init()
 {
-	Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Clumsy::OnClearScene);
+    Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Clumsy::OnClearScene);
 }
 
 void Clumsy::OnDrawUI(bool p_HasFocus)
@@ -114,7 +114,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
             // We queue the ragdoll de-activation for the next frame update because if we do it
             // immediately, the animation wouldn't have started playing yet, and we would get a
-            // frame of 47 standing up before the animation 
+            // frame of 47 standing up before the animation
             m_DeactivateRagdollQueued = true;
         }
     }
