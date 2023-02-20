@@ -15,6 +15,7 @@ public:
 
     void OnEngineInitialized() override;
 	void Init() override;
+    void OnDrawUI(bool p_HasFocus) override;
 
 private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
@@ -22,9 +23,10 @@ private:
     DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
 
 private:
-    float m_SlipStartTimer = -1.f;
-    float m_SlipStopTimer = -1.f;
+    double m_SlipStartTimer = -1;
+    double m_SlipStopTimer = -1;
     bool m_DeactivateRagdollQueued = false;
+    bool m_ShowBrickWarning = false;
 };
 
 DEFINE_ZHM_PLUGIN(Clumsy)

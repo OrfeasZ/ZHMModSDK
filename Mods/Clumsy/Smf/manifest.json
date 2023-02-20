@@ -1,0 +1,13 @@
+{
+	"version": "1.0.0",
+	"id": "SDK.Clumsy",
+	"name": "Clumsy",
+	"authors": [
+		"NoFaTe"
+	],
+	"frameworkVersion": "2.14.0",
+	"description": "Agent 47 is a clumsy man.",
+	"contentFolders": [
+		"clumsy"
+	]
+}

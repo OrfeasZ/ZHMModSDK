@@ -3,7 +3,7 @@
     "tbluHash": "00E738E7CF7A35E1",
     "patch": [
       {
-        "AddExternalScene": "[assembly:/_sdk/editor/editor_data.brick].pc_entitytype"
+        "AddExternalScene": "[assembly:/_sdk/get_up.brick].pc_entitytype"
       }
     ],
     "patchVersion": 6

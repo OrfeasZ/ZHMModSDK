@@ -1,0 +1,186 @@
+{
+    "tempHash": "00EAA870DB028093",
+    "tbluHash": "00CA9F99B473A3AD",
+    "rootEntity": "fffffffffffffffe",
+    "entities": {
+        "fffffffffffffffe": {
+            "parent": null,
+            "name": "GetUp",
+            "factory": "[modules:/zentity.class].pc_entitytype",
+            "blueprint": "[modules:/zentity.class].pc_entityblueprint"
+        },
+        "feedf42ba555b602": {
+            "parent": "fffffffffffffffe",
+            "name": "GetUpMan",
+            "factory": "[modules:/zsequenceentity.class].pc_entitytype",
+            "blueprint": "[modules:/zsequenceentity.class].pc_entityblueprint",
+            "properties": {
+                "m_duration": {
+                    "type": "ZGameTime",
+                    "value": {
+                        "m_nTicks": 16693328
+                    }
+                },
+                "m_nLoopCount": {
+                    "type": "int32",
+                    "value": 1
+                },
+                "m_bPausedOnStart": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_aTracksAndGroups": {
+                    "type": "TArray<SEntityTemplateReference>",
+                    "value": [
+                        "feeda1658779021d"
+                    ],
+                    "postInit": true
+                }
+            }
+        },
+        "feeda1658779021d": {
+            "parent": "feedf42ba555b602",
+            "name": "EntityTrack",
+            "factory": "[modules:/zentitygroup.class].pc_entitytype",
+            "blueprint": "[modules:/zentitygroup.class].pc_entityblueprint",
+            "properties": {
+                "m_targetEntity": {
+                    "type": "SEntityTemplateReference",
+                    "value": "feed1f9e5c74b67b"
+                },
+                "m_aTracksAndGroups": {
+                    "type": "TArray<SEntityTemplateReference>",
+                    "value": [
+                        "feed6d776c207981"
+                    ],
+                    "postInit": true
+                }
+            }
+        },
+        "feed6d776c207981": {
+            "parent": "feeda1658779021d",
+            "name": "MorphemeBoneTrack",
+            "factory": "[modules:/zmorphemebonetrack.class].pc_entitytype",
+            "blueprint": "[modules:/zmorphemebonetrack.class].pc_entityblueprint",
+            "properties": {
+                "m_entityGroup": {
+                    "type": "SEntityTemplateReference",
+                    "value": "feeda1658779021d"
+                },
+                "m_sSlotName": {
+                    "type": "ZString",
+                    "value": "FullBody"
+                },
+                "m_bUpperBody": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_aItems": {
+                    "type": "TArray<SEntityTemplateReference>",
+                    "value": [
+                        "feed5fac0a1e4ac9",
+                        "feed5fac0a1e4aca",
+                        "feed5fac0a1e4acb"
+                    ]
+                }
+            }
+        },
+        "feed5fac0a1e4ac9": {
+            "parent": "feed6d776c207981",
+            "name": "stand up",
+            "factory": "[modules:/zmorphemebonesource.class].pc_entitytype",
+            "blueprint": "[modules:/zmorphemebonesource.class].pc_entityblueprint",
+            "properties": {
+                "m_startTime": {
+                    "type": "ZGameTime",
+                    "value": {
+                        "m_nTicks": 0
+                    }
+                },
+                "m_duration": {
+                    "type": "ZGameTime",
+                    "value": {
+                        "m_nTicks": 7969177
+                    }
+                },
+                "m_animationResourceID": {
+                    "type": "ZRuntimeResourceID",
+                    "value": {
+                        "resource": "[assembly:/animations/npc/009_acts/specific/accident/act_mr_get_up_from_stomake_slow.xmd?/act_mr_get_up_from_stomake_slow.xmdtake](assembly:/geometry/characters/_export_rigs/biped~~.xml).pc_animation",
+                        "flag": "5F"
+                    }
+                }
+            }
+        },
+        "feed5fac0a1e4aca": {
+            "parent": "feed6d776c207981",
+            "name": "shake off head",
+            "factory": "[modules:/zmorphemebonesource.class].pc_entitytype",
+            "blueprint": "[modules:/zmorphemebonesource.class].pc_entityblueprint",
+            "properties": {
+                "m_startTime": {
+                    "type": "ZGameTime",
+                    "value": {
+                        "m_nTicks": 7969177
+                    }
+                },
+                "m_duration": {
+                    "type": "ZGameTime",
+                    "value": {
+                        "m_nTicks": 1677721
+                    }
+                },
+                "m_animationResourceID": {
+                    "type": "ZRuntimeResourceID",
+                    "value": {
+                        "resource": "[assembly:/animations/npc/009_acts/specific/accident/act_mr_stand_recover.xmd?/stand_recover_start.xmdtake](assembly:/geometry/characters/_export_rigs/biped~~.xml).pc_animation",
+                        "flag": "5F"
+                    }
+                }
+            }
+        },
+        "feed5fac0a1e4acb": {
+            "parent": "feed6d776c207981",
+            "name": "back to normal",
+            "factory": "[modules:/zmorphemebonesource.class].pc_entitytype",
+            "blueprint": "[modules:/zmorphemebonesource.class].pc_entityblueprint",
+            "properties": {
+                "m_startTime": {
+                    "type": "ZGameTime",
+                    "value": {
+                        "m_nTicks": 9646898
+                    }
+                },
+                "m_duration": {
+                    "type": "ZGameTime",
+                    "value": {
+                        "m_nTicks": 7046430
+                    }
+                },
+                "m_animationResourceID": {
+                    "type": "ZRuntimeResourceID",
+                    "value": {
+                        "resource": "[assembly:/animations/npc/009_acts/specific/accident/act_mr_stand_recover.xmd?/stand_recover_stop.xmdtake](assembly:/geometry/characters/_export_rigs/biped~~.xml).pc_animation",
+                        "flag": "5F"
+                    }
+                }
+            }
+        },
+        "feed1f9e5c74b67b": {
+            "parent": "fffffffffffffffe",
+            "name": "HeroStandIn",
+            "factory": "[modules:/zherostandin.class].pc_entitytype",
+            "blueprint": "[modules:/zherostandin.class].pc_entityblueprint"
+        }
+    },
+    "propertyOverrides": [],
+    "overrideDeletes": [],
+    "pinConnectionOverrides": [],
+    "pinConnectionOverrideDeletes": [],
+    "externalScenes": [],
+    "subType": "brick",
+    "quickEntityVersion": 3.1,
+    "extraFactoryDependencies": [],
+    "extraBlueprintDependencies": [],
+    "comments": []
+}
