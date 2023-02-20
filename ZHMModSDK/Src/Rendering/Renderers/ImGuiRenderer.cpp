@@ -6,7 +6,7 @@
 #include <dxgi1_4.h>
 
 #include <imgui.h>
-#include <backends/imgui_impl_dx12.h>
+#include "ImGuiImpl.h"
 #include <DDSTextureLoader.h>
 #include <ResourceUploadBatch.h>
 #include <DirectXHelpers.h>
@@ -38,7 +38,6 @@ ImGuiRenderer::ImGuiRenderer()
 	ImGuiIO& s_ImGuiIO = ImGui::GetIO();
 	s_ImGuiIO.IniFilename = nullptr;
 	s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
 	ImGui::StyleColorsDark();
 
@@ -387,7 +386,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
 		D3D_SET_OBJECT_NAME_A(m_SrvDescriptorHeap, "ZHMModSDK ImGui Srv Descriptor Heap");
 	}
-
+    
 	m_FrameContext.clear();
 
 	for (UINT i = 0; i < MaxRenderedFrames; ++i)
@@ -460,9 +459,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 	
 	s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
 	s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
-
-	ImGuiViewport* s_MainViewport = ImGui::GetMainViewport();
-	s_MainViewport->PlatformHandle = s_MainViewport->PlatformHandleRaw = m_Hwnd;
+    s_ImGuiIO.ImeWindowHandle = m_Hwnd;
 
 	m_RendererSetup = true;
     
@@ -531,9 +528,7 @@ void ImGuiRenderer::PostReset()
 
 	s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
 	s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
-
-	ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-	main_viewport->PlatformHandle = main_viewport->PlatformHandleRaw = m_Hwnd;
+    s_ImGuiIO.ImeWindowHandle = m_Hwnd;
 }
 
 void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
