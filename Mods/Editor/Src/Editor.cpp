@@ -332,9 +332,9 @@ void Editor::SpawnCameras()
 
 DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
 {
-    if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
+    //if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
 	//	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
-		p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
+	//	p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
 
 	return HookResult<void>(HookAction::Continue());
 }
