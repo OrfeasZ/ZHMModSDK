@@ -167,10 +167,6 @@ void FreeCam::ToggleFreecam()
 {
     m_FreeCamActive = !m_FreeCamActive;
     m_ShouldToggle = true;
-
-    if (m_FreeCamActive && !m_HasToggledFreecamBefore)
-        m_ControlsVisible = true;
-
     m_HasToggledFreecamBefore = true;
 }
 
