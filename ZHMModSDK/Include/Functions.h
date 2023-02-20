@@ -25,6 +25,7 @@ class ZItemSpawner;
 class ZCharacterSubcontrollerInventory;
 class ZResourceContainer;
 class ZResourceIndex;
+class ZHM5Animator;
 class ZHM5CrippleBox;
 
 class ZHMSDK_API Functions
@@ -33,7 +34,8 @@ public:
 	static EngineFunction<void(ZActor* th)>* ZActor_OnOutfitChanged;
 	static EngineFunction<void(ZActor* th)>* ZActor_ReviveActor;
 	static EngineFunction<void(ZDynamicObject* th, ZString* a2)>* ZDynamicObject_ToString;
-	static EngineFunction<void(ZHM5BaseCharacter* th, bool activate)>* ZHM5BaseCharacter_ActivateRagdoll;
+	static EngineFunction<void(ZHM5BaseCharacter* th, bool inMotion)>* ZHM5BaseCharacter_ActivateRagdoll;
+	static EngineFunction<void(ZHM5BaseCharacter* th)>* ZHM5BaseCharacter_DeactivateRagdoll;
 	static EngineFunction<ZCameraEntity*()>* GetCurrentCamera;
 	static EngineFunction<void(ZSpatialEntity* th, SMatrix* out)>* ZSpatialEntity_WorldTransform;
 	static EngineFunction<void(ZEngineAppCommon* th)>* ZEngineAppCommon_CreateFreeCamera;
@@ -51,4 +53,6 @@ public:
 	static EngineFunction<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
 	static EngineFunction<unsigned long long(ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId, void* unknown, unsigned int unknown2)>* ZCharacterSubcontrollerInventory_AddDynamicItemToInventory;
 	static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags)>* ZResourceContainer_GetResourceReferences;
+	static EngineFunction<void(ZHM5BaseCharacter* th, const ZString& request)>* ZHM5BaseCharacter_SendRequestToChildNetworks;
+	static EngineFunction<void(ZHM5Animator* th, float* time)>* ZHM5Animator_ActivateRagdollToAnimationBlend;
 };

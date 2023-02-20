@@ -255,14 +255,19 @@ bool D3D12Hooks::GetVTables(ID3D12Device* p_Device)
 	s_SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	s_SwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
+    ScopedD3DRef<IDXGIFactory1> s_Factory;
+
+    if (Hooks::CreateDXGIFactory1->Call(REF_IID_PPV_ARGS(s_Factory)) != S_OK)
+        return false;
+
     ScopedD3DRef<IDXGISwapChain> s_SwapChain;
 
     Logger::Debug("[D3D12Hooks] Creating swap chain.");
 
-    if (m_Factory->CreateSwapChain(s_CommandQueue, &s_SwapChainDesc, &s_SwapChain.Ref) != S_OK)
+    if (s_Factory->CreateSwapChain(s_CommandQueue, &s_SwapChainDesc, &s_SwapChain.Ref) != S_OK)
         return false;
     
-    m_VTables.IDXGIFactoryVtbl = *reinterpret_cast<void**>(m_Factory);
+    m_VTables.IDXGIFactoryVtbl = s_Factory.VTable();
     m_VTables.ID3D12DeviceVtbl = *reinterpret_cast<void**>(p_Device);
     m_VTables.ID3D12CommandQueueVtbl = s_CommandQueue.VTable();
     m_VTables.ID3D12CommandAllocatorVtbl = s_CommandAllocator.VTable();
@@ -315,12 +320,10 @@ DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pA
 {
     const auto s_Result = p_Hook->CallOriginal(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 
-    if (!m_Installed && m_Factory)
+    if (!m_Installed)
     {
         GetVTables(static_cast<ID3D12Device*>(*ppDevice));
         Install();
-
-        m_Factory = nullptr;
     }
 
     return HookResult(HookAction::Return(), s_Result);
@@ -329,6 +332,6 @@ DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pA
 DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, CreateDXGIFactory1, REFIID riid, void** ppFactory)
 {
     const auto s_Result = p_Hook->CallOriginal(riid, ppFactory);
-    m_Factory = static_cast<IDXGIFactory1*>(*ppFactory);
+    
     return HookResult(HookAction::Return(), s_Result);
 }

@@ -71,6 +71,18 @@
                 },
                 "m_bIsPIP": {
                     "type": "bool",
+                    "value": false
+                },
+                "m_bDrawGates": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_nGateTraversalDepth": {
+                    "type": "int32",
+                    "value": 10000
+                },
+                "m_bForceVisible": {
+                    "type": "bool",
                     "value": true
                 }
             }
@@ -83,7 +95,7 @@
             "properties": {
                 "m_bAllowAutoCameraCuts": {
                     "type": "bool",
-                    "value": true
+                    "value": false
                 },
                 "m_fNearZ": {
                     "type": "float32",
@@ -103,7 +115,7 @@
                 },
                 "m_bIsUICamera": {
                     "type": "bool",
-                    "value": false
+                    "value": true
                 },
                 "m_mTransform": {
                     "type": "SMatrix43",
@@ -123,6 +135,10 @@
                 "m_bForceVisible": {
                     "type": "bool",
                     "value": true
+                },
+                "m_nPIPPriority": {
+                    "type": "uint32",
+                    "value": 0
                 }
             }
         },

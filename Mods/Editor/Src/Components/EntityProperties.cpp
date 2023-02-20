@@ -150,9 +150,8 @@ void Editor::DrawEntityProperties()
         {
             m_SelectedEntity = m_SelectedEntity.GetLogicalParent();
         }
-
-        // location_home u+f150
-        if (ImGui::Button("\xef\x85\x90 Select Owning Entity (Brick)"))
+        
+        if (ImGui::Button(ICON_MD_BRANDING_WATERMARK " Select Owning Entity(Brick)"))
         {
             m_SelectedEntity = m_SelectedEntity.GetOwningEntity();
         }

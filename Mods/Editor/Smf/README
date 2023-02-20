@@ -5,3 +5,9 @@ Brick name:
 
 [assembly:/_sdk/editor/camera_texture.brick].pc_entitytype = 00a0e7801d5d4852
 [assembly:/_sdk/editor/camera_texture.brick].pc_entityblueprint = 008d72a87720dc3c
+
+[assembly:/_sdk/get_up.brick].pc_entitytype
+00EAA870DB028093
+
+[assembly:/_sdk/get_up.brick].pc_entityblueprint
+00CA9F99B473A3AD

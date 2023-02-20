@@ -2,6 +2,7 @@
 
 #include "ZActor.h"
 #include "ZHM5BaseCharacter.h"
+#include "ZPhysics.h"
 #include "ZPrimitives.h"
 
 /*
@@ -395,6 +396,13 @@ class ZHeroInteractionController;
 class ZHeroActorTagController;
 class ZCharacter;
 class ZHM5MainCamera;
+
+class ZHM5Animator :
+    public ZEntityImpl,
+    public IBoneAnimator
+{
+public:   
+};
 
 class ZHitman5 :
 	public ZHM5BaseCharacter,

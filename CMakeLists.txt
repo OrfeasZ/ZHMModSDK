@@ -31,25 +31,7 @@ add_subdirectory("ZHMModSDK")
 add_subdirectory("DirectInputProxy")
 
 # Mods.
-add_subdirectory("Mods/WakingUpNpcs")
-add_subdirectory("Mods/NoPause")
-add_subdirectory("Mods/SkipIntro")
-add_subdirectory("Mods/CodeGen")
-add_subdirectory("Mods/CertPinBypass")
-add_subdirectory("Mods/MaxPatchLevel")
-add_subdirectory("Mods/DebugMod")
-add_subdirectory("Mods/AdvancedRating")
-add_subdirectory("Mods/FreeCam")
-add_subdirectory("Mods/DiscordRichPresence")
-add_subdirectory("Mods/Editor")
-
-# Tools.
-add_subdirectory("Tools/DevLoader")
-
-# Make sure to compile everything before the devloader.
-add_dependencies(DevLoader 
-	DirectInputProxy 
-	ZHMModSDK 
+set(MODS
 	WakingUpNpcs
 	NoPause
 	SkipIntro
@@ -61,6 +43,21 @@ add_dependencies(DevLoader
 	FreeCam
 	DiscordRichPresence
 	Editor
+	Clumsy
+)
+
+foreach(MOD IN LISTS MODS)
+	add_subdirectory("Mods/${MOD}")
+endforeach()
+
+# Tools.
+add_subdirectory("Tools/DevLoader")
+
+# Make sure to compile everything before the devloader.
+add_dependencies(DevLoader 
+	DirectInputProxy 
+	ZHMModSDK 
+	${MODS}
 )
 
 if (EXISTS "${INSTALL_PATH}")
@@ -68,7 +65,7 @@ if (EXISTS "${INSTALL_PATH}")
 		RUNTIME DESTINATION "${INSTALL_PATH}"
 	)
 
-	install(TARGETS WakingUpNpcs NoPause SkipIntro CodeGen CertPinBypass MaxPatchLevel DebugMod AdvancedRating FreeCam DiscordRichPresence Editor
+	install(TARGETS ${MODS}
 		RUNTIME DESTINATION "${INSTALL_PATH}/mods"
 	)
 endif()

@@ -49,13 +49,58 @@ void Editor::OnDrawMenu()
 {
 	if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR"))
 	{
-		auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+		const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
-		if (!s_Scene)
+		if (s_Scene)
 		{
-			Logger::Debug("Scene not loaded.");
-		}
+            for (auto& s_Brick : Globals::Hitman5Module->m_pEntitySceneContext->m_aLoadedBricks)
+            {
+                if (s_Brick.runtimeResourceID != ResId<"[assembly:/_sdk/editor/editor_data.brick].pc_entitytype">)
+                    continue;
 
+                Logger::Debug("Found editor_data brick.");
+
+                const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.GetBlueprintFactory());
+
+                const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeedbf5a41eb9c48);
+
+                if (s_Index != -1)
+                {
+                    Logger::Debug("Found RT at index {}.", s_Index);
+                    m_CameraRT = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
+
+
+                    const auto s_CameraRTEntity = m_CameraRT.QueryInterface<ZRenderDestinationTextureEntity>();
+                    const auto s_RT = reinterpret_cast<ZRenderDestination*>(s_CameraRTEntity->GetRenderDestination());
+
+                    Logger::Debug("RTEntity = {} RT = {}", fmt::ptr(s_CameraRTEntity), fmt::ptr(s_RT));
+
+                    const auto s_Camera = Functions::GetCurrentCamera->Call();
+
+                    ZEntityRef s_CameraRef;
+                    s_Camera->GetID(&s_CameraRef);
+
+                    s_CameraRTEntity->AddClient(s_CameraRef);
+
+                    for (auto& s_Client : *s_CameraRTEntity->GetClients())
+                    {
+                        Logger::Debug("RT client = {} {:x} {}", fmt::ptr(s_Client.GetEntity()), s_Client->GetType()->m_nEntityId, (*s_Client->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName);
+                    }
+                }
+
+                const auto s_CameraIndex = s_BpFactory->GetSubEntityIndex(0xfeedb6fc4f5626ea);
+
+                if (s_CameraIndex != -1)
+                {
+                    Logger::Debug("Found Cam at index {}.", s_CameraIndex);
+                    m_Camera = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_CameraIndex);
+
+                    Logger::Debug("CamEntity = {}", fmt::ptr(m_Camera.GetEntity()));
+                }
+
+                break;
+            }
+		}
 	}
 }
 
@@ -122,47 +167,40 @@ void Editor::OnDrawUI(bool p_HasFocus)
     DrawEntityManipulator(p_HasFocus);
     DrawPinTracer();
 
-	if (m_CameraRT)
+	/*if (m_CameraRT && m_Camera)
 	{
-        /*ImGui::Begin("RT Texture");
+        ImGui::Begin("RT Texture");
 
 		const auto s_CameraRTEntity = m_CameraRT.QueryInterface<ZRenderDestinationTextureEntity>();
 		const auto s_RT = reinterpret_cast<ZRenderDestination*>(s_CameraRTEntity->GetRenderDestination());
 
-		ImGui::Text("Handle 1 = %p", s_RT->m_pSRV1->m_Handle.ptr);
-		ImGui::Text("Handle 2 = %p", s_RT->m_pSRV2->m_Handle.ptr);
-		ImGui::Text("Size = %d x %d", s_CameraRTEntity->m_nWidth, s_CameraRTEntity->m_nHeight);
+        m_CameraRT.SetProperty("m_bVisible", true);
+        m_Camera.SetProperty("m_bVisible", true);
 
         ID3D12Device* s_Device = nullptr;
         SDK()->thing->GetDevice(IID_PPV_ARGS(&s_Device));
 
-        auto s_HandleIncrementSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        const auto s_Start = SDK()->thing->GetCPUDescriptorHandleForHeapStart().ptr;
-
-        const auto s_Num = SDK()->thing->GetDesc().NumDescriptors;
-
-        const auto s_Idx1 = (s_RT->m_pSRV1->m_Handle.ptr - s_Start) / s_HandleIncrementSize;
-        const auto s_Idx2 = (s_RT->m_pSRV2->m_Handle.ptr - s_Start) / s_HandleIncrementSize;
+        const auto s_HandleIncrementSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         
         D3D12_GPU_DESCRIPTOR_HANDLE s_Handle {};
-	    s_Handle.ptr = SDK()->thing->GetGPUDescriptorHandleForHeapStart().ptr + (s_Idx2 * s_HandleIncrementSize);
-        
-		/*ImGui::GetWindowDrawList()->AddCallback([](const ImDrawList* p_DrawList, const ImDrawCmd* p_Cmd, void* p_CmdList)
+	    s_Handle.ptr = SDK()->thing->GetGPUDescriptorHandleForHeapStart().ptr + (s_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
+
+		ImGui::GetWindowDrawList()->AddCallback([](const ImDrawList* p_DrawList, const ImDrawCmd* p_Cmd, void* p_CmdList)
 	    {
 			const auto s_CmdList = reinterpret_cast<ID3D12GraphicsCommandList*>(p_CmdList);
 			s_CmdList->SetDescriptorHeaps(1, &SDK()->thing);
-		}, nullptr);#1#
+		}, nullptr);
 
 		ImGui::Image(reinterpret_cast<ImTextureID>(s_Handle.ptr), ImVec2(static_cast<float>(s_CameraRTEntity->m_nWidth), static_cast<float>(s_CameraRTEntity->m_nHeight)));
 
-		/*ImGui::GetWindowDrawList()->AddCallback([](const ImDrawList* p_DrawList, const ImDrawCmd* p_Cmd, void* p_CmdList)
+		ImGui::GetWindowDrawList()->AddCallback([](const ImDrawList* p_DrawList, const ImDrawCmd* p_Cmd, void* p_CmdList)
 	    {
 			const auto s_CmdList = reinterpret_cast<ID3D12GraphicsCommandList*>(p_CmdList);
             s_CmdList->SetDescriptorHeaps(1, &SDK()->thing2);
-		}, nullptr);#1#
+		}, nullptr);
 
-        ImGui::End();*/
-	}
+        ImGui::End();
+	}*/
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
@@ -230,7 +268,6 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
     }
 }
 
-
 void Editor::SpawnCameras()
 {
 	auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
@@ -291,14 +328,13 @@ void Editor::SpawnCameras()
 	s_CameraRT->SetSource(&m_Camera);
     
 	Logger::Debug("Added source to rt = {} sources = {} source = {}", fmt::ptr(s_CameraRT), s_CameraRT->m_aMultiSource.size(), s_CameraRT->m_nSelectedSource);
-    Logger::Debug("RT Render destination = {} texture = {} ptr = {}\n", fmt::ptr(s_CameraRT->GetRenderDestination()), fmt::ptr(reinterpret_cast<ZRenderDestination*>(s_CameraRT->GetRenderDestination())->m_pTexture2D->m_pResource), reinterpret_cast<ZRenderDestination*>(s_CameraRT->GetRenderDestination())->m_pSRV2->m_Handle.ptr);
 }
 
 DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
 {
-    //if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
+    if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
 	//	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
-	//	p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
+		p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
 
 	return HookResult<void>(HookAction::Continue());
 }
@@ -329,6 +365,11 @@ DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinI
         };
     }
 
+    if (pinId == 0x145358F7 || pinId == 0xF7585314)
+    {
+        Logger::Error("MA DONG BONG DONG");
+    }
+
     return { HookAction::Continue() };
 }
 
@@ -339,6 +380,11 @@ DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pin
         m_FiredOutputPins[pinId] = PinFireInfo {
             .m_FireTime = std::chrono::system_clock::now(),
         };
+    }
+
+    if (pinId == 0x145358F7 || pinId == 0xF7585314)
+    {
+        Logger::Error("MA DONG BONG DONG");
     }
 
     return { HookAction::Continue() };

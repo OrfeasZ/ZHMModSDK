@@ -16,6 +16,7 @@ public:
 	virtual void ICollisionShapeListener_unk5() = 0;
 };
 
+
 class IPhysicsAccessor : public IComponentInterface
 {
 public:
@@ -29,6 +30,20 @@ public:
 
 class IStaticPhysics : public IPhysicsAccessor
 {
+};
+
+class IDynamicPhysics : public IPhysicsAccessor
+{
+};
+
+class IBoneAnimator
+{
+public:
+    virtual ~IBoneAnimator();
+    virtual void IBoneAnimator_unk1() = 0;
+    virtual void IBoneAnimator_unk2() = 0;
+    virtual void IBoneAnimator_unk3() = 0;
+    virtual void IBoneAnimator_unk4() = 0;
 };
 
 class ZPhysicsBaseEntity : public ZEntityImpl
@@ -210,10 +225,39 @@ public:
 	virtual void ZStaticPhysicsAspect_unk21() = 0;
 
 public:
-	PAD(0x08);
+	PAD(0x08); // 0x38
 	IPhysicsObject* m_pPhysicsObject; // 0x40
 	PAD(0x20);
 };
 
 static_assert(offsetof(ZStaticPhysicsAspect, m_pPhysicsObject) == 0x40);
 static_assert(sizeof(ZStaticPhysicsAspect) == 0x68);
+
+class ZDynamicPhysicsAspect :
+	public ZPhysicsBaseEntity,
+	public ICollisionShapeListener,
+	public IDynamicPhysics,
+	public IDebugPhysicsSpatialAccessor
+{
+public:
+	virtual ~ZDynamicPhysicsAspect() = default;
+
+public:
+    PAD(0x60); // 0x38
+};
+
+static_assert(sizeof(ZDynamicPhysicsAspect) == 0x98);
+
+class ZPhysicsSystemEntity :
+	public ZPhysicsBaseEntity,
+	public IBoneAnimator,
+	public IDebugPhysicsSpatialAccessor
+{
+public:
+	virtual ~ZPhysicsSystemEntity() = default;
+
+public:
+    PAD(0x90); // 0x30
+};
+
+static_assert(sizeof(ZPhysicsSystemEntity) == 0xC0);

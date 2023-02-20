@@ -18,6 +18,8 @@
 #include <Glacier/ZHitman5.h>
 #include <Glacier/ZHM5InputManager.h>
 
+#include "IconsMaterialDesign.h"
+
 FreeCam::FreeCam() :
 	m_FreeCamActive(false),
 	m_ShouldToggle(false),
@@ -151,10 +153,13 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
 void FreeCam::OnDrawMenu()
 {
-	if (ImGui::Button("TOGGLE FREE CAM"))
-		ToggleFreecam();
+    bool s_FreeCamActive = m_FreeCamActive;
+    if (ImGui::Checkbox(ICON_MD_PHOTO_CAMERA " FREECAM", &s_FreeCamActive))
+    {
+        ToggleFreecam();
+    }
 
-	if (ImGui::Button("FREE CAM CONTROLS"))
+	if (ImGui::Button(ICON_MD_SPORTS_ESPORTS " FREECAM CONTROLS"))
 		m_ControlsVisible = !m_ControlsVisible;
 }
 
@@ -214,7 +219,7 @@ void FreeCam::OnDrawUI(bool p_HasFocus)
 	if (m_ControlsVisible)
 	{
 		ImGui::PushFont(SDK()->GetImGuiBlackFont());
-		const auto s_ControlsExpanded = ImGui::Begin("Free Cam Controls", &m_ControlsVisible);
+		const auto s_ControlsExpanded = ImGui::Begin(ICON_MD_PHOTO_CAMERA " FreeCam Controls", &m_ControlsVisible);
 		ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 		if (s_ControlsExpanded)

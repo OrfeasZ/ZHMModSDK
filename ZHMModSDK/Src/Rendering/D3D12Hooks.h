@@ -80,6 +80,5 @@ namespace Rendering
 		std::vector<InstalledHook> m_InstalledHooks;
         bool m_Installed = false;
         VTables m_VTables = {};
-        IDXGIFactory1* m_Factory = nullptr;
 	};
 }

@@ -30,6 +30,13 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
+	"\x48\x8B\xC4\x48\x89\x48\x08\x55\x48\x8D\x68\xA1\x48\x81\xEC\x00\x00\x00\x00\x48\x89\x58\x10",
+    "xxxxxxxxxxxxxxx????xxxx",
+	ZHM5BaseCharacter_DeactivateRagdoll,
+	void(ZHM5BaseCharacter*)
+);
+
+PATTERN_FUNCTION(
 	"\x40\x53\x48\x83\xEC\x00\x48\x8B\x1D\x00\x00\x00\x00\x48\x85\xDB\x74\x00\x48\x8B\x03\x48\x8B\x50\x20\x48\x8D\x05\x00\x00\x00\x00\x48\x3B\xD0\x0F\x85",
 	"xxxxx?xxx????xxxx?xxxxxxxxxx????xxxxx",
 	GetCurrentCamera,
@@ -140,4 +147,18 @@ PATTERN_FUNCTION(
 	"xxxxx?xxx????xxxxx",
 	ZResourceContainer_GetResourceReferences,
 	void(ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags)
+);
+
+PATTERN_FUNCTION(
+	"\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x8B\x81\xA0\x02\x00\x00",
+    "xxxxxxxxxxxxxx?xxxxxx",
+    ZHM5BaseCharacter_SendRequestToChildNetworks,
+    void(ZHM5BaseCharacter* th, const ZString& request)
+);
+
+PATTERN_FUNCTION(
+	"\x48\x89\x74\x24\x20\x57\x48\x83\xEC\x00\x0F\x57\xC0",
+    "xxxxxxxxx?xxx",
+    ZHM5Animator_ActivateRagdollToAnimationBlend,
+    void(ZHM5Animator* th, float* time)
 );
