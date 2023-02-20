@@ -25,7 +25,11 @@ Right now it's at a very early stage, with only a few aspects of the engine expo
 
 6. Profit?
 
+> NOTE: Some mods might require additional setup. For mods bundled with the SDK, refer to the [table below](#sample-mods). For any other mod, make sure to consult its installation instructions.
+
 > NOTE: You can at any time change the mods you're using by pressing the `~` key (`^` on QWERTZ layouts) and selecting them, or by editing the `mods.ini` file inside your game's `Retail` folder.
+
+> NOTE: If you are trying to use this on a **Steam Deck** or under **Proton / Linux**, you might need to follow [these additional steps](/INSTALL-deck.md).
 
 ## Sample mods
 
