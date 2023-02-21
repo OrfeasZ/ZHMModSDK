@@ -205,7 +205,7 @@ public:
     bool m_bUnk38 : 1;
     bool m_bUnk39 : 1;
     PAD(0x1C); // 0x1160
-    int32_t m_pCurrentBehaviorIndex; // 0x117C
+    int32_t m_nCurrentBehaviorIndex; // 0x117C
     PAD(0x2B0);
 
 public:
@@ -223,7 +223,7 @@ public:
 static_assert(offsetof(ZActor, m_OutfitRepositoryID) == 0x420);
 static_assert(offsetof(ZActor, m_sActorName) == 0x488);
 static_assert(offsetof(ZActor, m_DomainConfig) == 0x4D0);
-static_assert(offsetof(ZActor, m_pCurrentBehaviorIndex) == 0x117C);
+static_assert(offsetof(ZActor, m_nCurrentBehaviorIndex) == 0x117C);
 
 class ZActorSavableHandler;
 
