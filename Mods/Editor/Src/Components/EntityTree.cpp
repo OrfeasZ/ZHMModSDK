@@ -41,6 +41,9 @@ bool HasChildEntity(ZEntityRef p_Entity, ZEntityRef p_ChildEntity, IEntityBluepr
 
 void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId, IEntityBlueprintFactory* p_Factory, ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity)
 {
+    if (!p_Entity.GetEntity() || ! p_Entity->GetType())
+        return;
+
     const auto s_EntityTypeName = p_Entity.GetEntity()->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->m_pTypeName;
     const auto s_EntityText = fmt::format("{}::{} ({:08x})", p_BrickFactory->m_pTemplateEntityBlueprint ? p_BrickFactory->m_pTemplateEntityBlueprint->subEntities[p_Index].entityName.c_str() : "<noname>", s_EntityTypeName, p_EntityId);
 
@@ -122,7 +125,14 @@ void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId,
 
 void Editor::RenderBrick(ZEntityRef p_Entity)
 {
+    if (!p_Entity)
+        return;
+
     const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
+
+    if (!s_BpFactory)
+        return;
+
     const auto s_SubEntityCount = s_BpFactory->GetSubEntitiesCount();
 
     //ImGui::Text(fmt::format("Brick Entity = {}, id = {:x}, bp = {}, sub = {}", fmt::ptr(p_Entity.GetEntity()), p_Entity->GetType()->m_nEntityId, fmt::ptr(s_BpFactory), s_SubEntityCount).c_str());
