@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "EngineFunction.h"
 #include "Glacier/ZEntity.h"
+#include "Glacier/ZMath.h"
 #include "Glacier/ZPrimitives.h"
 
 class ZHitman5;
@@ -27,6 +28,7 @@ class ZResourceContainer;
 class ZResourceIndex;
 class ZHM5Animator;
 class ZHM5CrippleBox;
+class ZRagdollHandler;
 
 class ZHMSDK_API Functions
 {
@@ -55,4 +57,6 @@ public:
     static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags)>* ZResourceContainer_GetResourceReferences;
     static EngineFunction<void(ZHM5BaseCharacter* th, const ZString& request)>* ZHM5BaseCharacter_SendRequestToChildNetworks;
     static EngineFunction<void(ZHM5Animator* th, float* time)>* ZHM5Animator_ActivateRagdollToAnimationBlend;
+    static EngineFunction<void(ZHM5BaseCharacter* th, float time, bool inMotion, bool upperBody, float a5, bool a6)>* ZHM5BaseCharacter_ActivatePoweredRagdoll;
+    static EngineFunction<void(ZRagdollHandler* th, const float4& position, const float4& impulse, uint32_t boneIndex, bool randomize)>* ZRagdollHandler_ApplyImpulseOnRagdoll;
 };

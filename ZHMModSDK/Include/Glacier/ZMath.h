@@ -128,6 +128,8 @@ struct alignas(16) float4
 
     float4(float p_X, float p_Y, float p_Z, float p_W) : x(p_X), y(p_Y), z(p_Z), w(p_W) {}
 
+    float4(float p_Val) : x(p_Val), y(p_Val), z(p_Val), w(p_Val) {}
+
     float4 operator-(const float4& p_Vec) const
     {
         return _mm_sub_ps(m, p_Vec.m);
@@ -143,14 +145,41 @@ struct alignas(16) float4
         return _mm_mul_ps(m, p_Vec.m);
     }
 
+    float4 operator*(float p_Value) const
+    {
+        return _mm_mul_ps(m, _mm_load1_ps(&p_Value));
+    }
+
     float4 operator/(const float4& p_Vec) const
     {
         return _mm_div_ps(m, p_Vec.m);
     }
 
-    float4 operator*(float p_Value) const
+    float4 operator/(float p_Value) const
     {
-        return _mm_mul_ps(m, _mm_load1_ps(&p_Value));
+        return _mm_div_ps(m, _mm_load1_ps(&p_Value));
+    }
+
+    bool operator==(const float4& p_Other) const
+    {
+        return (_mm_movemask_ps(_mm_cmpeq_ps(m, p_Other.m)) == 0xF) & 1;
+    }
+
+    inline bool operator!=(const float4& p_Other) const
+    {
+        return !(p_Other == (*this));
+    }
+
+    float4& operator+=(const float4& p_Other)
+    {
+        m = _mm_add_ps(m, p_Other.m);
+        return *this;
+    }
+
+    float4& operator-=(const float4& p_Other)
+    {
+        m = _mm_sub_ps(m, p_Other.m);
+        return *this;
     }
 
     static float4 CrossProduct(float4& v1, float4& v2)

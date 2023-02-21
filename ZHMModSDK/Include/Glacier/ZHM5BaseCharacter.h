@@ -2,6 +2,8 @@
 
 #include "ZEntity.h"
 
+class ZRagdollHandler;
+
 class IHM5BaseCharacter :
     public IComponentInterface
 {
@@ -100,7 +102,8 @@ class ZHM5BaseCharacter :
     public ICrowdCoreProvider
 {
 public:
-    PAD(0x18); // 0x50
+    PAD(0x10); // 0x50
+    ZRagdollHandler* m_pRagdollHandler; // 0x60
     ZEntityRef m_EventConsumerCollection; // 0x68
     PAD(0x260);
 };
