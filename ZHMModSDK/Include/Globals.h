@@ -23,6 +23,7 @@ class ZPlayerRegistry;
 class ZHM5InputManager;
 class ZContentKitManager;
 class ZHM5ActionManager;
+class ZBehaviorService;
 
 class ZHMSDK_API Globals
 {
@@ -48,4 +49,5 @@ public:
     static ZCollisionManager** CollisionManager;
     static ZContentKitManager* ContentKitManager;
     static ZHM5ActionManager* HM5ActionManager;
+    static ZBehaviorService* BehaviorService;
 };

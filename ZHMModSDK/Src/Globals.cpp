@@ -148,3 +148,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZHM5ActionManager*, HM5ActionManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x89\x05\x00\x00\x00\x00\x48\x8D\x1D\x00\x00\x00\x00\x4C\x8D\x35",
+    "xxx????xxx????xxx",
+    3,
+    ZBehaviorService*, BehaviorService
+);
