@@ -400,9 +400,9 @@ void Editor::OnDrawUI(bool p_HasFocus)
 
             std::string s_BehaviorName = "<none>";
 
-            if (s_Actor.m_pInterfaceRef->m_pCurrentBehaviorIndex > 0)
+            if (s_Actor.m_pInterfaceRef->m_nCurrentBehaviorIndex >= 0)
             {
-                auto& s_BehaviorData = Globals::BehaviorService->m_aKnowledgeData[s_Actor.m_pInterfaceRef->m_pCurrentBehaviorIndex];
+                auto& s_BehaviorData = Globals::BehaviorService->m_aKnowledgeData[s_Actor.m_pInterfaceRef->m_nCurrentBehaviorIndex];
 
                 if (s_BehaviorData.m_pCurrentBehavior)
                     s_BehaviorName = BehaviorToString(static_cast<ECompiledBehaviorType>(s_BehaviorData.m_pCurrentBehavior->m_Type));
