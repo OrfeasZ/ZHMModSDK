@@ -6,8 +6,8 @@
         "fffffffffffffffe": {
             "parent": null,
             "name": "GetUp",
-            "factory": "[modules:/zentity.class].pc_entitytype",
-            "blueprint": "[modules:/zentity.class].pc_entityblueprint"
+            "factory": "[modules:/zspatialentity.class].pc_entitytype",
+            "blueprint": "[modules:/zspatialentity.class].pc_entityblueprint"
         },
         "feedf42ba555b602": {
             "parent": "fffffffffffffffe",
@@ -171,6 +171,133 @@
             "name": "HeroStandIn",
             "factory": "[modules:/zherostandin.class].pc_entitytype",
             "blueprint": "[modules:/zherostandin.class].pc_entityblueprint"
+        },
+        "feed8cfffcae85dd": {
+            "parent": "feed1f9e5c74b67b",
+            "name": "CinematicCamera",
+            "factory": "[modules:/zhm5camshakerentity.class].pc_entitytype",
+            "blueprint": "[modules:/zhm5camshakerentity.class].pc_entityblueprint",
+            "properties": {
+                "m_bUseDistanceScale": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_fRangeH": {
+                    "type": "float32",
+                    "value": 0.015
+                },
+                "m_fRangeV": {
+                    "type": "float32",
+                    "value": 0.015
+                },
+                "m_fFrequency": {
+                    "type": "float32",
+                    "value": 50
+                },
+                "m_fSustain": {
+                    "type": "float32",
+                    "value": 999999
+                },
+                "m_fRelease": {
+                    "type": "float32",
+                    "value": 0.10000000149011612
+                },
+                "m_fNearRadius": {
+                    "type": "float32",
+                    "value": 999999
+                },
+                "m_fFarRadius": {
+                    "type": "float32",
+                    "value": 999999
+                },
+                "m_bEnabled": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_eidParent": {
+                    "type": "SEntityTemplateReference",
+                    "value": "feed1f9e5c74b67b"
+                }
+            }
+        },
+        "feed35a47ee0adec": {
+            "parent": "feed9c1aab9f3d1e",
+            "name": "AudioEmitter",
+            "factory": "[assembly:/templates/sound/wwise/soundentities.template?/2daudioemitter.entitytemplate].pc_entitytype",
+            "blueprint": "[assembly:/templates/sound/wwise/soundentities.template?/2daudioemitter.entitytemplate].pc_entityblueprint",
+            "properties": {
+                "m_eidParent": {
+                    "type": "SEntityTemplateReference",
+                    "value": "feed9c1aab9f3d1e"
+                }
+            },
+            "subsets": {
+                "AudioEmitters": [
+                    "feed9c1aab9f3d1e"
+                ]
+            }
+        },
+        "feed6ea2fc060cbd": {
+            "parent": "feed9c1aab9f3d1e",
+            "name": "AudioEvent",
+            "factory": "[modules:/zaudioevententity.class].pc_entitytype",
+            "blueprint": "[modules:/zaudioevententity.class].pc_entityblueprint",
+            "properties": {
+                "m_pMainEvent": {
+                    "type": "ZRuntimeResourceID",
+                    "value": {
+                        "resource": "00ECCA441F6CC400",
+                        "flag": "5F"
+                    }
+                },
+                "m_pEmitter": {
+                    "type": "SEntityTemplateReference",
+                    "value": "feed35a47ee0adec"
+                },
+                "m_bIsEnabled": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_fTransitionTime": {
+                    "type": "float32",
+                    "value": 0.1
+                },
+                "m_bStopAtSceneReset": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_bStopAtEntityDeletion": {
+                    "type": "bool",
+                    "value": false
+                },
+                "Attenuation": {
+                    "type": "float32",
+                    "value": 10
+                }
+            }
+        },
+        "feed9c1aab9f3d1e": {
+            "parent": "fffffffffffffffe",
+            "name": "Music",
+            "factory": "[modules:/zspatialentity.class].pc_entitytype",
+            "blueprint": "[modules:/zspatialentity.class].pc_entityblueprint",
+            "properties": {
+                "m_mTransform": {
+                    "type": "SMatrix43",
+                    "value": {
+                        "rotation": {
+                            "x": 0,
+                            "y": 0,
+                            "z": -167.2991589642909
+                        },
+                        "position": {
+                            "x": -40.99882,
+                            "y": -24.293657,
+                            "z": 0.4925565
+                        }
+                    }
+                }
+            }
         }
     },
     "propertyOverrides": [],
@@ -180,7 +307,9 @@
     "externalScenes": [],
     "subType": "brick",
     "quickEntityVersion": 3.1,
-    "extraFactoryDependencies": [],
+    "extraFactoryDependencies": [
+        "[assembly:/sound/wwise/exportedwwisedata/soundbanks/globaldata/main.wwisesoundbank].pc_wwisebank"
+    ],
     "extraBlueprintDependencies": [],
     "comments": []
 }

@@ -314,6 +314,14 @@ struct SMatrix
             float4 ZAxis;
             float4 Trans;
         };
+
+        struct
+        {
+            float4 Left;
+            float4 Backward;
+            float4 Up;
+            float4 Pos;
+        };
     };
 };
 

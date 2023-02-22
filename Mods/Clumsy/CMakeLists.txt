@@ -18,4 +18,5 @@ target_include_directories(Clumsy PRIVATE
 
 target_link_libraries(Clumsy PRIVATE
 	ZHMModSDK
+	Microsoft::DirectXTK12
 )
