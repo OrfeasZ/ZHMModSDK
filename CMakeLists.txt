@@ -44,6 +44,7 @@ set(MODS
 	DiscordRichPresence
 	Editor
 	Clumsy
+	Noclip
 )
 
 foreach(MOD IN LISTS MODS)
