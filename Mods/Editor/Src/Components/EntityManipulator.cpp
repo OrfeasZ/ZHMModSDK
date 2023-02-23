@@ -56,6 +56,11 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
         {
             m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
         }
+
+        if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Backspace]))
+        {
+            m_SelectedEntity = {};
+        }
     }
 
     ImGuizmo::Enable(p_HasFocus);
