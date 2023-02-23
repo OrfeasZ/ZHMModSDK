@@ -72,7 +72,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
                 ImGuizmo::SetRect(0, 0, s_ImgGuiIO.DisplaySize.x, s_ImgGuiIO.DisplaySize.y);
 
-                if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::LOCAL, &s_ModelMatrix.XAxis.x, nullptr, nullptr))
+                if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
                 {
                     s_SpatialEntity->SetWorldMatrix(s_ModelMatrix);
 
