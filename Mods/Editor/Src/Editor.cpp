@@ -17,8 +17,10 @@
 #include <ranges>
 
 #include "backends/imgui_impl_dx12.h"
+#include "Glacier/SGameUpdateEvent.h"
 #include "Glacier/ZCollision.h"
 #include "Glacier/ZActor.h"
+#include "Glacier/ZGameLoopManager.h"
 #include "Glacier/ZKnowledge.h"
 
 Editor::Editor()
@@ -36,6 +38,39 @@ Editor::Editor()
     {
         Logger::Error("Could not patch ZTemplateEntityBlueprintFactory brick data freeing.");
     }
+
+    // Initialize Winsock and create the Qne socket and relevant things.
+    WSADATA s_Ws;
+    if (WSAStartup(MAKEWORD(2, 2), &s_Ws) != 0)
+    {
+        Logger::Error("WSAStartup failed: %d", WSAGetLastError());
+        return;
+    }
+    
+    if ((m_QneSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
+    {
+        Logger::Error("Could not create socket: %d", WSAGetLastError());
+        return;
+    }
+
+    // Make socket non-blocking.
+    u_long s_NonBlocking = 1;
+    if (ioctlsocket(m_QneSocket, FIONBIO, &s_NonBlocking) != 0)
+    {
+        Logger::Error("Could not make socket non-blocking: %d", WSAGetLastError());
+        return;
+    }
+
+    m_QneAddress.sin_family = AF_INET;
+    m_QneAddress.sin_port = htons(49494);
+    m_QneAddress.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+
+}
+
+Editor::~Editor()
+{
+    const ZMemberDelegate<Editor, void(const SGameUpdateEvent&)> s_Delegate(this, &Editor::OnFrameUpdate);
+    Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
 
 void Editor::Init()
@@ -142,6 +177,12 @@ void Editor::CopyToClipboard(const std::string& p_String) const
 void Editor::OnDraw3D(IRenderer* p_Renderer)
 {
     DrawEntityAABB(p_Renderer);
+}
+
+void Editor::OnEngineInitialized()
+{
+    const ZMemberDelegate<Editor, void(const SGameUpdateEvent&)> s_Delegate(this, &Editor::OnFrameUpdate);
+    Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
 }
 
 bool Editor::ImGuiCopyWidget(const std::string& p_Id)
@@ -417,6 +458,12 @@ void Editor::OnDrawUI(bool p_HasFocus)
     ImGui::PopFont();
 }
 
+void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
+{
+    CheckQneConnection(p_UpdateEvent.m_RealTimeDelta.ToSeconds());
+    ReceiveQneMessages();
+}
+
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 {
     SVector3 s_World;
@@ -549,6 +596,7 @@ DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZScene
     //if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
     //	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
     //    p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
+    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
 
     return HookResult<void>(HookAction::Continue());
 }

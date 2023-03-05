@@ -7,17 +7,21 @@
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 
+#include "Components/Qne.h"
+
 #include "ImGuizmo.h"
 
 class Editor : public IPluginInterface
 {
 public:
     Editor();
+    ~Editor() override;
 
     void Init() override;
     void OnDrawMenu() override;
     void OnDrawUI(bool p_HasFocus) override;
     void OnDraw3D(IRenderer* p_Renderer) override;
+    void OnEngineInitialized() override;
 
 private:
     void SpawnCameras();
@@ -35,6 +39,11 @@ private:
     bool SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId);
     bool SearchForEntityByType(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName);
     bool SearchForEntityByName(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName);
+
+    void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
+    void CheckQneConnection(float p_DeltaTime);
+    void ReceiveQneMessages();
+    void SendQneMessage(const Qne::SdkToQnMessage& p_Message);
 
     void DrawPinTracer();
 
@@ -75,8 +84,13 @@ private:
         std::chrono::time_point<std::chrono::system_clock> m_FireTime;
     };
 
-    std::unordered_map<uint32_t, PinFireInfo> m_FiredInputPins;
-    std::unordered_map<uint32_t, PinFireInfo> m_FiredOutputPins;
+    std::unordered_map<uint32_t, PinFireInfo> m_FiredInputPins = {};
+    std::unordered_map<uint32_t, PinFireInfo> m_FiredOutputPins = {};
+
+    SOCKET m_QneSocket = INVALID_SOCKET;
+    bool m_ConnectedToQne = false;
+    float m_QneConnectionTimer = 999.f; // Set to a high number so we connect on startup.
+    sockaddr_in m_QneAddress = {};
 
 };
 
