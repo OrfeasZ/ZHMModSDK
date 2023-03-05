@@ -204,6 +204,14 @@ bool ModSDK::Startup()
 
     m_D3D12Hooks->Startup();
 
+    // Patch mutex creation to allow multiple instances.
+    uint8_t s_NopBytes[84] = { 0x90 };
+    memset(s_NopBytes, 0x90, 84);
+    if (!PatchCode("\x4C\x8D\x05\x00\x00\x00\x00\xBA\x00\x00\x00\x00\x33\xC9\xFF\x15", "xxx????x????xxxx", s_NopBytes, 84))
+    {
+        Logger::Warn("Could not patch multi-instance detection. You will not be able to launch the game more than once.");
+    }
+
     return true;
 }
 
