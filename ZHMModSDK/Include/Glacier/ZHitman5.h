@@ -404,6 +404,25 @@ class ZHM5Animator :
 public:
 };
 
+struct SGameInput
+{
+    virtual ~SGameInput() = 0;
+    float m_fGameInput[72];
+    PAD(0x4D8);
+};
+
+static_assert(sizeof(SGameInput) == 0x600);
+
+class ZCharacterInputProcessor
+{
+public:
+    virtual ~ZCharacterInputProcessor() = 0;
+
+public:
+    PAD(0x10); // 0x08
+    SGameInput* m_pInput;
+};
+
 class ZHitman5 :
     public ZHM5BaseCharacter,
     public IFutureCameraState, // 720
@@ -436,7 +455,9 @@ public:
     TEntityRef<IVariationResourceEntity> m_DefaultWeaponVariationResource; // 0x768
     PAD(0x30); // 0x778
     ZGuid m_CharacterId; // 0x7A8
-    PAD(0x78); // 0x7B8
+    PAD(0x38); // 0x7B8
+    ZCharacterInputProcessor* m_pCharacterInputProcessor; // 0x7F0
+    PAD(0x38); // 0x7F8
     TEntityRef<ZBodyPartEntity> m_pVRHeadReplacement; // 0x830
     TEntityRef<ZBodyPartEntity> m_pVROldHeadReplacement; // 0x840
     ZRuntimeResourceID m_SeasonOneHead1; // 0x850
@@ -474,6 +495,7 @@ public:
 
 static_assert(offsetof(ZHitman5, m_InitialOutfitId) == 0x710);
 static_assert(offsetof(ZHitman5, m_CharacterId) == 0x7A8);
+static_assert(offsetof(ZHitman5, m_pCharacterInputProcessor) == 0x7F0);
 static_assert(offsetof(ZHitman5, m_pVRHeadReplacement) == 0x830);
 static_assert(offsetof(ZHitman5, m_bIsInvincible) == 0xD48);
 static_assert(offsetof(ZHitman5, m_pCharacter) == 0xDA0);

@@ -320,9 +320,32 @@ public:
         const auto s_Entity = GetEntity();
 
         if (!s_Entity || !*Globals::TypeRegistry)
-            return nullptr;
+            return false;
 
         const auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+
+        if (it == (*Globals::TypeRegistry)->m_types.end())
+            return false;
+
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces)
+        {
+            if (s_Interface.m_pTypeId == it->second)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool HasInterface(const std::string& p_TypeName) const
+    {
+        const auto s_Entity = GetEntity();
+
+        if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
+            return false;
+
+        const auto it = (*Globals::TypeRegistry)->m_types.find(p_TypeName.c_str());
 
         if (it == (*Globals::TypeRegistry)->m_types.end())
             return false;

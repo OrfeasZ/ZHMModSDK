@@ -292,3 +292,10 @@ PATTERN_HOOK(
     ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory,
     ZTemplateEntityBlueprintFactory*(ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)
 );
+
+PATTERN_RELATIVE_CALL_HOOK(
+    "\xE8\x00\x00\x00\x00\x48\x8B\x4C\x24\x38\x48\x85\xC9\x74\x00\x48\x81\xC1",
+    "x????xxxxxxxxx?xxx",
+    ZPlayerRegistry_GetLocalPlayer,
+    TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)
+);

@@ -57,6 +57,9 @@ class ZEntityType;
 class ZTemplateEntityBlueprintFactory;
 class STemplateEntityBlueprint;
 class ZResourcePending;
+class ZPlayerRegistry;
+class ZHitman5;
+template <class> class TEntityRef;
 
 class ZHMSDK_API Hooks
 {
@@ -93,6 +96,7 @@ public:
     static Hook<void(void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int param_6)>* Http_WinHttpCallback;
     static Hook<void(ZHttpResultDynamicObject* th)>* ZHttpResultDynamicObject_OnBufferReady;
     static Hook<ZTemplateEntityBlueprintFactory*(ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)>* ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory;
+    static Hook<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
     //static Hook<void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZTemplateEntityFactory_ConfigureEntity;
     //static Hook<void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZCppEntityFactory_ConfigureEntity;
     //static Hook<void(ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZBehaviorTreeEntityFactory_ConfigureEntity;
