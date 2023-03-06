@@ -19,5 +19,6 @@ target_include_directories(Editor PRIVATE
 target_link_libraries(Editor PRIVATE
 	ZHMModSDK
 	imguizmo
+	ws2_32
 #	TracyClient
 )
