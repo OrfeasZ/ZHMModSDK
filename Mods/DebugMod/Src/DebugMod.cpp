@@ -20,6 +20,9 @@
 #include <Glacier/ZItem.h>
 #include <Glacier/ZInventory.h>
 #include <Glacier/ZHM5CrippleBox.h>
+#include <Glacier/ZApplicationEngineWin32.h>
+#include <Glacier/ZFreeCamera.h>
+#include <Glacier/ZHM5InputManager.h>
 #include <IO/ZBinaryReader.h>
 #include <IO/ZBinaryDeserializer.h>
 #include <Crypto.h>
@@ -41,6 +44,8 @@ DebugMod::~DebugMod()
 {
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
     Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+
+    if (m_TrackCamActive) DisableTrackCam();
 }
 
 void DebugMod::Init()
@@ -60,7 +65,21 @@ void DebugMod::OnEngineInitialized()
 
 void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
+    if (!*Globals::ApplicationEngineWin32)
+        return;
 
+    if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef)
+    {
+        Logger::Debug("Creating free camera.");
+        Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
+    }
+
+    (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_TrackCamActive);
+
+    if (m_TrackCamActive)
+    {
+        UpdateTrackCam(); 
+    }
 }
 
 void DebugMod::OnDrawMenu()
@@ -1231,6 +1250,15 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
     );*/
 }
 
+DECLARE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&)
+{
+    if (m_TrackCamActive)
+        DisableTrackCam();
+    m_TrackCamActive = false;
+
+    return HookResult<void>(HookAction::Continue());
+}
+
 DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
 {
     m_EntityMutex.lock();
@@ -1251,6 +1279,10 @@ DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, boo
     m_Hm5CrippleBox = nullptr;
 
     m_EntityMutex.unlock();
+
+    if (m_TrackCamActive)
+        DisableTrackCam();
+    m_TrackCamActive = false;
 
     return HookResult<void>(HookAction::Continue());
 }
