@@ -292,7 +292,9 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
 
         if (ImGui::Button(std::format("Track This NPC##{}", s_NpcName).c_str()))
         {
-            GetPlayerCam();
+            if (m_RenderDest.m_ref == nullptr) GetRenderDest();
+            if (m_TrackCam.m_ref == nullptr) GetTrackCam();
+            if (m_PlayerCam == nullptr) GetPlayerCam();
             m_NPCTracked = s_Actor;
             m_TrackCamActive = true;
             EnableTrackCam();
@@ -316,53 +318,49 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
 
 void DebugMod::EnableTrackCam()
 {
-    auto s_TrackCam = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
-    TEntityRef<IRenderDestinationEntity> s_RenderDest;
-    Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
-
-    s_RenderDest.m_pInterfaceRef->SetSource(&s_TrackCam.m_ref);
-
-    TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-    if (s_LocalHitman)
-    {
-        auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
-        if (s_InputControl) s_InputControl->m_bActive = false;
-    }
+    m_RenderDest.m_pInterfaceRef->SetSource(&m_TrackCam.m_ref);
+    SetPlayerControlActive(false);
 }
 
 void DebugMod::UpdateTrackCam()
 {
-    auto s_TrackCamera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
-
     ZEntityRef s_Ref;
     m_NPCTracked->GetID(&s_Ref);
     SMatrix s_ActorWorldMatrix = s_Ref.QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
-    SMatrix s_TrackCamWorldMatrix = s_TrackCamera.m_pInterfaceRef->GetWorldMatrix();
-    s_TrackCamWorldMatrix.Trans = s_ActorWorldMatrix.Trans + float4(2.f, 0.f, 1.6f, 0.f);
+    SMatrix s_TrackCamWorldMatrix = m_TrackCam.m_pInterfaceRef->GetWorldMatrix();
+    s_TrackCamWorldMatrix.Trans = s_ActorWorldMatrix.Trans + float4(0.f, 0.f, 2.f, 0.f);
 
-    s_TrackCamera.m_pInterfaceRef->SetWorldMatrix(s_TrackCamWorldMatrix);
+    m_TrackCam.m_pInterfaceRef->SetWorldMatrix(s_TrackCamWorldMatrix);
 }
 
 void DebugMod::DisableTrackCam()
 {
-    TEntityRef<IRenderDestinationEntity> s_RenderDest;
-    Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
+    m_RenderDest.m_pInterfaceRef->SetSource(&m_PlayerCam);
+    SetPlayerControlActive(true);
+}
 
-    s_RenderDest.m_pInterfaceRef->SetSource(&m_PlayerCam);
+void DebugMod::GetPlayerCam()
+{
+    m_PlayerCam = *m_RenderDest.m_pInterfaceRef->GetSource();
+}
 
+void DebugMod::GetTrackCam()
+{
+    m_TrackCam = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
+}
+
+void DebugMod::GetRenderDest()
+{
+    Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &m_RenderDest);
+}
+
+void DebugMod::SetPlayerControlActive(bool s_Active)
+{
     TEntityRef<ZHitman5> s_LocalHitman;
     Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
     if (s_LocalHitman)
     {
         auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
-        if (s_InputControl) s_InputControl->m_bActive = true;
+        if (s_InputControl) s_InputControl->m_bActive = s_Active;
     }
-}
-
-void DebugMod::GetPlayerCam()
-{
-    TEntityRef<IRenderDestinationEntity> s_RenderDest;
-    Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
-    m_PlayerCam = *s_RenderDest.m_pInterfaceRef->GetSource();
 }

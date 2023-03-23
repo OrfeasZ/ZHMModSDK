@@ -125,12 +125,17 @@ private:
     ZActor* m_NPCTracked = nullptr;
     bool m_TrackCamActive = false;
     ZEntityRef m_PlayerCam = nullptr;
+    TEntityRef<ZCameraEntity> m_TrackCam = TEntityRef<ZCameraEntity>(nullptr);
+    TEntityRef<IRenderDestinationEntity> m_RenderDest = TEntityRef<IRenderDestinationEntity>(nullptr);
 
 private:
     void EnableTrackCam();
     void UpdateTrackCam();
     void DisableTrackCam();
     void GetPlayerCam();
+    void GetTrackCam();
+    void GetRenderDest();
+    void SetPlayerControlActive(bool active);
 };
 
 DEFINE_ZHM_PLUGIN(DebugMod)
