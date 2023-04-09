@@ -5,6 +5,7 @@
     {
       "type": "dll",
       "exe": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\HITMAN 3\\Retail\\HITMAN3.exe",
+      "cwd": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\HITMAN 3",
       "args": [],
       "project": "CMakeLists.txt",
       "projectTarget": "ZHMModSDK.dll (Install)",

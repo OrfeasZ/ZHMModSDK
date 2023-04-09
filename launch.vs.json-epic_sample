@@ -5,6 +5,7 @@
     {
       "type": "dll",
       "exe": "C:\\Program Files\\EpicGames\\HITMAN3\\Retail\\HITMAN3.exe",
+      "cwd": "C:\\Program Files\\EpicGames\\HITMAN3",
       "args": [
         "-EpicPortal",
         "-epicuserid=userid"
