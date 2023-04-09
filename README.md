@@ -49,12 +49,16 @@ There are a few sample mods included in this repository that can be used either 
 | [Editor](/Mods/Editor) | A WIP in-engine "editor". Currently supports viewing spawned entities alongside basic lookup and manipulation. **[Requires additional setup!](/Mods/Editor)** |
 | [Clumsy](/Mods/Clumsy) | Makes 47 very clumsy. He just can't seem to figure out how to take cover... **[Requires additional setup!](/Mods/Clumsy)** |
 
-## Contributing
-
-TODO
-
 ## Usage (for developers)
 
-TODO
+To find out how to create your own mods or how to extend the SDK, check out the [wiki](https://github.com/OrfeasZ/ZHMModSDK/wiki). Here are some guides to get you started:
 
+> [**Making mods with the SDK**](https://github.com/OrfeasZ/ZHMModSDK/wiki/Making-mods-with-the-SDK)
 
+> [**Building & debugging the SDK**](https://github.com/OrfeasZ/ZHMModSDK/wiki/Building-&-debugging-the-SDK)
+
+You can also check out the [sample mods](/Mods) for reference.
+
+## Contributing
+
+If you'd like to contribute to the SDK, feel free to open a pull request or an issue. If you're not sure where to start, check out the [issues](https://github.com/OrfeasZ/ZHMModSDK/issues) tab.
