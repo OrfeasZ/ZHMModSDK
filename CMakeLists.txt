@@ -85,9 +85,10 @@ install(CODE [[
 ]])
 
 # Install licenses from external projects.
-install(FILES "External/imgui/source/LICENSE.txt" DESTINATION "licenses" RENAME "imgui.txt")
-install(FILES "External/imguizmo/source/LICENSE" DESTINATION "licenses" RENAME "imguizmo.txt")
-install(FILES "External/mINI/LICENSE" DESTINATION "licenses" RENAME "mINI.txt")
+install(FILES "External/imgui/source/LICENSE.txt" DESTINATION licenses RENAME imgui.txt)
+install(FILES "External/imguizmo/source/LICENSE" DESTINATION licenses RENAME imguizmo.txt)
+install(FILES "External/mINI/LICENSE" DESTINATION licenses RENAME mINI.txt)
+install(FILES "External/IconFontCppHeaders/licence.txt" DESTINATION licenses RENAME IconFontCppHeaders.txt)
 
 # Install licenses from CPM packages.
 foreach(PACKAGE ${CPM_PACKAGES})
@@ -102,6 +103,6 @@ foreach(PACKAGE ${CPM_PACKAGES})
 	# If we found any license files, copy the first one.
 	if(CPM_PACKAGE_LICENSES)
 		list(GET CPM_PACKAGE_LICENSES 0 CPM_PACKAGE_LICENSE)
-		install(FILES "${CPM_PACKAGE_LICENSE}" DESTINATION "licenses" RENAME "${PACKAGE}.txt")
+		install(FILES "${CPM_PACKAGE_LICENSE}" DESTINATION licenses RENAME "${PACKAGE}.txt")
 	endif()
 endforeach()

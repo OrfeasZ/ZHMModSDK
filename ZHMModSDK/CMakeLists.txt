@@ -81,3 +81,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 else()
 	install(FILES "${VCPKG_BUILD_ROOT}/lib/fmt.lib" DESTINATION lib)
 endif()
+
+# Install icon header.
+install(FILES "${CMAKE_SOURCE_DIR}/External/IconFontCppHeaders/IconsMaterialDesign.h" DESTINATION include)
