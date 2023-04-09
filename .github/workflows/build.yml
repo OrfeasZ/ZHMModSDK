@@ -43,15 +43,15 @@ jobs:
     - name: Copy debug artifacts
       run: |
         mkdir _dist-debug
-        Copy-Item _install/x64-Debug/bin -Destination _dist-debug/ -Recurse
-        Copy-Item _install/x64-Debug/licenses -Destination _dist-debug/licenses/ -Recurse
+        Copy-Item _install/x64-Debug/bin/* -Destination _dist-debug/ -Recurse
+        Copy-Item _install/x64-Debug/licenses -Destination _dist-debug/ -Recurse
         Copy-Item LICENSE -Destination _dist-debug/LICENSE
 
     - name: Copy release artifacts
       run: |
         mkdir _dist-release
-        Copy-Item _install/x64-Release/bin -Destination _dist-release/ -Recurse
-        Copy-Item _install/x64-Release/licenses -Destination _dist-release/licenses/ -Recurse
+        Copy-Item _install/x64-Release/bin/* -Destination _dist-release/ -Recurse
+        Copy-Item _install/x64-Release/licenses -Destination _dist-release/ -Recurse
         Copy-Item LICENSE -Destination _dist-release/LICENSE
 
     - name: Copy SDK dev artifacts
@@ -67,12 +67,12 @@ jobs:
         Remove-Item _sdk/release/bin/dinput8.dll
         
         mkdir _sdk/debug
-        Copy-Item _install/x64-Debug/lib -Destination _sdk/debug -Recurse
-        Copy-Item _install/x64-Debug/bin -Destination _sdk/debug -Recurse
+        Copy-Item _install/x64-Debug/lib -Destination _sdk/debug/ -Recurse
+        Copy-Item _install/x64-Debug/bin -Destination _sdk/debug/ -Recurse
         Remove-Item _sdk/debug/bin/mods -Recurse
         Remove-Item _sdk/debug/bin/dinput8.dll
         
-        Copy-Item _install/x64-Release/licenses -Destination _dist-release/licenses -Recurse
+        Copy-Item _install/x64-Release/licenses -Destination _sdk/ -Recurse
         Copy-Item LICENSE -Destination _sdk/LICENSE
 
     - name: Archive debug SDK and mods
