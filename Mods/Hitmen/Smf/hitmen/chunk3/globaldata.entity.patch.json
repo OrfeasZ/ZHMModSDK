@@ -1,0 +1,10 @@
+{
+    "tempHash": "004E93563D0C209F",
+    "tbluHash": "007A565EE653FB02",
+    "patch": [
+        {
+            "AddExternalScene": "[assembly:/_sdk/hitmen.brick].pc_entitytype"
+        }
+    ],
+    "patchVersion": 6
+}
