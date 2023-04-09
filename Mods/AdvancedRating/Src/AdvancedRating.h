@@ -83,8 +83,8 @@ private:
     void Reset();
 
 private:
-    DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th);
-    DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event);
+    DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th);
+    DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event);
 
 private:
     SRWLOCK m_EventLock = {};
@@ -93,4 +93,4 @@ private:
     std::vector<RatingEvent> m_EventHistory;
 };
 
-DEFINE_ZHM_PLUGIN(AdvancedRating)
+DECLARE_ZHM_PLUGIN(AdvancedRating)

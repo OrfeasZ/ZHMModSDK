@@ -1200,4 +1200,4 @@ void CodeGen::GenerateEnumsFiles()
 }
 
 
-DECLARE_ZHM_PLUGIN(CodeGen);
+DEFINE_ZHM_PLUGIN(CodeGen);

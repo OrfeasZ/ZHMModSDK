@@ -40,9 +40,9 @@ private:
     void OnNpcPositions(BinaryStreamReader& p_Reader);
 
 private:
-    DEFINE_PLUGIN_DETOUR(Hitmen, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
-    DEFINE_PLUGIN_DETOUR(Hitmen, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
-    DEFINE_PLUGIN_DETOUR(Hitmen, TEntityRef<ZHitman5>*, GetLocalPlayer, ZPlayerRegistry* th, TEntityRef<ZHitman5>* out);
+    DECLARE_PLUGIN_DETOUR(Hitmen, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DECLARE_PLUGIN_DETOUR(Hitmen, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
+    DECLARE_PLUGIN_DETOUR(Hitmen, TEntityRef<ZHitman5>*, GetLocalPlayer, ZPlayerRegistry* th, TEntityRef<ZHitman5>* out);
 
 private:
     bool m_Initialized = false;
@@ -65,4 +65,4 @@ private:
     float m_NpcUpdateTimer = 0.f;
 };
 
-DEFINE_ZHM_PLUGIN(Hitmen)
+DECLARE_ZHM_PLUGIN(Hitmen)

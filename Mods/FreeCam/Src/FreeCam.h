@@ -25,9 +25,9 @@ private:
     void DisableFreecam();
 
 private:
-    DEFINE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int a2);
-    DEFINE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
-    DEFINE_PLUGIN_DETOUR(FreeCam, void, OnClearScene, ZEntitySceneContext*, bool);
+    DECLARE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int a2);
+    DECLARE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DECLARE_PLUGIN_DETOUR(FreeCam, void, OnClearScene, ZEntitySceneContext*, bool);
 
 private:
     volatile bool m_FreeCamActive;
@@ -43,4 +43,4 @@ private:
     std::unordered_map<std::string, std::string> m_ControllerControls;
 };
 
-DEFINE_ZHM_PLUGIN(FreeCam)
+DECLARE_ZHM_PLUGIN(FreeCam)

@@ -56,7 +56,7 @@ void Hitmen::OnEngineInitialized()
 
     const ZMemberDelegate<Hitmen, void(const SGameUpdateEvent&)> s_Delegate(this, &Hitmen::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
-    
+
     m_Initialized = true;
 }
 
@@ -116,7 +116,7 @@ void Hitmen::Connect(const std::string& p_Address, uint16_t p_Port)
         Logger::Error("Invalid address specified.");
         return;
     }
-  
+
     SteamNetworkingConfigValue_t s_Config {};
     s_Config.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)ClientCallback);
 
@@ -143,7 +143,7 @@ void Hitmen::OnServerStatus(SteamNetConnectionStatusChangedCallback_t* p_Info)
                 Logger::Warn("Can't accept connection.  (It was already closed?)");
                 break;
             }
-            
+
             if (!m_Sockets->SetConnectionPollGroup(p_Info->m_hConn, m_PollGroup))
             {
                 m_Sockets->CloseConnection(p_Info->m_hConn, 0, nullptr, false);
@@ -211,7 +211,7 @@ void Hitmen::UpdateServer()
             case NpcPositions:
                 OnNpcPositions(s_Reader);
                 break;
-        }        
+        }
 
         s_Msg->Release();
     }
@@ -274,7 +274,7 @@ void Hitmen::SendNpcPositions(HSteamNetConnection p_Connection)
     for (int i = 0; i < *Globals::NextActorId; ++i)
     {
         auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
-        
+
         if (s_Actor->IsAlive())
             ++s_AliveActorCount;
     }
@@ -285,7 +285,7 @@ void Hitmen::SendNpcPositions(HSteamNetConnection p_Connection)
     for (int i = 0; i < *Globals::NextActorId; ++i)
     {
         const auto& s_Actor = Globals::ActorManager->m_aActiveActors[i];
-        
+
         if (s_Actor.m_pInterfaceRef->IsAlive())
         {
             s_Writer.Write(i);
@@ -369,7 +369,7 @@ void Hitmen::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
     if (!m_Connected)
         return;*/
-    
+
     auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene || !(*Globals::ApplicationEngineWin32)->m_bSceneLoaded)
@@ -422,13 +422,13 @@ void Hitmen::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
         return;
     }
-    
+
     //if (m_UpdateTimer >= 1.f / 30.f)
     /*{
         m_UpdateTimer = 0.f;
         SendInputsAndPosition(m_ClientConnection);
     }
-    
+
     if (m_NpcUpdateTimer >= 1.f / 10.f)
     {
         m_NpcUpdateTimer = 0.f;
@@ -526,7 +526,7 @@ void Hitmen::OnDrawMenu()
 void Hitmen::OnDrawUI(bool p_HasFocus)
 {
     auto s_ImgGuiIO = ImGui::GetIO();
-    
+
     if (m_ShowServerWindow)
     {
         if (ImGui::Begin("Host Hitmen Server", &m_ShowServerWindow))
@@ -542,7 +542,7 @@ void Hitmen::OnDrawUI(bool p_HasFocus)
 
         ImGui::End();
     }
-    
+
     if (m_ShowClientWindow)
     {
         if (ImGui::Begin("Connect to Hitmen Server", &m_ShowClientWindow))
@@ -581,7 +581,7 @@ void Hitmen::OnDraw3D(IRenderer* p_Renderer)
     }*/
 }
 
-DECLARE_PLUGIN_DETOUR(Hitmen, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
+DEFINE_PLUGIN_DETOUR(Hitmen, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
 {
     // p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
     //p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
@@ -599,7 +599,7 @@ DECLARE_PLUGIN_DETOUR(Hitmen, void, OnLoadScene, ZEntitySceneContext* th, ZScene
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(Hitmen, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(Hitmen, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
 {
     m_OtherHitman = {};
     m_FirstHitman = {};
@@ -607,11 +607,11 @@ DECLARE_PLUGIN_DETOUR(Hitmen, void, OnClearScene, ZEntitySceneContext* th, bool 
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(Hitmen, TEntityRef<ZHitman5>*, GetLocalPlayer, ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)
+DEFINE_PLUGIN_DETOUR(Hitmen, TEntityRef<ZHitman5>*, GetLocalPlayer, ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)
 {
     auto s_Result = p_Hook->CallOriginal(th, out);
-    
+
     return HookResult(HookAction::Return(), out);
 }
 
-DECLARE_ZHM_PLUGIN(Hitmen);
+DEFINE_ZHM_PLUGIN(Hitmen);

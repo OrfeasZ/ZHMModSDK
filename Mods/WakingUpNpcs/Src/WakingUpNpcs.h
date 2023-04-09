@@ -18,8 +18,8 @@ private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
 private:
-    DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
-    DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext*, bool);
+    DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext*, bool);
 
 private:
     std::unordered_map<ZActor*, double> m_PacifiedTimes;
@@ -27,4 +27,4 @@ private:
     std::mt19937 m_Generator;
 };
 
-DEFINE_ZHM_PLUGIN(WakingUpNpcs)
+DECLARE_ZHM_PLUGIN(WakingUpNpcs)

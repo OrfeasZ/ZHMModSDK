@@ -11,7 +11,7 @@ public:
     void Init() override;
 
 private:
-    DEFINE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DECLARE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
 };
 
-DEFINE_ZHM_PLUGIN(SkipIntro)
+DECLARE_ZHM_PLUGIN(SkipIntro)

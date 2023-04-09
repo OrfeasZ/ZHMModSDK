@@ -65,7 +65,7 @@ private:
 
     void EnableInfiniteAmmo();
 
-    DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
+    DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
 
 private:
     bool m_DebugMenuActive = false;
@@ -121,4 +121,4 @@ private:
     ZHM5CrippleBox* m_Hm5CrippleBox = nullptr;
 };
 
-DEFINE_ZHM_PLUGIN(DebugMod)
+DECLARE_ZHM_PLUGIN(DebugMod)

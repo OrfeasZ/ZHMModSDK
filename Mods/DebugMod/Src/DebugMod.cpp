@@ -1231,7 +1231,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
     );*/
 }
 
-DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
 {
     m_EntityMutex.lock();
     m_SelectedEntity = ZEntityRef();
@@ -1255,4 +1255,4 @@ DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, boo
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_ZHM_PLUGIN(DebugMod);
+DEFINE_ZHM_PLUGIN(DebugMod);

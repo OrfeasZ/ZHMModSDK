@@ -547,7 +547,7 @@ void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
     m_CommandQueue->AddRef();
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
+DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
 {
     if (ImGui::GetCurrentContext() == nullptr)
         return HookResult<LRESULT>(HookAction::Continue());
@@ -658,7 +658,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineW
     return HookResult<LRESULT>(HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam));
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
+DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
 {
     // Don't process input while the imgui overlay has focus.
     if (m_ImguiHasFocus)
@@ -667,7 +667,7 @@ DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeybo
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction* th, int a2)
+DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction* th, int a2)
 {
     static std::unordered_set<std::string> s_BlockedInputs = {
         "eIAKBMLookHorizontal",

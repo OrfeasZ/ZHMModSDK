@@ -60,4 +60,4 @@ private:
     std::ofstream m_EnumsSourceFile;
 };
 
-DEFINE_ZHM_PLUGIN(CodeGen)
+DECLARE_ZHM_PLUGIN(CodeGen)
