@@ -72,6 +72,9 @@ jobs:
         Remove-Item _sdk/debug/bin/mods -Recurse
         Remove-Item _sdk/debug/bin/dinput8.dll
         
+        mkdir _sdk/cmake
+        Copy-Item cmake/zhm-mod.cmake -Destination _sdk/cmake/zhm-mod.cmake
+        
         Copy-Item _install/x64-Release/licenses -Destination _sdk/ -Recurse
         Copy-Item LICENSE -Destination _sdk/LICENSE
 

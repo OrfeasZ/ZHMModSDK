@@ -1,0 +1,6 @@
+function(zhmmodsdk_install MOD_NAME)
+    if (EXISTS "${GAME_INSTALL_PATH}/Retail")
+        install(FILES $<TARGET_FILE:${MOD_NAME}> DESTINATION "${GAME_INSTALL_PATH}/Retail/mods")
+        install(FILES $<TARGET_FILE:ZHMModSDK> DESTINATION "${GAME_INSTALL_PATH}/Retail")
+    endif()
+endfunction()
