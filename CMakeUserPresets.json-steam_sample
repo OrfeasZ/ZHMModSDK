@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "configurePresets": [
+    {
+      "name": "x64-Debug-Install",
+      "inherits": [ "x64-Debug" ],
+      "cacheVariables": {
+        "GAME_INSTALL_PATH": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\HITMAN 3"
+      }
+    },
+    {
+      "name": "x64-Release-Install",
+      "inherits": [ "x64-Release" ],
+      "cacheVariables": {
+        "GAME_INSTALL_PATH": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\HITMAN 3"
+      }
+    }
+  ]
+}
