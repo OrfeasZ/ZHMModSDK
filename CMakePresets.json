@@ -14,19 +14,16 @@
       },
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/_install/${presetName}",
-        "DIRECTX_ARCH": "x64",
-        "CMAKE_C_COMPILER": "cl.exe",
         "CMAKE_CXX_COMPILER": "cl.exe",
         "CMAKE_TOOLCHAIN_FILE": {
           "value": "${sourceDir}/External/vcpkg/scripts/buildsystems/vcpkg.cmake",
           "type": "FILEPATH"
         },
-        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg-overlays",
         "VCPKG_TARGET_TRIPLET": "x64-windows-zhm",
         "VCPKG_HOST_TRIPLET": "x64-windows-zhm",
-        "DIRECTX_DXC_PATH": "${sourceDir}/_build/${presetName}/vcpkg_installed/x64-windows/tools/directx-dxc",
-        "BUILD_XAUDIO_WIN10": false,
-        "BUILD_XAUDIO_REDIST": true
+        "CMAKE_VERBOSE_MAKEFILE": false,
+        "CMAKE_POLICY_DEFAULT_CMP0091": "NEW"
       },
       "toolset": {
         "value": "host=x64",
@@ -34,24 +31,20 @@
       }
     },
     {
-      "name": "Debug",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" },
-      "hidden": true
-    },
-    {
-      "name": "Release",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" },
-      "hidden": true
-    },
-    {
       "name": "x64-Debug",
-      "description": "MSVC for x64 (Debug)",
-      "inherits": [ "base", "Debug" ]
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebug"
+      },
+      "inherits": [ "base" ]
     },
     {
       "name": "x64-Release",
-      "description": "MSVC for x64 (Release)",
-      "inherits": [ "base", "Release" ]
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded"
+      },
+      "inherits": [ "base" ]
     }
   ]
 }

@@ -77,3 +77,7 @@ target_link_libraries(DiscordRichPresence PRIVATE
 	ZHMModSDK
 	DiscordSdk
 )
+
+install(TARGETS DiscordRichPresence
+	RUNTIME DESTINATION bin/mods
+)

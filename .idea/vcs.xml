@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/External/IconFontCppHeaders" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/External/imgui/source" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/External/mINI" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/External/vcpkg" vcs="Git" />
+  </component>
+</project>

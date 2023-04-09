@@ -22,3 +22,7 @@ target_link_libraries(Editor PRIVATE
 	ws2_32
 #	TracyClient
 )
+
+install(TARGETS Editor
+	RUNTIME DESTINATION bin/mods
+)

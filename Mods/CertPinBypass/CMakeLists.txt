@@ -19,3 +19,7 @@ target_include_directories(CertPinBypass PRIVATE
 target_link_libraries(CertPinBypass PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS CertPinBypass
+	RUNTIME DESTINATION bin/mods
+)

@@ -19,3 +19,7 @@ target_include_directories(AdvancedRating PRIVATE
 target_link_libraries(AdvancedRating PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS AdvancedRating
+	RUNTIME DESTINATION bin/mods
+)

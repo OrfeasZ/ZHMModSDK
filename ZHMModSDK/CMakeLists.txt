@@ -6,11 +6,16 @@ file(GLOB_RECURSE SRC_FILES
 	Src/*.c
 	Src/*.hpp
 	Src/*.h,
+)
+
+file(GLOB_RECURSE HEADER_FILES
+	CONFIGURE_DEPENDS
 	Include/*.h
 )
 
 add_library(ZHMModSDK SHARED
 	${SRC_FILES}
+	${HEADER_FILES}
 )
 
 target_include_directories(ZHMModSDK PRIVATE
@@ -43,3 +48,36 @@ target_link_libraries(ZHMModSDK PUBLIC
 	dxgi
 	delayimp
 )
+
+install(TARGETS ZHMModSDK
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+	ARCHIVE DESTINATION lib
+)
+
+# Install ZHMModSDK header files.
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Include/"
+	DESTINATION include
+	FILES_MATCHING PATTERN "*.h"
+)
+
+# Install ZHMModSDK pdb file.
+install(FILES $<TARGET_PDB_FILE:ZHMModSDK> DESTINATION bin)
+
+# Install spdlog and fmt header files.
+install(DIRECTORY "${VCPKG_BUILD_ROOT}/include/spdlog/"
+	DESTINATION include/spdlog
+	FILES_MATCHING PATTERN "*.h"
+)
+
+install(DIRECTORY "${VCPKG_BUILD_ROOT}/include/fmt/"
+	DESTINATION include/fmt
+	FILES_MATCHING PATTERN "*.h"
+)
+
+# Install fmt lib.
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	install(FILES "${VCPKG_BUILD_ROOT}/debug/lib/fmtd.lib" DESTINATION lib RENAME fmt.lib)
+else()
+	install(FILES "${VCPKG_BUILD_ROOT}/lib/fmt.lib" DESTINATION lib)
+endif()

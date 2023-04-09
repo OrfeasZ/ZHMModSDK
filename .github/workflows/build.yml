@@ -14,12 +14,6 @@ jobs:
     name: Build
     runs-on: [ windows-latest ]
 
-    strategy:
-      matrix:
-        buildpreset: 
-        - Release
-        - Debug
-
     steps:
     - name: Get latest CMake and ninja
       uses: lukka/get-cmake@latest
@@ -34,59 +28,70 @@ jobs:
       with:
         arch: x64
 
-    - name: Generate projects
+    - name: Build and install debug
       run: |
-        cmake --preset x64-${{ matrix.buildpreset }} .
+        cmake --preset x64-Debug .
+        cmake --build _build/x64-Debug --parallel
+        cmake --install _build/x64-Debug
 
-    - name: Build
+    - name: Build and install release
       run: |
-        cmake --build _build/x64-${{ matrix.buildpreset }} --parallel
+        cmake --preset x64-Release .
+        cmake --build _build/x64-Release --parallel
+        cmake --install _build/x64-Release
 
-    - name: Copy SDK and loader artifacts
+    - name: Copy debug artifacts
       run: |
-        cd _build/x64-${{ matrix.buildpreset }}
-        mkdir _dist
-        Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _dist/
-        Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _dist/
-        Copy-Item DirectInputProxy/dinput8.dll -Destination _dist/
-        Copy-Item DirectInputProxy/dinput8.pdb -Destination _dist/
-        Copy-Item ../../LICENSE -Destination _dist/
-        
-    - name: Copy mod artifacts
+        mkdir _dist-debug
+        Copy-Item _install/x64-Debug/bin -Destination _dist-debug/ -Recurse
+        Copy-Item _install/x64-Debug/licenses -Destination _dist-debug/licenses/ -Recurse
+        Copy-Item LICENSE -Destination _dist-debug/LICENSE
+
+    - name: Copy release artifacts
       run: |
-        cd _build/x64-${{ matrix.buildpreset }}
-        mkdir _dist/mods
-        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".dll")) -Destination (Join-Path "_dist/mods"  ($_.Name + ".dll")) }
-        Get-ChildItem -Directory Mods | ForEach-Object { Copy-Item (Join-Path $_.FullName ($_.Name + ".pdb")) -Destination (Join-Path "_dist/mods"  ($_.Name + ".pdb")) }
+        mkdir _dist-release
+        Copy-Item _install/x64-Release/bin -Destination _dist-release/ -Recurse
+        Copy-Item _install/x64-Release/licenses -Destination _dist-release/licenses/ -Recurse
+        Copy-Item LICENSE -Destination _dist-release/LICENSE
 
     - name: Copy SDK dev artifacts
       run: |
-        cd _build/x64-${{ matrix.buildpreset }}
         mkdir _sdk
-        mkdir _sdk/bin
-        Copy-Item ZHMModSDK/ZHMModSDK.dll -Destination _sdk/bin/ZHMModSDK.dll
-        Copy-Item ZHMModSDK/ZHMModSDK.lib -Destination _sdk/bin/ZHMModSDK.lib
-        Copy-Item ZHMModSDK/ZHMModSDK.pdb -Destination _sdk/bin/ZHMModSDK.pdb
-        Copy-Item ../../ZHMModSDK/Include/ -Destination _sdk/include -Recurse
-        Copy-Item ../../External/imgui/source/imgui.h -Destination _sdk/include/imgui.h
-        Copy-Item ../../External/imgui/source/imconfig.h -Destination _sdk/include/imconfig.h
-        #Copy-Item ../../External/spdlog/include/spdlog/ -Destination _sdk/include/spdlog -Recurse
-        Copy-Item ../../CMakeLists.dist.txt -Destination _sdk/CMakeLists.txt
-        Copy-Item ../../LICENSE -Destination _sdk/LICENSE
+        Copy-Item CMakeLists.dist.txt -Destination _sdk/CMakeLists.txt
+        Copy-Item _install/x64-Release/include -Destination _sdk/ -Recurse
+        
+        mkdir _sdk/release
+        Copy-Item _install/x64-Release/lib -Destination _sdk/release/ -Recurse
+        Copy-Item _install/x64-Release/bin -Destination _sdk/release/ -Recurse
+        Remove-Item _sdk/release/bin/mods -Recurse
+        Remove-Item _sdk/release/bin/dinput8.dll
+        
+        mkdir _sdk/debug
+        Copy-Item _install/x64-Debug/lib -Destination _sdk/debug -Recurse
+        Copy-Item _install/x64-Debug/bin -Destination _sdk/debug -Recurse
+        Remove-Item _sdk/debug/bin/mods -Recurse
+        Remove-Item _sdk/debug/bin/dinput8.dll
+        
+        Copy-Item _install/x64-Release/licenses -Destination _dist-release/licenses -Recurse
+        Copy-Item LICENSE -Destination _sdk/LICENSE
 
-    - name: Archive SDK, loader, and mods
+    - name: Archive debug SDK and mods
       uses: actions/upload-artifact@v2
       with:
-        name: ZHMModSDK-${{ matrix.buildpreset }}
-        path: |
-          _build/x64-${{ matrix.buildpreset }}/_dist/*
+        name: ZHMModSDK-Debug
+        path: _dist-debug/*
+
+    - name: Archive release SDK and mods
+      uses: actions/upload-artifact@v2
+      with:
+        name: ZHMModSDK-Release
+        path: _dist-release/*
 
     - name: Archive SDK dev package
       uses: actions/upload-artifact@v2
       with:
-        name: DevPkg-ZHMModSDK-${{ matrix.buildpreset }}
-        path: |
-          _build/x64-${{ matrix.buildpreset }}/_sdk/*
+        name: DevPkg-ZHMModSDK
+        path: _sdk/*
 
   upload_release:
     name: Upload release artifacts
@@ -99,8 +104,7 @@ jobs:
         artifact:
         - ZHMModSDK-Release
         - ZHMModSDK-Debug
-        #- DevPkg-ZHMModSDK-Release
-        #- DevPkg-ZHMModSDK-Debug
+        - DevPkg-ZHMModSDK
 
     steps:
     - name: Download artifact

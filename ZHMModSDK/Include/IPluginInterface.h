@@ -7,7 +7,7 @@
 class IPluginInterface
 {
 public:
-    virtual ~IPluginInterface() {}
+    virtual ~IPluginInterface() = default;
 
 private:
     virtual void SetupUI()

@@ -19,3 +19,7 @@ target_include_directories(CodeGen PRIVATE
 target_link_libraries(CodeGen PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS CodeGen
+	RUNTIME DESTINATION bin/mods
+)

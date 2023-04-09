@@ -19,3 +19,7 @@ target_include_directories(NoPause PRIVATE
 target_link_libraries(NoPause PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS NoPause
+	RUNTIME DESTINATION bin/mods
+)
