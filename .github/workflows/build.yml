@@ -57,7 +57,7 @@ jobs:
     - name: Copy SDK dev artifacts
       run: |
         mkdir _sdk
-        Copy-Item CMakeLists.dist.txt -Destination _sdk/CMakeLists.txt
+        Copy-Item cmake/sdk-dist.cmake -Destination _sdk/CMakeLists.txt
         Copy-Item _install/x64-Release/include -Destination _sdk/ -Recurse
         
         mkdir _sdk/release
