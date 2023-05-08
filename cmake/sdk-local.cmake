@@ -20,13 +20,7 @@ execute_process(
 
 # cmake --build _build/x64-Debug --parallel
 execute_process(
-    COMMAND ${CMAKE_COMMAND} --build _build/${ZHMMODSDK_PRESET} --parallel
-    WORKING_DIRECTORY ${ZHMMODSDK_DIR}
-)
-
-# cmake --install _build/x64-Debug
-execute_process(
-    COMMAND ${CMAKE_COMMAND} --install _build/${ZHMMODSDK_PRESET}
+    COMMAND ${CMAKE_COMMAND} --build _build/${ZHMMODSDK_PRESET} --parallel --target install
     WORKING_DIRECTORY ${ZHMMODSDK_DIR}
 )
 
@@ -39,9 +33,10 @@ add_subdirectory("${ZHMMODSDK_DIST_DIR}" "${ZHMMODSDK_BUILD_DIR}")
 
 # Create a build step to re-build the SDK and add it as a dependency to the SDK target.
 add_custom_target(_zhmBuild
-    COMMAND ${CMAKE_COMMAND} --build _build/${ZHMMODSDK_PRESET} --parallel
-    COMMAND ${CMAKE_COMMAND} --install _build/${ZHMMODSDK_PRESET}
+    COMMAND ${CMAKE_COMMAND} --build _build/${ZHMMODSDK_PRESET} --parallel --target install
     WORKING_DIRECTORY ${ZHMMODSDK_DIR}
-    COMMENT "Building ZHMModSDK..."
+    COMMENT "Building ZHMModSDK (${ZHMMODSDK_PRESET})..."
+    BYPRODUCTS "${ZHMMODSDK_DIST_DIR}"
 )
+
 add_dependencies(ZHMModSDK _zhmBuild)
