@@ -39,7 +39,7 @@ bool HasChildEntity(ZEntityRef p_Entity, ZEntityRef p_ChildEntity, IEntityBluepr
     return false;
 }
 
-void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId, IEntityBlueprintFactory* p_Factory, ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity)
+void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId, IEntityBlueprintFactory* p_Factory, ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, ZEntityRef p_SelectedEntity)
 {
     if (!p_Entity.GetEntity() || ! p_Entity->GetType())
         return;
@@ -68,7 +68,7 @@ void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId,
     if (!s_HasChildren)
         s_Flags |= ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_Leaf;
 
-    if (m_SelectedEntity == p_Entity)
+    if (p_SelectedEntity == p_Entity)
     {
         s_Flags |= ImGuiTreeNodeFlags_Selected;
 
@@ -78,7 +78,7 @@ void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId,
             ImGui::SetScrollHereY();
         }
     }
-    else if (m_ShouldScrollToEntity && m_SelectedEntity && m_SelectedEntity.IsAnyParent(p_Entity))
+    else if (m_ShouldScrollToEntity && p_SelectedEntity && p_SelectedEntity.IsAnyParent(p_Entity))
     {
         ImGui::SetNextTreeNodeOpen(true);
     }
@@ -99,7 +99,7 @@ void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId,
 
                 if (s_SubEntity.GetLogicalParent() == p_Entity)
                 {
-                    RenderEntity(i, s_SubEntity, p_BrickFactory->GetSubEntityId(i), p_BrickFactory->GetSubEntityBlueprint(i), p_BrickFactory, p_BrickEntity);
+                    RenderEntity(i, s_SubEntity, p_BrickFactory->GetSubEntityId(i), p_BrickFactory->GetSubEntityBlueprint(i), p_BrickFactory, p_BrickEntity, p_SelectedEntity);
                 }
             }
 
@@ -114,7 +114,8 @@ void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId,
                     s_BpFactory->GetSubEntityId(s_BpFactory->m_rootEntityIndex),
                     s_BpFactory->GetSubEntityBlueprint(s_BpFactory->m_rootEntityIndex),
                     s_BpFactory,
-                    p_Entity
+                    p_Entity,
+                    p_SelectedEntity
                 );
             }
 
@@ -123,7 +124,7 @@ void Editor::RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId,
     }
 }
 
-void Editor::RenderBrick(ZEntityRef p_Entity)
+void Editor::RenderBrick(ZEntityRef p_Entity, ZEntityRef p_SelectedEntity)
 {
     if (!p_Entity)
         return;
@@ -156,7 +157,8 @@ void Editor::RenderBrick(ZEntityRef p_Entity)
                 s_BpFactory->GetSubEntityId(i),
                 s_BpFactory->GetSubEntityBlueprint(i),
                 s_BpFactory,
-                p_Entity
+                p_Entity,
+                p_SelectedEntity
             );
         }
     }
@@ -231,8 +233,8 @@ bool Editor::SearchForEntityByType(ZTemplateEntityBlueprintFactory* p_BrickFacto
 
 void Editor::DrawEntityTree()
 {
-    ImGui::SetNextWindowPos({ 0, 110 });
-    ImGui::SetNextWindowSize({ 700, ImGui::GetIO().DisplaySize.y - 110 });
+    ImGui::SetNextWindowPos({ 0, 110 }, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ 700, ImGui::GetIO().DisplaySize.y - 110 }, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_CATEGORY " Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
@@ -297,7 +299,7 @@ void Editor::DrawEntityTree()
 
         if (s_SceneCtx->m_aLoadedBricks.size() > 0)
         {
-            RenderBrick(s_SceneCtx->m_aLoadedBricks[m_SelectedBrickIndex].entityRef);
+            RenderBrick(s_SceneCtx->m_aLoadedBricks[m_SelectedBrickIndex].entityRef, m_SelectedEntity);
         }
     }
     else

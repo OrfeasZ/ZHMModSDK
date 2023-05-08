@@ -7,9 +7,9 @@
 
 void Editor::DrawEntityAABB(IRenderer* p_Renderer)
 {
-    if (m_SelectedEntity)
+    if (const auto s_SelectedEntity = m_SelectedEntity)
     {
-        if (auto* s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
+        if (auto* s_SpatialEntity = s_SelectedEntity.QueryInterface<ZSpatialEntity>())
         {
             SMatrix s_Transform;
             Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
@@ -65,11 +65,11 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
     ImGuizmo::Enable(p_HasFocus);
 
-    if (m_SelectedEntity)
+    if (const auto s_SelectedEntity = m_SelectedEntity)
     {
         if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call())
         {
-            if (const auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
+            if (const auto s_SpatialEntity = s_SelectedEntity.QueryInterface<ZSpatialEntity>())
             {
                 auto s_ModelMatrix = s_SpatialEntity->GetWorldMatrix();
                 auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
@@ -81,7 +81,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
                 {
                     s_SpatialEntity->SetWorldMatrix(s_ModelMatrix);
 
-                    if (const auto s_PhysicsAspect = m_SelectedEntity.QueryInterface<ZStaticPhysicsAspect>())
+                    if (const auto s_PhysicsAspect = s_SelectedEntity.QueryInterface<ZStaticPhysicsAspect>())
                         s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
                 }
             }

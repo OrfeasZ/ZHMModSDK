@@ -101,7 +101,7 @@ public:
     bool GetPinName(int32_t p_PinId, ZString& p_Name) override;
     bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
     bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
-    bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize) override;
+    bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) override;
     void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) override;
 
 private:

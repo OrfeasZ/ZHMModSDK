@@ -29,12 +29,12 @@ Editor::Editor()
     uint8_t s_Nop[21] = {};
     memset(s_Nop, 0x90, sizeof(s_Nop));
 
-    if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x49\xC7\x86\xA0\x01\x00\x00", "xxxx?x????xxxxxxx", s_Nop, sizeof(s_Nop)))
+    if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x49\xC7\x86\xA0\x01\x00\x00", "xxxx?x????xxxxxxx", s_Nop, sizeof(s_Nop), 0))
     {
         Logger::Error("Could not patch ZTemplateEntityBlueprintFactory data freeing.");
     }
 
-    if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x48\xC7\x83\xA0\x01\x00\x00\x00\x00\x00\x00\x8B\x43\x10", "xxxx?x????xxxxxxx????xxx", s_Nop, sizeof(s_Nop)))
+    if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x48\xC7\x83\xA0\x01\x00\x00\x00\x00\x00\x00\x8B\x43\x10", "xxxx?x????xxxxxxx????xxx", s_Nop, sizeof(s_Nop), 0))
     {
         Logger::Error("Could not patch ZTemplateEntityBlueprintFactory brick data freeing.");
     }
@@ -510,21 +510,22 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
             const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
             Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
 
-            m_SelectedEntity = s_RayOutput.m_BlockingEntity;
-            m_ShouldScrollToEntity = true;
-
+            const auto s_SelectedEntity = s_RayOutput.m_BlockingEntity;
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i)
             {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
-                if (m_SelectedEntity.IsAnyParent(s_Brick.entityRef))
+                if (s_SelectedEntity.IsAnyParent(s_Brick.entityRef))
                 {
                     m_SelectedBrickIndex = i;
                     break;
                 }
             }
+
+            m_SelectedEntity = s_SelectedEntity;
+            m_ShouldScrollToEntity = true;
         }
     }
 }
