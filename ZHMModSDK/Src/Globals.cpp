@@ -155,3 +155,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZBehaviorService*, BehaviorService
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x4C\x8D\x2D\x00\x00\x00\x00\x4C\x89\xB4\x24\xD0\x00\x00\x00\x0F\x29\xB4\x24\xC0\x00\x00\x00",
+    "xxx????xxxxxxxxxxxxxxxx",
+    3,
+    SPrimitiveBufferData*, PrimitiveBufferData
+);

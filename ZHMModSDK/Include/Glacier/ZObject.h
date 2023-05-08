@@ -24,11 +24,9 @@ public:
 
         m_pTypeID = it->second;
     }
-
-protected:
+    
     ZObjectRef(STypeID* p_TypeId, void* p_Data) : m_pTypeID(p_TypeId), m_pData(p_Data) {}
-
-public:
+    
     template <class T>
     bool Is() const
     {

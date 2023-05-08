@@ -59,6 +59,7 @@ class STemplateEntityBlueprint;
 class ZResourcePending;
 class ZPlayerRegistry;
 class ZHitman5;
+class ZDynamicPageController;
 template <class> class TEntityRef;
 
 class ZHMSDK_API Hooks
@@ -97,6 +98,8 @@ public:
     static Hook<void(ZHttpResultDynamicObject* th)>* ZHttpResultDynamicObject_OnBufferReady;
     static Hook<ZTemplateEntityBlueprintFactory*(ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)>* ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory;
     static Hook<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
+    static Hook<void(ZDynamicPageController* th, ZDynamicObject& data, void* a3, void* a4, void* a5)>* ZDynamicPageController_Expand;
+    static Hook<void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)>* ZDynamicPageController_HandleActionObject2;
     //static Hook<void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZTemplateEntityFactory_ConfigureEntity;
     //static Hook<void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZCppEntityFactory_ConfigureEntity;
     //static Hook<void(ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZBehaviorTreeEntityFactory_ConfigureEntity;

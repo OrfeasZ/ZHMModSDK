@@ -42,8 +42,9 @@ public:
         unsigned int firstReferenceIndex;
         unsigned int numReferences;
         unsigned int resourceType;
+        int32_t monitorId;
         short priority;
-        int monitorId;
+        int8 packageId;
     };
 
 public:

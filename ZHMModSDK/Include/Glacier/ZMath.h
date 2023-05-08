@@ -297,6 +297,11 @@ struct SMatrix
         };
     }
 
+    SMatrix operator*(const SMatrix& p_Other) const
+    {
+        return DirectX::XMMatrixMultiply(DirectX::XMMATRIX(*this), DirectX::XMMATRIX(p_Other));
+    }
+
     SMatrix Inverse() const
     {
         return DirectX::XMMatrixInverse(nullptr,  DirectX::XMMATRIX(*this));

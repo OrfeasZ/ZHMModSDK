@@ -9,9 +9,62 @@ class ZRenderableEntity : public ZBoundedEntity //Size: 0xD0
     PAD(0x18);
 };
 
+// Size: 0x70
+class ZRenderGeometryBuffer
+{
+public:
+    virtual ~ZRenderGeometryBuffer() = default; // TODO
+
+public:
+    PAD(0x08); // 0x08
+    uint32_t m_nSize; // 0x10
+    PAD(0x20); // 0x18
+    ID3D12Resource* m_pResource; // 0x38
+    PAD(0x18); // 0x40
+    char* m_pCPUBuffer; // 0x58
+    PAD(0x10); // 0x60
+};
+
+static_assert(offsetof(ZRenderGeometryBuffer, m_pResource) == 0x38);
+static_assert(offsetof(ZRenderGeometryBuffer, m_pCPUBuffer) == 0x58);
+static_assert(sizeof(ZRenderGeometryBuffer) == 0x70);
+
+class ZRenderVertexBuffer : public ZRenderGeometryBuffer {};
+class ZRenderIndexBuffer : public ZRenderGeometryBuffer {};
+
+template <class T>
+class TRenderReferencedCountedImpl : public T
+{
+public:
+    int32_t m_ReferenceCount;
+};
+
+class IRenderPrimitive : public TRenderReferencedCountedImpl<IRenderRefCount>
+{
+public:
+    PAD(0x56); // 0x10
+    uint16_t m_BufferDataIndex; // 0x66
+};
+
+template <class T>
+class TRefCountPtrArg
+{
+public:
+    T* m_pObject;
+};
+
+template <class T>
+class TRefCountPtr : public TRefCountPtrArg<T>
+{
+};
+
+
 class ZPrimitiveContainerEntity : public ZRenderableEntity //Size: 0x170
 {
-    PAD(0xA0);
+public:
+    PAD(0x08);
+    TArray<TRefCountPtr<IRenderPrimitive>> m_Primitives; // 0xD8
+    PAD(0x80); // 0xF0
 };
 
 class ZGeomEntity : public ZPrimitiveContainerEntity //Size: 0x1B0
@@ -26,6 +79,65 @@ public:
 
 static_assert(sizeof(ZRenderableEntity) == 0xD0);
 static_assert(offsetof(ZGeomEntity, m_ResourceID) == 0x188);
+
+// Size: 32 (0x20)
+struct SRenderPrimitiveMeshDesc
+{
+    uint32_t nNumVertices; // 0x00
+    uint32_t mNumIndices; // 0x04
+    PAD(0x10); // 0x08
+    uint8_t nNumStreams; // 0x18
+    uint8_t anStreamStride[4]; // 0x19
+    PAD(0x03); // 0x1D
+};
+
+static_assert(sizeof(SRenderPrimitiveMeshDesc) == 0x20);
+
+// vvv Members Unverified vvv
+struct SRenderInputElementDesc
+{
+    uint8 nOffset;
+    __int32 eFormat : 8;
+    __int32 eElement : 8;
+    uint8 nElementIndex;
+    uint8 nStreamIndex;
+    __int32 eClassification : 8;
+    uint16 nInstanceDataStepRate;
+};
+
+static_assert(sizeof(SRenderInputElementDesc) == 20);
+
+class ZRenderInputLayout
+{
+public:
+    virtual ~ZRenderInputLayout() = default; // TODO
+
+public:
+    PAD(0x08); // 0x08
+    uint32_t m_nNumElements; // 0x10
+    SRenderInputElementDesc m_Elements[16]; // 0x14
+    D3D12_INPUT_ELEMENT_DESC m_ElementDesc[16]; // 0x158
+};
+
+static_assert(offsetof(ZRenderInputLayout, m_nNumElements) == 0x10);
+static_assert(offsetof(ZRenderInputLayout, m_Elements) == 0x14);
+static_assert(offsetof(ZRenderInputLayout, m_ElementDesc) == 0x158);
+
+struct SPrimitiveBufferData
+{
+    SRenderPrimitiveMeshDesc m_MeshDesc; // 0x00
+    PAD(0x38); // 0x20
+    ZRenderInputLayout* m_pInputLayout; // 0x58
+    PAD(0x08); // 0x60
+    ZRenderIndexBuffer* m_pIndexBuffer; // 0x68
+    ZRenderVertexBuffer* m_pVertexBuffers[4]; // 0x70
+    PAD(0x10); // 0x90
+};
+
+static_assert(offsetof(SPrimitiveBufferData, m_pInputLayout) == 0x58);
+static_assert(offsetof(SPrimitiveBufferData, m_pIndexBuffer) == 0x68);
+static_assert(offsetof(SPrimitiveBufferData, m_pVertexBuffers) == 0x70);
+static_assert(sizeof(SPrimitiveBufferData) == 160);
 
 class IRenderDestinationTextureEntity : public IRenderDestinationEntity
 {
