@@ -406,7 +406,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
     DrawEntityTree();
     DrawEntityProperties();
     DrawEntityManipulator(p_HasFocus);
-    DrawPinTracer();
+    //DrawPinTracer();
 
     if (m_CameraRT && m_Camera)
     {
@@ -424,7 +424,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
         ImGui::End();
     }
 
-    ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    /*ImGui::PushFont(SDK()->GetImGuiBlackFont());
     const auto s_Expanded = ImGui::Begin("Behaviors");
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
@@ -455,7 +455,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
 
     ImGui::PopFont();
     ImGui::End();
-    ImGui::PopFont();
+    ImGui::PopFont();*/
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
