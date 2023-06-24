@@ -519,6 +519,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 
                 if (s_SelectedEntity.IsAnyParent(s_Brick.entityRef))
                 {
+					Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
                     m_SelectedBrickIndex = i;
                     break;
                 }
@@ -594,10 +595,16 @@ void Editor::SpawnCameras()
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
 {
-    //if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
+    /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+        p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
     //	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
     //    p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
-    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
+        p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
+*/
+
+	m_CachedEntityTreeMutex.lock();
+	m_CachedEntityTree.reset();
+	m_CachedEntityTreeMutex.unlock();
 
     return HookResult<void>(HookAction::Continue());
 }
@@ -615,6 +622,10 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
     m_Camera = {};
     m_CameraRT = {};
     m_ShouldScrollToEntity = false;
+
+	m_CachedEntityTreeMutex.lock();
+	m_CachedEntityTree.reset();
+	m_CachedEntityTreeMutex.unlock();
 
     return HookResult<void>(HookAction::Continue());
 }

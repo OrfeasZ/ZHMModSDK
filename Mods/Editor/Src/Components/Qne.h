@@ -31,13 +31,13 @@ namespace Qne
     struct SdkToQnMessage_SelectEntity
     {
         uint64_t entity_id = 0;
-        ZRuntimeResourceID tblu_hash = {};
+		uint64_t tblu_hash = {};
     };
 
     struct SdkToQnMessage_SetEntityTransform
     {
         uint64_t entity_id = 0;
-        ZRuntimeResourceID tblu_hash = {};
+		uint64_t tblu_hash = {};
         Transform transform = {};
     };
 
@@ -56,20 +56,20 @@ namespace Qne
     struct QnToSdkMessage_SelectEntity
     {
         uint64_t entity_id = 0;
-        ZRuntimeResourceID tblu_hash = {};
+		uint64_t tblu_hash = {};
     };
 
     struct QnToSdkMessage_SetEntityTransform
     {
         uint64_t entity_id = 0;
-        ZRuntimeResourceID tblu_hash = {};
+		uint64_t tblu_hash = {};
         Transform transform = {};
     };
 
     struct QnToSdkMessage_SpawnEntity
     {
         uint64_t entity_id = 0;
-        ZRuntimeResourceID temp_hash = {};
+		uint64_t temp_hash = {};
     };
 
     struct QnToSdkMessage_SetSpawnedEntityTransform

@@ -5,6 +5,7 @@
 #include "Reflection.h"
 #include "ZObject.h"
 #include "Hooks.h"
+#include "Globals.h"
 
 class IEntityBlueprintFactory;
 class ZEntityType;
@@ -27,7 +28,7 @@ class IEntityBlueprintFactory : public IComponentInterface
 {
 public:
     virtual void GetMemoryRequirements(uint32_t&, uint32_t&, int64_t&) = 0;
-    virtual void IEntityBlueprintFactory_unk6() = 0;
+    virtual ZEntityType* GetFactoryEntityType() = 0;
     virtual void IEntityBlueprintFactory_unk7() = 0;
     virtual void IEntityBlueprintFactory_unk8() = 0;
     virtual void IEntityBlueprintFactory_unk9() = 0;
@@ -54,6 +55,10 @@ public:
     virtual void IEntityBlueprintFactory_unk30() = 0;
     virtual void IEntityBlueprintFactory_unk31() = 0;
     virtual void IEntityBlueprintFactory_unk32() = 0;
+
+	inline bool IsTemplateEntityBlueprintFactory() const {
+		return Globals::ZTemplateEntityBlueprintFactory_vtbl == *(void**)this;
+	}
 };
 
 class IEntity :
@@ -485,9 +490,18 @@ public:
     {
         size_t operator()(const ZEntityRef& p_Ref) const noexcept
         {
-            return reinterpret_cast<uintptr_t>(p_Ref.m_pEntity);
+            return reinterpret_cast<uintptr_t>(p_Ref.GetEntity());
         }
     };
+};
+
+template <>
+struct std::hash<ZEntityRef>
+{
+	size_t operator()(const ZEntityRef& p_Ref) const noexcept
+	{
+		return reinterpret_cast<uintptr_t>(p_Ref.GetEntity());
+	}
 };
 
 template <typename T>

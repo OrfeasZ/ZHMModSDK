@@ -2,6 +2,8 @@
 
 #include <random>
 #include <unordered_map>
+#include <map>
+#include <shared_mutex>
 
 #include "IPluginInterface.h"
 #include "Glacier/ZEntity.h"
@@ -10,6 +12,16 @@
 #include "Components/Qne.h"
 
 #include "ImGuizmo.h"
+
+struct EntityTreeNode {
+	std::string Name;
+	uint64_t EntityId;
+	ZEntityRef Entity;
+	std::multimap<std::string, std::shared_ptr<EntityTreeNode>> Children;
+
+	EntityTreeNode(const std::string& p_Name, uint64_t p_EntityId, ZEntityRef p_Ref)
+		: Name(p_Name), EntityId(p_EntityId), Entity(p_Ref) {}
+};
 
 class Editor : public IPluginInterface
 {
@@ -33,12 +45,12 @@ private:
 
     void DrawEntityProperties();
 
-    void RenderBrick(ZEntityRef p_Entity, ZEntityRef p_SelectedEntity);
-    void RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId, IEntityBlueprintFactory* p_Factory, ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, ZEntityRef p_SelectedEntity);
+    void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
     bool SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId);
     bool SearchForEntityByType(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName);
     bool SearchForEntityByName(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName);
+	void UpdateEntities();
 
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
     void CheckQneConnection(float p_DeltaTime);
@@ -92,6 +104,8 @@ private:
     float m_QneConnectionTimer = 999.f; // Set to a high number so we connect on startup.
     sockaddr_in m_QneAddress = {};
 
+	std::shared_mutex m_CachedEntityTreeMutex;
+	std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

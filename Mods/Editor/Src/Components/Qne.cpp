@@ -73,8 +73,11 @@ void Editor::ReceiveQneMessages()
                 },
                 [this](const Qne::QnToSdkMessage_SelectEntity& p_Msg)
                 {
-                    Logger::Debug("QNE select entity {:x} in tblu {}", p_Msg.entity_id, p_Msg.tblu_hash);
-                    // TODO
+				    const ZRuntimeResourceID s_Id(p_Msg.tblu_hash);
+				    Logger::Debug("QNE select entity {:x} in tblu {}", p_Msg.entity_id, s_Id);
+
+
+					
                 },
                 [this](const Qne::QnToSdkMessage_SetEntityTransform& p_Msg)
                 {

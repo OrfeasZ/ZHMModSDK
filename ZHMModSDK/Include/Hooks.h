@@ -60,6 +60,7 @@ class ZResourcePending;
 class ZPlayerRegistry;
 class ZHitman5;
 class ZDynamicPageController;
+class ZGameLobbyManagerEpic;
 template <class> class TEntityRef;
 
 class ZHMSDK_API Hooks

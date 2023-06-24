@@ -25,6 +25,8 @@ class ZContentKitManager;
 class ZHM5ActionManager;
 class ZBehaviorService;
 class SPrimitiveBufferData;
+class IGameMode;
+class IEngineMode;
 
 class ZHMSDK_API Globals
 {
@@ -52,4 +54,7 @@ public:
     static ZHM5ActionManager* HM5ActionManager;
     static ZBehaviorService* BehaviorService;
     static SPrimitiveBufferData* PrimitiveBufferData;
+    static IGameMode** GameMode;
+    static IEngineMode** EngineMode;
+	static void* ZTemplateEntityBlueprintFactory_vtbl;
 };

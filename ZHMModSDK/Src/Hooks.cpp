@@ -313,4 +313,3 @@ PATTERN_HOOK(
     ZDynamicPageController_HandleActionObject2,
     void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)
 );
-

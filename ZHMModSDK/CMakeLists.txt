@@ -47,6 +47,7 @@ target_link_libraries(ZHMModSDK PUBLIC
 	d3d12
 	dxgi
 	delayimp
+	ws2_32
 )
 
 install(TARGETS ZHMModSDK
