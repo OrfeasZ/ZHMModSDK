@@ -4,6 +4,7 @@
 #include "Functions.h"
 #include <Glacier/ZModule.h>
 #include <Glacier/ZGeomEntity.h>
+#include <Glacier/ZCameraEntity.h>
 #include <Glacier/ZResource.h>
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
@@ -215,7 +216,27 @@ void Editor::DrawEntityProperties() {
 			}
 		}
 
-		ImGui::Separator();
+        if (const auto s_CameraEntity = s_SelectedEntity.QueryInterface<ZCameraEntity>())
+        {
+            if (ImGui::Button(ICON_MD_CAMERA "Toggle Camera"))
+            {
+                ZEntityRef s_EntRef;
+                auto s_Camera = s_CameraEntity->GetID(&s_EntRef);
+
+                if (m_CameraActive)
+                {
+                    m_CameraActive = false;
+                    Editor::DeactivateCamera();
+                }
+                else
+                {
+                    m_CameraActive = true;
+                    Editor::ActivateCamera(s_Camera);
+                }
+            }
+        }
+
+        ImGui::Separator();
 
 		static char s_InputPinInput[1024] = {};
 

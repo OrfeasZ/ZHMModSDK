@@ -591,6 +591,24 @@ void Editor::SpawnCameras()
     Logger::Debug("Added source to rt = {} sources = {} source = {}", fmt::ptr(s_CameraRT), s_CameraRT->m_aMultiSource.size(), s_CameraRT->m_nSelectedSource);
 }
 
+void Editor::ActivateCamera(ZEntityRef* m_CameraEntity)
+{
+    TEntityRef<IRenderDestinationEntity> s_RenderDest;
+    Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
+
+    m_OriginalCam = *s_RenderDest.m_pInterfaceRef->GetSource();
+
+    s_RenderDest.m_pInterfaceRef->SetSource(m_CameraEntity);
+}
+
+void Editor::DeactivateCamera()
+{
+    TEntityRef<IRenderDestinationEntity> s_RenderDest;
+    Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
+
+    s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
+}
+
 DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
 {
     /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||

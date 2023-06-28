@@ -42,6 +42,8 @@ public:
 
 private:
     void SpawnCameras();
+    void ActivateCamera(ZEntityRef* m_CameraEntity);
+    void DeactivateCamera();
     void CopyToClipboard(const std::string& p_String) const;
     void OnMouseDown(SVector2 p_Pos, bool p_FirstClick);
 
@@ -107,6 +109,9 @@ private:
 private:
     ZEntityRef m_Camera;
     ZEntityRef m_CameraRT;
+
+    bool m_CameraActive = false;
+    ZEntityRef m_OriginalCam;
 
     bool m_HoldingMouse = false;
     bool m_UseSnap = false;
