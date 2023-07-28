@@ -21,9 +21,11 @@ Right now it's at a very early stage, with only a few aspects of the engine expo
 
 4. When the game opens, you'll see a dialog asking you which mods you'd like to use. Select them and press OK. You might need to restart your game for some of them to work.
 
-5. ...
+5. Open the SDK panel with the `~` key (`^` on QWERTZ layouts) to change loaded mods at runtime and to use the menus of certain mods.
 
-6. Profit?
+6. ...
+
+7. Profit?
 
 > NOTE: Some mods might require additional setup. For mods bundled with the SDK, refer to the [table below](#sample-mods). For any other mod, make sure to consult its installation instructions.
 
