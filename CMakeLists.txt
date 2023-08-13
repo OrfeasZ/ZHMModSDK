@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.15)
 include(FetchContent)
 
 project(ZHMMods CXX)
@@ -29,7 +29,6 @@ set(MODS
 	WakingUpNpcs
 	NoPause
 	SkipIntro
-	CodeGen
 	CertPinBypass
 	MaxPatchLevel
 	DebugMod
@@ -63,7 +62,7 @@ if (EXISTS "${GAME_INSTALL_PATH}/Retail")
 
 	foreach(MOD IN LISTS MODS)
 		install(FILES "$<TARGET_FILE:${MOD}>" DESTINATION "${GAME_INSTALL_PATH}/Retail/mods")
-	endforeach()
+    endforeach()
 endif()
 
 # Collect all licenses from ${VCPKG_BUILD_ROOT}/share/<lib>/copyright into licenses/<lib>.txt
