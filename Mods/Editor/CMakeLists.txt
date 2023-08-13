@@ -20,7 +20,7 @@ target_include_directories(Editor PRIVATE
 	${UWEBSOCKETS_INCLUDE_DIRS}
 )
 
-set(USOCKET_SEARCH_PATH "${VCPKG_BUILD_ROOT}/lib")
+set(USOCKETS_SEARCH_PATH "${VCPKG_BUILD_ROOT}/lib")
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     set(USOCKETS_SEARCH_PATH "${VCPKG_BUILD_ROOT}/debug/lib")
