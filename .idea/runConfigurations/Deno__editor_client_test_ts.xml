@@ -1,0 +1,5 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Deno: editor-client-test.ts" type="DenoConfigurationType" nameIsGenerated="true" inputPath="$PROJECT_DIR$/Mods/Editor/editor-client-test.ts" programParameters="run --allow-net">
+    <method v="2" />
+  </configuration>
+</component>
