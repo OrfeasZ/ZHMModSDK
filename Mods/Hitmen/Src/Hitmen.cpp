@@ -599,7 +599,7 @@ DEFINE_PLUGIN_DETOUR(Hitmen, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
     return HookResult<void>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(Hitmen, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(Hitmen, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
     m_OtherHitman = {};
     m_FirstHitman = {};

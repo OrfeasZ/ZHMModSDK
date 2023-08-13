@@ -1231,7 +1231,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
     );*/
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
     m_EntityMutex.lock();
     m_SelectedEntity = ZEntityRef();

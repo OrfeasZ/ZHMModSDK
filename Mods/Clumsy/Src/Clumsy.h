@@ -22,7 +22,7 @@ public:
 private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
     bool GetEntities();
-    DECLARE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
+    DECLARE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
 
 private:
     std::unique_ptr<DirectX::AudioEngine> m_AudioEngine;

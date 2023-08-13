@@ -108,7 +108,7 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     s_HitmanSpatial->SetWorldMatrix(m_PlayerPosition);
 }
 
-DEFINE_PLUGIN_DETOUR(Noclip, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(Noclip, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
     m_NoclipEnabled = false;
     return HookResult<void>(HookAction::Continue());

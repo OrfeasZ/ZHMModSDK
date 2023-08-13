@@ -19,7 +19,7 @@ public:
 
 private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
-    DECLARE_PLUGIN_DETOUR(Noclip, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
+    DECLARE_PLUGIN_DETOUR(Noclip, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
 
 private:
     bool m_NoclipEnabled = false;

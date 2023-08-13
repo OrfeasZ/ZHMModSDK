@@ -65,7 +65,7 @@ private:
 
     void EnableInfiniteAmmo();
 
-    DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
+    DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
 
 private:
     bool m_DebugMenuActive = false;

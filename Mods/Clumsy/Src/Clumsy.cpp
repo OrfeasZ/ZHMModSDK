@@ -338,7 +338,7 @@ bool Clumsy::GetEntities()
     return m_GetUpAnimation && m_ShakeEntity;
 }
 
-DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
     m_MusicLoop->Stop(true);
 

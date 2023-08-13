@@ -596,9 +596,9 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
     /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
         p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
     //	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
-    //    p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
-        p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
-*/
+        p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
+    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
+    */
 
 	m_CachedEntityTreeMutex.lock();
 	m_CachedEntityTree.reset();
@@ -613,7 +613,7 @@ DEFINE_PLUGIN_DETOUR(Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBl
     return HookResult<ZTemplateEntityBlueprintFactory*>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
     m_SelectedBrickIndex = 0;
     m_SelectedEntity = {};

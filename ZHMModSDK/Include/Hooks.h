@@ -68,7 +68,7 @@ class ZHMSDK_API Hooks
 public:
     static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
     static Hook<void(ZEntitySceneContext*, ZSceneData&)>* ZEntitySceneContext_LoadScene;
-    static Hook<void(ZEntitySceneContext*, bool fullyClear)>* ZEntitySceneContext_ClearScene;
+    static Hook<void(ZEntitySceneContext*, bool forReload)>* ZEntitySceneContext_ClearScene;
     static Hook<void(ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)>* ZUpdateEventContainer_AddDelegate;
     static Hook<void(ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode)>* ZUpdateEventContainer_RemoveDelegate;
     static Hook<bool(void*, void*)>* Engine_Init;

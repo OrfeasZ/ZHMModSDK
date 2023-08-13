@@ -26,7 +26,7 @@ PATTERN_HOOK(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x00\x0F\xB6\xF2",
     "xxxxxxxxxxxxxxxxxxxxxxxx?xxx",
     ZEntitySceneContext_ClearScene,
-    void(ZEntitySceneContext*, bool fullyClear)
+    void(ZEntitySceneContext*, bool forReload)
 );
 
 PATTERN_HOOK(
