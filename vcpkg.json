@@ -9,6 +9,7 @@
 		"lz4",
 		"directx-headers",
 		"protobuf",
+		"openssl",
 		"zlib",
 		"libuv",
 		{
