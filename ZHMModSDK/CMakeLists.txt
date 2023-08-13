@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.12)
 
 file(GLOB_RECURSE SRC_FILES
 	CONFIGURE_DEPENDS
@@ -16,11 +16,20 @@ file(GLOB_RECURSE HEADER_FILES
 add_library(ZHMModSDK SHARED
 	${SRC_FILES}
 	${HEADER_FILES}
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/RakNetTypes.cpp
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/SuperFastHash.cpp
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/RakNetSocket2.cpp
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/GetTime.cpp
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/Itoa.cpp
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/LocklessTypes.cpp
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/RakThread.cpp
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/RakSleep.cpp
 )
 
 target_include_directories(ZHMModSDK PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/Src
 	${CMAKE_SOURCE_DIR}/External/mINI/src/mini
+	${CMAKE_SOURCE_DIR}/External/RakNet/Source/
 )
 
 target_include_directories(ZHMModSDK PUBLIC
