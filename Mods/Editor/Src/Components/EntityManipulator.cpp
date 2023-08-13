@@ -59,7 +59,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
         if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Backspace]))
         {
-            m_SelectedEntity = {};
+			OnSelectEntity({});
         }
     }
 
@@ -79,12 +79,21 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
                 if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
                 {
-                    s_SpatialEntity->SetWorldMatrix(s_ModelMatrix);
-
-                    if (const auto s_PhysicsAspect = s_SelectedEntity.QueryInterface<ZStaticPhysicsAspect>())
-                        s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+	                OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix);
                 }
             }
         }
     }
+}
+
+void Editor::OnEntityTransformChange(ZEntityRef p_Entity, SMatrix p_Transform) {
+	if (auto* s_SpatialEntity = p_Entity.QueryInterface<ZSpatialEntity>()) {
+		s_SpatialEntity->SetWorldMatrix(p_Transform);
+
+		if (const auto s_PhysicsAspect = p_Entity.QueryInterface<ZStaticPhysicsAspect>()) {
+			s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+		}
+
+		m_Server.OnEntityTransformChanged(p_Entity);
+	}
 }

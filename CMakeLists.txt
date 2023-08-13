@@ -16,7 +16,13 @@ find_package(directxtk12 CONFIG REQUIRED)
 find_package(minhook CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(directx-headers CONFIG REQUIRED)
+find_package(libuv CONFIG REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(simdjson CONFIG REQUIRED)
 CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
+CPMAddPackage("gh:felixguendling/cista@0.14")
+CPMAddPackage("gh:OrfeasZ/ZHMTools@3.3.1")
+#add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
 add_subdirectory(External/imgui)
 add_subdirectory(External/imguizmo)
 
@@ -63,6 +69,9 @@ if (EXISTS "${GAME_INSTALL_PATH}/Retail")
 	foreach(MOD IN LISTS MODS)
 		install(FILES "$<TARGET_FILE:${MOD}>" DESTINATION "${GAME_INSTALL_PATH}/Retail/mods")
     endforeach()
+
+    # Install ResourceLib, needed by the Editor mod.
+    install(FILES "$<TARGET_FILE:ResourceLib_HM3>" DESTINATION "${GAME_INSTALL_PATH}/Retail")
 endif()
 
 # Collect all licenses from ${VCPKG_BUILD_ROOT}/share/<lib>/copyright into licenses/<lib>.txt

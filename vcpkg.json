@@ -1,13 +1,24 @@
 {
-  "name": "zhmmodsdk",
-  "version": "1.0.0",
-  "dependencies": [
-    "directxtk12",
-    "7zip",
-    "spdlog",
-    "minhook",
-    "lz4",
-    "directx-headers",
-    "protobuf"
-  ]
+	"name": "zhmmodsdk",
+	"version": "1.0.0",
+	"dependencies": [
+		"directxtk12",
+		"7zip",
+		"spdlog",
+		"minhook",
+		"lz4",
+		"directx-headers",
+		"protobuf",
+		"zlib",
+		"libuv",
+		{
+			"name": "usockets",
+			"default-features": false,
+			"features": [
+				"network"
+			]
+		},
+		"uwebsockets",
+		"simdjson"
+	]
 }

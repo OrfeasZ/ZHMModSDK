@@ -460,8 +460,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
-    CheckQneConnection(p_UpdateEvent.m_RealTimeDelta.ToSeconds());
-    ReceiveQneMessages();
+
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
@@ -525,8 +524,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
                 }
             }
 
-            m_SelectedEntity = s_SelectedEntity;
-            m_ShouldScrollToEntity = true;
+			OnSelectEntity(s_SelectedEntity);
         }
     }
 }

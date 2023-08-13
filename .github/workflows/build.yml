@@ -65,12 +65,14 @@ jobs:
         Copy-Item _install/x64-Release/bin -Destination _sdk/release/ -Recurse
         Remove-Item _sdk/release/bin/mods -Recurse
         Remove-Item _sdk/release/bin/dinput8.dll
+        Remove-Item _sdk/release/bin/ResourceLib_HM3.dll
         
         mkdir _sdk/debug
         Copy-Item _install/x64-Debug/lib -Destination _sdk/debug/ -Recurse
         Copy-Item _install/x64-Debug/bin -Destination _sdk/debug/ -Recurse
         Remove-Item _sdk/debug/bin/mods -Recurse
         Remove-Item _sdk/debug/bin/dinput8.dll
+        Remove-Item _sdk/debug/bin/ResourceLib_HM3.dll
         
         mkdir _sdk/cmake
         Copy-Item cmake/zhm-mod.cmake -Destination _sdk/cmake/zhm-mod.cmake

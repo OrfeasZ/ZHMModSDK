@@ -2,54 +2,14 @@
 
 #include <Glacier/EntityFactory.h>
 #include <Glacier/ZModule.h>
+#include <Glacier/ZEntity.h>
 
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
 
 #include <shared_mutex>
-#include <unordered_set>
 #include <queue>
 #include <map>
-
-bool HasChildEntity(
-	ZEntityRef p_Entity,
-	ZEntityRef p_ChildEntity,
-	IEntityBlueprintFactory* p_Factory,
-	ZTemplateEntityBlueprintFactory* p_BrickFactory,
-	ZEntityRef p_BrickEntity
-) {
-	for (int i = 0; i < p_BrickFactory->GetSubEntitiesCount(); ++i) {
-		const ZEntityRef s_SubEntity = p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, i);
-
-		if (s_SubEntity.GetLogicalParent() == p_Entity) {
-			if (s_SubEntity == p_ChildEntity) return true;
-
-			if (HasChildEntity(
-				s_SubEntity,
-				p_ChildEntity,
-				p_BrickFactory->GetSubEntityBlueprint(i),
-				p_BrickFactory,
-				p_BrickEntity
-			))
-				return true;
-		}
-	}
-
-	if (p_Factory && p_Factory->GetSubEntitiesCount() > 0) {
-		const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Factory);
-		const ZEntityRef s_RootSubEntity = s_BpFactory->GetSubEntity(p_Entity.m_pEntity, s_BpFactory->m_rootEntityIndex);
-
-		return HasChildEntity(
-			s_RootSubEntity,
-			p_ChildEntity,
-			s_BpFactory->GetSubEntityBlueprint(s_BpFactory->m_rootEntityIndex),
-			s_BpFactory,
-			p_Entity
-		);
-	}
-
-	return false;
-}
 
 void Editor::UpdateEntities() {
 	const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
@@ -69,7 +29,7 @@ void Editor::UpdateEntities() {
 	// children nodes to their parents.
 
 	std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
-	std::queue<std::pair<IEntityBlueprintFactory*, ZEntityRef>> s_NodeQueue;
+	std::queue<std::pair<ZEntityBlueprintFactoryBase*, ZEntityRef>> s_NodeQueue;
 	std::queue<std::shared_ptr<EntityTreeNode>> s_ParentlessNodes;
 
 	// Add all the brick nodes to the queue.
@@ -90,7 +50,7 @@ void Editor::UpdateEntities() {
 	}
 
 	// Create the root scene node.
-	auto s_SceneNode = std::make_shared<EntityTreeNode>("Scene Root", 0, s_SceneEnt);
+	auto s_SceneNode = std::make_shared<EntityTreeNode>("Scene Root", 0, 0, s_SceneEnt);
 	s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
 	s_NodeMap.emplace(ZEntityRef(), s_SceneNode);
 
@@ -138,7 +98,12 @@ void Editor::UpdateEntities() {
 			);
 
 			// Add the node to the map.
-			const auto s_SubEntityNode = std::make_shared<EntityTreeNode>(s_EntityHumanName, s_SubEntityId, s_SubEntity);
+			const auto s_SubEntityNode = std::make_shared<EntityTreeNode>(
+				s_EntityHumanName,
+				s_SubEntityId,
+				s_CurrentFactory->m_ridResource,
+				s_SubEntity
+			);
 
 			const auto s_LogicalParent = s_SubEntity.GetLogicalParent();
 
@@ -209,7 +174,11 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
 
 	if (s_IsSelected) {
 		s_Flags |= ImGuiTreeNodeFlags_Selected;
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
+
+		if (m_ShouldScrollToEntity) {
+			ImGui::SetScrollHereY();
+			m_ShouldScrollToEntity = false;
+		}
 	}
 	else if (m_ShouldScrollToEntity && m_SelectedEntity && m_SelectedEntity.IsAnyParent(s_Entity)) {
 		ImGui::SetNextTreeNodeOpen(true);
@@ -220,13 +189,8 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
 		s_Flags
 	);
 
-	if (s_IsSelected) {
-		ImGui::PopStyleColor();
-	}
-
 	if (ImGui::IsItemClicked()) {
-		m_SelectedEntity = s_Entity;
-		m_ShouldScrollToEntity = false;
+		OnSelectEntity(s_Entity);
 	}
 
 	if (s_Open) {
@@ -246,8 +210,7 @@ bool Editor::SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory
 	const auto s_EntIndex = p_BrickFactory->GetSubEntityIndex(p_EntityId);
 
 	if (s_EntIndex != -1) {
-		m_SelectedEntity = p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, s_EntIndex);
-		m_ShouldScrollToEntity = true;
+		OnSelectEntity(p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, s_EntIndex));
 		return true;
 	}
 
@@ -288,8 +251,7 @@ bool Editor::SearchForEntityByType(
 		ZEntityRef s_Ref = s_SubEntity;
 
 		if (s_Ref.HasInterface(p_TypeName)) {
-			m_SelectedEntity = s_Ref;
-			m_ShouldScrollToEntity = true;
+			OnSelectEntity(s_Ref);
 			return true;
 		}
 
@@ -410,4 +372,23 @@ void Editor::DrawEntityTree() {
 	if (m_ShouldScrollToEntity) {
 		m_ShouldScrollToEntity = false;
 	}
+}
+
+void Editor::OnSelectEntity(ZEntityRef p_Entity) {
+	const bool s_DifferentEntity = m_SelectedEntity != p_Entity;
+
+	m_SelectedEntity = p_Entity;
+	m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;
+
+	if (s_DifferentEntity) {
+		m_Server.OnEntitySelected(p_Entity);
+	}
+}
+
+void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name) {
+	m_CachedEntityTreeMutex.lock();
+	m_EntityNames[p_Entity] = p_Name;
+	m_CachedEntityTreeMutex.unlock();
+
+	m_Server.OnEntityNameChanged(p_Entity);
 }
