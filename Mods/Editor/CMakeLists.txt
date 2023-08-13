@@ -49,3 +49,7 @@ target_link_libraries(Editor PRIVATE
 install(TARGETS Editor
 	RUNTIME DESTINATION bin/mods
 )
+
+install(TARGETS ResourceLib_HM3
+	RUNTIME DESTINATION bin
+)
