@@ -602,8 +602,15 @@ void EditorServer::WriteTransform(std::ostream& p_Stream, SMatrix p_Transform) {
 void EditorServer::WritePropertyName(std::ostream& p_Stream, ZEntityProperty* p_Property) {
 	const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
 
-	if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID == 0) {
-		p_Stream << write_json(std::format("~{:08x}", p_Property->m_nPropertyId));
+	if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != p_Property->m_nPropertyId) {
+		// Some properties don't have a name for some reason. Try to find using RL.
+		const auto s_PropertyName = HM3_GetPropertyName(p_Property->m_nPropertyId);
+
+		if (s_PropertyName.Size > 0) {
+			p_Stream << write_json(std::string_view(s_PropertyName.Data, s_PropertyName.Size));
+		} else {
+			p_Stream << write_json(std::format("~{:08x}", p_Property->m_nPropertyId));
+		}
 	}
 	else if (s_PropertyInfo->m_pName) {
 		p_Stream << write_json(s_PropertyInfo->m_pName);

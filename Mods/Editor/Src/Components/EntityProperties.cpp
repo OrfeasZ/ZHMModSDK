@@ -9,6 +9,7 @@
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
 #include "Glacier/ZPhysics.h"
+#include <ResourceLib_HM3.h>
 
 void Editor::DrawEntityProperties() {
 	auto s_ImgGuiIO = ImGui::GetIO();
@@ -305,9 +306,15 @@ void Editor::DrawEntityProperties() {
 				// Render the name of the property.
 				ImGui::PushFont(SDK()->GetImGuiBoldFont());
 
-				if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID == 0) {
-					// Resource properties don't have a name for some reason.
-					ImGui::Text("Property %d", s_Property->m_nPropertyId);
+				if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+					// Some properties don't have a name for some reason. Try to find using RL.
+					const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+					if (s_PropertyName.Size > 0) {
+						ImGui::Text("%s", std::string(s_PropertyName.Data, s_PropertyName.Size).c_str());
+					} else {
+						ImGui::Text("~%08x", s_Property->m_nPropertyId);
+					}
 				} else {
 					ImGui::Text("%s", s_PropertyInfo->m_pName);
 				}
