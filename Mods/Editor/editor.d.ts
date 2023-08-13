@@ -39,6 +39,7 @@ interface Rotation {
 interface Transform {
     position: Vec3;
     rotation: Rotation;
+    scale: Vec3;
 }
 
 interface GameEntity {
