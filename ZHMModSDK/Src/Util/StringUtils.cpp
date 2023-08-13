@@ -27,13 +27,13 @@ std::vector<std::string> StringUtils::Split(const std::string& p_String, const s
 std::string StringUtils::ToLowerCase(const std::string& p_String)
 {
     std::string s_String = p_String;
-    std::transform(s_String.begin(), s_String.end(), s_String.begin(), std::tolower);
+    std::transform(s_String.begin(), s_String.end(), s_String.begin(), ::tolower);
     return s_String;
 }
 
 std::string StringUtils::ToUpperCase(const std::string& p_String)
 {
     std::string s_String = p_String;
-    std::transform(s_String.begin(), s_String.end(), s_String.begin(), std::toupper);
+    std::transform(s_String.begin(), s_String.end(), s_String.begin(), ::toupper);
     return s_String;
 }
