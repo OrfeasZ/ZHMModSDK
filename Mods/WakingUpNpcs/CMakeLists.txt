@@ -19,3 +19,7 @@ target_include_directories(WakingUpNpcs PRIVATE
 target_link_libraries(WakingUpNpcs PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS WakingUpNpcs
+	RUNTIME DESTINATION bin/mods
+)

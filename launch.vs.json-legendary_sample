@@ -1,0 +1,18 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "exe": "C:\\Path\\To\\legendary.exe",
+      "args": [
+		"launch",
+		"Eider",
+		"-skip_launcher"
+      ],
+      "project": "CMakeLists.txt",
+      "projectTarget": "ZHMModSDK.dll (Install)",
+      "name": "Hitman 3"
+    }
+  ]
+}

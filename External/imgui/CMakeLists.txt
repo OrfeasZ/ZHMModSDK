@@ -20,3 +20,12 @@ target_include_directories(imgui PUBLIC
 add_executable(binary_to_compressed_c
 	source/misc/fonts/binary_to_compressed_c.cpp
 )
+
+set_target_properties(imgui PROPERTIES
+	PUBLIC_HEADER "source/imgui.h;source/imconfig.h"
+)
+
+install(TARGETS imgui
+	LIBRARY DESTINATION lib
+	PUBLIC_HEADER DESTINATION include
+)

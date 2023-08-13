@@ -20,3 +20,7 @@ target_link_libraries(Clumsy PRIVATE
 	ZHMModSDK
 	Microsoft::DirectXTK12
 )
+
+install(TARGETS Clumsy
+	RUNTIME DESTINATION bin/mods
+)

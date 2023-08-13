@@ -26,3 +26,7 @@ target_link_libraries(DebugMod PRIVATE
 	lz4::lz4
 	7zip::7zip
 )
+
+install(TARGETS DebugMod
+	RUNTIME DESTINATION bin/mods
+)

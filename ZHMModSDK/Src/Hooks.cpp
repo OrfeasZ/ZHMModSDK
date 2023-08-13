@@ -26,7 +26,7 @@ PATTERN_HOOK(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x00\x0F\xB6\xF2",
     "xxxxxxxxxxxxxxxxxxxxxxxx?xxx",
     ZEntitySceneContext_ClearScene,
-    void(ZEntitySceneContext*, bool fullyClear)
+    void(ZEntitySceneContext*, bool forReload)
 );
 
 PATTERN_HOOK(
@@ -298,4 +298,18 @@ PATTERN_RELATIVE_CALL_HOOK(
     "x????xxxxxxxxx?xxx",
     ZPlayerRegistry_GetLocalPlayer,
     TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x18\x56\x57\x41\x54\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x05",
+    "xxxxxxxxxxxxxxxx????xxx",
+    ZDynamicPageController_Expand,
+    void(ZDynamicPageController* th, ZDynamicObject& data, void* a3, void* a4, void* a5)
+);
+
+PATTERN_HOOK(
+    "\x40\x56\x57\x48\x83\xEC\x00\x4C\x8B\x1A",
+    "xxxxxx?xxx",
+    ZDynamicPageController_HandleActionObject2,
+    void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)
 );

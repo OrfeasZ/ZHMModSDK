@@ -11,8 +11,8 @@ public:
     void Init() override;
 
 private:
-    DEFINE_PLUGIN_DETOUR(NoPause, bool, GetOption, const ZString&, bool);
-    DEFINE_PLUGIN_DETOUR(NoPause, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM);
+    DECLARE_PLUGIN_DETOUR(NoPause, bool, GetOption, const ZString&, bool);
+    DECLARE_PLUGIN_DETOUR(NoPause, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM);
 };
 
-DEFINE_ZHM_PLUGIN(NoPause)
+DECLARE_ZHM_PLUGIN(NoPause)

@@ -214,7 +214,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
         m_Ragdolling = !m_Ragdolling;
     }*/
-    
+
     ZInputAction s_RagdollAction("eIAKBMCover");
     if (Functions::ZInputAction_Digital->Call(&s_RagdollAction, -1))
     {
@@ -223,7 +223,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
         if (!s_LocalHitman)
             return;
-        
+
         if (!GetEntities())
             return;
 
@@ -319,7 +319,7 @@ bool Clumsy::GetEntities()
         Logger::Debug("Found get_up brick.");
 
         const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.GetBlueprintFactory());
-        
+
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeedf42ba555b602); s_Index != -1)
             m_GetUpAnimation = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
 
@@ -338,7 +338,7 @@ bool Clumsy::GetEntities()
     return m_GetUpAnimation && m_ShakeEntity;
 }
 
-DECLARE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
     m_MusicLoop->Stop(true);
 
@@ -357,4 +357,4 @@ DECLARE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool 
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_ZHM_PLUGIN(Clumsy);
+DEFINE_ZHM_PLUGIN(Clumsy);

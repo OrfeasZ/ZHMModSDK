@@ -176,7 +176,7 @@ public:
     }
 };
 
-#define DEFINE_DETOUR_WITH_CONTEXT(ContextType, ReturnType, DetourName, ...) \
+#define DECLARE_DETOUR_WITH_CONTEXT(ContextType, ReturnType, DetourName, ...) \
     template <class... Args>\
     static HookResult<ReturnType> DetourName(void* th, Args... p_Args)\
     {\
@@ -185,8 +185,8 @@ public:
     \
     HookResult<ReturnType> __fastcall DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
 
-#define DECLARE_DETOUR_WITH_CONTEXT(ContextType, ReturnType, DetourName, ...) \
+#define DEFINE_DETOUR_WITH_CONTEXT(ContextType, ReturnType, DetourName, ...) \
     HookResult<ReturnType> __fastcall ContextType::DetourName ## _Internal(Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
 
-#define DEFINE_STATIC_DETOUR(ReturnType, DetourName, ...) static HookResult<ReturnType> __fastcall DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
-#define DECLARE_STATIC_DETOUR(ParentType, ReturnType, DetourName, ...) HookResult<ReturnType> __fastcall ParentType::DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)
+#define DECLARE_STATIC_DETOUR(ReturnType, DetourName, ...) static HookResult<ReturnType> __fastcall DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__);
+#define DEFINE_STATIC_DETOUR(ParentType, ReturnType, DetourName, ...) HookResult<ReturnType> __fastcall ParentType::DetourName(void*, Hook<ReturnType(__VA_ARGS__)>* p_Hook, __VA_ARGS__)

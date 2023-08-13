@@ -257,7 +257,7 @@ void FreeCam::OnDrawUI(bool p_HasFocus)
     }
 }
 
-DECLARE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int a2)
+DEFINE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int a2)
 {
     if (!m_FreeCamActive)
         return HookResult<bool>(HookAction::Continue());
@@ -268,7 +268,7 @@ DECLARE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int
     return HookResult<bool>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&)
+DEFINE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&)
 {
     if (m_FreeCamActive)
         DisableFreecam();
@@ -279,7 +279,7 @@ DECLARE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext* th, ZScen
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(FreeCam, void, OnClearScene, ZEntitySceneContext* th, bool)
+DEFINE_PLUGIN_DETOUR(FreeCam, void, OnClearScene, ZEntitySceneContext* th, bool)
 {
     if (m_FreeCamActive)
         DisableFreecam();
@@ -290,4 +290,4 @@ DECLARE_PLUGIN_DETOUR(FreeCam, void, OnClearScene, ZEntitySceneContext* th, bool
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_ZHM_PLUGIN(FreeCam);
+DEFINE_ZHM_PLUGIN(FreeCam);

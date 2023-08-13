@@ -15,3 +15,7 @@ add_library(DirectInputProxy SHARED
 set_target_properties(DirectInputProxy PROPERTIES
 	OUTPUT_NAME "dinput8"
 )
+
+install(TARGETS DirectInputProxy
+	RUNTIME DESTINATION bin
+)

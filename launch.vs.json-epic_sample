@@ -1,0 +1,18 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "exe": "C:\\Program Files\\EpicGames\\HITMAN3\\Retail\\HITMAN3.exe",
+      "cwd": "C:\\Program Files\\EpicGames\\HITMAN3",
+      "args": [
+        "-EpicPortal",
+        "-epicuserid=userid"
+      ],
+      "project": "CMakeLists.txt",
+      "projectTarget": "ZHMModSDK.dll (Install)",
+      "name": "Hitman 3"
+    }
+  ]
+}

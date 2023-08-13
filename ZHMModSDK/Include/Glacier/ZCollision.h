@@ -3,12 +3,18 @@
 #include "Reflection.h"
 #include "ZMath.h"
 #include "ZEntity.h"
+#include "ZPhysics.h"
 
 struct ZRayQueryInput
 {
     float4 m_vFrom;
     float4 m_vTo;
-    PAD(0x40); // 0x20
+    uint32 m_nRayFilter;
+    ECollidablesType m_eType;
+    ERayDetailLevel m_eRayDetailLevel;
+    ZDelegate<bool(ZEntityRef, TEntityRef<ZSpatialEntity>)> m_FilterCallback;
+    bool m_bIgnoreTransparentMaterials;
+    bool m_bIgnoreDecalMaterials;
 };
 
 static_assert(sizeof(ZRayQueryInput) == 0x60);

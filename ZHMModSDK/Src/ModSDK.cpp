@@ -126,7 +126,7 @@ ModSDK::~ModSDK()
 #endif
 }
 
-bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize)
+bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset)
 {
     if (!p_Pattern || !p_Mask || !p_NewCode || p_CodeSize == 0)
     {
@@ -143,7 +143,7 @@ bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCod
         return false;
     }
 
-    auto* s_TargetPtr = reinterpret_cast<void*>(s_Target);
+    auto* s_TargetPtr = reinterpret_cast<void*>(s_Target + p_Offset);
 
     Logger::Debug("Patching {} bytes of code at {} with new code from {}.", p_CodeSize, fmt::ptr(s_TargetPtr), p_NewCode);
 
@@ -207,7 +207,7 @@ bool ModSDK::Startup()
     // Patch mutex creation to allow multiple instances.
     uint8_t s_NopBytes[84] = { 0x90 };
     memset(s_NopBytes, 0x90, 84);
-    if (!PatchCode("\x4C\x8D\x05\x00\x00\x00\x00\xBA\x00\x00\x00\x00\x33\xC9\xFF\x15", "xxx????x????xxxx", s_NopBytes, 84))
+    if (!PatchCode("\x4C\x8D\x05\x00\x00\x00\x00\xBA\x00\x00\x00\x00\x33\xC9\xFF\x15", "xxx????x????xxxx", s_NopBytes, 84, 0))
     {
         Logger::Warn("Could not patch multi-instance detection. You will not be able to launch the game more than once.");
     }
@@ -515,7 +515,7 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
 }
 
 
-DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
 {
     auto s_Result = p_Hook->CallOriginal(th, a2);
 

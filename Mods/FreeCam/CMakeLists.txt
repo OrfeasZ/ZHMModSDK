@@ -19,3 +19,7 @@ target_include_directories(FreeCam PRIVATE
 target_link_libraries(FreeCam PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS FreeCam
+	RUNTIME DESTINATION bin/mods
+)

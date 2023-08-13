@@ -19,3 +19,7 @@ target_include_directories(SkipIntro PRIVATE
 target_link_libraries(SkipIntro PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS SkipIntro
+	RUNTIME DESTINATION bin/mods
+)

@@ -1,15 +1,19 @@
 #pragma once
 
+#include <WinSock2.h>
+
 #include <random>
 #include <unordered_map>
+#include <map>
+#include <shared_mutex>
 
 #include "IPluginInterface.h"
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 
-#include "Components/Qne.h"
-
 #include "ImGuizmo.h"
+#include "EditorServer.h"
+#include "EntityTreeNode.h"
 
 class Editor : public IPluginInterface
 {
@@ -23,8 +27,23 @@ public:
     void OnDraw3D(IRenderer* p_Renderer) override;
     void OnEngineInitialized() override;
 
+public:
+	void SelectEntity(EntitySelector p_Selector);
+	void SetEntityTransform(EntitySelector p_Selector, SMatrix p_Transform);
+	void SpawnEntity(ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name);
+	void DestroyEntity(EntitySelector p_Selector);
+	void SetEntityName(EntitySelector p_Selector, std::string p_Name);
+	void SetEntityProperty(EntitySelector p_Selector, uint32_t p_PropertyId, std::string_view p_JsonValue);
+	void SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p_Output);
+	void LockEntityTree() { m_CachedEntityTreeMutex.lock_shared(); }
+	std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
+	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
+	ZEntityRef FindEntity(EntitySelector p_Selector);
+
 private:
     void SpawnCameras();
+    void ActivateCamera(ZEntityRef* m_CameraEntity);
+    void DeactivateCamera();
     void CopyToClipboard(const std::string& p_String) const;
     void OnMouseDown(SVector2 p_Pos, bool p_FirstClick);
 
@@ -33,32 +52,66 @@ private:
 
     void DrawEntityProperties();
 
-    void RenderBrick(ZEntityRef p_Entity);
-    void RenderEntity(int p_Index, ZEntityRef p_Entity, uint64_t p_EntityId, IEntityBlueprintFactory* p_Factory, ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity);
+    void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
     bool SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId);
     bool SearchForEntityByType(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName);
     bool SearchForEntityByName(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName);
+	void UpdateEntities();
+
+	void OnSelectEntity(ZEntityRef p_Entity);
+	void OnEntityTransformChange(ZEntityRef p_Entity, SMatrix p_Transform);
+	void OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name);
+	void OnSetPropertyValue(ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value);
+	void OnSignalEntityPin(ZEntityRef p_Entity, const std::string& p_Pin, bool p_Output);
+	void OnSignalEntityPin(ZEntityRef p_Entity, uint32_t p_PinId, bool p_Output);
 
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
-    void CheckQneConnection(float p_DeltaTime);
-    void ReceiveQneMessages();
-    void SendQneMessage(const Qne::SdkToQnMessage& p_Message);
 
     void DrawPinTracer();
 
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
+	// Properties
+	void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
+	// Primitive properties.
+	void StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void BoolProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Uint8Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Uint16Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Uint32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Uint64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Int8Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Int16Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Int32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Int64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Float32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void Float64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
+	// Vector properties.
+	void SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+	void SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
+	void SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
+	void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
 private:
-    DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
-    DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
-    DEFINE_PLUGIN_DETOUR(Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor, ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending);
-    DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
-    DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
+    DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
+    DECLARE_PLUGIN_DETOUR(Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor, ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending);
+    DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
+    DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
 
 private:
     ZEntityRef m_Camera;
     ZEntityRef m_CameraRT;
+
+    bool m_CameraActive = false;
+    ZEntityRef m_OriginalCam;
 
     bool m_HoldingMouse = false;
     bool m_UseSnap = false;
@@ -92,6 +145,13 @@ private:
     float m_QneConnectionTimer = 999.f; // Set to a high number so we connect on startup.
     sockaddr_in m_QneAddress = {};
 
+	std::shared_mutex m_CachedEntityTreeMutex;
+	std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
+
+	std::unordered_map<uint64_t, ZEntityRef> m_SpawnedEntities;
+	std::unordered_map<ZEntityRef, std::string> m_EntityNames;
+
+	EditorServer m_Server;
 };
 
-DEFINE_ZHM_PLUGIN(Editor)
+DECLARE_ZHM_PLUGIN(Editor)

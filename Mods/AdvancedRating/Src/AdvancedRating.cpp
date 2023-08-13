@@ -128,7 +128,7 @@ void AdvancedRating::Reset()
     ReleaseSRWLockExclusive(&m_EventLock);
 }
 
-DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventId, const ZDynamicObject& event)
+DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventId, const ZDynamicObject& event)
 {
     ZString s_EventData;
     Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), &s_EventData);
@@ -175,7 +175,7 @@ DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSen
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th)
+DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th)
 {
     if (!th->m_oldGameState.m_bHitmanTrespassingSpotted && th->m_gameState.m_bHitmanTrespassingSpotted)
         OnEvent(RatingEventType::CaughtTrespassing);
@@ -195,4 +195,4 @@ DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGa
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_ZHM_PLUGIN(AdvancedRating);
+DEFINE_ZHM_PLUGIN(AdvancedRating);

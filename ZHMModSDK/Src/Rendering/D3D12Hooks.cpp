@@ -18,6 +18,7 @@
 using namespace Rendering;
 
 DEFINE_D3D12_HOOK(IDXGIFactory, CreateSwapChain);
+DEFINE_D3D12_HOOK(ID3D12Device, CreateCommittedResource);
 DEFINE_D3D12_HOOK(ID3D12CommandQueue, ExecuteCommandLists);
 
 D3D12Hooks::~D3D12Hooks()
@@ -42,6 +43,7 @@ void D3D12Hooks::Install()
     const auto s_VTables = &m_VTables;
 
     INSTALL_D3D12_HOOK(IDXGIFactory, CreateSwapChain);
+    INSTALL_D3D12_HOOK(ID3D12Device, CreateCommittedResource);
     INSTALL_D3D12_HOOK(ID3D12CommandQueue, ExecuteCommandLists);
 
     m_Installed = true;
@@ -83,6 +85,11 @@ HRESULT D3D12Hooks::Detour_IDXGIFactory_CreateSwapChain(IDXGIFactory* th, IUnkno
     (*ppSwapChain)->AddRef();
 
     return S_OK;
+}
+
+HRESULT D3D12Hooks::Detour_ID3D12Device_CreateCommittedResource(ID3D12Device* th, const D3D12_HEAP_PROPERTIES* pHeapProperties, D3D12_HEAP_FLAGS HeapFlags, const D3D12_RESOURCE_DESC* pDesc, D3D12_RESOURCE_STATES InitialResourceState, const D3D12_CLEAR_VALUE* pOptimizedClearValue, const IID& riidResource, void** ppvResource)
+{
+    return Original_ID3D12Device_CreateCommittedResource(th, pHeapProperties, HeapFlags, pDesc, InitialResourceState, pOptimizedClearValue, riidResource, ppvResource);
 }
 
 void D3D12Hooks::Detour_ID3D12CommandQueue_ExecuteCommandLists(ID3D12CommandQueue* th, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists)
@@ -311,7 +318,7 @@ void D3D12Hooks::RemoveHook(const InstalledHook& p_Hook)
     MH_RemoveHook(p_Hook.OriginalAddr);
 }
 
-DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
+DEFINE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice)
 {
     const auto s_Result = p_Hook->CallOriginal(pAdapter, MinimumFeatureLevel, riid, ppDevice);
 

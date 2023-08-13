@@ -1,0 +1,20 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "exe": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\HITMAN 3\\Retail\\HITMAN3.exe",
+      "cwd": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\HITMAN 3",
+      "args": [],
+      "project": "CMakeLists.txt",
+      "projectTarget": "ZHMModSDK.dll (Install)",
+      "name": "Hitman 3",
+      "env": {
+        "SteamGameId": "1659040",
+        "SteamAppId": "1659040",
+        "SteamOverlayGameId": "1659040"
+      }
+    }
+  ]
+}

@@ -22,7 +22,7 @@ public:
 private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
     bool GetEntities();
-    DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
+    DECLARE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
 
 private:
     std::unique_ptr<DirectX::AudioEngine> m_AudioEngine;
@@ -30,7 +30,7 @@ private:
     std::unique_ptr<DirectX::SoundEffectInstance> m_MusicLoop;
 
     static constexpr size_t VelocitiesToAverage = 120;
-    
+
     float4 m_SampledVelocitySum;
     std::array<float4, VelocitiesToAverage> m_SampledVelocities;
     size_t m_VelocitySamples;
@@ -46,4 +46,4 @@ private:
     ZEntityRef m_MusicEmitter;
 };
 
-DEFINE_ZHM_PLUGIN(Clumsy)
+DECLARE_ZHM_PLUGIN(Clumsy)

@@ -10,7 +10,7 @@ void SkipIntro::Init()
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &SkipIntro::OnLoadScene);
 }
 
-DECLARE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
+DEFINE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
 {
     Logger::Debug("Loading scene: {}", p_SceneData.m_sceneName);
 
@@ -23,4 +23,4 @@ DECLARE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext* th, ZSc
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_ZHM_PLUGIN(SkipIntro);
+DEFINE_ZHM_PLUGIN(SkipIntro);

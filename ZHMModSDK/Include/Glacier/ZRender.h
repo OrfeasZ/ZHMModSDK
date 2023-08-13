@@ -18,7 +18,7 @@ public:
 
 class IRenderDestination : public IRenderRefCount
 {
-
+public:
 };
 
 class IRenderDestinationEntity :

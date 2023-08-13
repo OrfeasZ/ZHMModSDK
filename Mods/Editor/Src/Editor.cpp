@@ -29,12 +29,12 @@ Editor::Editor()
     uint8_t s_Nop[21] = {};
     memset(s_Nop, 0x90, sizeof(s_Nop));
 
-    if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x49\xC7\x86\xA0\x01\x00\x00", "xxxx?x????xxxxxxx", s_Nop, sizeof(s_Nop)))
+    if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x49\xC7\x86\xA0\x01\x00\x00", "xxxx?x????xxxxxxx", s_Nop, sizeof(s_Nop), 0))
     {
         Logger::Error("Could not patch ZTemplateEntityBlueprintFactory data freeing.");
     }
 
-    if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x48\xC7\x83\xA0\x01\x00\x00\x00\x00\x00\x00\x8B\x43\x10", "xxxx?x????xxxxxxx????xxx", s_Nop, sizeof(s_Nop)))
+    if (!SDK()->PatchCode("\x48\x85\xC9\x74\x00\xE8\x00\x00\x00\x00\x48\xC7\x83\xA0\x01\x00\x00\x00\x00\x00\x00\x8B\x43\x10", "xxxx?x????xxxxxxx????xxx", s_Nop, sizeof(s_Nop), 0))
     {
         Logger::Error("Could not patch ZTemplateEntityBlueprintFactory brick data freeing.");
     }
@@ -46,7 +46,7 @@ Editor::Editor()
         Logger::Error("WSAStartup failed: %d", WSAGetLastError());
         return;
     }
-    
+
     if ((m_QneSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET)
     {
         Logger::Error("Could not create socket: %d", WSAGetLastError());
@@ -406,7 +406,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
     DrawEntityTree();
     DrawEntityProperties();
     DrawEntityManipulator(p_HasFocus);
-    DrawPinTracer();
+    //DrawPinTracer();
 
     if (m_CameraRT && m_Camera)
     {
@@ -424,7 +424,7 @@ void Editor::OnDrawUI(bool p_HasFocus)
         ImGui::End();
     }
 
-    ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    /*ImGui::PushFont(SDK()->GetImGuiBlackFont());
     const auto s_Expanded = ImGui::Begin("Behaviors");
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
@@ -455,13 +455,12 @@ void Editor::OnDrawUI(bool p_HasFocus)
 
     ImGui::PopFont();
     ImGui::End();
-    ImGui::PopFont();
+    ImGui::PopFont();*/
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
-    CheckQneConnection(p_UpdateEvent.m_RealTimeDelta.ToSeconds());
-    ReceiveQneMessages();
+
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
@@ -510,21 +509,22 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
             const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
             Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
 
-            m_SelectedEntity = s_RayOutput.m_BlockingEntity;
-            m_ShouldScrollToEntity = true;
-
+            const auto s_SelectedEntity = s_RayOutput.m_BlockingEntity;
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i)
             {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
-                if (m_SelectedEntity.IsAnyParent(s_Brick.entityRef))
+                if (s_SelectedEntity.IsAnyParent(s_Brick.entityRef))
                 {
+					Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
                     m_SelectedBrickIndex = i;
                     break;
                 }
             }
+
+			OnSelectEntity(s_SelectedEntity);
         }
     }
 }
@@ -591,23 +591,55 @@ void Editor::SpawnCameras()
     Logger::Debug("Added source to rt = {} sources = {} source = {}", fmt::ptr(s_CameraRT), s_CameraRT->m_aMultiSource.size(), s_CameraRT->m_nSelectedSource);
 }
 
-DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
+void Editor::ActivateCamera(ZEntityRef* m_CameraEntity)
 {
-    //if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity")
+    TEntityRef<IRenderDestinationEntity> s_RenderDest;
+    Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
+
+    m_OriginalCam = *s_RenderDest.m_pInterfaceRef->GetSource();
+
+    s_RenderDest.m_pInterfaceRef->SetSource(m_CameraEntity);
+}
+
+void Editor::DeactivateCamera()
+{
+    TEntityRef<IRenderDestinationEntity> s_RenderDest;
+    Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
+
+    s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
+{
+    /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+        p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
     //	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
-    //    p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
+        p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
     //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
+    */
+
+	m_CachedEntityTreeMutex.lock();
+	m_CachedEntityTree.reset();
+	m_CachedEntityTreeMutex.unlock();
+
+    std::vector<std::string> s_Bricks;
+
+    for (auto& s_Brick : p_SceneData.m_sceneBricks) {
+        s_Bricks.push_back(s_Brick.c_str());
+    }
+
+    m_Server.OnSceneLoading(p_SceneData.m_sceneName.c_str(), s_Bricks);
 
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor, ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)
+DEFINE_PLUGIN_DETOUR(Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor, ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)
 {
     //Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
     return HookResult<ZTemplateEntityBlueprintFactory*>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
     m_SelectedBrickIndex = 0;
     m_SelectedEntity = {};
@@ -615,10 +647,16 @@ DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool 
     m_CameraRT = {};
     m_ShouldScrollToEntity = false;
 
+	m_CachedEntityTreeMutex.lock();
+	m_CachedEntityTree.reset();
+	m_CachedEntityTreeMutex.unlock();
+
+    m_Server.OnSceneClearing(forReload);
+
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data)
+DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data)
 {
     //if (entity == m_SelectedEntity)
     {
@@ -630,7 +668,7 @@ DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinI
     return { HookAction::Continue() };
 }
 
-DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data)
+DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data)
 {
     //if (entity == m_SelectedEntity)
     {
@@ -642,4 +680,4 @@ DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pin
     return { HookAction::Continue() };
 }
 
-DECLARE_ZHM_PLUGIN(Editor);
+DEFINE_ZHM_PLUGIN(Editor);

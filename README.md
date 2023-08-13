@@ -21,9 +21,11 @@ Right now it's at a very early stage, with only a few aspects of the engine expo
 
 4. When the game opens, you'll see a dialog asking you which mods you'd like to use. Select them and press OK. You might need to restart your game for some of them to work.
 
-5. ...
+5. Open the SDK panel with the `~` key (`^` on QWERTZ layouts) to change loaded mods at runtime and to use the menus of certain mods.
 
-6. Profit?
+6. ...
+
+7. Profit?
 
 > NOTE: Some mods might require additional setup. For mods bundled with the SDK, refer to the [table below](#sample-mods). For any other mod, make sure to consult its installation instructions.
 
@@ -40,7 +42,6 @@ There are a few sample mods included in this repository that can be used either 
 | [NoPause](/Mods/NoPause) | Prevents the game from automatically pausing after losing focus (eg. when alt-tabbing or minimizing). |
 | [SkipIntro](/Mods/SkipIntro) | Skips the intro sequence and starts the game directly at the main menu. |
 | [WakingUpNpcs](/Mods/WakingUpNpcs) | Makes pacified NPCs wake up after a random interval between 4 and 8 minutes. |
-| [CodeGen](/Mods/CodeGen) | Generates binding code from the embedded engine typeinfo which can be used by tools like [ResourceParser](https://github.com/OrfeasZ/ZHMTools/tree/master/Tools/ResourceParser). |
 | [CertPinBypass](/Mods/CertPinBypass) | Disables SSL certificate pinning, allowing the game to connect to any trusted server instead of only IOI's. |
 | [MaxPatchLevel](/Mods/MaxPatchLevel) | Dynamically sets the RPKG patchlevel to 1000, making the game discover patch chunks without having to modify the `packagedefinition.txt` file. |
 | [DebugMod](/Mods/DebugMod) | Adds a debug menu to test different SDK functionalities, like 3D rendering and entity information display. |
@@ -49,12 +50,16 @@ There are a few sample mods included in this repository that can be used either 
 | [Editor](/Mods/Editor) | A WIP in-engine "editor". Currently supports viewing spawned entities alongside basic lookup and manipulation. **[Requires additional setup!](/Mods/Editor)** |
 | [Clumsy](/Mods/Clumsy) | Makes 47 very clumsy. He just can't seem to figure out how to take cover... **[Requires additional setup!](/Mods/Clumsy)** |
 
-## Contributing
-
-TODO
-
 ## Usage (for developers)
 
-TODO
+To find out how to create your own mods or how to extend the SDK, check out the [wiki](https://github.com/OrfeasZ/ZHMModSDK/wiki). Here are some guides to get you started:
 
+> [**Making mods with the SDK**](https://github.com/OrfeasZ/ZHMModSDK/wiki/Making-mods-with-the-SDK)
 
+> [**Building & debugging the SDK**](https://github.com/OrfeasZ/ZHMModSDK/wiki/Building-&-debugging-the-SDK)
+
+You can also check out the [sample mods](/Mods) for reference.
+
+## Contributing
+
+If you'd like to contribute to the SDK, feel free to open a pull request or an issue. If you're not sure where to start, check out the [issues](https://github.com/OrfeasZ/ZHMModSDK/issues) tab.

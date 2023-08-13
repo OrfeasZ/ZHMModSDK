@@ -1250,7 +1250,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
     );*/
 }
 
-DECLARE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&)
+DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&)
 {
     if (m_TrackCamActive)
         DisableTrackCam();
@@ -1259,7 +1259,7 @@ DECLARE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZSce
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear)
+DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
     m_EntityMutex.lock();
     m_SelectedEntity = ZEntityRef();
@@ -1287,4 +1287,4 @@ DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, boo
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_ZHM_PLUGIN(DebugMod);
+DEFINE_ZHM_PLUGIN(DebugMod);

@@ -5,8 +5,10 @@
 #include "Reflection.h"
 #include "ZObject.h"
 #include "Hooks.h"
+#include "Globals.h"
 
 class IEntityBlueprintFactory;
+class ZEntityBlueprintFactoryBase;
 class ZEntityType;
 class ZActor;
 class STypeID;
@@ -18,7 +20,7 @@ public:
     virtual void IEntityFactory_unk5() = 0;
     virtual void ConfigureEntity() = 0;
     virtual void IEntityFactory_unk7() = 0;
-    virtual IEntityBlueprintFactory* GetBlueprint() = 0;
+    virtual ZEntityBlueprintFactoryBase* GetBlueprint() = 0;
     virtual void IEntityFactory_unk9() = 0;
     virtual void IEntityFactory_unk10() = 0;
 };
@@ -27,7 +29,7 @@ class IEntityBlueprintFactory : public IComponentInterface
 {
 public:
     virtual void GetMemoryRequirements(uint32_t&, uint32_t&, int64_t&) = 0;
-    virtual void IEntityBlueprintFactory_unk6() = 0;
+    virtual ZEntityType* GetFactoryEntityType() = 0;
     virtual void IEntityBlueprintFactory_unk7() = 0;
     virtual void IEntityBlueprintFactory_unk8() = 0;
     virtual void IEntityBlueprintFactory_unk9() = 0;
@@ -46,7 +48,7 @@ public:
     virtual void IEntityBlueprintFactory_unk22() = 0;
     virtual void IEntityBlueprintFactory_unk23() = 0;
     virtual void IEntityBlueprintFactory_unk24() = 0;
-    virtual IEntityBlueprintFactory* GetSubEntityBlueprint(int index) = 0;
+    virtual ZEntityBlueprintFactoryBase* GetSubEntityBlueprint(int index) = 0;
     virtual uint64_t GetSubEntityId(int index) = 0;
     virtual int GetSubEntityIndex(unsigned long long nEntityID) const = 0;
     virtual ZEntityType** GetSubEntity(ZEntityType**, int index) = 0;
@@ -54,6 +56,10 @@ public:
     virtual void IEntityBlueprintFactory_unk30() = 0;
     virtual void IEntityBlueprintFactory_unk31() = 0;
     virtual void IEntityBlueprintFactory_unk32() = 0;
+
+	inline bool IsTemplateEntityBlueprintFactory() const {
+		return Globals::ZTemplateEntityBlueprintFactory_vtbl == *(void**)this;
+	}
 };
 
 class IEntity :
@@ -117,9 +123,24 @@ public:
     int64_t m_nOffset;
 };
 
-class ZEntityType
-{
+class ZEntityType {
 public:
+	ZEntityProperty* FindProperty(uint32_t p_PropertyId) const {
+		auto s_Property = std::find_if(
+			m_pProperties01->begin(),
+			m_pProperties01->end(),
+			[p_PropertyId](const ZEntityProperty& p_Property) {
+				return p_Property.m_nPropertyId == p_PropertyId;
+			}
+		);
+
+		if (s_Property != m_pProperties01->end()) {
+			return s_Property;
+		}
+
+		return nullptr;
+	}
+
     uint32_t m_nUnkFlags;
     TArray<ZEntityProperty>* m_pProperties01;
     TArray<ZEntityProperty>* m_pProperties02;
@@ -266,7 +287,7 @@ public:
         return GetLogicalParent().GetClosestParentWithBlueprintFactory();
     }
 
-    IEntityBlueprintFactory* GetBlueprintFactory() const
+	ZEntityBlueprintFactoryBase* GetBlueprintFactory() const
     {
         const auto* s_Entity = GetEntity();
 
@@ -287,7 +308,7 @@ public:
             return nullptr;
 
         // Pointer to IEntityBlueprintFactory stored right before the start of this entity.
-        return *reinterpret_cast<IEntityBlueprintFactory**>(reinterpret_cast<uintptr_t>(s_RootEntity) - sizeof(uintptr_t));
+        return *reinterpret_cast<ZEntityBlueprintFactoryBase**>(reinterpret_cast<uintptr_t>(s_RootEntity) - sizeof(uintptr_t));
     }
 
     template <class T>
@@ -389,6 +410,7 @@ public:
             const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
             const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
+            // TODO: Memory leak.
             auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
             if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
@@ -484,9 +506,18 @@ public:
     {
         size_t operator()(const ZEntityRef& p_Ref) const noexcept
         {
-            return reinterpret_cast<uintptr_t>(p_Ref.m_pEntity);
+            return reinterpret_cast<uintptr_t>(p_Ref.GetEntity());
         }
     };
+};
+
+template <>
+struct std::hash<ZEntityRef>
+{
+	size_t operator()(const ZEntityRef& p_Ref) const noexcept
+	{
+		return reinterpret_cast<uintptr_t>(p_Ref.GetEntity());
+	}
 };
 
 template <typename T>

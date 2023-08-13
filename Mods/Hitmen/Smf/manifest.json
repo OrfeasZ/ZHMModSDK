@@ -1,0 +1,20 @@
+{
+	"version": "1.0.0",
+	"id": "SDK.Hitmen",
+	"name": "Hitmen",
+	"authors": [
+		"NoFaTe"
+	],
+	"frameworkVersion": "2.14.0",
+	"description": "Hitmen?",
+	"contentFolders": [
+		"hitmen"
+	],
+	"packagedefinition": [
+		{
+			"type": "entity",
+			"partition": "super",
+			"path": "[assembly:/_sdk/hitmen.brick].entitytype"
+		}
+	]
+}

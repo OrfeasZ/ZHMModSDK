@@ -11,7 +11,7 @@ public:
     void Init() override;
 
 private:
-    DEFINE_PLUGIN_DETOUR(CertPinBypass, bool, On_Check_SSL_Cert, void*, void*);
+    DECLARE_PLUGIN_DETOUR(CertPinBypass, bool, On_Check_SSL_Cert, void*, void*);
 };
 
-DEFINE_ZHM_PLUGIN(CertPinBypass)
+DECLARE_ZHM_PLUGIN(CertPinBypass)

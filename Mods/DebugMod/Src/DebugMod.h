@@ -65,8 +65,8 @@ private:
 
     void EnableInfiniteAmmo();
 
-    DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
-    DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool fullyClear);
+    DECLARE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
 
 private:
     bool m_DebugMenuActive = false;
@@ -138,4 +138,4 @@ private:
     void SetPlayerControlActive(bool active);
 };
 
-DEFINE_ZHM_PLUGIN(DebugMod)
+DECLARE_ZHM_PLUGIN(DebugMod)

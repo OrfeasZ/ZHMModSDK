@@ -155,3 +155,31 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZBehaviorService*, BehaviorService
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x4C\x8D\x2D\x00\x00\x00\x00\x4C\x89\xB4\x24\xD0\x00\x00\x00\x0F\x29\xB4\x24\xC0\x00\x00\x00",
+    "xxx????xxxxxxxxxxxxxxxx",
+    3,
+    SPrimitiveBufferData*, PrimitiveBufferData
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x0D\x00\x00\x00\x00\xC7\x44\x24\x30\x00\x00\x00\x00\x4C\x89\x64\x24\x38",
+    "xxx????xxxx????xxxxx",
+    3,
+    IGameMode**, GameMode
+);
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8B\x0D\x00\x00\x00\x00\x48\x85\xC9\x74\x00\x48\x8B\x01\x48\x8B\x50\x40",
+	"xxx????xxxx?xxxxxxx",
+	3,
+	IEngineMode**, EngineMode
+);
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x05\x00\x00\x00\x00\x4C\x89\x41\x18\x4C\x89\x41\x30",
+	"xxx????xxxxxxxx",
+	3,
+	void*, ZTemplateEntityBlueprintFactory_vtbl
+);

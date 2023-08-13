@@ -19,3 +19,7 @@ target_include_directories(Noclip PRIVATE
 target_link_libraries(Noclip PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS Noclip
+	RUNTIME DESTINATION bin/mods
+)

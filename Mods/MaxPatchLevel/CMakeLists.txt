@@ -19,3 +19,7 @@ target_include_directories(MaxPatchLevel PRIVATE
 target_link_libraries(MaxPatchLevel PRIVATE
 	ZHMModSDK
 )
+
+install(TARGETS MaxPatchLevel
+	RUNTIME DESTINATION bin/mods
+)

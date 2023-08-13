@@ -38,6 +38,7 @@ namespace Rendering
             IDXGIFactory2_CreateSwapChainForComposition = 24,
             ID3D12Device_CreateDescriptorHeap = 14,
             ID3D12Device_CreateShaderResourceView = 18,
+            ID3D12Device_CreateCommittedResource = 27,
         };
 
     private:
@@ -72,9 +73,10 @@ namespace Rendering
         void RemoveHook(const InstalledHook& p_Hook);
 
         DECLARE_D3D12_HOOK(HRESULT, IDXGIFactory, CreateSwapChain, IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain);
+        DECLARE_D3D12_HOOK(HRESULT, ID3D12Device, CreateCommittedResource, const D3D12_HEAP_PROPERTIES* pHeapProperties, D3D12_HEAP_FLAGS HeapFlags, const D3D12_RESOURCE_DESC* pDesc, D3D12_RESOURCE_STATES InitialResourceState, const D3D12_CLEAR_VALUE* pOptimizedClearValue, REFIID riidResource, void** ppvResource);
         DECLARE_D3D12_HOOK(void, ID3D12CommandQueue, ExecuteCommandLists, UINT NumCommandLists, ID3D12CommandList* const* ppCommandLists);
 
-        DEFINE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice);
+        DECLARE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid, void** ppDevice);
 
     private:
         std::vector<InstalledHook> m_InstalledHooks;

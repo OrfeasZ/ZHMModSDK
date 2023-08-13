@@ -197,7 +197,7 @@ std::string DiscordRichPresence::FindLocationForScene(ZString p_Scene) const
     return "ERR_UNKNOWN_LOCATION";
 }
 
-DECLARE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData)
+DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData)
 {
     if (!m_DiscordCore)
         return HookResult<void>(HookAction::Continue());
@@ -262,4 +262,4 @@ DECLARE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContex
     return HookResult<void>(HookAction::Continue());
 }
 
-DECLARE_ZHM_PLUGIN(DiscordRichPresence);
+DEFINE_ZHM_PLUGIN(DiscordRichPresence);
