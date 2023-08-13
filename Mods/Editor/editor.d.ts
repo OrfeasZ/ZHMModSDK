@@ -268,11 +268,11 @@ declare namespace EditorEvents {
         value: unknown;
     }
 
-    interface SceneLoaded {
-        type: 'sceneLoaded';
+    interface SceneLoading {
+        type: 'sceneLoading';
 
         // The name of the scene that is being loaded.
-        sceneName: string;
+        scene: string;
 
         // The name of additional bricks that are being loaded.
         bricks: string[];
@@ -282,8 +282,9 @@ declare namespace EditorEvents {
     interface SceneClearing {
         type: 'sceneClearing';
 
-		// Whether the scene is being fully cleared.
-		fullClear: boolean;
+		// Whether the scene is being cleared for a level reload.
+        // If `false`, it means the game will transition to a different scene.
+		forReload: boolean;
     }
 
 	interface EntityList {
@@ -311,7 +312,7 @@ type EditorEvent =
     | EditorEvents.EntitySpawned
     | EditorEvents.EntityDestroyed
     | EditorEvents.EntityPropertyChanged
-    | EditorEvents.SceneLoaded
+    | EditorEvents.SceneLoading
     | EditorEvents.SceneClearing
 	| EditorEvents.EntityList
 	| EditorEvents.EntityDetails;

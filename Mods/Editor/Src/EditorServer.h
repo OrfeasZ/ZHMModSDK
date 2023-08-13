@@ -33,6 +33,8 @@ public:
 	void OnEntityTransformChanged(ZEntityRef p_Entity);
 	void OnEntityNameChanged(ZEntityRef p_Entity);
 	void OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyId);
+	void OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks);
+	void OnSceneClearing(bool p_ForReload);
 
 private:
 	static void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);

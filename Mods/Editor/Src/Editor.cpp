@@ -604,6 +604,14 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
 	m_CachedEntityTree.reset();
 	m_CachedEntityTreeMutex.unlock();
 
+    std::vector<std::string> s_Bricks;
+
+    for (auto& s_Brick : p_SceneData.m_sceneBricks) {
+        s_Bricks.push_back(s_Brick.c_str());
+    }
+
+    m_Server.OnSceneLoading(p_SceneData.m_sceneName.c_str(), s_Bricks);
+
     return HookResult<void>(HookAction::Continue());
 }
 
@@ -624,6 +632,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
 	m_CachedEntityTreeMutex.lock();
 	m_CachedEntityTree.reset();
 	m_CachedEntityTreeMutex.unlock();
+
+    m_Server.OnSceneClearing(forReload);
 
     return HookResult<void>(HookAction::Continue());
 }

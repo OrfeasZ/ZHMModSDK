@@ -318,6 +318,67 @@ void EditorServer::OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyI
 	});
 }
 
+void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks) {
+	if (!m_Loop) {
+		return;
+	}
+
+	m_Loop->defer([this, p_Scene, p_Bricks](){
+		if (!m_App) {
+			return;
+		}
+
+		std::ostringstream s_Event;
+
+		s_Event << "{";
+
+		s_Event << write_json("type") << ":" << write_json("sceneLoading") << ",";
+		s_Event << write_json("scene") << ":" << write_json(p_Scene) << ",";
+		s_Event << write_json("bricks") << ":" << "[";
+
+		bool s_First = true;
+
+		for (const auto& s_Brick : p_Bricks) {
+			if (!s_First) {
+				s_Event << ",";
+			}
+
+			s_Event << write_json(s_Brick);
+
+			s_First = false;
+		}
+
+		s_Event << "]";
+
+		s_Event << "}";
+
+		m_App->publish("all", s_Event.str(), uWS::OpCode::TEXT);
+	});
+}
+
+void EditorServer::OnSceneClearing(bool p_ForReload) {
+	if (!m_Loop) {
+		return;
+	}
+
+	m_Loop->defer([this, p_ForReload](){
+		if (!m_App) {
+			return;
+		}
+
+		std::ostringstream s_Event;
+
+		s_Event << "{";
+
+		s_Event << write_json("type") << ":" << write_json("sceneClearing") << ",";
+		s_Event << write_json("forReload") << ":" << write_json(p_ForReload);
+
+		s_Event << "}";
+
+		m_App->publish("all", s_Event.str(), uWS::OpCode::TEXT);
+	});
+}
+
 void EditorServer::SendEntityList(EditorServer::WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree) {
 	std::ostringstream s_EventStream;
 
