@@ -614,16 +614,23 @@ void EditorServer::WritePropertyName(std::ostream& p_Stream, ZEntityProperty* p_
 }
 
 void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZEntityProperty* p_Property) {
+	p_Stream << "{" << write_json("type") << ":";
+
 	const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
 
 	if (!s_PropertyInfo || !s_PropertyInfo->m_pType) {
-		p_Stream << "null";
+		p_Stream << write_json("unknown") << ",";
+		p_Stream << write_json("data") << ":" << "null" << "}";
 		return;
 	}
 
 	const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + p_Property->m_nOffset;
 	const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
 	const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+	const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+
+	p_Stream << write_json(s_TypeName) << ",";
+	p_Stream << write_json("data") << ":";
 
 	// Get the value of the property.
 	auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
@@ -633,17 +640,15 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZE
 	else
 		s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(s_Data, reinterpret_cast<void*>(s_PropertyAddress));
 
-	const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
-
 	auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
 	(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
 	if (!s_JsonProperty) {
-		p_Stream << "null";
+		p_Stream << "null" << "}";
 		return;
 	}
 
-	p_Stream << std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize);
+	p_Stream << std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize) << "}";
 	HM3_FreeJsonString(s_JsonProperty);
 }
 

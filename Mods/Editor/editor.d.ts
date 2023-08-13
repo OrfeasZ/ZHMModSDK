@@ -42,6 +42,14 @@ interface Transform {
     scale: Vec3;
 }
 
+interface PropertyValue {
+    // The type of the property value.
+    type: string;
+
+    // The data of the property, as it would appear in RT JSON.
+    data: unknown;
+}
+
 interface GameEntity {
 	id: EntityId;
 	tblu: ResourceId;
@@ -80,9 +88,8 @@ type PropertyName = string | UnknownPropertyName;
 interface EntityData extends EntityBaseData {
 	parent?: EntitySelector;
 	transform?: Transform;
-
-	// The properties of the entity and their values, as they would appear in RT JSON.
-	properties: Record<PropertyName, unknown>;
+    relativeTransform?: Transform;
+	properties: Record<PropertyName, PropertyValue>;
 	interfaces: string[];
 }
 
@@ -117,6 +124,9 @@ declare namespace EditorRequests {
 
         // The new transform of the entity.
         transform: Transform;
+
+        // `true` to set the transform relative to the parent, `false` to set it in world space.
+        relative: boolean;
     }
 
     interface SpawnEntity {
@@ -158,8 +168,8 @@ declare namespace EditorRequests {
         // The name or id of the property to set.
         property: string | number;
 
-        // The new value to give to the property, in RT JSON format.
-        value: unknown;
+        // The new value to give to the property.
+        value: PropertyValue;
     }
 
 	interface SignalEntityPin {
@@ -265,8 +275,8 @@ declare namespace EditorEvents {
         // The id of the property that was updated.
         property: number;
 
-        // The new value of the property, in RT JSON format.
-        value: unknown;
+        // The new value of the property.
+        value: PropertyValue;
     }
 
     interface SceneLoading {
@@ -288,14 +298,14 @@ declare namespace EditorEvents {
 		forReload: boolean;
     }
 
-	interface EntityList {
+	interface EntityListResponse {
 		type: 'entityList';
 
 		// The list of requested entities.
 		entities: EntityBaseDetails[];
 	}
 
-	interface EntityDetails {
+	interface EntityDetailsResponse {
 		type: 'entityDetails';
 
 		// The details of the requested entity.
@@ -315,5 +325,5 @@ type EditorEvent =
     | EditorEvents.EntityPropertyChanged
     | EditorEvents.SceneLoading
     | EditorEvents.SceneClearing
-	| EditorEvents.EntityList
-	| EditorEvents.EntityDetails;
+	| EditorEvents.EntityListResponse
+	| EditorEvents.EntityDetailsResponse;
