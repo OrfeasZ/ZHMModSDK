@@ -296,7 +296,13 @@ void EditorServer::OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyI
 
 		const auto s_Property = s_EntityType->FindProperty(p_PropertyId);
 
-		if (!s_Property) {
+		if (!s_Property || !s_Property->m_pType) {
+			return;
+		}
+
+		const auto s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+
+		if (!s_PropertyInfo) {
 			return;
 		}
 
@@ -308,7 +314,21 @@ void EditorServer::OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyI
 		s_Event << write_json("entity") << ":";
 		WriteEntityDetails(s_Event, p_Entity);
 		s_Event << ",";
-		s_Event << write_json("property") << ":" << write_json(p_PropertyId) << ",";
+		s_Event << write_json("property") << ":";
+
+		if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+			// Some properties don't have a name for some reason. Try to find using RL.
+			const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+			if (s_PropertyName.Size > 0) {
+				s_Event << write_json(std::string_view(s_PropertyName.Data, s_PropertyName.Size)) << ",";
+			} else {
+				s_Event << write_json(s_Property->m_nPropertyId) << ",";
+			}
+		} else {
+			s_Event << write_json(s_PropertyInfo->m_pName) << ",";
+		}
+
 		s_Event << write_json("value") << ":";
 		WriteProperty(s_Event, p_Entity, s_Property);
 

@@ -1,8 +1,8 @@
 // Common types.
 type HexDigit = '0' | '1' | '2' | '3' | '4' | '5' | '6' |
-    '7' | '8' | '9' | 'A' | 'B' | 'C' | 'D' |
-    'E' | 'F' | 'a' | 'b' | 'c' | 'd' | 'e' |
-    'f';
+		'7' | '8' | '9' | 'A' | 'B' | 'C' | 'D' |
+		'E' | 'F' | 'a' | 'b' | 'c' | 'd' | 'e' |
+		'f';
 
 type NullByte = '00';
 type HexByte = string; // `${HexDigit}${HexDigit}`
@@ -25,9 +25,9 @@ type EntityId = HexInt64;
 type ResourceId = `${NullByte}${HexInt56}`;
 
 interface Vec3 {
-    x: number;
-    y: number;
-    z: number;
+	x: number;
+	y: number;
+	z: number;
 }
 
 interface Rotation {
@@ -37,17 +37,17 @@ interface Rotation {
 }
 
 interface Transform {
-    position: Vec3;
-    rotation: Rotation;
-    scale: Vec3;
+	position: Vec3;
+	rotation: Rotation;
+	scale: Vec3;
 }
 
 interface PropertyValue {
-    // The type of the property value.
-    type: string;
+	// The type of the property value.
+	type: string;
 
-    // The data of the property, as it would appear in RT JSON.
-    data: unknown;
+	// The data of the property, as it would appear in RT JSON.
+	data: unknown;
 }
 
 interface GameEntity {
@@ -88,7 +88,7 @@ type PropertyName = string | UnknownPropertyName;
 interface EntityData extends EntityBaseData {
 	parent?: EntitySelector;
 	transform?: Transform;
-    relativeTransform?: Transform;
+	relativeTransform?: Transform;
 	properties: Record<PropertyName, PropertyValue>;
 	interfaces: string[];
 }
@@ -100,77 +100,77 @@ type EntityDetails = GameEntityDetails | EditorEntityDetails;
 
 // Requests from a third party program to the editor.
 declare namespace EditorRequests {
-    // A hello message, which must be sent when the connection to the editor is
-    // first established.
-    interface Hello {
-        type: 'hello';
+	// A hello message, which must be sent when the connection to the editor is
+	// first established.
+	interface Hello {
+		type: 'hello';
 
-        // The name of the third party program.
-        identifier: string;
-    }
+		// The name of the third party program.
+		identifier: string;
+	}
 
-    interface SelectEntity {
-        type: 'selectEntity';
+	interface SelectEntity {
+		type: 'selectEntity';
 
-        // The entity to select.
-        entity: EntitySelector;
-    }
+		// The entity to select.
+		entity: EntitySelector;
+	}
 
-    interface SetEntityTransform {
-        type: 'setEntityTransform';
+	interface SetEntityTransform {
+		type: 'setEntityTransform';
 
-        // The entity to set the transform of.
-        entity: EntitySelector
+		// The entity to set the transform of.
+		entity: EntitySelector
 
-        // The new transform of the entity.
-        transform: Transform;
+		// The new transform of the entity.
+		transform: Transform;
 
-        // `true` to set the transform relative to the parent, `false` to set it in world space.
-        relative: boolean;
-    }
+		// `true` to set the transform relative to the parent, `false` to set it in world space.
+		relative: boolean;
+	}
 
-    interface SpawnEntity {
-        type: 'spawnEntity';
+	interface SpawnEntity {
+		type: 'spawnEntity';
 
-        // The id of the entity template (TEMP hash).
-        templateId: ResourceId;
+		// The id of the entity template (TEMP hash).
+		templateId: ResourceId;
 
-        // The id to assign to the new entity.
-        entityId: EntityId;
+		// The id to assign to the new entity.
+		entityId: EntityId;
 
-        // A human-readable name for the entity.
-        name: string;
-    }
+		// A human-readable name for the entity.
+		name: string;
+	}
 
-    interface DestroyEntity {
-        type: 'destroyEntity';
+	interface DestroyEntity {
+		type: 'destroyEntity';
 
-        // The entity to destroy.
-        entity: EntitySelector;
-    }
+		// The entity to destroy.
+		entity: EntitySelector;
+	}
 
-    interface SetEntityName {
-        type: 'setEntityName';
+	interface SetEntityName {
+		type: 'setEntityName';
 
-        // The entity to set the name of.
-        entity: EntitySelector;
+		// The entity to set the name of.
+		entity: EntitySelector;
 
-        // The new name of the entity.
-        name: string;
-    }
+		// The new name of the entity.
+		name: string;
+	}
 
-    interface SetEntityProperty {
-        type: 'setEntityProperty';
+	interface SetEntityProperty {
+		type: 'setEntityProperty';
 
-        // The entity to set the property of.
-        entity: EntitySelector;
+		// The entity to set the property of.
+		entity: EntitySelector;
 
-        // The name or id of the property to set.
-        property: string | number;
+		// The name or id of the property to set.
+		property: string | number;
 
-        // The new value to give to the property, as it would appear in RT JSON.
-        value: unknown;
-    }
+		// The new value to give to the property, as it would appear in RT JSON.
+		value: unknown;
+	}
 
 	interface SignalEntityPin {
 		type: 'signalEntityPin';
@@ -202,23 +202,23 @@ declare namespace EditorRequests {
 }
 
 type EditorRequest =
-    EditorRequests.Hello
-    | EditorRequests.SelectEntity
-    | EditorRequests.SetEntityTransform
-    | EditorRequests.SpawnEntity
-    | EditorRequests.DestroyEntity
-    | EditorRequests.SetEntityName
-    | EditorRequests.SetEntityProperty
-	| EditorRequests.SignalEntityPin
-	| EditorRequests.ListEntities
-	| EditorRequests.GetEntityDetails;
+		EditorRequests.Hello
+		| EditorRequests.SelectEntity
+		| EditorRequests.SetEntityTransform
+		| EditorRequests.SpawnEntity
+		| EditorRequests.DestroyEntity
+		| EditorRequests.SetEntityName
+		| EditorRequests.SetEntityProperty
+		| EditorRequests.SignalEntityPin
+		| EditorRequests.ListEntities
+		| EditorRequests.GetEntityDetails;
 
 // Events from the editor to a third party program.
 declare namespace EditorEvents {
-    // A welcome message, which is sent in response to a hello message.
-    interface Welcome {
-        type: 'welcome';
-    }
+	// A welcome message, which is sent in response to a hello message.
+	interface Welcome {
+		type: 'welcome';
+	}
 
 	interface Error {
 		type: 'error';
@@ -227,23 +227,23 @@ declare namespace EditorEvents {
 		message: string;
 	}
 
-    interface EntitySelected {
-        type: 'entitySelected';
+	interface EntitySelected {
+		type: 'entitySelected';
 
-        // The entity that was selected.
-        entity: EntityDetails;
-    }
+		// The entity that was selected.
+		entity: EntityDetails;
+	}
 
 	interface EntityDeselected {
 		type: 'entityDeselected';
 	}
 
-    interface EntityTransformUpdated {
-        type: 'entityTransformUpdated';
+	interface EntityTransformUpdated {
+		type: 'entityTransformUpdated';
 
-        // The entity whose transform was updated.
-        entity: EntityDetails;
-    }
+		// The entity whose transform was updated.
+		entity: EntityDetails;
+	}
 
 	interface EntityNameUpdated {
 		type: 'entityNameUpdated';
@@ -252,51 +252,51 @@ declare namespace EditorEvents {
 		entity: EntityDetails;
 	}
 
-    interface EntitySpawned {
-        type: 'entitySpawned';
+	interface EntitySpawned {
+		type: 'entitySpawned';
 
 		// The entity that was spawned.
 		entity: EntityDetails;
-    }
+	}
 
-    interface EntityDestroyed {
-        type: 'entityDestroyed';
+	interface EntityDestroyed {
+		type: 'entityDestroyed';
 
-        // The id of the destroyed entity.
-        entity: EntitySelector;
-    }
+		// The id of the destroyed entity.
+		entity: EntitySelector;
+	}
 
-    interface EntityPropertyChanged {
-        type: 'entityPropertyChanged';
+	interface EntityPropertyChanged {
+		type: 'entityPropertyChanged';
 
-        // The entity that was updated.
-        entity: EntityDetails;
+		// The entity that was updated.
+		entity: EntityDetails;
 
-        // The id of the property that was updated.
-        property: number;
+		// The name or id of the property that was updated.
+		property: string | number;
 
-        // The new value of the property.
-        value: PropertyValue;
-    }
+		// The new value of the property.
+		value: PropertyValue;
+	}
 
-    interface SceneLoading {
-        type: 'sceneLoading';
+	interface SceneLoading {
+		type: 'sceneLoading';
 
-        // The name of the scene that is being loaded.
-        scene: string;
+		// The name of the scene that is being loaded.
+		scene: string;
 
-        // The name of additional bricks that are being loaded.
-        bricks: string[];
-    }
+		// The name of additional bricks that are being loaded.
+		bricks: string[];
+	}
 
 	// The scene is being cleared (e.g. for a reload or a switch to a different scene).
-    interface SceneClearing {
-        type: 'sceneClearing';
+	interface SceneClearing {
+		type: 'sceneClearing';
 
 		// Whether the scene is being cleared for a level reload.
-        // If `false`, it means the game will transition to a different scene.
+		// If `false`, it means the game will transition to a different scene.
 		forReload: boolean;
-    }
+	}
 
 	interface EntityListResponse {
 		type: 'entityList';
@@ -314,16 +314,16 @@ declare namespace EditorEvents {
 }
 
 type EditorEvent =
-    EditorEvents.Welcome
-	| EditorEvents.Error
-    | EditorEvents.EntitySelected
-	| EditorEvents.EntityDeselected
-    | EditorEvents.EntityTransformUpdated
-	| EditorEvents.EntityNameUpdated
-    | EditorEvents.EntitySpawned
-    | EditorEvents.EntityDestroyed
-    | EditorEvents.EntityPropertyChanged
-    | EditorEvents.SceneLoading
-    | EditorEvents.SceneClearing
-	| EditorEvents.EntityListResponse
-	| EditorEvents.EntityDetailsResponse;
+		EditorEvents.Welcome
+		| EditorEvents.Error
+		| EditorEvents.EntitySelected
+		| EditorEvents.EntityDeselected
+		| EditorEvents.EntityTransformUpdated
+		| EditorEvents.EntityNameUpdated
+		| EditorEvents.EntitySpawned
+		| EditorEvents.EntityDestroyed
+		| EditorEvents.EntityPropertyChanged
+		| EditorEvents.SceneLoading
+		| EditorEvents.SceneClearing
+		| EditorEvents.EntityListResponse
+		| EditorEvents.EntityDetailsResponse;
