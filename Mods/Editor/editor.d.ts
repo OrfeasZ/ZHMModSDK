@@ -199,6 +199,18 @@ declare namespace EditorRequests {
 		// The entity to get the details of.
 		entity: EntitySelector;
 	}
+
+	interface GetHitmanEntity {
+		type: 'getHitmanEntity';
+	}
+
+	interface GetCameraEntity {
+		type: 'getCameraEntity';
+	}
+
+	interface RebuildEntityTree {
+		type: 'rebuildEntityTree';
+	}
 }
 
 type EditorRequest =
@@ -211,7 +223,10 @@ type EditorRequest =
 		| EditorRequests.SetEntityProperty
 		| EditorRequests.SignalEntityPin
 		| EditorRequests.ListEntities
-		| EditorRequests.GetEntityDetails;
+		| EditorRequests.GetEntityDetails
+		| EditorRequests.GetHitmanEntity
+		| EditorRequests.GetCameraEntity
+		| EditorRequests.RebuildEntityTree;
 
 // Events from the editor to a third party program.
 declare namespace EditorEvents {
@@ -311,6 +326,24 @@ declare namespace EditorEvents {
 		// The details of the requested entity.
 		entity: EntityDetails;
 	}
+
+	interface HitmanEntityResponse {
+		type: 'hitmanEntity';
+
+		// The details of the Hitman entity.
+		entity: EntityDetails;
+	}
+
+	interface CameraEntityResponse {
+		type: 'cameraEntity';
+
+		// The details of the active camera entity.
+		entity: EntityDetails;
+	}
+
+	interface EntityTreeRebuilt {
+		type: 'entityTreeRebuilt';
+	}
 }
 
 type EditorEvent =
@@ -326,4 +359,7 @@ type EditorEvent =
 		| EditorEvents.SceneLoading
 		| EditorEvents.SceneClearing
 		| EditorEvents.EntityListResponse
-		| EditorEvents.EntityDetailsResponse;
+		| EditorEvents.EntityDetailsResponse
+		| EditorEvents.HitmanEntityResponse
+		| EditorEvents.CameraEntityResponse
+		| EditorEvents.EntityTreeRebuilt;
