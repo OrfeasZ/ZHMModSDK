@@ -138,7 +138,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 		Plugin()->SetEntityProperty(
 			ReadEntitySelector(s_JsonMsg["entity"]),
 			s_PropertyId,
-			s_JsonMsg["value"].raw_json_token()
+			simdjson::to_json_string(s_JsonMsg["value"])
 		);
 	}
 	else if (s_Type == "signalEntityPin") {
