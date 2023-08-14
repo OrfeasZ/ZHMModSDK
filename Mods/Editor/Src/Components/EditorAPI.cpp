@@ -9,6 +9,7 @@
 #include <ResourceLib_HM3.h>
 
 #include <queue>
+#include <utility>
 
 ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
@@ -87,41 +88,41 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 	return {};
 }
 
-void Editor::SelectEntity(EntitySelector p_Selector) {
+void Editor::SelectEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId) {
 	auto s_Entity = FindEntity(p_Selector);
 
 	if (s_Entity) {
-		OnSelectEntity(s_Entity);
+		OnSelectEntity(s_Entity, std::move(p_ClientId));
 	} else {
 		throw std::runtime_error("Could not find entity for the given selector.");
 	}
 }
 
-void Editor::SetEntityTransform(EntitySelector p_Selector, SMatrix p_Transform) {
+void Editor::SetEntityTransform(EntitySelector p_Selector, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId) {
 	if (const auto s_Entity = FindEntity(p_Selector)) {
-		OnEntityTransformChange(s_Entity, p_Transform);
+		OnEntityTransformChange(s_Entity, p_Transform, p_Relative, std::move(p_ClientId));
 	} else {
 		throw std::runtime_error("Could not find entity for the given selector.");
 	}
 }
 
-void Editor::SpawnEntity(ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name) {
+void Editor::SpawnEntity(ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name, std::optional<std::string> p_ClientId) {
 
 }
 
-void Editor::DestroyEntity(EntitySelector p_Selector) {
+void Editor::DestroyEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId) {
 
 }
 
-void Editor::SetEntityName(EntitySelector p_Selector, std::string p_Name) {
+void Editor::SetEntityName(EntitySelector p_Selector, std::string p_Name, std::optional<std::string> p_ClientId) {
 	if (const auto s_Entity = FindEntity(p_Selector)) {
-		OnEntityNameChange(s_Entity, p_Name);
+		OnEntityNameChange(s_Entity, p_Name, std::move(p_ClientId));
 	} else {
 		throw std::runtime_error("Could not find entity for the given selector.");
 	}
 }
 
-void Editor::SetEntityProperty(EntitySelector p_Selector, uint32_t p_PropertyId, std::string_view p_JsonValue) {
+void Editor::SetEntityProperty(EntitySelector p_Selector, uint32_t p_PropertyId, std::string_view p_JsonValue, std::optional<std::string> p_ClientId) {
 	if (const auto s_Entity = FindEntity(p_Selector)) {
 		auto s_EntityType = s_Entity->GetType();
 		auto s_Property = s_EntityType->FindProperty(p_PropertyId);
@@ -158,7 +159,7 @@ void Editor::SetEntityProperty(EntitySelector p_Selector, uint32_t p_PropertyId,
 			throw std::runtime_error("Unable to convert JSON to game struct.");
 		}
 
-		OnSetPropertyValue(s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, s_Data));
+		OnSetPropertyValue(s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, s_Data), std::move(p_ClientId));
 		(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 	} else {
 		throw std::runtime_error("Could not find entity for the given selector.");
@@ -171,4 +172,8 @@ void Editor::SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p
 	} else {
 		throw std::runtime_error("Could not find entity for the given selector.");
 	}
+}
+
+void Editor::RebuildEntityTree() {
+	UpdateEntities();
 }

@@ -59,7 +59,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
         if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Backspace]))
         {
-			OnSelectEntity({});
+			OnSelectEntity({}, std::nullopt);
         }
     }
 
@@ -79,21 +79,42 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
                 if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
                 {
-	                OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix);
+	                OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix, false, std::nullopt);
                 }
             }
         }
     }
 }
 
-void Editor::OnEntityTransformChange(ZEntityRef p_Entity, SMatrix p_Transform) {
+void Editor::OnEntityTransformChange(ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId) {
 	if (auto* s_SpatialEntity = p_Entity.QueryInterface<ZSpatialEntity>()) {
-		s_SpatialEntity->SetWorldMatrix(p_Transform);
+		if (!p_Relative) {
+			s_SpatialEntity->SetWorldMatrix(p_Transform);
+		}
+		else {
+			SMatrix s_ParentTrans;
+
+			// Get parent entity transform.
+			if (s_SpatialEntity->m_eidParent.m_pInterfaceRef) {
+				s_ParentTrans = s_SpatialEntity->m_eidParent.m_pInterfaceRef->GetWorldMatrix();
+			} else if (p_Entity.GetLogicalParent() && p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()) {
+				s_ParentTrans = p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
+			} else if (p_Entity.GetOwningEntity() && p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()) {
+				s_ParentTrans = p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
+			}
+
+			// Calculate world transform based on the provided relative transform.
+			auto s_WorldTrans = p_Transform * s_ParentTrans;
+			s_WorldTrans.Trans = s_ParentTrans.Trans + p_Transform.Trans;
+			s_WorldTrans.Trans.w = 1.f;
+
+			s_SpatialEntity->SetWorldMatrix(s_WorldTrans);
+		}
 
 		if (const auto s_PhysicsAspect = p_Entity.QueryInterface<ZStaticPhysicsAspect>()) {
 			s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
 		}
 
-		m_Server.OnEntityTransformChanged(p_Entity);
+		m_Server.OnEntityTransformChanged(p_Entity, std::move(p_ClientId));
 	}
 }

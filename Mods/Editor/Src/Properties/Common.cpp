@@ -1,8 +1,8 @@
 #include "Editor.h"
 
-void Editor::OnSetPropertyValue(ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value) {
+void Editor::OnSetPropertyValue(ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value, std::optional<std::string> p_ClientId) {
 	Hooks::SetPropertyValue->Call(p_Entity, p_PropertyId, p_Value, true);
-	m_Server.OnEntityPropertySet(p_Entity, p_PropertyId);
+	m_Server.OnEntityPropertySet(p_Entity, p_PropertyId, std::move(p_ClientId));
 }
 
 void Editor::OnSignalEntityPin(ZEntityRef p_Entity, uint32_t p_PinId, bool p_Output) {

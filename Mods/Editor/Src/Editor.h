@@ -28,17 +28,18 @@ public:
     void OnEngineInitialized() override;
 
 public:
-	void SelectEntity(EntitySelector p_Selector);
-	void SetEntityTransform(EntitySelector p_Selector, SMatrix p_Transform);
-	void SpawnEntity(ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name);
-	void DestroyEntity(EntitySelector p_Selector);
-	void SetEntityName(EntitySelector p_Selector, std::string p_Name);
-	void SetEntityProperty(EntitySelector p_Selector, uint32_t p_PropertyId, std::string_view p_JsonValue);
+	void SelectEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId);
+	void SetEntityTransform(EntitySelector p_Selector, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId);
+	void SpawnEntity(ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name, std::optional<std::string> p_ClientId);
+	void DestroyEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId);
+	void SetEntityName(EntitySelector p_Selector, std::string p_Name, std::optional<std::string> p_ClientId);
+	void SetEntityProperty(EntitySelector p_Selector, uint32_t p_PropertyId, std::string_view p_JsonValue, std::optional<std::string> p_ClientId);
 	void SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p_Output);
 	void LockEntityTree() { m_CachedEntityTreeMutex.lock_shared(); }
 	std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
 	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
 	ZEntityRef FindEntity(EntitySelector p_Selector);
+	void RebuildEntityTree();
 
 private:
     void SpawnCameras();
@@ -59,10 +60,10 @@ private:
     bool SearchForEntityByName(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName);
 	void UpdateEntities();
 
-	void OnSelectEntity(ZEntityRef p_Entity);
-	void OnEntityTransformChange(ZEntityRef p_Entity, SMatrix p_Transform);
-	void OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name);
-	void OnSetPropertyValue(ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value);
+	void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
+	void OnEntityTransformChange(ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId);
+	void OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId);
+	void OnSetPropertyValue(ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value, std::optional<std::string> p_ClientId);
 	void OnSignalEntityPin(ZEntityRef p_Entity, const std::string& p_Pin, bool p_Output);
 	void OnSignalEntityPin(ZEntityRef p_Entity, uint32_t p_PinId, bool p_Output);
 

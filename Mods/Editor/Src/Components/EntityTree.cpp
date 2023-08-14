@@ -10,6 +10,7 @@
 #include <shared_mutex>
 #include <queue>
 #include <map>
+#include <utility>
 
 void Editor::UpdateEntities() {
 	const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
@@ -157,6 +158,8 @@ void Editor::UpdateEntities() {
 	m_CachedEntityTreeMutex.lock();
 	m_CachedEntityTree = std::move(s_SceneNode);
 	m_CachedEntityTreeMutex.unlock();
+
+	m_Server.OnEntityTreeRebuilt();
 }
 
 void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
@@ -190,7 +193,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
 	);
 
 	if (ImGui::IsItemClicked()) {
-		OnSelectEntity(s_Entity);
+		OnSelectEntity(s_Entity, std::nullopt);
 	}
 
 	if (s_Open) {
@@ -210,7 +213,7 @@ bool Editor::SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory
 	const auto s_EntIndex = p_BrickFactory->GetSubEntityIndex(p_EntityId);
 
 	if (s_EntIndex != -1) {
-		OnSelectEntity(p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, s_EntIndex));
+		OnSelectEntity(p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, s_EntIndex), std::nullopt);
 		return true;
 	}
 
@@ -251,7 +254,7 @@ bool Editor::SearchForEntityByType(
 		ZEntityRef s_Ref = s_SubEntity;
 
 		if (s_Ref.HasInterface(p_TypeName)) {
-			OnSelectEntity(s_Ref);
+			OnSelectEntity(s_Ref, std::nullopt);
 			return true;
 		}
 
@@ -374,21 +377,21 @@ void Editor::DrawEntityTree() {
 	}
 }
 
-void Editor::OnSelectEntity(ZEntityRef p_Entity) {
+void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
 	const bool s_DifferentEntity = m_SelectedEntity != p_Entity;
 
 	m_SelectedEntity = p_Entity;
 	m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;
 
 	if (s_DifferentEntity) {
-		m_Server.OnEntitySelected(p_Entity);
+		m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
 	}
 }
 
-void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name) {
+void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId) {
 	m_CachedEntityTreeMutex.lock();
 	m_EntityNames[p_Entity] = p_Name;
 	m_CachedEntityTreeMutex.unlock();
 
-	m_Server.OnEntityNameChanged(p_Entity);
+	m_Server.OnEntityNameChanged(p_Entity, std::move(p_ClientId));
 }

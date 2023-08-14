@@ -22,7 +22,9 @@ void Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityP
 				OnSetPropertyValue(
 					p_Entity,
 					p_Property->m_nPropertyId,
-					ZObjectRef(s_PropertyInfo->m_pType, &s_EnumValue.m_nValue));
+					ZObjectRef(s_PropertyInfo->m_pType, &s_EnumValue.m_nValue),
+					std::nullopt
+				);
 			}
 		}
 

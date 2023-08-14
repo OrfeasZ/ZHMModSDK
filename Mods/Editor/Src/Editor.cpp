@@ -524,7 +524,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
                 }
             }
 
-			OnSelectEntity(s_SelectedEntity);
+			OnSelectEntity(s_SelectedEntity, std::nullopt);
         }
     }
 }

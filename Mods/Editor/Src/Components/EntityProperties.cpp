@@ -24,7 +24,7 @@ void Editor::DrawEntityProperties() {
 
 	if (s_SceneCtx && s_SceneCtx->m_pScene && s_SelectedEntity) {
 		if (ImGui::Button(ICON_MD_SUPERVISOR_ACCOUNT)) {
-			OnSelectEntity(s_SelectedEntity.GetLogicalParent());
+			OnSelectEntity(s_SelectedEntity.GetLogicalParent(), std::nullopt);
 		}
 
 		if (ImGui::IsItemHovered())
@@ -34,7 +34,7 @@ void Editor::DrawEntityProperties() {
 		ImGui::SameLine(0, 5);
 
 		if (ImGui::Button(ICON_MD_BRANDING_WATERMARK)) {
-			OnSelectEntity(s_SelectedEntity.GetOwningEntity());
+			OnSelectEntity(s_SelectedEntity.GetOwningEntity(), std::nullopt);
 		}
 
 		if (ImGui::IsItemHovered())
@@ -44,7 +44,7 @@ void Editor::DrawEntityProperties() {
 		ImGui::SameLine(0, 5);
 
 		if (ImGui::Button(ICON_MD_DESELECT))
-			OnSelectEntity({});
+			OnSelectEntity({}, std::nullopt);
 
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip("Deselect");
@@ -202,7 +202,7 @@ void Editor::DrawEntityProperties() {
 
 				auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
-				OnEntityTransformChange(s_SelectedEntity, s_HitmanSpatial->GetWorldMatrix());
+				OnEntityTransformChange(s_SelectedEntity, s_HitmanSpatial->GetWorldMatrix(), false, std::nullopt);
 			}
 
 			ImGui::SameLine();
@@ -214,6 +214,8 @@ void Editor::DrawEntityProperties() {
 				auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
 				s_HitmanSpatial->SetWorldMatrix(s_Spatial->GetWorldMatrix());
+
+				OnEntityTransformChange(s_LocalHitman.m_ref, s_Spatial->GetWorldMatrix(), false, std::nullopt);
 			}
 		}
 
