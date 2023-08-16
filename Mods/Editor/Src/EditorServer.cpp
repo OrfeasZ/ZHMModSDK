@@ -847,7 +847,7 @@ SMatrix EditorServer::ReadTransform(simdjson::ondemand::value p_Transform) {
 	const auto s_Rotation = ReadRotation(p_Transform["rotation"]);
 	const auto s_Scale = ReadVector3(p_Transform["scale"]);
 
-	const auto s_Quat = DirectX::XMQuaternionRotationRollPitchYaw(s_Rotation.pitch, s_Rotation.yaw, s_Rotation.roll);
+	const auto s_Quat = DirectX::XMQuaternionRotationRollPitchYaw(s_Rotation.yaw, s_Rotation.pitch, s_Rotation.roll);
 
 	const auto s_Matrix = DirectX::XMMatrixAffineTransformation(
 		DirectX::XMVectorSet(s_Scale.x, s_Scale.y, s_Scale.z, 0.0f),
