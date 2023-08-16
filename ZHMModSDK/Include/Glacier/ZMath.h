@@ -227,20 +227,31 @@ public:
 	Quat(float p_X, float p_Y, float p_Z, float p_W) : m(p_X, p_Y, p_Z, p_W) {}
 
 	EulerAngles ToEuler() const {
-		// From: https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
-		float heading = atan2f(2.f * m.y * m.w - 2.f * m.x * m.z, 1.f - 2.f * m.y * m.y - 2.f * m.z * m.z);
+		// Adapted from DirectXTK.
+		const float xx = m.x * m.x;
+		const float yy = m.y * m.y;
+		const float zz = m.z * m.z;
 
-		float attitude = 2.f * m.x * m.y + 2.f * m.z * m.w;
-		attitude = std::clamp(attitude, -1.0f, 1.0f);
-		attitude = asinf(attitude);
+		const float m31 = 2.f * m.x * m.z + 2.f * m.y * m.w;
+		const float m32 = 2.f * m.y * m.z - 2.f * m.x * m.w;
+		const float m33 = 1.f - 2.f * xx - 2.f * yy;
 
-		float bank = atan2f(2.f * m.x * m.w - 2.f * m.y * m.z, 1.f - 2.f * m.x * m.x - 2.f * m.z * m.z);
+		const float cy = sqrtf(m33 * m33 + m31 * m31);
+		const float cx = atan2f(-m32, cy);
+		if (cy > 16.f * FLT_EPSILON)
+		{
+			const float m12 = 2.f * m.x * m.y + 2.f * m.z * m.w;
+			const float m22 = 1.f - 2.f * xx - 2.f * zz;
 
-		return {
-			heading, // yaw
-			attitude, // pitch
-			bank, // roll
-		};
+			return { cx, atan2f(m31, m33), atan2f(m12, m22) };
+		}
+		else
+		{
+			const float m11 = 1.f - 2.f * yy - 2.f * zz;
+			const float m21 = 2.f * m.x * m.y - 2.f * m.z * m.w;
+
+			return { cx, 0.f, atan2f(-m21, m11) };
+		}
 	}
 
 public:

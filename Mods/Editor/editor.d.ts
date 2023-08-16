@@ -30,6 +30,7 @@ interface Vec3 {
 	z: number;
 }
 
+// Rotation in radians.
 interface Rotation {
 	yaw: number;
 	pitch: number;
