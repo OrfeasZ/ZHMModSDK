@@ -7,6 +7,6 @@ namespace Util
     class FileUtils
     {
     public:
-		static std::filesystem::path GetExecutablePath();
+        static std::filesystem::path GetExecutablePath();
     };
 }

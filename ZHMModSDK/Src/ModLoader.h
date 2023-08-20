@@ -133,14 +133,14 @@ public:
     std::unordered_set<std::string> GetAvailableMods();
     std::unordered_set<std::string> GetActiveMods();
     void SetActiveMods(const std::unordered_set<std::string>& p_Mods);
-	void LoadMod(const std::string& p_Name, bool p_LiveLoad, ModConfiguration p_Configuration = {});
+    void LoadMod(const std::string& p_Name, bool p_LiveLoad, ModConfiguration p_Configuration = {});
     void UnloadMod(const std::string& p_Name);
     void ReloadMod(const std::string& p_Name);
     void UnloadAllMods();
     void ReloadAllMods();
     IPluginInterface* GetModByName(const std::string& p_Name);
-	ModSetting* GetModSetting(IPluginInterface* p_Mod, std::string_view p_Name);
-	ModSetting* GetOrCreateModSetting(IPluginInterface* p_Mod, std::string_view p_Name);
+    ModSetting* GetModSetting(IPluginInterface* p_Mod, std::string_view p_Name);
+    ModSetting* GetOrCreateModSetting(IPluginInterface* p_Mod, std::string_view p_Name);
     void SaveModConfigurations();
 
     std::vector<IPluginInterface*> GetLoadedMods() const
@@ -180,7 +180,7 @@ private:
     std::unordered_set<std::string> m_AvailableModsLower;
     std::vector<IPluginInterface*> m_ModList;
     std::unordered_map<std::string, LoadedMod> m_LoadedMods;
-	std::shared_mutex m_Mutex;
-	std::shared_mutex m_ConfigMutex;
+    std::shared_mutex m_Mutex;
+    std::shared_mutex m_ConfigMutex;
     std::vector<ModConfiguration> m_ModConfigurations;
 };
