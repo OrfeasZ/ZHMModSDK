@@ -5,6 +5,7 @@
 #include "imgui.h"
 
 class IPluginInterface;
+class ISetting;
 class ZRenderDestination;
 class SVector2;
 class SVector3;
@@ -73,6 +74,22 @@ public:
     virtual bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) = 0;
 
     virtual void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) = 0;
+
+    /**
+     * Set a plugin setting value for the given name.
+     * @param p_Plugin The plugin to set the setting for.
+     * @param p_Name The name of the setting. Use dot notation for sections e.g. 'section.setting'. Case insensitive.
+     * @param p_Value The value to set the setting to.
+     */
+    virtual void SetSetting(IPluginInterface* p_Plugin, const ZString& p_Name, const ZString& p_Value) = 0;
+
+    /**
+     * Get a plugin setting value for the given name.
+     * @param p_Plugin The plugin to get the setting for.
+     * @param p_Name The name of the setting. Use dot notation for sections e.g. 'section.setting'. Case insensitive.
+     * @return The setting if it exists, otherwise nullptr.
+     */
+    virtual ISetting* GetSetting(IPluginInterface* p_Plugin, const ZString& p_Name) = 0;
 };
 
 /**

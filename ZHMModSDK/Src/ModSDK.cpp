@@ -8,6 +8,7 @@
 #include "ini.h"
 #include "Logging.h"
 #include "IPluginInterface.h"
+#include "ISetting.h"
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
 
@@ -514,6 +515,19 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
     ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetDescriptorHeap, nullptr);
 }
 
+void ModSDK::SetSetting(IPluginInterface* p_Plugin, const ZString& p_Name, const ZString& p_Value)
+{
+    auto s_Config = m_ModLoader->GetOrCreateModSetting(p_Plugin, p_Name);
+    s_Config->Set(std::string(p_Value));
+
+    // TODO: Prevent multiple writes for multiple consecutive calls. Debounce thread?
+    m_ModLoader->SaveModConfigurations();
+}
+
+ISetting* ModSDK::GetSetting(IPluginInterface* p_Plugin, const ZString& p_Name)
+{
+    return m_ModLoader->GetModSetting(p_Plugin, p_Name);
+}
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
 {
