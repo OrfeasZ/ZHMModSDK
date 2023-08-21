@@ -93,7 +93,7 @@ void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
     // First unload any mods that don't exist in the new list.
     std::vector<std::string> s_ModsToUnload;
 
-    Lock();
+    LockRead();
     m_ConfigMutex.lock();
 
     for (auto& s_Pair : m_LoadedMods) {
@@ -115,7 +115,7 @@ void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
     }
 
     m_ConfigMutex.unlock();
-    Unlock();
+    UnlockRead();
 
     SaveModConfigurations();
 
@@ -124,7 +124,7 @@ void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
 
     std::vector<std::pair<std::string, ModConfiguration&>> s_ModsToLoad;
 
-    Lock();
+    LockRead();
     m_ConfigMutex.lock();
 
     // Then load any mods that aren't already loaded.
@@ -149,7 +149,7 @@ void ModLoader::SetActiveMods(const std::unordered_set<std::string>& p_Mods)
     }
 
     m_ConfigMutex.unlock();
-    Unlock();
+    UnlockRead();
 
     for (auto& s_Mod : s_ModsToLoad)
     {
