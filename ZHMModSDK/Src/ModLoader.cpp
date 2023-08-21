@@ -178,7 +178,7 @@ void ModLoader::LoadAllMods()
     
     for (const auto& s_Mod : m_ModConfigurations) {
         // Ignore the SDK entry. It's used for configuring the SDK itself.
-        if (s_Mod.Config.Name == "sdk")
+        if (Util::StringUtils::CompareInsensitive(s_Mod.Config.Name, "sdk"))
             continue;
         if (!s_Mod.Enabled)
             continue;
