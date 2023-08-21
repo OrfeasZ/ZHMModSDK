@@ -503,12 +503,12 @@ void ModSDK::SetSetting(IPluginInterface* p_Plugin, const ZString& p_Name, const
     s_Config->Set(std::string(p_Value));
 
     // TODO: Prevent multiple writes for multiple consecutive calls. Debounce thread?
-	m_ModConfigManager->SaveModConfigurations();
+    m_ModConfigManager->SaveModConfigurations();
 }
 
 ISetting* ModSDK::GetSetting(IPluginInterface* p_Plugin, const ZString& p_Name)
 {
-	return m_ModConfigManager->GetModSetting(p_Plugin, p_Name);
+    return m_ModConfigManager->GetModSetting(p_Plugin, p_Name);
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
