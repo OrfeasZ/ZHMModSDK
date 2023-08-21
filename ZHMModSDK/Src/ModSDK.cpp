@@ -89,7 +89,7 @@ ModSDK::ModSDK()
     SetupLogging(spdlog::level::info);
 #endif
 
-    m_ModLoader = std::make_shared<ModLoader>();
+    m_ModLoader = std::make_shared<ModLoader>(*m_ModConfigManager);
 
     m_UIConsole = std::make_shared<UI::Console>();
     m_UIMainMenu = std::make_shared<UI::MainMenu>();
@@ -161,34 +161,16 @@ bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCod
 
 void ModSDK::LoadConfiguration()
 {
-    char s_ExePathStr[MAX_PATH];
-    auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+    m_ModConfigManager = std::make_shared<ModConfigManager>();
 
-    if (s_PathSize == 0)
-        return;
+    m_ModConfigManager->LoadConfiguration();
 
-    std::filesystem::path s_ExePath(s_ExePathStr);
-    auto s_ExeDir = s_ExePath.parent_path();
+    auto s_NoUiSetting = m_ModConfigManager->GetSDKSetting("noui");
 
-    const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
-
-    mINI::INIFile s_File(s_IniPath.string());
-    mINI::INIStructure s_Ini;
-
-    // now we can read the file
-    s_File.read(s_Ini);
-
-    for (auto& s_Mod : s_Ini)
+    if (s_NoUiSetting && s_NoUiSetting->AsBool())
     {
-        // We are looking for the sdk entry.
-        if (Util::StringUtils::ToLowerCase(s_Mod.first) != "sdk")
-            continue;
-
-        if (s_Mod.second.has("noui") && s_Mod.second.get("noui") == "true")
-        {
-            m_UiEnabled = false;
-            MessageBoxA(nullptr, "WARNING: The mod SDK UI is currently disabled!\n\nIf you want to re-enable it, remove the 'noui = true' line from Retail/mods.ini and restart your game.", "Mod SDK Warning", MB_OK | MB_ICONWARNING);
-        }
+        m_UiEnabled = false;
+        MessageBoxA(nullptr, "WARNING: The mod SDK UI is currently disabled!\n\nIf you want to re-enable it, remove the 'noui = true' line from Retail/mods.ini and restart your game.", "Mod SDK Warning", MB_OK | MB_ICONWARNING);
     }
 }
 
@@ -517,16 +499,16 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
 
 void ModSDK::SetSetting(IPluginInterface* p_Plugin, const ZString& p_Name, const ZString& p_Value)
 {
-    auto s_Config = m_ModLoader->GetOrCreateModSetting(p_Plugin, p_Name);
+    auto s_Config = m_ModConfigManager->GetOrCreateModSetting(p_Plugin, p_Name);
     s_Config->Set(std::string(p_Value));
 
     // TODO: Prevent multiple writes for multiple consecutive calls. Debounce thread?
-    m_ModLoader->SaveModConfigurations();
+	m_ModConfigManager->SaveModConfigurations();
 }
 
 ISetting* ModSDK::GetSetting(IPluginInterface* p_Plugin, const ZString& p_Name)
 {
-    return m_ModLoader->GetModSetting(p_Plugin, p_Name);
+	return m_ModConfigManager->GetModSetting(p_Plugin, p_Name);
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)

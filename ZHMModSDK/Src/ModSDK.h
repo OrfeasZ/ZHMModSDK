@@ -29,6 +29,7 @@ namespace UI
 
 class IRenderer;
 class IPluginInterface;
+class ModConfigManager;
 class ModLoader;
 class DebugConsole;
 struct IDXGISwapChain3;
@@ -115,6 +116,7 @@ private:
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;
 
+    std::shared_ptr<ModConfigManager> m_ModConfigManager {};
     std::shared_ptr<ModLoader> m_ModLoader {};
 
 #if _DEBUG
