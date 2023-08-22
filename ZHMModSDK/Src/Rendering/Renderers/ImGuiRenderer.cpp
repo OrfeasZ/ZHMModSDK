@@ -15,6 +15,7 @@
 #include "Logging.h"
 
 #include <Glacier/ZApplicationEngineWin32.h>
+#include <Glacier/ZInputActionManager.h>
 
 #include "D3DUtils.h"
 #include "Fonts.h"
@@ -558,6 +559,9 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
     if (s_ScanCode == 0x29 && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN))
         m_ImguiHasFocus = !m_ImguiHasFocus;
 
+	//Globals::InputActionManager->m_bDebugKeys = true;
+	Globals::InputActionManager->m_bEnabled = !m_ImguiHasFocus;
+
     if (!m_ImguiHasFocus)
         return HookResult<LRESULT>(HookAction::Continue());
 
@@ -688,12 +692,12 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAct
         "eIAStickRightVertical_Raw",
     };
 
-    // Don't allow moving the camera / character while the imgui overlay has focus.
-    if (m_ImguiHasFocus)
-    {
-        if (s_BlockedInputs.contains(th->m_szName))
-            return HookResult(HookAction::Return(), 0.0);
-    }
+    //// Don't allow moving the camera / character while the imgui overlay has focus.
+    //if (m_ImguiHasFocus)
+    //{
+    //    if (s_BlockedInputs.contains(th->m_szName))
+    //        return HookResult(HookAction::Return(), 0.0);
+    //}
 
     return HookResult<double>(HookAction::Continue());
 }
