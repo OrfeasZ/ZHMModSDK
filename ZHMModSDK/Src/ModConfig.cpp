@@ -62,6 +62,39 @@ ModConfigManager::~ModConfigManager()
 void ModConfigManager::LoadConfiguration()
 {
     m_ModConfigs = LoadModConfigurations();
+
+    auto s_ExePath = Util::FileUtils::GetExecutablePath();
+    if (s_ExePath.empty())
+        return;
+
+    auto s_ExeDir = s_ExePath.parent_path();
+
+    const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
+
+    m_IniWriteThread = std::thread([this, s_IniPath]() {
+        mINI::INIFile s_File(s_IniPath.string());
+        mINI::INIStructure s_Ini;
+
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
+            if (m_ConfigSaveRequested) {
+                m_ConfigSaveRequested = false;
+
+                LockRead();
+
+                for (const auto& s_Config : m_ModConfigs) {
+                    // Use loaded mod's settings or user config.
+                    auto s_LoadedConfig = GetLoadedModConfigurationByName(s_Config.Config.Name);
+                    WriteModConfigurationToIni(s_Ini, s_LoadedConfig ? *s_LoadedConfig : s_Config);
+                }
+
+                s_File.generate(s_Ini, true);
+
+                UnlockRead();
+            }
+        }
+    });
 }
 
 bool ModConfigManager::IsModAvailable(const std::string& p_Name) const
@@ -293,34 +326,7 @@ ModSetting* ModConfigManager::GetOrCreateModSetting(IPluginInterface* p_Mod, std
 
 void ModConfigManager::SaveModConfigurations()
 {
-    // Persist the mods to the ini file.
-    auto s_ExePath = Util::FileUtils::GetExecutablePath();
-    if (s_ExePath.empty())
-        return;
-
-    auto s_ExeDir = s_ExePath.parent_path();
-
-    const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
-
-    std::thread([s_IniPath]() {
-
-    }).detach();
-
-    mINI::INIFile s_File(s_IniPath.string());
-
-    mINI::INIStructure s_Ini;
-
-    LockRead();
-
-    for (const auto& s_Config : m_ModConfigs) {
-        // Use loaded mod's settings or user config.
-        auto s_LoadedConfig = GetLoadedModConfigurationByName(s_Config.Config.Name);
-        WriteModConfigurationToIni(s_Ini, s_LoadedConfig ? *s_LoadedConfig : s_Config);
-    }
-
-    UnlockRead();
-
-    s_File.generate(s_Ini, true);
+    m_ConfigSaveRequested = true;
 }
 
 void ModConfigManager::LoadModConfigurationFromIniSection(ModConfigSection& p_ModConfiguration, const mINI::INIMap<std::string>& p_IniSection)

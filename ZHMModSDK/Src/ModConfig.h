@@ -77,4 +77,6 @@ protected:
 private:
     std::shared_mutex m_Mutex;
     std::vector<ModConfig> m_ModConfigs;
+    std::thread m_IniWriteThread;
+    std::atomic_bool m_ConfigSaveRequested = false;
 };
