@@ -125,8 +125,10 @@ std::vector<ModConfig> ModConfigManager::LoadModConfigurations()
                     return Util::StringUtils::CompareInsensitive(p_Section.Name, s_Key);
                 });
 
-                if (s_It == s_ModConfigSection->Subsections.end())
+                if (s_It == s_ModConfigSection->Subsections.end()) {
                     s_ModConfigSection = &s_ModConfigSection->Subsections.emplace_back();
+                    s_ModConfigSection->Name = s_Key;
+                }
                 else
                     s_ModConfigSection = &*s_It;
             }
@@ -267,6 +269,7 @@ ModSetting* ModConfigManager::GetOrCreateModSetting(IPluginInterface* p_Mod, std
 
             if (s_It == s_Section->Subsections.end()) {
                 s_Section = &s_Section->Subsections.emplace_back();
+                s_Section->Name = s_SplitKey[s_Idx];
                 continue;
             }
 
