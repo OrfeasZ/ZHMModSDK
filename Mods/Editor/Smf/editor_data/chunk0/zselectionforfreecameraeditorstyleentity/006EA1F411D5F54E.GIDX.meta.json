@@ -1,0 +1,726 @@
+{
+    "hash_value": "006EA1F411D5F54E",
+    "hash_path": "[assembly:/common/globalresources.ini].pc_resourceidx",
+    "hash_offset": 9609149,
+    "hash_size": 2147485183,
+    "hash_resource_type": "GIDX",
+    "hash_reference_table_size": 1597,
+    "hash_reference_table_dummy": 0,
+    "hash_size_final": 2376,
+    "hash_size_in_memory": 2032,
+    "hash_size_in_video_memory": 4294967295,
+    "hash_reference_data": [
+        {
+            "hash": "[modules:/zentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "0040DB61F3F905BC",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zrenderdestinationtextureentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/textures/g2/warnings/performancewarnings_01.texture?/codeyellow.tex](ascolormap).pc_tex",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/textures/g2/warnings/performancewarnings_01.texture?/codered.tex](ascolormap).pc_tex",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/textures/g2/warnings/performancewarnings_01.texture?/codecrying.tex](ascolormap).pc_tex",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/internal.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/primitivesimple.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/deferred.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "00EF5FD311ECD9F7",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/tileblur.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/tileblurvsm.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/deferredshadow.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/debugquadshading.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/skin.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/glow.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/postfilter30.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "008D3DC3EA93A98F",
+            "flag": "1F"
+        },
+        {
+            "hash": "007E2FF5AF42ACCB",
+            "flag": "1F"
+        },
+        {
+            "hash": "00A1E49B78075BE1",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/bc6encode.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "00938896F7CB8A71",
+            "flag": "1F"
+        },
+        {
+            "hash": "00669BA2A06C275B",
+            "flag": "1F"
+        },
+        {
+            "hash": "0060960AF46DD1B2",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/glare.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "00E5B96AE56C891D",
+            "flag": "1F"
+        },
+        {
+            "hash": "009F2C42D636569A",
+            "flag": "1F"
+        },
+        {
+            "hash": "0063163AFAE87FD3",
+            "flag": "1F"
+        },
+        {
+            "hash": "0059538CA014DF32",
+            "flag": "1F"
+        },
+        {
+            "hash": "000FB3FA5E2791D7",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/water.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/watershorewave.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/watercs.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/fxaa.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/smaa.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/smaa_old.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/atmosphericscattering.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/boxreflection.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/screenspacespecularaa.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "0061EDAEE0AC07C3",
+            "flag": "1F"
+        },
+        {
+            "hash": "00833A188A16EDBB",
+            "flag": "1F"
+        },
+        {
+            "hash": "0007CC64065DC775",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/labsdof.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/labsdofpc.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/forwardlightingbounds.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/imageanalysis.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/contactshadows.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/particleatlas.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "00D1FEB532B0EF26",
+            "flag": "1F"
+        },
+        {
+            "hash": "006BE42D75B10690",
+            "flag": "1F"
+        },
+        {
+            "hash": "00519E97563D2703",
+            "flag": "1F"
+        },
+        {
+            "hash": "0025A5FB20526C16",
+            "flag": "1F"
+        },
+        {
+            "hash": "00098C51DE0854BE",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/variablerateshading.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/gpucrash.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "00902AB7314532D6",
+            "flag": "1F"
+        },
+        {
+            "hash": "0042B16C121A77A1",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/standardcs.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/raytracingdebug.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/raytracingambientocclusion.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/raytracingutils.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/raytracingshadows.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/shaders/win32/raytracingreflections.fx](dx11,fx50).pc_mate",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zcameraentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/textures/g2/poissonvectornoise2.texture?/diffuse_a.tex](ascolormap).pc_tex",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/textures/g2/defaultcolorcorrectioncube.texture?/diffuse_a.tex](ascolormap).pc_tex",
+            "flag": "1F"
+        },
+        {
+            "hash": "0019C2E0A3E8348F",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_cubemap_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_light_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_light_directional_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_light_spot_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_light_capsule_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/textures/g2/defaultbillboard.texture?/diffuse_a.tex](asbillboardmap).pc_tex",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zspatialentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_particles_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zparticlecontainerentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_decal_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/localization/hitman6/conversations/ui/pro/menutext_sc.sweetmenutext].pc_localized-textlist",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zdestructiblematerialentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_colibox.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_colicapsule.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_colisphere.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_sound_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_point_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zcrowdactor.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/fonts.template?/fontconfigurationcommon.entitytemplate].pc_entityresource",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/fonts.template?/fontconfigurationrussian.entitytemplate].pc_entityresource",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/fonts.template?/fontconfigurationjapanese.entitytemplate].pc_entityresource",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/fonts.template?/fontconfigurationchinese.entitytemplate].pc_entityresource",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/fonts.template?/fontconfigurationtraditionalchinese.entitytemplate].pc_entityresource",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/ui/controls/controlsmain.swf].pc_swf",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/ui/controls/common.swf].pc_swf",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/ui/controls/basic.swf].pc_swf",
+            "flag": "1F"
+        },
+        {
+            "hash": "00C934E45FB084C3",
+            "flag": "1F"
+        },
+        {
+            "hash": "003524A9DB72511F",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_arrow_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/unit_circle.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_annotation_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/localization/hitman6/conversations/ui/pro/common.sweetmenutext].pc_localized-textlist",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/miscicons.template?/damageindicator.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zuicontrolentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/generalobjectivtracker.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/ld_maptracker_npcactor.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/controls/menucontrols.template?/dynamicmenupagecontroller.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/mapsetup.template?/dynamicpagemapcontainer.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/ld_menumap_icon_entrance.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/ld_menumap_icon_target.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/ld_menumap_icon_stashpoint.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/menuresources.template?/dynamicdataprovider.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/ld_menumap_icon_exit.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/ld_menumap_icon_entrance_selected.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/ld_menumap_icon_stashpoint_selected.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/effects/templates/decals/fx_bloodpool.template?/fx_bloodpool.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/design/gamecore/gizmos.template?/brokenactor.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/design/actor/acts/mr.template?/dynamicact_mr_stand_phone_pace.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/design/actor/acts/mr.template?/dynamicact_mr_stand_phone_onspot.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/design/actor/acts/fh.template?/dynamicact_fh_stand_phone_pace.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/design/actor/acts/fh.template?/dynamicact_fh_stand_phone_onspot.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/animationnetworks/actors/acts/fullbody/maleregular/mr_hunt_act_lookaround.aln].pc_rtn",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zdummybehaviorentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_goto_red.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_cut_board_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_goto_green.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_arrow_act.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_actor_01.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/geometry/g2/gizmos.wl2?/gizmo_pin_orange.prim].pc_prim",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zcombatsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/ztrespassingsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zdeadbodysituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zguardbodysituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zdisguisesituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zsentrysituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zsnipercombatsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zarrestsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zstandoffsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zclosecombatsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zinvestigatecautioussituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zhandledistractionsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zinvestigateweaponsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zrecoverunconscioussituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zdetectedinprivatesituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zavoidexplosionsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zentouragesituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zevacuatesituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zavoiddangerousareasituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zspectatorsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zsccurioussituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zscalertedsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zsccombatsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zinfectedsituation.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/ui/maptrackercontrols.template?/ld_menumap_icon_taggednpc.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zhm5action.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/design/gamecore/actionclient.template?/actionclient_interactiongroupsub2.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/design/gamecore/clothbundles.template?/clothbundle_basic.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zlinkedentityreplicaghost.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zhm5projectile.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/_pro/design/gamecore/vrhelpers.template?/vrhelper_gunprecisionaimglobal.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zlinkedentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zprimitivecontainerentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/gameplay/ai2/bodybag.template?/bodybag.entitytemplate].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zcrowdambientstandbehaviorentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zanimationclipentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zsceneentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "003E9FA668AB3CC5",
+            "flag": "1F"
+        },
+        {
+            "hash": "00B05DF32ED40405",
+            "flag": "1F"
+        },
+        {
+            "hash": "002027A33DA54DFC",
+            "flag": "1F"
+        },
+        {
+            "hash": "0018F32FAEB9F0A3",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zammodescriptorentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "000F35CBFE48C825",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zforwardimpacttoactorentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zcubemapprobeentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zscattercontainerentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zrenderdestinationscreenentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zhm5fixedcamprofilemanager.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zfreecameracontrolentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zfreecameracontroleditorstyleentity.class].pc_entitytype",
+            "flag": "1F"
+        },
+        {
+            "hash": "[assembly:/templates/levelselect/levelselectconfig.template?/levelselectconfig2.entitytemplate].pc_entityresource",
+            "flag": "1F"
+        },
+        {
+            "hash": "[modules:/zselectionforfreecameraeditorstyleentity.class].pc_entitytype",
+            "flag": "1F"
+        }
+    ]
+}

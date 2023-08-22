@@ -1,0 +1,294 @@
+{
+    "m_aItems": [
+        {
+            "m_sName": "runtime.entity",
+            "m_aResourceIndices": [
+                0
+            ]
+        },
+        {
+            "m_sName": "runtime.localization",
+            "m_aResourceIndices": [
+                1
+            ]
+        },
+        {
+            "m_sName": "runtime.render",
+            "m_aResourceIndices": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38,
+                39,
+                40,
+                41,
+                42,
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                60,
+                61,
+                62,
+                63,
+                64,
+                65,
+                66,
+                67,
+                68,
+                69,
+                70,
+                71,
+                72,
+                73,
+                74,
+                75,
+                76
+            ]
+        },
+        {
+            "m_sName": "runtime.network",
+            "m_aResourceIndices": [
+                77
+            ]
+        },
+        {
+            "m_sName": "runtime.physics",
+            "m_aResourceIndices": [
+                78,
+                79,
+                80,
+                81
+            ]
+        },
+        {
+            "m_sName": "runtime.audio.wwise",
+            "m_aResourceIndices": [
+                82
+            ]
+        },
+        {
+            "m_sName": "runtime.reasoninggrid",
+            "m_aResourceIndices": [
+                83
+            ]
+        },
+        {
+            "m_sName": "runtime.crowds",
+            "m_aResourceIndices": [
+                84
+            ]
+        },
+        {
+            "m_sName": "runtime.ui",
+            "m_aResourceIndices": [
+                85,
+                86,
+                87,
+                88,
+                89,
+                90,
+                91
+            ]
+        },
+        {
+            "m_sName": "runtime.video",
+            "m_aResourceIndices": [
+                92
+            ]
+        },
+        {
+            "m_sName": "runtime.gameentities",
+            "m_aResourceIndices": [
+                92
+            ]
+        },
+        {
+            "m_sName": "game.online",
+            "m_aResourceIndices": [
+                93,
+                94
+            ]
+        },
+        {
+            "m_sName": "runtime.purewater",
+            "m_aResourceIndices": [
+                95,
+                96
+            ]
+        },
+        {
+            "m_sName": "game.ai",
+            "m_aResourceIndices": [
+                97
+            ]
+        },
+        {
+            "m_sName": "game.ui",
+            "m_aResourceIndices": [
+                98,
+                99,
+                100,
+                100,
+                101,
+                102,
+                103,
+                104,
+                105,
+                106,
+                107,
+                108,
+                109,
+                110,
+                111
+            ]
+        },
+        {
+            "m_sName": "hitman5",
+            "m_aResourceIndices": [
+                112,
+                113,
+                114,
+                115,
+                116,
+                117,
+                118,
+                119,
+                120,
+                95,
+                121,
+                95,
+                83,
+                122,
+                123,
+                83,
+                120,
+                83,
+                97,
+                97,
+                97,
+                97,
+                124,
+                125,
+                124,
+                126,
+                127,
+                128,
+                129,
+                130,
+                131,
+                132,
+                133,
+                134,
+                135,
+                136,
+                137,
+                138,
+                139,
+                140,
+                141,
+                142,
+                143,
+                144,
+                145,
+                146,
+                147,
+                148,
+                149,
+                150,
+                106,
+                151,
+                152,
+                153,
+                154,
+                155,
+                156,
+                157,
+                158,
+                159,
+                160,
+                161,
+                162,
+                163,
+                164,
+                165,
+                166,
+                167,
+                168,
+                169
+            ]
+        },
+        {
+            "m_sName": "tool.editorserver",
+            "m_aResourceIndices": [
+                170,
+                63,
+                2,
+                171,
+                172
+            ]
+        },
+        {
+            "m_sName": "hitman5.evergreen",
+            "m_aResourceIndices": [
+                173
+            ]
+        },
+        {
+            "m_sName": "apps.engine",
+            "m_aResourceIndices": [
+                63,
+                174,
+                175,
+                172,
+                176
+            ]
+        }
+    ]
+}

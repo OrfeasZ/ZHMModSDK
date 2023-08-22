@@ -630,6 +630,9 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
 
     m_Server.OnSceneLoading(p_SceneData.m_sceneName.c_str(), s_Bricks);
 
+	// Clear SelectionForFreeCameraEditorStyleEntity's entity array just in case it wasn't cleared from previous scene
+	s_Selection.clear();
+
     return HookResult<void>(HookAction::Continue());
 }
 

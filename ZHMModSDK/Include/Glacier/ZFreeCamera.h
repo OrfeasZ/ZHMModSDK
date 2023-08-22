@@ -21,3 +21,19 @@ public:
     PAD(0x11); // 0x20
     bool m_bFreezeCamera; // 0x31
 };
+
+class ZFreeCameraControlEditorStyleEntity :
+	public ZEntityImpl,
+	public IFreeCameraControl
+{
+public:
+	TEntityRef<ZSpatialEntity> m_cameraEntity; // 0x20
+	bool m_bActive; // 0x30
+};
+
+class ZSelectionForFreeCameraEditorStyleEntity :
+	public ZEntityImpl // Offset 0x0
+{
+public:
+	TArray<ZEntityRef> m_selection; // 0x18
+};

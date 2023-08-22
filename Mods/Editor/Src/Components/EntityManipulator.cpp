@@ -139,7 +139,9 @@ void Editor::OnEntityTransformChange(ZEntityRef p_Entity, SMatrix p_Transform, b
 		}
 
 		if (const auto s_PhysicsAspect = p_Entity.QueryInterface<ZStaticPhysicsAspect>()) {
-			s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+			if (s_PhysicsAspect->m_pPhysicsObject) {
+				s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+			}
 		}
 
 		m_Server.OnEntityTransformChanged(p_Entity, std::move(p_ClientId));

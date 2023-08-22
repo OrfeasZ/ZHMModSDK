@@ -10,6 +10,7 @@
 #include "IPluginInterface.h"
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
+#include "Glacier/ZFreeCamera.h"
 
 #include "ImGuizmo.h"
 #include "EditorServer.h"
@@ -113,6 +114,10 @@ private:
 
     bool m_CameraActive = false;
     ZEntityRef m_OriginalCam;
+
+	bool m_SelectionForEntityCreated = false;
+	TArray<ZEntityRef> s_Selection;
+	ZEntityRef s_NewEntity;
 
     bool m_HoldingMouse = false;
     bool m_UseSnap = false;

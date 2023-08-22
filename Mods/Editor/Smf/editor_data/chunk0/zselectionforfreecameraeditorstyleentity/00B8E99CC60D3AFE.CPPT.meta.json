@@ -1,0 +1,18 @@
+{
+    "hash_value": "00B8E99CC60D3AFE",
+    "hash_path": "[modules:/zselectionforfreecameraeditorstyleentity.class].pc_entitytype",
+    "hash_offset": 20199798,
+    "hash_size": 2147483695,
+    "hash_resource_type": "CPPT",
+    "hash_reference_table_size": 13,
+    "hash_reference_table_dummy": 0,
+    "hash_size_final": 72,
+    "hash_size_in_memory": 32,
+    "hash_size_in_video_memory": 4294967295,
+    "hash_reference_data": [
+        {
+            "hash": "[modules:/zselectionforfreecameraeditorstyleentity.class].pc_entityblueprint",
+            "flag": "1F"
+        }
+    ]
+}
