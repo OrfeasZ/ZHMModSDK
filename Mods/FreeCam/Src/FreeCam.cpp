@@ -37,11 +37,26 @@ FreeCam::FreeCam() :
         { "F3", "Lock camera and enable 47 input" },
         { "Ctrl + W/S", "Change FOV" },
         { "Ctrl + A/D", "Roll camera" },
+	    { "Ctrl + X", "Reset roll" },
         { "Alt + W/S", "Change camera speed" },
         { "Space + Q/E", "Change camera height" },
         { "Space + W/S", "Move camera on axis" },
         { "Shift", "Increase camera speed" },
     };
+
+	m_PcControlsEditorStyle = {
+	    {"P", "Toggle freecam"},
+	    {"F3", "Lock camera and enable 47 input"},
+	    {"MMB", "Drag camera"},
+	    {"Scroll Wheel", "Zoom camera"},
+	    {"RMB", "Activate rotate"},
+	    {"Alt + MMB or RMB", "Orbit camera"},
+	    {"Z + Alt + MMB or RMB", "Orbit camera around selected entity"},
+	    {"Z", "Zoom to selected entity (press twice to focus the gizmo)"},
+	    {"Alt + Scroll Wheel", "Zoom camera with precision"},
+	    {"Shift", "Speed modifier"},
+	    {"RMB + Scroll wheel", "Adjust speed"},
+	};
 
     m_ControllerControls = {
         { "Y + L", "Change FOV" },
@@ -248,31 +263,42 @@ void FreeCam::OnDrawUI(bool p_HasFocus)
 
             ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
 
-            for (auto& [s_Key, s_Description] : m_PcControls)
-            {
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(s_Key.c_str());
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(s_Description.c_str());
-            }
+			if (m_EditorStyleFreecam) {
+				for (auto& [s_Key, s_Description]: m_PcControlsEditorStyle) {
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Key.c_str());
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Description.c_str());
+				}
+			} else {
+				for (auto& [s_Key, s_Description]: m_PcControls)
+				{
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Key.c_str());
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Description.c_str());
+				}
+			}
 
             ImGui::EndTable();
 
-            ImGui::TextUnformatted("Controller Controls");
+			if (!m_EditorStyleFreecam) {
+				ImGui::TextUnformatted("Controller Controls");
 
-            ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
+				ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
 
-            for (auto& [s_Key, s_Description] : m_ControllerControls)
-            {
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(s_Key.c_str());
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(s_Description.c_str());
-            }
+				for (auto& [s_Key, s_Description]: m_ControllerControls) {
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Key.c_str());
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Description.c_str());
+				}
 
-            ImGui::EndTable();
+				ImGui::EndTable();
+			}
         }
 
         ImGui::PopFont();

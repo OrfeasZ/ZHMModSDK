@@ -41,6 +41,7 @@ private:
     bool m_HasToggledFreecamBefore;
 	bool m_EditorStyleFreecam;
     std::unordered_map<std::string, std::string> m_PcControls;
+	std::unordered_map<std::string, std::string> m_PcControlsEditorStyle;
     std::unordered_map<std::string, std::string> m_ControllerControls;
 };
 
