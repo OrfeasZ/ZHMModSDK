@@ -19,6 +19,7 @@
 #include <Glacier/ZHM5InputManager.h>
 
 #include "IconsMaterialDesign.h"
+#include <imgui_internal.h>
 
 FreeCam::FreeCam() :
     m_FreeCamActive(false),
@@ -28,7 +29,8 @@ FreeCam::FreeCam() :
     m_FreezeFreeCamActionGc("ActivateGameControl0"),
     m_FreezeFreeCamActionKb("KBMInspectNode"),
     m_ControlsVisible(false),
-    m_HasToggledFreecamBefore(false)
+    m_HasToggledFreecamBefore(false),
+    m_EditorStyleFreecam(false)
 {
     m_PcControls = {
         { "P", "Toggle freecam" },
@@ -111,7 +113,11 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
             m_ShouldToggle = true;
     }
 
-    (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControlEditorStyle01.m_pInterfaceRef->SetActive(m_FreeCamActive);
+	if (m_EditorStyleFreecam) {
+		(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControlEditorStyle01.m_pInterfaceRef->SetActive(m_FreeCamActive);
+	} else {
+		(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_FreeCamActive);
+	}
 
     if (Functions::ZInputAction_Digital->Call(&m_ToggleFreeCamAction, -1))
     {
@@ -136,7 +142,11 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
         const bool s_FreezeFreeCam = Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionGc, -1) || m_FreeCamFrozen;
 
-        (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControlEditorStyle01.m_pInterfaceRef->m_bActive = !s_FreezeFreeCam;
+		if (m_EditorStyleFreecam) {
+			(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControlEditorStyle01.m_pInterfaceRef->m_bActive = !s_FreezeFreeCam;
+		} else {
+			(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->m_bFreezeCamera = s_FreezeFreeCam;
+		}
 
         TEntityRef<ZHitman5> s_LocalHitman;
         Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
@@ -157,6 +167,20 @@ void FreeCam::OnDrawMenu()
     if (ImGui::Checkbox(ICON_MD_PHOTO_CAMERA " FREECAM", &s_FreeCamActive))
     {
         ToggleFreecam();
+    }
+
+    if (s_FreeCamActive)
+    {
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		ImGui::Checkbox("USE EDITOR STYLE FREECAM", &m_EditorStyleFreecam);
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+    }
+    else
+    {
+		ImGui::Checkbox("USE EDITOR STYLE FREECAM", &m_EditorStyleFreecam);
+
     }
 
     if (ImGui::Button(ICON_MD_SPORTS_ESPORTS " FREECAM CONTROLS"))

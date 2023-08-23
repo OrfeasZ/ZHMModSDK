@@ -39,6 +39,7 @@ private:
     ZInputAction m_FreezeFreeCamActionKb;
     bool m_ControlsVisible;
     bool m_HasToggledFreecamBefore;
+	bool m_EditorStyleFreecam;
     std::unordered_map<std::string, std::string> m_PcControls;
     std::unordered_map<std::string, std::string> m_ControllerControls;
 };
