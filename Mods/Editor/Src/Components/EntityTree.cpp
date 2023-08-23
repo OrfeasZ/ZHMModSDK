@@ -405,7 +405,9 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_Cl
 	const auto s_SelectionForFreeCameraEditorStyleEntity = s_NewEntity.QueryInterface<ZSelectionForFreeCameraEditorStyleEntity>();
 
 	s_Selection.clear();
-	s_Selection.push_back(p_Entity);
+	if (p_Entity != nullptr) {
+		s_Selection.push_back(p_Entity);
+	}
 	Logger::Debug("Selection size: {}", s_Selection.size());
 	
 	for (int i = 0; i < s_Selection.size(); ++i) {
