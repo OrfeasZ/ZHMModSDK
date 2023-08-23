@@ -46,6 +46,7 @@ set(MODS
 	Clumsy
 	Noclip
 	Hitmen
+	DebugCheckKeyEntityEnabler
 )
 
 foreach(MOD IN LISTS MODS)
