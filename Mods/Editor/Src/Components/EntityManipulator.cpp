@@ -43,23 +43,23 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
         }
 
 		if (!s_ImgGuiIO.WantTextInput) {
-			if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
-            if (m_GizmoMode == ImGuizmo::TRANSLATE)
-                m_GizmoMode = ImGuizmo::ROTATE;
-            else if (m_GizmoMode == ImGuizmo::ROTATE)
-                m_GizmoMode = ImGuizmo::SCALE;
-            else if (m_GizmoMode == ImGuizmo::SCALE)
-                m_GizmoMode = ImGuizmo::TRANSLATE;
-        }
+			if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Tab])) {
+				if (m_GizmoMode == ImGuizmo::TRANSLATE)
+					m_GizmoMode = ImGuizmo::ROTATE;
+				else if (m_GizmoMode == ImGuizmo::ROTATE)
+					m_GizmoMode = ImGuizmo::SCALE;
+				else if (m_GizmoMode == ImGuizmo::SCALE)
+					m_GizmoMode = ImGuizmo::TRANSLATE;
+			}
 
-			if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
-            m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
-        }
+			if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Space])) {
+				m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+			}
 
-			if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-			OnSelectEntity({}, std::nullopt);
-        }
-    }
+			if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Backspace])) {
+				OnSelectEntity({}, std::nullopt);
+			}
+		}
     }
 
     ImGuizmo::Enable(p_HasFocus);
