@@ -35,5 +35,16 @@ class ZSelectionForFreeCameraEditorStyleEntity :
 	public ZEntityImpl // Offset 0x0
 {
 public:
+	virtual void Init() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk21() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk22() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk23() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk24() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk25() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk26() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk27() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk28() = 0;
+	virtual void ZSelectionForFreeCameraEditorStyleEntity_unk29() = 0;
+
 	TArray<ZEntityRef> m_selection; // 0x18
 };

@@ -4,6 +4,7 @@
 #include <Glacier/ZModule.h>
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZFreeCamera.h>
+#include <Glacier/ZComponentCreateInfo.h>
 
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
@@ -378,43 +379,34 @@ void Editor::DrawEntityTree() {
 	}
 }
 
-void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
+void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId)
+{
 	const bool s_DifferentEntity = m_SelectedEntity != p_Entity;
 
 	m_SelectedEntity = p_Entity;
 	m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;
 
-	if (s_DifferentEntity) {
+	if (s_DifferentEntity)
+	{
 		m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
 	}
 
-	if (!m_SelectionForEntityCreated) {
-		const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+	if (!m_SelectionForEntityCreated)
+	{
+		s_SelectionForFreeCameraEditorStyleEntity2 = std::unique_ptr<unsigned char[]>(new unsigned char[sizeof(ZSelectionForFreeCameraEditorStyleEntity)]);
+		s_SelectionForFreeCameraEditorStyleEntity = reinterpret_cast<ZSelectionForFreeCameraEditorStyleEntity*>(s_SelectionForFreeCameraEditorStyleEntity2.get());
+		entityRef.m_pInterfaceRef = s_SelectionForFreeCameraEditorStyleEntity;
 
-		const auto s_ID = ResId<"[modules:/zselectionforfreecameraeditorstyleentity.class].pc_entitytype">;
-		TResourcePtr<ZTemplateEntityFactory> s_Resource;
-		Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex, fmt::ptr(s_Resource.GetResource()));
-
-		Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
-
-		Functions::ZEntityManager_NewEntity->Call(Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, nullptr, -1);
+		Globals::Selections->push_back(entityRef);
 
 		m_SelectionForEntityCreated = true;
 	}
 
-	const auto s_SelectionForFreeCameraEditorStyleEntity = s_NewEntity.QueryInterface<ZSelectionForFreeCameraEditorStyleEntity>();
-
-	s_Selection.clear();
-	if (p_Entity != nullptr) {
+	if (m_SelectionForEntityCreated)
+	{
+		s_Selection.clear();
 		s_Selection.push_back(p_Entity);
-	}
-	Logger::Debug("Selection size: {}", s_Selection.size());
-	
-	for (int i = 0; i < s_Selection.size(); ++i) {
-		Logger::Debug("Selection = {}", fmt::ptr(s_Selection[i].GetEntity()));
-	}
 
-	if (s_SelectionForFreeCameraEditorStyleEntity) {
 		s_SelectionForFreeCameraEditorStyleEntity->m_selection = s_Selection;
 	}
 }

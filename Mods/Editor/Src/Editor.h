@@ -117,7 +117,9 @@ private:
 
 	bool m_SelectionForEntityCreated = false;
 	TArray<ZEntityRef> s_Selection;
-	ZEntityRef s_NewEntity;
+	ZSelectionForFreeCameraEditorStyleEntity* s_SelectionForFreeCameraEditorStyleEntity;
+	std::unique_ptr<unsigned char[]> s_SelectionForFreeCameraEditorStyleEntity2;
+	TEntityRef<ZSelectionForFreeCameraEditorStyleEntity> entityRef;
 
     bool m_HoldingMouse = false;
     bool m_UseSnap = false;
