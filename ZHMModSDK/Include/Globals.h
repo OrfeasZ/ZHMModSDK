@@ -27,6 +27,7 @@ class ZBehaviorService;
 class SPrimitiveBufferData;
 class IGameMode;
 class IEngineMode;
+class ZInputActionManager;
 class ZSelectionForFreeCameraEditorStyleEntity;
 template <typename T> class TArray;
 template <typename T> class TEntityRef;
@@ -60,5 +61,6 @@ public:
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
 	static void* ZTemplateEntityBlueprintFactory_vtbl;
+	static ZInputActionManager* InputActionManager;
 	static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
 };
