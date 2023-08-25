@@ -90,8 +90,14 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 						if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
 						{
 							m_SelectedEntity.SetProperty<SVector3>("m_PrimitiveScale", s_ModelMatrix.GetScale());
-							m_SelectedEntity.SetProperty<bool>("m_bRemovePhysics", true);
-							m_SelectedEntity.SetProperty<bool>("m_bRemovePhysics", false);
+
+							const bool s_bRemovePhysics = m_SelectedEntity.GetProperty<bool>("m_bRemovePhysics").Get();
+
+							if (!s_bRemovePhysics)
+							{
+								m_SelectedEntity.SetProperty<bool>("m_bRemovePhysics", true);
+								m_SelectedEntity.SetProperty<bool>("m_bRemovePhysics", false);
+							}
 						}
 					}
 				}
