@@ -77,10 +77,31 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
                 ImGuizmo::SetRect(0, 0, s_ImgGuiIO.DisplaySize.x, s_ImgGuiIO.DisplaySize.y);
 
-                if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
-                {
-	                OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix, false, std::nullopt);
-                }
+				if (m_GizmoMode == ImGuizmo::SCALE)
+				{
+					const auto s_GeomEntity = s_SelectedEntity.QueryInterface<ZGeomEntity>();
+
+					if (s_GeomEntity)
+					{
+						ZVariant<SVector3> s_Scale = m_SelectedEntity.GetProperty<SVector3>("m_PrimitiveScale");
+
+						s_ModelMatrix.ScaleTransform(s_Scale.Get());
+
+						if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
+						{
+							m_SelectedEntity.SetProperty<SVector3>("m_PrimitiveScale", s_ModelMatrix.GetScale());
+							m_SelectedEntity.SetProperty<bool>("m_bRemovePhysics", true);
+							m_SelectedEntity.SetProperty<bool>("m_bRemovePhysics", false);
+						}
+					}
+				}
+				else
+				{
+					if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
+					{
+						OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix, false, std::nullopt);
+					}
+				}
             }
         }
     }
