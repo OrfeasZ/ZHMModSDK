@@ -69,16 +69,16 @@ class IPhysicsObject
 public:
     virtual ~IPhysicsObject() = 0;
     virtual void IPhysicsObject_unk1() = 0;
-    virtual void IPhysicsObject_unk2() = 0;
+	virtual SMatrix GetTransform() const = 0;
     virtual void IPhysicsObject_unk3() = 0;
     virtual void IPhysicsObject_unk4() = 0;
     virtual void IPhysicsObject_unk5() = 0;
     virtual void IPhysicsObject_unk6() = 0;
-    virtual void IPhysicsObject_unk7() = 0;
+    virtual void SetTransform(const SMatrix& mNewTransform) = 0;
     virtual void IPhysicsObject_unk8() = 0;
-    virtual void SetTransform(const SMatrix& transform) = 0;
-    virtual void IPhysicsObject_unk10() = 0;
-    virtual void IPhysicsObject_unk11() = 0;
+    virtual void MoveTransform(const SMatrix& mNewTransform) = 0;
+	virtual void IPhysicsObject_unk10(const SMatrix& mNewTransform) = 0;
+    virtual float4 GetPosition() const = 0;
     virtual void IPhysicsObject_unk12() = 0;
     virtual void SetPosition(const float4& trans) = 0;
     virtual void IPhysicsObject_unk14() = 0;
@@ -170,7 +170,7 @@ public:
     virtual void IPhysicsObject_unk100() = 0;
     virtual void IPhysicsObject_unk101() = 0;
     virtual void IPhysicsObject_unk102() = 0;
-    virtual void IPhysicsObject_unk103() = 0;
+	virtual bool GetCollisionActivity(bool bRaysInsteadOfCollision) const = 0;
     virtual void IPhysicsObject_unk104() = 0;
     virtual void IPhysicsObject_unk105() = 0;
     virtual void IPhysicsObject_unk106() = 0;
@@ -209,10 +209,13 @@ public:
     virtual ~ZPhysicsObject() = default;
 
 public:
-    PAD(0x130);
+	PAD(0x50);
+	SQV m_PrevPose; //0x60
+	SQV m_CurPose; //0x80
+    PAD(0x90);
 };
 
-static_assert(sizeof(ZPhysicsObject) == 0x140);
+static_assert(sizeof(ZPhysicsObject) == 0x130);
 
 class ZStaticPhysicsAspect :
     public ZPhysicsBaseEntity,
@@ -243,7 +246,11 @@ public:
     virtual ~ZDynamicPhysicsAspect() = default;
 
 public:
-    PAD(0x60); // 0x38
+	bool m_bRemovePhysics; // 0x38
+	bool m_bKinematic; // 0x39
+	PAD(0x28);
+	IPhysicsObject* m_pPhysicsObject; // 0x68
+	PAD(0x28);
 };
 
 static_assert(sizeof(ZDynamicPhysicsAspect) == 0x98);
