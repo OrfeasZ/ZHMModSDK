@@ -193,6 +193,11 @@ struct alignas(16) float4 {
 		return Norm(p_From - p_To);
 	}
 
+	inline float Length() const
+	{
+		return sqrtf(x * x + y * y + z * z + w * w);
+	}
+
 	union {
 		__m128 m;
 
@@ -356,6 +361,41 @@ struct alignas(16) SMatrix {
 			Quat(float4(s_RotQuat)),
 			s_Scale
 		};
+	}
+
+	void ScaleTransform(const SVector3& scale)
+	{
+		XAxis.x *= scale.x;
+		XAxis.y *= scale.x;
+		XAxis.z *= scale.x;
+		YAxis.x *= scale.y;
+		YAxis.y *= scale.y;
+		YAxis.z *= scale.y;
+		ZAxis.x *= scale.z;
+		ZAxis.y *= scale.z;
+		ZAxis.z *= scale.z;
+	}
+
+	SMatrix ScaleTransform(SMatrix& transform, const SVector3& scale)
+	{
+		SMatrix result;
+
+		result.XAxis.x = transform.XAxis.x * scale.x;
+		result.XAxis.y = transform.XAxis.y * scale.x;
+		result.XAxis.z = transform.XAxis.z * scale.x;
+		result.YAxis.x = transform.YAxis.x * scale.y;
+		result.YAxis.y = transform.YAxis.y * scale.y;
+		result.YAxis.z = transform.YAxis.z * scale.y;
+		result.ZAxis.x = transform.ZAxis.x * scale.z;
+		result.ZAxis.y = transform.ZAxis.y * scale.z;
+		result.ZAxis.z = transform.ZAxis.z * scale.z;
+
+		return result;
+	}
+
+	SVector3 GetScale()
+	{
+		return SVector3(XAxis.Length(), YAxis.Length(), ZAxis.Length());
 	}
 
 	union {
