@@ -6,6 +6,7 @@
 
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZInput.h>
+#include <Glacier/ZCollision.h>
 
 class FreeCam : public IPluginInterface
 {
@@ -23,6 +24,9 @@ private:
     void ToggleFreecam();
     void EnableFreecam();
     void DisableFreecam();
+	void InstantlyKillNpc();
+	void TeleportMainCharacter();
+	bool GetFreeCameraRayCastClosestHitQueryOutput(ZRayQueryOutput& p_RayOutput);
 
 private:
     DECLARE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int a2);
@@ -37,6 +41,8 @@ private:
     ZInputAction m_ToggleFreeCamAction;
     ZInputAction m_FreezeFreeCamActionGc;
     ZInputAction m_FreezeFreeCamActionKb;
+	ZInputAction m_InstantlyKillNpcAction;
+	ZInputAction m_TeleportMainCharacterAction;
     bool m_ControlsVisible;
     bool m_HasToggledFreecamBefore;
     std::unordered_map<std::string, std::string> m_PcControls;

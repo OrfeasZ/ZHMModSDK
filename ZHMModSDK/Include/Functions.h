@@ -5,6 +5,7 @@
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZMath.h"
 #include "Glacier/ZPrimitives.h"
+#include "Glacier/ZInput.h"
 
 class ZHitman5;
 class ZActor;
@@ -29,6 +30,9 @@ class ZResourceIndex;
 class ZHM5Animator;
 class ZHM5CrippleBox;
 class ZRagdollHandler;
+class ZInputActionManager;
+class IItem;
+class ZSetpieceEntity;
 
 class ZHMSDK_API Functions
 {
@@ -59,4 +63,7 @@ public:
     static EngineFunction<void(ZHM5Animator* th, float* time)>* ZHM5Animator_ActivateRagdollToAnimationBlend;
     static EngineFunction<void(ZHM5BaseCharacter* th, float time, bool inMotion, bool upperBody, float a5, bool a6)>* ZHM5BaseCharacter_ActivatePoweredRagdoll;
     static EngineFunction<void(ZRagdollHandler* th, const float4& position, const float4& impulse, uint32_t boneIndex, bool randomize)>* ZRagdollHandler_ApplyImpulseOnRagdoll;
+	static EngineFunction<ZInputTokenStream::ZTokenData* (ZInputTokenStream* th, ZInputTokenStream::ZTokenData* result)>* ZInputTokenStream_ParseToken;
+	static EngineFunction<bool (ZInputActionManager* th, ZInputTokenStream* pkStream)>* ZInputActionManager_ParseAsignment;
+	static EngineFunction<void(ZActor* th, TEntityRef<IItem> rKillItem, TEntityRef<ZSetpieceEntity> rKillSetpiece, EDamageEvent eDamageEvent, EDeathBehavior eDeathBehavior)>* ZActor_KillActor;
 };
