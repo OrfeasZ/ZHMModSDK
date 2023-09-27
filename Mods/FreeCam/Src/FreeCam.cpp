@@ -34,7 +34,7 @@ FreeCam::FreeCam() :
     m_HasToggledFreecamBefore(false)
 {
     m_PcControls = {
-        { "P", "Toggle freecam" },
+        { "K", "Toggle freecam" },
         { "F3", "Lock camera and enable 47 input" },
         { "Ctrl + W/S", "Change FOV" },
         { "Ctrl + A/D", "Roll camera" },
@@ -42,6 +42,8 @@ FreeCam::FreeCam() :
         { "Space + Q/E", "Change camera height" },
         { "Space + W/S", "Move camera on axis" },
         { "Shift", "Increase camera speed" },
+		{ "F9", "Kill NPC" },
+        { "Ctrl + F9", "Teleport Hitman" },
     };
 
     m_ControllerControls = {
