@@ -6,7 +6,6 @@
 
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZInput.h>
-#include <Glacier/ZFreeCamera.h>
 
 class FreeCam : public IPluginInterface
 {
@@ -38,11 +37,9 @@ private:
     ZInputAction m_ToggleFreeCamAction;
     ZInputAction m_FreezeFreeCamActionGc;
     ZInputAction m_FreezeFreeCamActionKb;
-	TEntityRef<ZCameraEntity> s_Camera;
     bool m_ControlsVisible;
     bool m_HasToggledFreecamBefore;
 	bool m_EditorStyleFreecam;
-	float m_FOV;
     std::unordered_map<std::string, std::string> m_PcControls;
 	std::unordered_map<std::string, std::string> m_PcControlsEditorStyle;
     std::unordered_map<std::string, std::string> m_ControllerControls;

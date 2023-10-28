@@ -30,9 +30,7 @@ FreeCam::FreeCam() :
     m_FreezeFreeCamActionKb("KBMInspectNode"),
     m_ControlsVisible(false),
     m_HasToggledFreecamBefore(false),
-    m_EditorStyleFreecam(false),
-	m_FOV(45)
-
+    m_EditorStyleFreecam(false)
 {
     m_PcControls = {
         { "P", "Toggle freecam" },
@@ -200,13 +198,6 @@ void FreeCam::OnDrawMenu()
 
     }
 
-	ImGui::SetNextItemWidth(100.0f);
-
-	if (ImGui::SliderFloat("FOV", &m_FOV, 0.0f, 140.0f))
-		if (m_FreeCamActive) {
-			s_Camera.m_ref.SetProperty("m_fFovYDeg", m_FOV);
-		}
-
     if (ImGui::Button(ICON_MD_SPORTS_ESPORTS " FREECAM CONTROLS"))
         m_ControlsVisible = !m_ControlsVisible;
 }
@@ -220,7 +211,7 @@ void FreeCam::ToggleFreecam()
 
 void FreeCam::EnableFreecam()
 {
-    s_Camera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
+    auto s_Camera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
 
     TEntityRef<IRenderDestinationEntity> s_RenderDest;
     Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
