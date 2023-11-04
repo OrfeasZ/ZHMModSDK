@@ -59,4 +59,6 @@ public:
     static IEngineMode** EngineMode;
 	static void* ZTemplateEntityBlueprintFactory_vtbl;
 	static ZInputActionManager* InputActionManager;
+	static int* InputActionManager_BindMem;
+	static int* InputActionManager_Seq;
 };

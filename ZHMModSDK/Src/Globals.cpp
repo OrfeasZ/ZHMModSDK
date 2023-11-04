@@ -190,3 +190,17 @@ PATTERN_RELATIVE_GLOBAL(
 	3,
 	ZInputActionManager*, InputActionManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x81\x05\x00\x00\x00\x00\x00\x00\x00\x00\x48\x8D\x05\x00\x00\x00\x00\x48\x8D\x55\x07",
+	"xx????????xxx????xxxx",
+	2,
+	int*, InputActionManager_BindMem
+);
+
+PATTERN_RELATIVE_GLOBAL(
+	"\xFF\x05\x00\x00\x00\x00\x48\x8D\x05\x00\x00\x00\x00\x83\x05",
+	"xx????xxx????xx",
+	2,
+	int*, InputActionManager_Seq
+);

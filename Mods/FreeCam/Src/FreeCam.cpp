@@ -17,6 +17,7 @@
 #include <Glacier/ZGameLoopManager.h>
 #include <Glacier/ZHitman5.h>
 #include <Glacier/ZHM5InputManager.h>
+#include <Glacier/ZInputActionManager.h>
 
 #include "IconsMaterialDesign.h"
 
@@ -24,14 +25,16 @@ FreeCam::FreeCam() :
     m_FreeCamActive(false),
     m_ShouldToggle(false),
     m_FreeCamFrozen(false),
-    m_ToggleFreeCamAction("KBMButtonX"),
+	m_ToggleFreeCamAction("ToggleFreeCamera"),
     m_FreezeFreeCamActionGc("ActivateGameControl0"),
     m_FreezeFreeCamActionKb("KBMInspectNode"),
+	m_InstantlyKillNpcAction("InstantKill"),
+	m_TeleportMainCharacterAction("Teleport"),
     m_ControlsVisible(false),
     m_HasToggledFreecamBefore(false)
 {
     m_PcControls = {
-        { "P", "Toggle freecam" },
+        { "K", "Toggle freecam" },
         { "F3", "Lock camera and enable 47 input" },
         { "Ctrl + W/S", "Change FOV" },
         { "Ctrl + A/D", "Roll camera" },
@@ -39,6 +42,8 @@ FreeCam::FreeCam() :
         { "Space + Q/E", "Change camera height" },
         { "Space + W/S", "Move camera on axis" },
         { "Shift", "Increase camera speed" },
+		{ "F9", "Kill NPC" },
+        { "Ctrl + F9", "Teleport Hitman" },
     };
 
     m_ControllerControls = {
@@ -91,8 +96,23 @@ void FreeCam::Init()
 
 void FreeCam::OnEngineInitialized()
 {
-    const ZMemberDelegate<FreeCam, void(const SGameUpdateEvent&)> s_Delegate(this, &FreeCam::OnFrameUpdate);
-    Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+	const ZMemberDelegate<FreeCam, void(const SGameUpdateEvent&)> s_Delegate(this, &FreeCam::OnFrameUpdate);
+	Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+
+	ZInputTokenStream::ZTokenData result;
+	const char* binds = "FreeCameraInput={"
+		"ToggleFreeCamera=tap(kb,k);"
+		"Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f9);"
+		"InstantKill=tap(kb,f9);};";
+
+	if (ZInputActionManager::AddBindings(binds))
+	{
+		Logger::Debug("Successfully added bindings.");
+	}
+	else
+	{
+		Logger::Debug("Failed to add bindings.");
+	}
 }
 
 void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
@@ -111,7 +131,7 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
             m_ShouldToggle = true;
     }
 
-    (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_FreeCamActive);
+	(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_FreeCamActive);
 
     if (Functions::ZInputAction_Digital->Call(&m_ToggleFreeCamAction, -1))
     {
@@ -134,9 +154,19 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
         if (Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionKb, -1))
             m_FreeCamFrozen = !m_FreeCamFrozen;
 
+		if (Functions::ZInputAction_Digital->Call(&m_InstantlyKillNpcAction, -1))
+		{
+			InstantlyKillNpc();
+		}
+
+		if (Functions::ZInputAction_Digital->Call(&m_TeleportMainCharacterAction, -1))
+		{
+			TeleportMainCharacter();
+		}
+
         const bool s_FreezeFreeCam = Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionGc, -1) || m_FreeCamFrozen;
 
-        (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->m_bFreezeCamera = s_FreezeFreeCam;
+		(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->m_bFreezeCamera = s_FreezeFreeCam;
 
         TEntityRef<ZHitman5> s_LocalHitman;
         Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
@@ -208,6 +238,77 @@ void FreeCam::DisableFreecam()
             s_InputControl->m_bActive = true;
         }
     }
+}
+
+void FreeCam::InstantlyKillNpc()
+{
+	ZRayQueryOutput s_RayOutput{};
+
+	if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_BlockingEntity)
+	{
+		ZEntityRef s_LogicalParent = s_RayOutput.m_BlockingEntity.GetLogicalParent();
+		ZActor* s_Actor = s_LogicalParent.QueryInterface<ZActor>();
+
+		if (s_Actor)
+		{
+			TEntityRef<IItem> s_Item;
+			TEntityRef<ZSetpieceEntity> s_SetPieceEntity;
+
+			Functions::ZActor_KillActor->Call(s_Actor, s_Item, s_SetPieceEntity, EDamageEvent::eDE_UNDEFINED, EDeathBehavior::eDB_IMPACT_ANIM);
+		}
+	}
+}
+
+void FreeCam::TeleportMainCharacter()
+{
+	ZRayQueryOutput s_RayOutput{};
+
+	if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_BlockingEntity)
+	{
+		TEntityRef<ZHitman5> s_LocalHitman;
+
+		Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+		if (s_LocalHitman)
+		{
+			ZSpatialEntity* s_SpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+			SMatrix s_WorldMatrix = s_SpatialEntity->GetWorldMatrix();
+
+			s_WorldMatrix.Trans = s_RayOutput.m_vPosition;
+
+			s_SpatialEntity->SetWorldMatrix(s_WorldMatrix);
+		}
+	}
+}
+
+bool FreeCam::GetFreeCameraRayCastClosestHitQueryOutput(ZRayQueryOutput& p_RayOutput)
+{
+	auto s_Camera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
+	SMatrix s_WorldMatrix = s_Camera.m_pInterfaceRef->GetWorldMatrix();
+	float4 s_InvertedDirection = float4(-s_WorldMatrix.ZAxis.x, -s_WorldMatrix.ZAxis.y, -s_WorldMatrix.ZAxis.z, -s_WorldMatrix.ZAxis.w);
+	float4 s_From = s_WorldMatrix.Trans;
+	float4 s_To = s_WorldMatrix.Trans + s_InvertedDirection * 500.f;
+
+	if (!*Globals::CollisionManager)
+	{
+		Logger::Error("Collision manager not found.");
+
+		return false;
+	}
+
+	ZRayQueryInput s_RayInput{
+		.m_vFrom = s_From,
+		.m_vTo = s_To,
+	};
+
+	if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &p_RayOutput))
+	{
+		Logger::Error("Raycast failed.");
+
+		return false;
+	}
+
+	return true;
 }
 
 void FreeCam::OnDrawUI(bool p_HasFocus)

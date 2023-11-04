@@ -6,7 +6,7 @@
 
 | Keys | Action |
 | ---- | ------ |
-| P | Toggle freecam |
+| K | Toggle freecam |
 | F3 | Toggle camera lock and 47 input |
 | Ctrl + W/S | Change FOV |
 | Ctrl + A/D | Roll camera |
@@ -14,6 +14,8 @@
 | Space + Q/E | Change camera height |
 | Space +  W/S | Move camera forward/backward on axis |
 | Shift | Increase speed while holding |
+| F9 | Kill NPC |
+| Ctrl + F9 | Teleport Hitman |
 
 ### Controller
 
