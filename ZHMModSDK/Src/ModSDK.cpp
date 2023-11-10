@@ -201,6 +201,7 @@ bool ModSDK::Startup()
 
     // Notify all loaded mods that the engine has intialized once it has.
     Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
+    Hooks::EOS_Platform_Create->AddDetour(this, &ModSDK::EOS_Platform_Create);
 
     m_D3D12Hooks->Startup();
 
@@ -522,4 +523,41 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2)
     OnEngineInit();
 
     return HookResult<bool>(HookAction::Return(), s_Result);
+}
+
+typedef int32_t EOS_Bool;
+#define EOS_TRUE 1
+#define EOS_FALSE 0
+
+struct EOS_Platform_ClientCredentials {
+	const char* ClientId;
+	const char* ClientSecret;
+};
+
+struct EOS_Platform_Options {
+	int32_t ApiVersion;
+	void* Reserved;
+	const char* ProductId;
+	const char* SandboxId;
+	EOS_Platform_ClientCredentials ClientCredentials;
+	EOS_Bool bIsServer;
+	const char* EncryptionKey;
+	const char* OverrideCountryCode;
+	const char* OverrideLocaleCode;
+	const char* DeploymentId;
+	uint64_t Flags;
+	const char* CacheDirectory;
+	uint32_t TickBudgetInMilliseconds;
+};
+
+#define EOS_PF_LOADING_IN_EDITOR 0x00001
+#define EOS_PF_DISABLE_OVERLAY 0x00002
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options) {
+	// Disable overlay in debug mode since it conflicts with Nsight and the like.
+#if _DEBUG
+	Options->Flags |= EOS_PF_LOADING_IN_EDITOR | EOS_PF_DISABLE_OVERLAY;
+#endif
+
+	return HookResult<EOS_PlatformHandle*>(HookAction::Continue());
 }

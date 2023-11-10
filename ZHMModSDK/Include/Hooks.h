@@ -62,6 +62,8 @@ class ZHitman5;
 class ZDynamicPageController;
 class ZGameLobbyManagerEpic;
 template <class> class TEntityRef;
+struct EOS_PlatformHandle;
+struct EOS_Platform_Options;
 
 class ZHMSDK_API Hooks
 {
@@ -101,6 +103,7 @@ public:
     static Hook<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
     static Hook<void(ZDynamicPageController* th, ZDynamicObject& data, void* a3, void* a4, void* a5)>* ZDynamicPageController_Expand;
     static Hook<void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)>* ZDynamicPageController_HandleActionObject2;
+	static Hook<EOS_PlatformHandle*(EOS_Platform_Options* Options)>* EOS_Platform_Create;
     //static Hook<void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZTemplateEntityFactory_ConfigureEntity;
     //static Hook<void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZCppEntityFactory_ConfigureEntity;
     //static Hook<void(ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZBehaviorTreeEntityFactory_ConfigureEntity;

@@ -313,3 +313,10 @@ PATTERN_HOOK(
     ZDynamicPageController_HandleActionObject2,
     void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)
 );
+
+MODULE_HOOK(
+	"EOSSDK-Win64-Shipping.dll",
+	"EOS_Platform_Create",
+	EOS_Platform_Create,
+	EOS_PlatformHandle*(EOS_Platform_Options* Options)
+);
