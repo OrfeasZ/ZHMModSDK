@@ -66,11 +66,11 @@ void DirectXTKRenderer::Draw()
 
     m_LineEffect->Apply(m_CommandList);
 
-    m_LineBatch->Begin(m_CommandList);
+    m_PrimitiveBatch->Begin(m_CommandList);
 
     ModSDK::GetInstance()->OnDraw3D();
 
-    m_LineBatch->End();
+    m_PrimitiveBatch->End();
 
     m_SpriteBatch->End();
 }
