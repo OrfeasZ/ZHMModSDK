@@ -64,6 +64,7 @@ namespace Rendering::Renderers
         bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
         void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) override;
         void DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color) override;
+		void DrawQuad3D(const SVector3& p_V1, const SVector4& p_Color1, const SVector3& p_V2, const SVector4& p_Color2, const SVector3& p_V3, const SVector4& p_Color3, const SVector3& p_V4, const SVector4& p_Color4) override;
 
     private:
         bool m_RendererSetup = false;
@@ -94,7 +95,7 @@ namespace Rendering::Renderers
 
         std::unique_ptr<DirectX::GraphicsMemory> m_GraphicsMemory {};
         std::unique_ptr<DirectX::BasicEffect> m_LineEffect {};
-        std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_LineBatch {};
+        std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_PrimitiveBatch {};
 
         DirectX::SimpleMath::Matrix m_World {};
         DirectX::SimpleMath::Matrix m_View {};

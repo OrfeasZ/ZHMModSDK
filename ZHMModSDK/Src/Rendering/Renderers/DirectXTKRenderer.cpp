@@ -292,7 +292,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
     m_GraphicsMemory = std::make_unique<DirectX::GraphicsMemory>(s_Device);
 
-    m_LineBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>(s_Device);
+	m_PrimitiveBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>(s_Device);
 
     {
         const DirectX::RenderTargetState s_RtState(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT);
@@ -434,7 +434,7 @@ void DirectXTKRenderer::DrawLine3D(const SVector3& p_From, const SVector3& p_To,
         DirectX::SimpleMath::Vector4(p_ToColor.x, p_ToColor.y, p_ToColor.z, p_ToColor.w)
     );
 
-    m_LineBatch->DrawLine(s_From, s_To);
+    m_PrimitiveBatch->DrawLine(s_From, s_To);
 }
 
 void DirectXTKRenderer::DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/, float p_Scale/* = 1.f*/, TextAlignment p_Alignment/* = TextAlignment::Center*/)
@@ -581,4 +581,22 @@ void DirectXTKRenderer::DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, 
 
     DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
     DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
+}
+
+void DirectXTKRenderer::DrawQuad3D(
+	const SVector3& p_V1,
+	const SVector4& p_Color1,
+	const SVector3& p_V2,
+	const SVector4& p_Color2,
+	const SVector3& p_V3,
+	const SVector4& p_Color3,
+	const SVector3& p_V4,
+	const SVector4& p_Color4
+) {
+	m_PrimitiveBatch->DrawQuad(
+		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z), DirectX::SimpleMath::Vector4(p_Color1.x, p_Color1.y, p_Color1.z, p_Color1.w)),
+		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V2.x, p_V2.y, p_V2.z), DirectX::SimpleMath::Vector4(p_Color2.x, p_Color2.y, p_Color2.z, p_Color2.w)),
+		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V3.x, p_V3.y, p_V3.z), DirectX::SimpleMath::Vector4(p_Color3.x, p_Color3.y, p_Color3.z, p_Color3.w)),
+		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V4.x, p_V4.y, p_V4.z), DirectX::SimpleMath::Vector4(p_Color4.x, p_Color4.y, p_Color4.z, p_Color4.w))
+	);
 }
