@@ -12,6 +12,7 @@
 namespace Rendering
 {
     class D3D12Hooks;
+	class D3D12SwapChain;
 }
 
 namespace Rendering::Renderers
@@ -65,6 +66,7 @@ public:
     void OnDrawMenu();
 
 public:
+	void SetSwapChain(Rendering::D3D12SwapChain* p_SwapChain);
     void OnPresent(IDXGISwapChain3* p_SwapChain);
     void PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult);
     void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);

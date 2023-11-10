@@ -77,12 +77,15 @@ public:
     PAD(0x30E9D88); // 0x10A28
     ID3D12CommandQueue* m_pCommandQueue; // 0x30FA7B0, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
     PAD(0x180FC8); // 0x30FA7B8
-    ID3D12DescriptorHeap* m_pFrameHeapCBVSRVUAV; // 0x327B780, look for "m_pFrameHeapCBVSRVUAV" string, first argument
+    ID3D12DescriptorHeap* m_pFrameHeapCBVSRVUAV; // 0x327B780, look for "m_pFrameHeapCBVSRVUAV" string, argument to the left of it
+	PAD(0x18); // 0x327B788
+	ID3D12DescriptorHeap* m_pDescriptorHeapDSV; // 0x327B7A0, look for "m_pDescriptorHeapDSV" string, argument to the left of it
 };
 
 static_assert(offsetof(ZRenderDevice, m_pSwapChain) == 0x10A10);
 static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA7B0);
 static_assert(offsetof(ZRenderDevice, m_pFrameHeapCBVSRVUAV) == 0x327B780);
+static_assert(offsetof(ZRenderDevice, m_pDescriptorHeapDSV) == 0x327B7A0);
 
 class ZRenderContext
 {

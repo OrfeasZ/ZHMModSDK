@@ -15,6 +15,7 @@
 #include "Rendering/Renderers/ImGuiRenderer.h"
 
 #include "Rendering/D3D12Hooks.h"
+#include "Rendering/D3D12SwapChain.h"
 
 #include "UI/Console.h"
 #include "UI/MainMenu.h"
@@ -329,54 +330,26 @@ void ModSDK::OnEngineInit()
 static IDXGISwapChain* g_SwapChain = nullptr;
 static ID3D12CommandQueue* g_CommandQueue = nullptr;
 
+void ModSDK::SetSwapChain(Rendering::D3D12SwapChain* p_SwapChain)
+{
+	Logger::Debug("Setting swap chain to {}.", fmt::ptr(p_SwapChain));
+	g_SwapChain = p_SwapChain;
+}
+
 void ModSDK::OnPresent(IDXGISwapChain3* p_SwapChain)
 {
-    if (g_SwapChain == nullptr)
-    {
-        Logger::Debug("Setting swap chain to {}.", fmt::ptr(p_SwapChain));
-        g_SwapChain = p_SwapChain;
-    }
-
-    if (g_SwapChain != p_SwapChain)
-        return;
-
     m_DirectXTKRenderer->OnPresent(p_SwapChain);
     m_ImguiRenderer->OnPresent(p_SwapChain);
 }
 
 void ModSDK::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult)
 {
-    if (g_SwapChain != p_SwapChain)
-        return;
-
     m_ImguiRenderer->PostPresent(p_SwapChain, p_PresentResult);
     m_DirectXTKRenderer->PostPresent(p_SwapChain, p_PresentResult);
 }
 
 void ModSDK::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 {
-    if (!g_SwapChain)
-        return;
-
-    if (g_CommandQueue != nullptr)
-        return;
-
-    if (p_CommandQueue->GetDesc().Type != D3D12_COMMAND_LIST_TYPE_DIRECT)
-        return;
-
-    ScopedD3DRef<ID3D12Device> s_Device;
-
-    if (g_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK)
-        return;
-
-    ScopedD3DRef<ID3D12Device> s_CommandQueueDevice;
-
-    if (p_CommandQueue->GetDevice(REF_IID_PPV_ARGS(s_CommandQueueDevice)) != S_OK)
-        return;
-
-    if (s_Device.Ref != s_CommandQueueDevice.Ref)
-        return;
-
     g_CommandQueue = p_CommandQueue;
 
     m_DirectXTKRenderer->SetCommandQueue(p_CommandQueue);
@@ -385,18 +358,12 @@ void ModSDK::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
 
 void ModSDK::OnReset(IDXGISwapChain3* p_SwapChain)
 {
-    if (g_SwapChain != p_SwapChain)
-        return;
-
     m_DirectXTKRenderer->OnReset();
     m_ImguiRenderer->OnReset();
 }
 
 void ModSDK::PostReset(IDXGISwapChain3* p_SwapChain)
 {
-    if (g_SwapChain != p_SwapChain)
-        return;
-
     m_ImguiRenderer->PostReset();
     m_DirectXTKRenderer->PostReset();
 }
