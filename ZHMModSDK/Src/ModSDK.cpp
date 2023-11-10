@@ -556,6 +556,7 @@ struct EOS_Platform_Options {
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options) {
 	// Disable overlay in debug mode since it conflicts with Nsight and the like.
 #if _DEBUG
+	Logger::Debug("Disabling Epic overlay.");
 	Options->Flags |= EOS_PF_LOADING_IN_EDITOR | EOS_PF_DISABLE_OVERLAY;
 #endif
 
