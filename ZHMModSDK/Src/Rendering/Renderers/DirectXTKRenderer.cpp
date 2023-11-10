@@ -324,8 +324,6 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
             m_ResourceDescriptors->GetGpuHandle(static_cast<int>(Descriptors::FontRegular))
         );
 
-        DirectX::RenderTargetState s_RtState(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT);
-
         DirectX::SpriteBatchPipelineStateDescription s_Desc(s_RtState);
         m_SpriteBatch = std::make_unique<DirectX::SpriteBatch>(s_Device, s_ResourceUpload, s_Desc);
 
