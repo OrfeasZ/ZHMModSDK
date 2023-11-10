@@ -185,13 +185,21 @@ public:
         return iterator(&m_Info, s_Bucket, s_Node);
     }
 
-    iterator begin()
-    {
-        if (m_Info.m_nBucketCount == 0 || m_Info.m_pBuckets[0] == UINT32_MAX)
-            return iterator(&m_Info);
+	iterator begin()
+	{
+		if (m_Info.m_nBucketCount == 0)
+			return iterator(&m_Info);
 
-        return iterator(&m_Info, 0, &m_Info.m_pNodes[m_Info.m_pBuckets[0]]);
-    }
+		for (uint32_t i = 0; i < m_Info.m_nBucketCount; ++i)
+		{
+			const auto s_Bucket = m_Info.m_pBuckets[i];
+
+			if (s_Bucket != UINT32_MAX)
+				return iterator(&m_Info, 0, &m_Info.m_pNodes[s_Bucket]);
+		}
+
+		return iterator(&m_Info);
+	}
 
     iterator end()
     {
