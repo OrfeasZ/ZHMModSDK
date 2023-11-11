@@ -74,6 +74,7 @@ namespace Rendering::Renderers
         HWND m_Hwnd = nullptr;
 
         uint32_t m_RtvDescriptorSize = 0;
+        uint32_t m_DsvDescriptorSize = 0;
         ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
 
         /** The maximum number of frames that can be buffered for render. */
