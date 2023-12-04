@@ -360,7 +360,12 @@ void Editor::DrawEntityProperties() {
 					SVector4Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
 				} else if (s_TypeName == "SMatrix43") {
 					SMatrix43Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-				} else if (s_PropertyInfo->m_pType->typeInfo()->isEnum()) {
+				} else if (s_TypeName == "SColorRGB") {
+					SColorRGBProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
+				} else if (s_TypeName == "SColorRGBA") {
+					SColorRGBAProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
+				}
+				else if (s_PropertyInfo->m_pType->typeInfo()->isEnum()) {
 					EnumProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
 				} else if (s_PropertyInfo->m_pType->typeInfo()->isResource()) {
 					ResourceProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
