@@ -14,8 +14,6 @@
 | Space + Q/E | Change camera height |
 | Space +  W/S | Move camera forward/backward on axis |
 | Shift | Increase speed while holding |
-| F9 | Kill NPC |
-| Ctrl + F9 | Teleport Hitman |
 
 ### Controller
 
