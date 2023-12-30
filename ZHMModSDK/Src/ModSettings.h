@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <filesystem>
+#include <shared_mutex>
 
 class ModSettings {
 public:
@@ -21,4 +22,5 @@ private:
 	std::string m_ModName;
 	std::filesystem::path m_ModDirectory;
 	std::unordered_map<std::string, std::unordered_map<std::string, std::string>> m_Settings;
+	std::shared_mutex m_SettingsMutex;
 };

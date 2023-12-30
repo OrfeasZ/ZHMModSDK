@@ -16,6 +16,8 @@ ModSettings::~ModSettings() {
 }
 
 void ModSettings::Reload() {
+	std::unique_lock<std::shared_mutex> s_Lock(m_SettingsMutex);
+
 	m_Settings.clear();
 
 	std::filesystem::path s_SettingsIniPath = m_ModDirectory / (m_ModName + ".ini");
@@ -45,6 +47,8 @@ void ModSettings::Reload() {
 }
 
 void ModSettings::Save() {
+	std::unique_lock<std::shared_mutex> s_Lock(m_SettingsMutex);
+
 	std::filesystem::path s_SettingsIniPath = m_ModDirectory / (m_ModName + ".ini");
 
 	mINI::INIFile s_File(s_SettingsIniPath.string());
@@ -68,35 +72,56 @@ void ModSettings::Save() {
 }
 
 bool ModSettings::HasSetting(const std::string& p_Section, const std::string& p_Name) {
+	std::shared_lock<std::shared_mutex> s_Lock(m_SettingsMutex);
 	return m_Settings.find(p_Section) != m_Settings.end() && m_Settings[p_Section].find(p_Name) != m_Settings[p_Section].end();
 }
 
 std::string ModSettings::GetSetting(const std::string& p_Section, const std::string& p_Name, const std::string& p_DefaultValue) {
-	if (!HasSetting(p_Section, p_Name)) {
+	std::shared_lock<std::shared_mutex> s_Lock(m_SettingsMutex);
+
+	auto s_SectionIt = m_Settings.find(p_Section);
+
+	if (s_SectionIt == m_Settings.end()) {
 		return p_DefaultValue;
 	}
 
-	return m_Settings[p_Section][p_Name];
+	auto s_SettingIt = s_SectionIt->second.find(p_Name);
+
+	if (s_SettingIt == s_SectionIt->second.end()) {
+		return p_DefaultValue;
+	}
+
+	return s_SettingIt->second;
 }
 
 void ModSettings::SetSetting(const std::string& p_Section, const std::string& p_Name, const std::string& p_Value) {
-	if (m_Settings.find(p_Section) == m_Settings.end()) {
-		m_Settings[p_Section] = std::unordered_map<std::string, std::string>();
+	{
+		std::unique_lock<std::shared_mutex> s_Lock(m_SettingsMutex);
+
+		if (m_Settings.find(p_Section) == m_Settings.end()) {
+			m_Settings[p_Section] = std::unordered_map<std::string, std::string>();
+		}
+
+		m_Settings[p_Section][p_Name] = p_Value;
 	}
 
-	m_Settings[p_Section][p_Name] = p_Value;
 	Save();
 }
 
 void ModSettings::RemoveSetting(const std::string& p_Section, const std::string& p_Name) {
-	if (m_Settings.find(p_Section) == m_Settings.end()) {
-		return;
+	{
+		std::unique_lock<std::shared_mutex> s_Lock(m_SettingsMutex);
+
+		if (m_Settings.find(p_Section) == m_Settings.end()) {
+			return;
+		}
+
+		if (m_Settings[p_Section].find(p_Name) == m_Settings[p_Section].end()) {
+			return;
+		}
+
+		m_Settings[p_Section].erase(p_Name);
 	}
 
-	if (m_Settings[p_Section].find(p_Name) == m_Settings[p_Section].end()) {
-		return;
-	}
-
-	m_Settings[p_Section].erase(p_Name);
 	Save();
 }
