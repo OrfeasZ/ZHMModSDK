@@ -2,6 +2,10 @@
 
 #include "Logging.h"
 #include "ModSDK.h"
+#include <Glacier/ZRender.h>
+#include <d3dcompiler.h>
+#include <dxgi1_4.h>
+
 
 using namespace Rendering;
 

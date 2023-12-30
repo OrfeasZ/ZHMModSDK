@@ -6,6 +6,8 @@
 
 #include "Common.h"
 
+#include <spdlog/fmt/ostr.h>
+
 class ZString
 {
 public:
@@ -114,6 +116,20 @@ private:
 private:
     int32_t m_nLength;
     const char* m_pChars;
+};
+
+template <>
+struct fmt::formatter<ZString>
+{
+	constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator
+	{
+		return ctx.begin();
+	}
+
+	auto format(const ZString& r, format_context& ctx) const -> format_context::iterator
+	{
+		return fmt::format_to(ctx.out(), "{}", r.ToStringView());
+	}
 };
 
 inline std::ostream& operator<<(std::ostream& p_Stream, const ZString& p_String)

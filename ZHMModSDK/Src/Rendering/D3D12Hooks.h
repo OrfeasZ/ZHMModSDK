@@ -1,7 +1,7 @@
 #pragma once
 
 #include <optional>
-#include <d3d12.h>
+#include <directx/d3d12.h>
 #include <dxgi.h>
 #include <unordered_map>
 #include <vector>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Windows.h>
-#include <d3d12.h>
+#include <directx/d3d12.h>
 
 #include "Hook.h"
 #include "Common.h"
