@@ -71,10 +71,22 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
             if (const auto s_SpatialEntity = s_SelectedEntity.QueryInterface<ZSpatialEntity>())
             {
                 auto s_ModelMatrix = s_SpatialEntity->GetWorldMatrix();
-                auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
-                const SMatrix s_ProjectionMatrix = *s_CurrentCamera->GetProjectionMatrix();
 
-                ImGuizmo::SetRect(0, 0, s_ImgGuiIO.DisplaySize.x, s_ImgGuiIO.DisplaySize.y);
+	            const auto s_CameraRight = Globals::RenderManager->m_pDevice->m_Constants.cameraRight;
+	            const auto s_CameraUp = Globals::RenderManager->m_pDevice->m_Constants.cameraUp;
+	            const auto s_CameraFwd = Globals::RenderManager->m_pDevice->m_Constants.cameraFwd;
+	            const auto s_CameraPos = Globals::RenderManager->m_pDevice->m_Constants.cameraPos;
+
+	            const auto s_ViewMatrix = SMatrix {
+		            { s_CameraRight.x, s_CameraRight.y, s_CameraRight.z, 0.f },
+		            { s_CameraUp.x, s_CameraUp.y, s_CameraUp.z, 0.f },
+		            { -s_CameraFwd.x, -s_CameraFwd.y, -s_CameraFwd.z, 0.f },
+		            { s_CameraPos.x, s_CameraPos.y, s_CameraPos.z, 1.f }
+	            }.Inverse();
+
+	            const auto s_ProjectionMatrix = *reinterpret_cast<SMatrix*>(&Globals::RenderManager->m_pDevice->m_Constants.cameraViewToClip);
+
+	            ImGuizmo::SetRect(0, 0, s_ImgGuiIO.DisplaySize.x, s_ImgGuiIO.DisplaySize.y);
 
 				if (m_GizmoMode == ImGuizmo::SCALE)
 				{

@@ -209,7 +209,7 @@ protected:
 
         if (s_Result != MH_OK)
         {
-            Logger::Error("Could not create hook '{}' at address {}. Error code: {}.", p_HookName, fmt::ptr(p_Target), s_Result);
+            Logger::Error("Could not create hook '{}' at address {}. Error code: {}.", p_HookName, fmt::ptr(p_Target), static_cast<int>(s_Result));
             return;
         }
 
@@ -217,7 +217,7 @@ protected:
 
         if (s_Result != MH_OK)
         {
-            Logger::Error("Could install detour for hook '{}' at address {}. Error code: {}.", p_HookName, fmt::ptr(p_Target), s_Result);
+            Logger::Error("Could install detour for hook '{}' at address {}. Error code: {}.", p_HookName, fmt::ptr(p_Target), static_cast<int>(s_Result));
             return;
         }
 

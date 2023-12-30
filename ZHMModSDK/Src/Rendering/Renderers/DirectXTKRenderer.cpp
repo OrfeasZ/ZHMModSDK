@@ -66,11 +66,11 @@ void DirectXTKRenderer::Draw()
 
     m_LineEffect->Apply(m_CommandList);
 
-    m_LineBatch->Begin(m_CommandList);
+    m_PrimitiveBatch->Begin(m_CommandList);
 
     ModSDK::GetInstance()->OnDraw3D();
 
-    m_LineBatch->End();
+    m_PrimitiveBatch->End();
 
     m_SpriteBatch->End();
 }
@@ -85,24 +85,6 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
         Logger::Error("Failed to set up DirectXTK renderer.");
         OnReset();
         return;
-    }
-
-    if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call())
-    {
-        const auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
-        const SMatrix s_ProjectionMatrix = *s_CurrentCamera->GetProjectionMatrix();
-
-        m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_ViewMatrix);
-        m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_ProjectionMatrix);
-
-        m_ViewProjection = m_View * m_Projection;
-        m_ProjectionViewInverse = (m_Projection * m_View).Invert();
-
-        if (m_RendererSetup)
-        {
-            m_LineEffect->SetView(m_View);
-            m_LineEffect->SetProjection(m_Projection);
-        }
     }
 
     // Get context of next frame to render.
@@ -130,6 +112,32 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
     m_CommandList->ResourceBarrier(1, &s_RTBarrier);
 
+	// Update camera matrices.
+	const auto s_CameraRight = Globals::RenderManager->m_pDevice->m_Constants.cameraRight;
+	const auto s_CameraUp = Globals::RenderManager->m_pDevice->m_Constants.cameraUp;
+	const auto s_CameraFwd = Globals::RenderManager->m_pDevice->m_Constants.cameraFwd;
+	const auto s_CameraPos = Globals::RenderManager->m_pDevice->m_Constants.cameraPos;
+
+	const auto s_CameraView = SMatrix {
+		{ s_CameraRight.x, s_CameraRight.y, s_CameraRight.z, 0.f },
+		{ s_CameraUp.x, s_CameraUp.y, s_CameraUp.z, 0.f },
+		{ -s_CameraFwd.x, -s_CameraFwd.y, -s_CameraFwd.z, 0.f },
+		{ s_CameraPos.x, s_CameraPos.y, s_CameraPos.z, 1.f }
+	}.Inverse();
+
+	m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_CameraView);
+	m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pDevice->m_Constants.cameraViewToClip);
+
+	m_ViewProjection = m_View * m_Projection;
+	m_ProjectionViewInverse = (m_Projection * m_View).Invert();
+
+	if (m_RendererSetup)
+	{
+		m_LineEffect->SetView(m_View);
+		m_LineEffect->SetProjection(m_Projection);
+	}
+
+	// Set up the viewport.
     D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
     m_CommandList->RSSetViewports(1, &s_Viewport);
 
@@ -139,6 +147,14 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     const CD3DX12_CPU_DESCRIPTOR_HANDLE s_RtvDescriptor(s_RtvHandle, s_BackBufferIndex, m_RtvDescriptorSize);
 
+	// Use depth buffer from the game.
+	// TODO: Remove hardcoded 12 index. Allow rendering both with and without depth clipping.
+	/*const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
+	const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, 12, m_DsvDescriptorSize);
+
+	Logger::Debug("DSV descriptor handle: {:X}", s_DsvDescriptor.ptr);*/
+
+    //m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
     m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
 
     Draw();
@@ -224,9 +240,6 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
         D3D_SET_OBJECT_NAME_A(m_RtvDescriptorHeap, "ZHMModSDK DirectXTK Rtv Descriptor Heap");
     }
 
-    OutputDebugStringA(fmt::format("DXTK heaps {} vtbl {}\n", fmt::ptr(m_RtvDescriptorHeap.Ref), fmt::ptr(m_RtvDescriptorHeap.VTable())).c_str());
-    Logger::Debug("DXTK heaps {} vtbl {}", fmt::ptr(m_RtvDescriptorHeap.Ref), fmt::ptr(m_RtvDescriptorHeap.VTable()));
-
     m_FrameContext.clear();
 
     for (UINT i = 0; i < MaxRenderedFrames; ++i)
@@ -250,6 +263,8 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     m_BackBuffers.resize(s_BufferCount);
 
     m_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    m_DsvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
     for (UINT i = 0; i < s_BufferCount; ++i)
@@ -292,18 +307,18 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
     m_GraphicsMemory = std::make_unique<DirectX::GraphicsMemory>(s_Device);
 
-    m_LineBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>(s_Device);
+	m_PrimitiveBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>(s_Device);
+
+	DirectX::RenderTargetState s_RtState(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_D32_FLOAT_S8X24_UINT);
 
     {
-        const DirectX::RenderTargetState s_RtState(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT);
-
         DirectX::EffectPipelineStateDescription s_Desc(
             &DirectX::VertexPositionColor::InputLayout,
-            DirectX::CommonStates::Opaque,
-            DirectX::CommonStates::DepthDefault,
+            DirectX::CommonStates::AlphaBlend,
+            DirectX::CommonStates::DepthReadReverseZ,
             DirectX::CommonStates::CullNone,
             s_RtState,
-            D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE);
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 
         m_LineEffect = std::make_unique<DirectX::BasicEffect>(s_Device, DirectX::EffectFlags::VertexColor, s_Desc);
     }
@@ -323,8 +338,6 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
             m_ResourceDescriptors->GetCpuHandle(static_cast<int>(Descriptors::FontRegular)),
             m_ResourceDescriptors->GetGpuHandle(static_cast<int>(Descriptors::FontRegular))
         );
-
-        DirectX::RenderTargetState s_RtState(DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_D32_FLOAT);
 
         DirectX::SpriteBatchPipelineStateDescription s_Desc(s_RtState);
         m_SpriteBatch = std::make_unique<DirectX::SpriteBatch>(s_Device, s_ResourceUpload, s_Desc);
@@ -382,6 +395,8 @@ void DirectXTKRenderer::PostReset()
     m_BackBuffers.resize(s_SwapChainDesc.BufferCount);
 
     m_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    m_DsvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
     for (UINT i = 0; i < m_BackBuffers.size(); ++i)
@@ -434,7 +449,7 @@ void DirectXTKRenderer::DrawLine3D(const SVector3& p_From, const SVector3& p_To,
         DirectX::SimpleMath::Vector4(p_ToColor.x, p_ToColor.y, p_ToColor.z, p_ToColor.w)
     );
 
-    m_LineBatch->DrawLine(s_From, s_To);
+    m_PrimitiveBatch->DrawLine(s_From, s_To);
 }
 
 void DirectXTKRenderer::DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/, float p_Scale/* = 1.f*/, TextAlignment p_Alignment/* = TextAlignment::Center*/)
@@ -581,4 +596,22 @@ void DirectXTKRenderer::DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, 
 
     DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
     DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
+}
+
+void DirectXTKRenderer::DrawQuad3D(
+	const SVector3& p_V1,
+	const SVector4& p_Color1,
+	const SVector3& p_V2,
+	const SVector4& p_Color2,
+	const SVector3& p_V3,
+	const SVector4& p_Color3,
+	const SVector3& p_V4,
+	const SVector4& p_Color4
+) {
+	m_PrimitiveBatch->DrawQuad(
+		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z), DirectX::SimpleMath::Vector4(p_Color1.x, p_Color1.y, p_Color1.z, p_Color1.w)),
+		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V2.x, p_V2.y, p_V2.z), DirectX::SimpleMath::Vector4(p_Color2.x, p_Color2.y, p_Color2.z, p_Color2.w)),
+		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V3.x, p_V3.y, p_V3.z), DirectX::SimpleMath::Vector4(p_Color3.x, p_Color3.y, p_Color3.z, p_Color3.w)),
+		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V4.x, p_V4.y, p_V4.z), DirectX::SimpleMath::Vector4(p_Color4.x, p_Color4.y, p_Color4.z, p_Color4.w))
+	);
 }

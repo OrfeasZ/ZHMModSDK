@@ -131,7 +131,7 @@ void Hitmen::Connect(const std::string& p_Address, uint16_t p_Port)
 
 void Hitmen::OnServerStatus(SteamNetConnectionStatusChangedCallback_t* p_Info)
 {
-    Logger::Debug("Server connection status changed: {}", p_Info->m_info.m_eState);
+    Logger::Debug("Server connection status changed: {}", static_cast<int>(p_Info->m_info.m_eState));
 
     switch (p_Info->m_info.m_eState)
     {
@@ -162,7 +162,7 @@ void Hitmen::OnServerStatus(SteamNetConnectionStatusChangedCallback_t* p_Info)
 
 void Hitmen::OnClientStatus(SteamNetConnectionStatusChangedCallback_t* p_Info)
 {
-    Logger::Debug("Client connection status changed: {}", p_Info->m_info.m_eState);
+    Logger::Debug("Client connection status changed: {}", static_cast<int>(p_Info->m_info.m_eState));
 
     switch (p_Info->m_info.m_eState)
     {

@@ -39,7 +39,7 @@ target_link_libraries(Editor PRIVATE
 	ws2_32
 	cista
 	ResourceLib_HM3
-	uv_a
+    $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>
 	ZLIB::ZLIB
 	"${USOCKETS_LIB}"
 	simdjson::simdjson

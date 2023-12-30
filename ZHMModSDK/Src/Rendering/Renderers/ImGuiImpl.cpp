@@ -35,7 +35,7 @@
 #include "ImGuiImpl.h"
 
 // DirectX
-#include <d3d12.h>
+#include <directx/d3d12.h>
 #include <dxgi1_4.h>
 #include <d3dcompiler.h>
 

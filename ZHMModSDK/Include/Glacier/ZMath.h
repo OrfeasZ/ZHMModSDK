@@ -210,6 +210,17 @@ struct alignas(16) float4 {
 	};
 };
 
+struct SQuaternion
+{
+	float4 w128;
+};
+
+class SQV
+{
+public:
+	SQuaternion m_Rotation;
+	float4 m_Translation;
+};
 
 class EulerAngles {
 public:

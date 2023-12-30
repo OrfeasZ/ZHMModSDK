@@ -5,6 +5,8 @@
 #include "ZEntity.h"
 #include "ZPhysics.h"
 
+class ZSpatialEntity;
+
 struct ZRayQueryInput
 {
     float4 m_vFrom;

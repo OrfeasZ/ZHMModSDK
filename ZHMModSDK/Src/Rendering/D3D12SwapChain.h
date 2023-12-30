@@ -52,7 +52,7 @@ namespace Rendering
         HRESULT CheckColorSpaceSupport(DXGI_COLOR_SPACE_TYPE ColorSpace, UINT* pColorSpaceSupport) override { return m_Target->CheckColorSpaceSupport(ColorSpace, pColorSpaceSupport); }
         HRESULT SetColorSpace1(DXGI_COLOR_SPACE_TYPE ColorSpace) override { return m_Target->SetColorSpace1(ColorSpace); }
 
-    private:
+    public:
         IDXGISwapChain3* m_Target;
         volatile ULONG m_RefCount = 0;
     };

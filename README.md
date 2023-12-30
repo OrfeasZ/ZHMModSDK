@@ -50,6 +50,11 @@ There are a few sample mods included in this repository that can be used either 
 | [Editor](/Mods/Editor) | A WIP in-engine "editor". Currently supports viewing spawned entities alongside basic lookup and manipulation. **[Requires additional setup!](/Mods/Editor)** |
 | [Clumsy](/Mods/Clumsy) | Makes 47 very clumsy. He just can't seem to figure out how to take cover... **[Requires additional setup!](/Mods/Clumsy)** |
 
+## Uninstalling
+
+To de-activate / uninstall the mod loader, simply delete the extracted `dinput8.dll` from your `HITMAN3\Retail` directory. You can also 
+delete all the other files / folders you previously extracted, and the `mods.ini` file (if present).
+
 ## Usage (for developers)
 
 To find out how to create your own mods or how to extend the SDK, check out the [wiki](https://github.com/OrfeasZ/ZHMModSDK/wiki). Here are some guides to get you started:
