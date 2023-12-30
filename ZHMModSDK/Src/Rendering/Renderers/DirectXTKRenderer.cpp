@@ -149,10 +149,13 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
 	// Use depth buffer from the game.
 	// TODO: Remove hardcoded 12 index. Allow rendering both with and without depth clipping.
-	const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
+	/*const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
 	const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, 12, m_DsvDescriptorSize);
 
-    m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
+	Logger::Debug("DSV descriptor handle: {:X}", s_DsvDescriptor.ptr);*/
+
+    //m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
+    m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
 
     Draw();
 
