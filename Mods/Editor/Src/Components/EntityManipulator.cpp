@@ -98,7 +98,8 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
 						s_ModelMatrix.ScaleTransform(s_Scale.Get());
 
-						if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseScaleSnap ? &m_ScaleSnapValue : NULL))
+						float s_ScaleSnapValue = static_cast<float>(m_ScaleSnapValue);
+						if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseScaleSnap ? &s_ScaleSnapValue : NULL))
 						{
 							m_SelectedEntity.SetProperty<SVector3>("m_PrimitiveScale", s_ModelMatrix.GetScale());
 
@@ -114,7 +115,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 				}
 				else if (m_GizmoMode == ImGuizmo::TRANSLATE)
 				{
-					float m_CombinedSnapValue[3] = {m_SnapValue, m_SnapValue, m_SnapValue};
+					float m_CombinedSnapValue[3] = {static_cast<float>(m_SnapValue), static_cast<float>(m_SnapValue), static_cast<float>(m_SnapValue)};
 
 					if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? m_CombinedSnapValue : NULL))
 					{
@@ -123,7 +124,8 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 				}
 				else if (m_GizmoMode == ImGuizmo::ROTATE)
 				{
-					if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseAngleSnap ? &m_AngleSnapValue : NULL))
+					float s_AngleSnapValue = static_cast<float>(m_AngleSnapValue);
+					if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseAngleSnap ? &s_AngleSnapValue : NULL))
 					{
 						OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix, false, std::nullopt);
 					}

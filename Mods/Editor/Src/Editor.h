@@ -124,9 +124,9 @@ private:
     bool m_UseSnap = false;
 	bool m_UseAngleSnap = false;
 	bool m_UseScaleSnap = false;
-	float m_SnapValue = 1.0f;
-	float m_AngleSnapValue = 90.0f;
-	float m_ScaleSnapValue = 1.0f;
+	double m_SnapValue = 1.0;
+	double m_AngleSnapValue = 90.0;
+	double m_ScaleSnapValue = 1.0;
 
     float4 m_From;
     float4 m_To;

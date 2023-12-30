@@ -54,17 +54,35 @@ void Editor::DrawEntityProperties() {
 		static bool s_LocalTransform = false;
 		ImGui::Checkbox("Local Transforms", &s_LocalTransform);
 
-        ImGui::Checkbox("##UseSnap", &m_UseSnap);
-		ImGui::SameLine();
-		ImGui::InputFloat("Snap", &m_SnapValue);
+        if (ImGui::Checkbox("##UseSnap", &m_UseSnap)) {
+			SetSettingBool("general", "snap", m_UseSnap);
+		}
 
-		ImGui::Checkbox("##UseAngleSnap", &m_UseAngleSnap);
 		ImGui::SameLine();
-		ImGui::InputFloat("Angle Snap", &m_AngleSnapValue);
 
-		ImGui::Checkbox("##UseScaleSnap", &m_UseScaleSnap);
+		if (ImGui::InputDouble("Snap", &m_SnapValue)) {
+			SetSettingDouble("general", "snap_value", m_SnapValue);
+		}
+
+		if (ImGui::Checkbox("##UseAngleSnap", &m_UseAngleSnap)) {
+			SetSettingBool("general", "angle_snap", m_UseAngleSnap);
+		}
+
 		ImGui::SameLine();
-		ImGui::InputFloat("Scale Snap", &m_ScaleSnapValue);
+
+		if (ImGui::InputDouble("Angle Snap", &m_AngleSnapValue)) {
+			SetSettingDouble("general", "angle_snap_value", m_AngleSnapValue);
+		}
+
+		if (ImGui::Checkbox("##UseScaleSnap", &m_UseScaleSnap)) {
+			SetSettingBool("general", "scale_snap", m_UseScaleSnap);
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::InputDouble("Scale Snap", &m_ScaleSnapValue)) {
+			SetSettingDouble("general", "scale_snap_value", m_ScaleSnapValue);
+		}
 
 		ImGui::Separator();
 

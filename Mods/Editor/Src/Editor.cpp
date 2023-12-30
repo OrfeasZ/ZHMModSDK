@@ -86,6 +86,13 @@ void Editor::Init()
     Hooks::ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory->AddDetour(this, &Editor::ZTemplateEntityBlueprintFactory_ctor);
     Hooks::SignalInputPin->AddDetour(this, &Editor::OnInputPin);
     Hooks::SignalOutputPin->AddDetour(this, &Editor::OnOutputPin);
+
+	m_UseSnap = GetSettingBool("general", "snap", true);
+	m_SnapValue = GetSettingDouble("general", "snap_value", 1.0);
+	m_UseAngleSnap = GetSettingBool("general", "angle_snap", true);
+	m_AngleSnapValue = GetSettingDouble("general", "angle_snap_value", 90.0);
+	m_UseScaleSnap = GetSettingBool("general", "scale_snap", true);
+	m_ScaleSnapValue = GetSettingDouble("general", "scale_snap_value", 1.0);
 }
 
 void Editor::OnDrawMenu()
@@ -183,6 +190,25 @@ void Editor::CopyToClipboard(const std::string& p_String) const
 void Editor::OnDraw3D(IRenderer* p_Renderer)
 {
     DrawEntityAABB(p_Renderer);
+
+	/*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
+	const auto s_LineColor = SVector4(0.94, 0.12, 0.05, 1.0);
+
+	p_Renderer->DrawQuad3D(
+		{ -26.179094, -25.697458, 0.5 },
+		s_Color,
+		{ -25.915297, -27.365824, 0.5 },
+		s_Color,
+		{ -27.750357, -27.950037, 0.5 },
+		s_Color,
+		{ -27.304773, -25.154234, 0.5 },
+		s_Color
+	);*/
+
+	//p_Renderer->DrawLine3D({ -35.352013, -23.58427, 0.4925564 }, { -27.71298, -24.866821, 0.4925564 }, s_LineColor, s_LineColor);
+	//p_Renderer->DrawLine3D({ -27.71298, -24.866821, 0.4925564 }, { -26.691515, -38.064953, 0.4925564 }, s_LineColor, s_LineColor);
+	//p_Renderer->DrawLine3D({ -26.691515, -38.064953, 0.4925564 }, { -41.43283, -33.25945, 0.49255627 }, s_LineColor, s_LineColor);
+	//p_Renderer->DrawLine3D({ -41.43283, -33.25945, 0.49255627 }, { -35.352013, -23.58427, 0.4925564 }, s_LineColor, s_LineColor);
 }
 
 void Editor::OnEngineInitialized()
