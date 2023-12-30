@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <Windows.h>
+#include "ModSettings.h"
 
 class IPluginInterface;
 
@@ -15,6 +16,7 @@ private:
     {
         HMODULE Module;
         IPluginInterface* PluginInterface;
+	    ModSettings* Settings;
     };
 
 public:
@@ -34,6 +36,7 @@ public:
     void UnloadAllMods();
     void ReloadAllMods();
     IPluginInterface* GetModByName(const std::string& p_Name);
+	ModSettings* GetModSettings(IPluginInterface* p_PluginInterface);
 
     std::vector<IPluginInterface*> GetLoadedMods() const
     {

@@ -202,69 +202,68 @@ void ModLoader::LoadAllMods()
 
 void ModLoader::LoadMod(const std::string& p_Name, bool p_LiveLoad)
 {
-    std::unique_lock s_Lock(m_Mutex);
+	const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
+	IPluginInterface* s_PluginInterface;
 
-    const std::string s_Name = Util::StringUtils::ToLowerCase(p_Name);
+	{
+		std::unique_lock s_Lock(m_Mutex);
 
-    if (m_LoadedMods.contains(s_Name))
-    {
-        Logger::Warn("A mod with the same name ({}) is already loaded. Skipping.", p_Name);
-        return;
-    }
+		if (m_LoadedMods.contains(s_Name)) {
+			Logger::Warn("A mod with the same name ({}) is already loaded. Skipping.", p_Name);
+			return;
+		}
 
-    char s_ExePathStr[MAX_PATH];
-    auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+		char s_ExePathStr[MAX_PATH];
+		auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
 
-    if (s_PathSize == 0)
-        return;
+		if (s_PathSize == 0)
+			return;
 
-    std::filesystem::path s_ExePath(s_ExePathStr);
-    auto s_ExeDir = s_ExePath.parent_path();
+		std::filesystem::path s_ExePath(s_ExePathStr);
+		auto s_ExeDir = s_ExePath.parent_path();
 
-    const auto s_ModulePath = absolute(s_ExeDir / ("mods/" + p_Name + ".dll"));
+		const auto s_ModulePath = absolute(s_ExeDir / ("mods/" + p_Name + ".dll"));
 
-    if (!exists(s_ModulePath) || !is_regular_file(s_ModulePath))
-    {
-        Logger::Warn("Could not find mod '{}'.", p_Name);
-    }
+		if (!exists(s_ModulePath) || !is_regular_file(s_ModulePath)) {
+			Logger::Warn("Could not find mod '{}'.", p_Name);
+		}
 
-    Logger::Info("Attempting to load mod '{}'.", p_Name);
-    Logger::Debug("Module path is '{}'.", s_ModulePath.string());
+		Logger::Info("Attempting to load mod '{}'.", p_Name);
+		Logger::Debug("Module path is '{}'.", s_ModulePath.string());
 
-    const auto s_Module = LoadLibraryA(s_ModulePath.string().c_str());
+		const auto s_Module = LoadLibraryA(s_ModulePath.string().c_str());
 
-    if (s_Module == nullptr)
-    {
-        Logger::Warn("Failed to load mod. Error: {}", GetLastError());
-        return;
-    }
+		if (s_Module == nullptr) {
+			Logger::Warn("Failed to load mod. Error: {}", GetLastError());
+			return;
+		}
 
-    const auto s_GetPluginInterfaceAddr = GetProcAddress(s_Module, "GetPluginInterface");
+		const auto s_GetPluginInterfaceAddr = GetProcAddress(s_Module, "GetPluginInterface");
 
-    if (s_GetPluginInterfaceAddr == nullptr)
-    {
-        Logger::Warn("Could not find plugin interface for mod. Make sure that the 'GetPluginInterface' method is exported.");
-        FreeLibrary(s_Module);
-        return;
-    }
+		if (s_GetPluginInterfaceAddr == nullptr) {
+			Logger::Warn("Could not find plugin interface for mod. Make sure that the 'GetPluginInterface' method is exported.");
+			FreeLibrary(s_Module);
+			return;
+		}
 
-    const auto s_GetPluginInterface = reinterpret_cast<GetPluginInterface_t>(s_GetPluginInterfaceAddr);
+		const auto s_GetPluginInterface = reinterpret_cast<GetPluginInterface_t>(s_GetPluginInterfaceAddr);
 
-    auto* s_PluginInterface = s_GetPluginInterface();
+		s_PluginInterface = s_GetPluginInterface();
 
-    if (s_PluginInterface == nullptr)
-    {
-        Logger::Warn("Mod returned a null plugin interface.");
-        FreeLibrary(s_Module);
-        return;
-    }
+		if (s_PluginInterface == nullptr) {
+			Logger::Warn("Mod returned a null plugin interface.");
+			FreeLibrary(s_Module);
+			return;
+		}
 
-    LoadedMod s_Mod {};
-    s_Mod.Module = s_Module;
-    s_Mod.PluginInterface = s_PluginInterface;
+		LoadedMod s_Mod{};
+		s_Mod.Module = s_Module;
+		s_Mod.PluginInterface = s_PluginInterface;
+		s_Mod.Settings = new ModSettings(p_Name, s_ExeDir / "mods");
 
-    m_LoadedMods[s_Name] = s_Mod;
-    m_ModList.push_back(s_PluginInterface);
+		m_LoadedMods[s_Name] = s_Mod;
+		m_ModList.push_back(s_PluginInterface);
+	}
 
     ModSDK::GetInstance()->OnModLoaded(s_Name, s_PluginInterface, p_LiveLoad);
 }
@@ -294,6 +293,7 @@ void ModLoader::UnloadMod(const std::string& p_Name)
     }
 
     delete s_ModMapIt->second.PluginInterface;
+	delete s_ModMapIt->second.Settings;
     FreeLibrary(s_ModMapIt->second.Module);
 
     m_LoadedMods.erase(s_ModMapIt);
@@ -364,4 +364,17 @@ IPluginInterface* ModLoader::GetModByName(const std::string& p_Name)
         return nullptr;
 
     return it->second.PluginInterface;
+}
+
+ModSettings* ModLoader::GetModSettings(IPluginInterface* p_PluginInterface)
+{
+	std::shared_lock s_Lock(m_Mutex);
+
+	for (auto& s_Pair : m_LoadedMods) {
+		if (s_Pair.second.PluginInterface == p_PluginInterface) {
+			return s_Pair.second.Settings;
+		}
+	}
+
+	return nullptr;
 }

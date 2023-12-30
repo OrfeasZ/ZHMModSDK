@@ -14,6 +14,7 @@ ZString::~ZString()
 void ZString::Allocate(const char* str, size_t size)
 {
     m_nLength = static_cast<uint32_t>(size);
-    m_pChars = reinterpret_cast<char*>((*Globals::MemoryManager)->m_pNormalAllocator->Allocate(size));
+    m_pChars = reinterpret_cast<char*>((*Globals::MemoryManager)->m_pNormalAllocator->Allocate(size + 1));
     memcpy(const_cast<char*>(m_pChars), str, size);
+	const_cast<char*>(m_pChars)[size] = '\0';
 }

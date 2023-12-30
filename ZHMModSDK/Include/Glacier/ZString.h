@@ -23,6 +23,10 @@ public:
         m_nLength = static_cast<uint32_t>(str.size()) | 0x80000000;
     }
 
+	ZString(const std::string& str) {
+		Allocate(str.c_str(), str.size());
+	}
+
     ZString(const char* str) :
         m_pChars(str)
     {

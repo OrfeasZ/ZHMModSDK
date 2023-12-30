@@ -27,6 +27,138 @@ public:
     virtual void OnDrawUI(bool p_HasFocus) {}
     virtual void OnDraw3D(IRenderer* p_Renderer) {}
     virtual void OnDrawMenu() {}
+	
+public:
+	/**
+     * Set a setting string value for the given name.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_Value The value of the setting.
+     */
+	void SetSetting(const ZString& p_Section, const ZString& p_Name, const ZString& p_Value) {
+		SDK()->SetPluginSetting(this, p_Section, p_Name, p_Value);
+	}
+
+	/**
+	 * Set a setting integer value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_Value The value of the setting.
+	 */
+	void SetSettingInt(const ZString& p_Section, const ZString& p_Name, int64 p_Value) {
+		SDK()->SetPluginSettingInt(this, p_Section, p_Name, p_Value);
+	}
+
+	/**
+	 * Set a setting unsigned integer value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_Value The value of the setting.
+	 */
+	void SetSettingUInt(const ZString& p_Section, const ZString& p_Name, uint64 p_Value) {
+		SDK()->SetPluginSettingUInt(this, p_Section, p_Name, p_Value);
+	}
+
+	/**
+	 * Set a setting double value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_Value The value of the setting.
+	 */
+	void SetSettingDouble(const ZString& p_Section, const ZString& p_Name, double p_Value) {
+		SDK()->SetPluginSettingDouble(this, p_Section, p_Name, p_Value);
+	}
+
+	/**
+	 * Set a setting boolean value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_Value The value of the setting.
+	 */
+	void SetSettingBool(const ZString& p_Section, const ZString& p_Name, bool p_Value) {
+		SDK()->SetPluginSettingBool(this, p_Section, p_Name, p_Value);
+	}
+
+	/**
+	 * Get a setting string value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_DefaultValue The default value to return if the setting does not exist.
+	 * @return The value of the setting, or the default value if the setting does not exist.
+	 */
+	ZString GetSetting(const ZString& p_Section, const ZString& p_Name, const ZString& p_DefaultValue) {
+		return SDK()->GetPluginSetting(this, p_Section, p_Name, p_DefaultValue);
+	}
+
+	/**
+	 * Get a setting integer value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_DefaultValue The default value to return if the setting does not exist or is not an integer.
+	 * @return The value of the setting, or the default value if the setting does not exist or is not an integer.
+	 */
+	int64 GetSettingInt(const ZString& p_Section, const ZString& p_Name, int64 p_DefaultValue) {
+		return SDK()->GetPluginSettingInt(this, p_Section, p_Name, p_DefaultValue);
+	}
+
+	/**
+	 * Get a setting unsigned integer value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_DefaultValue The default value to return if the setting does not exist or is not an unsigned integer.
+	 * @return The value of the setting, or the default value if the setting does not exist or is not an unsigned integer.
+	 */
+	uint64 GetSettingUInt(const ZString& p_Section, const ZString& p_Name, uint64 p_DefaultValue) {
+		return SDK()->GetPluginSettingUInt(this, p_Section, p_Name, p_DefaultValue);
+	}
+
+	/**
+	 * Get a setting double value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_DefaultValue The default value to return if the setting does not exist or is not a double.
+	 * @return The value of the setting, or the default value if the setting does not exist or is not a double.
+	 */
+	double GetSettingDouble(const ZString& p_Section, const ZString& p_Name, double p_DefaultValue) {
+		return SDK()->GetPluginSettingDouble(this, p_Section, p_Name, p_DefaultValue);
+	}
+
+	/**
+	 * Get a setting boolean value for the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @param p_DefaultValue The default value to return if the setting does not exist or is not a boolean.
+	 * @return The value of the setting, or the default value if the setting does not exist or is not a boolean.
+	 */
+	bool GetSettingBool(const ZString& p_Section, const ZString& p_Name, bool p_DefaultValue) {
+		return SDK()->GetPluginSettingBool(this, p_Section, p_Name, p_DefaultValue);
+	}
+
+	/**
+	 * Check if a setting with the given name exists.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 * @return True if the setting exists, false otherwise.
+	 */
+	bool HasSetting(const ZString& p_Section, const ZString& p_Name) {
+		return SDK()->HasPluginSetting(this, p_Section, p_Name);
+	}
+
+	/**
+	 * Remove a setting with the given name.
+	 * @param p_Section The section of the setting in the INI file.
+	 * @param p_Name The name of the setting.
+	 */
+	void RemoveSetting(const ZString& p_Section, const ZString& p_Name) {
+		SDK()->RemovePluginSetting(this, p_Section, p_Name);
+	}
+
+	/**
+	 * Reload the settings for the current plugin.
+	 */
+	void ReloadSettings() {
+		SDK()->ReloadPluginSettings(this);
+	}
 
     friend class ModSDK;
 };
