@@ -71,6 +71,12 @@ Editor::~Editor()
 {
     const ZMemberDelegate<Editor, void(const SGameUpdateEvent&)> s_Delegate(this, &Editor::OnFrameUpdate);
     Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+
+	if (m_SelectionForFreeCameraEditorStyleEntity) {
+		Globals::Selections->clear();
+		free(m_SelectionForFreeCameraEditorStyleEntity);
+		m_SelectionForFreeCameraEditorStyleEntity = nullptr;
+	}
 }
 
 void Editor::Init()
@@ -618,6 +624,10 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
     //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
     */
 
+	if (m_SelectionForFreeCameraEditorStyleEntity) {
+		m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
+	}
+
 	m_CachedEntityTreeMutex.lock();
 	m_CachedEntityTree.reset();
 	m_CachedEntityTreeMutex.unlock();
@@ -629,9 +639,6 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
     }
 
     m_Server.OnSceneLoading(p_SceneData.m_sceneName.c_str(), s_Bricks);
-
-	// Clear SelectionForFreeCameraEditorStyleEntity's entity array just in case it wasn't cleared from previous scene
-	s_Selection.clear();
 
     return HookResult<void>(HookAction::Continue());
 }

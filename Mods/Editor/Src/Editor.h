@@ -118,11 +118,7 @@ private:
     bool m_CameraActive = false;
     ZEntityRef m_OriginalCam;
 
-	bool m_SelectionForEntityCreated = false;
-	TArray<ZEntityRef> s_Selection;
-	ZSelectionForFreeCameraEditorStyleEntity* s_SelectionForFreeCameraEditorStyleEntity;
-	std::unique_ptr<unsigned char[]> s_SelectionForFreeCameraEditorStyleEntity2;
-	TEntityRef<ZSelectionForFreeCameraEditorStyleEntity> entityRef;
+	ZSelectionForFreeCameraEditorStyleEntity* m_SelectionForFreeCameraEditorStyleEntity = nullptr;
 
     bool m_HoldingMouse = false;
     bool m_UseSnap = false;

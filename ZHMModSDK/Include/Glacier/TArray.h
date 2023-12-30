@@ -31,6 +31,26 @@ public:
         m_pBegin[s_Size] = p_Value;
     }
 
+	T* erase(T* p_Value) {
+		size_t s_Size = size();
+
+		for (size_t i = 0; i < s_Size; i++) {
+			if (m_pBegin[i] != p_Value) {
+				continue;
+			}
+
+			// TODO: Call destructor?
+
+			for (size_t j = i; j < s_Size - 1; j++) {
+				m_pBegin[j] = m_pBegin[j + 1];
+			}
+
+			resize(s_Size - 1);
+			return &m_pBegin[i];
+		}
+	}
+
+
     void resize(size_t p_Size)
     {
         // TODO: Inline support.
