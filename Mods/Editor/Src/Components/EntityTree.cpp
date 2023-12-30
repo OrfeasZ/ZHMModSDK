@@ -3,6 +3,8 @@
 #include <Glacier/EntityFactory.h>
 #include <Glacier/ZModule.h>
 #include <Glacier/ZEntity.h>
+#include <Glacier/ZFreeCamera.h>
+#include <Glacier/ZComponentCreateInfo.h>
 
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
@@ -377,14 +379,35 @@ void Editor::DrawEntityTree() {
 	}
 }
 
-void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
+void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId)
+{
 	const bool s_DifferentEntity = m_SelectedEntity != p_Entity;
 
 	m_SelectedEntity = p_Entity;
 	m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;
 
-	if (s_DifferentEntity) {
+	if (s_DifferentEntity)
+	{
 		m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
+	}
+
+	if (!m_SelectionForEntityCreated)
+	{
+		s_SelectionForFreeCameraEditorStyleEntity2 = std::unique_ptr<unsigned char[]>(new unsigned char[sizeof(ZSelectionForFreeCameraEditorStyleEntity)]);
+		s_SelectionForFreeCameraEditorStyleEntity = reinterpret_cast<ZSelectionForFreeCameraEditorStyleEntity*>(s_SelectionForFreeCameraEditorStyleEntity2.get());
+		entityRef.m_pInterfaceRef = s_SelectionForFreeCameraEditorStyleEntity;
+
+		Globals::Selections->push_back(entityRef);
+
+		m_SelectionForEntityCreated = true;
+	}
+
+	if (m_SelectionForEntityCreated)
+	{
+		s_Selection.clear();
+		s_Selection.push_back(p_Entity);
+
+		s_SelectionForFreeCameraEditorStyleEntity->m_selection = s_Selection;
 	}
 }
 

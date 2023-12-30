@@ -185,8 +185,8 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
-	"\x48\x89\x05\x00\x00\x00\x00\x48\x89\x2D\x00\x00\x00\x00\x40\x88\x2D",
-	"xxx????xxx????xxx",
+    "\x48\x89\x05\x00\x00\x00\x00\x48\x89\x2D\x00\x00\x00\x00\x40\x88\x2D",
+    "xxx????xxx????xxx",
 	3,
 	ZInputActionManager*, InputActionManager
 );
@@ -203,4 +203,11 @@ PATTERN_RELATIVE_GLOBAL(
 	"xx????xxx????xx",
 	2,
 	int*, InputActionManager_Seq
+);
+
+PATTERN_RELATIVE_GLOBAL(
+	"\x48\x8D\x15\x00\x00\x00\x00\x48\x0F\x44\xD7",
+	"xxx????xxxx",
+	3,
+	TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>*, Selections
 );

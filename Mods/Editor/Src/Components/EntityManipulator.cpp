@@ -42,25 +42,24 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
             m_HoldingMouse = false;
         }
 
-        if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Tab]))
-        {
-            if (m_GizmoMode == ImGuizmo::TRANSLATE)
-                m_GizmoMode = ImGuizmo::ROTATE;
-            else if (m_GizmoMode == ImGuizmo::ROTATE)
-                m_GizmoMode = ImGuizmo::SCALE;
-            else if (m_GizmoMode == ImGuizmo::SCALE)
-                m_GizmoMode = ImGuizmo::TRANSLATE;
-        }
+		if (!s_ImgGuiIO.WantTextInput) {
+			if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Tab])) {
+				if (m_GizmoMode == ImGuizmo::TRANSLATE)
+					m_GizmoMode = ImGuizmo::ROTATE;
+				else if (m_GizmoMode == ImGuizmo::ROTATE)
+					m_GizmoMode = ImGuizmo::SCALE;
+				else if (m_GizmoMode == ImGuizmo::SCALE)
+					m_GizmoMode = ImGuizmo::TRANSLATE;
+			}
 
-        if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Space]))
-        {
-            m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
-        }
+			if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Space])) {
+				m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+			}
 
-        if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Backspace]))
-        {
-			OnSelectEntity({}, std::nullopt);
-        }
+			if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Backspace])) {
+				OnSelectEntity({}, std::nullopt);
+			}
+		}
     }
 
     ImGuizmo::Enable(p_HasFocus);
@@ -99,7 +98,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 
 						s_ModelMatrix.ScaleTransform(s_Scale.Get());
 
-						if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
+						if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseScaleSnap ? &m_ScaleSnapValue : NULL))
 						{
 							m_SelectedEntity.SetProperty<SVector3>("m_PrimitiveScale", s_ModelMatrix.GetScale());
 
@@ -113,9 +112,18 @@ void Editor::DrawEntityManipulator(bool p_HasFocus)
 						}
 					}
 				}
-				else
+				else if (m_GizmoMode == ImGuizmo::TRANSLATE)
 				{
-					if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
+					float m_CombinedSnapValue[3] = {m_SnapValue, m_SnapValue, m_SnapValue};
+
+					if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? m_CombinedSnapValue : NULL))
+					{
+						OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix, false, std::nullopt);
+					}
+				}
+				else if (m_GizmoMode == ImGuizmo::ROTATE)
+				{
+					if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseAngleSnap ? &m_AngleSnapValue : NULL))
 					{
 						OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix, false, std::nullopt);
 					}
@@ -151,7 +159,9 @@ void Editor::OnEntityTransformChange(ZEntityRef p_Entity, SMatrix p_Transform, b
 		}
 
 		if (const auto s_PhysicsAspect = p_Entity.QueryInterface<ZStaticPhysicsAspect>()) {
-			s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+			if (s_PhysicsAspect->m_pPhysicsObject) {
+				s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+			}
 		}
 
 		m_Server.OnEntityTransformChanged(p_Entity, std::move(p_ClientId));

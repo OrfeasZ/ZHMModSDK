@@ -10,6 +10,7 @@
 #include "IPluginInterface.h"
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
+#include "Glacier/ZFreeCamera.h"
 
 #include "ImGuizmo.h"
 #include "EditorServer.h"
@@ -117,9 +118,19 @@ private:
     bool m_CameraActive = false;
     ZEntityRef m_OriginalCam;
 
+	bool m_SelectionForEntityCreated = false;
+	TArray<ZEntityRef> s_Selection;
+	ZSelectionForFreeCameraEditorStyleEntity* s_SelectionForFreeCameraEditorStyleEntity;
+	std::unique_ptr<unsigned char[]> s_SelectionForFreeCameraEditorStyleEntity2;
+	TEntityRef<ZSelectionForFreeCameraEditorStyleEntity> entityRef;
+
     bool m_HoldingMouse = false;
     bool m_UseSnap = false;
-    float m_SnapValue[3] = { 1.0f, 1.0f, 1.0f };
+	bool m_UseAngleSnap = false;
+	bool m_UseScaleSnap = false;
+	float m_SnapValue = 1.0f;
+	float m_AngleSnapValue = 90.0f;
+	float m_ScaleSnapValue = 1.0f;
 
     float4 m_From;
     float4 m_To;

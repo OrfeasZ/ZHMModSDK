@@ -54,6 +54,18 @@ void Editor::DrawEntityProperties() {
 		static bool s_LocalTransform = false;
 		ImGui::Checkbox("Local Transforms", &s_LocalTransform);
 
+        ImGui::Checkbox("##UseSnap", &m_UseSnap);
+		ImGui::SameLine();
+		ImGui::InputFloat("Snap", &m_SnapValue);
+
+		ImGui::Checkbox("##UseAngleSnap", &m_UseAngleSnap);
+		ImGui::SameLine();
+		ImGui::InputFloat("Angle Snap", &m_AngleSnapValue);
+
+		ImGui::Checkbox("##UseScaleSnap", &m_UseScaleSnap);
+		ImGui::SameLine();
+		ImGui::InputFloat("Scale Snap", &m_ScaleSnapValue);
+
 		ImGui::Separator();
 
 		// The way to get the factory here is probably wrong.

@@ -20,6 +20,7 @@
 #include <Glacier/ZInputActionManager.h>
 
 #include "IconsMaterialDesign.h"
+#include <imgui_internal.h>
 
 FreeCam::FreeCam() :
     m_FreeCamActive(false),
@@ -31,13 +32,15 @@ FreeCam::FreeCam() :
 	m_InstantlyKillNpcAction("InstantKill"),
 	m_TeleportMainCharacterAction("Teleport"),
     m_ControlsVisible(false),
-    m_HasToggledFreecamBefore(false)
+    m_HasToggledFreecamBefore(false),
+    m_EditorStyleFreecam(false)
 {
     m_PcControls = {
         { "K", "Toggle freecam" },
         { "F3", "Lock camera and enable 47 input" },
         { "Ctrl + W/S", "Change FOV" },
         { "Ctrl + A/D", "Roll camera" },
+	    { "Ctrl + X", "Reset roll" },
         { "Alt + W/S", "Change camera speed" },
         { "Space + Q/E", "Change camera height" },
         { "Space + W/S", "Move camera on axis" },
@@ -45,6 +48,20 @@ FreeCam::FreeCam() :
 		{ "F9", "Kill NPC" },
         { "Ctrl + F9", "Teleport Hitman" },
     };
+
+	m_PcControlsEditorStyle = {
+	    {"P", "Toggle freecam"},
+	    {"F3", "Lock camera and enable 47 input"},
+	    {"MMB", "Drag camera"},
+	    {"Scroll Wheel", "Zoom camera"},
+	    {"RMB", "Activate rotate"},
+	    {"Alt + MMB or RMB", "Orbit camera"},
+	    {"Z + Alt + MMB or RMB", "Orbit camera around selected entity"},
+	    {"Z", "Zoom to selected entity (press twice to focus the gizmo)"},
+	    {"Alt + Scroll Wheel", "Zoom camera with precision"},
+	    {"Shift", "Speed modifier"},
+	    {"RMB + Scroll wheel", "Adjust speed"},
+	};
 
     m_ControllerControls = {
         { "Y + L", "Change FOV" },
@@ -131,7 +148,11 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
             m_ShouldToggle = true;
     }
 
-	(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_FreeCamActive);
+	if (m_EditorStyleFreecam) {
+		(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControlEditorStyle01.m_pInterfaceRef->SetActive(m_FreeCamActive);
+	} else {
+		(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_FreeCamActive);
+	}
 
     if (Functions::ZInputAction_Digital->Call(&m_ToggleFreeCamAction, -1))
     {
@@ -166,7 +187,11 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
         const bool s_FreezeFreeCam = Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionGc, -1) || m_FreeCamFrozen;
 
-		(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->m_bFreezeCamera = s_FreezeFreeCam;
+		if (m_EditorStyleFreecam) {
+			(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControlEditorStyle01.m_pInterfaceRef->m_bActive = !s_FreezeFreeCam;
+		} else {
+			(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->m_bFreezeCamera = s_FreezeFreeCam;
+		}
 
         TEntityRef<ZHitman5> s_LocalHitman;
         Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
@@ -187,6 +212,20 @@ void FreeCam::OnDrawMenu()
     if (ImGui::Checkbox(ICON_MD_PHOTO_CAMERA " FREECAM", &s_FreeCamActive))
     {
         ToggleFreecam();
+    }
+
+    if (s_FreeCamActive)
+    {
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+		ImGui::Checkbox("USE EDITOR STYLE FREECAM", &m_EditorStyleFreecam);
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+    }
+    else
+    {
+		ImGui::Checkbox("USE EDITOR STYLE FREECAM", &m_EditorStyleFreecam);
+
     }
 
     if (ImGui::Button(ICON_MD_SPORTS_ESPORTS " FREECAM CONTROLS"))
@@ -325,31 +364,42 @@ void FreeCam::OnDrawUI(bool p_HasFocus)
 
             ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
 
-            for (auto& [s_Key, s_Description] : m_PcControls)
-            {
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(s_Key.c_str());
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(s_Description.c_str());
-            }
+			if (m_EditorStyleFreecam) {
+				for (auto& [s_Key, s_Description]: m_PcControlsEditorStyle) {
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Key.c_str());
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Description.c_str());
+				}
+			} else {
+				for (auto& [s_Key, s_Description]: m_PcControls)
+				{
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Key.c_str());
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Description.c_str());
+				}
+			}
 
             ImGui::EndTable();
 
-            ImGui::TextUnformatted("Controller Controls");
+			if (!m_EditorStyleFreecam) {
+				ImGui::TextUnformatted("Controller Controls");
 
-            ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
+				ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
 
-            for (auto& [s_Key, s_Description] : m_ControllerControls)
-            {
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(s_Key.c_str());
-                ImGui::TableNextColumn();
-                ImGui::TextUnformatted(s_Description.c_str());
-            }
+				for (auto& [s_Key, s_Description]: m_ControllerControls) {
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Key.c_str());
+					ImGui::TableNextColumn();
+					ImGui::TextUnformatted(s_Description.c_str());
+				}
 
-            ImGui::EndTable();
+				ImGui::EndTable();
+			}
         }
 
         ImGui::PopFont();

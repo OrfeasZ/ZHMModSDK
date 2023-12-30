@@ -28,3 +28,21 @@
 | Right Trigger | Increase speed while holding |
 | Left Bumper | Keeps camera still while you control 47 |
 | Left Trigger + Right Analog Stick | Change camera height |
+
+## Editor style controls
+
+### Keyboard
+
+| Keys | Action |
+| ---- | ------ |
+| K | Toggle freecam |
+| F3 | Toggle camera lock and 47 input |
+| MMB | Drag camera |
+| Scroll Wheel | Zoom camera |
+| RMB | Activate rotate |
+| Alt + MMB or RMB | Orbit camera |
+| Z + Alt + MMB or RMB | Orbit camera around selected entity |
+| Z | Zoom to selected entity (press twice to focus the gizmo) |
+| Alt + Scroll Wheel | Zoom camera with precision |
+| Shift | Speed modifier |
+| RMB + Scroll wheel | Adjust speed |
