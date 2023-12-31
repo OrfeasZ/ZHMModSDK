@@ -397,7 +397,8 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_Cl
 
 		Globals::Selections->push_back(s_EntityRef);
 	}
-	else {
+
+	if (m_SelectionForFreeCameraEditorStyleEntity) {
 		m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
 		m_SelectionForFreeCameraEditorStyleEntity->m_selection.push_back(p_Entity);
 	}
