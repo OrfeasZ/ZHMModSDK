@@ -10,6 +10,7 @@ endif()
 
 # The ZHMMODSDK_DIST_DIR can override the location from which sdk-dist.cmake loads the SDK from.
 set(ZHMMODSDK_DIST_DIR "${ZHMMODSDK_DIR}/_install/${ZHMMODSDK_PRESET}")
+set(ZHMMODSDK_INCLUDE_DIR "${ZHMMODSDK_DIST_DIR}/include")
 set(ZHMMODSDK_BUILD_DIR "${ZHMMODSDK_DIR}/_build/${ZHMMODSDK_PRESET}")
 
 # cmake --preset x64-Debug .
