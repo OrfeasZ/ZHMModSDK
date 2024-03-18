@@ -1284,6 +1284,8 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool
         DisableTrackCam();
     m_TrackCamActive = false;
 
+	m_GlobalOutfitKit = nullptr;
+
     return HookResult<void>(HookAction::Continue());
 }
 

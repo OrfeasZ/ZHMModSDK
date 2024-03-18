@@ -121,6 +121,8 @@ private:
 
     ZHM5CrippleBox* m_Hm5CrippleBox = nullptr;
 
+	TEntityRef<ZGlobalOutfitKit>* m_GlobalOutfitKit;
+
 private:
     ZActor* m_NPCTracked = nullptr;
     bool m_TrackCamActive = false;
