@@ -103,7 +103,10 @@ public:
     static Hook<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
     static Hook<void(ZDynamicPageController* th, ZDynamicObject& data, void* a3, void* a4, void* a5)>* ZDynamicPageController_Expand;
     static Hook<void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)>* ZDynamicPageController_HandleActionObject2;
-	static Hook<EOS_PlatformHandle*(EOS_Platform_Options* Options)>* EOS_Platform_Create;
+    static Hook<void*(void* th, void* a2)>* ZLevelManagerStateCondition_ZLevelManagerStateCondition;
+    static Hook<void*(void* th, void* a1)>* ZLoadingScreenVideo_ActivateLoadingScreen;
+    static Hook<bool(void* th, void* a1)>* ZLoadingScreenVideo_StartNewVideo;
+    static Hook<EOS_PlatformHandle*(EOS_Platform_Options* Options)>* EOS_Platform_Create;
     //static Hook<void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZTemplateEntityFactory_ConfigureEntity;
     //static Hook<void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZCppEntityFactory_ConfigureEntity;
     //static Hook<void(ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZBehaviorTreeEntityFactory_ConfigureEntity;
@@ -121,7 +124,4 @@ public:
     //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3)>* ZAudioSwitchBlueprintFactory_DestroyEntity;
     //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3)>* ZAudioStateBlueprintFactory_DestroyEntity;
     //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3)>* ZAspectEntityBlueprintFactory_DestroyEntity;
-	static Hook<void*(void* th, void* a2)>* ZLevelManagerStateCondition_ZLevelManagerStateCondition;
-	static Hook<void*(void* th, void* a1)>* ZLoadingScreenVideo_ActivateLoadingScreen;
-	static Hook<bool(void* th, void* a1)>* ZLoadingScreenVideo_StartNewVideo;
 };
