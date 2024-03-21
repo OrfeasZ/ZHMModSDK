@@ -314,6 +314,27 @@ PATTERN_HOOK(
     void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)
 );
 
+PATTERN_HOOK(
+    "\x40\x53\x48\x83\xEC\x00\x48\x8B\xD9\x48\x8D\x0D\x00\x00\x00\x00\xFF\x15\x00\x00\x00\x00\x48\x8B\xCB\xE8\x00\x00\x00\x00\x83\xBB\xE8\x00\x00\x00",
+    "xxx????xxxxxxxxxxxxx????xxxxxx????xxxxxxxxxxx????xxx????x???????xxx????xxxxxxxxxxxxx????xxxxxxxxxx????xxx????x??xxx",
+    ZLevelManagerStateCondition_ZLevelManagerStateCondition,
+    void*(void* th, void* a2)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xF9\x0F\xB6\xDA\x48\x8D\x0D",
+    "xxxxxxxxxxxxxx?xxxxxxxxx",
+    ZLoadingScreenVideo_ActivateLoadingScreen,
+    void*(void* th, void* a1)
+);
+
+PATTERN_HOOK(
+    "\x40\x53\x48\x83\xEC\x00\x48\x8B\xD9\x48\x8D\x0D\x00\x00\x00\x00\xFF\x15\x00\x00\x00\x00\x48\x8B\xCB\xE8\x00\x00\x00\x00\x83\xBB\xE8\x00\x00\x00",
+    "xxxxx?xxxxxx????xx????xxxx????xxxxxx",
+    ZLoadingScreenVideo_StartNewVideo,
+    bool(void* th, void* a1)
+);
+
 MODULE_HOOK(
 	"EOSSDK-Win64-Shipping.dll",
 	"EOS_Platform_Create",
