@@ -49,18 +49,18 @@ namespace hsm {
 	struct Transition {
 		void* NewBaseCtor;
 		void* Unk0x8;
-		uint32_t Unk0x10;
+		uint32_t StateHash;
 	};
 
 	class HSMStateBase {
 	public:
-		virtual ~HSMStateBase() {}
+		virtual void HSMStateBase_unk0() = 0;
 		virtual void HSMStateBase_unk1() = 0;
-		virtual void HSMStateBase_unk2() = 0;
+		virtual ~HSMStateBase() {}
 		virtual void HSMStateBase_unk3() = 0;
 		virtual void HSMStateBase_unk4() = 0;
 		virtual void OnEnter() = 0;
-		virtual void HSMStateBase_unk6() = 0;
+		virtual void OnExit() = 0; // Called directly before destruction.
 		virtual void HSMStateBase_unk7() = 0;
 		virtual void HSMStateBase_unk8() = 0;
 		virtual void GetTransition(Transition& next) = 0; // Called directly after OnEnter.
@@ -68,7 +68,7 @@ namespace hsm {
 		virtual void HSMStateBase_unk11() = 0;
 		virtual void HSMStateBase_unk12() = 0;
 		virtual void HSMStateBase_unk13() = 0;
-		virtual void HSMStateBase_unk14() = 0;
+		virtual uint32_t GetStateHash() = 0;
 		virtual void HSMStateBase_unk15() = 0;
 		virtual void HSMStateBase_unk16() = 0;
 	};
