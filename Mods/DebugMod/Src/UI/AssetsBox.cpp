@@ -23,13 +23,13 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
         ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
 
-        static char s_PropTitle[36] { "" };
-        static char s_PropAssemblyPath[512] { "" };
+        static char s_PropTitle[2048] { "" };
+        static char s_PropAssemblyPath[2048] { "" };
         static char s_NumberOfPropsToSpawn[5] { "1" };
         static char s_NumberOfPropsToSpawn2[5] { "1" };
         static char s_NumberOfPropsToSpawn3[5] { "1" };
         static int s_Button = 1;
-        static char s_NpcName[100] {};
+        static char s_NpcName[2048] {};
 
         ImGui::Text("Repository Props");
         ImGui::Text("");
@@ -129,7 +129,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
         ImGui::InputText("##NPCName", s_NpcName, sizeof(s_NpcName));
 
-        static char outfitName[256] { "" };
+        static char outfitName[2048] { "" };
 
         ImGui::Text("Outfit");
         ImGui::SameLine();

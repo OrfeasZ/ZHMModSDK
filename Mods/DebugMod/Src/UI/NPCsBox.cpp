@@ -29,7 +29,7 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-        static char s_NpcName[256] { "" };
+        static char s_NpcName[2048] { "" };
 
         ImGui::Text("NPC Name");
         ImGui::SameLine();
@@ -59,7 +59,7 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
         ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
 
         ZActor* s_Actor = Globals::ActorManager->m_aActiveActors[s_Selected].m_pInterfaceRef;
-        static char s_OutfitName[256] { "" };
+        static char s_OutfitName[2048] { "" };
 
         ImGui::Text("Outfit");
         ImGui::SameLine();
@@ -203,7 +203,7 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
 
         ImGui::Separator();
 
-        static char s_NpcName2[256] { "" };
+        static char s_NpcName2[2048] { "" };
 
         ImGui::Text("NPC Name");
         ImGui::SameLine();

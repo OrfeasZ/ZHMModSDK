@@ -40,7 +40,7 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
             }
         }
 
-        static char s_OutfitName[256] { "" };
+        static char s_OutfitName[2048] { "" };
 
         ImGui::Text("Outfit");
         ImGui::SameLine();
@@ -183,7 +183,7 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
 
         ImGui::Separator();
 
-        static char npcName[256] { "" };
+        static char npcName[2048] { "" };
 
         ImGui::Text("NPC Name");
         ImGui::SameLine();
