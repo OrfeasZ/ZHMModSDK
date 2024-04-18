@@ -5,8 +5,10 @@ void Editor::StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
 	auto* s_RealData = static_cast<ZString*>(p_Data);
 
 	static char s_StringBuffer[65536] = {};
-	memcpy(s_StringBuffer, s_RealData->c_str(), min(s_RealData->size(), sizeof(s_StringBuffer) - 1));
-	s_StringBuffer[min(s_RealData->size(), sizeof(s_StringBuffer) - 1) + 1] = '\0';
+	const auto s_StringSize = min(s_RealData->size(), sizeof(s_StringBuffer) - 1);
+
+	memcpy(s_StringBuffer, s_RealData->c_str(), s_StringSize);
+	s_StringBuffer[s_StringSize] = '\0';
 
 	if (ImGui::InputText(p_Id.c_str(), s_StringBuffer, sizeof(s_StringBuffer))) {
 		OnSetPropertyValue(p_Entity, p_Property->m_nPropertyId, ZVariant(ZString(s_StringBuffer)), std::nullopt);
