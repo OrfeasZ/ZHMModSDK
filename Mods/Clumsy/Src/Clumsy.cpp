@@ -12,6 +12,8 @@
 #include "Glacier/ZKnowledge.h"
 #include "Glacier/ZModule.h"
 
+#include <filesystem>
+
 Clumsy::Clumsy()
 {
 }
@@ -30,8 +32,11 @@ Clumsy::~Clumsy()
 void Clumsy::OnEngineInitialized()
 {
     m_AudioEngine = std::make_unique<DirectX::AudioEngine>(DirectX::AudioEngine_Default);
-    m_Music = std::make_unique<DirectX::SoundEffect>(m_AudioEngine.get(), L"dab.wav");
-    m_MusicLoop = m_Music->CreateInstance();
+
+	if (std::filesystem::exists("dab.wav")) {
+		m_Music = std::make_unique<DirectX::SoundEffect>(m_AudioEngine.get(), L"dab.wav");
+		m_MusicLoop = m_Music->CreateInstance();
+	}
 
     const ZMemberDelegate<Clumsy, void(const SGameUpdateEvent&)> s_Delegate(this, &Clumsy::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
@@ -240,13 +245,17 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
                 s_EmitterSpatial->SetWorldMatrix(s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>()->GetWorldMatrix());
 
             m_ShakeEntity.SignalInputPin("Activate");
-            m_MusicLoop->Play(true);
+
+			if (m_MusicLoop)
+                m_MusicLoop->Play(true);
         }
         else
         {
             Functions::ZHM5BaseCharacter_DeactivateRagdoll->Call(s_LocalHitman.m_pInterfaceRef);
             m_ShakeEntity.SignalInputPin("Deactivate");
-            m_MusicLoop->Stop(true);
+
+			if (m_MusicLoop)
+                m_MusicLoop->Stop(true);
         }
     }
 
@@ -340,7 +349,8 @@ bool Clumsy::GetEntities()
 
 DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
-    m_MusicLoop->Stop(true);
+	if (m_MusicLoop)
+        m_MusicLoop->Stop(true);
 
     m_DeactivateRagdollQueued = false;
     m_Ragdolling = false;
