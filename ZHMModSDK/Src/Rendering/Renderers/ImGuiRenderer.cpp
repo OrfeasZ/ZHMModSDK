@@ -62,7 +62,7 @@ ImGuiRenderer::ImGuiRenderer()
     s_ImGuiIO.KeyMap[ImGuiKey_Space] = VK_SPACE;
     s_ImGuiIO.KeyMap[ImGuiKey_Enter] = VK_RETURN;
     s_ImGuiIO.KeyMap[ImGuiKey_Escape] = VK_ESCAPE;
-    s_ImGuiIO.KeyMap[ImGuiKey_KeyPadEnter] = VK_RETURN;
+    s_ImGuiIO.KeyMap[ImGuiKey_KeypadEnter] = VK_RETURN;
     s_ImGuiIO.KeyMap[ImGuiKey_A] = 'A';
     s_ImGuiIO.KeyMap[ImGuiKey_C] = 'C';
     s_ImGuiIO.KeyMap[ImGuiKey_V] = 'V';
@@ -460,7 +460,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
     s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
     s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
-    s_ImGuiIO.ImeWindowHandle = m_Hwnd;
+	ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
 
     m_RendererSetup = true;
 
@@ -529,7 +529,7 @@ void ImGuiRenderer::PostReset()
 
     s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
     s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
-    s_ImGuiIO.ImeWindowHandle = m_Hwnd;
+	ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
 }
 
 void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
@@ -555,8 +555,8 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
 
     auto s_ScanCode = static_cast<uint8_t>(p_Lparam >> 16);
 
-    // Toggle imgui input when user presses the grave / tilde key.
-    if (s_ScanCode == 0x29 && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN))
+    // Toggle imgui input when user presses the console key.
+    if (s_ScanCode == ModSDK::GetInstance()->GetConsoleScanCode() && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN))
         m_ImguiHasFocus = !m_ImguiHasFocus;
 
 	//Globals::InputActionManager->m_bDebugKeys = true;

@@ -1,5 +1,5 @@
 // https://github.com/CedricGuillemet/ImGuizmo
-// v 1.83
+// v 1.89 WIP
 //
 // The MIT License(MIT)
 //
@@ -23,8 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-#include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui.h"
 #include "imgui_internal.h"
 #define IMAPP_IMPL
 #include "ImApp.h"
@@ -213,11 +213,11 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
 
    if (editTransformDecomposition)
    {
-      if (ImGui::IsKeyPressed(90))
+      if (ImGui::IsKeyPressed(ImGuiKey_T))
          mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-      if (ImGui::IsKeyPressed(69))
+      if (ImGui::IsKeyPressed(ImGuiKey_E))
          mCurrentGizmoOperation = ImGuizmo::ROTATE;
-      if (ImGui::IsKeyPressed(82)) // r Key
+      if (ImGui::IsKeyPressed(ImGuiKey_R)) // r Key
          mCurrentGizmoOperation = ImGuizmo::SCALE;
       if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
          mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -227,6 +227,8 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
       ImGui::SameLine();
       if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
          mCurrentGizmoOperation = ImGuizmo::SCALE;
+      if (ImGui::RadioButton("Universal", mCurrentGizmoOperation == ImGuizmo::UNIVERSAL))
+         mCurrentGizmoOperation = ImGuizmo::UNIVERSAL;
       float matrixTranslation[3], matrixRotation[3], matrixScale[3];
       ImGuizmo::DecomposeMatrixToComponents(matrix, matrixTranslation, matrixRotation, matrixScale);
       ImGui::InputFloat3("Tr", matrixTranslation);
@@ -242,9 +244,9 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
          if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
             mCurrentGizmoMode = ImGuizmo::WORLD;
       }
-      if (ImGui::IsKeyPressed(83))
+      if (ImGui::IsKeyPressed(ImGuiKey_S))
          useSnap = !useSnap;
-      ImGui::Checkbox("", &useSnap);
+      ImGui::Checkbox("##UseSnap", &useSnap);
       ImGui::SameLine();
 
       switch (mCurrentGizmoOperation)
@@ -263,7 +265,7 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
       if (boundSizing)
       {
          ImGui::PushID(3);
-         ImGui::Checkbox("", &boundSizingSnap);
+         ImGui::Checkbox("##BoundSizing", &boundSizingSnap);
          ImGui::SameLine();
          ImGui::InputFloat3("Snap", boundsSnap);
          ImGui::PopID();
@@ -273,18 +275,21 @@ void EditTransform(float* cameraView, float* cameraProjection, float* matrix, bo
    ImGuiIO& io = ImGui::GetIO();
    float viewManipulateRight = io.DisplaySize.x;
    float viewManipulateTop = 0;
+   static ImGuiWindowFlags gizmoWindowFlags = 0;
    if (useWindow)
    {
-      ImGui::SetNextWindowSize(ImVec2(800, 400));
-      ImGui::SetNextWindowPos(ImVec2(400,20));
+      ImGui::SetNextWindowSize(ImVec2(800, 400), ImGuiCond_Appearing);
+      ImGui::SetNextWindowPos(ImVec2(400,20), ImGuiCond_Appearing);
       ImGui::PushStyleColor(ImGuiCol_WindowBg, (ImVec4)ImColor(0.35f, 0.3f, 0.3f));
-      ImGui::Begin("Gizmo", 0, ImGuiWindowFlags_NoMove);
+      ImGui::Begin("Gizmo", 0, gizmoWindowFlags);
       ImGuizmo::SetDrawlist();
       float windowWidth = (float)ImGui::GetWindowWidth();
       float windowHeight = (float)ImGui::GetWindowHeight();
       ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
       viewManipulateRight = ImGui::GetWindowPos().x + windowWidth;
       viewManipulateTop = ImGui::GetWindowPos().y;
+      ImGuiWindow* window = ImGui::GetCurrentWindow();
+      gizmoWindowFlags = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(window->InnerRect.Min, window->InnerRect.Max) ? ImGuiWindowFlags_NoMove : 0;
    }
    else
    {
@@ -754,12 +759,12 @@ int main(int, char**)
       ImGuizmo::SetOrthographic(!isPerspective);
       ImGuizmo::BeginFrame();
 
-      ImGui::SetNextWindowPos(ImVec2(1024, 100));
-      ImGui::SetNextWindowSize(ImVec2(256, 256));
+      ImGui::SetNextWindowPos(ImVec2(1024, 100), ImGuiCond_Appearing);
+      ImGui::SetNextWindowSize(ImVec2(256, 256), ImGuiCond_Appearing);
 
       // create a window and insert the inspector
-      ImGui::SetNextWindowPos(ImVec2(10, 10));
-      ImGui::SetNextWindowSize(ImVec2(320, 340));
+      ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Appearing);
+      ImGui::SetNextWindowSize(ImVec2(320, 340), ImGuiCond_Appearing);
       ImGui::Begin("Editor");
       if (ImGui::RadioButton("Full view", !useWindow)) useWindow = false;
       ImGui::SameLine();
@@ -819,9 +824,9 @@ int main(int, char**)
 
       ImGui::End();
 
-      ImGui::SetNextWindowPos(ImVec2(10, 350));
+      ImGui::SetNextWindowPos(ImVec2(10, 350), ImGuiCond_Appearing);
 
-      ImGui::SetNextWindowSize(ImVec2(940, 480));
+      ImGui::SetNextWindowSize(ImVec2(940, 480), ImGuiCond_Appearing);
       ImGui::Begin("Other controls");
       if (ImGui::CollapsingHeader("Zoom Slider"))
       {
@@ -897,7 +902,6 @@ int main(int, char**)
 
          ImGui::End();
       }
-
 
       // render everything
       glClearColor(0.45f, 0.4f, 0.4f, 1.f);

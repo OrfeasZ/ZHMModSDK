@@ -409,6 +409,15 @@ struct alignas(16) SMatrix {
 		return SVector3(XAxis.Length(), YAxis.Length(), ZAxis.Length());
 	}
 
+	[[nodiscard]] SMatrix43 ToMatrix43() const {
+		SMatrix43 s_Matrix;
+		s_Matrix.XAxis = { XAxis.x, XAxis.y, XAxis.z };
+		s_Matrix.YAxis = { YAxis.x, YAxis.y, YAxis.z };
+		s_Matrix.ZAxis = { ZAxis.x, ZAxis.y, ZAxis.z };
+		s_Matrix.Trans = { Trans.x, Trans.y, Trans.z };
+		return s_Matrix;
+	}
+
 	union {
 		float4 mat[4];
 		float flt[4 * 4];
