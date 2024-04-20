@@ -56,6 +56,8 @@ public:
 
 private:
     void LoadConfiguration();
+	std::pair<uint32_t, std::string> RequestLatestVersion();
+	void ShowVersionNotice(const std::wstring& p_Version);
 
 public:
     void OnEngineInit();

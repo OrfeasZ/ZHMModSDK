@@ -52,11 +52,14 @@ target_link_libraries(ZHMModSDK PUBLIC
 	Microsoft::DirectXTK12
 	Microsoft::DirectX-Guids
 	Microsoft::DirectX-Headers
+    semver::semver
 	imgui
 	d3d12
 	dxgi
 	delayimp
 	ws2_32
+    winhttp
+    comctl32
 )
 
 install(TARGETS ZHMModSDK
