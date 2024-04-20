@@ -49,10 +49,14 @@ void Editor::DrawEntityProperties() {
 		if (ImGui::IsItemHovered())
 			ImGui::SetTooltip("Deselect");
 
-		ImGui::SameLine(0, 20);
-
 		static bool s_LocalTransform = false;
 		ImGui::Checkbox("Local Transforms", &s_LocalTransform);
+
+		ImGui::SameLine(0, 20);
+
+		if (ImGui::Checkbox("QNE Transforms", &m_UseQneTransforms)) {
+			SetSettingBool("general", "qne_transforms", m_UseQneTransforms);
+		}
 
         if (ImGui::Checkbox("##UseSnap", &m_UseSnap)) {
 			SetSettingBool("general", "snap", m_UseSnap);
@@ -205,24 +209,15 @@ void Editor::DrawEntityProperties() {
 			ImGui::SameLine();
 
 			if (ImGui::Button(ICON_MD_CONTENT_COPY " QN JSON##EntQN")) {
-				// This is adapted from QN: https://github.com/atampy25/quickentity-rs/blob/b94dbab32c91ccd0e1612a2e5dda8fb83eb2a8e9/src/lib.rs#L243
-				constexpr double c_RAD2DEG = 180.0 / std::numbers::pi;
-
-				double s_RotationX = abs(s_Trans.XAxis.z) < 0.9999999f
-				                     ? atan2f(-s_Trans.YAxis.z, s_Trans.ZAxis.z) * c_RAD2DEG
-				                     : atan2f(s_Trans.ZAxis.y, s_Trans.YAxis.y) * c_RAD2DEG;
-
-				double s_RotationY = asinf(min(max(-1.f, s_Trans.XAxis.z), 1.f)) * c_RAD2DEG;
-
-				double s_RotationZ = abs(s_Trans.XAxis.z) < 0.9999999f
-				                     ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
-				                     : 0.f;
+				const auto s_QneTrans = MatrixToQneTransform(s_Trans);
 
 				CopyToClipboard(
 					fmt::format(
-						"{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-						s_RotationX, s_RotationY, s_RotationZ,
-						s_Trans.Trans.x, s_Trans.Trans.y, s_Trans.Trans.z
+						"{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},\"position\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+						"\"scale\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
+						s_QneTrans.Rotation.x, s_QneTrans.Rotation.y, s_QneTrans.Rotation.z,
+						s_QneTrans.Position.x, s_QneTrans.Position.y, s_QneTrans.Position.z,
+						s_QneTrans.Scale.x, s_QneTrans.Scale.y, s_QneTrans.Scale.z
 					));
 			}
 

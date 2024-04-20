@@ -156,7 +156,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
             m_HoldingMouse = false;
         }
 
-        if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Tab]))
+        if (ImGui::IsKeyPressed(ImGuiKey_Tab))
         {
             if (m_GizmoMode == ImGuizmo::TRANSLATE)
                 m_GizmoMode = ImGuizmo::ROTATE;
@@ -166,7 +166,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
                 m_GizmoMode = ImGuizmo::TRANSLATE;
         }
 
-        if (ImGui::IsKeyPressed(s_ImgGuiIO.KeyMap[ImGuiKey_Space]))
+        if (ImGui::IsKeyPressed(ImGuiKey_Space))
         {
             m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
         }

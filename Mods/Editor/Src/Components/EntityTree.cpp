@@ -186,7 +186,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
 		}
 	}
 	else if (m_ShouldScrollToEntity && m_SelectedEntity && m_SelectedEntity.IsAnyParent(s_Entity)) {
-		ImGui::SetNextTreeNodeOpen(true);
+		ImGui::SetNextItemOpen(true);
 	}
 
 	auto s_Open = ImGui::TreeNodeEx(

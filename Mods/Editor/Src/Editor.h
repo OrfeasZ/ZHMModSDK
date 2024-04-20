@@ -16,6 +16,12 @@
 #include "EditorServer.h"
 #include "EntityTreeNode.h"
 
+struct QneTransform {
+	SVector3 Position;
+	SVector3 Rotation;
+	SVector3 Scale;
+};
+
 class Editor : public IPluginInterface
 {
 public:
@@ -104,6 +110,9 @@ private:
 
 	void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
+	static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
+	static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
+
 private:
     DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
     DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
@@ -124,6 +133,7 @@ private:
     bool m_UseSnap = false;
 	bool m_UseAngleSnap = false;
 	bool m_UseScaleSnap = false;
+	bool m_UseQneTransforms = false;
 	double m_SnapValue = 1.0;
 	double m_AngleSnapValue = 90.0;
 	double m_ScaleSnapValue = 1.0;

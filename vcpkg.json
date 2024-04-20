@@ -20,6 +20,7 @@
 			]
 		},
 		"uwebsockets",
-		"simdjson"
+		"simdjson",
+		"neargye-semver"
 	]
 }

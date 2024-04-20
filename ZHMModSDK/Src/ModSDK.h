@@ -88,6 +88,8 @@ public:
     std::shared_ptr<UI::MainMenu> GetUIMainMenu() const { return m_UIMainMenu; }
     std::shared_ptr<UI::ModSelector> GetUIModSelector() const { return m_UIModSelector; }
 
+	uint8_t GetConsoleScanCode() const { return m_ConsoleScanCode; }
+
 public:
     void RequestUIFocus() override;
     void ReleaseUIFocus() override;
@@ -127,6 +129,7 @@ private:
 
 private:
     bool m_UiEnabled = true;
+	uint8_t m_ConsoleScanCode = 0x29; // Grave / Tilde key
     uintptr_t m_ModuleBase;
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;

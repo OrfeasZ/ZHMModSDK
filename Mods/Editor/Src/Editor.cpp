@@ -93,6 +93,7 @@ void Editor::Init()
 	m_AngleSnapValue = GetSettingDouble("general", "angle_snap_value", 90.0);
 	m_UseScaleSnap = GetSettingBool("general", "scale_snap", true);
 	m_ScaleSnapValue = GetSettingDouble("general", "scale_snap_value", 1.0);
+	m_UseQneTransforms = GetSettingBool("general", "qne_transforms", false);
 }
 
 void Editor::OnDrawMenu()
@@ -641,14 +642,141 @@ void Editor::DeactivateCamera()
     s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
 }
 
+QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
+	// This is adapted from QN: https://github.com/atampy25/quickentity-rs/blob/240ffba9d23dedc864bd39f1f029646837d3916d/src/lib.rs#L2528
+	auto s_Trans = p_Matrix;
+
+	constexpr float c_RAD2DEG = 180.0f / std::numbers::pi;
+
+	const auto n11 = s_Trans.XAxis.x;
+	const auto n12 = s_Trans.XAxis.y;
+	const auto n13 = s_Trans.XAxis.z;
+	const auto n14 = 0.0f;
+	const auto n21 = s_Trans.YAxis.x;
+	const auto n22 = s_Trans.YAxis.y;
+	const auto n23 = s_Trans.YAxis.z;
+	const auto n24 = 0.0f;
+	const auto n31 = s_Trans.ZAxis.x;
+	const auto n32 = s_Trans.ZAxis.y;
+	const auto n33 = s_Trans.ZAxis.z;
+	const auto n34 = 0.0f;
+	const auto n41 = s_Trans.Trans.x;
+	const auto n42 = s_Trans.Trans.y;
+	const auto n43 = s_Trans.Trans.z;
+	const auto n44 = 1.0f;
+
+	const auto det =
+		n41 * (n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34
+		       - n12 * n23 * n34) + n42
+		                            * (n11 * n23 * n34 - n11 * n24 * n33 + n14 * n21 * n33 - n13 * n21 * n34 + n13 * n24 * n31
+		                               - n14 * n23 * n31) + n43
+		                                                    * (n11 * n24 * n32 - n11 * n22 * n34 - n14 * n21 * n32 + n12 * n21 * n34 + n14 * n22 * n31
+		                                                       - n12 * n24 * n31) + n44
+		                                                                            * (-n13 * n22 * n31 - n11 * n23 * n32 + n11 * n22 * n33 + n13 * n21 * n32 - n12 * n21 * n33
+		                                                                               + n12 * n23 * n31);
+
+	auto sx = n11 * n11 + n21 * n21 + n31 * n31;
+	const auto sy = n12 * n12 + n22 * n22 + n32 * n32;
+	const auto sz = n13 * n13 + n23 * n23 + n33 * n33;
+
+	if (det < 0.0f) {
+		sx = -sx;
+	}
+
+	const auto inv_sx = 1.0f / sx;
+	const auto inv_sy = 1.0f / sy;
+	const auto inv_sz = 1.0f / sz;
+
+	s_Trans.XAxis.x *= inv_sx;
+	s_Trans.YAxis.x *= inv_sx;
+	s_Trans.ZAxis.x *= inv_sx;
+	s_Trans.XAxis.y *= inv_sy;
+	s_Trans.YAxis.y *= inv_sy;
+	s_Trans.ZAxis.y *= inv_sy;
+	s_Trans.XAxis.z *= inv_sz;
+	s_Trans.YAxis.z *= inv_sz;
+	s_Trans.ZAxis.z *= inv_sz;
+
+	float s_RotationX = abs(s_Trans.XAxis.z) < 0.9999999f
+	                     ? atan2f(-s_Trans.YAxis.z, s_Trans.ZAxis.z) * c_RAD2DEG
+	                     : atan2f(s_Trans.ZAxis.y, s_Trans.YAxis.y) * c_RAD2DEG;
+
+	float s_RotationY = asinf(min(max(-1.f, s_Trans.XAxis.z), 1.f)) * c_RAD2DEG;
+
+	float s_RotationZ = abs(s_Trans.XAxis.z) < 0.9999999f
+	                     ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
+	                     : 0.f;
+
+	return QneTransform {
+		.Position = { n41, n42, n43 },
+		.Rotation = { s_RotationX, s_RotationY, s_RotationZ },
+		.Scale = { sx, sy, sz },
+	};
+}
+
+SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
+	// This is adapted from QN: https://github.com/atampy25/quickentity-rs/blob/240ffba9d23dedc864bd39f1f029646837d3916d/src/lib.rs#L2782
+	constexpr float c_DEG2RAD = std::numbers::pi / 180.0f;
+
+	const auto x = p_Transform.Rotation.x * c_DEG2RAD;
+	const auto y = p_Transform.Rotation.y * c_DEG2RAD;
+	const auto z = p_Transform.Rotation.z * c_DEG2RAD;
+
+	const auto c1 = cosf(x / 2.0f);
+	const auto c2 = cosf(y / 2.0f);
+	const auto c3 = cosf(z / 2.0f);
+
+	const auto s1 = sinf(x / 2.0f);
+	const auto s2 = sinf(y / 2.0f);
+	const auto s3 = sinf(z / 2.0f);
+
+	const auto quat_x = s1 * c2 * c3 + c1 * s2 * s3;
+	const auto quat_y = c1 * s2 * c3 - s1 * c2 * s3;
+	const auto quat_z = c1 * c2 * s3 + s1 * s2 * c3;
+	const auto quat_w = c1 * c2 * c3 - s1 * s2 * s3;
+
+	const auto x2 = quat_x + quat_x;
+	const auto y2 = quat_y + quat_y;
+	const auto z2 = quat_z + quat_z;
+	const auto xx = quat_x * x2;
+	const auto xy = quat_x * y2;
+	const auto xz = quat_x * z2;
+	const auto yy = quat_y * y2;
+	const auto yz = quat_y * z2;
+	const auto zz = quat_z * z2;
+	const auto wx = quat_w * x2;
+	const auto wy = quat_w * y2;
+	const auto wz = quat_w * z2;
+
+	SMatrix s_Matrix;
+
+	s_Matrix.XAxis.x = (1.0f - (yy + zz)) * p_Transform.Scale.x;
+	s_Matrix.XAxis.y = (xy - wz) * p_Transform.Scale.y;
+	s_Matrix.XAxis.z = (xz + wy) * p_Transform.Scale.z;
+
+	s_Matrix.YAxis.x = (xy + wz) * p_Transform.Scale.x;
+	s_Matrix.YAxis.y = (1.0f - (xx + zz)) * p_Transform.Scale.y;
+	s_Matrix.YAxis.z = (yz - wx) * p_Transform.Scale.z;
+
+	s_Matrix.ZAxis.x = (xz - wy) * p_Transform.Scale.x;
+	s_Matrix.ZAxis.y = (yz + wx) * p_Transform.Scale.y;
+	s_Matrix.ZAxis.z = (1.0f - (xx + yy)) * p_Transform.Scale.z;
+
+	s_Matrix.Trans.x = p_Transform.Position.x;
+	s_Matrix.Trans.y = p_Transform.Position.y;
+	s_Matrix.Trans.z = p_Transform.Position.z;
+
+	return s_Matrix;
+}
+
 DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
 {
-    /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+    if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
         p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
     //	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
         p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
     //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
-    */
+    
 
 	if (m_SelectionForFreeCameraEditorStyleEntity) {
 		m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
