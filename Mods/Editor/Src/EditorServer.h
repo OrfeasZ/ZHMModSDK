@@ -42,11 +42,11 @@ private:
 	static void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);
 
 	static void SendWelcome(WebSocket* p_Socket);
-	static void SendHitmanEntity(WebSocket* p_Socket);
-	static void SendCameraEntity(WebSocket* p_Socket);
-	static void SendError(WebSocket* p_Socket, std::string p_Message);
-	static void SendEntityList(WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree);
-	static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity);
+	static void SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
+	static void SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
+	static void SendError(WebSocket* p_Socket, std::string p_Message, std::optional<int64_t> p_MessageId);
+	static void SendEntityList(WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId);
+	static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
 
 	static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);
 	static void WriteVector3(std::ostream& p_Stream, double p_X, double p_Y, double p_Z);

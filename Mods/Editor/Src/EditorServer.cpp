@@ -47,7 +47,7 @@ EditorServer::EditorServer() {
 							OnMessage(p_Socket, p_Message);
 						} catch (const std::exception& e) {
 							Logger::Error("Failed to handle editor message with error: {}\nMessage was: {}", e.what(), p_Message);
-							SendError(p_Socket, e.what());
+							SendError(p_Socket, e.what(), std::nullopt);
 						}
 					},
 					.close = [this](WebSocket* p_Socket, int p_Code, std::string_view p_Message) {
@@ -103,6 +103,12 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 
 	const std::string_view s_Type = s_JsonMsg["type"];
 	Logger::Trace("Editor message type: {}", s_Type);
+
+	std::optional<int64_t> s_MessageId;
+
+	if (s_JsonMsg["msgId"].type() == simdjson::ondemand::json_type::number) {
+		s_MessageId = s_JsonMsg["msgId"];
+	}
 
 	if (s_Type == "hello") {
 		p_Socket->getUserData()->Identifier = std::string_view(s_JsonMsg["identifier"]);
@@ -174,19 +180,19 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	}
 	else if (s_Type == "listEntities") {
 		Plugin()->LockEntityTree();
-		SendEntityList(p_Socket, Plugin()->GetEntityTree());
+		SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
 		Plugin()->UnlockEntityTree();
 	}
 	else if (s_Type == "getEntityDetails") {
 		const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
 		const auto s_Entity = Plugin()->FindEntity(s_Selector);
-		SendEntityDetails(p_Socket, s_Entity);
+		SendEntityDetails(p_Socket, s_Entity, s_MessageId);
 	}
 	else if (s_Type == "getHitmanEntity") {
-		SendHitmanEntity(p_Socket);
+		SendHitmanEntity(p_Socket, s_MessageId);
 	}
 	else if (s_Type == "getCameraEntity") {
-		SendCameraEntity(p_Socket);
+		SendCameraEntity(p_Socket, s_MessageId);
 	}
 	else if (s_Type == "rebuildEntityTree") {
 		Plugin()->RebuildEntityTree();
@@ -217,18 +223,23 @@ void EditorServer::SendWelcome(EditorServer::WebSocket* p_Socket) {
 	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendHitmanEntity(WebSocket* p_Socket) {
+void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId) {
 	TEntityRef<ZHitman5> s_LocalHitman;
 	Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
 
 	if (!s_LocalHitman || !s_LocalHitman.m_ref) {
-		SendError(p_Socket, "Failed to get local hitman entity.");
+		SendError(p_Socket, "Failed to get local hitman entity.", p_MessageId);
 		return;
 	}
 
 	std::ostringstream s_Event;
 
 	s_Event << "{";
+
+	if (p_MessageId) {
+		s_Event << write_json("msgId") << ":" << write_json(*p_MessageId) << ",";
+	}
+
 	s_Event << write_json("type") << ":" << write_json("hitmanEntity") << ",";
 	s_Event << write_json("entity") << ":";
 	WriteEntityDetails(s_Event, s_LocalHitman.m_ref);
@@ -237,11 +248,11 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket) {
 	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendCameraEntity(WebSocket* p_Socket) {
+void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId) {
 	const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
 	if (!s_CurrentCamera) {
-		SendError(p_Socket, "Failed to get active camera entity.");
+		SendError(p_Socket, "Failed to get active camera entity.", p_MessageId);
 		return;
 	}
 
@@ -251,6 +262,11 @@ void EditorServer::SendCameraEntity(WebSocket* p_Socket) {
 	std::ostringstream s_Event;
 
 	s_Event << "{";
+
+	if (p_MessageId) {
+		s_Event << write_json("msgId") << ":" << write_json(*p_MessageId) << ",";
+	}
+
 	s_Event << write_json("type") << ":" << write_json("cameraEntity") << ",";
 	s_Event << write_json("entity") << ":";
 	WriteEntityDetails(s_Event, s_Ref);
@@ -259,10 +275,15 @@ void EditorServer::SendCameraEntity(WebSocket* p_Socket) {
 	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendError(EditorServer::WebSocket* p_Socket, std::string p_Message) {
+void EditorServer::SendError(EditorServer::WebSocket* p_Socket, std::string p_Message, std::optional<int64_t> p_MessageId) {
 	std::ostringstream s_Event;
 
 	s_Event << "{";
+
+	if (p_MessageId) {
+		s_Event << write_json("msgId") << ":" << write_json(*p_MessageId) << ",";
+	}
+
 	s_Event << write_json("type") << ":" << write_json("error") << ",";
 	s_Event << write_json("message") << ":" << write_json(p_Message);
 	s_Event << "}";
@@ -488,10 +509,14 @@ void EditorServer::OnEntityTreeRebuilt() {
 	});
 }
 
-void EditorServer::SendEntityList(EditorServer::WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree) {
+void EditorServer::SendEntityList(EditorServer::WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId) {
 	std::ostringstream s_EventStream;
 
 	s_EventStream << "{";
+
+	if (p_MessageId) {
+		s_EventStream << write_json("msgId") << ":" << write_json(*p_MessageId) << ",";
+	}
 
 	s_EventStream << write_json("type") << ":" << write_json("entityList") << ",";
 	s_EventStream << write_json("entities") << ":" << "[";
@@ -553,7 +578,7 @@ void EditorServer::SendEntityList(EditorServer::WebSocket* p_Socket, std::shared
 	p_Socket->send(s_EventStream.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity) {
+void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId) {
 	if (!p_Entity) {
 		throw std::runtime_error("Could not find entity for the given selector.");
 	}
@@ -561,6 +586,10 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity) {
 	std::ostringstream s_Event;
 
 	s_Event << "{";
+
+	if (p_MessageId) {
+		s_Event << write_json("msgId") << ":" << write_json(*p_MessageId) << ",";
+	}
 
 	s_Event << write_json("type") << ":" << write_json("entityDetails") << ",";
 	s_Event << write_json("entity") << ":";

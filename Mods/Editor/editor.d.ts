@@ -192,6 +192,9 @@ declare namespace EditorRequests {
 
 		// `true` to only list entities spawned by the editor, `false` or undefined to list all entities.
 		editorOnly?: boolean;
+
+		// A message id to include in the response in order to match it to the request.
+		msgId?: number;
 	}
 
 	interface GetEntityDetails {
@@ -199,14 +202,23 @@ declare namespace EditorRequests {
 
 		// The entity to get the details of.
 		entity: EntitySelector;
+
+		// A message id to include in the response in order to match it to the request.
+		msgId?: number;
 	}
 
 	interface GetHitmanEntity {
 		type: 'getHitmanEntity';
+
+		// A message id to include in the response in order to match it to the request.
+		msgId?: number;
 	}
 
 	interface GetCameraEntity {
 		type: 'getCameraEntity';
+
+		// A message id to include in the response in order to match it to the request.
+		msgId?: number;
 	}
 
 	interface RebuildEntityTree {
@@ -241,6 +253,9 @@ declare namespace EditorEvents {
 
 		// The error message.
 		message: string;
+
+		// The message id of the request that caused the error, if any.
+		msgId?: number;
 	}
 
 	interface EntitySelected {
@@ -319,6 +334,9 @@ declare namespace EditorEvents {
 
 		// The list of requested entities.
 		entities: EntityBaseDetails[];
+
+		// The message id of the request, if any.
+		msgId?: number;
 	}
 
 	interface EntityDetailsResponse {
@@ -326,6 +344,9 @@ declare namespace EditorEvents {
 
 		// The details of the requested entity.
 		entity: EntityDetails;
+
+		// The message id of the request, if any.
+		msgId?: number;
 	}
 
 	interface HitmanEntityResponse {
@@ -333,6 +354,9 @@ declare namespace EditorEvents {
 
 		// The details of the Hitman entity.
 		entity: EntityDetails;
+
+		// The message id of the request, if any.
+		msgId?: number;
 	}
 
 	interface CameraEntityResponse {
@@ -340,6 +364,9 @@ declare namespace EditorEvents {
 
 		// The details of the active camera entity.
 		entity: EntityDetails;
+
+		// The message id of the request, if any.
+		msgId?: number;
 	}
 
 	interface EntityTreeRebuilt {
