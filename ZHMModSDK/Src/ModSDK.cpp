@@ -39,6 +39,9 @@
 #include <Shlobj.h>
 #include <Shlwapi.h>
 #include <format>
+#include <shellapi.h>
+#include <simdjson.h>
+#include <semver.hpp>
 
 // Needed for TaskDialogIndirect
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -57,6 +60,10 @@ extern void ClearLoggers();
 
 ZHMSDK_API IModSDK* SDK() {
 	return ModSDK::GetInstance();
+}
+
+extern "C" ZHMSDK_API const char* SDKVersion() {
+	return "2.0.0-rc.4";
 }
 
 ModSDK* ModSDK::g_Instance = nullptr;
@@ -210,14 +217,18 @@ void ModSDK::LoadConfiguration() {
 			);
 		}
 
-		if (s_Mod.second.has("console-key") && !s_Mod.second.get("console-key").empty()) {
+		if (s_Mod.second.has("console_key") && !s_Mod.second.get("console_key").empty()) {
 			// Try to parse its value as a uint8_t.
 			try {
-				m_ConsoleScanCode = std::stoul(s_Mod.second.get("console-key"), nullptr, 0);
+				m_ConsoleScanCode = std::stoul(s_Mod.second.get("console_key"), nullptr, 0);
 			}
 			catch (const std::exception&) {
 				Logger::Error("Could not parse console key value from mod.ini. Using default value.");
 			}
+		}
+
+		if (s_Mod.second.has("ignore_version")) {
+			m_IgnoredVersion = s_Mod.second.get("ignore_version");
 		}
 	}
 }
@@ -248,7 +259,7 @@ std::pair<uint32_t, std::string> ModSDK::RequestLatestVersion() {
 
 	// Create an HTTP request handle
 	HINTERNET s_Request = WinHttpOpenRequest(
-		s_ConnectHandle.get(), L"GET", L"/repos/OrfeasZ/ZHMModSDK/releases/latest",
+		s_ConnectHandle.get(), L"GET", L"/repos/OrfeasZ/ZHMModSDK/releases",
 		nullptr, WINHTTP_NO_REFERER,
 		WINHTTP_DEFAULT_ACCEPT_TYPES,
 		WINHTTP_FLAG_SECURE
@@ -302,63 +313,168 @@ std::pair<uint32_t, std::string> ModSDK::RequestLatestVersion() {
 	return { s_StatusCode, s_Response };
 }
 
-void ModSDK::ShowVersionNotice(const std::wstring& p_Version) {
+void ModSDK::ShowVersionNotice(const std::string& p_Version) {
 	const auto s_ContentStr = std::format(
-		L"A new version of the Mod SDK ({}) is available.\nYou can update by downloading it and replacing "
+		"A new version of the Mod SDK ({}) is available.\nYou can update by downloading it and replacing "
 		"the current version.\n\nKeep in mind you might also have to update any additional mods you have "
 		"installed.", p_Version
 	);
 
+	// Convert to wide string.
+	const auto s_ContentSize = MultiByteToWideChar(CP_UTF8, 0, s_ContentStr.c_str(), -1, nullptr, 0);
+	std::wstring s_WideContent(s_ContentSize, 0);
+	MultiByteToWideChar(CP_UTF8, 0, s_ContentStr.c_str(), -1, s_WideContent.data(), s_ContentSize);
+
 	TASKDIALOGCONFIG s_Config = { 0 };
-	s_Config.cbSize = sizeof(TASKDIALOGCONFIG);
-	//s_Config.hInstance = GetModuleHandleA(nullptr);
-	s_Config.dwFlags = TDF_ALLOW_DIALOG_CANCELLATION | TDF_ENABLE_HYPERLINKS | TDF_SIZE_TO_CONTENT | TDF_USE_COMMAND_LINKS;
+	s_Config.cbSize = sizeof(s_Config);
+	s_Config.hInstance = GetModuleHandle(nullptr);
+	s_Config.dwFlags = TDF_ENABLE_HYPERLINKS | TDF_USE_COMMAND_LINKS;
 	s_Config.dwCommonButtons = TDCBF_CLOSE_BUTTON;
-	s_Config.pszWindowTitle = L"VU Error";
-	s_Config.pszMainInstruction = L"VU has stopped working";
-	s_Config.pszMainIcon = TD_ERROR_ICON;
-	s_Config.pszContent = L"VU encountered a problem and had to shut down.\n\nA crash report has been automatically generated. Please be patient while it is being sent to the developers.";
-	s_Config.pszExpandedInformation = L"Crash details";
+	s_Config.pszMainIcon = TD_INFORMATION_ICON;
+	s_Config.pszWindowTitle = L"ZHM Mod SDK - Update Available";
+	s_Config.pszMainInstruction = L"A new SDK update is available!";
+	s_Config.pszContent = s_WideContent.c_str();
 
-	int download_button_id = 1000;
-	TASKDIALOG_BUTTON download_button { download_button_id, L"Download it now\n" L"You will need to run the downloaded installer" };
-	s_Config.cButtons = 1;
-	s_Config.pButtons = &download_button;
-	s_Config.nDefaultButton = download_button_id;
+	TASKDIALOG_BUTTON s_Buttons[] = {
+		{ 1337, L"Download update\nUpdate must be manually applied after being downloaded." },
+		{ 1338, L"View update notes\nOpen a page with the update notes for the new version." },
+		{ 1339, L"Ignore this version\nSkip this update and further update notifications for this version." },
+	};
 
-	s_Config.pfCallback = [](HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam, LONG_PTR data) -> HRESULT
-	{
+	s_Config.pButtons = s_Buttons;
+	s_Config.cButtons = 3;
+
+	struct TaskDialogCallbackData {
+		std::string Version;
+	};
+
+	auto* s_CallbackData = new TaskDialogCallbackData();
+	s_CallbackData->Version = p_Version;
+
+	s_Config.lpCallbackData = reinterpret_cast<LONG_PTR>(s_CallbackData);
+	s_Config.pfCallback = [](HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam, LONG_PTR data) -> HRESULT {
+		auto* s_CallbackData = reinterpret_cast<TaskDialogCallbackData*>(data);
+
+		if (type == TDN_DESTROYED) {
+			delete s_CallbackData;
+			return S_OK;
+		}
+		else if (type == TDN_BUTTON_CLICKED) {
+			if (wParam == 1337) {
+				const auto s_DownloadURL = std::format(
+					"https://github.com/OrfeasZ/ZHMModSDK/releases/download/{}/ZHMModSDK-Release.zip",
+					s_CallbackData->Version
+				);
+
+				ShellExecuteA(nullptr, "open", s_DownloadURL.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+			}
+			else if (wParam == 1338) {
+				const auto s_ReleaseURL = std::format(
+					"https://github.com/OrfeasZ/ZHMModSDK/releases/tag/{}",
+					s_CallbackData->Version
+				);
+
+				ShellExecuteA(nullptr, "open", s_ReleaseURL.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+			}
+			else if (wParam == 1339) {
+				// Ignore this version.
+				ModSDK::GetInstance()->SkipVersionUpdate(s_CallbackData->Version);
+			}
+		}
+
 		return S_OK;
 	};
 
-	wchar_t buf[MAX_PATH];
-	UINT len = ::GetWindowsDirectoryW(buf, MAX_PATH);
-	if (len == 0 || len >= MAX_PATH)
-	{
+	TaskDialogIndirect(&s_Config, nullptr, nullptr, nullptr);
+}
+
+// Write the version to skip update notifications for to the mods.ini file.
+void ModSDK::SkipVersionUpdate(const std::string& p_Version) {
+	char s_ExePathStr[MAX_PATH];
+	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+
+	if (s_PathSize == 0)
+		return;
+
+	std::filesystem::path s_ExePath(s_ExePathStr);
+	auto s_ExeDir = s_ExePath.parent_path();
+
+	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
+
+	mINI::INIFile s_File(s_IniPath.string());
+
+	mINI::INIStructure s_Ini;
+
+	if (is_regular_file(s_IniPath)) {
+		s_File.read(s_Ini);
+	}
+
+	mINI::INIMap<std::string> s_SdkMap;
+
+	if (s_Ini.has("sdk")) {
+		s_SdkMap = s_Ini.get("sdk");
+	}
+
+	s_SdkMap.set("ignore_version", p_Version);
+	s_Ini.set("sdk", s_SdkMap);
+
+	s_File.generate(s_Ini, true);
+}
+
+void ModSDK::CheckForUpdates() {
+	// Try to get latest version from GitHub.
+	std::pair<uint32_t, std::string> s_VersionCheckResult;
+
+	try {
+		Logger::Info("Checking for updates...");
+		s_VersionCheckResult = RequestLatestVersion();
+	}
+	catch (const std::exception& e) {
+		Logger::Error("Could not check for updates: {}", e.what());
 		return;
 	}
 
-	std::wstring manifest = std::format(L"{}\\WindowsShell.Manifest", buf);
-
-	// Since this is only for errors shown when the process is about to exit, we
-	// skip releasing/deactivating the context to minimize impact on apphost size
-	ACTCTXW actctx = { sizeof(ACTCTXW), 0, manifest.c_str() };
-	HANDLE context_handle = ::CreateActCtxW(&actctx);
-	if (context_handle == INVALID_HANDLE_VALUE)
-	{
+	if (s_VersionCheckResult.first != 200) {
+		Logger::Error("Could not check for updates: HTTP status code {}", s_VersionCheckResult.first);
 		return;
 	}
 
-	ULONG_PTR cookie;
-	if (::ActivateActCtx(context_handle, &cookie) == FALSE)
-	{
-		return;
+	// Parse the JSON response with simdjson.
+	try {
+		simdjson::ondemand::parser s_Parser;
+		const auto s_Json = simdjson::padded_string(s_VersionCheckResult.second);
+		simdjson::ondemand::document s_JsonMsg = s_Parser.iterate(s_Json);
+
+		// Get tag name of the latest release (top of the list).
+		std::string_view s_LatestVersion = s_JsonMsg.get_array().at(0)["tag_name"].get_string();
+
+		// Check if we should ignore this version.
+		if (m_IgnoredVersion == s_LatestVersion) {
+			Logger::Info("Ignoring update notification for version {}.", s_LatestVersion);
+			return;
+		}
+
+		// Strip v prefix.
+		const std::string s_LatestVersionStr(s_LatestVersion.substr(1));
+
+		// Compare the latest version with the current version.
+		semver::version s_CurrentVersion(SDKVersion());
+		semver::version s_LatestSemver(s_LatestVersionStr);
+
+		if (s_LatestSemver > s_CurrentVersion) {
+			Logger::Info("A new version of the Mod SDK is available: {}.", s_LatestVersion);
+			ShowVersionNotice(std::string(s_LatestVersion));
+		}
+		else {
+			Logger::Info("Mod SDK is up to date.");
+		}
 	}
-
-	const auto s_Result = TaskDialogIndirect(&s_Config, nullptr, nullptr, nullptr);
-
-	printf("TaskDialog result: %lX\n", s_Result);
-	printf("HINSTANCE: %llX\n", reinterpret_cast<uintptr_t>(s_Config.hInstance));
+	catch (const simdjson::simdjson_error& e) {
+		Logger::Error("Could not parse JSON response: {}", e.what());
+	}
+	catch (const std::exception& e) {
+		Logger::Error("An error occurred while checking for updates: {}", e.what());
+	}
 }
 
 bool ModSDK::Startup() {
@@ -384,7 +500,11 @@ bool ModSDK::Startup() {
 	// Setup custom multiplayer code.
 	//Multiplayer::Lobby::Setup();
 
-	//ShowVersionNotice(L"1.2.3");
+	std::thread s_VersionCheckThread([&]() {
+		CheckForUpdates();
+	});
+
+	s_VersionCheckThread.detach();
 
 	return true;
 }

@@ -57,7 +57,9 @@ public:
 private:
     void LoadConfiguration();
 	std::pair<uint32_t, std::string> RequestLatestVersion();
-	void ShowVersionNotice(const std::wstring& p_Version);
+	void ShowVersionNotice(const std::string& p_Version);
+	void SkipVersionUpdate(const std::string& p_Version);
+	void CheckForUpdates();
 
 public:
     void OnEngineInit();
@@ -135,6 +137,7 @@ private:
     uintptr_t m_ModuleBase;
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;
+	std::string m_IgnoredVersion;
 
     std::shared_ptr<ModLoader> m_ModLoader {};
 

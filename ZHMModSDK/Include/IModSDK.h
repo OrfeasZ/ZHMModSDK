@@ -197,3 +197,8 @@ public:
  * Get the global instance of the SDK.
  */
 ZHMSDK_API IModSDK* SDK();
+
+/**
+* Get the current SDK version.
+*/
+extern "C" ZHMSDK_API const char* SDKVersion();

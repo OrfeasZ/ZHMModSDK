@@ -53,6 +53,7 @@ target_link_libraries(ZHMModSDK PUBLIC
 	Microsoft::DirectX-Guids
 	Microsoft::DirectX-Headers
     semver::semver
+    simdjson::simdjson
 	imgui
 	d3d12
 	dxgi
