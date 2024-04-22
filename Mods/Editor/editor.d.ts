@@ -53,19 +53,20 @@ interface PropertyValue {
 
 interface GameEntity {
 	id: EntityId;
+	source: "game";
 	tblu: ResourceId;
 }
 
 interface EditorEntity {
 	id: EntityId;
-	byEditor: true;
+	source: "editor";
 }
 
 // Rules used to select either an entity spawned by the game or by the editor.
-// When `tblu` is defined and set to a blueprint (TBLU) resource id / hash,
+// When `source` is set to "game" and `tblu` is defined and set to a blueprint (TBLU) resource id / hash,
 // the entity will be looked up based on the provided `id` in the collection of entities
 // spawned by the game based on that blueprint.
-// Otherwise, when `byEditor` is defined and set to `true`, the entity will be looked up
+// Otherwise, the entity will be looked up
 // in the collection of entities spawned by the editor at runtime.
 type EntitySelector = GameEntity | EditorEntity;
 
