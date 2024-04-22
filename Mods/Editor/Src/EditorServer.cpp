@@ -106,8 +106,10 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 
 	std::optional<int64_t> s_MessageId;
 
-	if (s_JsonMsg["msgId"].type() == simdjson::ondemand::json_type::number) {
-		s_MessageId = s_JsonMsg["msgId"];
+	if (s_JsonMsg.find_field("msgId").error() == simdjson::SUCCESS) {
+		if (s_JsonMsg["msgId"].type() == simdjson::ondemand::json_type::number) {
+			s_MessageId = s_JsonMsg["msgId"];
+		}
 	}
 
 	if (s_Type == "hello") {
