@@ -106,8 +106,10 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 
 	std::optional<int64_t> s_MessageId;
 
-	if (s_JsonMsg["msgId"].type() == simdjson::ondemand::json_type::number) {
-		s_MessageId = s_JsonMsg["msgId"];
+	if (s_JsonMsg.find_field("msgId").error() == simdjson::SUCCESS) {
+		if (s_JsonMsg["msgId"].type() == simdjson::ondemand::json_type::number) {
+			s_MessageId = s_JsonMsg["msgId"];
+		}
 	}
 
 	if (s_Type == "hello") {
@@ -551,6 +553,7 @@ void EditorServer::SendEntityList(EditorServer::WebSocket* p_Socket, std::shared
 
 		s_EventStream << "{";
 		s_EventStream << write_json("id") << ":" << write_json(std::format("{:016x}", s_Node->EntityId)) << ",";
+		s_EventStream << write_json("source") << ":" << write_json("game") << ",";
 		s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->TBLU.GetID())) << ",";
 		s_EventStream << write_json("type") << ":" << write_json((*s_Node->Entity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName);
 
@@ -625,11 +628,13 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 			p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
 		}
 
+		p_Stream << write_json("source") << ":" << write_json("game") << ",";
+
 		p_Stream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Factory->m_ridResource.GetID())) << ",";
 	}
 	else {
 		// TODO: Name.
-		p_Stream << write_json("byEditor") << ":" << write_json(true) << ",";
+		p_Stream << write_json("source") << ":" << write_json("editor") << ",";
 	}
 
 	// Write type and interfaces.
@@ -840,12 +845,6 @@ EntitySelector EditorServer::ReadEntitySelector(simdjson::ondemand::value p_Sele
 			.EntityId = s_Id64,
 			.TbluHash = std::make_optional(s_Tblu64),
 		};
-	}
-
-	const bool s_ByEditor = p_Selector["byEditor"];
-
-	if (!s_ByEditor) {
-		throw std::runtime_error("Entity selector 'byEditor' field cannot be `false` when 'tblu' is not present.");
 	}
 
 	return {
