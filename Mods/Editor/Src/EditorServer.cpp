@@ -819,16 +819,60 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZE
 	else
 		s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(s_Data, reinterpret_cast<void*>(s_PropertyAddress));
 
-	auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
-	(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
+	if (s_PropertyInfo->m_pType->typeInfo() && s_PropertyInfo->m_pType->typeInfo()->isEntity()) {
+		auto* s_EntityData = reinterpret_cast<TEntityRef<ZEntityImpl>*>(s_Data);
 
-	if (!s_JsonProperty) {
-		p_Stream << "null" << "}";
-		return;
+		if (!s_EntityData || !*s_EntityData) {
+			(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
+			p_Stream << "null" << "}";
+			return;
+		}
+
+		p_Stream << "{" << write_json("id") << ":" << write_json(std::format("{:016x}", s_EntityData->m_ref->GetType()->m_nEntityId)) << ",";
+
+		auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_ref.GetBlueprintFactory());
+
+		if (s_EntityData->m_ref.GetOwningEntity()) {
+			s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_ref.GetOwningEntity().GetBlueprintFactory());
+		}
+
+		if (s_Factory) {
+			// This is also probably wrong.
+			auto s_Index = s_Factory->GetSubEntityIndex( s_EntityData->m_ref->GetType()->m_nEntityId);
+
+			if (s_Index != -1) {
+				const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
+				p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
+			}
+
+			p_Stream << write_json("source") << ":" << write_json("game") << ",";
+
+			p_Stream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Factory->m_ridResource.GetID())) << ",";
+		}
+		else {
+			// TODO: Name.
+			p_Stream << write_json("source") << ":" << write_json("editor") << ",";
+		}
+
+		// Write type and interfaces.
+		auto s_Interfaces = (*s_EntityData->m_ref->GetType()->m_pInterfaces);
+
+		p_Stream << write_json("type") << ":" << write_json(s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName) << "}}";
+
+		(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 	}
+	else {
+		auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
+		(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
-	p_Stream << std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize) << "}";
-	HM3_FreeJsonString(s_JsonProperty);
+		if (!s_JsonProperty) {
+			p_Stream << "null" << "}";
+			return;
+		}
+
+		p_Stream << std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize) << "}";
+		HM3_FreeJsonString(s_JsonProperty);
+	}
 }
 
 EntitySelector EditorServer::ReadEntitySelector(simdjson::ondemand::value p_Selector) {

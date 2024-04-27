@@ -127,8 +127,8 @@ private:
     ZActor* m_NPCTracked = nullptr;
     bool m_TrackCamActive = false;
     ZEntityRef m_PlayerCam = nullptr;
-    TEntityRef<ZCameraEntity> m_TrackCam = TEntityRef<ZCameraEntity>(nullptr);
-    TEntityRef<IRenderDestinationEntity> m_RenderDest = TEntityRef<IRenderDestinationEntity>(nullptr);
+    TEntityRef<ZCameraEntity> m_TrackCam {};
+    TEntityRef<IRenderDestinationEntity> m_RenderDest {};
 
 private:
     void EnableTrackCam();

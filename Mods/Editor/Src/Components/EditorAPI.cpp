@@ -137,30 +137,51 @@ void Editor::SetEntityProperty(EntitySelector p_Selector, uint32_t p_PropertyId,
 
 		const auto s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
 
-		const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-		const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
-		const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+		if (s_PropertyInfo->m_pType->typeInfo()->isEntity()) {
+			if (p_JsonValue == "null") {
+				TEntityRef<ZEntityImpl> s_EntityRef;
+				OnSetPropertyValue(s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, &s_EntityRef), std::move(p_ClientId));
+			} else {
+				// Parse EntitySelector
+				simdjson::ondemand::parser s_Parser;
+				const auto s_EntitySelectorJson = simdjson::padded_string(p_JsonValue);
+				simdjson::ondemand::document s_EntitySelectorMsg = s_Parser.iterate(s_EntitySelectorJson);
 
-		void* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-			s_TypeSize,
-			s_TypeAlignment
-		);
+				const auto s_EntitySelector = EditorServer::ReadEntitySelector(s_EntitySelectorMsg);
 
-		const bool s_Success = HM3_JsonToGameStruct(
-			s_TypeName.c_str(),
-			p_JsonValue.data(),
-			p_JsonValue.size(),
-			s_Data,
-			s_TypeSize
-		);
+				if (const auto s_TargetEntity = FindEntity(s_EntitySelector)) {
+					TEntityRef<ZEntityImpl> s_EntityRef(s_TargetEntity);
+					OnSetPropertyValue(s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, &s_EntityRef), std::move(p_ClientId));
+				} else {
+					throw std::runtime_error("Could not find entity for the given selector.");
+				}
+			}
+		} else {
+			const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
+			const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+			const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
 
-		if (!s_Success) {
+			void* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+				s_TypeSize,
+				s_TypeAlignment
+			);
+
+			const bool s_Success = HM3_JsonToGameStruct(
+				s_TypeName.c_str(),
+				p_JsonValue.data(),
+				p_JsonValue.size(),
+				s_Data,
+				s_TypeSize
+			);
+
+			if (!s_Success) {
+				(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
+				throw std::runtime_error("Unable to convert JSON to game struct.");
+			}
+
+			OnSetPropertyValue(s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, s_Data), std::move(p_ClientId));
 			(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
-			throw std::runtime_error("Unable to convert JSON to game struct.");
 		}
-
-		OnSetPropertyValue(s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, s_Data), std::move(p_ClientId));
-		(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 	} else {
 		throw std::runtime_error("Could not find entity for the given selector.");
 	}

@@ -171,6 +171,7 @@ declare namespace EditorRequests {
 		property: string | number;
 
 		// The new value to give to the property, as it would appear in RT JSON.
+		// For entity properties, provide an [EntitySelector] object or [null].
 		value: unknown;
 	}
 

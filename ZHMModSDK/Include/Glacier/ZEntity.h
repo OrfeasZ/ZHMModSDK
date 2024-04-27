@@ -524,6 +524,13 @@ template <typename T>
 class TEntityRef
 {
 public:
+	TEntityRef() = default;
+
+	explicit TEntityRef(ZEntityRef p_Ref) : m_ref(p_Ref), m_pInterfaceRef(p_Ref.GetEntity())
+	{
+
+	}
+
     ZEntityRef m_ref;
     T* m_pInterfaceRef = nullptr;
 

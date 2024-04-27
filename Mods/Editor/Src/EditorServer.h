@@ -55,6 +55,7 @@ private:
 	static void WritePropertyName(std::ostream& p_Stream, ZEntityProperty* p_Property);
 	static void WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZEntityProperty* p_Property);
 
+public:
 	static EntitySelector ReadEntitySelector(simdjson::ondemand::value p_Selector);
 	static SVector3 ReadVector3(simdjson::ondemand::value p_Vector);
 	static EulerAngles ReadRotation(simdjson::ondemand::value p_Rotation);
@@ -62,6 +63,7 @@ private:
 	static ZRuntimeResourceID ReadResourceId(simdjson::ondemand::value p_ResourceId);
 	static uint64_t ReadEntityId(simdjson::ondemand::value p_EntityId);
 
+private:
 	void PublishEvent(const std::string& p_Event, std::optional<std::string> p_IgnoreClient);
 
 private:

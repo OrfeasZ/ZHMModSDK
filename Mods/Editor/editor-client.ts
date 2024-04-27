@@ -67,6 +67,34 @@ ws.on("message", (message) => {
 
 			return;
 		}
+
+		if (msg.type === "entityDetails") {
+			console.log("Received details for an entity:", msg.entity);
+
+			if (msg.entity.properties.m_eidParent.data !== null) {
+				console.log("Setting parent property to null and getting details again.");
+
+				sendMessage({
+					type: "setEntityProperty",
+					entity: {
+						id: msg.entity.id,
+						tblu: msg.entity.tblu,
+					},
+					property: "m_eidParent",
+					value: null,
+				});
+
+				sendMessage({
+					type: "getEntityDetails",
+					entity: {
+						id: msg.entity.id,
+						tblu: msg.entity.tblu,
+					},
+				});
+			}
+
+			return;
+		}
 	} catch (e) {
 		console.error("Encountered error while parsing message from editor:", e, message.data);
 	}

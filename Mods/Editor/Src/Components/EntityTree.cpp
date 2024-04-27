@@ -52,8 +52,20 @@ void Editor::UpdateEntities() {
 		s_NodeQueue.emplace(s_BpFactory, s_BrickEnt);
 	}
 
+	auto s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetBlueprintFactory());
+
+	if (s_SceneEnt.GetOwningEntity()) {
+		s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetOwningEntity().GetBlueprintFactory());
+	}
+
 	// Create the root scene node.
-	auto s_SceneNode = std::make_shared<EntityTreeNode>("Scene Root", 0, 0, s_SceneEnt);
+	auto s_SceneNode = std::make_shared<EntityTreeNode>(
+		"Scene Root",
+		s_SceneEnt->GetType()->m_nEntityId,
+		s_SceneFactory->m_ridResource,
+		s_SceneEnt
+	);
+
 	s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
 	s_NodeMap.emplace(ZEntityRef(), s_SceneNode);
 
