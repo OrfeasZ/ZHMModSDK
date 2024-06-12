@@ -185,6 +185,12 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 		SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
 		Plugin()->UnlockEntityTree();
 	}
+	else if (s_Type == "listTbluEntities") {
+		Plugin()->LockEntityTree();
+		std::vector<ZEntityRef> s_Entities = Plugin()->FindTblus(ReadTbluEntitySelectors(s_JsonMsg["tblus"]));
+		SendEntitiesDetails(p_Socket, s_Entities, s_MessageId);
+		Plugin()->UnlockEntityTree();
+	}
 	else if (s_Type == "getEntityDetails") {
 		const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
 		const auto s_Entity = Plugin()->FindEntity(s_Selector);
@@ -603,11 +609,45 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
 	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<ZEntityRef> p_Entities, std::optional<int64_t> p_MessageId) {
+	if (p_Entities.empty()) {
+		throw std::runtime_error("Could not find entities for the given selectors.");
+	}
+
+	Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
+
+	std::ostringstream s_Event;
+
+	s_Event << "{";
+
+	if (p_MessageId) {
+		s_Event << write_json("msgId") << ":" << write_json(*p_MessageId) << ",";
+	}
+
+	s_Event << write_json("type") << ":" << write_json("entitiesDetails") << ",";
+	s_Event << write_json("entities") << ":" << "[";
+	bool isFirst = true;
+	for (ZEntityRef p_Entity : p_Entities) {
+		s_Event << "{" << write_json("entity") << ":";
+		if (!isFirst) {
+			s_Event << ",";
+			isFirst = false;
+		}
+		WriteEntityDetails(s_Event, p_Entity);
+		s_Event << "}";
+	}
+
+	s_Event << "]" << "}";
+	Logger::Info("Message that should be sent: {}", s_Event.str());
+	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+}
+
 void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity) {
 	if (!p_Entity) {
 		p_Stream << "null";
 		return;
 	}
+	Logger::Info("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
 
 	p_Stream << "{";
 
@@ -895,6 +935,21 @@ EntitySelector EditorServer::ReadEntitySelector(simdjson::ondemand::value p_Sele
 		.EntityId = s_Id64,
 		.TbluHash = std::nullopt,
 	};
+}
+
+std::vector<EntitySelector> EditorServer::ReadTbluEntitySelectors(simdjson::ondemand::array p_Selector) {
+	std::vector<EntitySelector> s_EntitySelectors;
+	for (const std::string_view s_TbluString: p_Selector) {
+		Logger::Info("Reading TbluEntitySelector for temp: '{}' ", s_TbluString);
+		const auto s_Tblu64 = std::stoull(std::string{s_TbluString}, nullptr, 16);
+
+		s_EntitySelectors.push_back({
+			.EntityId = 0,
+		    .TbluHash = std::make_optional(s_Tblu64),
+		});
+	}
+
+	return s_EntitySelectors;
 }
 
 SVector3 EditorServer::ReadVector3(simdjson::ondemand::value p_Vector) {

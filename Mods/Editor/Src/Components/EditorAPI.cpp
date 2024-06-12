@@ -88,6 +88,50 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 	return {};
 }
 
+std::vector<ZEntityRef> Editor::FindTblus(std::vector<EntitySelector> p_Selectors) {
+	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+
+	if (!m_CachedEntityTree) {
+		return {};
+	}
+	std::vector<ZEntityRef> entities;
+
+
+	// Create a queue and add the root to it.
+	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
+	s_NodeQueue.push(m_CachedEntityTree);
+
+	// Keep iterating through the tree until we find the nodes we're looking for.
+	while (!s_NodeQueue.empty()) {
+		// Access the first node in the queue
+		auto s_Node = s_NodeQueue.front();
+		s_NodeQueue.pop();
+		//Logger::Info("Checking Entity with id: '{}' ", s_Node->Entity.GetEntity()->GetType()->m_nEntityId);
+
+		const auto s_NodeTblu = s_Node->TBLU;
+		for (EntitySelector p_Selector: p_Selectors) {
+			if (!p_Selector.TbluHash.has_value()) {
+				continue;
+			}
+			const ZRuntimeResourceID s_selectorTblu = p_Selector.TbluHash.value();
+			//Logger::Info("Looking for TBLU with selector: '{}' ", s_selectorTblu);
+
+			if (s_NodeTblu == s_selectorTblu) {
+				Logger::Info("TBLU matches selector: '{}' ", s_selectorTblu);
+				entities.push_back(s_Node->Entity);
+			}
+		}
+
+		// Add children to the queue.
+		for (auto& childPair: s_Node->Children) {
+			//Logger::Info("+---Entity has child");
+			s_NodeQueue.push(childPair.second);
+		}
+	}
+
+	return entities;
+}
+
 void Editor::SelectEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId) {
 	auto s_Entity = FindEntity(p_Selector);
 

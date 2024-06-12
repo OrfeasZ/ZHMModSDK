@@ -46,6 +46,7 @@ public:
 	std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
 	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
 	ZEntityRef FindEntity(EntitySelector p_Selector);
+	std::vector<ZEntityRef> FindTblus(std::vector<EntitySelector> p_Selectors);
 	void RebuildEntityTree();
 
 private:
