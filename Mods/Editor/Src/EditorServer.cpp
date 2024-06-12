@@ -188,7 +188,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	else if (s_Type == "listTbluEntities") {
 		Plugin()->LockEntityTree();
 		std::vector<ZEntityRef> s_Entities = Plugin()->FindTblus(ReadTbluEntitySelectors(s_JsonMsg["tblus"]));
-		SendEntitiesDetails(p_Socket, s_Entities, s_MessageId);
+		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
 	else if (s_Type == "getEntityDetails") {
@@ -609,25 +609,18 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
 	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<ZEntityRef> p_Entities, std::optional<int64_t> p_MessageId) {
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<ZEntityRef> p_Entities) {
 	if (p_Entities.empty()) {
 		throw std::runtime_error("Could not find entities for the given selectors.");
 	}
 
 	Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
 
-	std::ostringstream s_Event;
 
-	s_Event << "{";
-
-	if (p_MessageId) {
-		s_Event << write_json("msgId") << ":" << write_json(*p_MessageId) << ",";
-	}
-
-	s_Event << write_json("type") << ":" << write_json("entitiesDetails") << ",";
-	s_Event << write_json("entities") << ":" << "[";
-	bool isFirst = true;
 	for (ZEntityRef p_Entity : p_Entities) {
+		std::ostringstream s_Event;
+
+		bool isFirst = true;
 		s_Event << "{" << write_json("entity") << ":";
 		if (!isFirst) {
 			s_Event << ",";
@@ -635,11 +628,9 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<ZEntityR
 		}
 		WriteEntityDetails(s_Event, p_Entity);
 		s_Event << "}";
+		Logger::Info("Message that should be sent: {}", s_Event.str());
+		p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 	}
-
-	s_Event << "]" << "}";
-	Logger::Info("Message that should be sent: {}", s_Event.str());
-	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
 void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity) {
@@ -647,7 +638,7 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 		p_Stream << "null";
 		return;
 	}
-	Logger::Info("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
+		Logger::Info("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
 
 	p_Stream << "{";
 
