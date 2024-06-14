@@ -185,9 +185,9 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 		SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
 		Plugin()->UnlockEntityTree();
 	}
-	else if (s_Type == "listTbluEntities") {
+	else if (s_Type == "listPrimEntities") {
 		Plugin()->LockEntityTree();
-		std::vector<ZEntityRef> s_Entities = Plugin()->FindTblus(ReadTbluEntitySelectors(s_JsonMsg["tblus"]));
+		std::vector<ZEntityRef> s_Entities = Plugin()->FindPrims(ReadPrimEntitySelectors(s_JsonMsg["prims"]));
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
@@ -918,25 +918,28 @@ EntitySelector EditorServer::ReadEntitySelector(simdjson::ondemand::value p_Sele
 
 		return {
 			.EntityId = s_Id64,
-			.TbluHash = std::make_optional(s_Tblu64),
+		    .TbluHash = std::make_optional(s_Tblu64),
+		    .PrimHash = std::nullopt,
 		};
 	}
 
 	return {
 		.EntityId = s_Id64,
-		.TbluHash = std::nullopt,
+	    .TbluHash = std::nullopt,
+	    .PrimHash = std::nullopt,
 	};
 }
 
-std::vector<EntitySelector> EditorServer::ReadTbluEntitySelectors(simdjson::ondemand::array p_Selector) {
+std::vector<EntitySelector> EditorServer::ReadPrimEntitySelectors(simdjson::ondemand::array p_Selector) {
 	std::vector<EntitySelector> s_EntitySelectors;
-	for (const std::string_view s_TbluString: p_Selector) {
-		Logger::Info("Reading TbluEntitySelector for temp: '{}' ", s_TbluString);
-		const auto s_Tblu64 = std::stoull(std::string{s_TbluString}, nullptr, 16);
+	for (const std::string_view s_PrimStringView: p_Selector) {
+		const auto s_PrimString = std::string{s_PrimStringView};
+		Logger::Info("Reading PrimEntitySelector for hash: '{}'", s_PrimString);
 
 		s_EntitySelectors.push_back({
 			.EntityId = 0,
-		    .TbluHash = std::make_optional(s_Tblu64),
+		    .TbluHash = std::nullopt,
+		    .PrimHash = std::make_optional(s_PrimString),
 		});
 	}
 

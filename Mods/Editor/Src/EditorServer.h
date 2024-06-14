@@ -16,6 +16,7 @@
 struct EntitySelector {
 	uint64_t EntityId;
 	std::optional<ZRuntimeResourceID> TbluHash;
+	std::optional<std::string> PrimHash;
 };
 
 class EditorServer {
@@ -58,7 +59,7 @@ private:
 
 public:
 	static EntitySelector ReadEntitySelector(simdjson::ondemand::value p_Selector);
-	static std::vector<EntitySelector> ReadTbluEntitySelectors(simdjson::ondemand::array p_Selector);
+	static std::vector<EntitySelector> ReadPrimEntitySelectors(simdjson::ondemand::array p_Selector);
 	static SVector3 ReadVector3(simdjson::ondemand::value p_Vector);
 	static EulerAngles ReadRotation(simdjson::ondemand::value p_Rotation);
 	static SMatrix ReadTransform(simdjson::ondemand::value p_Transform);

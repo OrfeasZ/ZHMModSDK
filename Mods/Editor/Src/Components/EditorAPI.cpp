@@ -88,7 +88,7 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 	return {};
 }
 
-std::vector<ZEntityRef> Editor::FindTblus(std::vector<EntitySelector> p_Selectors) {
+std::vector<ZEntityRef> Editor::FindPrims(std::vector<EntitySelector> p_Selectors) {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
@@ -100,25 +100,37 @@ std::vector<ZEntityRef> Editor::FindTblus(std::vector<EntitySelector> p_Selector
 	// Create a queue and add the root to it.
 	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
 	s_NodeQueue.push(m_CachedEntityTree);
+	const char* s_GEOMENTITY_TYPE = "ZGeomEntity";
 
 	// Keep iterating through the tree until we find the nodes we're looking for.
 	while (!s_NodeQueue.empty()) {
 		// Access the first node in the queue
 		auto s_Node = s_NodeQueue.front();
 		s_NodeQueue.pop();
+		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
+		char * s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
+
 		//Logger::Info("Checking Entity with id: '{}' ", s_Node->Entity.GetEntity()->GetType()->m_nEntityId);
 
-		const auto s_NodeTblu = s_Node->TBLU;
-		for (EntitySelector p_Selector: p_Selectors) {
-			if (!p_Selector.TbluHash.has_value()) {
-				continue;
-			}
-			const ZRuntimeResourceID s_selectorTblu = p_Selector.TbluHash.value();
-			//Logger::Info("Looking for TBLU with selector: '{}' ", s_selectorTblu);
+		if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
+			for (EntitySelector p_Selector: p_Selectors) {
+				if (!p_Selector.PrimHash.has_value()) {
+					continue;
+				}
+				const std::string s_selectorPrim = p_Selector.PrimHash.value();
+				Logger::Info("Looking for PRIM with selector: '{}' ", s_selectorPrim);
 
-			if (s_NodeTblu == s_selectorTblu) {
-				Logger::Info("TBLU matches selector: '{}' ", s_selectorTblu);
-				entities.push_back(s_Node->Entity);
+				Logger::Info("Entity with id: '{}' is a '{}' ", s_Node->Entity.GetEntity()->GetType()->m_nEntityId, s_GEOMENTITY_TYPE);
+				if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
+					if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
+						const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
+						const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
+						Logger::Info("Associated PRIM: {:016X}", s_PrimHash);
+						if (std::to_string(s_PrimHash) == s_selectorPrim) {
+							entities.push_back(s_Node->Entity);
+						}
+					}
+				}
 			}
 		}
 
