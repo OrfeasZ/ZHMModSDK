@@ -101,6 +101,13 @@ std::vector<ZEntityRef> Editor::FindPrims(std::vector<EntitySelector> p_Selector
 	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
 	s_NodeQueue.push(m_CachedEntityTree);
 	const char* s_GEOMENTITY_TYPE = "ZGeomEntity";
+	std::vector<std::string> s_selectorPrimHashes;
+	for (EntitySelector p_Selector: p_Selectors) {
+		if (!p_Selector.PrimHash.has_value()) {
+			continue;
+		}
+		s_selectorPrimHashes.push_back(p_Selector.PrimHash.value());
+	}
 
 	// Keep iterating through the tree until we find the nodes we're looking for.
 	while (!s_NodeQueue.empty()) {
@@ -113,22 +120,15 @@ std::vector<ZEntityRef> Editor::FindPrims(std::vector<EntitySelector> p_Selector
 		//Logger::Info("Checking Entity with id: '{}' ", s_Node->Entity.GetEntity()->GetType()->m_nEntityId);
 
 		if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
-			for (EntitySelector p_Selector: p_Selectors) {
-				if (!p_Selector.PrimHash.has_value()) {
-					continue;
-				}
-				const std::string s_selectorPrim = p_Selector.PrimHash.value();
-				Logger::Info("Looking for PRIM with selector: '{}' ", s_selectorPrim);
+			if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
+				if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
+					const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
+					const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
+					std::string s_PrimHashString{std::format("{:016X}", s_PrimHash)};
 
-				Logger::Info("Entity with id: '{}' is a '{}' ", s_Node->Entity.GetEntity()->GetType()->m_nEntityId, s_GEOMENTITY_TYPE);
-				if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
-					if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
-						const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
-						const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
-						Logger::Info("Associated PRIM: {:016X}", s_PrimHash);
-						if (std::to_string(s_PrimHash) == s_selectorPrim) {
-							entities.push_back(s_Node->Entity);
-						}
+					if (std::find(s_selectorPrimHashes.begin(), s_selectorPrimHashes.end(), s_PrimHashString) != s_selectorPrimHashes.end()) {
+						Logger::Info("Found PRIM: '{}'", s_PrimHashString);
+						entities.push_back(s_Node->Entity);
 					}
 				}
 			}
