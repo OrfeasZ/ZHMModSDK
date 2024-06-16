@@ -88,13 +88,13 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 	return {};
 }
 
-std::vector<ZEntityRef> Editor::FindPrims(std::vector<EntitySelector> p_Selectors) {
+std::vector <std::pair<std::string, ZEntityRef>> Editor::FindPrims(std::vector<EntitySelector> p_Selectors) {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
 		return {};
 	}
-	std::vector<ZEntityRef> entities;
+	std::vector<std::pair<std::string, ZEntityRef>> entities;
 
 
 	// Create a queue and add the root to it.
@@ -117,8 +117,6 @@ std::vector<ZEntityRef> Editor::FindPrims(std::vector<EntitySelector> p_Selector
 		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
 		char * s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
 
-		//Logger::Info("Checking Entity with id: '{}' ", s_Node->Entity.GetEntity()->GetType()->m_nEntityId);
-
 		if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
 			if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
 				if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
@@ -128,7 +126,7 @@ std::vector<ZEntityRef> Editor::FindPrims(std::vector<EntitySelector> p_Selector
 
 					if (std::find(s_selectorPrimHashes.begin(), s_selectorPrimHashes.end(), s_PrimHashString) != s_selectorPrimHashes.end()) {
 						Logger::Info("Found PRIM: '{}'", s_PrimHashString);
-						entities.push_back(s_Node->Entity);
+						entities.push_back(std::pair<std::string, ZEntityRef>{s_PrimHashString, s_Node->Entity});
 					}
 				}
 			}
@@ -136,7 +134,6 @@ std::vector<ZEntityRef> Editor::FindPrims(std::vector<EntitySelector> p_Selector
 
 		// Add children to the queue.
 		for (auto& childPair: s_Node->Children) {
-			//Logger::Info("+---Entity has child");
 			s_NodeQueue.push(childPair.second);
 		}
 	}

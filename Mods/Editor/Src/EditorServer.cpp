@@ -187,7 +187,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	}
 	else if (s_Type == "listPrimEntities") {
 		Plugin()->LockEntityTree();
-		std::vector<ZEntityRef> s_Entities = Plugin()->FindPrims(ReadPrimEntitySelectors(s_JsonMsg["prims"]));
+		std::vector<std::pair<std::string, ZEntityRef>> s_Entities = Plugin()->FindPrims(ReadPrimEntitySelectors(s_JsonMsg["prims"]));
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
@@ -609,7 +609,7 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
 	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<ZEntityRef> p_Entities) {
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pair<std::string, ZEntityRef>> p_Entities) {
 	if (p_Entities.empty()) {
 		throw std::runtime_error("Could not find entities for the given selectors.");
 	}
@@ -617,20 +617,17 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<ZEntityR
 	Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
 
 
-	for (ZEntityRef p_Entity : p_Entities) {
+	for (std::pair<std::string, ZEntityRef> p_Entity: p_Entities) {
 		std::ostringstream s_Event;
-
-		bool isFirst = true;
-		s_Event << "{" << write_json("entity") << ":";
-		if (!isFirst) {
-			s_Event << ",";
-			isFirst = false;
-		}
-		WriteEntityDetails(s_Event, p_Entity);
+		s_Event << "{" << write_json("primHash") << ":";
+		s_Event << write_json(p_Entity.first) << ",";
+		s_Event << write_json("entity") << ":";
+		WriteEntityDetails(s_Event, p_Entity.second);
 		s_Event << "}";
 		Logger::Info("Message that should be sent: {}", s_Event.str());
 		p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 	}
+	p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
 }
 
 void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity) {
