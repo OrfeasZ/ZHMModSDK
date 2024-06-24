@@ -622,12 +622,94 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pai
 		s_Event << "{" << write_json("primHash") << ":";
 		s_Event << write_json(p_Entity.first) << ",";
 		s_Event << write_json("entity") << ":";
-		WriteEntityDetails(s_Event, p_Entity.second);
+		WriteEntityTransforms(s_Event, p_Entity.second);
 		s_Event << "}";
 		Logger::Info("Message that should be sent: {}", s_Event.str());
 		p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 	}
 	p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
+}
+
+void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_Entity) {
+	if (!p_Entity) {
+		p_Stream << "null";
+		return;
+	}
+	Logger::Info("Sending entity transforms for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
+
+	p_Stream << "{";
+
+	p_Stream << write_json("id") << ":" << write_json(std::format("{:016x}", p_Entity->GetType()->m_nEntityId)) << ",";
+
+	auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
+
+	if (p_Entity.GetOwningEntity()) {
+		s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetOwningEntity().GetBlueprintFactory());
+	}
+
+	if (s_Factory) {
+		// This is also probably wrong.
+		auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityId);
+
+		if (s_Index != -1) {
+			const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
+			p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
+		}
+	}
+
+	// Write transform.
+	if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
+		const auto s_Trans = s_Spatial->GetWorldMatrix();
+
+		SMatrix p_Transform = s_Spatial->GetWorldMatrix();
+		const auto s_Decomposed = p_Transform.Decompose();
+		const auto s_Euler = s_Decomposed.Quaternion.ToEuler();
+
+		p_Stream << write_json("position") << ":";
+		WriteVector3(p_Stream, s_Decomposed.Position.x, s_Decomposed.Position.y, s_Decomposed.Position.z);
+		p_Stream << ",";
+
+		p_Stream << write_json("rotation") << ":";
+		WriteRotation(p_Stream, s_Euler.yaw, s_Euler.pitch, s_Euler.roll);
+		p_Stream << ",";
+	}
+
+	const auto s_EntityType = p_Entity->GetType();
+
+	const std::string s_ScalePropertyName = "m_PrimitiveScale";
+
+	if (s_EntityType && s_EntityType->m_pProperties01) {
+		for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
+			ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+			const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+
+			if (!s_PropertyInfo || !s_PropertyInfo->m_pType || !s_PropertyInfo->m_pType->typeInfo()) {
+				continue;
+			}
+
+			if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+				// Some properties don't have a name for some reason. Try to find using RL.
+				const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+				if (s_PropertyName.Size > 0) {
+					std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
+					if (s_PropertyNameView == s_ScalePropertyName) {
+						p_Stream << write_json("scale");
+						p_Stream << ":";
+						WriteProperty(p_Stream, p_Entity, s_Property);
+					}
+				}
+			} else if (s_PropertyInfo->m_pName) {
+				if (s_PropertyInfo->m_pName == s_ScalePropertyName) {
+					p_Stream << write_json("scale");
+					p_Stream << ":";
+					WriteProperty(p_Stream, p_Entity, s_Property);
+				}
+			}
+		}
+	}
+
+	p_Stream << "}";
 }
 
 void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity) {
