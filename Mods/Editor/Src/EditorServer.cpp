@@ -40,11 +40,15 @@ EditorServer::EditorServer() {
 						p_Socket->getUserData()->ClientId = s_ClientIdStr;
 						m_SocketUserDatas.push_back(p_Socket->getUserData());
 					},
-					.message = [](WebSocket* p_Socket, std::string_view p_Message, uWS::OpCode p_OpCode) {
+					.message = [&](WebSocket* p_Socket, std::string_view p_Message, uWS::OpCode p_OpCode) {
 						Logger::Trace("Socket message received: {}", p_Message);
 
 						try {
-							OnMessage(p_Socket, p_Message);
+				            if (m_Enabled) {
+					            OnMessage(p_Socket, p_Message);
+				            } else {
+					            Logger::Info("EditorServer disabled, ignoring message.");
+							}
 						} catch (const std::exception& e) {
 							Logger::Error("Failed to handle editor message with error: {}\nMessage was: {}", e.what(), p_Message);
 							SendError(p_Socket, e.what(), std::nullopt);
@@ -95,6 +99,8 @@ EditorServer::~EditorServer() {
 		});
 	}
 }
+
+bool EditorServer::m_Enabled = true;
 
 void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false) {
 	simdjson::ondemand::parser s_Parser;
@@ -226,6 +232,10 @@ void EditorServer::SendWelcome(EditorServer::WebSocket* p_Socket) {
 }
 
 void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping SendHitmanEntity.");
+		return;
+	}
 	TEntityRef<ZHitman5> s_LocalHitman;
 	Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
 
@@ -251,6 +261,10 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> 
 }
 
 void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping SendCameraEntity.");
+		return;
+	}
 	const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
 	if (!s_CurrentCamera) {
@@ -294,6 +308,10 @@ void EditorServer::SendError(EditorServer::WebSocket* p_Socket, std::string p_Me
 }
 
 void EditorServer::OnEntitySelected(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping OnEntitySelected.");
+		return;
+	}
 	if (!m_Loop) {
 		return;
 	}
@@ -323,6 +341,10 @@ void EditorServer::OnEntitySelected(ZEntityRef p_Entity, std::optional<std::stri
 }
 
 void EditorServer::OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping OnEntityTransformChanged.");
+		return;
+	}
 	if (!m_Loop) {
 		return;
 	}
@@ -347,6 +369,10 @@ void EditorServer::OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<s
 }
 
 void EditorServer::OnEntityNameChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping OnEntityNameChanged.");
+		return;
+	}
 	if (!m_Loop) {
 		return;
 	}
@@ -371,6 +397,10 @@ void EditorServer::OnEntityNameChanged(ZEntityRef p_Entity, std::optional<std::s
 }
 
 void EditorServer::OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyId, std::optional<std::string> p_ByClient) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping OnEntityPropertySet.");
+		return;
+	}
 	if (!m_Loop) {
 		return;
 	}
@@ -431,6 +461,10 @@ void EditorServer::OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyI
 }
 
 void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping OnSceneLoading.");
+		return;
+	}
 	if (!m_Loop) {
 		return;
 	}
@@ -469,6 +503,10 @@ void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<
 }
 
 void EditorServer::OnSceneClearing(bool p_ForReload) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping OnSceneClearing.");
+		return;
+	}
 	if (!m_Loop) {
 		return;
 	}
@@ -492,6 +530,10 @@ void EditorServer::OnSceneClearing(bool p_ForReload) {
 }
 
 void EditorServer::OnEntityTreeRebuilt() {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping OnEntityTreeRebuilt.");
+		return;
+	}
 	if (!m_Loop) {
 		return;
 	}
@@ -511,7 +553,25 @@ void EditorServer::OnEntityTreeRebuilt() {
 	});
 }
 
+void EditorServer::SetEnabled(bool p_Enabled) {
+	m_Enabled = p_Enabled;
+	if (p_Enabled) {
+		Logger::Info("Enabling EditorServer");
+	} else {
+		Logger::Info("Disabling EditorServer");
+	}
+}
+
+bool EditorServer::GetEnabled() {
+	return m_Enabled;
+}
+
+
 void EditorServer::SendEntityList(EditorServer::WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping SendEntityList.");
+		return;
+	}
 	std::ostringstream s_EventStream;
 
 	s_EventStream << "{";
@@ -582,6 +642,10 @@ void EditorServer::SendEntityList(EditorServer::WebSocket* p_Socket, std::shared
 }
 
 void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId) {
+	if (!m_Enabled) {
+		Logger::Info("EditorServer disabled. Skipping SendEntityDetails.");
+		return;
+	}
 	if (!p_Entity) {
 		throw std::runtime_error("Could not find entity for the given selector.");
 	}
