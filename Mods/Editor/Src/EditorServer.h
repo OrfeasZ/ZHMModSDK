@@ -38,6 +38,8 @@ public:
 	void OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks);
 	void OnSceneClearing(bool p_ForReload);
 	void OnEntityTreeRebuilt();
+	void SetEnabled(bool p_Enabled);
+	bool GetEnabled();
 
 private:
 	static void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);
@@ -76,4 +78,5 @@ private:
 	uWS::Loop* m_Loop;
 	std::vector<SocketUserData*> m_SocketUserDatas;
 	std::jthread m_ServerThread;
+	static bool m_Enabled;
 };

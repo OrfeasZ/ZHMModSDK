@@ -81,6 +81,8 @@ private:
 
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
+	void ToggleEditorServerEnabled();
+
 	// Properties
 	void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 

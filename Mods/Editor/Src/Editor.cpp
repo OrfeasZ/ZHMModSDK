@@ -98,6 +98,11 @@ void Editor::Init()
 
 void Editor::OnDrawMenu()
 {
+	bool s_ServerEnabled = m_Server.GetEnabled();
+	if (ImGui::Checkbox("EDITOR SERVER ENABLED", &s_ServerEnabled)) {
+		ToggleEditorServerEnabled();
+	}
+
     /*if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR"))
     {
         const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
@@ -154,6 +159,10 @@ void Editor::OnDrawMenu()
     }*/
 }
 
+
+void Editor::ToggleEditorServerEnabled() {
+	m_Server.SetEnabled(!m_Server.GetEnabled());
+}
 
 void Editor::CopyToClipboard(const std::string& p_String) const
 {
