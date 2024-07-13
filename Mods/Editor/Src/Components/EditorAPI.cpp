@@ -10,10 +10,11 @@
 
 #include <queue>
 #include <utility>
+#include <spdlog/fmt/ostr.h>
 
 ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
-
+	
 	if (!m_CachedEntityTree) {
 		return {};
 	}
@@ -31,7 +32,7 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 
 	// Otherwise we're selecting from the entity tree.
 	const ZRuntimeResourceID s_TBLU = p_Selector.TbluHash.value();
-
+	
 	// Create a queue and add the root to it.
 	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
 	s_NodeQueue.push(m_CachedEntityTree);
@@ -87,6 +88,27 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 
 	return {};
 }
+std::vector<std::string> Editor::FindBrickHashes() {
+	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+
+	if (!m_CachedEntityTree) {
+		return {};
+	}
+	std::vector<std::string> s_ExcludedTbluHashes{"0073C696B21A86BE", "009F148C918537E7", "004D99E9BEC3EA51", "00E738E7CF7A35E1"};
+	std::vector<std::string> s_Hashes;
+	for (auto& childPair: m_CachedEntityTree->Children) {
+		std::shared_ptr<EntityTreeNode> s_Node = childPair.second;
+		auto s_Tblu= reinterpret_cast<ZTemplateEntityBlueprintFactory*>((s_Node.get()->Entity).GetBlueprintFactory());
+		std::string s_Hash = std::format("{:08X}{:08X}", s_Tblu->m_ridResource.m_IDHigh, s_Tblu->m_ridResource.m_IDLow);
+		if (s_Node->Children.empty() ||
+			std::find(s_ExcludedTbluHashes.begin(), s_ExcludedTbluHashes.end(), s_Hash) != s_ExcludedTbluHashes.end()) {
+			continue;
+		}
+		Logger::Info("Found Brick Blueprint hash: '{}'", s_Hash);
+		s_Hashes.push_back(s_Hash);
+	}
+	return s_Hashes;
+}
 
 std::vector <std::pair<std::string, ZEntityRef>> Editor::FindPrims(std::vector<EntitySelector> p_Selectors) {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
@@ -115,7 +137,9 @@ std::vector <std::pair<std::string, ZEntityRef>> Editor::FindPrims(std::vector<E
 		auto s_Node = s_NodeQueue.front();
 		s_NodeQueue.pop();
 		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
-		char * s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
+		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
+		std::string s_HashString = std::format("RuntimeResId<{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
+		Logger::Info("Found PRIM: '{}'", s_HashString);
 
 		if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
 			if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
@@ -130,6 +154,42 @@ std::vector <std::pair<std::string, ZEntityRef>> Editor::FindPrims(std::vector<E
 					}
 				}
 			}
+		}
+
+		// Add children to the queue.
+		for (auto& childPair: s_Node->Children) {
+			s_NodeQueue.push(childPair.second);
+		}
+	}
+
+	return entities;
+}
+
+std::vector<std::pair<std::string, ZEntityRef>> Editor::FindPfBoxEntities() {
+	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+
+	if (!m_CachedEntityTree) {
+		return {};
+	}
+	std::vector<std::pair<std::string, ZEntityRef>> entities;
+	const char* s_PFBOXENTITY_TYPE = "ZPFBoxEntity";
+
+	Logger::Info("Getting PfBoxEntities:");
+	// Create a queue and add the root to it.
+	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
+	s_NodeQueue.push(m_CachedEntityTree);
+
+	// Keep iterating through the tree until we find the nodes we're looking for.
+	while (!s_NodeQueue.empty()) {
+		// Access the first node in the queue
+		auto s_Node = s_NodeQueue.front();
+		s_NodeQueue.pop();
+		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
+		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
+
+		if (strcmp(s_EntityType, s_PFBOXENTITY_TYPE) == 0) {
+			Logger::Info("Found PfBoxEntity: 00724CDE424AFE76");
+			entities.push_back(std::pair<std::string, ZEntityRef>{"00724CDE424AFE76", s_Node->Entity});
 		}
 
 		// Add children to the queue.

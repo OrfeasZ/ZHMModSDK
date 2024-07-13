@@ -51,6 +51,7 @@ private:
 	static void SendEntityList(WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId);
 	static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
 	static void SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pair<std::string, ZEntityRef>> p_Entities);
+	static void SendBrickHashes(WebSocket* p_Socket, std::vector<std::string> p_BrickHashes);
 
 	static void WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_Entity);
 	static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);

@@ -192,9 +192,21 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 		SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
 		Plugin()->UnlockEntityTree();
 	}
+	else if (s_Type == "getBrickHashes") {
+		Plugin()->LockEntityTree();
+		std::vector<std::string> s_BrickHashes = Plugin()->FindBrickHashes();
+		SendBrickHashes(p_Socket, s_BrickHashes);
+		Plugin()->UnlockEntityTree();
+	}
 	else if (s_Type == "listPrimEntities") {
 		Plugin()->LockEntityTree();
 		std::vector<std::pair<std::string, ZEntityRef>> s_Entities = Plugin()->FindPrims(ReadPrimEntitySelectors(s_JsonMsg["prims"]));
+		SendEntitiesDetails(p_Socket, s_Entities);
+		Plugin()->UnlockEntityTree();
+	}
+	else if (s_Type == "listPfBoxEntities") {
+		Plugin()->LockEntityTree();
+		std::vector<std::pair<std::string, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
@@ -674,23 +686,39 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
 	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pair<std::string, ZEntityRef>> p_Entities) {
-	if (p_Entities.empty()) {
-		throw std::runtime_error("Could not find entities for the given selectors.");
+void EditorServer::SendBrickHashes(WebSocket* p_Socket, std::vector<std::string> p_BrickHashes) {
+	if (p_BrickHashes.empty()) {
+		throw std::runtime_error("Could not find bricks.");
 	}
 
-	Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
-
-
-	for (std::pair<std::string, ZEntityRef> p_Entity: p_Entities) {
+	for (std::string p_BrickHash: p_BrickHashes) {
+		Logger::Info("Sending brick hash '{}'", p_BrickHash);
 		std::ostringstream s_Event;
-		s_Event << "{" << write_json("primHash") << ":";
-		s_Event << write_json(p_Entity.first) << ",";
-		s_Event << write_json("entity") << ":";
-		WriteEntityTransforms(s_Event, p_Entity.second);
+		s_Event << "{" << write_json("brickHash") << ":";
+		s_Event << write_json(p_BrickHash);
 		s_Event << "}";
 		Logger::Info("Message that should be sent: {}", s_Event.str());
 		p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+	}
+	p_Socket->send("Done sending brick hashes.", uWS::OpCode::TEXT);
+}
+
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pair<std::string, ZEntityRef>> p_Entities) {
+	if (!p_Entities.empty()) {
+		Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
+
+		for (std::pair<std::string, ZEntityRef> p_Entity: p_Entities) {
+			std::ostringstream s_Event;
+			s_Event << "{" << write_json("hash") << ":";
+			s_Event << write_json(p_Entity.first) << ",";
+			s_Event << write_json("entity") << ":";
+			WriteEntityTransforms(s_Event, p_Entity.second);
+			s_Event << "}";
+			Logger::Info("Message that should be sent: {}", s_Event.str());
+			p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+		}
+	} else {
+		Logger::Info("No entities found for request.", p_Entities.size());
 	}
 	p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
 }
@@ -742,6 +770,11 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_En
 	const auto s_EntityType = p_Entity->GetType();
 
 	const std::string s_ScalePropertyName = "m_PrimitiveScale";
+	const std::string s_TypePropertyName = "m_eType";
+	const std::string s_GlobalSizePropertyName = "m_vGlobalSize";
+	
+	const auto& s_Interfaces = *p_Entity.GetEntity()->GetType()->m_pInterfaces;
+	char* s_EntityTypeFirstInterface = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
 
 	if (s_EntityType && s_EntityType->m_pProperties01) {
 		for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
@@ -762,11 +795,29 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_En
 						p_Stream << write_json("scale");
 						p_Stream << ":";
 						WriteProperty(p_Stream, p_Entity, s_Property);
+					} else if (s_PropertyNameView == s_TypePropertyName) {
+						p_Stream << write_json("type");
+						p_Stream << ":";
+						WriteProperty(p_Stream, p_Entity, s_Property);
+						p_Stream << ",";
+					} else if (s_PropertyNameView == s_GlobalSizePropertyName) {
+						p_Stream << write_json("size");
+						p_Stream << ":";
+						WriteProperty(p_Stream, p_Entity, s_Property);
 					}
 				}
 			} else if (s_PropertyInfo->m_pName) {
 				if (s_PropertyInfo->m_pName == s_ScalePropertyName) {
 					p_Stream << write_json("scale");
+					p_Stream << ":";
+					WriteProperty(p_Stream, p_Entity, s_Property);
+				} else if (s_PropertyInfo->m_pName == s_TypePropertyName) {
+					p_Stream << write_json("type");
+					p_Stream << ":";
+					WriteProperty(p_Stream, p_Entity, s_Property);
+					p_Stream << ",";
+				} else if (s_PropertyInfo->m_pName == s_GlobalSizePropertyName) {
+					p_Stream << write_json("size");
 					p_Stream << ":";
 					WriteProperty(p_Stream, p_Entity, s_Property);
 				}
