@@ -50,6 +50,7 @@ public:
 	std::vector<std::string> FindBrickHashes();
 	std::vector<std::pair<std::string, ZEntityRef>> FindPfBoxEntities();
 	void RebuildEntityTree();
+	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas);
 
 private:
     void SpawnCameras();
@@ -151,6 +152,8 @@ private:
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
     bool m_ShouldScrollToEntity = false;
+
+	std::vector<std::vector<SVector3>> m_NavpAreas;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;

@@ -210,6 +210,11 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
+	else if (s_Type == "loadNavp") {
+		simdjson::ondemand::array s_Areas = s_JsonMsg["areas"];
+		Plugin()->LoadNavpAreas(s_Areas);
+		SendDoneLoadingNavpMessage(p_Socket);
+	}
 	else if (s_Type == "getEntityDetails") {
 		const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
 		const auto s_Entity = Plugin()->FindEntity(s_Selector);
@@ -701,6 +706,10 @@ void EditorServer::SendBrickHashes(WebSocket* p_Socket, std::vector<std::string>
 		p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 	}
 	p_Socket->send("Done sending brick hashes.", uWS::OpCode::TEXT);
+}
+
+void EditorServer::SendDoneLoadingNavpMessage(WebSocket* p_Socket) {
+	p_Socket->send("Done loading Navp.", uWS::OpCode::TEXT);
 }
 
 void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pair<std::string, ZEntityRef>> p_Entities) {

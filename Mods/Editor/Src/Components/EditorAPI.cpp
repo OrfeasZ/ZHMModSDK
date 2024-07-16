@@ -88,12 +88,14 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 
 	return {};
 }
+
 std::vector<std::string> Editor::FindBrickHashes() {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
 		return {};
 	}
+	// Exclude menu resources and global data
 	std::vector<std::string> s_ExcludedTbluHashes{"0073C696B21A86BE", "009F148C918537E7", "004D99E9BEC3EA51", "00E738E7CF7A35E1"};
 	std::vector<std::string> s_Hashes;
 	for (auto& childPair: m_CachedEntityTree->Children) {
@@ -310,4 +312,23 @@ void Editor::SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p
 
 void Editor::RebuildEntityTree() {
 	UpdateEntities();
+}
+
+void Editor::LoadNavpAreas(simdjson::ondemand::array p_NavpAreas) {
+	Logger::Info("Loading Navp areas");	
+
+	m_NavpAreas.clear();
+	for (simdjson::ondemand::array s_NavpArea: p_NavpAreas) {
+		std::vector<SVector3> s_Area;
+		for (simdjson::ondemand::array s_NavpPoint: s_NavpArea) {
+			std::vector<double> s_Point;
+			for (double coord: s_NavpPoint) {
+				s_Point.push_back(coord);
+			}
+			SVector3 point{(float) s_Point[0], (float) s_Point[1], (float) s_Point[2]};
+
+			s_Area.push_back(point);
+		}
+		m_NavpAreas.push_back(s_Area);
+	}
 }
