@@ -314,10 +314,12 @@ void Editor::RebuildEntityTree() {
 	UpdateEntities();
 }
 
-void Editor::LoadNavpAreas(simdjson::ondemand::array p_NavpAreas) {
+void Editor::LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex) {
 	Logger::Info("Loading Navp areas");	
 
-	m_NavpAreas.clear();
+	if (p_ChunkIndex == 0) {
+		m_NavpAreas.clear();
+	}
 	for (simdjson::ondemand::array s_NavpArea: p_NavpAreas) {
 		std::vector<SVector3> s_Area;
 		for (simdjson::ondemand::array s_NavpPoint: s_NavpArea) {

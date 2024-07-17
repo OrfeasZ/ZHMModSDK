@@ -211,9 +211,13 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 		Plugin()->UnlockEntityTree();
 	}
 	else if (s_Type == "loadNavp") {
+		uint64_t s_ChunkIndex = s_JsonMsg["chunk"];
+		uint64_t s_ChunkCount = s_JsonMsg["chunkCount"];
 		simdjson::ondemand::array s_Areas = s_JsonMsg["areas"];
-		Plugin()->LoadNavpAreas(s_Areas);
-		SendDoneLoadingNavpMessage(p_Socket);
+		Plugin()->LoadNavpAreas(s_Areas, s_ChunkIndex);
+		if (s_ChunkIndex == s_ChunkCount - 1) {
+			SendDoneLoadingNavpMessage(p_Socket);
+		}
 	}
 	else if (s_Type == "getEntityDetails") {
 		const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);

@@ -50,7 +50,7 @@ public:
 	std::vector<std::string> FindBrickHashes();
 	std::vector<std::pair<std::string, ZEntityRef>> FindPfBoxEntities();
 	void RebuildEntityTree();
-	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas);
+	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
 
 private:
     void SpawnCameras();
