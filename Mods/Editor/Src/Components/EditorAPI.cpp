@@ -150,10 +150,10 @@ std::vector <std::pair<std::string, ZEntityRef>> Editor::FindPrims(std::vector<E
 					const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
 					std::string s_PrimHashString{std::format("{:016X}", s_PrimHash)};
 
-					if (std::find(s_selectorPrimHashes.begin(), s_selectorPrimHashes.end(), s_PrimHashString) != s_selectorPrimHashes.end()) {
-						Logger::Info("Found PRIM: '{}'", s_PrimHashString);
-						entities.push_back(std::pair<std::string, ZEntityRef>{s_PrimHashString, s_Node->Entity});
-					}
+					//if (std::find(s_selectorPrimHashes.begin(), s_selectorPrimHashes.end(), s_PrimHashString) != s_selectorPrimHashes.end()) {
+					//	Logger::Info("Found PRIM: '{}'", s_PrimHashString);
+					entities.push_back(std::pair<std::string, ZEntityRef>{s_PrimHashString, s_Node->Entity});
+					//}
 				}
 			}
 		}

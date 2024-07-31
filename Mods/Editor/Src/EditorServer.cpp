@@ -716,11 +716,97 @@ void EditorServer::SendDoneLoadingNavpMessage(WebSocket* p_Socket) {
 	p_Socket->send("Done loading Navp.", uWS::OpCode::TEXT);
 }
 
+int GetPropertyValue(const auto* s_Property, ZEntityRef& p_Entity) {
+
+	const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+
+	if (!s_PropertyInfo || !s_PropertyInfo->m_pType) {
+		return -1;
+	}
+
+	const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + s_Property->m_nOffset;
+	const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
+	const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+	const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+
+	// Get the value of the property.
+	auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
+
+	if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
+		s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
+	else
+		s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(s_Data, reinterpret_cast<void*>(s_PropertyAddress));
+
+	auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
+	(*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
+
+	if (!s_JsonProperty) {
+		return -1;
+	}
+
+	std::string_view s_PropertyValue = std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize);
+	int value = s_PropertyValue == "true";
+	HM3_FreeJsonString(s_JsonProperty);
+	return value;
+}
+
+bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
+	////// Check if m_bRemovePhysics is true. If it is true, skip this entity.
+	const auto s_EntityType = p_Entity->GetType();
+	const std::string s_RemovePhysicsPropertyName = "m_bRemovePhysics";
+	const std::string s_VisiblePropertyName = "m_bVisible";
+	bool s_SkipPrim = false;
+	if (s_EntityType && s_EntityType->m_pProperties01) {
+		for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
+			ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+			const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+
+			if (!s_PropertyInfo || !s_PropertyInfo->m_pType || !s_PropertyInfo->m_pType->typeInfo()) {
+				continue;
+			}
+
+			if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+				// Some properties don't have a name for some reason. Try to find using RL.
+				const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+				if (s_PropertyName.Size > 0) {
+					std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
+					if (s_PropertyNameView == s_RemovePhysicsPropertyName) {
+						if (GetPropertyValue(s_Property, p_Entity) == 1) {
+							return true;
+						}
+					} else if (s_PropertyNameView == s_VisiblePropertyName) {
+						if (GetPropertyValue(s_Property, p_Entity) == 0) {
+							return true;
+						}
+					}
+				}
+			} else if (s_PropertyInfo->m_pName) {
+				if (s_PropertyInfo->m_pName == s_RemovePhysicsPropertyName) {
+					if (GetPropertyValue(s_Property, p_Entity) == 1) {
+						return true;
+					}
+				} else if (s_PropertyInfo->m_pName == s_VisiblePropertyName) {
+					if (GetPropertyValue(s_Property, p_Entity) == 0) {
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
+
 void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pair<std::string, ZEntityRef>> p_Entities) {
 	if (!p_Entities.empty()) {
 		Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
 
 		for (std::pair<std::string, ZEntityRef> p_Entity: p_Entities) {
+			bool s_SkipPrim = ExcludeFromNavMeshExport(p_Entity.second);
+			if (s_SkipPrim) {
+				continue;
+			}
+
 			std::ostringstream s_Event;
 			s_Event << "{" << write_json("hash") << ":";
 			s_Event << write_json(p_Entity.first) << ",";
@@ -786,9 +872,6 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_En
 	const std::string s_TypePropertyName = "m_eType";
 	const std::string s_GlobalSizePropertyName = "m_vGlobalSize";
 	
-	const auto& s_Interfaces = *p_Entity.GetEntity()->GetType()->m_pInterfaces;
-	char* s_EntityTypeFirstInterface = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
-
 	if (s_EntityType && s_EntityType->m_pProperties01) {
 		for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
 			ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
