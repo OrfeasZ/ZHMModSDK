@@ -192,15 +192,9 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 		SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
 		Plugin()->UnlockEntityTree();
 	}
-	else if (s_Type == "getBrickHashes") {
+	else if (s_Type == "listAlocEntities") {
 		Plugin()->LockEntityTree();
-		std::vector<std::string> s_BrickHashes = Plugin()->FindBrickHashes();
-		SendBrickHashes(p_Socket, s_BrickHashes);
-		Plugin()->UnlockEntityTree();
-	}
-	else if (s_Type == "listPrimEntities") {
-		Plugin()->LockEntityTree();
-		std::vector<std::pair<std::string, ZEntityRef>> s_Entities = Plugin()->FindPrims(ReadPrimEntitySelectors(s_JsonMsg["prims"]));
+		std::vector<std::pair<std::string, ZEntityRef>> s_Entities = Plugin()->FindPrims();
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
@@ -806,7 +800,6 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pai
 			if (s_SkipPrim) {
 				continue;
 			}
-
 			std::ostringstream s_Event;
 			s_Event << "{" << write_json("hash") << ":";
 			s_Event << write_json(p_Entity.first) << ",";

@@ -89,30 +89,98 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 	return {};
 }
 
-std::vector<std::string> Editor::FindBrickHashes() {
-	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 
-	if (!m_CachedEntityTree) {
-		return {};
-	}
-	// Exclude menu resources and global data
-	std::vector<std::string> s_ExcludedTbluHashes{"0073C696B21A86BE", "009F148C918537E7", "004D99E9BEC3EA51", "00E738E7CF7A35E1"};
-	std::vector<std::string> s_Hashes;
-	for (auto& childPair: m_CachedEntityTree->Children) {
-		std::shared_ptr<EntityTreeNode> s_Node = childPair.second;
-		auto s_Tblu= reinterpret_cast<ZTemplateEntityBlueprintFactory*>((s_Node.get()->Entity).GetBlueprintFactory());
-		std::string s_Hash = std::format("{:08X}{:08X}", s_Tblu->m_ridResource.m_IDHigh, s_Tblu->m_ridResource.m_IDLow);
-		if (s_Node->Children.empty() ||
-			std::find(s_ExcludedTbluHashes.begin(), s_ExcludedTbluHashes.end(), s_Hash) != s_ExcludedTbluHashes.end()) {
-			continue;
+
+	const auto s_EntityType = s_SelectedEntity->GetType();
+	std::string s_AlocHash = "";
+	if (s_EntityType && s_EntityType->m_pProperties01) {
+		for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
+			ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+			const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+
+			if (!s_PropertyInfo || !s_PropertyInfo->m_pType)
+				continue;
+
+			const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(s_SelectedEntity.m_pEntity) + s_Property->m_nOffset;
+			const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
+			const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+
+			// Get the value of the property.
+			auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
+
+			if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
+				s_PropertyInfo->get(
+				    reinterpret_cast<void*>(s_PropertyAddress),
+				    s_Data,
+				    s_PropertyInfo->m_nOffset);
+			} else {
+				s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+				    s_Data,
+				    reinterpret_cast<void*>(s_PropertyAddress));
+			}
+
+			const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+			const std::string s_InputId = std::format("##Property{}", i);
+
+			const char* s_COLLISION_RESOURCE_ID_PROPERTY_NAME = "m_CollisionResourceID";
+			
+			if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+				// Some properties don't have a name for some reason. Try to find using RL.
+				const auto s_PropertyNameView = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+				if (s_PropertyNameView.Size > 0) {
+					//Logger::Info("Property Name: {}", std::string(s_PropertyNameView.Data, s_PropertyNameView.Size).c_str());
+
+					if (std::string(s_PropertyNameView.Data, s_PropertyNameView
+						.Size) != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
+						continue;
+					} else {
+						Logger::Info("Property Name: {}", std::string(s_PropertyNameView.Data, s_PropertyNameView.Size).c_str());
+					}
+					
+				}
+			}
+			//else {
+			//	Logger::Info("Property Name: {}", s_PropertyInfo->m_pName);
+			//	if (s_PropertyInfo->m_pName != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
+			//		//continue;
+			//	}
+			//}
+
+			// Render the value of the property.
+			/*if (s_TypeName == "ZString") {
+				auto* s_RealData = static_cast<ZString*>(s_Data);
+
+				static char s_StringBuffer[65536] = {};
+				const auto s_StringSize = min(s_RealData->size(), sizeof(s_StringBuffer) - 1);
+
+				memcpy(s_StringBuffer, s_RealData->c_str(), s_StringSize);
+				s_StringBuffer[s_StringSize] = '\0';
+				Logger::Info("Found ALOC ZString: {}", s_InputId.c_str());
+				s_AlocHash = s_InputId.c_str();
+			} else */
+			if (s_PropertyInfo->m_pType->typeInfo()->isResource()) {
+				auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
+				std::string s_ResourceName = "null";
+
+				if (s_Resource && s_Resource->m_nResourceIndex >= 0) {
+					//fmt::format("RuntimeResId<{:08X}{:08X}>", p_Value.m_IDHigh, p_Value.m_IDLow)
+					s_ResourceName = fmt::format("{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh, s_Resource->GetResourceInfo().rid.m_IDLow);
+				}
+
+				Logger::Info("Found ALOC Resource: {}", s_ResourceName.c_str());
+				if (s_ResourceName.c_str() != "" && s_ResourceName.c_str() != NULL) {
+					return s_ResourceName.c_str();
+				}
+			}
 		}
-		Logger::Info("Found Brick Blueprint hash: '{}'", s_Hash);
-		s_Hashes.push_back(s_Hash);
 	}
-	return s_Hashes;
+
+	return "";
 }
 
-std::vector <std::pair<std::string, ZEntityRef>> Editor::FindPrims(std::vector<EntitySelector> p_Selectors) {
+std::vector<std::pair<std::string, ZEntityRef>> Editor::FindPrims() {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
@@ -120,47 +188,42 @@ std::vector <std::pair<std::string, ZEntityRef>> Editor::FindPrims(std::vector<E
 	}
 	std::vector<std::pair<std::string, ZEntityRef>> entities;
 
-
 	// Create a queue and add the root to it.
-	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
-	s_NodeQueue.push(m_CachedEntityTree);
+	std::queue<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodeQueue;
+	s_NodeQueue.push(std::pair(std::shared_ptr<EntityTreeNode>(), m_CachedEntityTree));
 	const char* s_GEOMENTITY_TYPE = "ZGeomEntity";
 	std::vector<std::string> s_selectorPrimHashes;
-	for (EntitySelector p_Selector: p_Selectors) {
-		if (!p_Selector.PrimHash.has_value()) {
-			continue;
-		}
-		s_selectorPrimHashes.push_back(p_Selector.PrimHash.value());
-	}
 
-	// Keep iterating through the tree until we find the nodes we're looking for.
+	// Keep iterating through the tree until we find all the prims.
 	while (!s_NodeQueue.empty()) {
 		// Access the first node in the queue
-		auto s_Node = s_NodeQueue.front();
+		auto s_Parent = s_NodeQueue.front().first;
+		auto s_Node = s_NodeQueue.front().second;
 		s_NodeQueue.pop();
+		
+
 		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
 		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
-		std::string s_HashString = std::format("RuntimeResId<{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
-		Logger::Info("Found PRIM: '{}'", s_HashString);
-
 		if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
 			if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
 				if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
-					const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
-					const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
-					std::string s_PrimHashString{std::format("{:016X}", s_PrimHash)};
+					std::string s_collision_ioi_string = getCollisionHash(s_Node->Entity);//GetCollisionPropertyValue(s_Node->Entity);
+					if (!s_collision_ioi_string.empty()) {
+						std::string s_HashString = std::format("Node TBLU <{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
+						const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
+						const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
+						std::string s_PrimHashString{std::format("{:016X}", s_PrimHash)};
+						Logger::Info("Found PRIM with collision: '{}' '{}' '{}'", s_HashString, s_PrimHashString, s_collision_ioi_string);
 
-					//if (std::find(s_selectorPrimHashes.begin(), s_selectorPrimHashes.end(), s_PrimHashString) != s_selectorPrimHashes.end()) {
-					//	Logger::Info("Found PRIM: '{}'", s_PrimHashString);
-					entities.push_back(std::pair<std::string, ZEntityRef>{s_PrimHashString, s_Node->Entity});
-					//}
+						entities.push_back(std::pair<std::string, ZEntityRef>{s_collision_ioi_string, s_Node->Entity});
+					}
 				}
 			}
 		}
 
 		// Add children to the queue.
 		for (auto& childPair: s_Node->Children) {
-			s_NodeQueue.push(childPair.second);
+			s_NodeQueue.push(std::pair(s_Node, childPair.second));
 		}
 	}
 

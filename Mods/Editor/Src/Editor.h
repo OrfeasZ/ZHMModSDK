@@ -46,8 +46,8 @@ public:
 	std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
 	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
 	ZEntityRef FindEntity(EntitySelector p_Selector);
-	std::vector<std::pair<std::string, ZEntityRef>> FindPrims(std::vector<EntitySelector> p_Selectors);
-	std::vector<std::string> FindBrickHashes();
+	std::string getCollisionHash(auto s_SelectedEntity);
+	std::vector<std::pair<std::string, ZEntityRef>> FindPrims();
 	std::vector<std::pair<std::string, ZEntityRef>> FindPfBoxEntities();
 	void RebuildEntityTree();
 	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
