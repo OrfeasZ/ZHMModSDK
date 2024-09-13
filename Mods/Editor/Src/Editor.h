@@ -66,7 +66,9 @@ private:
 
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
-    bool SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId);
+	void SearchForEntityByIdPressed(const char* s_EntitySearchInput);
+	static int SearchForEntityByIdChanged(ImGuiInputTextCallbackData* data);
+	bool SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId);
     bool SearchForEntityByType(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName);
     bool SearchForEntityByName(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName);
 	void UpdateEntities();
@@ -152,6 +154,9 @@ private:
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
     bool m_ShouldScrollToEntity = false;
+
+	int m_SearchForEntityByIdIndex = -1;
+	int m_SearchForEntityByIdType = -1;
 
 	std::vector<std::vector<SVector3>> m_NavpAreas;
 

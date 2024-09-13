@@ -90,8 +90,6 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 }
 
 std::string Editor::getCollisionHash(auto s_SelectedEntity) {
-
-
 	const auto s_EntityType = s_SelectedEntity->GetType();
 	std::string s_AlocHash = "";
 	if (s_EntityType && s_EntityType->m_pProperties01) {
@@ -130,48 +128,24 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 				const auto s_PropertyNameView = HM3_GetPropertyName(s_Property->m_nPropertyId);
 
 				if (s_PropertyNameView.Size > 0) {
-					//Logger::Info("Property Name: {}", std::string(s_PropertyNameView.Data, s_PropertyNameView.Size).c_str());
-
 					if (std::string(s_PropertyNameView.Data, s_PropertyNameView
 						.Size) != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
 						continue;
 					} else {
 						Logger::Info("Property Name: {}", std::string(s_PropertyNameView.Data, s_PropertyNameView.Size).c_str());
+						auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
+						std::string s_ResourceName = "null";
+
+						if (s_Resource && s_Resource->m_nResourceIndex >= 0) {
+							s_ResourceName = fmt::format("{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh, s_Resource->GetResourceInfo().rid.m_IDLow);
+						}
+
+						Logger::Info("Found ALOC Resource: {}", s_ResourceName.c_str());
+						if (s_ResourceName.c_str() != "" && s_ResourceName.c_str() != NULL && s_ResourceName.c_str() != "null") { 
+							return s_ResourceName.c_str();
+						}
 					}
 					
-				}
-			}
-			//else {
-			//	Logger::Info("Property Name: {}", s_PropertyInfo->m_pName);
-			//	if (s_PropertyInfo->m_pName != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
-			//		//continue;
-			//	}
-			//}
-
-			// Render the value of the property.
-			/*if (s_TypeName == "ZString") {
-				auto* s_RealData = static_cast<ZString*>(s_Data);
-
-				static char s_StringBuffer[65536] = {};
-				const auto s_StringSize = min(s_RealData->size(), sizeof(s_StringBuffer) - 1);
-
-				memcpy(s_StringBuffer, s_RealData->c_str(), s_StringSize);
-				s_StringBuffer[s_StringSize] = '\0';
-				Logger::Info("Found ALOC ZString: {}", s_InputId.c_str());
-				s_AlocHash = s_InputId.c_str();
-			} else */
-			if (s_PropertyInfo->m_pType->typeInfo()->isResource()) {
-				auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
-				std::string s_ResourceName = "null";
-
-				if (s_Resource && s_Resource->m_nResourceIndex >= 0) {
-					//fmt::format("RuntimeResId<{:08X}{:08X}>", p_Value.m_IDHigh, p_Value.m_IDLow)
-					s_ResourceName = fmt::format("{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh, s_Resource->GetResourceInfo().rid.m_IDLow);
-				}
-
-				Logger::Info("Found ALOC Resource: {}", s_ResourceName.c_str());
-				if (s_ResourceName.c_str() != "" && s_ResourceName.c_str() != NULL) {
-					return s_ResourceName.c_str();
 				}
 			}
 		}
@@ -192,6 +166,7 @@ std::vector<std::pair<std::string, ZEntityRef>> Editor::FindPrims() {
 	std::queue<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodeQueue;
 	s_NodeQueue.push(std::pair(std::shared_ptr<EntityTreeNode>(), m_CachedEntityTree));
 	const char* s_GEOMENTITY_TYPE = "ZGeomEntity";
+	const char* s_PURE_WATER_TYPE = "ZPureWaterAspect";
 	std::vector<std::string> s_selectorPrimHashes;
 
 	// Keep iterating through the tree until we find all the prims.
@@ -207,15 +182,28 @@ std::vector<std::pair<std::string, ZEntityRef>> Editor::FindPrims() {
 		if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
 			if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
 				if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
-					std::string s_collision_ioi_string = getCollisionHash(s_Node->Entity);//GetCollisionPropertyValue(s_Node->Entity);
-					if (!s_collision_ioi_string.empty()) {
+					std::string s_collision_ioi_string = getCollisionHash(s_Node->Entity);
+					if (!s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
 						std::string s_HashString = std::format("Node TBLU <{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
 						const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
 						const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
 						std::string s_PrimHashString{std::format("{:016X}", s_PrimHash)};
-						Logger::Info("Found PRIM with collision: '{}' '{}' '{}'", s_HashString, s_PrimHashString, s_collision_ioi_string);
+						bool s_Skip = false;
+						for (auto s_Interface: s_Interfaces) {
+							if (s_Interface.m_pTypeId->typeInfo() != NULL) {
+								char* s_EntityType = s_Interface.m_pTypeId->typeInfo()->m_pTypeName;
+								if (strcmp(s_EntityType, s_PURE_WATER_TYPE) == 0) {
+									s_Skip = true;
+									Logger::Info("Skipping PRIM with ZPureWaterAspect type: '{}' '{}' '{}'", s_HashString, s_PrimHashString, s_collision_ioi_string);
+									break;
+								}
+							}
+						}
+						if (!s_Skip) {
+							Logger::Info("Found PRIM with collision: '{}' '{}' '{}'", s_HashString, s_PrimHashString, s_collision_ioi_string);
 
-						entities.push_back(std::pair<std::string, ZEntityRef>{s_collision_ioi_string, s_Node->Entity});
+							entities.push_back(std::pair<std::string, ZEntityRef>{s_collision_ioi_string, s_Node->Entity});
+						}
 					}
 				}
 			}
