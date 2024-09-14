@@ -50,10 +50,10 @@ private:
 	static void SendError(WebSocket* p_Socket, std::string p_Message, std::optional<int64_t> p_MessageId);
 	static void SendEntityList(WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId);
 	static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
-	static void SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pair<std::string, ZEntityRef>> p_Entities);
+	static void SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> p_Entities);
 	static void SendBrickHashes(WebSocket* p_Socket, std::vector<std::string> p_BrickHashes);
 	static void SendDoneLoadingNavpMessage(WebSocket* p_Socket);
-	static void WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_Entity);
+	static void WriteEntityTransforms(std::ostream& p_Stream, EulerAngles p_EulerAngles, ZEntityRef p_Entity);
 	static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);
 	static void WriteVector3(std::ostream& p_Stream, double p_X, double p_Y, double p_Z);
 	static void WriteRotation(std::ostream& p_Stream, double p_Yaw, double p_Pitch, double p_Roll);

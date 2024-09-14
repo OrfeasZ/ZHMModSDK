@@ -47,10 +47,11 @@ public:
 	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
 	ZEntityRef FindEntity(EntitySelector p_Selector);
 	std::string getCollisionHash(auto s_SelectedEntity);
-	std::vector<std::pair<std::string, ZEntityRef>> FindPrims();
-	std::vector<std::pair<std::string, ZEntityRef>> FindPfBoxEntities();
+	std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> FindPrims();
+	std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> FindPfBoxEntities();
 	void RebuildEntityTree();
 	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
+	static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
     void SpawnCameras();
@@ -117,8 +118,6 @@ private:
 	void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
 	void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-
-	static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 	static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
 private:

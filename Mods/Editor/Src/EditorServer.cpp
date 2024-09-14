@@ -194,13 +194,13 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	}
 	else if (s_Type == "listAlocEntities") {
 		Plugin()->LockEntityTree();
-		std::vector<std::pair<std::string, ZEntityRef>> s_Entities = Plugin()->FindPrims();
+		std::vector < std::tuple< std::string, EulerAngles, ZEntityRef >> s_Entities = Plugin()->FindPrims();
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
 	else if (s_Type == "listPfBoxEntities") {
 		Plugin()->LockEntityTree();
-		std::vector<std::pair<std::string, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
+		std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
@@ -791,20 +791,20 @@ bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
 	return false;
 }
 
-void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pair<std::string, ZEntityRef>> p_Entities) {
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> p_Entities) {
 	if (!p_Entities.empty()) {
 		Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
 
-		for (std::pair<std::string, ZEntityRef> p_Entity: p_Entities) {
-			bool s_SkipPrim = ExcludeFromNavMeshExport(p_Entity.second);
+		for (std::tuple<std::string, EulerAngles, ZEntityRef> p_Entity: p_Entities) {
+			bool s_SkipPrim = ExcludeFromNavMeshExport(get<2>(p_Entity));
 			if (s_SkipPrim) {
 				continue;
 			}
 			std::ostringstream s_Event;
 			s_Event << "{" << write_json("hash") << ":";
-			s_Event << write_json(p_Entity.first) << ",";
+			s_Event << write_json(get<0>(p_Entity)) << ",";
 			s_Event << write_json("entity") << ":";
-			WriteEntityTransforms(s_Event, p_Entity.second);
+			WriteEntityTransforms(s_Event, get<1>(p_Entity), get<2>(p_Entity));
 			s_Event << "}";
 			Logger::Info("Message that should be sent: {}", s_Event.str());
 			p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
@@ -815,7 +815,7 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::pai
 	p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
 }
 
-void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_Entity) {
+void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, EulerAngles p_EulerAngles, ZEntityRef p_Entity) {
 	if (!p_Entity) {
 		p_Stream << "null";
 		return;
@@ -841,24 +841,21 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_En
 			p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
 		}
 	}
-
+	//EulerAngles s_WorldMatrixEuler;
 	// Write transform.
 	if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
 		const auto s_Trans = s_Spatial->GetWorldMatrix();
 
 		SMatrix p_Transform = s_Spatial->GetWorldMatrix();
 		const auto s_Decomposed = p_Transform.Decompose();
-		const auto s_Euler = s_Decomposed.Quaternion.ToEuler();
-
+		//s_WorldMatrixEuler = s_Decomposed.Quaternion.ToEuler();
 		p_Stream << write_json("position") << ":";
 		WriteVector3(p_Stream, s_Decomposed.Position.x, s_Decomposed.Position.y, s_Decomposed.Position.z);
 		p_Stream << ",";
-
-		p_Stream << write_json("rotation") << ":";
-		WriteRotation(p_Stream, s_Euler.yaw, s_Euler.pitch, s_Euler.roll);
-		p_Stream << ",";
 	}
-
+	p_Stream << write_json("rotation") << ":";
+	WriteRotation(p_Stream, p_EulerAngles.yaw, p_EulerAngles.pitch, p_EulerAngles.roll);
+	p_Stream << ",";
 	const auto s_EntityType = p_Entity->GetType();
 
 	const std::string s_ScalePropertyName = "m_PrimitiveScale";
@@ -881,17 +878,15 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_En
 				if (s_PropertyName.Size > 0) {
 					std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
 					if (s_PropertyNameView == s_ScalePropertyName) {
-						p_Stream << write_json("scale");
-						p_Stream << ":";
+						p_Stream << write_json("scale") << ":";
 						WriteProperty(p_Stream, p_Entity, s_Property);
-					} else if (s_PropertyNameView == s_TypePropertyName) {
-						p_Stream << write_json("type");
-						p_Stream << ":";
+					}
+					if (s_PropertyNameView == s_TypePropertyName) {
+						p_Stream << write_json("type") << ":";
 						WriteProperty(p_Stream, p_Entity, s_Property);
 						p_Stream << ",";
 					} else if (s_PropertyNameView == s_GlobalSizePropertyName) {
-						p_Stream << write_json("size");
-						p_Stream << ":";
+						p_Stream << write_json("size") << ":";
 						WriteProperty(p_Stream, p_Entity, s_Property);
 					}
 				}
@@ -900,7 +895,8 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, ZEntityRef p_En
 					p_Stream << write_json("scale");
 					p_Stream << ":";
 					WriteProperty(p_Stream, p_Entity, s_Property);
-				} else if (s_PropertyInfo->m_pName == s_TypePropertyName) {
+				}
+				if (s_PropertyInfo->m_pName == s_TypePropertyName) {
 					p_Stream << write_json("type");
 					p_Stream << ":";
 					WriteProperty(p_Stream, p_Entity, s_Property);
