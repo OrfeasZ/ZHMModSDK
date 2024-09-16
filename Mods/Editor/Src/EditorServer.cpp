@@ -194,13 +194,13 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	}
 	else if (s_Type == "listAlocEntities") {
 		Plugin()->LockEntityTree();
-		std::vector < std::tuple< std::string, EulerAngles, ZEntityRef >> s_Entities = Plugin()->FindPrims();
+		std::vector < std::tuple< std::string, Quat, ZEntityRef >> s_Entities = Plugin()->FindPrims();
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
 	else if (s_Type == "listPfBoxEntities") {
 		Plugin()->LockEntityTree();
-		std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
+		std::vector<std::tuple<std::string, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
 		SendEntitiesDetails(p_Socket, s_Entities);
 		Plugin()->UnlockEntityTree();
 	}
@@ -745,7 +745,7 @@ int GetPropertyValue(const auto* s_Property, ZEntityRef& p_Entity) {
 }
 
 bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
-	////// Check if m_bRemovePhysics is true. If it is true, skip this entity.
+	// Check if m_bRemovePhysics is true. If it is true, skip this entity.
 	const auto s_EntityType = p_Entity->GetType();
 	const std::string s_RemovePhysicsPropertyName = "m_bRemovePhysics";
 	const std::string s_VisiblePropertyName = "m_bVisible";
@@ -791,11 +791,11 @@ bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
 	return false;
 }
 
-void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> p_Entities) {
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::string, Quat, ZEntityRef>> p_Entities) {
 	if (!p_Entities.empty()) {
 		Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
 
-		for (std::tuple<std::string, EulerAngles, ZEntityRef> p_Entity: p_Entities) {
+		for (std::tuple<std::string, Quat, ZEntityRef> p_Entity: p_Entities) {
 			bool s_SkipPrim = ExcludeFromNavMeshExport(get<2>(p_Entity));
 			if (s_SkipPrim) {
 				continue;
@@ -815,7 +815,7 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tup
 	p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
 }
 
-void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, EulerAngles p_EulerAngles, ZEntityRef p_Entity) {
+void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity) {
 	if (!p_Entity) {
 		p_Stream << "null";
 		return;
@@ -841,20 +841,18 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, EulerAngles p_E
 			p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
 		}
 	}
-	//EulerAngles s_WorldMatrixEuler;
 	// Write transform.
 	if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
 		const auto s_Trans = s_Spatial->GetWorldMatrix();
 
 		SMatrix p_Transform = s_Spatial->GetWorldMatrix();
 		const auto s_Decomposed = p_Transform.Decompose();
-		//s_WorldMatrixEuler = s_Decomposed.Quaternion.ToEuler();
 		p_Stream << write_json("position") << ":";
 		WriteVector3(p_Stream, s_Decomposed.Position.x, s_Decomposed.Position.y, s_Decomposed.Position.z);
 		p_Stream << ",";
 	}
 	p_Stream << write_json("rotation") << ":";
-	WriteRotation(p_Stream, p_EulerAngles.yaw, p_EulerAngles.pitch, p_EulerAngles.roll);
+	WriteQuat(p_Stream, p_Quat.m.x, p_Quat.m.y, p_Quat.m.z, p_Quat.m.w);
 	p_Stream << ",";
 	const auto s_EntityType = p_Entity->GetType();
 
@@ -1059,6 +1057,15 @@ void EditorServer::WriteRotation(std::ostream& p_Stream, double p_Yaw, double p_
 	p_Stream << write_json("yaw") << ":" << write_json(p_Yaw) << ",";
 	p_Stream << write_json("pitch") << ":" << write_json(p_Pitch) << ",";
 	p_Stream << write_json("roll") << ":" << write_json(p_Roll);
+	p_Stream << "}";
+}
+
+void EditorServer::WriteQuat(std::ostream& p_Stream, double p_x, double p_y, double p_z, double p_w) {
+	p_Stream << "{";
+	p_Stream << write_json("x") << ":" << write_json(p_x) << ",";
+	p_Stream << write_json("y") << ":" << write_json(p_y) << ",";
+	p_Stream << write_json("z") << ":" << write_json(p_z) << ",";
+	p_Stream << write_json("w") << ":" << write_json(p_w);
 	p_Stream << "}";
 }
 

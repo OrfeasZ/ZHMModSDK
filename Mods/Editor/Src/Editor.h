@@ -47,8 +47,8 @@ public:
 	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
 	ZEntityRef FindEntity(EntitySelector p_Selector);
 	std::string getCollisionHash(auto s_SelectedEntity);
-	std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> FindPrims();
-	std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> FindPfBoxEntities();
+	std::vector<std::tuple<std::string, Quat, ZEntityRef>> FindPrims();
+	std::vector<std::tuple<std::string, Quat, ZEntityRef>> FindPfBoxEntities();
 	void RebuildEntityTree();
 	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
 	static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
@@ -113,6 +113,10 @@ private:
 	void SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
 	void SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
+	auto* GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property);
+	Quat GetQuatFromProperty(ZEntityRef p_Entity);
+	Quat GetParentQuat(ZEntityRef p_Entity);
 
 	void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 	void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);

@@ -155,24 +155,12 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 	return "";
 }
 
-float32 Deg2rad(float p_Deg) {
-	return p_Deg * std::numbers::pi / 180.0f;
-}
-
-EulerAngles GetEulers(ZSpatialEntity* p_Entity) {
-	auto s_Value = p_Entity->m_mTransform;
-	auto s_QneTransform = Editor::MatrixToQneTransform(s_Value);
-	return EulerAngles(Deg2rad(s_QneTransform.Rotation.x), Deg2rad(s_QneTransform.Rotation.y), Deg2rad(s_QneTransform.Rotation.z));
-}
-
-
-auto* GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property) {
+auto* Editor::GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property) {
 	const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
 	const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + p_Property->m_nOffset;
 	const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
 	const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
-	// Get the value of the property.
 	// Get the value of the property.
 	auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
@@ -183,7 +171,7 @@ auto* GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property) {
 	return s_Data;
 }
 
-EulerAngles GetEulersFromProperty(ZEntityRef p_Entity) {
+Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
 
 	const std::string s_TransformPropertyName = "m_mTransform";
 	const auto s_EntityType = p_Entity->GetType();
@@ -202,65 +190,59 @@ EulerAngles GetEulersFromProperty(ZEntityRef p_Entity) {
 					SMatrix43* s_Data43 = reinterpret_cast<SMatrix43*>(GetProperty(p_Entity, s_Property));
 					SMatrix s_Data = SMatrix(*s_Data43);
 					const auto s_Decomposed = s_Data.Decompose();
-					const auto s_Euler = s_Decomposed.Quaternion.ToEuler();
-					return s_Euler;
+					const auto s_Quat = s_Decomposed.Quaternion;
+					return s_Quat;
 				}
 			}
-		} else if (s_PropertyInfo->m_pName) {
-			if (s_PropertyInfo->m_pName == s_TransformPropertyName) {
-				SMatrix43* s_Data43 = reinterpret_cast<SMatrix43*>(GetProperty(p_Entity, s_Property));
-				SMatrix s_Data = SMatrix(*s_Data43);
-				const auto s_Decomposed = s_Data.Decompose();
-				const auto s_Euler = s_Decomposed.Quaternion.ToEuler();
-				return s_Euler;
-			}
+		} else if (s_PropertyInfo->m_pName && s_PropertyInfo->m_pName == s_TransformPropertyName) {
+			SMatrix43* s_Data43 = reinterpret_cast<SMatrix43*>(GetProperty(p_Entity, s_Property));
+			SMatrix s_Data = SMatrix(*s_Data43);
+			const auto s_Decomposed = s_Data.Decompose();
+			const auto s_Quat = s_Decomposed.Quaternion;
+			return s_Quat;
 		}
 	}
-	return EulerAngles();
+	return Quat();
 }
 
 
-EulerAngles GetParentEulers(ZEntityRef p_Entity) {
+Quat Editor::GetParentQuat(ZEntityRef p_Entity) {
 	ZSpatialEntity* s_Entity = p_Entity.QueryInterface<ZSpatialEntity>();
-	EulerAngles s_ParentEulers = EulerAngles();
 	TEntityRef<ZSpatialEntity> s_EidParent;
-	while (true) {
-		if (s_Entity->m_eidParent != NULL) {
-			s_EidParent = s_Entity->m_eidParent;
-			std::string s_Id = std::format("{:016x}", s_EidParent.m_ref->GetType()->m_nEntityId);
-			//Logger::Info("Parent id: '{}'", s_Id);
+	std::vector<Quat> s_ParentQuats;
+	while (s_Entity->m_eidParent != NULL) {
+		s_EidParent = s_Entity->m_eidParent;
+		std::string s_Id = std::format("{:016x}", s_EidParent.m_ref->GetType()->m_nEntityId);
+		Logger::Info("Parent id: '{}'", s_Id);
 
-			s_Entity = s_EidParent.m_pInterfaceRef;
+		s_Entity = s_EidParent.m_pInterfaceRef;
 
-			//EulerAngles s_EntityEulers = GetEulers(s_Entity);
-			EulerAngles s_EntityEulers = GetEulersFromProperty(s_EidParent.m_ref);
-			
-			s_ParentEulers = EulerAngles(
-			    s_ParentEulers.yaw + s_EntityEulers.yaw,
-			    s_ParentEulers.pitch + s_EntityEulers.pitch,
-			    s_ParentEulers.roll + s_EntityEulers.roll);
-		} else if (s_Entity = s_EidParent.m_ref.GetOwningEntity().QueryInterface<ZSpatialEntity>()) {
-			//EulerAngles s_EntityEulers = GetEulers(s_Entity);
-			EulerAngles s_EntityEulers = GetEulersFromProperty(s_EidParent.m_ref);
-			s_ParentEulers = EulerAngles(
-			    s_ParentEulers.yaw + s_EntityEulers.yaw,
-			    s_ParentEulers.pitch + s_EntityEulers.pitch,
-			    s_ParentEulers.roll + s_EntityEulers.roll);
-			continue;
-		} else {
-			break;
-		}
+		s_ParentQuats.push_back(GetQuatFromProperty(s_EidParent.m_ref));
+		
 	}
-	return s_ParentEulers;
+
+	if (s_ParentQuats.empty()) {
+		return Quat();
+	}
+	std::reverse(s_ParentQuats.begin(), s_ParentQuats.end());
+	std::vector<Quat>::iterator s_QuatIter = s_ParentQuats.begin();
+	Quat s_Quat = *s_QuatIter;
+	while (s_QuatIter != s_ParentQuats.end()) {
+		if (s_QuatIter != s_ParentQuats.begin()) {
+			s_Quat = s_Quat * *s_QuatIter;
+		}
+		s_QuatIter++;
+	}
+	return s_Quat;
 }
 
-std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> Editor::FindPrims() {
+std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPrims() {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
 		return {};
 	}
-	std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> entities;
+	std::vector<std::tuple<std::string, Quat, ZEntityRef>> entities;
 
 	// Create a queue and add the root to it.
 	std::queue<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodeQueue;
@@ -301,18 +283,15 @@ std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> Editor::FindPrims(
 						if (!s_Skip) {
 							std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
 							Logger::Info("Found PRIM with collision: '{}' '{}' '{}' '{}'", s_Id, s_HashString, s_PrimHashString, s_collision_ioi_string);
-							//EulerAngles s_EntityEulers = GetEulers(s_Node->Entity.QueryInterface<ZSpatialEntity>());
-							EulerAngles s_EntityEulers = GetEulersFromProperty(s_Node->Entity);
-							EulerAngles s_ParentEulers = GetParentEulers(s_Node->Entity);
+							Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
+							Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
 							
-							EulerAngles s_CombinedEulers = EulerAngles(
-							    s_ParentEulers.yaw + s_EntityEulers.yaw,
-							    s_ParentEulers.pitch + s_EntityEulers.pitch,
-							    s_ParentEulers.roll + s_EntityEulers.roll);
-							std::tuple<std::string, EulerAngles, ZEntityRef> s_Entity = 
+							Quat s_CombinedQuat;
+							s_CombinedQuat = s_ParentQuat * s_EntityQuat;
+							std::tuple<std::string, Quat, ZEntityRef> s_Entity = 
 								std::make_tuple(
 									s_collision_ioi_string,  
-									s_CombinedEulers, 
+									s_CombinedQuat, 
 									s_Node->Entity
 								);
 							entities.push_back(s_Entity);
@@ -331,13 +310,13 @@ std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> Editor::FindPrims(
 	return entities;
 }
 
-std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> Editor::FindPfBoxEntities() {
+std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPfBoxEntities() {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
 		return {};
 	}
-	std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> entities;
+	std::vector<std::tuple<std::string, Quat, ZEntityRef>> entities;
 	const char* s_PFBOXENTITY_TYPE = "ZPFBoxEntity";
 
 	Logger::Info("Getting PfBoxEntities:");
@@ -355,7 +334,7 @@ std::vector<std::tuple<std::string, EulerAngles, ZEntityRef>> Editor::FindPfBoxE
 
 		if (strcmp(s_EntityType, s_PFBOXENTITY_TYPE) == 0) {
 			Logger::Info("Found PfBoxEntity: 00724CDE424AFE76");
-			std::tuple<std::string, EulerAngles, ZEntityRef> s_Entity = std::make_tuple("00724CDE424AFE76", EulerAngles(), s_Node->Entity);
+			std::tuple<std::string, Quat, ZEntityRef> s_Entity = std::make_tuple("00724CDE424AFE76", Quat(), s_Node->Entity);
 			entities.push_back(s_Entity);
 		}
 
