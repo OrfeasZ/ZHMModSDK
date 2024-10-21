@@ -133,7 +133,7 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 						.Size) != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
 						continue;
 					} else {
-						Logger::Info("Property Name: {}", std::string(s_PropertyNameView.Data, s_PropertyNameView.Size).c_str());
+						//Logger::Info("Property Name: {}", std::string(s_PropertyNameView.Data, s_PropertyNameView.Size).c_str());
 						auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
 						std::string s_ResourceName = "null";
 
@@ -141,7 +141,7 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 							s_ResourceName = fmt::format("{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh, s_Resource->GetResourceInfo().rid.m_IDLow);
 						}
 
-						Logger::Info("Found ALOC Resource: {}", s_ResourceName.c_str());
+						//Logger::Info("Found ALOC Resource: {}", s_ResourceName.c_str());
 						if (s_ResourceName.c_str() != "" && s_ResourceName.c_str() != NULL && s_ResourceName.c_str() != "null") { 
 							return s_ResourceName.c_str();
 						}
@@ -213,7 +213,7 @@ Quat Editor::GetParentQuat(ZEntityRef p_Entity) {
 	while (s_Entity->m_eidParent != NULL) {
 		s_EidParent = s_Entity->m_eidParent;
 		std::string s_Id = std::format("{:016x}", s_EidParent.m_ref->GetType()->m_nEntityId);
-		Logger::Info("Parent id: '{}'", s_Id);
+		//Logger::Info("Parent id: '{}'", s_Id);
 
 		s_Entity = s_EidParent.m_pInterfaceRef;
 
@@ -275,14 +275,14 @@ std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPrims() {
 								char* s_EntityType = s_Interface.m_pTypeId->typeInfo()->m_pTypeName;
 								if (strcmp(s_EntityType, s_PURE_WATER_TYPE) == 0) {
 									s_Skip = true;
-									Logger::Info("Skipping PRIM with ZPureWaterAspect type: '{}' '{}' '{}'", s_HashString, s_PrimHashString, s_collision_ioi_string);
+									//Logger::Info("Skipping PRIM with ZPureWaterAspect type: '{}' '{}' '{}'", s_HashString, s_PrimHashString, s_collision_ioi_string);
 									break;
 								}
 							}
 						}
 						if (!s_Skip) {
 							std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
-							Logger::Info("Found PRIM with collision: '{}' '{}' '{}' '{}'", s_Id, s_HashString, s_PrimHashString, s_collision_ioi_string);
+							//Logger::Info("Found PRIM with collision: '{}' '{}' '{}' '{}'", s_Id, s_HashString, s_PrimHashString, s_collision_ioi_string);
 							Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
 							Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
 							
@@ -333,8 +333,17 @@ std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPfBoxEntities
 		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
 
 		if (strcmp(s_EntityType, s_PFBOXENTITY_TYPE) == 0) {
-			Logger::Info("Found PfBoxEntity: 00724CDE424AFE76");
-			std::tuple<std::string, Quat, ZEntityRef> s_Entity = std::make_tuple("00724CDE424AFE76", Quat(), s_Node->Entity);
+			Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
+			Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+
+			Quat s_CombinedQuat;
+			s_CombinedQuat = s_ParentQuat * s_EntityQuat;
+			std::tuple<std::string, Quat, ZEntityRef> s_Entity =
+			    std::make_tuple(
+			        "00724CDE424AFE76",
+			        s_CombinedQuat,
+			        s_Node->Entity);
+
 			entities.push_back(s_Entity);
 		}
 

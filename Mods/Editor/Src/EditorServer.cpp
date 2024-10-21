@@ -689,23 +689,6 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
 	p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendBrickHashes(WebSocket* p_Socket, std::vector<std::string> p_BrickHashes) {
-	if (p_BrickHashes.empty()) {
-		throw std::runtime_error("Could not find bricks.");
-	}
-
-	for (std::string p_BrickHash: p_BrickHashes) {
-		Logger::Info("Sending brick hash '{}'", p_BrickHash);
-		std::ostringstream s_Event;
-		s_Event << "{" << write_json("brickHash") << ":";
-		s_Event << write_json(p_BrickHash);
-		s_Event << "}";
-		Logger::Info("Message that should be sent: {}", s_Event.str());
-		p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
-	}
-	p_Socket->send("Done sending brick hashes.", uWS::OpCode::TEXT);
-}
-
 void EditorServer::SendDoneLoadingNavpMessage(WebSocket* p_Socket) {
 	p_Socket->send("Done loading Navp.", uWS::OpCode::TEXT);
 }
@@ -806,7 +789,7 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tup
 			s_Event << write_json("entity") << ":";
 			WriteEntityTransforms(s_Event, get<1>(p_Entity), get<2>(p_Entity));
 			s_Event << "}";
-			Logger::Info("Message that should be sent: {}", s_Event.str());
+			//Logger::Info("Message that should be sent: {}", s_Event.str());
 			p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 		}
 	} else {
@@ -820,7 +803,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 		p_Stream << "null";
 		return;
 	}
-	Logger::Info("Sending entity transforms for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
+	//Logger::Info("Sending entity transforms for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
 
 	p_Stream << "{";
 
@@ -839,8 +822,10 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 		if (s_Index != -1) {
 			const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
 			p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
+			p_Stream << write_json("tblu") << ":" << write_json(fmt::format("{:016X}", s_Factory->m_ridResource.GetID()).c_str()) << ",";
 		}
 	}
+
 	// Write transform.
 	if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
 		const auto s_Trans = s_Spatial->GetWorldMatrix();
