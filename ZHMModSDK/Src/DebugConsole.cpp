@@ -56,7 +56,7 @@ DebugConsole::DebugConsole() :
                     {
                         ModSDK::GetInstance()->GetModLoader()->UnloadMod(s_Parts[1]);
                     }
-                    else if (s_Parts[1] == "reload")
+                    else if (s_Parts[0] == "reload")
                     {
                         ModSDK::GetInstance()->GetModLoader()->ReloadMod(s_Parts[1]);
                     }
