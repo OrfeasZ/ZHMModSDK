@@ -197,3 +197,10 @@ PATTERN_FUNCTION(
 	ZActor_KillActor,
 	void(ZActor* th, TEntityRef<IItem> rKillItem, TEntityRef<ZSetpieceEntity> rKillSetpiece, EDamageEvent eDamageEvent, EDeathBehavior eDeathBehavior)
 );
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x00\x48\x8B\xFA\x48\x8B\xD9\x4C\x8B\xC9",
+    "xxxx?xxxx?xxxxxxxxx",
+    ZConfigCommand_ExecuteCommand,
+    void(const char* pCommandName, const char* argv)
+);

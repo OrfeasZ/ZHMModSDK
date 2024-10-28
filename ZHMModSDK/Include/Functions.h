@@ -66,4 +66,5 @@ public:
 	static EngineFunction<ZInputTokenStream::ZTokenData* (ZInputTokenStream* th, ZInputTokenStream::ZTokenData* result)>* ZInputTokenStream_ParseToken;
 	static EngineFunction<bool (ZInputActionManager* th, ZInputTokenStream* pkStream)>* ZInputActionManager_ParseAsignment;
 	static EngineFunction<void(ZActor* th, TEntityRef<IItem> rKillItem, TEntityRef<ZSetpieceEntity> rKillSetpiece, EDamageEvent eDamageEvent, EDeathBehavior eDeathBehavior)>* ZActor_KillActor;
+    static EngineFunction<void(const char* pCommandName, const char* argv)>* ZConfigCommand_ExecuteCommand;
 };

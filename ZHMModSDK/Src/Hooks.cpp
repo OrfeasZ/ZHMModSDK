@@ -335,13 +335,6 @@ PATTERN_HOOK(
     bool(void* th, void* a1)
 );
 
-PATTERN_HOOK(
-    "\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x00\x48\x8B\xFA\x48\x8B\xD9\x4C\x8B\xC9",
-    "xxxx?xxxx?xxxxxxxxx",
-    ZConfigCommand_ExecuteCommand,
-    void(const char* pCommandName, const char* argv)
-);
-
 MODULE_HOOK(
 	"EOSSDK-Win64-Shipping.dll",
 	"EOS_Platform_Create",
