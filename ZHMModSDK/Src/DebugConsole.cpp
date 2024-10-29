@@ -62,7 +62,7 @@ DebugConsole::DebugConsole() :
                     }
                 }
 
-                Events::OnConsoleCommand->Call();
+                Events::OnDebugConsoleCommand->Call();
             }
         });
 }
