@@ -16,6 +16,7 @@
 | Shift | Increase speed while holding |
 | F9 | Kill NPC |
 | Ctrl + F9 | Teleport Hitman |
+| F8 | Pause/Resume game |
 
 ### Controller
 

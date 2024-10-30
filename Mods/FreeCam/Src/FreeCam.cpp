@@ -26,11 +26,13 @@ FreeCam::FreeCam() :
     m_FreeCamActive(false),
     m_ShouldToggle(false),
     m_FreeCamFrozen(false),
+    m_GamePaused(true),
 	m_ToggleFreeCamAction("ToggleFreeCamera"),
     m_FreezeFreeCamActionGc("ActivateGameControl0"),
     m_FreezeFreeCamActionKb("KBMInspectNode"),
 	m_InstantlyKillNpcAction("InstantKill"),
 	m_TeleportMainCharacterAction("Teleport"),
+    m_TogglePauseGame("TogglePauseGame"),
     m_ControlsVisible(false),
     m_HasToggledFreecamBefore(false),
     m_EditorStyleFreecam(false)
@@ -47,6 +49,7 @@ FreeCam::FreeCam() :
         { "Shift", "Increase camera speed" },
 		{ "F9", "Kill NPC" },
         { "Ctrl + F9", "Teleport Hitman" },
+	    { "F8", "Pause/Resume game" },
     };
 
 	m_PcControlsEditorStyle = {
@@ -109,6 +112,8 @@ void FreeCam::Init()
     Hooks::ZInputAction_Digital->AddDetour(this, &FreeCam::ZInputAction_Digital);
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &FreeCam::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &FreeCam::OnClearScene);
+
+	m_GamePaused = GetSettingBool("general", "toggle_pause", true);
 }
 
 void FreeCam::OnEngineInitialized()
@@ -120,7 +125,8 @@ void FreeCam::OnEngineInitialized()
 	const char* binds = "FreeCameraInput={"
 		"ToggleFreeCamera=tap(kb,k);"
 		"Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f9);"
-		"InstantKill=tap(kb,f9);};";
+		"InstantKill=tap(kb,f9);"
+	    "TogglePauseGame=tap(kb,f8);};";
 
 	if (ZInputActionManager::AddBindings(binds))
 	{
@@ -175,6 +181,12 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
         if (Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionKb, -1))
             m_FreeCamFrozen = !m_FreeCamFrozen;
 
+		if (Functions::ZInputAction_Digital->Call(&m_TogglePauseGame, -1)) {
+			m_GamePaused = !m_GamePaused;
+			SetSettingBool("general", "toggle_pause", m_GamePaused);
+			Globals::GameTimeManager->m_bPaused = m_GamePaused;
+		}
+
 		if (Functions::ZInputAction_Digital->Call(&m_InstantlyKillNpcAction, -1))
 		{
 			InstantlyKillNpc();
@@ -225,7 +237,6 @@ void FreeCam::OnDrawMenu()
     else
     {
 		ImGui::Checkbox("USE EDITOR STYLE FREECAM", &m_EditorStyleFreecam);
-
     }
 
     if (ImGui::Button(ICON_MD_SPORTS_ESPORTS " FREECAM CONTROLS"))
@@ -254,6 +265,9 @@ void FreeCam::EnableFreecam()
     Logger::Debug("Camera trans: {}", fmt::ptr(&s_Camera.m_pInterfaceRef->m_mTransform.Trans));
 
     s_RenderDest.m_pInterfaceRef->SetSource(&s_Camera.m_ref);
+
+	if (m_GamePaused)
+		Globals::GameTimeManager->m_bPaused = true;
 }
 
 void FreeCam::DisableFreecam()
@@ -277,6 +291,8 @@ void FreeCam::DisableFreecam()
             s_InputControl->m_bActive = true;
         }
     }
+
+	Globals::GameTimeManager->m_bPaused = false;
 }
 
 void FreeCam::InstantlyKillNpc()
