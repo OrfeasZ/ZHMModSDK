@@ -37,7 +37,7 @@ class ZHMSDK_API Globals
 public:
     static ZGameLoopManager* GameLoopManager;
     static ZTypeRegistry** TypeRegistry;
-    static ZGameTimeManager** GameTimeManager;
+    static ZGameTimeManager* GameTimeManager;
     static ZHitman5Module* Hitman5Module;
     static ZGameContext* GameContext;
     static ZActorManager* ActorManager;
