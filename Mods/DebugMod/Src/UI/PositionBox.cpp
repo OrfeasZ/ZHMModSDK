@@ -34,18 +34,20 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
         if (s_CurrentCamera)
             s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
 
-        ImGui::TextUnformatted("Hitman Transform:");
+    	constexpr uint8 columnCount = 4;
+		constexpr uint8 rowCount = 4;
 
-        if (ImGui::BeginTable("DebugMod_HitmanPosition", 4))
+        ImGui::TextUnformatted("Hitman Transform:");
+		if (ImGui::BeginTable("DebugMod_HitmanPosition", columnCount))
         {
-            for (int i = 0; i < 4; ++i)
+			for (int i = 0; i < rowCount; ++i)
             {
                 ImGui::TableNextRow();
 
-                for (int j = 0; j < 4; ++j)
+                for (int j = 0; j < columnCount; ++j)
                 {
                     ImGui::TableSetColumnIndex(j);
-                    ImGui::Text("%f", s_HitmanTrans.flt[(i * 4) + j]);
+					ImGui::Text("%f", s_HitmanTrans.flt[(i * 4) + j]);
                 }
             }
 
@@ -54,13 +56,13 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 
         ImGui::TextUnformatted("Camera Transform:");
 
-        if (ImGui::BeginTable("DebugMod_Camera_Position", 4))
+        if (ImGui::BeginTable("DebugMod_Camera_Position", columnCount))
         {
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < rowCount; ++i)
             {
                 ImGui::TableNextRow();
 
-                for (int j = 0; j < 4; ++j)
+                for (int j = 0; j < columnCount; ++j)
                 {
                     ImGui::TableSetColumnIndex(j);
                     ImGui::Text("%f", s_CameraTrans.flt[(i * 4) + j]);
@@ -79,13 +81,12 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 
         if (ImGui::Button("RT JSON##HitmanRT"))
         {
-            CopyToClipboard(fmt::format(
-                "{{\"XAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"YAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-                s_HitmanTrans.XAxis.x, s_HitmanTrans.XAxis.y, s_HitmanTrans.XAxis.z,
-                s_HitmanTrans.YAxis.x, s_HitmanTrans.YAxis.y, s_HitmanTrans.YAxis.z,
-                s_HitmanTrans.ZAxis.x, s_HitmanTrans.ZAxis.y, s_HitmanTrans.ZAxis.z,
-                s_HitmanTrans.Trans.x, s_HitmanTrans.Trans.y, s_HitmanTrans.Trans.z
-            ));
+            CopyToClipboard(fmt::format(R"({{"XAxis":{{"x":{},"y":{},"z":{}}},"YAxis":{{"x":{},"y":{},"z":{}}},"ZAxis":{{"x":{},"y":{},"z":{}}},"Trans":{{"x":{},"y":{},"z":{}}}}})",
+                                        s_HitmanTrans.XAxis.x, s_HitmanTrans.XAxis.y, s_HitmanTrans.XAxis.z,
+                                        s_HitmanTrans.YAxis.x, s_HitmanTrans.YAxis.y, s_HitmanTrans.YAxis.z,
+                                        s_HitmanTrans.ZAxis.x, s_HitmanTrans.ZAxis.y, s_HitmanTrans.ZAxis.z,
+                                        s_HitmanTrans.Trans.x, s_HitmanTrans.Trans.y, s_HitmanTrans.Trans.z
+	            ));
         }
 
         ImGui::SameLine();
@@ -105,11 +106,10 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
                 ? atan2f(-s_HitmanTrans.XAxis.y, s_HitmanTrans.XAxis.x) * c_RAD2DEG
                 : 0.f;
 
-            CopyToClipboard(fmt::format(
-                "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-                s_RotationX, s_RotationY, s_RotationZ,
-                s_HitmanTrans.Trans.x, s_HitmanTrans.Trans.y, s_HitmanTrans.Trans.z
-            ));
+            CopyToClipboard(fmt::format(R"({{"rotation":{{"x":{},"y":{},"z":{}}},"position":{{"x":{},"y":{},"z":{}}}}})",
+                                        s_RotationX, s_RotationY, s_RotationZ,
+                                        s_HitmanTrans.Trans.x, s_HitmanTrans.Trans.y, s_HitmanTrans.Trans.z
+	            ));
         }
 
         if (ImGui::Button("Copy Camera Transform"))
@@ -121,13 +121,12 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 
         if (ImGui::Button("RT JSON##CameraRT"))
         {
-            CopyToClipboard(fmt::format(
-                "{{\"XAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"YAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-                s_CameraTrans.XAxis.x, s_CameraTrans.XAxis.y, s_CameraTrans.XAxis.z,
-                s_CameraTrans.YAxis.x, s_CameraTrans.YAxis.y, s_CameraTrans.YAxis.z,
-                s_CameraTrans.ZAxis.x, s_CameraTrans.ZAxis.y, s_CameraTrans.ZAxis.z,
-                s_CameraTrans.Trans.x, s_CameraTrans.Trans.y, s_CameraTrans.Trans.z
-            ));
+            CopyToClipboard(fmt::format(R"({{"XAxis":{{"x":{},"y":{},"z":{}}},"YAxis":{{"x":{},"y":{},"z":{}}},"ZAxis":{{"x":{},"y":{},"z":{}}},"Trans":{{"x":{},"y":{},"z":{}}}}})",
+                                        s_CameraTrans.XAxis.x, s_CameraTrans.XAxis.y, s_CameraTrans.XAxis.z,
+                                        s_CameraTrans.YAxis.x, s_CameraTrans.YAxis.y, s_CameraTrans.YAxis.z,
+                                        s_CameraTrans.ZAxis.x, s_CameraTrans.ZAxis.y, s_CameraTrans.ZAxis.z,
+                                        s_CameraTrans.Trans.x, s_CameraTrans.Trans.y, s_CameraTrans.Trans.z
+	            ));
         }
 
         ImGui::SameLine();
@@ -147,11 +146,10 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
                 ? atan2f(-s_CameraTrans.XAxis.y, s_CameraTrans.XAxis.x) * c_RAD2DEG
                 : 0.f;
 
-            CopyToClipboard(fmt::format(
-                "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-                s_RotationX, s_RotationY, s_RotationZ,
-                s_CameraTrans.Trans.x, s_CameraTrans.Trans.y, s_CameraTrans.Trans.z
-            ));
+            CopyToClipboard(fmt::format(R"({{"rotation":{{"x":{},"y":{},"z":{}}},"position":{{"x":{},"y":{},"z":{}}}}})",
+                                        s_RotationX, s_RotationY, s_RotationZ,
+                                        s_CameraTrans.Trans.x, s_CameraTrans.Trans.y, s_CameraTrans.Trans.z
+	            ));
         }
 
         ImGui::Checkbox("Use Snap", &m_UseSnap);

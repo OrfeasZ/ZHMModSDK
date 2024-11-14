@@ -42,10 +42,13 @@
 
 DebugMod::~DebugMod()
 {
+	if (m_TrackCamActive)
+	{
+		DisableTrackCam();
+	}
+
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
     Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
-
-    if (m_TrackCamActive) DisableTrackCam();
 }
 
 void DebugMod::Init()
@@ -78,7 +81,7 @@ void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
     if (m_TrackCamActive)
     {
-        UpdateTrackCam(); 
+        UpdateTrackCam();
     }
 }
 
@@ -139,7 +142,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
     DrawPositionBox(p_HasFocus);
     DrawSceneBox(p_HasFocus);
 
-    auto s_ImgGuiIO = ImGui::GetIO();
+    auto& s_ImgGuiIO = ImGui::GetIO();
 
     if (p_HasFocus)
     {
@@ -283,26 +286,26 @@ void DebugMod::DrawOptions(bool p_HasFocus)
 
 void DebugMod::EquipOutfit(
     const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
-    unsigned int p_CurrentCharSetIndex,
-    const char* p_CurrentCharSetCharacterType,
-    unsigned int p_CurrentOutfitVariationIndex,
+    uint8 p_CurrentCharSetIndex,
+    const std::string& p_CurrentCharSetCharacterType,
+    uint8 p_CurrentOutfitVariationIndex,
     ZHitman5* p_LocalHitman
 )
 {
     std::vector<ZRuntimeResourceID> s_HeroOutfitVariations;
 
-    if (strcmp(p_CurrentCharSetCharacterType, "HeroA") != 0)
+    if (p_CurrentCharSetCharacterType != "HeroA")
     {
         const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[p_CurrentCharSetIndex].m_pInterfaceRef;
 
         const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType2 = &s_OutfitVariationCollection->m_aCharacters[2];
         const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = nullptr;
 
-        if (strcmp(p_CurrentCharSetCharacterType, "Actor") == 0)
+        if (p_CurrentCharSetCharacterType == "Actor")
         {
             s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[0];
         }
-        else if (strcmp(p_CurrentCharSetCharacterType, "Nude") == 0)
+        else if (p_CurrentCharSetCharacterType == "Nude")
         {
             s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[1];
         }
@@ -323,7 +326,7 @@ void DebugMod::EquipOutfit(
 
     Functions::ZHitman5_SetOutfit->Call(p_LocalHitman, p_GlobalOutfitKit, p_CurrentCharSetIndex, p_CurrentOutfitVariationIndex, false, false);
 
-    if (strcmp(p_CurrentCharSetCharacterType, "HeroA") != 0)
+    if (p_CurrentCharSetCharacterType == "HeroA")
     {
         ZOutfitVariationCollection* outfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[p_CurrentCharSetIndex].m_pInterfaceRef;
         TEntityRef<ZCharsetCharacterType>* charsetCharacterType = &outfitVariationCollection->m_aCharacters[2];
@@ -337,26 +340,25 @@ void DebugMod::EquipOutfit(
 
 void DebugMod::EquipOutfit(
     const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
-    unsigned int p_CurrentCharSetIndex,
-    const char* p_CurrentCharSetCharacterType,
-    unsigned int p_CurrentOutfitVariationIndex,
+    uint8 n_CurrentCharSetIndex,
+    const std::string& s_CurrentCharSetCharacterType,
+    uint8 n_CurrentOutfitVariationIndex,
     ZActor* p_Actor
 )
 {
-    std::vector<ZRuntimeResourceID> s_ActorOutfitVariations;
-
-    if (strcmp(p_CurrentCharSetCharacterType, "Actor") != 0)
+	std::vector<ZRuntimeResourceID> s_ActorOutfitVariations;
+	if (s_CurrentCharSetCharacterType != "HeroA")
     {
-        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[p_CurrentCharSetIndex].m_pInterfaceRef;
+	    const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[n_CurrentCharSetIndex].m_pInterfaceRef;
 
         const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType2 = &s_OutfitVariationCollection->m_aCharacters[0];
         const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = nullptr;
 
-        if (strcmp(p_CurrentCharSetCharacterType, "Nude") == 0)
+		if (s_CurrentCharSetCharacterType == "Nude")
         {
             s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[1];
         }
-        else if (strcmp(p_CurrentCharSetCharacterType, "HeroA") == 0)
+    	else if (s_CurrentCharSetCharacterType == "HeroA")
         {
             s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[2];
         }
@@ -375,11 +377,11 @@ void DebugMod::EquipOutfit(
         }
     }
 
-    Functions::ZActor_SetOutfit->Call(p_Actor, p_GlobalOutfitKit, p_CurrentCharSetIndex, p_CurrentOutfitVariationIndex, false);
+    Functions::ZActor_SetOutfit->Call(p_Actor, p_GlobalOutfitKit, n_CurrentCharSetIndex, n_CurrentOutfitVariationIndex, false);
 
-    if (strcmp(p_CurrentCharSetCharacterType, "Actor") != 0)
+     if (s_CurrentCharSetCharacterType != "Actor")
     {
-        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[p_CurrentCharSetIndex].m_pInterfaceRef;
+        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[n_CurrentCharSetIndex].m_pInterfaceRef;
         const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[0];
 
         for (size_t i = 0; i < s_ActorOutfitVariations.size(); ++i)
@@ -466,7 +468,7 @@ void DebugMod::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bo
     Functions::ZItemSpawner_RequestContentLoad->Call(s_ItemSpawner);
 }
 
-void DebugMod::SpawnNonRepositoryProp(const char* p_PropAssemblyPath)
+void DebugMod::SpawnNonRepositoryProp(const std::string& s_PropAssemblyPath)
 {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
@@ -476,7 +478,7 @@ void DebugMod::SpawnNonRepositoryProp(const char* p_PropAssemblyPath)
         return;
     }
 
-    const Hash::MD5Hash s_Hash = Hash::MD5(std::string_view(p_PropAssemblyPath, strlen(p_PropAssemblyPath)));
+    const Hash::MD5Hash s_Hash = Hash::MD5(std::string_view(s_PropAssemblyPath));
 
     const uint32_t s_IdHigh = ((s_Hash.A >> 24) & 0x000000FF)
         | ((s_Hash.A >> 8) & 0x0000FF00)
@@ -525,13 +527,12 @@ void DebugMod::SpawnNonRepositoryProp(const char* p_PropAssemblyPath)
 }
 
 auto DebugMod::SpawnNPC(
-    const char* p_NpcName,
+    const std::string& p_NpcName,
     const ZRepositoryID& repositoryID,
     const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit,
-    const char* p_CurrentCharacterSetIndex,
-    const char* p_CurrentcharSetCharacterType,
-    const char* p_CurrentOutfitVariationIndex
-) -> void
+    const uint8 n_CurrentCharacterSetIndex,
+    const std::string& s_CurrentcharSetCharacterType,
+    const uint8 n_CurrentOutfitVariationIndex) -> void
 {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
@@ -574,8 +575,8 @@ auto DebugMod::SpawnNPC(
 
     actor->m_sActorName = p_NpcName;
     actor->m_bStartEnabled = true;
-    actor->m_nOutfitCharset = std::stoi(p_CurrentCharacterSetIndex);
-    actor->m_nOutfitVariation = std::stoi(p_CurrentOutfitVariationIndex);
+    actor->m_nOutfitCharset = n_CurrentCharacterSetIndex;
+    actor->m_nOutfitVariation = n_CurrentOutfitVariationIndex;
     actor->m_OutfitRepositoryID = repositoryID;
     actor->m_eRequiredVoiceVariation = EActorVoiceVariation::eAVV_Undefined;
 
@@ -588,7 +589,7 @@ auto DebugMod::SpawnNPC(
 
     if (p_GlobalOutfitKit)
     {
-        EquipOutfit(*p_GlobalOutfitKit, std::stoi(p_CurrentCharacterSetIndex), p_CurrentcharSetCharacterType, std::stoi(p_CurrentOutfitVariationIndex), actor);
+		EquipOutfit(*p_GlobalOutfitKit, n_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType, n_CurrentOutfitVariationIndex, actor);
     }
 }
 
@@ -848,7 +849,7 @@ std::string DebugMod::FindNPCEntityNameInBrickBackReferences(
     return s_EntityName;
 }
 
-std::string DebugMod::ConvertDynamicObjectValueTString(ZDynamicObject* p_DynamicObject)
+std::string DebugMod::ConvertDynamicObjectValueTString(const ZDynamicObject* p_DynamicObject)
 {
     std::string s_Result;
     const IType* s_Type = p_DynamicObject->m_pTypeID->typeInfo();
@@ -1105,7 +1106,7 @@ void DebugMod::EnableInfiniteAmmo()
     hm5CrippleBox->Activate(0);
 }
 
-void DebugMod::CopyToClipboard(const std::string& p_String) const
+void DebugMod::CopyToClipboard(const std::string& p_String)
 {
     if (!OpenClipboard(nullptr))
         return;

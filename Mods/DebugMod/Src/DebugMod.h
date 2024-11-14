@@ -32,7 +32,7 @@ public:
 
 private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
-    void CopyToClipboard(const std::string& p_String) const;
+    static void CopyToClipboard(const std::string& p_String);
     void OnMouseDown(SVector2 p_Pos, bool p_FirstClick);
 
 private:
@@ -46,24 +46,24 @@ private:
     void DrawNPCsBox(bool p_HasFocus);
     void DrawSceneBox(bool p_HasFocus);
 
-    void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, unsigned int p_CurrentCharSetIndex, const char* p_CurrentCharSetCharacterType, unsigned int p_CurrentOutfitVariationIndex, ZHitman5* p_LocalHitman);
-    void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, unsigned int p_CurrentCharSetIndex, const char* p_CurrentCharSetCharacterType, unsigned int p_CurrentOutfitVariationindex, ZActor* p_Actor);
-    void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, bool addToWorld);
-    void SpawnNonRepositoryProp(const char* p_PropAssemblyPath);
-    void SpawnNPC(const char* p_NpcName, const ZRepositoryID& repositoryID, const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, const char* p_CurrentCharacterSetIndex, const char* p_CurrentcharSetCharacterType, const char* p_CurrentOutfitVariationIndex);
-    void LoadRepositoryProps();
+	static void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8 n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8 n_CurrentOutfitVariationIndex, ZHitman5* p_LocalHitman);
+	void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8 n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8 n_CurrentOutfitVariationindex, ZActor* p_Actor);
+	static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld);
+	static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
+	void SpawnNPC(const std::string& s_NpcName, const ZRepositoryID& repositoryID, const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8 n_CurrentCharacterSetIndex, const std::string& s_CurrentcharSetCharacterType, uint8 p_CurrentOutfitVariationIndex);
+	void LoadRepositoryProps();
     static void LoadHashMap();
     static void DownloadHashMap();
     std::string GetEntityName(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
     std::string FindNPCEntityNameInBrickBackReferences(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
 
-    std::string ConvertDynamicObjectValueTString(ZDynamicObject* p_DynamicObject);
+    static std::string ConvertDynamicObjectValueTString(const ZDynamicObject* p_DynamicObject);
     void LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData);
-    void LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData, const std::string& p_RpkgFilePath);
+    static void LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData, const std::string& p_RpkgFilePath);
     std::string GetPatchRPKGFilePath();
     unsigned long long GetDDSTextureHash(const std::string p_Image);
 
-    void EnableInfiniteAmmo();
+    static void EnableInfiniteAmmo();
 
     DECLARE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
     DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
@@ -94,6 +94,7 @@ private:
     float m_MoveDistance = 0.0f;
     bool m_HoldingMouse = false;
 
+	std::string m_SelectedCharacterName;
     ZEntityRef m_SelectedEntity;
     std::shared_mutex m_EntityMutex;
     std::string m_SelectedEntityName;
@@ -114,14 +115,14 @@ private:
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
     std::vector<char> m_TextureResourceData;
     std::multimap<std::string, ZRepositoryID> m_RepositoryProps;
-    const char* m_CharSetCharacterTypes[3] = { "Actor", "Nude", "HeroA" };
+	const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
 
     inline static std::unordered_map<unsigned long long, std::string> m_RuntimeResourceIDsToResourceIDs;
     inline static std::mutex m_Mutex;
 
     ZHM5CrippleBox* m_Hm5CrippleBox = nullptr;
 
-	TEntityRef<ZGlobalOutfitKit>* m_GlobalOutfitKit;
+	TEntityRef<ZGlobalOutfitKit>* m_GlobalOutfitKit = nullptr;
 
 private:
     ZActor* m_NPCTracked = nullptr;
@@ -132,12 +133,12 @@ private:
 
 private:
     void EnableTrackCam();
-    void UpdateTrackCam();
+    void UpdateTrackCam() const;
     void DisableTrackCam();
     void GetPlayerCam();
     void GetTrackCam();
     void GetRenderDest();
-    void SetPlayerControlActive(bool active);
+    static void SetPlayerControlActive(bool active);
 };
 
 DECLARE_ZHM_PLUGIN(DebugMod)

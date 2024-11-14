@@ -94,9 +94,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
                 ImGui::TextUnformatted(fmt::format("Brick Template Entity: {}", m_BrickEntityId).c_str());
             }
 
-            const ZGeomEntity* s_GeomEntity = m_SelectedEntity.QueryInterface<ZGeomEntity>();
-
-            if (s_GeomEntity)
+            if (m_SelectedEntity.QueryInterface<ZGeomEntity>())
             {
                 ZVariant<ZResourcePtr> s_Property = m_SelectedEntity.GetProperty<ZResourcePtr>("m_ResourceID");
                 ZResourceContainer::SResourceInfo s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_Property.Get().m_nResourceIndex];
@@ -200,13 +198,12 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
                 if (ImGui::Button("RT JSON##EntRT"))
                 {
-                    CopyToClipboard(fmt::format(
-                        "{{\"XAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"YAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-                        s_Trans.XAxis.x, s_Trans.XAxis.y, s_Trans.XAxis.z,
-                        s_Trans.YAxis.x, s_Trans.YAxis.y, s_Trans.YAxis.z,
-                        s_Trans.ZAxis.x, s_Trans.ZAxis.y, s_Trans.ZAxis.z,
-                        s_Trans.Trans.x, s_Trans.Trans.y, s_Trans.Trans.z
-                    ));
+                    CopyToClipboard(fmt::format(R"({{"XAxis":{{"x":{},"y":{},"z":{}}},"YAxis":{{"x":{},"y":{},"z":{}}},"ZAxis":{{"x":{},"y":{},"z":{}}},"Trans":{{"x":{},"y":{},"z":{}}}}})",
+                                                s_Trans.XAxis.x, s_Trans.XAxis.y, s_Trans.XAxis.z,
+                                                s_Trans.YAxis.x, s_Trans.YAxis.y, s_Trans.YAxis.z,
+                                                s_Trans.ZAxis.x, s_Trans.ZAxis.y, s_Trans.ZAxis.z,
+                                                s_Trans.Trans.x, s_Trans.Trans.y, s_Trans.Trans.z
+	                    ));
                 }
 
                 ImGui::SameLine();
@@ -226,11 +223,10 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
                         ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
                         : 0.f;
 
-                    CopyToClipboard(fmt::format(
-                        "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-                        s_RotationX, s_RotationY, s_RotationZ,
-                        s_Trans.Trans.x, s_Trans.Trans.y, s_Trans.Trans.z
-                    ));
+                    CopyToClipboard(fmt::format(R"({{"rotation":{{"x":{},"y":{},"z":{}}},"position":{{"x":{},"y":{},"z":{}}}}})",
+                                                s_RotationX, s_RotationY, s_RotationZ,
+                                                s_Trans.Trans.x, s_Trans.Trans.y, s_Trans.Trans.z
+	                    ));
                 }
 
                 if (ImGui::Button("Copy ID"))
