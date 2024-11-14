@@ -5,6 +5,7 @@
 #include "Globals.h"
 #include "HookImpl.h"
 #include "Hooks.h"
+#include "Events.h"
 #include "ini.h"
 #include "Logging.h"
 #include "IPluginInterface.h"
@@ -477,6 +478,50 @@ void ModSDK::CheckForUpdates() {
 	}
 }
 
+// Built-in console commands
+void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
+	if (p_Args.size() == 1)
+	{
+		if (p_Args[0] == "unloadall")
+		{
+			ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
+		}
+		else if (p_Args[0] == "reloadall")
+		{
+			ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
+		}
+	}
+
+	if (p_Args.size() == 2)
+	{
+		if (p_Args[0] == "load")
+		{
+			ModSDK::GetInstance()->GetModLoader()->LoadMod(p_Args[1], true);
+		}
+		else if (p_Args[0] == "unload")
+		{
+			ModSDK::GetInstance()->GetModLoader()->UnloadMod(p_Args[1]);
+		}
+		else if (p_Args[0] == "reload")
+		{
+			ModSDK::GetInstance()->GetModLoader()->ReloadMod(p_Args[1]);
+		}
+		else if (p_Args[0] == "config")
+		{
+			Logger::Warn("[ZConfigCommand] Not implemented");
+		}
+	}
+
+	if (p_Args.size() == 3)
+	{
+		if (p_Args[0] == "config")
+		{
+			Functions::ZConfigCommand_ExecuteCommand->Call(p_Args[1].c_str(), p_Args[2].c_str());
+			Logger::Info("[ZConfigCommand] Set \"{}\" to \"{}\"", p_Args[1], p_Args[2]);
+		}
+	}
+}
+
 bool ModSDK::Startup() {
 #if _DEBUG
 	m_DebugConsole->StartRedirecting();
@@ -505,6 +550,9 @@ bool ModSDK::Startup() {
 	});
 
 	s_VersionCheckThread.detach();
+
+	// Register built-in console commands
+	Events::OnConsoleCommand->AddListener(this, &OnConsoleCommand);
 
 	return true;
 }

@@ -33,36 +33,7 @@ DebugConsole::DebugConsole() :
                 if (s_ReadLine.size() == 0)
                     continue;
 
-                auto s_Parts = Util::StringUtils::Split(s_ReadLine, " ");
-
-                if (s_Parts.size() == 1)
-                {
-                    if (s_Parts[0] == "unloadall")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
-                    }
-                    else if (s_Parts[0] == "reloadall")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
-                    }
-                }
-                if (s_Parts.size() == 2)
-                {
-                    if (s_Parts[0] == "load")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->LoadMod(s_Parts[1], true);
-                    }
-                    else if (s_Parts[0] == "unload")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->UnloadMod(s_Parts[1]);
-                    }
-                    else if (s_Parts[0] == "reload")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->ReloadMod(s_Parts[1]);
-                    }
-                }
-
-                Events::OnDebugConsoleCommand->Call();
+                Events::OnConsoleCommand->Call(Util::StringUtils::Split(s_ReadLine, " "));
             }
         });
 }
