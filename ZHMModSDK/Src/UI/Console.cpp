@@ -4,6 +4,10 @@
 
 #include "IModSDK.h"
 
+#include "Logging.h"
+#include "Util/StringUtils.h"
+#include "Events.h"
+
 using namespace UI;
 
 Console::Console()
@@ -86,6 +90,13 @@ void Console::Draw(bool p_HasFocus)
 
         char s_Command[2048] = {};
         ImGui::InputText("##consoleCommand", s_Command, IM_ARRAYSIZE(s_Command), ImGuiInputTextFlags_EnterReturnsTrue);
+
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            Logger::Info("> {}", s_Command);
+            Events::OnConsoleCommand->Call(Util::StringUtils::Split(s_Command, " "));
+            s_Command[0] = '\0';
+            ImGui::SetKeyboardFocusHere(-1);
+        }
 
         ImGui::SetItemDefaultFocus();
     }
