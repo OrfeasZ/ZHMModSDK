@@ -47,8 +47,6 @@ private:
 class ZConfigFloat : public ZConfigCommand
 {
 public:
-    ZConfigCommand_ECLASSTYPE GetType() override { return ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT; }
-
     float GetValue() const { return m_Value; }
 
 private:
@@ -58,8 +56,6 @@ private:
 class ZConfigInt : public ZConfigCommand
 {
 public:
-    ZConfigCommand_ECLASSTYPE GetType() override { return ZConfigCommand_ECLASSTYPE::ECLASS_INT; }
-
     uint32_t GetValue() const { return m_Value; }
 
 private:
@@ -69,8 +65,6 @@ private:
 class ZConfigString : public ZConfigCommand
 {
 public:
-    ZConfigCommand_ECLASSTYPE GetType() override { return ZConfigCommand_ECLASSTYPE::ECLASS_STRING; }
-
     const char* GetValue() const { return m_szValue; }
 
 private:
