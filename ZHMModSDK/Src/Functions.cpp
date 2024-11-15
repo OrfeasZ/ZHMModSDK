@@ -204,3 +204,17 @@ PATTERN_FUNCTION(
     ZConfigCommand_ExecuteCommand,
     void(const char* pCommandName, const char* argv)
 );
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x00\x57\x48\x83\xEC\x00\x8B\xF9\xE8",
+    "xxxx?xxxx?xxx",
+    ZConfigCommand_GetConfigCommand,
+    ZConfigCommand*(uint32_t commandNameHash)
+)
+
+PATTERN_FUNCTION(
+    "\x40\x53\x48\x83\xEC\x00\xE8\x00\x00\x00\x00\x48\x8B\xC8\xFF\x15\x00\x00\x00\x00\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x48\x8B\xD8\xE8",
+    "xxxxx?x????xxxxx????xxx????x????xxxx",
+    ZConfigCommand_First,
+    ZConfigCommand*()
+);
