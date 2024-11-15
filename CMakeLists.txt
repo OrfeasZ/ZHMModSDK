@@ -37,7 +37,6 @@ set(MODS
 	WakingUpNpcs
 	NoPause
 	SkipIntro
-	CertPinBypass
 	MaxPatchLevel
 	DebugMod
 	AdvancedRating
