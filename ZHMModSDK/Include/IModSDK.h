@@ -68,9 +68,10 @@ public:
      * @param p_NewCode A buffer containing the new code to write to the location where the pattern was found.
      * @param p_CodeSize The size of the code buffer.
      * @param p_Offset The offset to add to the address where the pattern was found.
+	 * @param p_OldCode A (optional) buffer to store the old code.
      * @return True if the pattern was found and patched, false otherwise.
      */
-    virtual bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) = 0;
+    virtual bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OldCode = nullptr) = 0;
 
     virtual void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) = 0;
 

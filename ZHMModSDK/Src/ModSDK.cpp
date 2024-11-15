@@ -151,7 +151,7 @@ ModSDK::~ModSDK() {
 #endif
 }
 
-bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) {
+bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OldCode) {
 	if (!p_Pattern || !p_Mask || !p_NewCode || p_CodeSize == 0) {
 		Logger::Error("Invalid parameters provided to PatchCode call.");
 		return false;
@@ -171,6 +171,8 @@ bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCod
 	}
 
 	auto* s_TargetPtr = reinterpret_cast<void*>(s_Target + p_Offset);
+
+	if (p_OldCode != nullptr) memcpy(p_OldCode, s_TargetPtr, p_CodeSize);
 
 	Logger::Debug("Patching {} bytes of code at {} with new code from {}.", p_CodeSize, fmt::ptr(s_TargetPtr), p_NewCode);
 
@@ -516,6 +518,7 @@ void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
 	{
 		if (p_Args[0] == "config")
 		{
+			// TODO: Check command type and validate input
 			Functions::ZConfigCommand_ExecuteCommand->Call(p_Args[1].c_str(), p_Args[2].c_str());
 			Logger::Info("[ZConfigCommand] Set \"{}\" to \"{}\"", p_Args[1], p_Args[2]);
 		}
