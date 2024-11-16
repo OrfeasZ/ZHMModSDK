@@ -11,6 +11,8 @@
 #include "IPluginInterface.h"
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
+#include "Util/HashingUtils.h"
+#include "Util/StringUtils.h"
 
 #include "Rendering/Renderers/DirectXTKRenderer.h"
 #include "Rendering/Renderers/ImGuiRenderer.h"
@@ -30,7 +32,6 @@
 #include "D3DUtils.h"
 #include "Glacier/ZRender.h"
 #include "Rendering/Renderers/ImGuiImpl.h"
-#include "Util/StringUtils.h"
 
 #include "Glacier/ZLobby.h"
 #include "Glacier/ZRakNet.h"
@@ -43,6 +44,7 @@
 #include <shellapi.h>
 #include <simdjson.h>
 #include <semver.hpp>
+#include <limits.h>
 
 // Needed for TaskDialogIndirect
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -510,7 +512,22 @@ void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
 		}
 		else if (p_Args[0] == "config")
 		{
-			Logger::Warn("[ZConfigCommand] Not implemented");
+			ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
+
+			if (s_Command == 0)
+				return Logger::Error("[ZConfigCommand] Invalid command.");
+
+			switch(s_Command->GetType())
+			{
+				case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT:
+					return Logger::Info("[ZConfigCommand] {} - float - {}", p_Args[1], s_Command->As<ZConfigFloat>()->GetValue());
+				case ZConfigCommand_ECLASSTYPE::ECLASS_INT:
+					return Logger::Info("[ZConfigCommand] {} - int - {}", p_Args[1], s_Command->As<ZConfigInt>()->GetValue());
+				case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
+					return Logger::Info("[ZConfigCommand] {} - string - \"{}\"", p_Args[1], s_Command->As<ZConfigString>()->GetValue());
+				case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
+					return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+			}
 		}
 	}
 
@@ -518,7 +535,51 @@ void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
 	{
 		if (p_Args[0] == "config")
 		{
-			// TODO: Check command type and validate input
+			ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
+
+			if (s_Command == 0)
+				return Logger::Info("[ZConfigCommand] Invalid command.");
+
+			// Now we validate the input, we technically don't need to do this as it'll be done by the engine function
+			// we call. But we do this to provide output to the user.
+			switch (s_Command->GetType())
+			{
+				case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT: {
+					try {
+						size_t pos;
+						static_cast<void>(std::stof(p_Args[2], &pos));
+						if (pos != p_Args[2].length())
+							return Logger::Error("[ZConfigCommand] Invalid input (float), not all characters provided were processed.");
+					} catch (const std::invalid_argument&) {
+						return Logger::Error("[ZConfigCommand] Invalid input (float), input does not represent a float.");
+					} catch (const std::out_of_range&) {
+						return Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
+					}
+					break;
+				}
+				case ZConfigCommand_ECLASSTYPE::ECLASS_INT: {
+					try {
+						size_t pos;
+						unsigned long value = std::stoul(p_Args[2], &pos);
+						if (pos != p_Args[2].length())
+							return Logger::Error("[ZConfigCommand] Invalid input (integer), not all characters provided were processed.");
+						if (value > (std::numeric_limits<unsigned int>::max)())
+							return Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
+					} catch (const std::invalid_argument&) {
+						return Logger::Error("[ZConfigCommand] Invalid input (integer), input does not represent a integer.");
+					} catch (const std::out_of_range&) {
+						return Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
+					}
+					break;
+				}
+				case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
+					if (p_Args[2].length() >= 256)
+						return Logger::Error("[ZConfigCommand] Invalid input (string), maximum length of 255 exceeded.");
+					break;
+				case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
+					return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+			}
+
 			Functions::ZConfigCommand_ExecuteCommand->Call(p_Args[1].c_str(), p_Args[2].c_str());
 			Logger::Info("[ZConfigCommand] Set \"{}\" to \"{}\"", p_Args[1], p_Args[2]);
 		}
