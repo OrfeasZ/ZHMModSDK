@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "ZString.h"
 
 enum class ZConfigCommand_ECLASSTYPE
 {
@@ -18,6 +19,10 @@ class ZConfigCommand
 {
 public:
     virtual ZConfigCommand_ECLASSTYPE GetType() = 0;
+
+    // Get a pointer to a config command from the command name.
+    // Returns 0/nullptr if it does not exist.
+    static ZConfigCommand* Get(ZString p_CommandName);
 
     uint32_t GetNameHash() const { return m_iNameHash; }
     ZConfigCommand* GetNext() { return m_pNext; }
