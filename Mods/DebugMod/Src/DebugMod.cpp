@@ -48,7 +48,14 @@ DebugMod::~DebugMod()
 	}
 
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
-    Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+
+	try
+	{
+		Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+	} catch (std::exception e)
+	{
+		Logger::Error("Exception: {}", e.what());
+	}
 }
 
 void DebugMod::Init()
@@ -133,7 +140,6 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
     ImGuizmo::BeginFrame();
 
     DrawOptions(p_HasFocus);
-    DrawEntityBox(p_HasFocus);
     DrawAssetsBox(p_HasFocus);
     DrawEntityBox(p_HasFocus);
     DrawItemsBox(p_HasFocus);
@@ -257,6 +263,30 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
         m_SelectedEntity = s_RayOutput.m_BlockingEntity;
         m_SelectedEntityName.clear();
 
+    	if (m_SelectedEntity.GetOwningEntity().HasInterface<ZCharacterTemplateAspect>())
+		{
+			if (ZActor* tempSelectedActor = m_SelectedEntity.GetOwningEntity().QueryInterface<ZActor>())
+			{
+				s_CurrentlySelectedActor = tempSelectedActor;
+				bActorSelectedByCamera = true;
+			}
+		}
+
+		if (m_SelectedEntity.HasInterface<ZActor>())
+		{
+			if (ZActor* s_Actor = m_SelectedEntity.QueryInterface<ZActor>())
+			{
+				if (!s_CurrentlySelectedActor) // Check against nullptr
+				{
+					s_CurrentlySelectedActor = s_Actor;
+				}
+
+				if (s_CurrentlySelectedActor->m_rCharacter.m_pInterfaceRef != s_Actor->m_rCharacter.m_pInterfaceRef)
+				{
+					m_SelectedEntity = s_Actor->m_rCharacter.m_ref;
+				}
+			}
+		}
         m_EntityMutex.unlock();
     }
 }
@@ -269,7 +299,7 @@ void DebugMod::DrawOptions(bool p_HasFocus)
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
+    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing)
@@ -346,6 +376,11 @@ void DebugMod::EquipOutfit(
     ZActor* p_Actor
 )
 {
+	if (!p_Actor)
+	{
+		Logger::Error("Could not equip outfit - no actor selected");
+	}
+
 	std::vector<ZRuntimeResourceID> s_ActorOutfitVariations;
 	if (s_CurrentCharSetCharacterType != "HeroA")
     {

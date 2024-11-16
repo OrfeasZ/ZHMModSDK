@@ -23,7 +23,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
         ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
 
-        static char s_PropTitle[2048] { "" };
+        static char s_PropTitle_SubString[2048] { "" };
         static char s_PropAssemblyPath[2048] { "" };
 
 		static int s_NumberOfPropsToSpawn = 1;
@@ -38,7 +38,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
         ImGui::Text("Prop Title");
         ImGui::SameLine();
 
-        const bool s_IsInputTextEnterPressed = ImGui::InputText("##PropRepositoryID", s_PropTitle, sizeof(s_PropTitle), ImGuiInputTextFlags_EnterReturnsTrue);
+        const bool s_IsInputTextEnterPressed = ImGui::InputText("##PropRepositoryID", s_PropTitle_SubString, sizeof(s_PropTitle_SubString), ImGuiInputTextFlags_EnterReturnsTrue);
         const bool s_IsInputTextActive = ImGui::IsItemActive();
 
         if (ImGui::IsItemActivated())
@@ -53,17 +53,22 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
         {
             for (auto it = m_RepositoryProps.begin(); it != m_RepositoryProps.end(); ++it)
             {
-                const char* s_PropTitle2 = it->first.c_str();
+                const std::string s_PropTitle = it->first.c_str();
 
-                if (!strstr(s_PropTitle2, s_PropTitle))
+				if (s_PropTitle.empty())
+				{
+					continue;
+				}
+
+                if (!FindSubstring(s_PropTitle, s_PropTitle_SubString))
                 {
                     continue;
                 }
 
-                if (ImGui::Selectable(s_PropTitle2))
+                if (ImGui::Selectable(s_PropTitle.c_str()))
                 {
                     ImGui::ClearActiveID();
-                    strcpy_s(s_PropTitle, s_PropTitle2);
+                    strcpy_s(s_PropTitle_SubString, s_PropTitle.c_str());
 
                     for (int i = 0; i < s_NumberOfPropsToSpawn; ++i)
                     {
@@ -127,12 +132,12 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
         ImGui::InputText("##NPCName", s_NpcName, sizeof(s_NpcName));
 
-        static char outfitName[2048] { "" };
+        static char outfitName_SubString[2048] { "" };
 
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
-        const bool s_IsInputTextEnterPressed2 = ImGui::InputText("##OutfitName", outfitName, sizeof(outfitName), ImGuiInputTextFlags_EnterReturnsTrue);
+        const bool s_IsInputTextEnterPressed2 = ImGui::InputText("##OutfitName", outfitName_SubString, sizeof(outfitName_SubString), ImGuiInputTextFlags_EnterReturnsTrue);
         const bool s_IsInputTextActive2 = ImGui::IsItemActive();
 
         if (ImGui::IsItemActivated())
@@ -154,17 +159,22 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
             for (auto it = s_ContentKitManager->m_repositoryGlobalOutfitKits.begin(); it != s_ContentKitManager->m_repositoryGlobalOutfitKits.end(); ++it)
             {
                 TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit2 = &it->second;
-                const char* outfitName2 = s_GlobalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
+                const std::string outfitName = s_GlobalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
 
-                if (!strstr(outfitName2, outfitName))
+				if (outfitName.empty())
+				{
+					continue;
+				}
+
+                if (!FindSubstring(outfitName, outfitName_SubString))
                 {
                     continue;
                 }
 
-                if (ImGui::Selectable(outfitName2))
+                if (ImGui::Selectable(outfitName.c_str()))
                 {
                     ImGui::ClearActiveID();
-                    strcpy_s(outfitName, outfitName2);
+                    strcpy_s(outfitName_SubString, outfitName.c_str());
 
                     s_RepositoryId = it->first;
                     s_GlobalOutfitKit = s_GlobalOutfitKit2;

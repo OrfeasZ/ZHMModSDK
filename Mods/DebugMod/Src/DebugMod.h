@@ -19,6 +19,24 @@ class ZGlobalOutfitKit;
 class ZHitman5;
 class ZTemplateEntityFactory;
 
+inline bool FindSubstring(const std::string& str, const std::string& substring, const bool bCaseSensitive = false) {
+
+	if (substring.empty())
+	{
+		return true;
+	}
+
+	const auto it = std::ranges::search(str, substring,
+	                                    [bCaseSensitive](const char ch1, const char ch2) {
+		                                    if (bCaseSensitive) {
+			                                    return ch1 == ch2;
+		                                    }
+		                                    return std::tolower(ch1) == std::tolower(ch2);
+	                                    })
+	                    .begin();
+	return (it != str.end());
+}
+
 class DebugMod : public IPluginInterface
 {
 public:
@@ -47,7 +65,7 @@ private:
     void DrawSceneBox(bool p_HasFocus);
 
 	static void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8 n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8 n_CurrentOutfitVariationIndex, ZHitman5* p_LocalHitman);
-	void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8 n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8 n_CurrentOutfitVariationindex, ZActor* p_Actor);
+    static void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8 n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8 n_CurrentOutfitVariationindex, ZActor* p_Actor);
 	static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld);
 	static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
 	void SpawnNPC(const std::string& s_NpcName, const ZRepositoryID& repositoryID, const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8 n_CurrentCharacterSetIndex, const std::string& s_CurrentcharSetCharacterType, uint8 p_CurrentOutfitVariationIndex);
@@ -96,6 +114,7 @@ private:
 
 	std::string m_SelectedCharacterName;
     ZEntityRef m_SelectedEntity;
+	ZActor* s_CurrentlySelectedActor = nullptr;
     std::shared_mutex m_EntityMutex;
     std::string m_SelectedEntityName;
     unsigned long long m_SelectedResourceHash = 0;
@@ -117,6 +136,7 @@ private:
     std::multimap<std::string, ZRepositoryID> m_RepositoryProps;
 	const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
 
+	bool bActorSelectedByCamera = false;
     inline static std::unordered_map<unsigned long long, std::string> m_RuntimeResourceIDsToResourceIDs;
     inline static std::mutex m_Mutex;
 
