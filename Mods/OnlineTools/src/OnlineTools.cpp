@@ -146,8 +146,6 @@ void OnlineTools::OnEngineInitialized()
 OnlineTools::~OnlineTools()
 {
     RestoreAuthHeaderChecks();
-    if (m_OldAuthPatch1Code) free(m_OldAuthPatch1Code);
-    if (m_OldAuthPatch2Code) free(m_OldAuthPatch2Code);
 }
 
 #pragma region Hooks
