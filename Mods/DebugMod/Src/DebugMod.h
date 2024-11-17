@@ -68,12 +68,12 @@ private:
     static void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8 n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8 n_CurrentOutfitVariationindex, ZActor* p_Actor);
 	static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld);
 	static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
-	void SpawnNPC(const std::string& s_NpcName, const ZRepositoryID& repositoryID, const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8 n_CurrentCharacterSetIndex, const std::string& s_CurrentcharSetCharacterType, uint8 p_CurrentOutfitVariationIndex);
+    static void SpawnNPC(const std::string& s_NpcName, const ZRepositoryID& repositoryID, const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8 n_CurrentCharacterSetIndex, const std::string& s_CurrentcharSetCharacterType, uint8 p_CurrentOutfitVariationIndex);
 	void LoadRepositoryProps();
     static void LoadHashMap();
     static void DownloadHashMap();
-    std::string GetEntityName(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
-    std::string FindNPCEntityNameInBrickBackReferences(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
+    static std::string GetEntityName(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
+    static std::string FindNPCEntityNameInBrickBackReferences(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
 
     static std::string ConvertDynamicObjectValueTString(const ZDynamicObject* p_DynamicObject);
     void LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData);
@@ -137,6 +137,7 @@ private:
 	const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
 
 	bool bActorSelectedByCamera = false;
+
     inline static std::unordered_map<unsigned long long, std::string> m_RuntimeResourceIDsToResourceIDs;
     inline static std::mutex m_Mutex;
 

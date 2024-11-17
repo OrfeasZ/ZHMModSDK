@@ -240,6 +240,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput))
     {
         Logger::Error("Raycast failed.");
+		m_SelectedEntity = nullptr;
         return;
     }
 
@@ -260,7 +261,8 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
             Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
         }
 
-        m_SelectedEntity = s_RayOutput.m_BlockingEntity;
+		// We've already picked this entity - so let's deselect it
+        m_SelectedEntity = s_RayOutput.m_BlockingEntity == m_SelectedEntity ? nullptr : s_RayOutput.m_BlockingEntity;
         m_SelectedEntityName.clear();
 
     	if (m_SelectedEntity.GetOwningEntity().HasInterface<ZCharacterTemplateAspect>())
@@ -276,7 +278,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 		{
 			if (ZActor* s_Actor = m_SelectedEntity.QueryInterface<ZActor>())
 			{
-				if (!s_CurrentlySelectedActor) // Check against nullptr
+				if (!s_CurrentlySelectedActor)
 				{
 					s_CurrentlySelectedActor = s_Actor;
 				}
@@ -291,7 +293,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
     }
 }
 
-void DebugMod::DrawOptions(bool p_HasFocus)
+void DebugMod::DrawOptions(const bool p_HasFocus)
 {
     if (!p_HasFocus || !m_DebugMenuActive)
     {
@@ -356,10 +358,10 @@ void DebugMod::EquipOutfit(
 
     Functions::ZHitman5_SetOutfit->Call(p_LocalHitman, p_GlobalOutfitKit, p_CurrentCharSetIndex, p_CurrentOutfitVariationIndex, false, false);
 
-    if (p_CurrentCharSetCharacterType == "HeroA")
+    if (p_CurrentCharSetCharacterType != "HeroA")
     {
-        ZOutfitVariationCollection* outfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[p_CurrentCharSetIndex].m_pInterfaceRef;
-        TEntityRef<ZCharsetCharacterType>* charsetCharacterType = &outfitVariationCollection->m_aCharacters[2];
+	    const auto* outfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[p_CurrentCharSetIndex].m_pInterfaceRef;
+	    const auto* charsetCharacterType = &outfitVariationCollection->m_aCharacters[2];
 
         for (size_t i = 0; i < s_HeroOutfitVariations.size(); ++i)
         {
@@ -907,7 +909,7 @@ std::string DebugMod::ConvertDynamicObjectValueTString(const ZDynamicObject* p_D
     }
     else if (strcmp(s_Type->m_pTypeName, "float64") == 0)
     {
-        double value = *p_DynamicObject->As<double>();
+	    const double value = *p_DynamicObject->As<double>();
 
         s_Result = std::to_string(value).c_str();
     }
