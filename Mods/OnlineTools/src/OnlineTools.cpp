@@ -286,7 +286,7 @@ void OnlineTools::SettingsMenu()
 
             // Maximum total size of a domain is 255 characters
             char s_Domain[256] = {};
-            strncpy(s_Domain, m_Domains[i].c_str(), sizeof(s_Domain) - 1);
+            strncpy_s(s_Domain, m_Domains[i].c_str(), sizeof(s_Domain) - 1);
 
             // Apply button
             ImGui::SameLine();
