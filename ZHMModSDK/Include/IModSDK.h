@@ -193,7 +193,7 @@ public:
 	 virtual void ReloadPluginSettings(IPluginInterface* p_Plugin) = 0;
 
     /**
-     * Search for a pattern in the game's memory and patch it with the given code.
+     * Search for a pattern in the game's memory and patch it with the given code, storing the old code at that offset in a provided buffer.
      * @param p_Pattern A sequence of bytes to search for in the game's memory.
      * @param p_Mask A mask to use when searching for the pattern. x = pattern byte, ? = any byte (eg. xxx????x).
      * @param p_NewCode A buffer containing the new code to write to the location where the pattern was found.
