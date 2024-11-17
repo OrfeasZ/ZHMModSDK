@@ -47,6 +47,7 @@ set(MODS
 	Noclip
 	Hitmen
 	DebugCheckKeyEntityEnabler
+	OnlineTools
 )
 
 foreach(MOD IN LISTS MODS)
