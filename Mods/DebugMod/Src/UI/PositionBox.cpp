@@ -34,17 +34,17 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
         if (s_CurrentCamera)
             s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
 
-    	constexpr uint8 columnCount = 4;
-		constexpr uint8 rowCount = 4;
+    	constexpr uint8_t columnCount = 4;
+		constexpr uint8_t rowCount = 4;
 
         ImGui::TextUnformatted("Hitman Transform:");
 		if (ImGui::BeginTable("DebugMod_HitmanPosition", columnCount))
         {
-			for (int i = 0; i < rowCount; ++i)
+			for (size_t i = 0; i < rowCount; ++i)
             {
                 ImGui::TableNextRow();
 
-                for (int j = 0; j < columnCount; ++j)
+                for (size_t j = 0; j < columnCount; ++j)
                 {
                     ImGui::TableSetColumnIndex(j);
 					ImGui::Text("%f", s_HitmanTrans.flt[(i * 4) + j]);
@@ -58,11 +58,11 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 
         if (ImGui::BeginTable("DebugMod_Camera_Position", columnCount))
         {
-            for (int i = 0; i < rowCount; ++i)
+			for (size_t i = 0; i < rowCount; ++i)
             {
                 ImGui::TableNextRow();
 
-                for (int j = 0; j < columnCount; ++j)
+                for (size_t j = 0; j < columnCount; ++j)
                 {
                     ImGui::TableSetColumnIndex(j);
                     ImGui::Text("%f", s_CameraTrans.flt[(i * 4) + j]);

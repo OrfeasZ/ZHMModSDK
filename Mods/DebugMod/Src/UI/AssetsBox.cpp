@@ -70,7 +70,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
                     ImGui::ClearActiveID();
                     strcpy_s(s_PropTitle_SubString, s_PropTitle.c_str());
 
-                    for (int i = 0; i < s_NumberOfPropsToSpawn; ++i)
+                    for (size_t i = 0; i < s_NumberOfPropsToSpawn; ++i)
                     {
                         SpawnRepositoryProp(it->second, s_Button == 1);
                     }
@@ -113,7 +113,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
         if (ImGui::Button("Spawn Prop"))
         {
-            for (int i = 0; i < s_NumberOfPropsToSpawn; ++i)
+			for (size_t i = 0; i < s_NumberOfPropsToSpawn; ++i)
             {
                 SpawnNonRepositoryProp(s_PropAssemblyPath);
             }
@@ -150,9 +150,9 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
         static ZRepositoryID s_RepositoryId = ZRepositoryID("");
         static TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit = nullptr;
-        static uint8 n_CurrentCharacterSetIndex = 0;
+        static uint8_t n_CurrentCharacterSetIndex = 0;
         static std::string s_CurrentcharSetCharacterType = "HeroA";
-        static uint8 n_CurrentOutfitVariationIndex = 0;
+        static uint8_t n_CurrentOutfitVariationIndex = 0;
 
         if (ImGui::BeginPopup("##popup2", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
         {
@@ -238,7 +238,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
         {
             if (s_GlobalOutfitKit)
             {
-                const uint8 s_CurrentCharacterSetIndex2 = n_CurrentCharacterSetIndex;
+                const uint8_t s_CurrentCharacterSetIndex2 = n_CurrentCharacterSetIndex;
                 const size_t s_VariationCount = s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->m_aVariations.size();
 
                 for (size_t i = 0; i < s_VariationCount; ++i)
@@ -262,7 +262,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
         if (ImGui::Button("Spawn NPC"))
         {
-            for (int i = 0; i < s_NumberOfPropsToSpawn3; ++i)
+			for (size_t i = 0; i < s_NumberOfPropsToSpawn3; ++i)
             {
                 SpawnNPC(s_NpcName, s_RepositoryId, s_GlobalOutfitKit, n_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType, n_CurrentOutfitVariationIndex);
             }

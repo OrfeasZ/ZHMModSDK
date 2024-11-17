@@ -40,6 +40,7 @@
 
 #pragma comment(lib, "urlmon.lib")
 
+
 DebugMod::~DebugMod()
 {
 	if (m_TrackCamActive)
@@ -99,40 +100,63 @@ void DebugMod::OnDrawMenu()
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
+	ImGui::SameLine();
+
     if (ImGui::Button("POSITIONS MENU"))
     {
         m_PositionsMenuActive = !m_PositionsMenuActive;
     }
+
+	ImGui::SameLine();
 
     if (ImGui::Button("ENTITY MENU"))
     {
         m_EntityMenuActive = !m_EntityMenuActive;
     }
 
+	ImGui::SameLine();
+
     if (ImGui::Button("PLAYER MENU"))
     {
         m_PlayerMenuActive = !m_PlayerMenuActive;
     }
 
+	ImGui::SameLine();
+
     if (ImGui::Button("ITEMS MENU"))
     {
         m_ItemsMenuActive = !m_ItemsMenuActive;
     }
+	ImGui::SameLine();
 
     if (ImGui::Button("ASSETS MENU"))
     {
         m_AssetsMenuActive = !m_AssetsMenuActive;
     }
+	ImGui::SameLine();
 
     if (ImGui::Button("NPCs MENU"))
     {
         m_NPCsMenuActive = !m_NPCsMenuActive;
     }
+	ImGui::SameLine();
 
     if (ImGui::Button("SCENE MENU"))
     {
         m_SceneMenuActive = !m_SceneMenuActive;
     }
+
+	ImGui::SameLine();
+	ImGui::Button("Extra button1");
+
+	ImGui::SameLine();
+	ImGui::Button("Extra button2");
+
+	ImGui::SameLine();
+	ImGui::Button("Extra button3");
+
+	ImGui::SameLine();
+	ImGui::Button("Extra button4");
 }
 
 void DebugMod::OnDrawUI(bool p_HasFocus)
@@ -235,7 +259,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 
     ZRayQueryOutput s_RayOutput {};
 
-    Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
+    //Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput))
     {
@@ -244,7 +268,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
         return;
     }
 
-    Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
+    //Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
 
     m_From = s_From;
     m_To = s_To;
@@ -258,7 +282,8 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
         if (s_RayOutput.m_BlockingEntity)
         {
             const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
-            Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
+
+           // Logger::Trace("Hit entity of type '{}' with id` '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
         }
 
 		// We've already picked this entity - so let's deselect it
@@ -289,6 +314,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 				}
 			}
 		}
+
         m_EntityMutex.unlock();
     }
 }
@@ -317,12 +343,11 @@ void DebugMod::DrawOptions(const bool p_HasFocus)
 }
 
 void DebugMod::EquipOutfit(
-    const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
-    uint8 p_CurrentCharSetIndex,
-    const std::string& p_CurrentCharSetCharacterType,
-    uint8 p_CurrentOutfitVariationIndex,
-    ZHitman5* p_LocalHitman
-)
+	const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
+	uint8_t p_CurrentCharSetIndex,
+	const std::string& p_CurrentCharSetCharacterType,
+	uint8_t p_CurrentOutfitVariationIndex,
+	ZHitman5* p_LocalHitman)
 {
     std::vector<ZRuntimeResourceID> s_HeroOutfitVariations;
 
@@ -371,12 +396,11 @@ void DebugMod::EquipOutfit(
 }
 
 void DebugMod::EquipOutfit(
-    const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
-    uint8 n_CurrentCharSetIndex,
-    const std::string& s_CurrentCharSetCharacterType,
-    uint8 n_CurrentOutfitVariationIndex,
-    ZActor* p_Actor
-)
+	const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
+	uint8_t n_CurrentCharSetIndex,
+	const std::string& s_CurrentCharSetCharacterType,
+	uint8_t n_CurrentOutfitVariationIndex,
+	ZActor* p_Actor)
 {
 	if (!p_Actor)
 	{
@@ -564,12 +588,12 @@ void DebugMod::SpawnNonRepositoryProp(const std::string& s_PropAssemblyPath)
 }
 
 auto DebugMod::SpawnNPC(
-    const std::string& p_NpcName,
-    const ZRepositoryID& repositoryID,
-    const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit,
-    const uint8 n_CurrentCharacterSetIndex,
-    const std::string& s_CurrentcharSetCharacterType,
-    const uint8 n_CurrentOutfitVariationIndex) -> void
+	const std::string& p_NpcName,
+	const ZRepositoryID& repositoryID,
+	const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit,
+	uint8_t n_CurrentCharacterSetIndex,
+	const std::string& s_CurrentcharSetCharacterType,
+	uint8_t n_CurrentOutfitVariationIndex) -> void
 {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
@@ -778,7 +802,7 @@ std::string DebugMod::GetEntityName(
     unsigned long long s_SubEntitiesEndOffset = s_BinaryReader.Read<unsigned long long>();
     auto s_SubEntityCount = static_cast<unsigned int>((s_SubEntitiesEndOffset - s_SubEntitiesStartOffset) / 0xA8); //0xA8 is size of STemplateBlueprintSubEntity
 
-    for (unsigned int i = 0; i < s_SubEntityCount; ++i)
+    for (size_t i = 0; i < s_SubEntityCount; ++i)
     {
         s_BinaryReader.Seek(s_DataSectionOffset + s_SubEntitiesStartOffset + i * 0xA8 + 0x28);
 
@@ -836,7 +860,7 @@ std::string DebugMod::FindNPCEntityNameInBrickBackReferences(
     std::string s_EntityName;
     ZResourceContainer* s_ResourceContainer = *Globals::ResourceContainer;
 
-    for (unsigned int i = 0; i < s_ResourceContainer->m_resourcesSize; ++i)
+    for (size_t i = 0; i < s_ResourceContainer->m_resourcesSize; ++i)
     {
         const ZResourceContainer::SResourceInfo* s_ResourceInfo = &s_ResourceContainer->m_resources[i];
         unsigned long long s_ResourceHash2 = s_ResourceInfo->rid.GetID();
@@ -1069,7 +1093,7 @@ unsigned long long DebugMod::GetDDSTextureHash(const std::string p_Image)
 
         unsigned s_ResourceCount = s_BinaryReader.Read<unsigned int>();
 
-        for (unsigned int i = 0; i < s_ResourceCount; ++i)
+        for (size_t i = 0; i < s_ResourceCount; ++i)
         {
             auto s_StringLength = s_BinaryReader.Read<unsigned int>();
 
@@ -1180,7 +1204,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 {
     if (m_RenderNpcBoxes || m_RenderNpcNames || m_RenderNpcRepoIds)
     {
-        for (int i = 0; i < *Globals::NextActorId; ++i)
+        for (size_t i = 0; i < *Globals::NextActorId; ++i)
         {
             auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 

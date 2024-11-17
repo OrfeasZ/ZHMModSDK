@@ -11,7 +11,7 @@
 
 #include "imgui_internal.h"
 
-void DebugMod::DrawNPCsBox(bool p_HasFocus)
+void DebugMod::DrawNPCsBox(const bool p_HasFocus)
 {
 	static std::string s_currentlySelectActor_Name;
 	static size_t s_SelectedID = -1;
@@ -113,10 +113,10 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
 
         static TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit = nullptr;
-        static uint8 n_CurrentCharacterSetIndex = 0;
+        static uint8_t n_CurrentCharacterSetIndex = 0;
         static std::string s_CurrentcharSetCharacterType = "Actor";
         static std::string s_CurrentcharSetCharacterType2 = "Actor";
-        static uint8 n_CurrentOutfitVariationIndex = 0;
+        static uint8_t n_CurrentOutfitVariationIndex = 0;
 
 
 		if (s_CurrentlySelectedActor) 
@@ -216,7 +216,7 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
         {
             if (s_GlobalOutfitKit)
             {
-                const uint8 s_CurrentCharacterSetIndex2 = n_CurrentCharacterSetIndex;
+                const uint8_t s_CurrentCharacterSetIndex2 = n_CurrentCharacterSetIndex;
                 const size_t s_VariationCount = s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->m_aVariations.size();
 
                 for (size_t i = 0; i < s_VariationCount; ++i)

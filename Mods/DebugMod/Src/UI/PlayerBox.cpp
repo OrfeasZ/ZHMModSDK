@@ -56,10 +56,10 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
         ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
 
-        static uint8 s_CurrentCharacterSetIndex = 0;
+        static uint8_t s_CurrentCharacterSetIndex = 0;
         static std::string s_CurrentcharSetCharacterType = "HeroA";
 		static std::string s_CurrentcharSetCharacterType2 = "HeroA";
-        static int s_CurrentOutfitVariationIndex = 1;
+		static uint8_t s_CurrentOutfitVariationIndex = 1;
 
         if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
         {
@@ -252,9 +252,9 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
             auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
             const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
 
-            for (unsigned int i = 0; i < s_Hm5ActionManager->m_Actions.size(); ++i)
+            for (size_t i = 0; i < s_Hm5ActionManager->m_Actions.size(); ++i)
             {
-                ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
+	            const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
 
                 if (s_Action->m_eActionType == EActionType::AT_PICKUP)
                 {
@@ -267,9 +267,9 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
 
         if (ImGui::Button("Teleport All NPCs To Player"))
         {
-            auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+	        const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
-            for (int i = 0; i < *Globals::NextActorId; ++i)
+            for (size_t i = 0; i < *Globals::NextActorId; ++i)
             {
                 ZActor* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
                 ZEntityRef s_Ref;

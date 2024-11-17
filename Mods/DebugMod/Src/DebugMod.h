@@ -64,11 +64,11 @@ private:
     void DrawNPCsBox(bool p_HasFocus);
     void DrawSceneBox(bool p_HasFocus);
 
-	static void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8 n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8 n_CurrentOutfitVariationIndex, ZHitman5* p_LocalHitman);
-    static void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8 n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8 n_CurrentOutfitVariationindex, ZActor* p_Actor);
+	static void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8_t n_CurrentOutfitVariationIndex, ZHitman5* p_LocalHitman);
+    static void EquipOutfit(const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CurrentCharSetIndex, const std::string& s_CurrentCharSetCharacterType, uint8_t n_CurrentOutfitVariationindex, ZActor* p_Actor);
 	static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld);
 	static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
-    static void SpawnNPC(const std::string& s_NpcName, const ZRepositoryID& repositoryID, const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8 n_CurrentCharacterSetIndex, const std::string& s_CurrentcharSetCharacterType, uint8 p_CurrentOutfitVariationIndex);
+    static void SpawnNPC(const std::string& s_NpcName, const ZRepositoryID& repositoryID, const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8_t n_CurrentCharacterSetIndex, const std::string& s_CurrentcharSetCharacterType, uint8_t p_CurrentOutfitVariationIndex);
 	void LoadRepositoryProps();
     static void LoadHashMap();
     static void DownloadHashMap();

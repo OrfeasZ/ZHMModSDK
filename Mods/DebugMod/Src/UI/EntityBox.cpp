@@ -175,11 +175,11 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
 
                 if (ImGui::BeginTable("DebugMod_HitmanPosition", 4))
                 {
-                    for (int i = 0; i < 4; ++i)
+                    for (uint8_t i = 0; i < 4; ++i)
                     {
                         ImGui::TableNextRow();
 
-                        for (int j = 0; j < 4; ++j)
+                        for (uint8_t j = 0; j < 4; ++j)
                         {
                             ImGui::TableSetColumnIndex(j);
                             ImGui::Text("%f", s_Trans.flt[(i * 4) + j]);

@@ -28,7 +28,7 @@ void DebugMod::DrawSceneBox(bool p_HasFocus)
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-        for (int i = 0; i < s_EntitySceneContext->m_aLoadedBricks.size(); ++i)
+        for (size_t i = 0; i < s_EntitySceneContext->m_aLoadedBricks.size(); ++i)
         {
             ZRuntimeResourceID s_RuntimeResourceId = s_EntitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
             std::string s_ResourceId = m_RuntimeResourceIDsToResourceIDs[s_RuntimeResourceId.GetID()];
