@@ -39,7 +39,7 @@ DebugConsole::DebugConsole() :
                 std::vector<std::string> s_Split = Util::StringUtils::Split(s_ReadLine, " ");
 
                 for (const std::string& arg : s_Split)
-                    s_Args.push_back(arg);
+                    s_Args.push_back(*new ZString(arg));
 
                 Events::OnConsoleCommand->Call(s_Args);
             }
