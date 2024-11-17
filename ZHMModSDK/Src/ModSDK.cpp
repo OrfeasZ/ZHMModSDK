@@ -483,7 +483,7 @@ void ModSDK::CheckForUpdates() {
 }
 
 // Built-in console commands
-void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
+void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
 	if (p_Args.size() == 1)
 	{
 		if (p_Args[0] == "unloadall")
@@ -500,15 +500,15 @@ void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
 	{
 		if (p_Args[0] == "load")
 		{
-			ModSDK::GetInstance()->GetModLoader()->LoadMod(p_Args[1], true);
+			ModSDK::GetInstance()->GetModLoader()->LoadMod(p_Args[1].c_str(), true);
 		}
 		else if (p_Args[0] == "unload")
 		{
-			ModSDK::GetInstance()->GetModLoader()->UnloadMod(p_Args[1]);
+			ModSDK::GetInstance()->GetModLoader()->UnloadMod(p_Args[1].c_str());
 		}
 		else if (p_Args[0] == "reload")
 		{
-			ModSDK::GetInstance()->GetModLoader()->ReloadMod(p_Args[1]);
+			ModSDK::GetInstance()->GetModLoader()->ReloadMod(p_Args[1].c_str());
 		}
 		else if (p_Args[0] == "config")
 		{
@@ -547,8 +547,8 @@ void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
 				case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT: {
 					try {
 						size_t pos;
-						static_cast<void>(std::stof(p_Args[2], &pos));
-						if (pos != p_Args[2].length())
+						static_cast<void>(std::stof(p_Args[2].c_str(), &pos));
+						if (pos != p_Args[2].size())
 							return Logger::Error("[ZConfigCommand] Invalid input (float), not all characters provided were processed.");
 					} catch (const std::invalid_argument&) {
 						return Logger::Error("[ZConfigCommand] Invalid input (float), input does not represent a float.");
@@ -560,8 +560,8 @@ void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
 				case ZConfigCommand_ECLASSTYPE::ECLASS_INT: {
 					try {
 						size_t pos;
-						unsigned long value = std::stoul(p_Args[2], &pos);
-						if (pos != p_Args[2].length())
+						unsigned long value = std::stoul(p_Args[2].c_str(), &pos);
+						if (pos != p_Args[2].size())
 							return Logger::Error("[ZConfigCommand] Invalid input (integer), not all characters provided were processed.");
 						if (value > (std::numeric_limits<unsigned int>::max)())
 							return Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
@@ -573,7 +573,7 @@ void OnConsoleCommand(void* context, std::vector<std::string> p_Args) {
 					break;
 				}
 				case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
-					if (p_Args[2].length() >= 256)
+					if (p_Args[2].size() >= 256)
 						return Logger::Error("[ZConfigCommand] Invalid input (string), maximum length of 255 exceeded.");
 					break;
 				case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:

@@ -3,11 +3,11 @@
 #include "EventDispatcher.h"
 #include "Common.h"
 
-#include <vector>
-#include <string>
+#include "Glacier/TArray.h"
+#include "Glacier/ZString.h"
 
 class ZHMSDK_API Events
 {
 public:
-    static EventDispatcher<std::vector<std::string>>* OnConsoleCommand;
+    static EventDispatcher<TArray<ZString>>* OnConsoleCommand;
 };

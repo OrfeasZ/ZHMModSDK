@@ -11,6 +11,8 @@
 #include "spdlog/common.h"
 #include "Util/StringUtils.h"
 
+#include "Glacier/TArray.h"
+
 #if _DEBUG
 DebugConsole::DebugConsole() :
     m_Running(true),
@@ -33,7 +35,13 @@ DebugConsole::DebugConsole() :
                 if (s_ReadLine.size() == 0)
                     continue;
 
-                Events::OnConsoleCommand->Call(Util::StringUtils::Split(s_ReadLine, " "));
+                TArray<ZString> s_Args{};
+                std::vector<std::string> s_Split = Util::StringUtils::Split(s_ReadLine, " ");
+
+                for (const std::string& arg : s_Split)
+                    s_Args.push_back(arg);
+
+                Events::OnConsoleCommand->Call(s_Args);
             }
         });
 }

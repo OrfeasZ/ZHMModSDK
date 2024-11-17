@@ -93,7 +93,15 @@ void Console::Draw(bool p_HasFocus)
 
         if (ImGui::IsItemDeactivatedAfterEdit()) {
             Logger::Info("> {}", s_Command);
-            Events::OnConsoleCommand->Call(Util::StringUtils::Split(s_Command, " "));
+
+            TArray<ZString> s_Args{};
+            std::vector<std::string> s_Split = Util::StringUtils::Split(s_Command, " ");
+
+            for (const std::string& arg : s_Split)
+                s_Args.push_back(arg);
+
+            Events::OnConsoleCommand->Call(s_Args);
+
             s_Command[0] = '\0';
             ImGui::SetKeyboardFocusHere(-1);
         }
