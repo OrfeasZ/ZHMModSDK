@@ -156,10 +156,10 @@ DEFINE_PLUGIN_DETOUR(OnlineTools, ZString*, GetConfigHost, void* th, void* a1)
 {
     if (!m_UseHttp) return HookResult<ZString*>(HookAction::Continue());
 
-    ZString* orig_url = p_Hook->CallOriginal(th, a1);
-    ZString* new_url = new ZString(std::regex_replace(orig_url->c_str(), std::regex("https://"), "http://"));
+    ZString* s_OriginalUrl = p_Hook->CallOriginal(th, a1);
+    ZString* s_NewUrl = new ZString(std::regex_replace(s_OriginalUrl->c_str(), std::regex("https://"), "http://"));
 
-    return HookResult<ZString*>(HookAction::Return(), new_url); 
+    return HookResult<ZString*>(HookAction::Return(), s_NewUrl); 
 }
 
 DEFINE_PLUGIN_DETOUR(OnlineTools, bool, Check_SSL_Cert, void* unk1, void* unk2)
