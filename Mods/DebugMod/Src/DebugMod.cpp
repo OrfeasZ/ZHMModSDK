@@ -40,7 +40,6 @@
 
 #pragma comment(lib, "urlmon.lib")
 
-
 DebugMod::~DebugMod()
 {
 	if (m_TrackCamActive)
@@ -100,63 +99,40 @@ void DebugMod::OnDrawMenu()
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
-	ImGui::SameLine();
-
     if (ImGui::Button("POSITIONS MENU"))
     {
         m_PositionsMenuActive = !m_PositionsMenuActive;
     }
-
-	ImGui::SameLine();
 
     if (ImGui::Button("ENTITY MENU"))
     {
         m_EntityMenuActive = !m_EntityMenuActive;
     }
 
-	ImGui::SameLine();
-
     if (ImGui::Button("PLAYER MENU"))
     {
         m_PlayerMenuActive = !m_PlayerMenuActive;
     }
 
-	ImGui::SameLine();
-
     if (ImGui::Button("ITEMS MENU"))
     {
         m_ItemsMenuActive = !m_ItemsMenuActive;
     }
-	ImGui::SameLine();
 
     if (ImGui::Button("ASSETS MENU"))
     {
         m_AssetsMenuActive = !m_AssetsMenuActive;
     }
-	ImGui::SameLine();
 
     if (ImGui::Button("NPCs MENU"))
     {
         m_NPCsMenuActive = !m_NPCsMenuActive;
     }
-	ImGui::SameLine();
 
     if (ImGui::Button("SCENE MENU"))
     {
         m_SceneMenuActive = !m_SceneMenuActive;
     }
-
-	ImGui::SameLine();
-	ImGui::Button("Extra button1");
-
-	ImGui::SameLine();
-	ImGui::Button("Extra button2");
-
-	ImGui::SameLine();
-	ImGui::Button("Extra button3");
-
-	ImGui::SameLine();
-	ImGui::Button("Extra button4");
 }
 
 void DebugMod::OnDrawUI(bool p_HasFocus)
@@ -259,7 +235,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 
     ZRayQueryOutput s_RayOutput {};
 
-    //Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
+    Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput))
     {
@@ -268,7 +244,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
         return;
     }
 
-    //Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
+    Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
 
     m_From = s_From;
     m_To = s_To;
@@ -282,8 +258,7 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
         if (s_RayOutput.m_BlockingEntity)
         {
             const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
-
-           // Logger::Trace("Hit entity of type '{}' with id` '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
+            Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
         }
 
 		// We've already picked this entity - so let's deselect it
@@ -314,7 +289,6 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
 				}
 			}
 		}
-
         m_EntityMutex.unlock();
     }
 }
