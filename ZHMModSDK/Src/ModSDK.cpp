@@ -153,7 +153,15 @@ ModSDK::~ModSDK() {
 #endif
 }
 
-bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OldCode) {
+bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) {
+	return PatchCodeInternal(p_Pattern, p_Mask, p_NewCode, p_CodeSize, p_Offset, nullptr);
+}
+
+bool ModSDK::PatchCodeGetOld(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OldCode) {
+	return PatchCodeInternal(p_Pattern, p_Mask, p_NewCode, p_CodeSize, p_Offset, p_OldCode);
+}
+
+bool ModSDK::PatchCodeInternal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OldCode) {
 	if (!p_Pattern || !p_Mask || !p_NewCode || p_CodeSize == 0) {
 		Logger::Error("Invalid parameters provided to PatchCode call.");
 		return false;

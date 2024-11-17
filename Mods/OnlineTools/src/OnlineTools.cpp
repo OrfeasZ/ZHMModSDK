@@ -57,7 +57,7 @@ void OnlineTools::PatchAuthHeaderChecks()
     if (m_OldAuthPatch2Code == nullptr) m_OldAuthPatch2Code = malloc(6);
 
     // Patch protocol check in ZOnlineManager::HttpRequest
-    if (!SDK()->PatchCode("\x0F\x85\x00\x00\x00\x00\x48\x83\xF9\x00\x75\x00\xE9\x00\x00\x00\x00\x32\xDB", "xx????xxx?x?x????xx", nop, sizeof(nop), 0, m_OldAuthPatch1Code))
+    if (!SDK()->PatchCodeGetOld("\x0F\x85\x00\x00\x00\x00\x48\x83\xF9\x00\x75\x00\xE9\x00\x00\x00\x00\x32\xDB", "xx????xxx?x?x????xx", nop, sizeof(nop), 0, m_OldAuthPatch1Code))
     {
         Logger::Error("[OnlineTools] Failed to patch protocol check in ZOnlineManager::HttpRequest!");
         free(m_OldAuthPatch1Code);
@@ -65,12 +65,12 @@ void OnlineTools::PatchAuthHeaderChecks()
     }
 
     // Patch trusted domain check in ZOnlineManager::HttpRequest
-    if (!SDK()->PatchCode("\x0F\x84\x00\x00\x00\x00\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8B\x05", "xx????xxxx????xxx", nop, sizeof(nop), 0, m_OldAuthPatch2Code))
+    if (!SDK()->PatchCodeGetOld("\x0F\x84\x00\x00\x00\x00\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8B\x05", "xx????xxxx????xxx", nop, sizeof(nop), 0, m_OldAuthPatch2Code))
     {
         Logger::Warn("[OnlineTools] Failed to patch trusted domain check in ZOnlineManager::HttpRequest! Trying Game Pass pattern...");
 
         // It's different on gamepass because of course it is.
-        if (!SDK()->PatchCode("\x0F\x84\x00\x00\x00\x00\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xx????xxxx????xxx", nop, sizeof(nop), 0, m_OldAuthPatch2Code))
+        if (!SDK()->PatchCodeGetOld("\x0F\x84\x00\x00\x00\x00\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xx????xxxx????xxx", nop, sizeof(nop), 0, m_OldAuthPatch2Code))
         {
             Logger::Error("[OnlineTools] Failed to patch trusted domain check in ZOnlineManager::HttpRequest!");
             free(m_OldAuthPatch2Code);

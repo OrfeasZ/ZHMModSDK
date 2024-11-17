@@ -68,10 +68,9 @@ public:
      * @param p_NewCode A buffer containing the new code to write to the location where the pattern was found.
      * @param p_CodeSize The size of the code buffer.
      * @param p_Offset The offset to add to the address where the pattern was found.
-	 * @param p_OldCode A (optional) buffer to store the old code.
      * @return True if the pattern was found and patched, false otherwise.
      */
-    virtual bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OldCode = nullptr) = 0;
+    virtual bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) = 0;
 
     virtual void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) = 0;
 
@@ -192,6 +191,18 @@ public:
 	  * @param p_Plugin The plugin to reload the settings for.
 	  */
 	 virtual void ReloadPluginSettings(IPluginInterface* p_Plugin) = 0;
+
+    /**
+     * Search for a pattern in the game's memory and patch it with the given code.
+     * @param p_Pattern A sequence of bytes to search for in the game's memory.
+     * @param p_Mask A mask to use when searching for the pattern. x = pattern byte, ? = any byte (eg. xxx????x).
+     * @param p_NewCode A buffer containing the new code to write to the location where the pattern was found.
+     * @param p_CodeSize The size of the code buffer.
+     * @param p_Offset The offset to add to the address where the pattern was found.
+	 * @param p_OldCode A buffer to store the old code.
+     * @return True if the pattern was found and patched, false otherwise.
+     */
+    virtual bool PatchCodeGetOld(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OldCode) = 0;
 };
 
 /**
