@@ -33,13 +33,13 @@ std::vector<std::string> Split(const std::string& p_String, const std::string& p
     return s_Parts;
 }
 
-std::string Join(std::vector<std::string>& strings, std::string& delim)
+std::string Join(std::vector<std::string>& p_Strings, std::string& p_Delimeter)
 {
     return std::accumulate(
-        strings.begin(), strings.end(), std::string(),
-        [&delim](std::string x, std::string y)
+        p_Strings.begin(), p_Strings.end(), std::string(),
+        [&p_Delimeter](std::string x, std::string y)
         {
-            return x.empty() ? y : x + delim + y;
+            return x.empty() ? y : x + p_Delimeter + y;
         }
     );
 }
@@ -249,20 +249,20 @@ void OnlineTools::SettingsMenu()
         else
             CenteredText("Press enter after editing a domain to save it.");
 
-        std::unique_ptr<bool[]> default_state(new bool[m_Domains.size()]);
+        std::unique_ptr<bool[]> s_IsDefault(new bool[m_Domains.size()]);
 
         for (size_t i = 0; i < m_Domains.size(); ++i)
         {
-            default_state[i] = m_DefaultDomain == i;
+            s_IsDefault[i] = m_DefaultDomain == i;
 
             // Checkbox to mark as default domain
-            if (ImGui::Checkbox(("##Default" + std::to_string(i)).c_str(), &default_state[i]))
+            if (ImGui::Checkbox(("##Default" + std::to_string(i)).c_str(), &s_IsDefault[i]))
             {
-                m_DefaultDomain = default_state[i] ? i : -1;
+                m_DefaultDomain = s_IsDefault[i] ? i : -1;
                 SetSettingInt("domains", "default", m_DefaultDomain);
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip(default_state[i] ? "This domain is currently set as the default. Uncheck or check another to remove." : "Make this domain the default one when the game starts.");
+                ImGui::SetTooltip(s_IsDefault[i] ? "This domain is currently set as the default. Uncheck or check another to remove." : "Make this domain the default one when the game starts.");
 
             // Delete button
             ImGui::SameLine();
@@ -270,7 +270,7 @@ void OnlineTools::SettingsMenu()
             {
                 m_Domains.erase(m_Domains.begin() + i);
 
-                if (default_state[i])
+                if (s_IsDefault[i])
                 {
                     m_DefaultDomain = -1;
                     SetSettingInt("domains", "default", -1);
@@ -284,26 +284,26 @@ void OnlineTools::SettingsMenu()
                 continue;
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Delete this domain%s.", default_state[i] ? " and remove it as the default" : "");
+                ImGui::SetTooltip("Delete this domain%s.", s_IsDefault[i] ? " and remove it as the default" : "");
 
             // Maximum total size of a domain is 255 characters
-            char domain[256] = {};
-            strncpy(domain, m_Domains[i].c_str(), sizeof(domain) - 1);
+            char s_Domain[256] = {};
+            strncpy(s_Domain, m_Domains[i].c_str(), sizeof(s_Domain) - 1);
 
             // Apply button
             ImGui::SameLine();
             if (ImGui::Button((ICON_MD_KEYBOARD_RETURN "##" + std::to_string(i)).c_str()))
-                Functions::ZConfigCommand_ExecuteCommand->Call("online_VersionConfigDomain", domain);
+                Functions::ZConfigCommand_ExecuteCommand->Call("online_VersionConfigDomain", s_Domain);
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Apply this domain now, it will persist until you apply a different one or close the game.");
 
             // Domain box
             ImGui::SameLine();
-            ImGui::InputText(("##Domain" + std::to_string(i)).c_str(), domain, IM_ARRAYSIZE(domain));
+            ImGui::InputText(("##Domain" + std::to_string(i)).c_str(), s_Domain, IM_ARRAYSIZE(s_Domain));
             if (ImGui::IsItemHovered()) ImGui::SetTooltip("Enter a domain here, press enter to save.");
 
             if (ImGui::IsItemDeactivatedAfterEdit())
             {
-                m_Domains[i] = domain;
+                m_Domains[i] = s_Domain;
                 SaveDomains();
             }
         }
