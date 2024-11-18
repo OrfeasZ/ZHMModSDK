@@ -48,14 +48,7 @@ DebugMod::~DebugMod()
 	}
 
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
-
-	try
-	{
-		Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
-	} catch (std::exception e)
-	{
-		Logger::Error("Exception: {}", e.what());
-	}
+	Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
 
 void DebugMod::Init()
@@ -379,6 +372,7 @@ void DebugMod::EquipOutfit(
 	if (!p_Actor)
 	{
 		Logger::Error("Could not equip outfit - no actor selected");
+		return;
 	}
 
 	std::vector<ZRuntimeResourceID> s_ActorOutfitVariations;
