@@ -92,7 +92,7 @@ void OnlineTools::RestoreAuthHeaderChecks()
         m_OldAuthPatch1Code = nullptr;
     }
     else
-        Logger::Error("[OnlineTools] Unable to restore protocol check in ZOnlineManager::HttpRequest! Old code not found.");
+        Logger::Warn("[OnlineTools] Unable to restore protocol check in ZOnlineManager::HttpRequest! Old code not found.");
 
     // Patch trusted domain check in ZOnlineManager::HttpRequest
     if (m_OldAuthPatch2Code)
@@ -110,7 +110,7 @@ void OnlineTools::RestoreAuthHeaderChecks()
         m_OldAuthPatch2Code = nullptr;
     }
     else
-        Logger::Error("[OnlineTools] Unable to restore trusted domain check in ZOnlineManager::HttpRequest! Old code not found.");
+        Logger::Warn("[OnlineTools] Unable to restore trusted domain check in ZOnlineManager::HttpRequest! Old code not found.");
 }
 
 #pragma endregion
