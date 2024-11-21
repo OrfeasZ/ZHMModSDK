@@ -101,7 +101,7 @@ void OnlineTools::RestoreAuthHeaderChecks()
         {
             Logger::Warn("[OnlineTools] Failed to restore trusted domain check in ZOnlineManager::HttpRequest! Trying Game Pass pattern...");
 
-            // It's different on gamepass because of course it is.
+            // It's different on game pass because of course it is.
             if (!SDK()->PatchCode("\x90\x90\x90\x90\x90\x90\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xxxxxxxxxx????xxx", m_OldAuthPatch2Code, 6, 0))
                 Logger::Error("[OnlineTools] Failed to restore trusted domain check in ZOnlineManager::HttpRequest!");
         }
