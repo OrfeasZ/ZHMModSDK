@@ -19,7 +19,7 @@ PATTERN_RELATIVE_GLOBAL(
     "\x48\x89\x05\x00\x00\x00\x00\x48\x8B\x05\x00\x00\x00\x00\x0F\x57\xC9",
     "xxx????xxx????xxx",
     3,
-    ZGameTimeManager**, GameTimeManager
+    ZGameTimeManager*, GameTimeManager
 );
 
 PATTERN_RELATIVE_GLOBAL(

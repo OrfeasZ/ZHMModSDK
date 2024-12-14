@@ -35,8 +35,7 @@ class ZInputActionManager;
 class IItem;
 class ZSetpieceEntity;
 
-class ZHMSDK_API Functions
-{
+class ZHMSDK_API Functions {
 public:
 	static EngineFunction<void(ZActor* th)>* ZActor_OnOutfitChanged;
 	static EngineFunction<void(ZActor* th)>* ZActor_ReviveActor;
@@ -44,12 +43,12 @@ public:
 	static EngineFunction<void(ZHM5BaseCharacter* th, bool inMotion)>* ZHM5BaseCharacter_ActivateRagdoll;
 	static EngineFunction<void(ZHM5BaseCharacter* th)>* ZHM5BaseCharacter_DeactivateRagdoll;
 	static EngineFunction<ZCameraEntity*()>* GetCurrentCamera;
-	static EngineFunction<void(ZSpatialEntity* th, SMatrix* out)>* ZSpatialEntity_WorldTransform;
-	static EngineFunction<void(ZEngineAppCommon* th)>* ZEngineAppCommon_CreateFreeCamera;
+	//static EngineFunction<void(ZSpatialEntity* th, SMatrix* out)>* ZSpatialEntity_WorldTransform;
+	//static EngineFunction<void(ZEngineAppCommon* th)>* ZEngineAppCommon_CreateFreeCamera;
 	static EngineFunction<TEntityRef<IRenderDestinationEntity>*(ZCameraManager* th, TEntityRef<IRenderDestinationEntity>* result)>* ZCameraManager_GetActiveRenderDestinationEntity;
 	static EngineFunction<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
 	static EngineFunction<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
-	static EngineFunction<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
+	//static EngineFunction<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
 	static EngineFunction<ZHM5InputControl*(ZHM5InputManager* th)>* ZHM5InputManager_GetInputControlForLocalPlayer;
 	static EngineFunction<void(ZResourceManager* th, int index)>* ZResourceManager_UninstallResource;
 	static EngineFunction<void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef& parent, void* a6, int64_t a7)>* ZEntityManager_NewEntity;

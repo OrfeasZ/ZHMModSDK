@@ -61,12 +61,12 @@ class ZPlayerRegistry;
 class ZHitman5;
 class ZDynamicPageController;
 class ZGameLobbyManagerEpic;
-template <class> class TEntityRef;
+template<class>
+class TEntityRef;
 struct EOS_PlatformHandle;
 struct EOS_Platform_Options;
 
-class ZHMSDK_API Hooks
-{
+class ZHMSDK_API Hooks {
 public:
 	static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
 	static Hook<void(ZEntitySceneContext*, ZSceneData&)>* ZEntitySceneContext_LoadScene;
@@ -100,10 +100,10 @@ public:
 	static Hook<void(void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int param_6)>* Http_WinHttpCallback;
 	static Hook<void(ZHttpResultDynamicObject* th)>* ZHttpResultDynamicObject_OnBufferReady;
 	static Hook<ZTemplateEntityBlueprintFactory*(ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)>* ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory;
-	static Hook<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
+	//static Hook<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
 	static Hook<void(ZDynamicPageController* th, ZDynamicObject& data, void* a3, void* a4, void* a5)>* ZDynamicPageController_Expand;
 	static Hook<void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)>* ZDynamicPageController_HandleActionObject2;
-	static Hook<void*(void* th, void* a2)>* ZLevelManagerStateCondition_ZLevelManagerStateCondition;
+	//static Hook<void*(void* th, void* a2)>* ZLevelManagerStateCondition_ZLevelManagerStateCondition;
 	static Hook<void*(void* th, void* a1)>* ZLoadingScreenVideo_ActivateLoadingScreen;
 	static Hook<bool(void* th, void* a1)>* ZLoadingScreenVideo_StartNewVideo;
 	static Hook<ZString*(void* th, void* a1)>* ZOnlineVersionConfig_GetConfigHost;
