@@ -80,7 +80,7 @@ void OnlineTools::RestoreAuthHeaderChecks()
     // Restore protocol check in ZOnlineManager::HttpRequest
     if (m_OldAuthPatch1Code)
     {
-        if (!SDK()->PatchCode("\x90\x90\x48\x83\xF9\x00\x75\x00\xEB\x00\x49\x8B\xCF", "x?xxx?x?x?xxx", m_OldAuthPatch1Code, 2, 0))
+        if (!SDK()->PatchCode("\x90\x90\x48\x83\xF9\x00\x75\x00\xEB\x00\x49\x8B\xCF", "xxxxx?x?x?xxx", m_OldAuthPatch1Code, 2, 0))
             Logger::Error("[OnlineTools] Failed to restore protocol check in ZOnlineManager::HttpRequest!");
 
         free(m_OldAuthPatch1Code);
@@ -92,7 +92,7 @@ void OnlineTools::RestoreAuthHeaderChecks()
     // Patch trusted domain check in ZOnlineManager::HttpRequest
     if (m_OldAuthPatch2Code)
     {
-        if (!SDK()->PatchCode("\x90\x90\x90\x90\x90\x90\x45\x84\xED\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xx????xxxxx????xxx", m_OldAuthPatch2Code, 6, 0))
+        if (!SDK()->PatchCode("\x90\x90\x90\x90\x90\x90\x45\x84\xED\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xxxxxxxxxxx????xxx", m_OldAuthPatch2Code, 6, 0))
             Logger::Error("[OnlineTools] Failed to restore trusted domain check in ZOnlineManager::HttpRequest!");
 
         free(m_OldAuthPatch2Code);
