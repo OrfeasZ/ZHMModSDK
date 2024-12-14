@@ -51,13 +51,14 @@ std::string Join(std::vector<std::string>& p_Strings, std::string& p_Delimeter)
 // Patches the game so the Authorization header is sent to non-HTTPS and untrusted servers.
 void OnlineTools::PatchAuthHeaderChecks()
 {
-    uint8_t nop[6] = {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
+    uint8_t nop_2[2] = {0x90, 0x90};
+    uint8_t nop_6[6] = {0x90, 0x90, 0x90, 0x90, 0x90, 0x90};
     
-    if (m_OldAuthPatch1Code == nullptr) m_OldAuthPatch1Code = malloc(6);
+    if (m_OldAuthPatch1Code == nullptr) m_OldAuthPatch1Code = malloc(2);
     if (m_OldAuthPatch2Code == nullptr) m_OldAuthPatch2Code = malloc(6);
 
     // Patch protocol check in ZOnlineManager::HttpRequest
-    if (!SDK()->PatchCodeStoreOriginal("\x0F\x85\x00\x00\x00\x00\x48\x83\xF9\x00\x75\x00\xE9\x00\x00\x00\x00\x32\xDB", "xx????xxx?x?x????xx", nop, sizeof(nop), 0, m_OldAuthPatch1Code))
+    if (!SDK()->PatchCodeStoreOriginal("\x75\x00\x48\x83\xF9\x00\x75\x00\xEB\x00\x49\x8B\xCF", "x?xxx?x?x?xxx", nop_2, sizeof(nop_2), 0, m_OldAuthPatch1Code))
     {
         Logger::Error("[OnlineTools] Failed to patch protocol check in ZOnlineManager::HttpRequest!");
         free(m_OldAuthPatch1Code);
@@ -65,17 +66,11 @@ void OnlineTools::PatchAuthHeaderChecks()
     }
 
     // Patch trusted domain check in ZOnlineManager::HttpRequest
-    if (!SDK()->PatchCodeStoreOriginal("\x0F\x84\x00\x00\x00\x00\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8B\x05", "xx????xxxx????xxx", nop, sizeof(nop), 0, m_OldAuthPatch2Code))
+    if (!SDK()->PatchCodeStoreOriginal("\x0F\x84\x00\x00\x00\x00\x45\x84\xED\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xx????xxxxx????xxx", nop_6, sizeof(nop_6), 0, m_OldAuthPatch2Code))
     {
-        Logger::Warn("[OnlineTools] Failed to patch trusted domain check in ZOnlineManager::HttpRequest! Trying Game Pass pattern...");
-
-        // It's different on gamepass because of course it is.
-        if (!SDK()->PatchCodeStoreOriginal("\x0F\x84\x00\x00\x00\x00\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xx????xxxx????xxx", nop, sizeof(nop), 0, m_OldAuthPatch2Code))
-        {
-            Logger::Error("[OnlineTools] Failed to patch trusted domain check in ZOnlineManager::HttpRequest!");
-            free(m_OldAuthPatch2Code);
-            m_OldAuthPatch2Code = nullptr;
-        }
+        Logger::Error("[OnlineTools] Failed to patch trusted domain check in ZOnlineManager::HttpRequest!");
+        free(m_OldAuthPatch2Code);
+        m_OldAuthPatch2Code = nullptr;
     }
 }
 
@@ -85,7 +80,7 @@ void OnlineTools::RestoreAuthHeaderChecks()
     // Restore protocol check in ZOnlineManager::HttpRequest
     if (m_OldAuthPatch1Code)
     {
-        if (!SDK()->PatchCode("\x90\x90\x90\x90\x90\x90\x48\x83\xF9\x00\x75\x00\xE9\x00\x00\x00\x00\x32\xDB", "xxxxxxxxx?x?x????xx", m_OldAuthPatch1Code, 6, 0))
+        if (!SDK()->PatchCode("\x90\x90\x48\x83\xF9\x00\x75\x00\xEB\x00\x49\x8B\xCF", "x?xxx?x?x?xxx", m_OldAuthPatch1Code, 2, 0))
             Logger::Error("[OnlineTools] Failed to restore protocol check in ZOnlineManager::HttpRequest!");
 
         free(m_OldAuthPatch1Code);
@@ -97,14 +92,8 @@ void OnlineTools::RestoreAuthHeaderChecks()
     // Patch trusted domain check in ZOnlineManager::HttpRequest
     if (m_OldAuthPatch2Code)
     {
-        if (!SDK()->PatchCode("\x90\x90\x90\x90\x90\x90\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8B\x05", "xxxxxxxxxx????xxx", m_OldAuthPatch2Code, 6, 0))
-        {
-            Logger::Warn("[OnlineTools] Failed to restore trusted domain check in ZOnlineManager::HttpRequest! Trying Game Pass pattern...");
-
-            // It's different on game pass because of course it is.
-            if (!SDK()->PatchCode("\x90\x90\x90\x90\x90\x90\x84\xDB\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xxxxxxxxxx????xxx", m_OldAuthPatch2Code, 6, 0))
-                Logger::Error("[OnlineTools] Failed to restore trusted domain check in ZOnlineManager::HttpRequest!");
-        }
+        if (!SDK()->PatchCode("\x90\x90\x90\x90\x90\x90\x45\x84\xED\x0F\x85\x00\x00\x00\x00\x48\x8D\x55", "xx????xxxxx????xxx", m_OldAuthPatch2Code, 6, 0))
+            Logger::Error("[OnlineTools] Failed to restore trusted domain check in ZOnlineManager::HttpRequest!");
 
         free(m_OldAuthPatch2Code);
         m_OldAuthPatch2Code = nullptr;
