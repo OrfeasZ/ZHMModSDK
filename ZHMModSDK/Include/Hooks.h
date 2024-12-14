@@ -106,6 +106,9 @@ public:
 	//static Hook<void*(void* th, void* a2)>* ZLevelManagerStateCondition_ZLevelManagerStateCondition;
 	static Hook<void*(void* th, void* a1)>* ZLoadingScreenVideo_ActivateLoadingScreen;
 	static Hook<bool(void* th, void* a1)>* ZLoadingScreenVideo_StartNewVideo;
+	static Hook<ZString*(void* th, void* a1)>* ZOnlineVersionConfig_GetConfigHost;
+	static Hook<ZString*(void* th, void* a1, void* a2, void* a3)>* ZOnlineVersionConfig_GetConfigUrl;
+	static Hook<uint32_t(const char* str)>* ZConfigCommand_Name_Hasher;
 	static Hook<EOS_PlatformHandle*(EOS_Platform_Options* Options)>* EOS_Platform_Create;
 	//static Hook<void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZTemplateEntityFactory_ConfigureEntity;
 	//static Hook<void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZCppEntityFactory_ConfigureEntity;

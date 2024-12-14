@@ -57,7 +57,7 @@ public:
         while (s_Registration != nullptr)
         {
             const auto s_Listener = static_cast<EventListener_t>(s_Registration->Listener);
-            s_Listener(s_Registration->Context);
+            s_Listener(s_Registration->Context, p_Args...);
             s_Registration = *++s_Registrations;
         }
 
