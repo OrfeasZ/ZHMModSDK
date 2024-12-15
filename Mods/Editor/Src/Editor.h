@@ -46,7 +46,12 @@ public:
 	std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
 	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
 	ZEntityRef FindEntity(EntitySelector p_Selector);
+	std::string getCollisionHash(auto s_SelectedEntity);
+	std::vector<std::tuple<std::string, Quat, ZEntityRef>> FindPrims();
+	std::vector<std::tuple<std::string, Quat, ZEntityRef>> FindPfBoxEntities();
 	void RebuildEntityTree();
+	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
+	static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
     void SpawnCameras();
@@ -62,7 +67,9 @@ private:
 
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
-    bool SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId);
+	void SearchForEntityByIdPressed(const char* s_EntitySearchInput);
+	static int SearchForEntityByIdChanged(ImGuiInputTextCallbackData* data);
+	bool SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId);
     bool SearchForEntityByType(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName);
     bool SearchForEntityByName(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName);
 	void UpdateEntities();
@@ -107,12 +114,14 @@ private:
 
 	void SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
+	auto* GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property);
+	Quat GetQuatFromProperty(ZEntityRef p_Entity);
+	Quat GetParentQuat(ZEntityRef p_Entity);
+
 	void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 	void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
 	void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-
-	static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 	static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
 private:
@@ -148,6 +157,11 @@ private:
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
     bool m_ShouldScrollToEntity = false;
+
+	int m_SearchForEntityByIdIndex = -1;
+	int m_SearchForEntityByIdType = -1;
+
+	std::vector<std::vector<SVector3>> m_NavpAreas;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;
