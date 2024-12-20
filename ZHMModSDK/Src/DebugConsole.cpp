@@ -11,6 +11,8 @@
 #include "spdlog/common.h"
 #include "Util/StringUtils.h"
 
+#include "Glacier/TArray.h"
+
 #if _DEBUG
 DebugConsole::DebugConsole() :
     m_Running(true),
@@ -33,36 +35,13 @@ DebugConsole::DebugConsole() :
                 if (s_ReadLine.size() == 0)
                     continue;
 
-                auto s_Parts = Util::StringUtils::Split(s_ReadLine, " ");
+                TArray<ZString> s_Args{};
+                std::vector<std::string> s_Split = Util::StringUtils::Split(s_ReadLine, " ");
 
-                if (s_Parts.size() == 1)
-                {
-                    if (s_Parts[0] == "unloadall")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
-                    }
-                    else if (s_Parts[0] == "reloadall")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
-                    }
-                }
-                if (s_Parts.size() == 2)
-                {
-                    if (s_Parts[0] == "load")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->LoadMod(s_Parts[1], true);
-                    }
-                    else if (s_Parts[0] == "unload")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->UnloadMod(s_Parts[1]);
-                    }
-                    else if (s_Parts[1] == "reload")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->ReloadMod(s_Parts[1]);
-                    }
-                }
+                for (const std::string& arg : s_Split)
+                    s_Args.push_back(*new ZString(arg));
 
-                Events::OnConsoleCommand->Call();
+                Events::OnConsoleCommand->Call(s_Args);
             }
         });
 }

@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "EngineFunction.h"
+#include "Glacier/ZConfigCommand.h"
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 #include "Glacier/ZMath.h"
@@ -65,4 +66,7 @@ public:
 	static EngineFunction<ZInputTokenStream::ZTokenData*(ZInputTokenStream* th, ZInputTokenStream::ZTokenData* result)>* ZInputTokenStream_ParseToken;
 	static EngineFunction<bool(ZInputActionManager* th, ZInputTokenStream* pkStream)>* ZInputActionManager_ParseAsignment;
 	static EngineFunction<void(ZActor* th, TEntityRef<IItem> rKillItem, TEntityRef<ZSetpieceEntity> rKillSetpiece, EDamageEvent eDamageEvent, EDeathBehavior eDeathBehavior)>* ZActor_KillActor;
+	static EngineFunction<void(const char* pCommandName, const char* argv)>* ZConfigCommand_ExecuteCommand;
+	static EngineFunction<ZConfigCommand*(uint32_t commandNameHash)>* ZConfigCommand_GetConfigCommand;
+	static EngineFunction<ZConfigCommand*()>* ZConfigCommand_First;
 };

@@ -3,8 +3,11 @@
 #include "EventDispatcher.h"
 #include "Common.h"
 
+#include "Glacier/TArray.h"
+#include "Glacier/ZString.h"
+
 class ZHMSDK_API Events
 {
 public:
-    static EventDispatcher<void>* OnConsoleCommand;
+    static EventDispatcher<TArray<ZString>>* OnConsoleCommand;
 };

@@ -4,4 +4,4 @@
 
 std::unordered_set<EventDispatcherBase*>* EventDispatcherRegistry::g_Dispatchers = nullptr;
 
-DEFINE_EVENT(OnConsoleCommand, void)
+DEFINE_EVENT(OnConsoleCommand, TArray<ZString>)
