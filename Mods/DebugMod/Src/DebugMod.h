@@ -39,7 +39,6 @@ private:
     // UI Drawing
     void DrawOptions(bool p_HasFocus);
     void DrawPositionBox(bool p_HasFocus);
-    void DrawEntityBox(bool p_HasFocus);
     void DrawPlayerBox(bool p_HasFocus);
     void DrawItemsBox(bool p_HasFocus);
     void DrawAssetsBox(bool p_HasFocus);
@@ -93,14 +92,6 @@ private:
     bool m_Moving = false;
     float m_MoveDistance = 0.0f;
     bool m_HoldingMouse = false;
-
-    ZEntityRef m_SelectedEntity;
-    std::shared_mutex m_EntityMutex;
-    std::string m_SelectedEntityName;
-    unsigned long long m_SelectedResourceHash = 0;
-    unsigned long long m_EntityId = 0;
-    unsigned long long m_BrickEntityId = 0;
-    std::set<unsigned long long> m_BrickHashes;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;

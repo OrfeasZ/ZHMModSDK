@@ -96,11 +96,11 @@ void Editor::DrawEntityProperties() {
 		if (s_SelectedEntity.GetOwningEntity())
 			s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SelectedEntity.GetOwningEntity().GetBlueprintFactory());
 
-		if (s_Factory && s_Factory->m_pTemplateEntityBlueprint) {
+		if (s_Factory) {
 			// This is also probably wrong.
 			auto s_Index = s_Factory->GetSubEntityIndex(s_SelectedEntity->GetType()->m_nEntityId);
 
-			if (s_Index != -1)
+			if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint)
 				ImGui::TextUnformatted(
 					fmt::format(
 						"Entity Name: {}",

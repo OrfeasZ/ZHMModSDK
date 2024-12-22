@@ -74,10 +74,9 @@ void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 		Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
     }
 
-    (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_TrackCamActive);
-
-    if (m_TrackCamActive)
-    {
+    if (m_TrackCamActive) 
+	{
+		(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_TrackCamActive);
         UpdateTrackCam(); 
     }
 }
@@ -130,9 +129,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
     ImGuizmo::BeginFrame();
 
     DrawOptions(p_HasFocus);
-    DrawEntityBox(p_HasFocus);
     DrawAssetsBox(p_HasFocus);
-    DrawEntityBox(p_HasFocus);
     DrawItemsBox(p_HasFocus);
     DrawNPCsBox(p_HasFocus);
     DrawPlayerBox(p_HasFocus);
@@ -173,33 +170,6 @@ void DebugMod::OnDrawUI(bool p_HasFocus)
     }
 
     ImGuizmo::Enable(p_HasFocus);
-
-    m_EntityMutex.lock_shared();
-
-    if (m_SelectedEntity)
-    {
-        if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call())
-        {
-            if (const auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>())
-            {
-                auto s_ModelMatrix = s_SpatialEntity->GetWorldMatrix();
-                auto s_ViewMatrix = s_CurrentCamera->GetViewMatrix();
-                const SMatrix s_ProjectionMatrix = *s_CurrentCamera->GetProjectionMatrix();
-
-                ImGuizmo::SetRect(0, 0, s_ImgGuiIO.DisplaySize.x, s_ImgGuiIO.DisplaySize.y);
-
-                if (ImGuizmo::Manipulate(&s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace, &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? &m_SnapValue[0] : NULL))
-                {
-                    s_SpatialEntity->SetWorldMatrix(s_ModelMatrix);
-
-                    if (const auto s_PhysicsAspect = m_SelectedEntity.QueryInterface<ZStaticPhysicsAspect>())
-                        s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
-                }
-            }
-        }
-    }
-
-    m_EntityMutex.unlock_shared();
 }
 
 void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
@@ -240,22 +210,6 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick)
     m_To = s_To;
     m_Hit = s_RayOutput.m_vPosition;
     m_Normal = s_RayOutput.m_vNormal;
-
-    if (p_FirstClick)
-    {
-        m_EntityMutex.lock();
-
-        if (s_RayOutput.m_BlockingEntity)
-        {
-            const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
-            Logger::Trace("Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName, s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId);
-        }
-
-        m_SelectedEntity = s_RayOutput.m_BlockingEntity;
-        m_SelectedEntityName.clear();
-
-        m_EntityMutex.unlock();
-    }
 }
 
 void DebugMod::DrawOptions(bool p_HasFocus)
@@ -1186,23 +1140,6 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
         }
     }
 
-    m_EntityMutex.lock_shared();
-
-    if (m_SelectedEntity)
-    {
-        auto* s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>();
-
-		auto s_Transform = s_SpatialEntity->GetWorldMatrix();
-
-        float4 s_Min, s_Max;
-
-        s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
-
-        p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(0.f, 0.f, 1.f, 1.f));
-    }
-
-    m_EntityMutex.unlock_shared();
-
     /*SVector2 s_StartPos;
     if (p_Renderer->WorldToScreen(SVector3(m_From.x, m_From.y, m_From.z), s_StartPos))
         p_Renderer->DrawText2D("0", s_StartPos, SVector4(1, 1, 1, 1), 0, 0.5f);
@@ -1259,15 +1196,6 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZScen
 
 DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
-    m_EntityMutex.lock();
-    m_SelectedEntity = ZEntityRef();
-
-    m_SelectedEntityName = "";
-    m_SelectedResourceHash = 0;
-    m_EntityId = 0;
-    m_BrickEntityId = 0;
-    m_BrickHashes.clear();
-
     m_TextureSrvGpuHandle = {};
     m_Width = 0;
     m_Height = 0;
@@ -1275,8 +1203,6 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool
     m_TextureResourceData.clear();
     m_RepositoryProps.clear();
     m_Hm5CrippleBox = nullptr;
-
-    m_EntityMutex.unlock();
 
     if (m_TrackCamActive)
         DisableTrackCam();
