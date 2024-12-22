@@ -21,7 +21,7 @@ find_package(ZLIB REQUIRED)
 find_package(simdjson CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(semver CONFIG REQUIRED)
-CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
+#CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
 CPMAddPackage("gh:felixguendling/cista@0.14")
 CPMAddPackage("gh:OrfeasZ/ZHMTools@3.4.3")
 #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
@@ -46,7 +46,7 @@ set(MODS
 	Editor
 	Clumsy
 	Noclip
-	Hitmen
+	#Hitmen
 	DebugCheckKeyEntityEnabler
 )
 
