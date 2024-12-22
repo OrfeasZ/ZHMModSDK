@@ -71,8 +71,7 @@ void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef)
     {
         Logger::Debug("Creating free camera.");
-        // TODO(update)
-		//Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
+		Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
     }
 
     (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_TrackCamActive);

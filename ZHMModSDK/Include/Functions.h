@@ -43,7 +43,7 @@ public:
 	static EngineFunction<void(ZHM5BaseCharacter* th)>* ZHM5BaseCharacter_DeactivateRagdoll;
 	static EngineFunction<ZCameraEntity*()>* GetCurrentCamera;
 	//static EngineFunction<void(ZSpatialEntity* th, SMatrix* out)>* ZSpatialEntity_WorldTransform;
-	//static EngineFunction<void(ZEngineAppCommon* th)>* ZEngineAppCommon_CreateFreeCamera;
+	static EngineFunction<void(ZEngineAppCommon* th)>* ZEngineAppCommon_CreateFreeCamera;
 	static EngineFunction<TEntityRef<IRenderDestinationEntity>*(ZCameraManager* th, TEntityRef<IRenderDestinationEntity>* result)>* ZCameraManager_GetActiveRenderDestinationEntity;
 	static EngineFunction<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
 	static EngineFunction<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
