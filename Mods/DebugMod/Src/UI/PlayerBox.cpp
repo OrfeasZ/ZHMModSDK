@@ -17,7 +17,7 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
     ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
 
     TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    SDK()->GetLocalPlayer(s_LocalHitman);
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
     const auto s_Showing = ImGui::Begin("PLAYER", &m_PlayerMenuActive);

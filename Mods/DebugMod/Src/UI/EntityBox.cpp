@@ -241,7 +241,7 @@ void DebugMod::DrawEntityBox(bool p_HasFocus)
                 if (ImGui::Button("Move to Hitman"))
                 {
                     TEntityRef<ZHitman5> s_LocalHitman;
-                    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+                    SDK()->GetLocalPlayer(s_LocalHitman);
 
                     auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 

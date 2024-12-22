@@ -127,6 +127,8 @@ public:
 	void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) override;
 	void ReloadPluginSettings(IPluginInterface* p_Plugin) override;
 
+	void GetLocalPlayer(TEntityRef<ZHitman5>& p_Out) override;
+
 private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);

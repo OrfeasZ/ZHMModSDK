@@ -987,6 +987,11 @@ void ModSDK::ReloadPluginSettings(IPluginInterface* p_Plugin) {
 	s_Settings->Reload();
 }
 
+void ModSDK::GetLocalPlayer(TEntityRef<ZHitman5>& p_Out) {
+	p_Out = {};
+	// TODO(update)
+}
+
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {
 	auto s_Result = p_Hook->CallOriginal(th, a2);
 

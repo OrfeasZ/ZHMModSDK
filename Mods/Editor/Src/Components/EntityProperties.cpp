@@ -96,7 +96,7 @@ void Editor::DrawEntityProperties() {
 		if (s_SelectedEntity.GetOwningEntity())
 			s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SelectedEntity.GetOwningEntity().GetBlueprintFactory());
 
-		if (s_Factory) {
+		if (s_Factory && s_Factory->m_pTemplateEntityBlueprint) {
 			// This is also probably wrong.
 			auto s_Index = s_Factory->GetSubEntityIndex(s_SelectedEntity->GetType()->m_nEntityId);
 
@@ -223,7 +223,7 @@ void Editor::DrawEntityProperties() {
 
 			if (ImGui::Button(ICON_MD_PERSON_PIN " Move to Hitman")) {
 				TEntityRef<ZHitman5> s_LocalHitman;
-				Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+				SDK()->GetLocalPlayer(s_LocalHitman);
 
 				auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
@@ -234,7 +234,7 @@ void Editor::DrawEntityProperties() {
 
 			if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move Hitman to")) {
 				TEntityRef<ZHitman5> s_LocalHitman;
-				Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+				SDK()->GetLocalPlayer(s_LocalHitman);
 
 				auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 

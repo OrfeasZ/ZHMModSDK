@@ -9,6 +9,11 @@ class ZRenderDestination;
 class SVector2;
 class SVector3;
 
+template<typename T>
+class TEntityRef;
+
+class ZHitman5;
+
 class IModSDK
 {
 public:
@@ -191,6 +196,12 @@ public:
 	  * @param p_Plugin The plugin to reload the settings for.
 	  */
 	 virtual void ReloadPluginSettings(IPluginInterface* p_Plugin) = 0;
+
+	 /**
+	  * Try to get the local Hitman player.
+	  * @param p_Out The output entity reference.
+	  */
+	 virtual void GetLocalPlayer(TEntityRef<ZHitman5>& p_Out) = 0;
 };
 
 /**
