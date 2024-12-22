@@ -22,7 +22,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 
         // Enable Hitman input.
         TEntityRef<ZHitman5> s_LocalHitman;
-        Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+        SDK()->GetLocalPlayer(s_LocalHitman);
 
         auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 

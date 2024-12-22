@@ -378,7 +378,7 @@ void Hitmen::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     if (!m_SceneLoaded)
     {
         TEntityRef<ZHitman5> s_LocalHitman;
-        Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+        SDK()->GetLocalPlayer(s_LocalHitman);
 
         if (!s_LocalHitman)
             return;
@@ -510,7 +510,7 @@ void Hitmen::OnDrawMenu()
         Logger::Debug("Local player data: {}", fmt::ptr(Globals::PlayerRegistry->m_pLocalPlayer));
 
         TEntityRef<ZHitman5> s_LocalHitman;
-        Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+        SDK()->GetLocalPlayer(s_LocalHitman);
 
         Logger::Debug("Local player: {} (base {})", fmt::ptr(s_LocalHitman.m_pInterfaceRef), fmt::ptr(s_LocalHitman.m_ref.GetEntity()));
 

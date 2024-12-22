@@ -1056,7 +1056,13 @@ bool ModSDK::GetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_S
 
 	const auto s_Value = s_Settings->GetSetting(p_Section.c_str(), p_Name.c_str(), p_DefaultValue ? "true" : "false");
 
-	return s_Value == "true" || s_Value == "1" || s_Value == "yes" || s_Value == "on" || s_Value == "y";
+	if (s_Value == "true" || s_Value == "1" || s_Value == "yes" || s_Value == "on" || s_Value == "y") {
+		return true;
+	} else if (s_Value == "false" || s_Value == "0" || s_Value == "no" || s_Value == "off" || s_Value == "n") {
+		return false;
+	} else {
+		return p_DefaultValue;
+	}
 }
 
 bool ModSDK::HasPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) {
@@ -1099,6 +1105,11 @@ void ModSDK::ReloadPluginSettings(IPluginInterface* p_Plugin) {
 	}
 
 	s_Settings->Reload();
+}
+
+void ModSDK::GetLocalPlayer(TEntityRef<ZHitman5>& p_Out) {
+	p_Out = {};
+	// TODO(update)
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {

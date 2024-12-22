@@ -71,7 +71,8 @@ void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef)
     {
         Logger::Debug("Creating free camera.");
-        Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
+        // TODO(update)
+		//Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
     }
 
     (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(m_TrackCamActive);
@@ -392,7 +393,7 @@ void DebugMod::EquipOutfit(
 void DebugMod::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld)
 {
     TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    SDK()->GetLocalPlayer(s_LocalHitman);
 
     if (!s_LocalHitman)
     {
@@ -510,7 +511,7 @@ void DebugMod::SpawnNonRepositoryProp(const char* p_PropAssemblyPath)
     s_NewEntity.SetProperty("m_eRoomBehaviour", ZSpatialEntity::ERoomBehaviour::ROOM_DYNAMIC);
 
     TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    SDK()->GetLocalPlayer(s_LocalHitman);
 
     if (!s_LocalHitman)
     {
@@ -562,7 +563,7 @@ auto DebugMod::SpawnNPC(
     }
 
     TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    SDK()->GetLocalPlayer(s_LocalHitman);
 
     if (!s_LocalHitman)
     {
@@ -1088,7 +1089,7 @@ void DebugMod::EnableInfiniteAmmo()
     }
 
     TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    SDK()->GetLocalPlayer(s_LocalHitman);
 
     if (!s_LocalHitman)
     {
@@ -1151,8 +1152,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
 
             auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-            SMatrix s_Transform;
-            Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
+            auto s_Transform = s_SpatialEntity->GetWorldMatrix();
 
             if (m_RenderNpcBoxes)
             {
@@ -1193,8 +1193,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer)
     {
         auto* s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>();
 
-        SMatrix s_Transform;
-        Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
+		auto s_Transform = s_SpatialEntity->GetWorldMatrix();
 
         float4 s_Min, s_Max;
 

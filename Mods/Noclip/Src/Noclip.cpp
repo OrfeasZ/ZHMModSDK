@@ -41,7 +41,7 @@ void Noclip::OnDrawMenu()
         if (m_NoclipEnabled)
         {
             TEntityRef<ZHitman5> s_LocalHitman;
-            Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+            SDK()->GetLocalPlayer(s_LocalHitman);
 
             if (s_LocalHitman)
             {
@@ -55,7 +55,7 @@ void Noclip::OnDrawMenu()
 void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
     TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    SDK()->GetLocalPlayer(s_LocalHitman);
 
     if (!s_LocalHitman)
         return;

@@ -9,6 +9,11 @@ class ZRenderDestination;
 class SVector2;
 class SVector3;
 
+template<typename T>
+class TEntityRef;
+
+class ZHitman5;
+
 class IModSDK
 {
 public:
@@ -190,8 +195,14 @@ public:
 	  * Reload the settings for the given plugin.
 	  * @param p_Plugin The plugin to reload the settings for.
 	  */
-	virtual void ReloadPluginSettings(IPluginInterface* p_Plugin) = 0;
+	 virtual void ReloadPluginSettings(IPluginInterface* p_Plugin) = 0;
 
+	 /**
+	  * Try to get the local Hitman player.
+	  * @param p_Out The output entity reference.
+	  */
+	 virtual void GetLocalPlayer(TEntityRef<ZHitman5>& p_Out) = 0;
+  
     /**
      * Search for a pattern in the game's memory and patch it with the given code, storing the original code in a provided buffer.
      * @param p_Pattern A sequence of bytes to search for in the game's memory.

@@ -152,7 +152,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
         if (ImGui::Button("Teleport Item To Player"))
         {
             TEntityRef<ZHitman5> s_LocalHitman;
-            Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+            SDK()->GetLocalPlayer(s_LocalHitman);
 
             if (s_LocalHitman)
             {

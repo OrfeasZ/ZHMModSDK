@@ -92,7 +92,7 @@ FreeCam::~FreeCam()
 
         // Enable Hitman input.
         TEntityRef<ZHitman5> s_LocalHitman;
-        Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+        SDK()->GetLocalPlayer(s_LocalHitman);
 
         if (s_LocalHitman)
         {
@@ -146,7 +146,8 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef)
     {
         Logger::Debug("Creating free camera.");
-        Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
+        // TODO(update)
+		//Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
 
         // If freecam was active we need to toggle.
         // This can happen after level restarts / changes.
@@ -206,7 +207,7 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 		}
 
         TEntityRef<ZHitman5> s_LocalHitman;
-        Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+        SDK()->GetLocalPlayer(s_LocalHitman);
 
         if (s_LocalHitman)
         {
@@ -279,7 +280,7 @@ void FreeCam::DisableFreecam()
 
     // Enable Hitman input.
     TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    SDK()->GetLocalPlayer(s_LocalHitman);
 
     if (s_LocalHitman)
     {
@@ -322,7 +323,7 @@ void FreeCam::TeleportMainCharacter()
 	{
 		TEntityRef<ZHitman5> s_LocalHitman;
 
-		Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+		SDK()->GetLocalPlayer(s_LocalHitman);
 
 		if (s_LocalHitman)
 		{
