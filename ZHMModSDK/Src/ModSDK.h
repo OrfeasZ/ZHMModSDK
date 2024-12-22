@@ -140,6 +140,7 @@ private:
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;
 	std::string m_IgnoredVersion;
+	bool m_DisableUpdateCheck = false;
 	float m_LoadedModsUIScrollOffset = 0;
 
     std::shared_ptr<ModLoader> m_ModLoader {};

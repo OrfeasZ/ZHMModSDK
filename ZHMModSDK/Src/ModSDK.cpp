@@ -230,6 +230,10 @@ void ModSDK::LoadConfiguration() {
 		if (s_Mod.second.has("ignore_version")) {
 			m_IgnoredVersion = s_Mod.second.get("ignore_version");
 		}
+
+		if (s_Mod.second.has("no_updates_for_me_please")) {
+			m_DisableUpdateCheck = true;
+		}
 	}
 }
 
@@ -500,11 +504,13 @@ bool ModSDK::Startup() {
 	// Setup custom multiplayer code.
 	//Multiplayer::Lobby::Setup();
 
-	std::thread s_VersionCheckThread([&]() {
-		CheckForUpdates();
-	});
+	if (!m_DisableUpdateCheck) {
+		std::thread s_VersionCheckThread([&]() {
+			CheckForUpdates();
+		});
 
-	s_VersionCheckThread.detach();
+		s_VersionCheckThread.detach();
+	}
 
 	return true;
 }
