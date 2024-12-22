@@ -37,7 +37,6 @@ set(MODS
 	WakingUpNpcs
 	NoPause
 	SkipIntro
-	CertPinBypass
 	MaxPatchLevel
 	DebugMod
 	AdvancedRating
@@ -48,6 +47,7 @@ set(MODS
 	Noclip
 	#Hitmen
 	DebugCheckKeyEntityEnabler
+	OnlineTools
 )
 
 foreach(MOD IN LISTS MODS)

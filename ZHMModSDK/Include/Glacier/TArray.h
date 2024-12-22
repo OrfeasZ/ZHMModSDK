@@ -2,6 +2,8 @@
 
 #include "ZPrimitives.h"
 
+#include <vector>
+
 template <class T>
 class TIterator
 {
@@ -21,6 +23,20 @@ public:
         m_pEnd(nullptr),
         m_pAllocationEnd(nullptr)
     {
+    }
+
+    TArray(const std::vector<T>& p_Vector)  :
+        m_pBegin(nullptr),
+        m_pEnd(nullptr),
+        m_pAllocationEnd(nullptr)
+    {
+        if (p_Vector.empty())
+            return;
+
+        resize(p_Vector.size());
+
+        for (size_t i = 0; i < p_Vector.size(); ++i)
+            m_pBegin[i] = p_Vector[i];
     }
 
     void push_back(const T& p_Value)
