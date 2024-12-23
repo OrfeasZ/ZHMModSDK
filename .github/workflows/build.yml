@@ -10,28 +10,9 @@ on:
     types: [ opened, synchronize, reopened ]
 
 jobs:
-  check-runner:
-    runs-on: ubuntu-latest
-    outputs:
-      runner_available: ${{ steps.check_runner.outputs.runner_available }}
-    steps:
-      - name: Check for Custom Runner
-        id: check_runner
-        run: |
-          # Check if the custom runner 'ptlm-runner' is available
-          if [[ $(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/runners" | grep -c "ptlm-runner") -gt 0 ]]; then
-            echo "Custom runner is available."
-            echo "runner_available=true" >> $GITHUB_OUTPUT
-          else
-            echo "Custom runner is not available."
-            echo "runner_available=false" >> $GITHUB_OUTPUT
-          fi
-
   build:
     name: Build
-    runs-on: ${{ needs.check_runner.outputs.runner_available == 'true' && 'ptlm-runner' || 'windows-latest' }}
-    needs: check-runner
+    runs-on: ptlm-runner
 
     steps:
     - name: Get latest CMake and ninja
