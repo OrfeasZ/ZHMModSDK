@@ -572,12 +572,12 @@ void DebugMod::LoadRepositoryProps()
 
                 if (s_Key == "ID_")
                 {
-                    s_Id = ConvertDynamicObjectValueTString(&s_Entries->operator[](i).value);
+                    s_Id = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
                 }
 
                 if (s_Key == "Title")
                 {
-                    std::string s_Title = ConvertDynamicObjectValueTString(&s_Entries->operator[](i).value);
+                    std::string s_Title = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
 
                     m_RepositoryProps.insert(std::make_pair(s_Title, ZRepositoryID(s_Id.c_str())));
 
@@ -802,19 +802,19 @@ std::string DebugMod::FindNPCEntityNameInBrickBackReferences(
     return s_EntityName;
 }
 
-std::string DebugMod::ConvertDynamicObjectValueTString(ZDynamicObject* p_DynamicObject)
+std::string DebugMod::ConvertDynamicObjectValueTString(const ZDynamicObject& p_DynamicObject)
 {
     std::string s_Result;
-    const IType* s_Type = p_DynamicObject->m_pTypeID->typeInfo();
+    const IType* s_Type = p_DynamicObject.m_pTypeID->typeInfo();
 
     if (strcmp(s_Type->m_pTypeName, "ZString") == 0)
     {
-        const auto s_Value = p_DynamicObject->As<ZString>();
+        const auto s_Value = p_DynamicObject.As<ZString>();
         s_Result = s_Value->c_str();
     }
     else if (strcmp(s_Type->m_pTypeName, "bool") == 0)
     {
-        if (*p_DynamicObject->As<bool>())
+        if (*p_DynamicObject.As<bool>())
         {
             s_Result = "true";
         }
@@ -825,7 +825,7 @@ std::string DebugMod::ConvertDynamicObjectValueTString(ZDynamicObject* p_Dynamic
     }
     else if (strcmp(s_Type->m_pTypeName, "float64") == 0)
     {
-        double value = *p_DynamicObject->As<double>();
+        double value = *p_DynamicObject.As<double>();
 
         s_Result = std::to_string(value).c_str();
     }
