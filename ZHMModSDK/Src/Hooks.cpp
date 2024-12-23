@@ -353,15 +353,6 @@ PATTERN_HOOK(
     ZString*(void* th, void* a1, void* a2, void* a3)
 );
 
-// This doesn't actually match the expected output of an FNV-1a hash, after this function is called it seems like they do some more operations on
-// the output before using it for ZConfigCommand purposes. Unsure why this is, maybe a compiler optimisation?
-PATTERN_HOOK(
-    "\x48\x89\x5C\x24\x00\x48\x89\x6C\x24\x00\x48\x89\x74\x24\x00\x48\x89\x7C\x24\x00\x41\x56\x41\x57\x44\x0F\xB6\x01",
-    "xxxx?xxxx?xxxx?xxxx?xxxxxxxx",
-    ZConfigCommand_Name_Hasher,
-    uint32_t(const char* str)
-);
-
 MODULE_HOOK(
     "EOSSDK-Win64-Shipping.dll",
     "EOS_Platform_Create",
