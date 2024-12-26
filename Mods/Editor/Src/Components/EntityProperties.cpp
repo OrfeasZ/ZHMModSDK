@@ -222,25 +222,23 @@ void Editor::DrawEntityProperties() {
 			}
 
 			if (ImGui::Button(ICON_MD_PERSON_PIN " Move to Hitman")) {
-				TEntityRef<ZHitman5> s_LocalHitman;
-				SDK()->GetLocalPlayer(s_LocalHitman);
+				if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
+					auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
-				auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
-
-				OnEntityTransformChange(s_SelectedEntity, s_HitmanSpatial->GetWorldMatrix(), false, std::nullopt);
+					OnEntityTransformChange(s_SelectedEntity, s_HitmanSpatial->GetWorldMatrix(), false, std::nullopt);
+				}
 			}
 
 			ImGui::SameLine();
 
 			if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move Hitman to")) {
-				TEntityRef<ZHitman5> s_LocalHitman;
-				SDK()->GetLocalPlayer(s_LocalHitman);
+				if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
+					auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
-				auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+					s_HitmanSpatial->SetWorldMatrix(s_Spatial->GetWorldMatrix());
 
-				s_HitmanSpatial->SetWorldMatrix(s_Spatial->GetWorldMatrix());
-
-				OnEntityTransformChange(s_LocalHitman.m_ref, s_Spatial->GetWorldMatrix(), false, std::nullopt);
+					OnEntityTransformChange(s_LocalHitman.m_ref, s_Spatial->GetWorldMatrix(), false, std::nullopt);
+				}
 			}
 		}
 

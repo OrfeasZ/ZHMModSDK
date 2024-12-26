@@ -236,8 +236,8 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> 
 		Logger::Info("EditorServer disabled. Skipping SendHitmanEntity.");
 		return;
 	}
-	TEntityRef<ZHitman5> s_LocalHitman;
-	SDK()->GetLocalPlayer(s_LocalHitman);
+
+	auto s_LocalHitman = SDK()->GetLocalPlayer();
 
 	if (!s_LocalHitman || !s_LocalHitman.m_ref) {
 		SendError(p_Socket, "Failed to get local hitman entity.", p_MessageId);

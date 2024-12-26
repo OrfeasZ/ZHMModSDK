@@ -273,10 +273,7 @@ void DebugMod::DrawNPCsBox(bool p_HasFocus)
 
         if (ImGui::Button("Teleport NPC To Player"))
         {
-            TEntityRef<ZHitman5> s_LocalHitman;
-            SDK()->GetLocalPlayer(s_LocalHitman);
-
-            if (s_LocalHitman)
+            if (auto s_LocalHitman = SDK()->GetLocalPlayer())
             {
                 ZEntityRef s_Ref;
                 s_Actor->GetID(&s_Ref);
@@ -356,8 +353,7 @@ void DebugMod::GetRenderDest()
 
 void DebugMod::SetPlayerControlActive(bool s_Active)
 {
-    TEntityRef<ZHitman5> s_LocalHitman;
-    SDK()->GetLocalPlayer(s_LocalHitman);
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
     if (s_LocalHitman)
     {
         auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);

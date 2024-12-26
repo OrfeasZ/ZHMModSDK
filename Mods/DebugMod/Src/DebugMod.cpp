@@ -345,8 +345,7 @@ void DebugMod::EquipOutfit(
 
 void DebugMod::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld)
 {
-    TEntityRef<ZHitman5> s_LocalHitman;
-    SDK()->GetLocalPlayer(s_LocalHitman);
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman)
     {
@@ -463,8 +462,7 @@ void DebugMod::SpawnNonRepositoryProp(const char* p_PropAssemblyPath)
 
     s_NewEntity.SetProperty("m_eRoomBehaviour", ZSpatialEntity::ERoomBehaviour::ROOM_DYNAMIC);
 
-    TEntityRef<ZHitman5> s_LocalHitman;
-    SDK()->GetLocalPlayer(s_LocalHitman);
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman)
     {
@@ -515,8 +513,7 @@ auto DebugMod::SpawnNPC(
         return;
     }
 
-    TEntityRef<ZHitman5> s_LocalHitman;
-    SDK()->GetLocalPlayer(s_LocalHitman);
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman)
     {
@@ -1041,8 +1038,7 @@ void DebugMod::EnableInfiniteAmmo()
         return;
     }
 
-    TEntityRef<ZHitman5> s_LocalHitman;
-    SDK()->GetLocalPlayer(s_LocalHitman);
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman)
     {

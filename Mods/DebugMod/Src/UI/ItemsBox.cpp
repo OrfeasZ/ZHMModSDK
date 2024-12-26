@@ -151,10 +151,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 
         if (ImGui::Button("Teleport Item To Player"))
         {
-            TEntityRef<ZHitman5> s_LocalHitman;
-            SDK()->GetLocalPlayer(s_LocalHitman);
-
-            if (s_LocalHitman)
+            if (auto s_LocalHitman = SDK()->GetLocalPlayer())
             {
                 ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
                 s_Item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());

@@ -46,6 +46,8 @@
 #include <semver.hpp>
 #include <limits.h>
 
+#include "Glacier/ZPlayerRegistry.h"
+
 // Needed for TaskDialogIndirect
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
@@ -1113,9 +1115,41 @@ void ModSDK::ReloadPluginSettings(IPluginInterface* p_Plugin) {
 	s_Settings->Reload();
 }
 
-void ModSDK::GetLocalPlayer(TEntityRef<ZHitman5>& p_Out) {
-	p_Out = {};
-	// TODO(update)
+TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
+	if (!Globals::PlayerRegistry) {
+		return {};
+	}
+
+	SNetPlayerData* s_PlayerData = nullptr;
+
+	for (int i = 0; i < _countof(Globals::PlayerRegistry->m_pPlayerData); ++i) {
+		if (!Globals::PlayerRegistry->m_pPlayerData[i]->m_Controller.m_pNetPlayer) {
+			s_PlayerData = Globals::PlayerRegistry->m_pPlayerData[i];
+			break;
+		}
+
+		// TODO: Game does some additional checks here but I have no idea what's going on currently and I'm not sure if it's necessary.
+		// It might become relevant when dealing with multiplayer sessions. It seems to:
+		// Keep going through the m_pPlayerData array until it finds a player without a s_PlayerData->m_Controller.m_pNetPlayer
+		// or one that does have one but passes some check (no idea what that check is - some vfunc call).
+	}
+
+	// If we still don't have a player, pick the first non-null one.
+	if (!s_PlayerData) {
+		for (int i = 0; i < _countof(Globals::PlayerRegistry->m_pPlayerData); ++i) {
+			if (Globals::PlayerRegistry->m_pPlayerData[i]) {
+				s_PlayerData = Globals::PlayerRegistry->m_pPlayerData[i];
+				break;
+			}
+		}
+	}
+
+	// Still nothing? Return an empty entity.
+	if (!s_PlayerData) {
+		return {};
+	}
+
+	return TEntityRef<ZHitman5>(s_PlayerData->m_Controller.m_HitmanEntity);
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {

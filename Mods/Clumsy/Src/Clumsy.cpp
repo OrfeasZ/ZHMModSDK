@@ -79,8 +79,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     {
         m_DeactivateRagdollQueued = false;
 
-        TEntityRef<ZHitman5> s_LocalHitman;
-        SDK()->GetLocalPlayer(s_LocalHitman);
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
             return;
@@ -97,8 +96,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     }
     else if (m_Ragdolling)
     {
-        /*TEntityRef<ZHitman5> s_LocalHitman;
-        SDK()->GetLocalPlayer(s_LocalHitman);
+        /*auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
             return;
@@ -149,8 +147,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     /*ZInputAction s_RagdollAction("eIAKBMCover");
     if (Functions::ZInputAction_Digital->Call(&s_RagdollAction, -1))
     {
-        TEntityRef<ZHitman5> s_LocalHitman;
-        SDK()->GetLocalPlayer(s_LocalHitman);
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
             return;
@@ -202,8 +199,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     /*ZInputAction s_RagdollAction("eIAKBMCover");
     if (Functions::ZInputAction_Digital->Call(&s_RagdollAction, -1))
     {
-        TEntityRef<ZHitman5> s_LocalHitman;
-        SDK()->GetLocalPlayer(s_LocalHitman);
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
             return;
@@ -223,8 +219,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     ZInputAction s_RagdollAction("eIAKBMCover");
     if (Functions::ZInputAction_Digital->Call(&s_RagdollAction, -1))
     {
-        TEntityRef<ZHitman5> s_LocalHitman;
-        SDK()->GetLocalPlayer(s_LocalHitman);
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
             return;
@@ -261,8 +256,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
     if (m_Ragdolling)
     {
-        TEntityRef<ZHitman5> s_LocalHitman;
-        SDK()->GetLocalPlayer(s_LocalHitman);
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
             return;

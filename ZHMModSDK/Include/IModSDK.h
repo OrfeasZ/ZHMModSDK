@@ -199,9 +199,8 @@ public:
 
 	 /**
 	  * Try to get the local Hitman player.
-	  * @param p_Out The output entity reference.
 	  */
-	 virtual void GetLocalPlayer(TEntityRef<ZHitman5>& p_Out) = 0;
+	 virtual TEntityRef<ZHitman5> GetLocalPlayer() = 0;
   
     /**
      * Search for a pattern in the game's memory and patch it with the given code, storing the original code in a provided buffer.
