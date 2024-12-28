@@ -26,7 +26,7 @@ FreeCam::FreeCam() :
     m_FreeCamActive(false),
     m_ShouldToggle(false),
     m_FreeCamFrozen(false),
-    m_GamePaused(true),
+    m_GamePaused(false),
 	m_MoveInFreecam(false),
 	m_ToggleFreeCamAction("ToggleFreeCamera"),
     m_FreezeFreeCamActionGc("ActivateGameControl0"),
@@ -109,7 +109,7 @@ void FreeCam::Init()
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &FreeCam::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &FreeCam::OnClearScene);
 
-	m_GamePaused = GetSettingBool("general", "toggle_pause", true);
+	m_GamePaused = GetSettingBool("general", "toggle_pause", false);
 	m_MoveInFreecam = GetSettingBool("general", "move_in_freecam", false);
 }
 
