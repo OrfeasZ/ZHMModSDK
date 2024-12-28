@@ -9,10 +9,9 @@ void Editor::DrawEntityAABB(IRenderer* p_Renderer)
 {
     if (const auto s_SelectedEntity = m_SelectedEntity)
     {
-        if (auto* s_SpatialEntity = s_SelectedEntity.QueryInterface<ZSpatialEntity>())
-        {
-            SMatrix s_Transform;
-            Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
+        if (auto* s_SpatialEntity = s_SelectedEntity.QueryInterface<ZSpatialEntity>()) 
+		{
+			auto s_Transform = s_SpatialEntity->GetWorldMatrix();
 
             float4 s_Min, s_Max;
 

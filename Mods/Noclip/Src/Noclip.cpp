@@ -40,10 +40,7 @@ void Noclip::OnDrawMenu()
     {
         if (m_NoclipEnabled)
         {
-            TEntityRef<ZHitman5> s_LocalHitman;
-            Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-            if (s_LocalHitman)
+            if (auto s_LocalHitman = SDK()->GetLocalPlayer())
             {
                 if (const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>())
                     m_PlayerPosition = s_HitmanSpatial->GetWorldMatrix();
@@ -54,8 +51,7 @@ void Noclip::OnDrawMenu()
 
 void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 {
-    TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman)
         return;

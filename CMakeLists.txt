@@ -21,9 +21,9 @@ find_package(ZLIB REQUIRED)
 find_package(simdjson CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(semver CONFIG REQUIRED)
-CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
+#CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
 CPMAddPackage("gh:felixguendling/cista@0.14")
-CPMAddPackage("gh:OrfeasZ/ZHMTools@3.4.3")
+CPMAddPackage("gh:OrfeasZ/ZHMTools@3.6.4")
 #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
 add_subdirectory(External/imgui)
 add_subdirectory(External/imguizmo)
@@ -37,7 +37,6 @@ set(MODS
 	WakingUpNpcs
 	NoPause
 	SkipIntro
-	CertPinBypass
 	MaxPatchLevel
 	DebugMod
 	AdvancedRating
@@ -46,8 +45,9 @@ set(MODS
 	Editor
 	Clumsy
 	Noclip
-	Hitmen
+	#Hitmen
 	DebugCheckKeyEntityEnabler
+	OnlineTools
 )
 
 foreach(MOD IN LISTS MODS)

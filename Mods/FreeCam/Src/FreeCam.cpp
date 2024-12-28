@@ -91,14 +91,9 @@ FreeCam::~FreeCam()
         s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
 
         // Enable Hitman input.
-        TEntityRef<ZHitman5> s_LocalHitman;
-        Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-        if (s_LocalHitman)
+        if (auto s_LocalHitman = SDK()->GetLocalPlayer())
         {
-            auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
-
-            if (s_InputControl)
+	        if (auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager))
             {
                 Logger::Debug("Got local hitman entity and input control! Enabling input. {} {}", fmt::ptr(s_InputControl), fmt::ptr(s_LocalHitman.m_pInterfaceRef));
                 s_InputControl->m_bActive = true;
@@ -146,7 +141,7 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef)
     {
         Logger::Debug("Creating free camera.");
-        Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
+		Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
 
         // If freecam was active we need to toggle.
         // This can happen after level restarts / changes.
@@ -205,14 +200,9 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 			(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->m_bFreezeCamera = s_FreezeFreeCam;
 		}
 
-        TEntityRef<ZHitman5> s_LocalHitman;
-        Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-        if (s_LocalHitman)
+        if (auto s_LocalHitman = SDK()->GetLocalPlayer())
         {
-            auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
-
-            if (s_InputControl)
+	        if (auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager))
                 s_InputControl->m_bActive = s_FreezeFreeCam;
         }
     }
@@ -278,8 +268,7 @@ void FreeCam::DisableFreecam()
     s_RenderDest.m_pInterfaceRef->SetSource(&m_OriginalCam);
 
     // Enable Hitman input.
-    TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (s_LocalHitman)
     {
@@ -320,11 +309,7 @@ void FreeCam::TeleportMainCharacter()
 
 	if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_BlockingEntity)
 	{
-		TEntityRef<ZHitman5> s_LocalHitman;
-
-		Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-		if (s_LocalHitman)
+		if (auto s_LocalHitman = SDK()->GetLocalPlayer())
 		{
 			ZSpatialEntity* s_SpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 			SMatrix s_WorldMatrix = s_SpatialEntity->GetWorldMatrix();

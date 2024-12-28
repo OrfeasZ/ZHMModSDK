@@ -2,7 +2,6 @@
 
 #include "ZPrimitives.h"
 #include "CompileReflection.h"
-#include "TArray.h"
 
 class STypeID;
 class ZString;
@@ -181,13 +180,6 @@ class ZEnumEntry
 public:
     char* m_pName;
     int32_t m_nValue;
-};
-
-class IEnumType :
-    public IType
-{
-public:
-    TArray<ZEnumEntry> m_entries;
 };
 
 class SArrayFunctions

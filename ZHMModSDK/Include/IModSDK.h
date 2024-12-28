@@ -9,6 +9,11 @@ class ZRenderDestination;
 class SVector2;
 class SVector3;
 
+template<typename T>
+class TEntityRef;
+
+class ZHitman5;
+
 class IModSDK
 {
 public:
@@ -184,13 +189,30 @@ public:
 	 * @param p_Section The section of the setting in the INI file.
 	 * @param p_Name The name of the setting.
 	 */
-	 virtual void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) = 0;
+	virtual void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) = 0;
 
 	 /**
 	  * Reload the settings for the given plugin.
 	  * @param p_Plugin The plugin to reload the settings for.
 	  */
 	 virtual void ReloadPluginSettings(IPluginInterface* p_Plugin) = 0;
+
+	 /**
+	  * Try to get the local Hitman player.
+	  */
+	 virtual TEntityRef<ZHitman5> GetLocalPlayer() = 0;
+  
+    /**
+     * Search for a pattern in the game's memory and patch it with the given code, storing the original code in a provided buffer.
+     * @param p_Pattern A sequence of bytes to search for in the game's memory.
+     * @param p_Mask A mask to use when searching for the pattern. x = pattern byte, ? = any byte (eg. xxx????x).
+     * @param p_NewCode A buffer containing the new code to write to the location where the pattern was found.
+     * @param p_CodeSize The size of the code buffer.
+     * @param p_Offset The offset to add to the address where the pattern was found.
+     * @param p_OriginalCode A buffer to store the original code.
+     * @return True if the pattern was found and patched, false otherwise.
+     */
+    virtual bool PatchCodeStoreOriginal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OriginalCode) = 0;
 };
 
 /**

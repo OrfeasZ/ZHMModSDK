@@ -95,7 +95,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 
             if (s_Key == "Image")
             {
-                s_Image = ConvertDynamicObjectValueTString(&s_Entries->operator[](i).value);
+                s_Image = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
 
                 break;
             }
@@ -127,7 +127,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 
                 for (unsigned int j = 0; j < s_Array->size(); ++j)
                 {
-                    std::string s_Value = ConvertDynamicObjectValueTString(&s_Array->operator[](j));
+                    std::string s_Value = ConvertDynamicObjectValueTString(s_Array->at(j));
 
                     if (!s_Value.empty())
                     {
@@ -141,7 +141,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
             {
                 ImGui::Text(s_Key.c_str());
 
-                std::string s_Value = ConvertDynamicObjectValueTString(&s_Entries->operator[](i).value);
+                std::string s_Value = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
 
                 ImGui::SameLine();
                 ImGui::Text(s_Value.c_str());
@@ -150,10 +150,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
 
         if (ImGui::Button("Teleport Item To Player"))
         {
-            TEntityRef<ZHitman5> s_LocalHitman;
-            Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-            if (s_LocalHitman)
+            if (auto s_LocalHitman = SDK()->GetLocalPlayer())
             {
                 ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
                 s_Item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());

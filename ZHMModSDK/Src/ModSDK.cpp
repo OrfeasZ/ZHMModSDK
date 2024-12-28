@@ -5,11 +5,14 @@
 #include "Globals.h"
 #include "HookImpl.h"
 #include "Hooks.h"
+#include "Events.h"
 #include "ini.h"
 #include "Logging.h"
 #include "IPluginInterface.h"
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
+#include "Util/HashingUtils.h"
+#include "Util/StringUtils.h"
 
 #include "Rendering/Renderers/DirectXTKRenderer.h"
 #include "Rendering/Renderers/ImGuiRenderer.h"
@@ -29,7 +32,6 @@
 #include "D3DUtils.h"
 #include "Glacier/ZRender.h"
 #include "Rendering/Renderers/ImGuiImpl.h"
-#include "Util/StringUtils.h"
 
 #include "Glacier/ZLobby.h"
 #include "Glacier/ZRakNet.h"
@@ -42,6 +44,9 @@
 #include <shellapi.h>
 #include <simdjson.h>
 #include <semver.hpp>
+#include <limits.h>
+
+#include "Glacier/ZPlayerRegistry.h"
 
 // Needed for TaskDialogIndirect
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -151,6 +156,14 @@ ModSDK::~ModSDK() {
 }
 
 bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) {
+	return PatchCodeInternal(p_Pattern, p_Mask, p_NewCode, p_CodeSize, p_Offset, nullptr);
+}
+
+bool ModSDK::PatchCodeStoreOriginal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OriginalCode) {
+	return PatchCodeInternal(p_Pattern, p_Mask, p_NewCode, p_CodeSize, p_Offset, p_OriginalCode);
+}
+
+bool ModSDK::PatchCodeInternal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OriginalCode) {
 	if (!p_Pattern || !p_Mask || !p_NewCode || p_CodeSize == 0) {
 		Logger::Error("Invalid parameters provided to PatchCode call.");
 		return false;
@@ -170,6 +183,8 @@ bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCod
 	}
 
 	auto* s_TargetPtr = reinterpret_cast<void*>(s_Target + p_Offset);
+
+	if (p_OriginalCode != nullptr) memcpy(p_OriginalCode, s_TargetPtr, p_CodeSize);
 
 	Logger::Debug("Patching {} bytes of code at {} with new code from {}.", p_CodeSize, fmt::ptr(s_TargetPtr), p_NewCode);
 
@@ -229,6 +244,10 @@ void ModSDK::LoadConfiguration() {
 
 		if (s_Mod.second.has("ignore_version")) {
 			m_IgnoredVersion = s_Mod.second.get("ignore_version");
+		}
+
+		if (s_Mod.second.has("no_updates_for_me_please")) {
+			m_DisableUpdateCheck = true;
 		}
 	}
 }
@@ -477,6 +496,110 @@ void ModSDK::CheckForUpdates() {
 	}
 }
 
+// Built-in console commands
+void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
+	if (p_Args.size() == 1)
+	{
+		if (p_Args[0] == "unloadall")
+		{
+			ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
+		}
+		else if (p_Args[0] == "reloadall")
+		{
+			ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
+		}
+	}
+
+	if (p_Args.size() == 2)
+	{
+		if (p_Args[0] == "load")
+		{
+			ModSDK::GetInstance()->GetModLoader()->LoadMod(p_Args[1].c_str(), true);
+		}
+		else if (p_Args[0] == "unload")
+		{
+			ModSDK::GetInstance()->GetModLoader()->UnloadMod(p_Args[1].c_str());
+		}
+		else if (p_Args[0] == "reload")
+		{
+			ModSDK::GetInstance()->GetModLoader()->ReloadMod(p_Args[1].c_str());
+		}
+		else if (p_Args[0] == "config")
+		{
+			ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
+
+			if (s_Command == 0)
+				return Logger::Error("[ZConfigCommand] Invalid command.");
+
+			switch(s_Command->GetType())
+			{
+				case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT:
+					return Logger::Info("[ZConfigCommand] {} - float - {}", p_Args[1], s_Command->As<ZConfigFloat>()->GetValue());
+				case ZConfigCommand_ECLASSTYPE::ECLASS_INT:
+					return Logger::Info("[ZConfigCommand] {} - int - {}", p_Args[1], s_Command->As<ZConfigInt>()->GetValue());
+				case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
+					return Logger::Info("[ZConfigCommand] {} - string - \"{}\"", p_Args[1], s_Command->As<ZConfigString>()->GetValue());
+				case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
+					return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+			}
+		}
+	}
+
+	if (p_Args.size() == 3)
+	{
+		if (p_Args[0] == "config")
+		{
+			ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
+
+			if (s_Command == 0)
+				return Logger::Info("[ZConfigCommand] Invalid command.");
+
+			// Now we validate the input, we technically don't need to do this as it'll be done by the engine function
+			// we call. But we do this to provide output to the user.
+			switch (s_Command->GetType())
+			{
+				case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT: {
+					try {
+						size_t pos;
+						static_cast<void>(std::stof(p_Args[2].c_str(), &pos));
+						if (pos != p_Args[2].size())
+							return Logger::Error("[ZConfigCommand] Invalid input (float), not all characters provided were processed.");
+					} catch (const std::invalid_argument&) {
+						return Logger::Error("[ZConfigCommand] Invalid input (float), input does not represent a float.");
+					} catch (const std::out_of_range&) {
+						return Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
+					}
+					break;
+				}
+				case ZConfigCommand_ECLASSTYPE::ECLASS_INT: {
+					try {
+						size_t pos;
+						unsigned long value = std::stoul(p_Args[2].c_str(), &pos);
+						if (pos != p_Args[2].size())
+							return Logger::Error("[ZConfigCommand] Invalid input (integer), not all characters provided were processed.");
+						if (value > (std::numeric_limits<unsigned int>::max)())
+							return Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
+					} catch (const std::invalid_argument&) {
+						return Logger::Error("[ZConfigCommand] Invalid input (integer), input does not represent a integer.");
+					} catch (const std::out_of_range&) {
+						return Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
+					}
+					break;
+				}
+				case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
+					if (p_Args[2].size() >= 256)
+						return Logger::Error("[ZConfigCommand] Invalid input (string), maximum length of 255 exceeded.");
+					break;
+				case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
+					return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+			}
+
+			Functions::ZConfigCommand_ExecuteCommand->Call(p_Args[1].c_str(), p_Args[2].c_str());
+			Logger::Info("[ZConfigCommand] Set \"{}\" to \"{}\"", p_Args[1], p_Args[2]);
+		}
+	}
+}
+
 bool ModSDK::Startup() {
 #if _DEBUG
 	m_DebugConsole->StartRedirecting();
@@ -500,11 +623,16 @@ bool ModSDK::Startup() {
 	// Setup custom multiplayer code.
 	//Multiplayer::Lobby::Setup();
 
-	std::thread s_VersionCheckThread([&]() {
-		CheckForUpdates();
-	});
+	if (!m_DisableUpdateCheck) {
+		std::thread s_VersionCheckThread([&]() {
+			CheckForUpdates();
+		});
 
-	s_VersionCheckThread.detach();
+		s_VersionCheckThread.detach();
+	}
+
+	// Register built-in console commands
+	Events::OnConsoleCommand->AddListener(this, &OnConsoleCommand);
 
 	return true;
 }
@@ -936,7 +1064,13 @@ bool ModSDK::GetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_S
 
 	const auto s_Value = s_Settings->GetSetting(p_Section.c_str(), p_Name.c_str(), p_DefaultValue ? "true" : "false");
 
-	return s_Value == "true" || s_Value == "1" || s_Value == "yes" || s_Value == "on" || s_Value == "y";
+	if (s_Value == "true" || s_Value == "1" || s_Value == "yes" || s_Value == "on" || s_Value == "y") {
+		return true;
+	} else if (s_Value == "false" || s_Value == "0" || s_Value == "no" || s_Value == "off" || s_Value == "n") {
+		return false;
+	} else {
+		return p_DefaultValue;
+	}
 }
 
 bool ModSDK::HasPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) {
@@ -979,6 +1113,43 @@ void ModSDK::ReloadPluginSettings(IPluginInterface* p_Plugin) {
 	}
 
 	s_Settings->Reload();
+}
+
+TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
+	if (!Globals::PlayerRegistry) {
+		return {};
+	}
+
+	SNetPlayerData* s_PlayerData = nullptr;
+
+	for (int i = 0; i < _countof(Globals::PlayerRegistry->m_pPlayerData); ++i) {
+		if (!Globals::PlayerRegistry->m_pPlayerData[i]->m_Controller.m_pNetPlayer) {
+			s_PlayerData = Globals::PlayerRegistry->m_pPlayerData[i];
+			break;
+		}
+
+		// TODO: Game does some additional checks here but I have no idea what's going on currently and I'm not sure if it's necessary.
+		// It might become relevant when dealing with multiplayer sessions. It seems to:
+		// Keep going through the m_pPlayerData array until it finds a player without a s_PlayerData->m_Controller.m_pNetPlayer
+		// or one that does have one but passes some check (no idea what that check is - some vfunc call).
+	}
+
+	// If we still don't have a player, pick the first non-null one.
+	if (!s_PlayerData) {
+		for (int i = 0; i < _countof(Globals::PlayerRegistry->m_pPlayerData); ++i) {
+			if (Globals::PlayerRegistry->m_pPlayerData[i]) {
+				s_PlayerData = Globals::PlayerRegistry->m_pPlayerData[i];
+				break;
+			}
+		}
+	}
+
+	// Still nothing? Return an empty entity.
+	if (!s_PlayerData) {
+		return {};
+	}
+
+	return TEntityRef<ZHitman5>(s_PlayerData->m_Controller.m_HitmanEntity);
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {

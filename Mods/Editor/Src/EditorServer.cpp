@@ -236,8 +236,8 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> 
 		Logger::Info("EditorServer disabled. Skipping SendHitmanEntity.");
 		return;
 	}
-	TEntityRef<ZHitman5> s_LocalHitman;
-	Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+
+	auto s_LocalHitman = SDK()->GetLocalPlayer();
 
 	if (!s_LocalHitman || !s_LocalHitman.m_ref) {
 		SendError(p_Socket, "Failed to get local hitman entity.", p_MessageId);
@@ -621,7 +621,7 @@ void EditorServer::SendEntityList(EditorServer::WebSocket* p_Socket, std::shared
 			// This is also probably wrong.
 			auto s_Index = s_Factory->GetSubEntityIndex(s_Node->Entity->GetType()->m_nEntityId);
 
-			if (s_Index != -1) {
+			if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
 				const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
 				s_EventStream << "," << write_json("name") << ":" << write_json(s_Name);
 			}
@@ -687,7 +687,7 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 		// This is also probably wrong.
 		auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityId);
 
-		if (s_Index != -1) {
+		if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
 			const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
 			p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
 		}
@@ -904,7 +904,7 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZE
 			// This is also probably wrong.
 			auto s_Index = s_Factory->GetSubEntityIndex( s_EntityData->m_ref->GetType()->m_nEntityId);
 
-			if (s_Index != -1) {
+			if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
 				const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
 				p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
 			}

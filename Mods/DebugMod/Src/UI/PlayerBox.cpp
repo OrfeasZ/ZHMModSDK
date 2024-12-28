@@ -16,8 +16,7 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
 
     ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
 
-    TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
     const auto s_Showing = ImGui::Begin("PLAYER", &m_PlayerMenuActive);
@@ -25,7 +24,7 @@ void DebugMod::DrawPlayerBox(bool p_HasFocus)
 
     if (s_Showing)
     {
-        if (s_LocalHitman.m_pInterfaceRef)
+        if (s_LocalHitman)
         {
             static bool s_IsInvincible = s_LocalHitman.m_ref.GetProperty<bool>("m_bIsInvincible").Get();
 

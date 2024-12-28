@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: [ ptlm-runner ]
+    runs-on: ptlm-runner
 
     steps:
     - name: Get latest CMake and ninja

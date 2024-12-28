@@ -1,6 +1,7 @@
 #include "Editor.h"
 #include "imgui.h"
 
+#include <Glacier/IEnumType.h>
 
 void Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
 	auto s_Value = *static_cast<int32*>(p_Data);

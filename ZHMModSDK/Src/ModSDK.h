@@ -110,6 +110,7 @@ public:
     bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
     bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
     bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) override;
+    bool PatchCodeStoreOriginal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OriginalCode) override;
     void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) override;
 
 	// Plugin settings
@@ -127,9 +128,13 @@ public:
 	void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) override;
 	void ReloadPluginSettings(IPluginInterface* p_Plugin) override;
 
+	TEntityRef<ZHitman5> GetLocalPlayer() override;
+
 private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
+
+    bool PatchCodeInternal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OriginalCode);
 
 private:
     bool m_UiEnabled = true;
@@ -138,6 +143,7 @@ private:
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;
 	std::string m_IgnoredVersion;
+	bool m_DisableUpdateCheck = false;
 	float m_LoadedModsUIScrollOffset = 0;
 
     std::shared_ptr<ModLoader> m_ModLoader {};

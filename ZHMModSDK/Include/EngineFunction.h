@@ -29,7 +29,7 @@ public:
     }
 
 protected:
-    void* m_Address;
+    void* m_Address = nullptr;
 };
 
 template <class... Args>
@@ -51,5 +51,5 @@ public:
     }
 
 protected:
-    void* m_Address;
+    void* m_Address = nullptr;
 };
