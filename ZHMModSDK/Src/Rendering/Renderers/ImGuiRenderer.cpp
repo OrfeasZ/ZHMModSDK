@@ -80,24 +80,24 @@ ImGuiRenderer::ImGuiRenderer()
 
     static constexpr ImWchar c_IconRanges[] = { ICON_MIN_MD, ICON_MAX_16_MD, 0 };
 
-    m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoLight_compressed_data, RobotoLight_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoLight_compressed_data, RobotoLight_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
-    m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data, RobotoRegular_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data, RobotoRegular_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
-    m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoMedium_compressed_data, RobotoMedium_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoMedium_compressed_data, RobotoMedium_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
-    m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBold_compressed_data, RobotoBold_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBold_compressed_data, RobotoBold_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
-    m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
     s_ImGuiIO.FontDefault = m_FontRegular;
@@ -126,15 +126,15 @@ void ImGuiRenderer::SetupStyles()
     s_Style.WindowRounding = 0.f;
     s_Style.WindowBorderSize = 0.f;
 
-    s_Style.WindowPadding = ImVec2(20.f, 20.f);
-    s_Style.FramePadding = ImVec2(10.f, 10.f);
-    s_Style.CellPadding = ImVec2(5.f, 5.f);
-    s_Style.ItemSpacing = ImVec2(20.f, 10.f);
+    s_Style.WindowPadding = ImVec2(12.f, 12.f);
+    s_Style.FramePadding = ImVec2(6.f, 6.f);
+    s_Style.CellPadding = ImVec2(6.f, 3.f);
+    s_Style.ItemSpacing = ImVec2(10.f, 6.f);
     s_Style.ItemInnerSpacing = ImVec2(10.f, 10.f);
     s_Style.TouchExtraPadding = ImVec2(0.f, 0.f);
-    s_Style.IndentSpacing = 20.f;
-    s_Style.ScrollbarSize = 20.f;
-    s_Style.GrabMinSize = 20.f;
+    s_Style.IndentSpacing = 10.f;
+    s_Style.ScrollbarSize = 12.f;
+    s_Style.GrabMinSize = 12.f;
 
     s_Style.WindowBorderSize = 0.f;
     s_Style.ChildBorderSize = 0.f;
@@ -459,7 +459,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     GetClientRect(m_Hwnd, &s_Rect);
 
     s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
-    s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
+    s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 1800.f);
 	ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
 
     m_RendererSetup = true;
@@ -528,7 +528,7 @@ void ImGuiRenderer::PostReset()
     GetClientRect(m_Hwnd, &s_Rect);
 
     s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
-    s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
+    s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 1800.f);
 	ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
 }
 

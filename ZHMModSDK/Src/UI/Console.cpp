@@ -28,7 +28,7 @@ void Console::Draw(bool p_HasFocus)
 
     const auto& s_ImGuiIO = ImGui::GetIO();
     ImGui::SetWindowSize(ImVec2(s_ImGuiIO.DisplaySize.x - 60, 400), ImGuiCond_Always);
-    ImGui::SetWindowPos(ImVec2(30, 80 * (s_ImGuiIO.DisplaySize.y / 2048.f)), ImGuiCond_Always);
+    ImGui::SetWindowPos(ImVec2(30, 80 * (s_ImGuiIO.DisplaySize.y / 1800.f)), ImGuiCond_Always);
 
     if (s_Showing)
     {

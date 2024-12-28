@@ -655,29 +655,9 @@ void ModSDK::ThreadedStartup() {
 void ModSDK::OnDrawMenu() {
 	m_ModLoader->LockRead();
 
-	auto cursorPosX = ImGui::GetCursorPosX();
-	auto width = ImGui::GetWindowWidth();
-	auto height = ImGui::GetWindowHeight();
-
-	ImGui::PushClipRect(ImVec2(cursorPosX, 0), ImVec2(width, height), true);
-	ImGui::BeginGroup();
-	ImGui::SetCursorPosX(cursorPosX - (float)(int)m_LoadedModsUIScrollOffset);
-
-	for (auto& s_Mod: m_ModLoader->GetLoadedMods())
+	for (auto& s_Mod: m_ModLoader->GetLoadedMods()) {
 		s_Mod->OnDrawMenu();
-
-	ImGui::EndGroup();
-	ImGui::PopClipRect();
-
-	auto modMenusWidth = ImGui::GetCursorPosX();
-
-	if (ImGui::IsItemHovered())
-		m_LoadedModsUIScrollOffset += ImGui::GetIO().MouseWheel * -10.0f;
-
-	if (m_LoadedModsUIScrollOffset < 0)
-		m_LoadedModsUIScrollOffset = 0;
-	if (modMenusWidth < width)
-		m_LoadedModsUIScrollOffset -= width - modMenusWidth;
+	}
 
 	m_ModLoader->UnlockRead();
 }
