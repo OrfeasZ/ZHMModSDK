@@ -27,6 +27,7 @@ FreeCam::FreeCam() :
     m_ShouldToggle(false),
     m_FreeCamFrozen(false),
     m_GamePaused(true),
+	m_MoveInFreecam(false),
 	m_ToggleFreeCamAction("ToggleFreeCamera"),
     m_FreezeFreeCamActionGc("ActivateGameControl0"),
     m_FreezeFreeCamActionKb("KBMInspectNode"),
@@ -109,6 +110,7 @@ void FreeCam::Init()
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &FreeCam::OnClearScene);
 
 	m_GamePaused = GetSettingBool("general", "toggle_pause", true);
+	m_MoveInFreecam = GetSettingBool("general", "move_in_freecam", false);
 }
 
 void FreeCam::OnEngineInitialized()
@@ -202,8 +204,9 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
         if (auto s_LocalHitman = SDK()->GetLocalPlayer())
         {
-	        if (auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager))
-                s_InputControl->m_bActive = s_FreezeFreeCam;
+	        if (auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager)) {
+		        s_InputControl->m_bActive = s_FreezeFreeCam || m_MoveInFreecam;
+	        }
         }
     }
 }
@@ -220,14 +223,22 @@ void FreeCam::OnDrawMenu()
     {
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-		ImGui::Checkbox("USE EDITOR STYLE FREECAM", &m_EditorStyleFreecam);
+		ImGui::Checkbox("EDITOR FREECAM", &m_EditorStyleFreecam);
 		ImGui::PopItemFlag();
 		ImGui::PopStyleVar();
     }
     else
     {
-		ImGui::Checkbox("USE EDITOR STYLE FREECAM", &m_EditorStyleFreecam);
+		ImGui::Checkbox("EDITOR FREECAM", &m_EditorStyleFreecam);
     }
+
+	if (ImGui::Checkbox("MOVE IN FREECAM", &m_MoveInFreecam)) {
+		SetSettingBool("general", "move_in_freecam", m_MoveInFreecam);
+	}
+
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Whether the Hitman should move along with the camera when in freecam.");
+	}
 
     if (ImGui::Button(ICON_MD_SPORTS_ESPORTS " FREECAM CONTROLS"))
         m_ControlsVisible = !m_ControlsVisible;
