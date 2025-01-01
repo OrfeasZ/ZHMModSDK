@@ -242,6 +242,16 @@ void ModSDK::LoadConfiguration() {
 			}
 		}
 
+		if (s_Mod.second.has("ui_toggle_key") && !s_Mod.second.get("ui_toggle_key").empty()) {
+			// Try to parse its value as a uint8_t.
+			try {
+				m_UiToggleScanCode = std::stoul(s_Mod.second.get("ui_toggle_key"), nullptr, 0);
+			}
+			catch (const std::exception&) {
+				Logger::Error("Could not parse ui_toggle_key value from mod.ini. Using default value.");
+			}
+		}
+
 		if (s_Mod.second.has("ignore_version")) {
 			m_IgnoredVersion = s_Mod.second.get("ignore_version");
 		}
@@ -249,7 +259,19 @@ void ModSDK::LoadConfiguration() {
 		if (s_Mod.second.has("no_updates_for_me_please")) {
 			m_DisableUpdateCheck = true;
 		}
+
+		if (s_Mod.second.has("shown_ui_toggle_warning")) {
+			m_HasShownUiToggleWarning = true;
+		}
 	}
+}
+
+void ModSDK::SetHasShownUiToggleWarning() {
+	m_HasShownUiToggleWarning = true;
+
+	UpdateSdkIni([&](auto& s_SdkMap) {
+		s_SdkMap.set("shown_ui_toggle_warning", "true");
+	});
 }
 
 std::pair<uint32_t, std::string> ModSDK::RequestLatestVersion() {
@@ -409,35 +431,9 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
 
 // Write the version to skip update notifications for to the mods.ini file.
 void ModSDK::SkipVersionUpdate(const std::string& p_Version) {
-	char s_ExePathStr[MAX_PATH];
-	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
-
-	if (s_PathSize == 0)
-		return;
-
-	std::filesystem::path s_ExePath(s_ExePathStr);
-	auto s_ExeDir = s_ExePath.parent_path();
-
-	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
-
-	mINI::INIFile s_File(s_IniPath.string());
-
-	mINI::INIStructure s_Ini;
-
-	if (is_regular_file(s_IniPath)) {
-		s_File.read(s_Ini);
-	}
-
-	mINI::INIMap<std::string> s_SdkMap;
-
-	if (s_Ini.has("sdk")) {
-		s_SdkMap = s_Ini.get("sdk");
-	}
-
-	s_SdkMap.set("ignore_version", p_Version);
-	s_Ini.set("sdk", s_SdkMap);
-
-	s_File.generate(s_Ini, true);
+	UpdateSdkIni([&](auto& s_SdkMap) {
+		s_SdkMap.set("ignore_version", p_Version);
+	});
 }
 
 void ModSDK::CheckForUpdates() {
@@ -1176,4 +1172,37 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS
 #endif
 
 	return HookResult<EOS_PlatformHandle*>(HookAction::Continue());
+}
+
+void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string> &)> p_Callback) {
+	char s_ExePathStr[MAX_PATH];
+	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+
+	if (s_PathSize == 0)
+		return;
+
+	std::filesystem::path s_ExePath(s_ExePathStr);
+	auto s_ExeDir = s_ExePath.parent_path();
+
+	const auto s_IniPath = absolute(s_ExeDir / "mods.ini");
+
+	mINI::INIFile s_File(s_IniPath.string());
+
+	mINI::INIStructure s_Ini;
+
+	if (is_regular_file(s_IniPath)) {
+		s_File.read(s_Ini);
+	}
+
+	mINI::INIMap<std::string> s_SdkMap;
+
+	if (s_Ini.has("sdk")) {
+		s_SdkMap = s_Ini.get("sdk");
+	}
+
+	p_Callback(s_SdkMap);
+
+	s_Ini.set("sdk", s_SdkMap);
+
+	s_File.generate(s_Ini, true);
 }

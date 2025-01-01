@@ -245,6 +245,45 @@ void ImGuiRenderer::Draw()
     ImGui::GetStyle().Alpha = m_ImguiHasFocus ? 1.f : 0.3f;
 
     ModSDK::GetInstance()->OnDrawUI(m_ImguiHasFocus);
+
+    if (m_ShowingUiToggleWarning) {
+        const auto s_Center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(s_Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        ImGui::Begin("Warning", &m_ShowingUiToggleWarning);
+
+        ImGui::Text("You have pressed the UI toggle key (F11 by default), which will HIDE the SDK UI.");
+        ImGui::Text("You must press this key again to show the SDK UI.");
+        ImGui::Text("If you want to change this key, you can do so in the mods.ini file.");
+        ImGui::Text("See the SDK readme for more information. This waning will not appear again.");
+
+        ImGui::NewLine();
+
+        static bool s_HasConfirmed = false;
+
+        ImGui::Checkbox("I understand I'm hiding the UI and that I must press this key to show it again", &s_HasConfirmed);
+
+        ImGui::NewLine();
+
+        ImGui::BeginDisabled(!s_HasConfirmed);
+
+        if (ImGui::Button("Continue")) {
+            ModSDK::GetInstance()->SetHasShownUiToggleWarning();
+            m_ImguiVisible = false;
+            m_ShowingUiToggleWarning = false;
+            m_ImguiHasFocus = false;
+        }
+
+        ImGui::EndDisabled();
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel")) {
+            m_ShowingUiToggleWarning = false;
+        }
+
+        ImGui::End();
+    }
 }
 
 void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
@@ -257,6 +296,9 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
         Logger::Error("Failed to set up ImGui renderer.");
         return;
     }
+
+    if (!m_ImguiVisible)
+        return;
 
     Draw();
 
@@ -558,6 +600,19 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
     // Toggle imgui input when user presses the console key.
     if (s_ScanCode == ModSDK::GetInstance()->GetConsoleScanCode() && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN))
         m_ImguiHasFocus = !m_ImguiHasFocus;
+
+    if (s_ScanCode == ModSDK::GetInstance()->GetUiToggleScanCode() && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN)) {
+        if (!ModSDK::GetInstance()->HasShownUiToggleWarning()) {
+            m_ShowingUiToggleWarning = true;
+            m_ImguiHasFocus = true;
+        } else {
+            m_ImguiVisible = !m_ImguiVisible;
+
+            if (!m_ImguiVisible) {
+                m_ImguiHasFocus = false;
+            }
+        }
+    }
 
 	//Globals::InputActionManager->m_bDebugKeys = true;
 	Globals::InputActionManager->m_bEnabled = !m_ImguiHasFocus;

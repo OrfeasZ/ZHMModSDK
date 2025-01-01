@@ -89,5 +89,7 @@ namespace Rendering::Renderers
         ImFont* m_FontBlack = nullptr;
 
         volatile bool m_ImguiHasFocus = false;
+        volatile bool m_ImguiVisible = true;
+        bool m_ShowingUiToggleWarning = false;
     };
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ini.h>
 #include <memory>
 #include <shared_mutex>
 #include <string>
@@ -93,6 +94,10 @@ public:
     std::shared_ptr<UI::ModSelector> GetUIModSelector() const { return m_UIModSelector; }
 
 	uint8_t GetConsoleScanCode() const { return m_ConsoleScanCode; }
+    uint8_t GetUiToggleScanCode() const { return m_UiToggleScanCode; }
+    bool HasShownUiToggleWarning() const { return m_HasShownUiToggleWarning; }
+
+    void SetHasShownUiToggleWarning();
 
 public:
     void RequestUIFocus() override;
@@ -136,9 +141,13 @@ private:
 
     bool PatchCodeInternal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OriginalCode);
 
+    void UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback);
+
 private:
     bool m_UiEnabled = true;
 	uint8_t m_ConsoleScanCode = 0x29; // Grave / Tilde key
+    uint8_t m_UiToggleScanCode = 0x57; // F11
+    bool m_HasShownUiToggleWarning = false;
     uintptr_t m_ModuleBase;
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;

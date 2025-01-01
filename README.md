@@ -55,6 +55,50 @@ There are a few sample mods included in this repository that can be used either 
 To de-activate / uninstall the mod loader, simply delete the extracted `dinput8.dll` from your `HITMAN3\Retail` directory. You can also 
 delete all the other files / folders you previously extracted, and the `mods.ini` file (if present).
 
+## Changing the console key
+
+The console key can be changed by editing the `mods.ini` file in your game's `Retail` folder.
+
+To change the console key, open the `mods.ini` file and add the following:
+
+```ini
+[sdk]
+console_key = 0x29
+```
+
+(If the `[sdk]` section already exists, just add the `console_key` key and value)
+
+You can replace `0x29` (tilde / grave key) with a scan code of your choice. See [this table](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#scan-codes) for a list of scan codes by key (column named Scan 1 Make).
+
+For example, to change it to `F1`, write the following:
+
+```ini
+[sdk]
+console_key = 0x3B
+```
+
+## Changing the UI toggle key
+
+By default, the `F11` key is used to show and hide the SDK UI. You can change this key by editing the `mods.ini` file, similar to how you change the console key.
+
+To change the UI toggle key, open the `mods.ini` file and add the following:
+
+```ini
+[sdk]
+ui_toggle_key = 0x57
+```
+
+(If the `[sdk]` section already exists, just add the `ui_toggle_key` key and value)
+
+You can replace `0x57` (F11 key) with a scan code of your choice. See [this table](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#scan-codes) for a list of scan codes by key (column named Scan 1 Make).
+
+For example, to change it to `F2`, write the following:
+
+```ini
+[sdk]
+ui_toggle_key = 0x3C
+```
+
 ## Usage (for developers)
 
 To find out how to create your own mods or how to extend the SDK, check out the [wiki](https://github.com/OrfeasZ/ZHMModSDK/wiki). Here are some guides to get you started:
