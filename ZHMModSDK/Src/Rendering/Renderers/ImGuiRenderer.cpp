@@ -250,39 +250,45 @@ void ImGuiRenderer::Draw()
         const auto s_Center = ImGui::GetMainViewport()->GetCenter();
         ImGui::SetNextWindowPos(s_Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-        ImGui::Begin("Warning", &m_ShowingUiToggleWarning);
+        ImGui::PushFont(SDK()->GetImGuiBlackFont());
+        const auto s_Expanded = ImGui::Begin("Warning", &m_ShowingUiToggleWarning);
+        ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-        ImGui::Text("You have pressed the UI toggle key (F11 by default), which will HIDE the SDK UI.");
-        ImGui::Text("You must press this key again to show the SDK UI.");
-        ImGui::Text("If you want to change this key, you can do so in the mods.ini file.");
-        ImGui::Text("See the SDK readme for more information. This waning will not appear again.");
+        if (s_Expanded) {
+            ImGui::Text("You have pressed the UI toggle key (F11 by default), which will HIDE the SDK UI.");
+            ImGui::Text("You must press this key again to show the SDK UI.");
+            ImGui::Text("If you want to change this key, you can do so in the mods.ini file.");
+            ImGui::Text("See the SDK readme for more information. This waning will not appear again.");
 
-        ImGui::NewLine();
+            ImGui::NewLine();
 
-        static bool s_HasConfirmed = false;
+            static bool s_HasConfirmed = false;
 
-        ImGui::Checkbox("I understand I'm hiding the UI and that I must press this key to show it again", &s_HasConfirmed);
+            ImGui::Checkbox("I understand I'm hiding the UI and that I must press this key to show it again", &s_HasConfirmed);
 
-        ImGui::NewLine();
+            ImGui::NewLine();
 
-        ImGui::BeginDisabled(!s_HasConfirmed);
+            ImGui::BeginDisabled(!s_HasConfirmed);
 
-        if (ImGui::Button("Continue")) {
-            ModSDK::GetInstance()->SetHasShownUiToggleWarning();
-            m_ImguiVisible = false;
-            m_ShowingUiToggleWarning = false;
-            m_ImguiHasFocus = false;
+            if (ImGui::Button("Continue")) {
+                ModSDK::GetInstance()->SetHasShownUiToggleWarning();
+                m_ImguiVisible = false;
+                m_ShowingUiToggleWarning = false;
+                m_ImguiHasFocus = false;
+            }
+
+            ImGui::EndDisabled();
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Cancel")) {
+                m_ShowingUiToggleWarning = false;
+            }
         }
 
-        ImGui::EndDisabled();
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Cancel")) {
-            m_ShowingUiToggleWarning = false;
-        }
-
+        ImGui::PopFont();
         ImGui::End();
+        ImGui::PopFont();
     }
 }
 
