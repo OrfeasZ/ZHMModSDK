@@ -37,7 +37,7 @@ private:
     volatile bool m_FreeCamActive;
     volatile bool m_ShouldToggle;
     volatile bool m_FreeCamFrozen;
-	volatile bool m_GamePaused;
+	bool m_GamePaused;
     ZEntityRef m_OriginalCam;
     ZInputAction m_ToggleFreeCamAction;
     ZInputAction m_FreezeFreeCamActionGc;
