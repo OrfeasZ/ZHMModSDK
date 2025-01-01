@@ -45,6 +45,7 @@ private:
 	ZInputAction m_InstantlyKillNpcAction;
 	ZInputAction m_TeleportMainCharacterAction;
 	ZInputAction m_TogglePauseGame;
+	bool m_MenuVisible;
     bool m_ControlsVisible;
     bool m_HasToggledFreecamBefore;
 	bool m_EditorStyleFreecam;

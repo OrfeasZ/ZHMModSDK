@@ -34,6 +34,7 @@ FreeCam::FreeCam() :
 	m_InstantlyKillNpcAction("InstantKill"),
 	m_TeleportMainCharacterAction("Teleport"),
     m_TogglePauseGame("TogglePauseGame"),
+    m_MenuVisible(false),
     m_ControlsVisible(false),
     m_HasToggledFreecamBefore(false),
     m_EditorStyleFreecam(false)
@@ -213,35 +214,9 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
 void FreeCam::OnDrawMenu()
 {
-    bool s_FreeCamActive = m_FreeCamActive;
-    if (ImGui::Checkbox(ICON_MD_PHOTO_CAMERA " FREECAM", &s_FreeCamActive))
-    {
-        ToggleFreecam();
-    }
-
-    if (s_FreeCamActive)
-    {
-		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-		ImGui::Checkbox("EDITOR FREECAM", &m_EditorStyleFreecam);
-		ImGui::PopItemFlag();
-		ImGui::PopStyleVar();
-    }
-    else
-    {
-		ImGui::Checkbox("EDITOR FREECAM", &m_EditorStyleFreecam);
-    }
-
-	if (ImGui::Checkbox("MOVE IN FREECAM", &m_MoveInFreecam)) {
-		SetSettingBool("general", "move_in_freecam", m_MoveInFreecam);
+	if (ImGui::Button(ICON_MD_PHOTO_CAMERA " FREECAM")) {
+		m_MenuVisible = !m_MenuVisible;
 	}
-
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("Whether the Hitman should move along with the camera when in freecam.");
-	}
-
-    if (ImGui::Button(ICON_MD_SPORTS_ESPORTS " FREECAM CONTROLS"))
-        m_ControlsVisible = !m_ControlsVisible;
 }
 
 void FreeCam::ToggleFreecam()
@@ -364,6 +339,42 @@ bool FreeCam::GetFreeCameraRayCastClosestHitQueryOutput(ZRayQueryOutput& p_RayOu
 
 void FreeCam::OnDrawUI(bool p_HasFocus)
 {
+	if (m_MenuVisible) {
+		const auto s_Center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(s_Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+		ImGui::PushFont(SDK()->GetImGuiBlackFont());
+		const auto s_MenuExpanded = ImGui::Begin(ICON_MD_PHOTO_CAMERA " FreeCam", &m_MenuVisible);
+		ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+		if (s_MenuExpanded) {
+			bool s_FreeCamActive = m_FreeCamActive;
+			if (ImGui::Checkbox(ICON_MD_PHOTO_CAMERA " Enable freecam", &s_FreeCamActive)) {
+				ToggleFreecam();
+			}
+
+			ImGui::BeginDisabled(!s_FreeCamActive);
+			ImGui::Checkbox("Use editor style freecam", &m_EditorStyleFreecam);
+			ImGui::EndDisabled();
+
+			if (ImGui::Checkbox("Move in freecam", &m_MoveInFreecam)) {
+				SetSettingBool("general", "move_in_freecam", m_MoveInFreecam);
+			}
+
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Whether the Hitman should move along with the camera when in freecam.");
+			}
+
+			if (ImGui::Button(ICON_MD_SPORTS_ESPORTS " Show freecam controls")) {
+				m_ControlsVisible = !m_ControlsVisible;
+			}
+		}
+
+		ImGui::PopFont();
+		ImGui::End();
+		ImGui::PopFont();
+	}
+
     if (m_ControlsVisible)
     {
         ImGui::PushFont(SDK()->GetImGuiBlackFont());
