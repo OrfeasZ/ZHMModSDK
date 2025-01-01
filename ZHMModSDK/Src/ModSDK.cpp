@@ -68,7 +68,7 @@ ZHMSDK_API IModSDK* SDK() {
 }
 
 extern "C" ZHMSDK_API const char* SDKVersion() {
-	return "2.0.0";
+	return "3.0.0";
 }
 
 ModSDK* ModSDK::g_Instance = nullptr;
@@ -111,12 +111,12 @@ ModSDK::ModSDK() {
 
 	LoadConfiguration();
 
-#if _DEBUG
+	#if _DEBUG
 	m_DebugConsole = std::make_shared<DebugConsole>();
 	SetupLogging(spdlog::level::trace);
-#else
+	#else
 	SetupLogging(spdlog::level::info);
-#endif
+	#endif
 
 	m_ModLoader = std::make_shared<ModLoader>();
 
@@ -147,23 +147,31 @@ ModSDK::~ModSDK() {
 	HookRegistry::DestroyHooks();
 	Trampolines::ClearTrampolines();
 
-#if _DEBUG
+	#if _DEBUG
 	FlushLoggers();
 	ClearLoggers();
 
 	m_DebugConsole.reset();
-#endif
+	#endif
 }
 
-bool ModSDK::PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) {
+bool ModSDK::PatchCode(
+	const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset
+) {
 	return PatchCodeInternal(p_Pattern, p_Mask, p_NewCode, p_CodeSize, p_Offset, nullptr);
 }
 
-bool ModSDK::PatchCodeStoreOriginal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OriginalCode) {
+bool ModSDK::PatchCodeStoreOriginal(
+	const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
+	void* p_OriginalCode
+) {
 	return PatchCodeInternal(p_Pattern, p_Mask, p_NewCode, p_CodeSize, p_Offset, p_OriginalCode);
 }
 
-bool ModSDK::PatchCodeInternal(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset, void* p_OriginalCode) {
+bool ModSDK::PatchCodeInternal(
+	const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
+	void* p_OriginalCode
+) {
 	if (!p_Pattern || !p_Mask || !p_NewCode || p_CodeSize == 0) {
 		Logger::Error("Invalid parameters provided to PatchCode call.");
 		return false;
@@ -186,7 +194,9 @@ bool ModSDK::PatchCodeInternal(const char* p_Pattern, const char* p_Mask, void* 
 
 	if (p_OriginalCode != nullptr) memcpy(p_OriginalCode, s_TargetPtr, p_CodeSize);
 
-	Logger::Debug("Patching {} bytes of code at {} with new code from {}.", p_CodeSize, fmt::ptr(s_TargetPtr), p_NewCode);
+	Logger::Debug(
+		"Patching {} bytes of code at {} with new code from {}.", p_CodeSize, fmt::ptr(s_TargetPtr), p_NewCode
+	);
 
 	DWORD s_OldProtect;
 	VirtualProtect(s_TargetPtr, p_CodeSize, PAGE_EXECUTE_READWRITE, &s_OldProtect);
@@ -217,7 +227,7 @@ void ModSDK::LoadConfiguration() {
 	// now we can read the file
 	s_File.read(s_Ini);
 
-	for (auto& s_Mod: s_Ini) {
+	for (auto& s_Mod : s_Ini) {
 		// We are looking for the sdk entry.
 		if (Util::StringUtils::ToLowerCase(s_Mod.first) != "sdk")
 			continue;
@@ -269,9 +279,11 @@ void ModSDK::LoadConfiguration() {
 void ModSDK::SetHasShownUiToggleWarning() {
 	m_HasShownUiToggleWarning = true;
 
-	UpdateSdkIni([&](auto& s_SdkMap) {
-		s_SdkMap.set("shown_ui_toggle_warning", "true");
-	});
+	UpdateSdkIni(
+		[&](auto& s_SdkMap) {
+			s_SdkMap.set("shown_ui_toggle_warning", "true");
+		}
+	);
 }
 
 std::pair<uint32_t, std::string> ModSDK::RequestLatestVersion() {
@@ -313,7 +325,9 @@ std::pair<uint32_t, std::string> ModSDK::RequestLatestVersion() {
 	std::unique_ptr<void, decltype(&WinHttpCloseHandle)> s_RequestHandle(s_Request, &WinHttpCloseHandle);
 
 	// Send a request
-	if (!WinHttpSendRequest(s_RequestHandle.get(), WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0)) {
+	if (!WinHttpSendRequest(
+		s_RequestHandle.get(), WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0
+	)) {
 		throw std::runtime_error("WinHttpSendRequest failed");
 	}
 
@@ -349,9 +363,10 @@ std::pair<uint32_t, std::string> ModSDK::RequestLatestVersion() {
 				s_Response.append(s_Buffer.get(), s_BytesRead);
 			}
 		}
-	} while (s_ResponseSize > 0);
+	}
+	while (s_ResponseSize > 0);
 
-	return { s_StatusCode, s_Response };
+	return {s_StatusCode, s_Response};
 }
 
 void ModSDK::ShowVersionNotice(const std::string& p_Version) {
@@ -366,7 +381,7 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
 	std::wstring s_WideContent(s_ContentSize, 0);
 	MultiByteToWideChar(CP_UTF8, 0, s_ContentStr.c_str(), -1, s_WideContent.data(), s_ContentSize);
 
-	TASKDIALOGCONFIG s_Config = { 0 };
+	TASKDIALOGCONFIG s_Config = {0};
 	s_Config.cbSize = sizeof(s_Config);
 	s_Config.hInstance = GetModuleHandle(nullptr);
 	s_Config.dwFlags = TDF_ENABLE_HYPERLINKS | TDF_USE_COMMAND_LINKS;
@@ -377,9 +392,9 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
 	s_Config.pszContent = s_WideContent.c_str();
 
 	TASKDIALOG_BUTTON s_Buttons[] = {
-		{ 1337, L"Download update\nUpdate must be manually applied after being downloaded." },
-		{ 1338, L"View update notes\nOpen a page with the update notes for the new version." },
-		{ 1339, L"Ignore this version\nSkip this update and further update notifications for this version." },
+		{1337, L"Download update\nUpdate must be manually applied after being downloaded."},
+		{1338, L"View update notes\nOpen a page with the update notes for the new version."},
+		{1339, L"Ignore this version\nSkip this update and further update notifications for this version."},
 	};
 
 	s_Config.pButtons = s_Buttons;
@@ -431,9 +446,11 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
 
 // Write the version to skip update notifications for to the mods.ini file.
 void ModSDK::SkipVersionUpdate(const std::string& p_Version) {
-	UpdateSdkIni([&](auto& s_SdkMap) {
-		s_SdkMap.set("ignore_version", p_Version);
-	});
+	UpdateSdkIni(
+		[&](auto& s_SdkMap) {
+			s_SdkMap.set("ignore_version", p_Version);
+		}
+	);
 }
 
 void ModSDK::CheckForUpdates() {
@@ -494,57 +511,52 @@ void ModSDK::CheckForUpdates() {
 
 // Built-in console commands
 void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
-	if (p_Args.size() == 1)
-	{
-		if (p_Args[0] == "unloadall")
-		{
+	if (p_Args.size() == 1) {
+		if (p_Args[0] == "unloadall") {
 			ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
 		}
-		else if (p_Args[0] == "reloadall")
-		{
+		else if (p_Args[0] == "reloadall") {
 			ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
 		}
 	}
 
-	if (p_Args.size() == 2)
-	{
-		if (p_Args[0] == "load")
-		{
+	if (p_Args.size() == 2) {
+		if (p_Args[0] == "load") {
 			ModSDK::GetInstance()->GetModLoader()->LoadMod(p_Args[1].c_str(), true);
 		}
-		else if (p_Args[0] == "unload")
-		{
+		else if (p_Args[0] == "unload") {
 			ModSDK::GetInstance()->GetModLoader()->UnloadMod(p_Args[1].c_str());
 		}
-		else if (p_Args[0] == "reload")
-		{
+		else if (p_Args[0] == "reload") {
 			ModSDK::GetInstance()->GetModLoader()->ReloadMod(p_Args[1].c_str());
 		}
-		else if (p_Args[0] == "config")
-		{
+		else if (p_Args[0] == "config") {
 			ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
 
 			if (s_Command == 0)
 				return Logger::Error("[ZConfigCommand] Invalid command.");
 
-			switch(s_Command->GetType())
-			{
+			switch (s_Command->GetType()) {
 				case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT:
-					return Logger::Info("[ZConfigCommand] {} - float - {}", p_Args[1], s_Command->As<ZConfigFloat>()->GetValue());
+					return Logger::Info(
+						"[ZConfigCommand] {} - float - {}", p_Args[1], s_Command->As<ZConfigFloat>()->GetValue()
+					);
 				case ZConfigCommand_ECLASSTYPE::ECLASS_INT:
-					return Logger::Info("[ZConfigCommand] {} - int - {}", p_Args[1], s_Command->As<ZConfigInt>()->GetValue());
+					return Logger::Info(
+						"[ZConfigCommand] {} - int - {}", p_Args[1], s_Command->As<ZConfigInt>()->GetValue()
+					);
 				case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
-					return Logger::Info("[ZConfigCommand] {} - string - \"{}\"", p_Args[1], s_Command->As<ZConfigString>()->GetValue());
+					return Logger::Info(
+						"[ZConfigCommand] {} - string - \"{}\"", p_Args[1], s_Command->As<ZConfigString>()->GetValue()
+					);
 				case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
 					return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
 			}
 		}
 	}
 
-	if (p_Args.size() == 3)
-	{
-		if (p_Args[0] == "config")
-		{
+	if (p_Args.size() == 3) {
+		if (p_Args[0] == "config") {
 			ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
 
 			if (s_Command == 0)
@@ -552,16 +564,20 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
 
 			// Now we validate the input, we technically don't need to do this as it'll be done by the engine function
 			// we call. But we do this to provide output to the user.
-			switch (s_Command->GetType())
-			{
+			switch (s_Command->GetType()) {
 				case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT: {
 					try {
 						size_t pos;
 						static_cast<void>(std::stof(p_Args[2].c_str(), &pos));
 						if (pos != p_Args[2].size())
-							return Logger::Error("[ZConfigCommand] Invalid input (float), not all characters provided were processed.");
-					} catch (const std::invalid_argument&) {
-						return Logger::Error("[ZConfigCommand] Invalid input (float), input does not represent a float.");
+							return Logger::Error(
+								"[ZConfigCommand] Invalid input (float), not all characters provided were processed."
+							);
+					}
+					catch (const std::invalid_argument&) {
+						return Logger::Error(
+							"[ZConfigCommand] Invalid input (float), input does not represent a float."
+						);
 					} catch (const std::out_of_range&) {
 						return Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
 					}
@@ -572,11 +588,16 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
 						size_t pos;
 						unsigned long value = std::stoul(p_Args[2].c_str(), &pos);
 						if (pos != p_Args[2].size())
-							return Logger::Error("[ZConfigCommand] Invalid input (integer), not all characters provided were processed.");
+							return Logger::Error(
+								"[ZConfigCommand] Invalid input (integer), not all characters provided were processed."
+							);
 						if (value > (std::numeric_limits<unsigned int>::max)())
 							return Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
-					} catch (const std::invalid_argument&) {
-						return Logger::Error("[ZConfigCommand] Invalid input (integer), input does not represent a integer.");
+					}
+					catch (const std::invalid_argument&) {
+						return Logger::Error(
+							"[ZConfigCommand] Invalid input (integer), input does not represent a integer."
+						);
 					} catch (const std::out_of_range&) {
 						return Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
 					}
@@ -584,7 +605,9 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
 				}
 				case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
 					if (p_Args[2].size() >= 256)
-						return Logger::Error("[ZConfigCommand] Invalid input (string), maximum length of 255 exceeded.");
+						return Logger::Error(
+							"[ZConfigCommand] Invalid input (string), maximum length of 255 exceeded."
+						);
 					break;
 				case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
 					return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
@@ -597,9 +620,9 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
 }
 
 bool ModSDK::Startup() {
-#if _DEBUG
+	#if _DEBUG
 	m_DebugConsole->StartRedirecting();
-#endif
+	#endif
 
 	m_ModLoader->Startup();
 
@@ -610,19 +633,25 @@ bool ModSDK::Startup() {
 	m_D3D12Hooks->Startup();
 
 	// Patch mutex creation to allow multiple instances.
-	uint8_t s_NopBytes[84] = { 0x90 };
+	uint8_t s_NopBytes[84] = {0x90};
 	memset(s_NopBytes, 0x90, 84);
-	if (!PatchCode("\x4C\x8D\x05\x00\x00\x00\x00\xBA\x00\x00\x00\x00\x33\xC9\xFF\x15", "xxx????x????xxxx", s_NopBytes, 84, 0)) {
-		Logger::Warn("Could not patch multi-instance detection. You will not be able to launch the game more than once.");
+	if (!PatchCode(
+		"\x4C\x8D\x05\x00\x00\x00\x00\xBA\x00\x00\x00\x00\x33\xC9\xFF\x15", "xxx????x????xxxx", s_NopBytes, 84, 0
+	)) {
+		Logger::Warn(
+			"Could not patch multi-instance detection. You will not be able to launch the game more than once."
+		);
 	}
 
 	// Setup custom multiplayer code.
 	//Multiplayer::Lobby::Setup();
 
 	if (!m_DisableUpdateCheck) {
-		std::thread s_VersionCheckThread([&]() {
-			CheckForUpdates();
-		});
+		std::thread s_VersionCheckThread(
+			[&]() {
+				CheckForUpdates();
+			}
+		);
 
 		s_VersionCheckThread.detach();
 	}
@@ -636,7 +665,7 @@ bool ModSDK::Startup() {
 void ModSDK::ThreadedStartup() {
 	m_ModLoader->LockRead();
 
-	for (const auto& s_Mod: m_ModLoader->GetLoadedMods()) {
+	for (const auto& s_Mod : m_ModLoader->GetLoadedMods()) {
 		s_Mod->SetupUI();
 		s_Mod->Init();
 	}
@@ -651,7 +680,7 @@ void ModSDK::ThreadedStartup() {
 void ModSDK::OnDrawMenu() {
 	m_ModLoader->LockRead();
 
-	for (auto& s_Mod: m_ModLoader->GetLoadedMods()) {
+	for (auto& s_Mod : m_ModLoader->GetLoadedMods()) {
 		s_Mod->OnDrawMenu();
 	}
 
@@ -665,7 +694,7 @@ void ModSDK::OnDrawUI(bool p_HasFocus) {
 
 	m_ModLoader->LockRead();
 
-	for (auto& s_Mod: m_ModLoader->GetLoadedMods())
+	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnDrawUI(p_HasFocus);
 
 	m_ModLoader->UnlockRead();
@@ -674,7 +703,7 @@ void ModSDK::OnDrawUI(bool p_HasFocus) {
 void ModSDK::OnDraw3D() {
 	m_ModLoader->LockRead();
 
-	for (auto& s_Mod: m_ModLoader->GetLoadedMods())
+	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnDraw3D(m_DirectXTKRenderer.get());
 
 	m_ModLoader->UnlockRead();
@@ -715,9 +744,7 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
 	Logger::Info("Mod {} successfully loaded.", p_Name);
 }
 
-void ModSDK::OnModUnloaded(const std::string& p_Name) {
-
-}
+void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 
 void ModSDK::OnEngineInit() {
 	Logger::Debug("Engine was initialized.");
@@ -729,7 +756,7 @@ void ModSDK::OnEngineInit() {
 
 	m_ModLoader->LockRead();
 
-	for (auto& s_Mod: m_ModLoader->GetLoadedMods())
+	for (auto& s_Mod : m_ModLoader->GetLoadedMods())
 		s_Mod->OnEngineInitialized();
 
 	m_ModLoader->UnlockRead();
@@ -855,23 +882,25 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
 
 	if (s_Size.x == 0 && s_Size.y == 0) {
 		const auto s_Desc = p_RT->m_pTexture2D->m_pResource->GetDesc();
-		s_Size = { static_cast<float>(s_Desc.Width), static_cast<float>(s_Desc.Height) };
+		s_Size = {static_cast<float>(s_Desc.Width), static_cast<float>(s_Desc.Height)};
 	}
 
 	const auto s_HandleIncrementSize = Globals::RenderManager->m_pDevice->m_pDevice->GetDescriptorHandleIncrementSize(
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
 	);
 
-	D3D12_GPU_DESCRIPTOR_HANDLE s_Handle{};
+	D3D12_GPU_DESCRIPTOR_HANDLE s_Handle {};
 	s_Handle.ptr = Globals::RenderManager->m_pDevice->m_pFrameHeapCBVSRVUAV->GetGPUDescriptorHandleForHeapStart().ptr +
-	               (p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
+			(p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
 
 	ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_SetGameDescriptorHeap, nullptr);
 	ImGui::Image(reinterpret_cast<ImTextureID>(s_Handle.ptr), s_Size);
 	ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetDescriptorHeap, nullptr);
 }
 
-void ModSDK::SetPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_Value) {
+void ModSDK::SetPluginSetting(
+	IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_Value
+) {
 	if (!p_Plugin) {
 		return;
 	}
@@ -885,7 +914,9 @@ void ModSDK::SetPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Secti
 	s_Settings->SetSetting(p_Section.c_str(), p_Name.c_str(), p_Value.c_str());
 }
 
-void ModSDK::SetPluginSettingInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_Value) {
+void ModSDK::SetPluginSettingInt(
+	IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_Value
+) {
 	if (!p_Plugin) {
 		return;
 	}
@@ -899,7 +930,9 @@ void ModSDK::SetPluginSettingInt(IPluginInterface* p_Plugin, const ZString& p_Se
 	s_Settings->SetSetting(p_Section.c_str(), p_Name.c_str(), std::to_string(p_Value));
 }
 
-void ModSDK::SetPluginSettingUInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64_t p_Value) {
+void ModSDK::SetPluginSettingUInt(
+	IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64_t p_Value
+) {
 	if (!p_Plugin) {
 		return;
 	}
@@ -913,7 +946,9 @@ void ModSDK::SetPluginSettingUInt(IPluginInterface* p_Plugin, const ZString& p_S
 	s_Settings->SetSetting(p_Section.c_str(), p_Name.c_str(), std::to_string(p_Value));
 }
 
-void ModSDK::SetPluginSettingDouble(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_Value) {
+void ModSDK::SetPluginSettingDouble(
+	IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_Value
+) {
 	if (!p_Plugin)
 		return;
 
@@ -926,7 +961,9 @@ void ModSDK::SetPluginSettingDouble(IPluginInterface* p_Plugin, const ZString& p
 	s_Settings->SetSetting(p_Section.c_str(), p_Name.c_str(), std::to_string(p_Value));
 }
 
-void ModSDK::SetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_Value) {
+void ModSDK::SetPluginSettingBool(
+	IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_Value
+) {
 	if (!p_Plugin) {
 		return;
 	}
@@ -959,7 +996,9 @@ ZString ModSDK::GetPluginSetting(
 	return s_Settings->GetSetting(p_Section.c_str(), p_Name.c_str(), p_DefaultValue.c_str());
 }
 
-int64_t ModSDK::GetPluginSettingInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_DefaultValue) {
+int64_t ModSDK::GetPluginSettingInt(
+	IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_DefaultValue
+) {
 	if (!p_Plugin) {
 		return p_DefaultValue;
 	}
@@ -1006,7 +1045,9 @@ uint64_t ModSDK::GetPluginSettingUInt(
 	}
 }
 
-double ModSDK::GetPluginSettingDouble(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_DefaultValue) {
+double ModSDK::GetPluginSettingDouble(
+	IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_DefaultValue
+) {
 	if (!p_Plugin) {
 		return p_DefaultValue;
 	}
@@ -1027,7 +1068,9 @@ double ModSDK::GetPluginSettingDouble(IPluginInterface* p_Plugin, const ZString&
 	}
 }
 
-bool ModSDK::GetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_DefaultValue) {
+bool ModSDK::GetPluginSettingBool(
+	IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_DefaultValue
+) {
 	if (!p_Plugin) {
 		return p_DefaultValue;
 	}
@@ -1042,9 +1085,11 @@ bool ModSDK::GetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_S
 
 	if (s_Value == "true" || s_Value == "1" || s_Value == "yes" || s_Value == "on" || s_Value == "y") {
 		return true;
-	} else if (s_Value == "false" || s_Value == "0" || s_Value == "no" || s_Value == "off" || s_Value == "n") {
+	}
+	else if (s_Value == "false" || s_Value == "0" || s_Value == "no" || s_Value == "off" || s_Value == "n") {
 		return false;
-	} else {
+	}
+	else {
 		return p_DefaultValue;
 	}
 }
@@ -1166,15 +1211,15 @@ struct EOS_Platform_Options {
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options) {
 	// Disable overlay in debug mode since it conflicts with Nsight and the like.
-#if _DEBUG
+	#if _DEBUG
 	Logger::Debug("Disabling Epic overlay.");
 	Options->Flags |= EOS_PF_LOADING_IN_EDITOR | EOS_PF_DISABLE_OVERLAY;
-#endif
+	#endif
 
 	return HookResult<EOS_PlatformHandle*>(HookAction::Continue());
 }
 
-void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string> &)> p_Callback) {
+void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback) {
 	char s_ExePathStr[MAX_PATH];
 	auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
 
