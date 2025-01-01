@@ -8,28 +8,23 @@ class ZEntitySceneContext;
 class ZUserFeedbackManager;
 
 class IModule :
-    public IComponentInterface
-{
-};
+        public IComponentInterface {};
 
 // size: 0x68
 class ZSimpleModuleBase :
-    public IModule
-{
+        public IModule {
 public:
     PAD(0x60); // 0x08
 };
 
-class ZConfiguration
-{
+class ZConfiguration {
 public:
     PAD(0x10);
 };
 
 class ZHitman5Module :
-    public ZSimpleModuleBase,
-    public ZConfiguration
-{
+        public ZSimpleModuleBase,
+        public ZConfiguration {
 public:
     PAD(0x10); // 0x78
     ZEntitySceneContext* m_pEntitySceneContext; // 0x88
@@ -38,8 +33,7 @@ public:
 
 public:
     [[nodiscard]]
-    bool IsEngineInitialized() const
-    {
+    bool IsEngineInitialized() const {
         if (!m_pEntitySceneContext)
             return false;
 

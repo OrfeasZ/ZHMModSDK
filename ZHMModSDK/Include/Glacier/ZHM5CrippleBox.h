@@ -3,14 +3,12 @@
 #include "ZEntity.h"
 #include "ZHitman5.h"
 
-class ZHeroReference : public ZEntityImpl
-{
+class ZHeroReference : public ZEntityImpl {
 public:
     TEntityRef<ZHitman5> m_rHitmanCharacter; // 0x18
 };
 
-class ZHM5CrippleBox : public ZHeroReference, public ISavableEntity
-{
+class ZHM5CrippleBox : public ZHeroReference, public ISavableEntity {
 public:
     PAD(0x8);
     bool m_bInSequence; // 0x38

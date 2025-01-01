@@ -4,8 +4,7 @@
 #include "ZPrimitives.h"
 #include "Enums.h"
 
-struct SActorCounts
-{
+struct SActorCounts {
     int m_nEnemiesIsAlerted; // 40
     int m_nEnemiesIsAlertedArmed; // 44
     int m_nEnemiesIsEngaged; // 48
@@ -17,8 +16,7 @@ struct SActorCounts
 
 class ZAIEventEmitterEntity;
 
-class ZAIGameState
-{
+class ZAIGameState {
 public:
     float m_fDisguiseHealth; // 0
     STokenID m_outfitToken; // 8
@@ -36,7 +34,7 @@ public:
     float m_fAttentionMax; // 104
     float m_fAttentionMaxPan; // 108
     float m_fAudibleAttentionMax; // 112
-    float m_fAudibleAttentionMaxPan;  // 116
+    float m_fAudibleAttentionMaxPan; // 116
     float m_fSecurityCameraAttentionMax; // 120
     float m_fSecurityCameraAttentionMaxPan; // 124
     float m_fTrespassingAttentionMax; // 128
@@ -47,13 +45,11 @@ public:
     PAD(24); // 152
     ZString m_sBodyId; // 176
 
-    union
-    {
+    union {
         uint64_t m_nFlags;
 
-        struct
-        {
-            bool m_bDisguiseBroken : 1;  // 192 (0xC0)
+        struct {
+            bool m_bDisguiseBroken : 1; // 192 (0xC0)
             bool m_bDisguiseSuspicious : 1; // & 2 (>> 1)
             bool m_bInDisguise : 1; // & 4 (>> 2)
             bool m_bUnk3 : 1; // & 8 (>> 3)
@@ -105,8 +101,7 @@ public:
     };
 };
 
-class ZGameStatsManager
-{
+class ZGameStatsManager {
 public:
     PAD(0x48);
     ZAIGameState m_gameState; // 72

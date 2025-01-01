@@ -32,8 +32,7 @@ class ZSelectionForFreeCameraEditorStyleEntity;
 template <typename T> class TArray;
 template <typename T> class TEntityRef;
 
-class ZHMSDK_API Globals
-{
+class ZHMSDK_API Globals {
 public:
     static ZGameLoopManager* GameLoopManager;
     static ZTypeRegistry** TypeRegistry;
@@ -60,9 +59,9 @@ public:
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
-	static void* ZTemplateEntityBlueprintFactory_vtbl;
-	static ZInputActionManager* InputActionManager;
-	static int* InputActionManager_BindMem;
-	static int* InputActionManager_Seq;
-	static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
+    static void* ZTemplateEntityBlueprintFactory_vtbl;
+    static ZInputActionManager* InputActionManager;
+    static int* InputActionManager_BindMem;
+    static int* InputActionManager_Seq;
+    static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
 };

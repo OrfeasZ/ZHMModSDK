@@ -6,52 +6,54 @@
 
 #include <vector>
 
-template<class T>
+template <class T>
 class TIterator {
 protected:
-    TIterator(T *p_Current) : m_pCurrent(p_Current) {
-    }
+    TIterator(T* p_Current) :
+        m_pCurrent(p_Current) {}
 
 public:
-    T *m_pCurrent;
+    T* m_pCurrent;
 };
 
-template<class T>
+template <class T>
 class TArray {
 public:
-    TArray() : m_pBegin(nullptr),
-               m_pEnd(nullptr),
-               m_pAllocationEnd(nullptr) {
-    }
+    TArray() :
+        m_pBegin(nullptr),
+        m_pEnd(nullptr),
+        m_pAllocationEnd(nullptr) {}
 
-    TArray(const std::vector<T> &p_Other) : m_pBegin(nullptr),
-                                            m_pEnd(nullptr),
-                                            m_pAllocationEnd(nullptr) {
+    TArray(const std::vector<T>& p_Other) :
+        m_pBegin(nullptr),
+        m_pEnd(nullptr),
+        m_pAllocationEnd(nullptr) {
         if (p_Other.size() == 0) {
             return;
         }
 
-        for (const auto &s_Value: p_Other) {
+        for (const auto& s_Value : p_Other) {
             push_back(s_Value);
         }
     }
 
-    TArray(const TArray<T> &p_Other) : m_pBegin(nullptr),
-                                       m_pEnd(nullptr),
-                                       m_pAllocationEnd(nullptr) {
+    TArray(const TArray<T>& p_Other) :
+        m_pBegin(nullptr),
+        m_pEnd(nullptr),
+        m_pAllocationEnd(nullptr) {
         if (p_Other.size() == 0) {
             return;
         }
 
-        for (const auto &s_Value: p_Other) {
+        for (const auto& s_Value : p_Other) {
             push_back(s_Value);
         }
     }
 
-    TArray(TArray<T> &&) = delete;
+    TArray(TArray<T>&&) = delete;
 
     ~TArray() {
-        for (T *s_Item = begin(); s_Item != end(); ++s_Item)
+        for (T* s_Item = begin(); s_Item != end(); ++s_Item)
             s_Item->~T();
 
         if (!hasInlineFlag()) {
@@ -59,23 +61,23 @@ public:
         }
     }
 
-    TArray<T> &operator=(const TArray<T> &p_Other) {
+    TArray<T>& operator=(const TArray<T>& p_Other) {
         if (this == &p_Other) {
             return *this;
         }
 
         clear();
 
-        for (const auto &s_Value: p_Other) {
+        for (const auto& s_Value : p_Other) {
             push_back(s_Value);
         }
 
         return *this;
     }
 
-    TArray &operator=(TArray<T> &&p_Other) = delete;
+    TArray& operator=(TArray<T>&& p_Other) = delete;
 
-    void push_back(const T &p_Value) {
+    void push_back(const T& p_Value) {
         // If we have the inline flag, we need to copy everything into
         // a temporary dynamically-allocated array, and then swap it with
         // the current one.
@@ -86,19 +88,21 @@ public:
 
         if (m_pEnd < m_pAllocationEnd) {
             new(m_pEnd++) T(p_Value);
-        } else {
+        }
+        else {
             // Out of space, need to allocate a new array and move everything over.
             // We will allocate double the existing capacity.
             const size_t s_NewCapacity = capacity() == 0 ? 1 : capacity() * 2;
             const size_t s_CurrentSize = size();
-            const auto s_NewBegin = static_cast<T *>((*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                sizeof(T) * s_NewCapacity, alignof(T)));
+            const auto s_NewBegin = static_cast<T*>((*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+                sizeof(T) * s_NewCapacity, alignof(T)
+            ));
 
             // Copy the old data over to the new array.
             // After copying, we destroy them and free the old array.
             auto s_NewItemMem = s_NewBegin;
 
-            for (T *s_Item = begin(); s_Item != end(); ++s_Item) {
+            for (T* s_Item = begin(); s_Item != end(); ++s_Item) {
                 new(s_NewItemMem++) T(*s_Item);
                 s_Item->~T();
             }
@@ -116,14 +120,15 @@ public:
     }
 
     void clear() {
-        for (T *s_Item = begin(); s_Item != end(); ++s_Item) {
+        for (T* s_Item = begin(); s_Item != end(); ++s_Item) {
             s_Item->~T();
         }
 
         if (hasInlineFlag()) {
             // If data was stored inline, just clear everything (including the inline flag).
             m_pBegin = m_pEnd = m_pAllocationEnd = nullptr;
-        } else {
+        }
+        else {
             // We're not freeing anything here since the allocated memory can be re-used.
             m_pBegin = m_pEnd;
         }
@@ -145,52 +150,52 @@ public:
         return (reinterpret_cast<uintptr_t>(m_pAllocationEnd) - reinterpret_cast<uintptr_t>(m_pBegin)) / sizeof(T);
     }
 
-    T &operator[](size_t p_Index) {
+    T& operator[](size_t p_Index) {
         return begin()[p_Index];
     }
 
-    const T &operator[](size_t p_Index) const {
+    const T& operator[](size_t p_Index) const {
         return begin()[p_Index];
     }
 
-    T &at(size_t p_Index) {
+    T& at(size_t p_Index) {
         return begin()[p_Index];
     }
 
-    const T &at(size_t p_Index) const {
+    const T& at(size_t p_Index) const {
         return begin()[p_Index];
     }
 
-    T *begin() {
+    T* begin() {
         if (fitsInline() && hasInlineFlag())
-            return reinterpret_cast<T *>(&m_pBegin);
+            return reinterpret_cast<T*>(&m_pBegin);
 
         return m_pBegin;
     }
 
-    T *end() {
+    T* end() {
         if (fitsInline() && hasInlineFlag())
             return begin() + m_nInlineCount;
 
         return m_pEnd;
     }
 
-    const T *begin() const {
+    const T* begin() const {
         if (fitsInline() && hasInlineFlag())
-            return reinterpret_cast<const T *>(&m_pBegin);
+            return reinterpret_cast<const T*>(&m_pBegin);
 
         return m_pBegin;
     }
 
-    const T *end() const {
+    const T* end() const {
         if (fitsInline() && hasInlineFlag())
             return begin() + m_nInlineCount;
 
         return m_pEnd;
     }
 
-    T *find(const T &p_Value) const {
-        T *s_Current = begin();
+    T* find(const T& p_Value) const {
+        T* s_Current = begin();
 
         while (s_Current != end()) {
             if (*s_Current == p_Value)
@@ -203,7 +208,7 @@ public:
     }
 
     [[nodiscard]] bool fitsInline() const {
-        return sizeof(T) <= sizeof(T *) * 2;
+        return sizeof(T) <= sizeof(T*) * 2;
     }
 
     [[nodiscard]] bool hasInlineFlag() const {
@@ -211,11 +216,11 @@ public:
     }
 
 public:
-    T *m_pBegin;
-    T *m_pEnd;
+    T* m_pBegin;
+    T* m_pEnd;
 
     union {
-        T *m_pAllocationEnd;
+        T* m_pAllocationEnd;
         int64_t m_nFlags;
 
         struct {
@@ -225,7 +230,7 @@ public:
     };
 };
 
-template<typename T>
+template <typename T>
 class TFixedArray {
 public:
     inline size_t size() const {
@@ -236,28 +241,28 @@ public:
         return (reinterpret_cast<uintptr_t>(m_pEnd) - reinterpret_cast<uintptr_t>(m_pBegin)) / sizeof(T);
     }
 
-    inline T &operator[](size_t p_Index) const {
+    inline T& operator[](size_t p_Index) const {
         return m_pBegin[p_Index];
     }
 
-    inline T *begin() {
+    inline T* begin() {
         return m_pBegin;
     }
 
-    inline T *end() {
+    inline T* end() {
         return m_pEnd;
     }
 
-    inline T *begin() const {
+    inline T* begin() const {
         return m_pBegin;
     }
 
-    inline T *end() const {
+    inline T* end() const {
         return m_pEnd;
     }
 
-    inline T *find(const T &p_Value) const {
-        T *s_Current = m_pBegin;
+    inline T* find(const T& p_Value) const {
+        T* s_Current = m_pBegin;
 
         while (s_Current != m_pEnd) {
             if (*s_Current == p_Value)
@@ -270,6 +275,6 @@ public:
     }
 
 public:
-    T *m_pBegin;
-    T *m_pEnd;
+    T* m_pBegin;
+    T* m_pEnd;
 };

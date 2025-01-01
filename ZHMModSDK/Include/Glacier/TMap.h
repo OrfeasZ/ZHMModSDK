@@ -3,35 +3,26 @@
 #include "TPair.h"
 
 template <typename T>
-class TBinaryTreeNode
-{
+class TBinaryTreeNode {
 public:
-    static TBinaryTreeNode* GetNextNode(TBinaryTreeNode* pNode)
-    {
+    static TBinaryTreeNode* GetNextNode(TBinaryTreeNode* pNode) {
         TBinaryTreeNode* result = pNode->m_pRight;
 
-        if (result)
-        {
-            for (TBinaryTreeNode* i = result->m_pLeft; i; i = i->m_pLeft)
-            {
+        if (result) {
+            for (TBinaryTreeNode* i = result->m_pLeft; i; i = i->m_pLeft) {
                 result = i;
             }
         }
-        else
-        {
+        else {
             result = pNode->m_pParent;
 
-            if (result)
-            {
-                if (result->m_pLeft == pNode)
-                {
+            if (result) {
+                if (result->m_pLeft == pNode) {
                     return result;
                 }
 
-                do
-                {
-                    if (result->m_pLeft == pNode)
-                    {
+                do {
+                    if (result->m_pLeft == pNode) {
                         break;
                     }
 
@@ -43,8 +34,7 @@ public:
 
             result = pNode->m_pParent;
 
-            if (!result)
-            {
+            if (!result) {
                 return pNode;
             }
         }
@@ -61,46 +51,36 @@ public:
 };
 
 template <typename T>
-class TBinaryTreeIterator
-{
+class TBinaryTreeIterator {
 public:
     inline TBinaryTreeIterator() :
-        m_pCurrent(nullptr)
-    {
-
-    }
+        m_pCurrent(nullptr) {}
 
     inline TBinaryTreeIterator(T* ptr) :
-        m_pCurrent(ptr)
-    {
-    }
+        m_pCurrent(ptr) {}
 
-    inline TBinaryTreeIterator<T>& operator++()
-    {
-        TBinaryTreeNode<T>* node = reinterpret_cast<TBinaryTreeNode<T>*>(reinterpret_cast<char*>(this->m_pCurrent) - offsetof(TBinaryTreeNode<T>, TBinaryTreeNode<T>::m_data));
+    inline TBinaryTreeIterator<T>& operator++() {
+        TBinaryTreeNode<T>* node = reinterpret_cast<TBinaryTreeNode<T>*>(reinterpret_cast<char*>(this->m_pCurrent) -
+            offsetof(TBinaryTreeNode<T>, TBinaryTreeNode<T>::m_data));
 
         this->m_pCurrent = &TBinaryTreeNode<T>::GetNextNode(node)->m_data;
 
         return *this;
     }
 
-    inline bool operator==(const TBinaryTreeIterator<T>& other) const
-    {
+    inline bool operator==(const TBinaryTreeIterator<T>& other) const {
         return m_pCurrent == other.m_pCurrent;
     }
 
-    inline bool operator!=(const TBinaryTreeIterator<T>& other) const
-    {
+    inline bool operator!=(const TBinaryTreeIterator<T>& other) const {
         return m_pCurrent != other.m_pCurrent;
     }
 
-    inline T* operator*() const
-    {
+    inline T* operator*() const {
         return m_pCurrent;
     }
 
-    inline T* operator->() const
-    {
+    inline T* operator->() const {
         return m_pCurrent;
     }
 
@@ -109,11 +89,9 @@ public:
 };
 
 template <typename T>
-class TBinaryTree
-{
+class TBinaryTree {
 public:
-    struct SFakeTreeNode
-    {
+    struct SFakeTreeNode {
         int m_nReserved; // 0x00
         TBinaryTreeNode<T>* m_pNULL; // 0x08
         TBinaryTreeNode<T>* m_pRightRoot; // 0x10
@@ -124,21 +102,17 @@ public:
     typedef const TBinaryTreeIterator<T> const_iterator;
 
 public:
-    inline iterator end()
-    {
+    inline iterator end() {
         return reinterpret_cast<T*>(&m_nSize);
     }
 
-    inline iterator begin()
-    {
+    inline iterator begin() {
         iterator result;
 
-        if (m_tree.m_pLeftRoot)
-        {
+        if (m_tree.m_pLeftRoot) {
             result.m_pCurrent = &TBinaryTreeNode<T>::GetNextNode(reinterpret_cast<TBinaryTreeNode<T>*>(this))->m_data;
         }
-        else
-        {
+        else {
             result.m_pCurrent = reinterpret_cast<T*>(&m_nSize);
         }
 
@@ -152,13 +126,10 @@ public:
 
 template <typename T>
 class TRedBlackTree :
-    public TBinaryTree<T>
-{
-};
+        public TBinaryTree<T> {};
 
 template <typename T, typename Z>
-class TMap
-{
+class TMap {
 public:
     typedef TPair<T, Z> value_type;
 
@@ -166,45 +137,37 @@ public:
     typedef const TBinaryTreeIterator<value_type> const_iterator;
 
 public:
-    inline iterator end()
-    {
+    inline iterator end() {
         return m_container.end();
     }
 
-    inline iterator begin()
-    {
+    inline iterator begin() {
         return m_container.begin();
     }
 
-    inline iterator find(const T& key)
-    {
+    inline iterator find(const T& key) {
         TBinaryTreeNode<value_type>* node = find(m_container.m_tree.m_pLeftRoot, key);
 
-        if (node)
-        {
+        if (node) {
             return &node->m_data;
         }
 
         return end();
     }
 
-    inline TBinaryTreeNode<value_type>* find(TBinaryTreeNode<value_type>* root, const T& key)
-    {
-        if (!root || root->m_data.first == key)
-        {
+    inline TBinaryTreeNode<value_type>* find(TBinaryTreeNode<value_type>* root, const T& key) {
+        if (!root || root->m_data.first == key) {
             return root;
         }
 
-        if (root->m_data.first < key)
-        {
+        if (root->m_data.first < key) {
             return find(root->m_pRight, key);
         }
 
         return find(root->m_pLeft, key);
     }
 
-    inline size_t size() const
-    {
+    inline size_t size() const {
         return m_container.m_nSize;
     }
 

@@ -6,8 +6,7 @@
 #include "Glacier/TArray.h"
 #include "Glacier/ZString.h"
 
-class ZHMSDK_API Events
-{
+class ZHMSDK_API Events {
 public:
     static EventDispatcher<TArray<ZString>>* OnConsoleCommand;
 };

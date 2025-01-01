@@ -10,11 +10,9 @@
 class STypeID;
 class ZString;
 
-class ZObjectRef
-{
+class ZObjectRef {
 public:
-    ZObjectRef()
-    {
+    ZObjectRef() {
         auto it = (*Globals::TypeRegistry)->m_types.find("void");
 
         assert(it != (*Globals::TypeRegistry)->m_types.end());
@@ -24,12 +22,12 @@ public:
 
         m_pTypeID = it->second;
     }
-    
-    ZObjectRef(STypeID* p_TypeId, void* p_Data) : m_pTypeID(p_TypeId), m_pData(p_Data) {}
-    
+
+    ZObjectRef(STypeID* p_TypeId, void* p_Data) :
+        m_pTypeID(p_TypeId), m_pData(p_Data) {}
+
     template <class T>
-    bool Is() const
-    {
+    bool Is() const {
         if (m_pTypeID == nullptr ||
             m_pTypeID->typeInfo() == nullptr ||
             m_pTypeID->typeInfo()->m_pTypeName == nullptr)
@@ -39,23 +37,21 @@ public:
     }
 
     template <class T>
-    T* As() const
-    {
+    T* As() const {
         if (!Is<T>())
             return nullptr;
 
         return static_cast<T*>(m_pData);
     }
 
-    void Assign(STypeID* p_Type, void* p_Data)
-    {
+    void Assign(STypeID* p_Type, void* p_Data) {
         m_pTypeID = p_Type;
         m_pData = p_Data;
     }
 
-    bool IsEmpty() const
-    {
-        return m_pTypeID == nullptr || m_pData == nullptr || Hash::Crc32(m_pTypeID->typeInfo()->m_pTypeName) == ZHMTypeId<void>;
+    bool IsEmpty() const {
+        return m_pTypeID == nullptr || m_pData == nullptr || Hash::Crc32(m_pTypeID->typeInfo()->m_pTypeName) ==
+                ZHMTypeId<void>;
     }
 
 public:
@@ -65,17 +61,13 @@ public:
 
 template <class T>
 class ZVariant :
-    public ZObjectRef
-{
+        public ZObjectRef {
 public:
-    ZVariant(ZObjectRef objectRef) : ZObjectRef(objectRef)
-    {
-
-    }
+    ZVariant(ZObjectRef objectRef) :
+        ZObjectRef(objectRef) {}
 
     ZVariant() :
-        ZObjectRef(GetTypeId(), nullptr)
-    {
+        ZObjectRef(GetTypeId(), nullptr) {
         m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
             m_pTypeID->typeInfo()->m_nTypeSize,
             m_pTypeID->typeInfo()->m_nTypeAlignment
@@ -85,8 +77,7 @@ public:
     }
 
     ZVariant(const T& p_Value) :
-        ZObjectRef(GetTypeId(), nullptr)
-    {
+        ZObjectRef(GetTypeId(), nullptr) {
         m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
             m_pTypeID->typeInfo()->m_nTypeSize,
             m_pTypeID->typeInfo()->m_nTypeAlignment
@@ -96,8 +87,7 @@ public:
     }
 
     ZVariant(const ZVariant<T>& p_Other) :
-        ZObjectRef(p_Other.m_pTypeID, nullptr)
-    {
+        ZObjectRef(p_Other.m_pTypeID, nullptr) {
         m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
             m_pTypeID->typeInfo()->m_nTypeSize,
             m_pTypeID->typeInfo()->m_nTypeAlignment
@@ -106,27 +96,23 @@ public:
         m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(m_pData, p_Other.m_pData);
     }
 
-    ~ZVariant()
-    {
+    ~ZVariant() {
         m_pTypeID->typeInfo()->m_pTypeFunctions->destruct(m_pData);
         (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_pData);
     }
 
-    T& Get()
-    {
+    T& Get() {
         return *static_cast<T*>(m_pData);
     }
 
-    ZVariant<T>& operator=(const T& p_Value)
-    {
+    ZVariant<T>& operator=(const T& p_Value) {
         m_pTypeID->typeInfo()->m_pTypeFunctions->destruct(m_pData);
         m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(m_pData, &p_Value);
         return *this;
     }
 
 private:
-    STypeID* GetTypeId()
-    {
+    STypeID* GetTypeId() {
         auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
 
         assert(it != (*Globals::TypeRegistry)->m_types.end());
@@ -140,28 +126,22 @@ private:
 
 template <class T>
 class ZVariantRef :
-    public ZObjectRef
-{
+        public ZObjectRef {
 public:
     ZVariantRef(T* p_Value) :
-        ZObjectRef(GetTypeId(), p_Value)
-    {
-    }
+        ZObjectRef(GetTypeId(), p_Value) {}
 
-    T* Get()
-    {
+    T* Get() {
         return static_cast<T*>(m_pData);
     }
 
-    ZVariantRef<T>& operator=(T* p_Value)
-    {
+    ZVariantRef<T>& operator=(T* p_Value) {
         m_pData = p_Value;
         return *this;
     }
 
 private:
-    STypeID* GetTypeId()
-    {
+    STypeID* GetTypeId() {
         auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
 
         assert(it != (*Globals::TypeRegistry)->m_types.end());
@@ -174,12 +154,9 @@ private:
 };
 
 class ZDynamicObject :
-    public ZObjectRef
-{
-};
+        public ZObjectRef {};
 
-class SDynamicObjectKeyValuePair
-{
+class SDynamicObjectKeyValuePair {
 public:
     ZString sKey; // 0x0
     ZDynamicObject value; // 0x10

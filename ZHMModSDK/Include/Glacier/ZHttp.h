@@ -7,8 +7,7 @@
 
 class ZHttpResultBase;
 
-class ZHttpHeader
-{
+class ZHttpHeader {
 public:
     virtual ~ZHttpHeader() {}
 
@@ -17,11 +16,9 @@ public:
     ZString m_value;
 };
 
-class ZHttpUrl
-{
+class ZHttpUrl {
 public:
-    enum class EVerb : int32_t
-    {
+    enum class EVerb : int32_t {
         eNONE,
         eGET,
         ePOST,
@@ -29,10 +26,8 @@ public:
         eHEAD,
     };
 
-    static ZString EVerbToStr(EVerb p_Verb)
-    {
-        switch (p_Verb)
-        {
+    static ZString EVerbToStr(EVerb p_Verb) {
+        switch (p_Verb) {
             case EVerb::eGET:
                 return "GET";
 
@@ -86,8 +81,7 @@ public:
     TArray<TPair<ZString, ZString>> m_queryArgs;
 };
 
-class SHttpRequestBehavior
-{
+class SHttpRequestBehavior {
 public:
     void (*unk0)();
     void (*unk1)();
@@ -97,8 +91,7 @@ public:
     void (*unk5)();
 };
 
-class ZHttpRequestParams
-{
+class ZHttpRequestParams {
 public:
     ZHttpUrl m_url;
     ZString m_body;
@@ -109,8 +102,7 @@ public:
     ZHttpResultBase* m_pResult;
 };
 
-class IHttpRequest
-{
+class IHttpRequest {
 public:
     virtual ~IHttpRequest() = 0;
 
@@ -126,13 +118,9 @@ public:
 };
 
 class ZHttpRequestWindows :
-    public IHttpRequest
-{
+        public IHttpRequest {};
 
-};
-
-class ZHttpResultDynamicObject
-{
+class ZHttpResultDynamicObject {
 public:
     virtual ~ZHttpResultDynamicObject() = default;
 

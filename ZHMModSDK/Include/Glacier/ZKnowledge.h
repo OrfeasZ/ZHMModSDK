@@ -3,18 +3,13 @@
 #include "ZPrimitives.h"
 #include "TArray.h"
 
-class ZKnowledge
-{
+class ZKnowledge {};
 
-};
-
-struct SBehaviorBase
-{
+struct SBehaviorBase {
     uint32_t m_Type;
 };
 
-struct SBehaviorData
-{
+struct SBehaviorData {
     PAD(0xA0);
     SBehaviorBase* m_pCurrentBehavior; // 0xA0
     PAD(0x50); // 0xA8
@@ -22,8 +17,7 @@ struct SBehaviorData
 
 static_assert(sizeof(SBehaviorData) == 248);
 
-class ZBehaviorService
-{
+class ZBehaviorService {
 public:
     virtual ~ZBehaviorService() = 0;
 

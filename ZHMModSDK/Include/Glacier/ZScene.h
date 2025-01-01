@@ -9,17 +9,12 @@
 class ZEntityScope;
 
 class IEntitySceneContext :
-    public IComponentInterface
-{
-};
+        public IComponentInterface {};
 
 class ISceneEntity :
-    public IComponentInterface
-{
-};
+        public IComponentInterface {};
 
-class ZSceneData
-{
+class ZSceneData {
 public:
     ZString m_sceneName; // 0x00
     TArray<ZString> m_sceneBricks; // 0x10
@@ -29,8 +24,7 @@ public:
     ZString m_codeNameHint; // 0x40
 };
 
-class ZSceneConfiguration
-{
+class ZSceneConfiguration {
 public:
     ZRuntimeResourceID m_ridSceneFactory; //0x0
     TArray<ZRuntimeResourceID> m_aAdditionalBrickFactoryRIDs; //0x8
@@ -40,8 +34,7 @@ public:
     TArray<TResourcePtr<IEntityBlueprintFactory>> m_aAdditionalBrickBlueprints; //0x48
 };
 
-class ZBrickData
-{
+class ZBrickData {
 public:
     ZEntityRef entityRef;
     ZRuntimeResourceID runtimeResourceID;
@@ -49,8 +42,7 @@ public:
 };
 
 class ZEntitySceneContext :
-    public IEntitySceneContext
-{
+        public IEntitySceneContext {
 public:
     virtual ~ZEntitySceneContext() = 0;
     virtual void ZEntitySceneContext_unk0() = 0;

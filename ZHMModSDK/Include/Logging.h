@@ -8,19 +8,16 @@
 
 #include "Glacier/ZString.h"
 
-struct LoggerList
-{
+struct LoggerList {
     spdlog::logger** Loggers;
     size_t Count;
 };
 
 ZHMSDK_API LoggerList GetLoggers();
 
-namespace Logger
-{
+namespace Logger {
     template <typename... Args>
-    inline void Error(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args)
-    {
+    inline void Error(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args) {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
@@ -28,8 +25,7 @@ namespace Logger
     }
 
     template <typename... Args>
-    inline void Warn(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args)
-    {
+    inline void Warn(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args) {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
@@ -37,8 +33,7 @@ namespace Logger
     }
 
     template <typename... Args>
-    inline void Info(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args)
-    {
+    inline void Info(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args) {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
@@ -46,8 +41,7 @@ namespace Logger
     }
 
     template <typename... Args>
-    inline void Debug(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args)
-    {
+    inline void Debug(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args) {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
@@ -55,8 +49,7 @@ namespace Logger
     }
 
     template <typename... Args>
-    inline void Trace(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args)
-    {
+    inline void Trace(spdlog::format_string_t<Args...> p_Format, const Args&... p_Args) {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)

@@ -2,19 +2,16 @@
 
 #include "Reflection.h"
 
-struct ZGameTime
-{
+struct ZGameTime {
     int64_t m_nTicks;
 
-    double ToSeconds() const
-    {
+    double ToSeconds() const {
         return static_cast<double>(m_nTicks) / 1024.0 / 1024.0;
     }
 };
 
 class ZGameTimeManager :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     int64_t m_unk0x8;
     ZGameTime m_tSystemTime;

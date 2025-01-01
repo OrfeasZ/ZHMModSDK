@@ -5,41 +5,22 @@
 #include "ZGeomEntity.h"
 #include "ZHitman5.h"
 
-class IItemBase : public IComponentInterface
-{
+class IItemBase : public IComponentInterface {};
 
-};
+class IKeywordProvider : public IComponentInterface {};
 
-class IKeywordProvider : public IComponentInterface
-{
+class IItem : public IKeywordProvider {};
 
-};
+class IKeywordHolder : public IComponentInterface {};
 
-class IItem : public IKeywordProvider
-{
-
-};
-
-class IKeywordHolder : public IComponentInterface
-{
-
-};
-
-class ZUIDataProvider
-{
+class ZUIDataProvider {
 public:
     PAD(0x40);
 };
 
-class IBoolConditionListener : public IComponentInterface
-{
+class IBoolConditionListener : public IComponentInterface {};
 
-};
-
-class IColliderController : public IComponentInterface
-{
-
-};
+class IColliderController : public IComponentInterface {};
 
 class ZHM5Action;
 class IPhysicsAccessor;
@@ -52,8 +33,7 @@ class IBoolCondition;
 class ZValueBool;
 class IVariationResourceEntity;
 
-class ZItemConfigDescriptor
-{
+class ZItemConfigDescriptor {
 public:
     virtual ~ZItemConfigDescriptor() = 0;
 
@@ -63,21 +43,20 @@ public:
 };
 
 class ZHM5Item :
-    public ZEntityImpl, // Offset 0x0
-    public IItemBase, // Offset 0x18
-    public IItem, // Offset 0x20
-    public IKeywordHolder, // Offset 0x28
-    public ZUIDataProvider, // Offset 0x30
-    public IAIGameplayConcept, // Offset 0x70
-    public IBoolConditionListener, // Offset 0x78
-    public IColliderController // Offset 0x80
+        public ZEntityImpl, // Offset 0x0
+        public IItemBase, // Offset 0x18
+        public IItem, // Offset 0x20
+        public IKeywordHolder, // Offset 0x28
+        public ZUIDataProvider, // Offset 0x30
+        public IAIGameplayConcept, // Offset 0x70
+        public IBoolConditionListener, // Offset 0x78
+        public IColliderController // Offset 0x80
 {
 public:
-    enum class EUseTypes
-    {
+    enum class EUseTypes {
         EUT_CantUse = 0,
-        EUT_Toggle = 1,
-        EUT_TurnOn = 2,
+        EUT_Toggle  = 1,
+        EUT_TurnOn  = 2,
     };
 
     PAD(0x10);
@@ -128,12 +107,11 @@ public:
 class ZItemSpawner : public ZSpatialEntity, public IItemOwner, public ISavableEntity //Size: 0x138
 {
 public:
-    enum EPhysicsMode
-    {
+    enum EPhysicsMode {
         EPM_DEFINED_BY_ITEM = 0,
-        EPM_DYNAMIC = 1,
-        EPM_SLEEPING = 2,
-        EPM_KINEMATIC = 3
+        EPM_DYNAMIC         = 1,
+        EPM_SLEEPING        = 2,
+        EPM_KINEMATIC       = 3
     };
 
     PAD(0x40);

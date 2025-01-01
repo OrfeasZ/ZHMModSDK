@@ -3,11 +3,10 @@
 #include <cstdint>
 #include "ZString.h"
 
-enum class ZConfigCommand_ECLASSTYPE
-{
-    ECLASS_FLOAT = 0,
-    ECLASS_INT = 1,
-    ECLASS_STRING = 2,
+enum class ZConfigCommand_ECLASSTYPE {
+    ECLASS_FLOAT   = 0,
+    ECLASS_INT     = 1,
+    ECLASS_STRING  = 2,
     ECLASS_UNKNOWN = 3,
 };
 
@@ -15,8 +14,7 @@ class ZConfigFloat;
 class ZConfigInt;
 class ZConfigString;
 
-class ZConfigCommand
-{
+class ZConfigCommand {
 public:
     virtual ZConfigCommand_ECLASSTYPE GetType() = 0;
 
@@ -39,9 +37,11 @@ private:
     static ZConfigCommand_ECLASSTYPE GetEnumForType() {
         if (std::is_same<T, ZConfigFloat>::value) {
             return ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT;
-        } else if (std::is_same<T, ZConfigInt>::value) {
+        }
+        else if (std::is_same<T, ZConfigInt>::value) {
             return ZConfigCommand_ECLASSTYPE::ECLASS_INT;
-        } else if (std::is_same<T, ZConfigString>::value) {
+        }
+        else if (std::is_same<T, ZConfigString>::value) {
             return ZConfigCommand_ECLASSTYPE::ECLASS_STRING;
         }
 
@@ -49,8 +49,7 @@ private:
     }
 };
 
-class ZConfigFloat : public ZConfigCommand
-{
+class ZConfigFloat : public ZConfigCommand {
 public:
     float GetValue() const { return m_Value; }
 
@@ -58,8 +57,7 @@ private:
     float m_Value;
 };
 
-class ZConfigInt : public ZConfigCommand
-{
+class ZConfigInt : public ZConfigCommand {
 public:
     uint32_t GetValue() const { return m_Value; }
 
@@ -67,8 +65,7 @@ private:
     uint32_t m_Value;
 };
 
-class ZConfigString : public ZConfigCommand
-{
+class ZConfigString : public ZConfigCommand {
 public:
     const char* GetValue() const { return m_szValue; }
 

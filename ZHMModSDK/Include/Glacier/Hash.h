@@ -29,21 +29,20 @@ SOFTWARE.
 #include <array>
 #include <vector>
 
-namespace Hash
-{
+namespace Hash {
     static constexpr uint32_t g_Crc32Table[] =
     {
         0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
-        0xe963a535, 0x9e6495a3,	0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
+        0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
         0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,
-        0xf3b97148, 0x84be41de,	0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
-        0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec,	0x14015c4f, 0x63066cd9,
-        0xfa0f3d63, 0x8d080df5,	0x3b6e20c8, 0x4c69105e, 0xd56041e4, 0xa2677172,
-        0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b,	0x35b5a8fa, 0x42b2986c,
-        0xdbbbc9d6, 0xacbcf940,	0x32d86ce3, 0x45df5c75, 0xdcd60dcf, 0xabd13d59,
+        0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
+        0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9,
+        0xfa0f3d63, 0x8d080df5, 0x3b6e20c8, 0x4c69105e, 0xd56041e4, 0xa2677172,
+        0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b, 0x35b5a8fa, 0x42b2986c,
+        0xdbbbc9d6, 0xacbcf940, 0x32d86ce3, 0x45df5c75, 0xdcd60dcf, 0xabd13d59,
         0x26d930ac, 0x51de003a, 0xc8d75180, 0xbfd06116, 0x21b4f4b5, 0x56b3c423,
         0xcfba9599, 0xb8bda50f, 0x2802b89e, 0x5f058808, 0xc60cd9b2, 0xb10be924,
-        0x2f6f7c87, 0x58684c11, 0xc1611dab, 0xb6662d3d,	0x76dc4190, 0x01db7106,
+        0x2f6f7c87, 0x58684c11, 0xc1611dab, 0xb6662d3d, 0x76dc4190, 0x01db7106,
         0x98d220bc, 0xefd5102a, 0x71b18589, 0x06b6b51f, 0x9fbfe4a5, 0xe8b8d433,
         0x7807c9a2, 0x0f00f934, 0x9609a88e, 0xe10e9818, 0x7f6a0dbb, 0x086d3d2d,
         0x91646c97, 0xe6635c01, 0x6b6b51f4, 0x1c6c6162, 0x856530d8, 0xf262004e,
@@ -78,12 +77,10 @@ namespace Hash
         0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
     };
 
-    constexpr uint32_t Crc32(const char* p_Data, size_t p_Length)
-    {
+    constexpr uint32_t Crc32(const char* p_Data, size_t p_Length) {
         uint32_t s_Hash = 0xFFFFFFFF;
 
-        while (p_Length--)
-        {
+        while (p_Length--) {
             s_Hash = g_Crc32Table[*p_Data ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
             p_Data++;
         }
@@ -91,12 +88,10 @@ namespace Hash
         return s_Hash ^ 0xFFFFFFFF;
     }
 
-    constexpr uint32_t Crc32(const char* p_Data)
-    {
+    constexpr uint32_t Crc32(const char* p_Data) {
         uint32_t s_Hash = 0xFFFFFFFF;
 
-        while (*p_Data)
-        {
+        while (*p_Data) {
             s_Hash = g_Crc32Table[*p_Data ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
             p_Data++;
         }
@@ -104,12 +99,10 @@ namespace Hash
         return s_Hash ^ 0xFFFFFFFF;
     }
 
-    constexpr uint32_t Fnv1a(const char* p_Data, size_t p_Length)
-    {
+    constexpr uint32_t Fnv1a(const char* p_Data, size_t p_Length) {
         uint32_t s_Hash = 0x811c9dc5;
 
-        while (p_Length--)
-        {
+        while (p_Length--) {
             s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
             p_Data++;
         }
@@ -117,12 +110,10 @@ namespace Hash
         return s_Hash;
     }
 
-    constexpr uint32_t Fnv1a(const char* p_Data)
-    {
+    constexpr uint32_t Fnv1a(const char* p_Data) {
         uint32_t s_Hash = 0x811c9dc5;
 
-        while (*p_Data)
-        {
+        while (*p_Data) {
             s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
             p_Data++;
         }
@@ -130,12 +121,10 @@ namespace Hash
         return s_Hash;
     }
 
-    constexpr uint32_t Fnv1a_Lower(const char* p_Data, size_t p_Length)
-    {
+    constexpr uint32_t Fnv1a_Lower(const char* p_Data, size_t p_Length) {
         uint32_t s_Hash = 0x811c9dc5;
 
-        while (p_Length--)
-        {
+        while (p_Length--) {
             s_Hash = (s_Hash ^ ::tolower(*p_Data)) * 0x1000193;
             p_Data++;
         }
@@ -143,12 +132,10 @@ namespace Hash
         return s_Hash;
     }
 
-    constexpr uint32_t Fnv1a_Lower(const char* p_Data)
-    {
+    constexpr uint32_t Fnv1a_Lower(const char* p_Data) {
         uint32_t s_Hash = 0x811c9dc5;
 
-        while (*p_Data)
-        {
+        while (*p_Data) {
             s_Hash = (s_Hash ^ ::tolower(*p_Data)) * 0x1000193;
             p_Data++;
         }
@@ -156,12 +143,10 @@ namespace Hash
         return s_Hash;
     }
 
-    constexpr uint64_t Fnv1a64(const char* p_Data, size_t p_Length)
-    {
+    constexpr uint64_t Fnv1a64(const char* p_Data, size_t p_Length) {
         uint64_t s_Hash = 0x811c9dc5;
 
-        while (p_Length--)
-        {
+        while (p_Length--) {
             s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
             p_Data++;
         }
@@ -169,12 +154,10 @@ namespace Hash
         return s_Hash;
     }
 
-    constexpr uint64_t Fnv1a64(const char* p_Data)
-    {
+    constexpr uint64_t Fnv1a64(const char* p_Data) {
         uint64_t s_Hash = 0x811c9dc5;
 
-        while (*p_Data)
-        {
+        while (*p_Data) {
             s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
             p_Data++;
         }
@@ -182,12 +165,10 @@ namespace Hash
         return s_Hash;
     }
 
-    constexpr uint64_t Fnv1a64_Lower(const char* p_Data, size_t p_Length)
-    {
+    constexpr uint64_t Fnv1a64_Lower(const char* p_Data, size_t p_Length) {
         uint64_t s_Hash = 0x811c9dc5;
 
-        while (p_Length--)
-        {
+        while (p_Length--) {
             s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
             p_Data++;
         }
@@ -195,12 +176,10 @@ namespace Hash
         return s_Hash;
     }
 
-    constexpr uint64_t Fnv1a64_Lower(const char* p_Data)
-    {
+    constexpr uint64_t Fnv1a64_Lower(const char* p_Data) {
         uint64_t s_Hash = 0x811c9dc5;
 
-        while (*p_Data)
-        {
+        while (*p_Data) {
             s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
             p_Data++;
         }
@@ -210,10 +189,10 @@ namespace Hash
 
     constexpr std::array<uint32_t, 64> MD5_s = {
         {
-            7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,
-            5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
-            4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,
-            6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,
+            7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+            5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+            4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+            6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
         }
     };
 
@@ -238,8 +217,7 @@ namespace Hash
         }
     };
 
-    struct MD5Hash
-    {
+    struct MD5Hash {
         uint32_t A;
         uint32_t B;
         uint32_t C;
@@ -247,8 +225,7 @@ namespace Hash
     };
 
     template <std::size_t N>
-    constexpr MD5Hash MD5(std::string_view p_Str)
-    {
+    constexpr MD5Hash MD5(std::string_view p_Str) {
         uint32_t a0 = 0x67452301;
         uint32_t b0 = 0xefcdab89;
         uint32_t c0 = 0x98badcfe;
@@ -277,16 +254,14 @@ namespace Hash
         s_Data[s_DataSize - 2] = (s_LenInBits & 0x00FF000000000000) >> 48;
         s_Data[s_DataSize - 1] = (s_LenInBits & 0xFF00000000000000) >> 56;
 
-        for (size_t s_Group = 0; s_Group < s_GroupCount; ++s_Group)
-        {
+        for (size_t s_Group = 0; s_Group < s_GroupCount; ++s_Group) {
             std::array<uint32_t, 16> M {};
 
-            for (size_t j = 0; j < 16; ++j)
-            {
+            for (size_t j = 0; j < 16; ++j) {
                 M[j] = s_Data[(s_Group * 64) + (j * 4)]
-                    | s_Data[(s_Group * 64) + (j * 4) + 1] << 8
-                    | s_Data[(s_Group * 64) + (j * 4) + 2] << 16
-                    | s_Data[(s_Group * 64) + (j * 4) + 3] << 24;
+                        | s_Data[(s_Group * 64) + (j * 4) + 1] << 8
+                        | s_Data[(s_Group * 64) + (j * 4) + 2] << 16
+                        | s_Data[(s_Group * 64) + (j * 4) + 3] << 24;
             }
 
             uint32_t A = a0;
@@ -294,27 +269,22 @@ namespace Hash
             uint32_t C = c0;
             uint32_t D = d0;
 
-            for (uint32_t i = 0; i < 64; ++i)
-            {
+            for (uint32_t i = 0; i < 64; ++i) {
                 uint32_t F, g;
 
-                if (i <= 15)
-                {
+                if (i <= 15) {
                     F = (B & C) | (~B & D);
                     g = i;
                 }
-                else if (i <= 31)
-                {
+                else if (i <= 31) {
                     F = (D & B) | (~D & C);
                     g = ((i * 5) + 1) % 16;
                 }
-                else if (i <= 47)
-                {
+                else if (i <= 47) {
                     F = B ^ C ^ D;
                     g = ((i * 3) + 5) % 16;
                 }
-                else
-                {
+                else {
                     F = C ^ (B | ~D);
                     g = (i * 7) % 16;
                 }
@@ -332,11 +302,10 @@ namespace Hash
             d0 += D;
         }
 
-        return MD5Hash { a0, b0, c0, d0 };
+        return MD5Hash {a0, b0, c0, d0};
     }
 
-    constexpr MD5Hash MD5(std::string_view p_Str)
-    {
+    constexpr MD5Hash MD5(std::string_view p_Str) {
         uint32_t a0 = 0x67452301;
         uint32_t b0 = 0xefcdab89;
         uint32_t c0 = 0x98badcfe;
@@ -365,16 +334,14 @@ namespace Hash
         s_Data[s_DataSize - 2] = static_cast<uint8_t>((s_LenInBits & 0x00FF000000000000) >> 48);
         s_Data[s_DataSize - 1] = (s_LenInBits & 0xFF00000000000000) >> 56;
 
-        for (size_t s_Group = 0; s_Group < s_GroupCount; ++s_Group)
-        {
+        for (size_t s_Group = 0; s_Group < s_GroupCount; ++s_Group) {
             std::array<uint32_t, 16> M {};
 
-            for (size_t j = 0; j < 16; ++j)
-            {
+            for (size_t j = 0; j < 16; ++j) {
                 M[j] = s_Data[(s_Group * 64) + (j * 4)]
-                    | s_Data[(s_Group * 64) + (j * 4) + 1] << 8
-                    | s_Data[(s_Group * 64) + (j * 4) + 2] << 16
-                    | s_Data[(s_Group * 64) + (j * 4) + 3] << 24;
+                        | s_Data[(s_Group * 64) + (j * 4) + 1] << 8
+                        | s_Data[(s_Group * 64) + (j * 4) + 2] << 16
+                        | s_Data[(s_Group * 64) + (j * 4) + 3] << 24;
             }
 
             uint32_t A = a0;
@@ -382,27 +349,22 @@ namespace Hash
             uint32_t C = c0;
             uint32_t D = d0;
 
-            for (uint32_t i = 0; i < 64; ++i)
-            {
+            for (uint32_t i = 0; i < 64; ++i) {
                 uint32_t F, g;
 
-                if (i <= 15)
-                {
+                if (i <= 15) {
                     F = (B & C) | (~B & D);
                     g = i;
                 }
-                else if (i <= 31)
-                {
+                else if (i <= 31) {
                     F = (D & B) | (~D & C);
                     g = ((i * 5) + 1) % 16;
                 }
-                else if (i <= 47)
-                {
+                else if (i <= 47) {
                     F = B ^ C ^ D;
                     g = ((i * 3) + 5) % 16;
                 }
-                else
-                {
+                else {
                     F = C ^ (B | ~D);
                     g = (i * 7) % 16;
                 }
@@ -420,6 +382,6 @@ namespace Hash
             d0 += D;
         }
 
-        return MD5Hash { a0, b0, c0, d0 };
+        return MD5Hash {a0, b0, c0, d0};
     }
 }

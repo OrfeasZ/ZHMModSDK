@@ -5,8 +5,7 @@
 #include "ZEntity.h"
 #include "ZOutfit.h"
 
-class ZContentKitManager : public IComponentInterface
-{
+class ZContentKitManager : public IComponentInterface {
 public:
     TMap<ZRepositoryID const, TEntityRef<ZGlobalOutfitKit>> m_repositoryGlobalOutfitKits;
 };

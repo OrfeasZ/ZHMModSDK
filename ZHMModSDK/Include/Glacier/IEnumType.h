@@ -4,8 +4,7 @@
 #include "Reflection.h"
 
 class IEnumType :
-    public IType
-{
+        public IType {
 public:
     TArray<ZEnumEntry> m_entries;
 };

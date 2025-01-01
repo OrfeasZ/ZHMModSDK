@@ -6,31 +6,25 @@
 
 class ZRuntimeResourceID;
 
-class ZResourceIndex
-{
+class ZResourceIndex {
 public:
-    ZResourceIndex(int val) : val(val)
-    {
-
-    }
+    ZResourceIndex(int val) :
+        val(val) {}
 
     int val;
 };
 
-enum EResourceStatus
-{
-    RESOURCE_STATUS_UNKNOWN = 0,
-    RESOURCE_STATUS_LOADING = 1,
+enum EResourceStatus {
+    RESOURCE_STATUS_UNKNOWN    = 0,
+    RESOURCE_STATUS_LOADING    = 1,
     RESOURCE_STATUS_INSTALLING = 2,
-    RESOURCE_STATUS_FAILED = 3,
-    RESOURCE_STATUS_VALID = 4,
+    RESOURCE_STATUS_FAILED     = 3,
+    RESOURCE_STATUS_VALID      = 4,
 };
 
-class ZResourceContainer
-{
+class ZResourceContainer {
 public:
-    struct SResourceInfo
-    {
+    struct SResourceInfo {
         ZRuntimeResourceID rid;
         void* resourceData;
         unsigned long long dataOffset;
@@ -56,11 +50,9 @@ public:
     TArray<ZString> m_MountedPackages;
 };
 
-class ZResourcePtr
-{
+class ZResourcePtr {
 public:
-    ~ZResourcePtr()
-    {
+    ~ZResourcePtr() {
         if (m_nResourceIndex < 0)
             return;
 
@@ -71,15 +63,13 @@ public:
     }
 
 public:
-    ZResourceContainer::SResourceInfo& GetResourceInfo() const
-    {
+    ZResourceContainer::SResourceInfo& GetResourceInfo() const {
         auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex];
 
         return s_ResourceInfo;
     }
 
-    void* GetResourceData() const
-    {
+    void* GetResourceData() const {
         if (m_nResourceIndex < 0)
             return nullptr;
 
@@ -88,8 +78,7 @@ public:
         return s_ResourceInfo.resourceData;
     }
 
-    operator bool() const
-    {
+    operator bool() const {
         return GetResourceData() != nullptr;
     }
 
@@ -99,28 +88,25 @@ public:
 };
 
 template <typename T>
-class TResourcePtr : public ZResourcePtr
-{
+class TResourcePtr : public ZResourcePtr {
 public:
-    TResourcePtr()
-    {
-        static_assert(std::is_base_of_v<IComponentInterface, T>, "TResourcePtr type must implement IComponentInterface.");
+    TResourcePtr() {
+        static_assert(
+            std::is_base_of_v<IComponentInterface, T>, "TResourcePtr type must implement IComponentInterface."
+        );
     }
 
 public:
-    T* GetResource() const
-    {
+    T* GetResource() const {
         return static_cast<T*>(GetResourceData());
     }
 
-    operator T*() const
-    {
+    operator T*() const {
         return GetResource();
     }
 };
 
-class ZResourceManager : public IComponentInterface
-{
+class ZResourceManager : public IComponentInterface {
 public:
     virtual ~ZResourceManager() {}
     virtual void ZResourceManager_unk5() = 0;

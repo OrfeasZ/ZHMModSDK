@@ -6,8 +6,7 @@ class ZCharacterStateMachineCoordinator;
 class ZCharacterScheduler;
 
 class ZCharacterSubcontroller : public ZEntityImpl //Size: 0x38
-{
-};
+{};
 
 class ZCharacterSubcontrollerInventory : public ZCharacterSubcontroller //Size: 0x310
 {

@@ -4,8 +4,7 @@
 
 class ZEntitySceneContext;
 
-class ZEntityManager
-{
+class ZEntityManager {
 public:
     virtual ~ZEntityManager() {}
 
