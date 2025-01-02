@@ -241,8 +241,7 @@ public:
     * Param p_Name: Actor's name
     * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
     */
-    ZActor* GetActorByName(const ZString& p_Name)
-    {
+    ZActor* GetActorByName(const ZString& p_Name) const {
         for (int i = 0; i < *Globals::NextActorId; ++i)
         {
             auto* s_Actor = m_aActiveActors[i].m_pInterfaceRef;

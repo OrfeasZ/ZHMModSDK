@@ -26,11 +26,11 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
         static char s_PropTitle_SubString[2048] { "" };
         static char s_PropAssemblyPath[2048] { "" };
 
-		static int s_NumberOfPropsToSpawn = 1;
-		static int s_NumberOfPropsToSpawn2 = 1;
-		static int s_NumberOfPropsToSpawn3 = 1;
+		static int s_NumberOfPropsToSpawn_Repo = 1;
+		static int s_NumberOfPropsToSpawn_NonRepo = 1;
+		static int s_NumberOfPropsToSpawn_NPCs = 1;
 
-        static int s_Button = 1;
+        static int s_WorldInventoryButton = 1;
         static char s_NpcName[2048] {};
 
         ImGui::Text("Repository Props");
@@ -70,9 +70,9 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
                     ImGui::ClearActiveID();
                     strcpy_s(s_PropTitle_SubString, s_PropTitle.c_str());
 
-                    for (size_t i = 0; i < s_NumberOfPropsToSpawn; ++i)
+                    for (size_t i = 0; i < s_NumberOfPropsToSpawn_Repo; ++i)
                     {
-                        SpawnRepositoryProp(it->second, s_Button == 1);
+                        SpawnRepositoryProp(it->second, s_WorldInventoryButton == 1);
                     }
                 }
             }
@@ -85,22 +85,22 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
             ImGui::EndPopup();
         }
 
-        if (ImGui::RadioButton("Add To World", s_Button == 1))
+        if (ImGui::RadioButton("Add To World", s_WorldInventoryButton == 1))
         {
-            s_Button = 1;
+            s_WorldInventoryButton = 1;
         }
 
         ImGui::SameLine();
 
-        if (ImGui::RadioButton("Add To Inventory", s_Button == 2))
+        if (ImGui::RadioButton("Add To Inventory", s_WorldInventoryButton == 2))
         {
-            s_Button = 2;
+            s_WorldInventoryButton = 2;
         }
 
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
-        ImGui::InputInt("##NumberOfPropsToSpawn", &s_NumberOfPropsToSpawn);
+        ImGui::InputInt("##NumberOfPropsToSpawn_Repo)", &s_NumberOfPropsToSpawn_Repo);
 
         ImGui::Separator();
         ImGui::Text("Non Repository Props");
@@ -113,7 +113,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
 
         if (ImGui::Button("Spawn Prop"))
         {
-			for (size_t i = 0; i < s_NumberOfPropsToSpawn; ++i)
+			for (size_t i = 0; i < s_NumberOfPropsToSpawn_Repo; ++i)
             {
                 SpawnNonRepositoryProp(s_PropAssemblyPath);
             }
@@ -122,7 +122,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
-        ImGui::InputInt("##NumberOfPropsToSpawn2", &s_NumberOfPropsToSpawn2);
+        ImGui::InputInt("##NumberOfPropsToSpawn_NonRepo", &s_NumberOfPropsToSpawn_NonRepo);
         ImGui::Separator();
 
         ImGui::Text("NPCs");
@@ -258,13 +258,19 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus)
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
-        ImGui::InputInt("##NumberOfPropsToSpawn3", &s_NumberOfPropsToSpawn3);
+        ImGui::InputInt("##NumberOfPropsToSpawn_NPCs", &s_NumberOfPropsToSpawn_NPCs);
 
         if (ImGui::Button("Spawn NPC"))
         {
-			for (size_t i = 0; i < s_NumberOfPropsToSpawn3; ++i)
+			for (size_t i = 0; i < s_NumberOfPropsToSpawn_NPCs; ++i)
             {
-                SpawnNPC(s_NpcName, s_RepositoryId, s_GlobalOutfitKit, n_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType, n_CurrentOutfitVariationIndex);
+                SpawnNPC(
+					s_NpcName,
+					s_RepositoryId,
+					s_GlobalOutfitKit,
+					n_CurrentCharacterSetIndex,
+					s_CurrentcharSetCharacterType,
+					n_CurrentOutfitVariationIndex);
             }
         }
     }
