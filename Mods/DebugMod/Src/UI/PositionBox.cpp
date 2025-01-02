@@ -6,7 +6,8 @@
 
 void DebugMod::DrawPositionBox(bool p_HasFocus)
 {
-	if (!p_HasFocus || !m_PositionsMenuActive) {
+	if (!p_HasFocus || !m_PositionsMenuActive)
+	{
 		return;
 	}
 
@@ -14,7 +15,8 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 	const auto s_Showing = ImGui::Begin("POSITIONS", &m_PositionsMenuActive);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-	if (s_Showing) {
+	if (s_Showing)
+{
 		SMatrix s_HitmanTrans;
 		SMatrix s_CameraTrans;
 
@@ -37,12 +39,12 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 
 			ImGui::TextUnformatted("Hitman Transform:");
 			if (ImGui::BeginTable("DebugMod_HitmanPosition", columnCount)) {
-				for (size_t i = 0; i < rowCount; ++i) {
+				for (uint8_t rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
 					ImGui::TableNextRow();
 
-					for (size_t j = 0; j < columnCount; ++j) {
-						ImGui::TableSetColumnIndex(j);
-						ImGui::Text("%f", s_HitmanTrans.flt[(i * 4) + j]);
+					for (uint8_t colIndex = 0; colIndex < columnCount; ++colIndex) {
+						ImGui::TableSetColumnIndex(colIndex);
+						ImGui::Text("%f", s_HitmanTrans.flt[(rowIndex * 4) + colIndex]);
 					}
 
 					ImGui::EndTable();
@@ -89,12 +91,12 @@ void DebugMod::DrawPositionBox(bool p_HasFocus)
 			ImGui::TextUnformatted("Camera Transform:");
 
 			if (ImGui::BeginTable("DebugMod_Camera_Position", columnCount)) {
-				for (size_t i = 0; i < rowCount; ++i) {
+				for (uint8_t rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
 					ImGui::TableNextRow();
 
-					for (size_t j = 0; j < columnCount; ++j) {
-						ImGui::TableSetColumnIndex(j);
-						ImGui::Text("%f", s_CameraTrans.flt[(i * 4) + j]);
+					for (uint8_t colIndex = 0; colIndex < columnCount; ++colIndex) {
+						ImGui::TableSetColumnIndex(colIndex);
+						ImGui::Text("%f", s_CameraTrans.flt[(rowIndex * 4) + colIndex]);
 					}
 				}
 
