@@ -74,11 +74,8 @@ private:
     static std::string GetEntityName(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
     static std::string FindNPCEntityNameInBrickBackReferences(unsigned long long p_TempBrickHash, unsigned long long p_EntityId, unsigned long long& p_ResourceHash);
 
-<<<<<<< HEAD
-    static std::string ConvertDynamicObjectValueTString(const ZDynamicObject* p_DynamicObject);
-=======
     std::string ConvertDynamicObjectValueTString(const ZDynamicObject& p_DynamicObject);
->>>>>>> master
+
     void LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData);
     static void LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData, const std::string& p_RpkgFilePath);
     std::string GetPatchRPKGFilePath();
