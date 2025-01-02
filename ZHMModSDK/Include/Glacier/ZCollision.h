@@ -7,8 +7,7 @@
 
 class ZSpatialEntity;
 
-struct ZRayQueryInput
-{
+struct ZRayQueryInput {
     float4 m_vFrom;
     float4 m_vTo;
     uint32 m_nRayFilter;
@@ -21,8 +20,7 @@ struct ZRayQueryInput
 
 static_assert(sizeof(ZRayQueryInput) == 0x60);
 
-struct ZRayQueryOutput
-{
+struct ZRayQueryOutput {
     float4 m_vPosition;
     float4 m_vNormal; // 0x10
     PAD(0x20); // 0x20
@@ -33,8 +31,7 @@ struct ZRayQueryOutput
 static_assert(sizeof(ZRayQueryOutput) == 0xA0);
 static_assert(offsetof(ZRayQueryOutput, m_BlockingEntity) == 0x40);
 
-class ZCollisionManager : public IComponentInterface
-{
+class ZCollisionManager : public IComponentInterface {
 public:
     virtual void ZCollisionManager_unk5() = 0;
     virtual void ZCollisionManager_unk6() = 0;

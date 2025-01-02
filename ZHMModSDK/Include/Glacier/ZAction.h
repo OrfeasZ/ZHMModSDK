@@ -10,8 +10,7 @@ class ZTextListData;
 class ZIllegalActionEntity;
 class IEnableConditionListener;
 
-class ZHM5Action : public ZEntityImpl
-{
+class ZHM5Action : public ZEntityImpl {
 public:
     PAD(0x18);
     ZEntityRef m_Object; // 0x30
@@ -40,8 +39,7 @@ public:
     EActionType m_eActionType;
 };
 
-class ZHM5ActionManager : IComponentInterface
-{
+class ZHM5ActionManager : IComponentInterface {
 public:
     TArray<ZHM5Action*> m_Actions;
 };

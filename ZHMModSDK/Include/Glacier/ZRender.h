@@ -8,22 +8,19 @@
 
 class ZEntityRef;
 
-class IRenderRefCount
-{
+class IRenderRefCount {
 public:
     virtual ~IRenderRefCount() = 0;
     virtual void AddRef() = 0;
     virtual uint32_t Release() = 0;
 };
 
-class IRenderDestination : public IRenderRefCount
-{
+class IRenderDestination : public IRenderRefCount {
 public:
 };
 
 class IRenderDestinationEntity :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ZEntityRef* GetSource() = 0;
     virtual void IRenderDestinationEntity_unk6() = 0;
@@ -54,8 +51,7 @@ public:
     virtual void IRenderDestinationEntity_unk31() = 0;
 };
 
-class ZRenderSwapChain
-{
+class ZRenderSwapChain {
 public:
     virtual ~ZRenderSwapChain();
 
@@ -65,53 +61,55 @@ public:
 };
 
 struct slConstants {
-	char structTypeUuid[16];
-	size_t structVersion;
-	SMatrix44 cameraViewToClip;
-	SMatrix44 clipToCameraView;
-	SMatrix44 clipToLensClip;
-	SMatrix44 clipToPrevClip;
-	SMatrix44 prevClipToClip;
-	SVector2 jitterOffset;
-	SVector2 mvecScale;
-	SVector2 cameraPinholeOffset;
-	SVector3 cameraPos;
-	SVector3 cameraUp;
-	SVector3 cameraRight;
-	SVector3 cameraFwd;
-	float cameraNear;
-	float cameraFar;
-	float cameraFOV;
-	float cameraAspectRatio;
-	float motionVectorsInvalidValue;
-	bool depthInverted;
-	bool cameraMotionIncluded;
-	bool motionVectors3D;
-	bool reset;
-	bool renderingGameFrames;
-	bool orthographicProjection;
-	bool motionVectorsDilated;
-	bool motionVectorsJittered;
+    char structTypeUuid[16];
+    size_t structVersion;
+    SMatrix44 cameraViewToClip;
+    SMatrix44 clipToCameraView;
+    SMatrix44 clipToLensClip;
+    SMatrix44 clipToPrevClip;
+    SMatrix44 prevClipToClip;
+    SVector2 jitterOffset;
+    SVector2 mvecScale;
+    SVector2 cameraPinholeOffset;
+    SVector3 cameraPos;
+    SVector3 cameraUp;
+    SVector3 cameraRight;
+    SVector3 cameraFwd;
+    float cameraNear;
+    float cameraFar;
+    float cameraFOV;
+    float cameraAspectRatio;
+    float motionVectorsInvalidValue;
+    bool depthInverted;
+    bool cameraMotionIncluded;
+    bool motionVectors3D;
+    bool reset;
+    bool renderingGameFrames;
+    bool orthographicProjection;
+    bool motionVectorsDilated;
+    bool motionVectorsJittered;
 };
 
-class ZRenderDevice
-{
+class ZRenderDevice {
 public:
     virtual ~ZRenderDevice() = default;
 
 public:
-	PAD(0x400); // 0x08
-	slConstants m_Constants; // 0x408
+    PAD(0x400); // 0x08
+    slConstants m_Constants; // 0x408
     PAD(0x10448); // 0x5C8
     ZRenderSwapChain* m_pSwapChain; // 0x10A10, look for ZRenderSwapChain constructor
     PAD(0x08); // 0x10A18
     ID3D12Device* m_pDevice; // 0x10A20
     PAD(0x30E9D88); // 0x10A28
-    ID3D12CommandQueue* m_pCommandQueue; // 0x30FA7B0, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
+    ID3D12CommandQueue* m_pCommandQueue;
+    // 0x30FA7B0, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
     PAD(0x180FC8); // 0x30FA7B8
-    ID3D12DescriptorHeap* m_pFrameHeapCBVSRVUAV; // 0x327B780, look for "m_pFrameHeapCBVSRVUAV" string, argument to the left of it
-	PAD(0x18); // 0x327B788
-	ID3D12DescriptorHeap* m_pDescriptorHeapDSV; // 0x327B7A0, look for "m_pDescriptorHeapDSV" string, argument to the left of it
+    ID3D12DescriptorHeap* m_pFrameHeapCBVSRVUAV;
+    // 0x327B780, look for "m_pFrameHeapCBVSRVUAV" string, argument to the left of it
+    PAD(0x18); // 0x327B788
+    ID3D12DescriptorHeap* m_pDescriptorHeapDSV;
+    // 0x327B7A0, look for "m_pDescriptorHeapDSV" string, argument to the left of it
 };
 
 static_assert(offsetof(ZRenderDevice, m_Constants) == 0x408);
@@ -120,18 +118,16 @@ static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA7B0);
 static_assert(offsetof(ZRenderDevice, m_pFrameHeapCBVSRVUAV) == 0x327B780);
 static_assert(offsetof(ZRenderDevice, m_pDescriptorHeapDSV) == 0x327B7A0);
 
-class ZRenderContext
-{
+class ZRenderContext {
 public:
     PAD(0x200);
-	SMatrix m_mViewToWorld; // 0x200
+    SMatrix m_mViewToWorld; // 0x200
     SMatrix m_mWorldToView; // 0x240, function called by ZRenderContext_Unknown01, second pair of 4
     PAD(0xC0);
     SMatrix m_mViewToProjection; // 0x340, function called by ZRenderContext_Unknown01, first pair of 4
 };
 
-class ZRenderManager
-{
+class ZRenderManager {
 public:
     virtual ~ZRenderManager() = default;
 
@@ -139,15 +135,15 @@ public:
     PAD(0x14178);
     ZRenderDevice* m_pDevice; // 0x14180, look for ZRenderDevice constructor
     PAD(0xF8); // 0x14188
-    ZRenderContext* m_pRenderContext; // 0x14280, look for "ZRenderManager::RenderThread" string, first thing being constructed and assigned
+    ZRenderContext* m_pRenderContext;
+    // 0x14280, look for "ZRenderManager::RenderThread" string, first thing being constructed and assigned
 };
 
 static_assert(offsetof(ZRenderManager, m_pDevice) == 0x14180);
 static_assert(offsetof(ZRenderManager, m_pRenderContext) == 0x14280);
 
 
-class ZRenderTexture2D
-{
+class ZRenderTexture2D {
 public:
     virtual ~ZRenderTexture2D() = 0;
 
@@ -157,8 +153,7 @@ public:
 
 class ZRenderTargetView;
 
-class ZRenderShaderResourceView
-{
+class ZRenderShaderResourceView {
 public:
     virtual ~ZRenderShaderResourceView() = 0;
 
@@ -172,8 +167,7 @@ public:
 static_assert(offsetof(ZRenderShaderResourceView, m_nHeapDescriptorIndex) == 0x14);
 static_assert(offsetof(ZRenderShaderResourceView, m_Handle) == 0x38);
 
-class ZRenderDestination : public IRenderDestination
-{
+class ZRenderDestination : public IRenderDestination {
 public:
     uint32_t m_nRefCount; // 0x08
     PAD(0x60); // 0x10

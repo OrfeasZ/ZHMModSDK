@@ -5,8 +5,7 @@
 
 #include "ZEngineAppCommon.h"
 
-class ZApplicationEngineWin32
-{
+class ZApplicationEngineWin32 {
 public:
     virtual ~ZApplicationEngineWin32() = default;
 

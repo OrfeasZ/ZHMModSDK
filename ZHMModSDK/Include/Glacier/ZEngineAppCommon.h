@@ -8,8 +8,7 @@ class ZFreeCameraControlEntity;
 class ZFreeCameraControlEditorStyleEntity;
 
 // Size = 0xA0 (unverified)
-class ZEngineAppCommon
-{
+class ZEngineAppCommon {
 public:
     PAD(0x38);
     TEntityRef<ZFreeCameraControlEntity> m_pFreeCameraControl01; // 0x38

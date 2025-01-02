@@ -4,8 +4,7 @@
 
 class ZLevelSavableHandler;
 
-class ZLevelManager
-{
+class ZLevelManager {
 public:
     virtual ~ZLevelManager() {}
 

@@ -5,15 +5,13 @@
 #include "ZGeomEntity.h"
 
 class IRenderDestinationSource :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     ~IRenderDestinationSource() = default;
 };
 
 class ICameraEntity :
-    public IRenderDestinationSource
-{
+        public IRenderDestinationSource {
 public:
     virtual void ICameraEntity_unk5() = 0;
     virtual void ICameraEntity_unk6() = 0;
@@ -36,12 +34,11 @@ public:
 };
 
 class ZCameraEntity :
-    public ZRenderableEntity,
-    public ICameraEntity // at +0xD0
+        public ZRenderableEntity,
+        public ICameraEntity // at +0xD0
 {
 public:
-    SMatrix GetViewMatrix()
-    {
+    SMatrix GetViewMatrix() {
         return GetWorldMatrix().Inverse();
     }
 };

@@ -3,8 +3,7 @@
 #include "ZEntity.h"
 #include "ZSpatialEntity.h"
 
-class ZSetpieceEntity : public ZEntityImpl
-{
+class ZSetpieceEntity : public ZEntityImpl {
 public:
     virtual ~ZSetpieceEntity() = default;
 

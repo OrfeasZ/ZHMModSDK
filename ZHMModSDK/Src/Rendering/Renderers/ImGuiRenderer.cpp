@@ -80,24 +80,24 @@ ImGuiRenderer::ImGuiRenderer()
 
     static constexpr ImWchar c_IconRanges[] = { ICON_MIN_MD, ICON_MAX_16_MD, 0 };
 
-    m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoLight_compressed_data, RobotoLight_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoLight_compressed_data, RobotoLight_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
-    m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data, RobotoRegular_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data, RobotoRegular_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
-    m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoMedium_compressed_data, RobotoMedium_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoMedium_compressed_data, RobotoMedium_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
-    m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBold_compressed_data, RobotoBold_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBold_compressed_data, RobotoBold_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
-    m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 32.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 32.f, &s_IconsConfig, c_IconRanges);
+    m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 28.f);
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
     s_ImGuiIO.Fonts->Build();
 
     s_ImGuiIO.FontDefault = m_FontRegular;
@@ -126,15 +126,15 @@ void ImGuiRenderer::SetupStyles()
     s_Style.WindowRounding = 0.f;
     s_Style.WindowBorderSize = 0.f;
 
-    s_Style.WindowPadding = ImVec2(20.f, 20.f);
-    s_Style.FramePadding = ImVec2(10.f, 10.f);
-    s_Style.CellPadding = ImVec2(5.f, 5.f);
-    s_Style.ItemSpacing = ImVec2(20.f, 10.f);
+    s_Style.WindowPadding = ImVec2(12.f, 12.f);
+    s_Style.FramePadding = ImVec2(6.f, 6.f);
+    s_Style.CellPadding = ImVec2(6.f, 3.f);
+    s_Style.ItemSpacing = ImVec2(10.f, 6.f);
     s_Style.ItemInnerSpacing = ImVec2(10.f, 10.f);
     s_Style.TouchExtraPadding = ImVec2(0.f, 0.f);
-    s_Style.IndentSpacing = 20.f;
-    s_Style.ScrollbarSize = 20.f;
-    s_Style.GrabMinSize = 20.f;
+    s_Style.IndentSpacing = 10.f;
+    s_Style.ScrollbarSize = 12.f;
+    s_Style.GrabMinSize = 12.f;
 
     s_Style.WindowBorderSize = 0.f;
     s_Style.ChildBorderSize = 0.f;
@@ -245,6 +245,51 @@ void ImGuiRenderer::Draw()
     ImGui::GetStyle().Alpha = m_ImguiHasFocus ? 1.f : 0.3f;
 
     ModSDK::GetInstance()->OnDrawUI(m_ImguiHasFocus);
+
+    if (m_ShowingUiToggleWarning) {
+        const auto s_Center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(s_Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        ImGui::PushFont(SDK()->GetImGuiBlackFont());
+        const auto s_Expanded = ImGui::Begin("Warning", &m_ShowingUiToggleWarning);
+        ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+        if (s_Expanded) {
+            ImGui::Text("You have pressed the UI toggle key (F11 by default), which will HIDE the SDK UI.");
+            ImGui::Text("You must press this key again to show the SDK UI.");
+            ImGui::Text("If you want to change this key, you can do so in the mods.ini file.");
+            ImGui::Text("See the SDK readme for more information. This waning will not appear again.");
+
+            ImGui::NewLine();
+
+            static bool s_HasConfirmed = false;
+
+            ImGui::Checkbox("I understand I'm hiding the UI and that I must press this key to show it again", &s_HasConfirmed);
+
+            ImGui::NewLine();
+
+            ImGui::BeginDisabled(!s_HasConfirmed);
+
+            if (ImGui::Button("Continue")) {
+                ModSDK::GetInstance()->SetHasShownUiToggleWarning();
+                m_ImguiVisible = false;
+                m_ShowingUiToggleWarning = false;
+                m_ImguiHasFocus = false;
+            }
+
+            ImGui::EndDisabled();
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Cancel")) {
+                m_ShowingUiToggleWarning = false;
+            }
+        }
+
+        ImGui::PopFont();
+        ImGui::End();
+        ImGui::PopFont();
+    }
 }
 
 void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
@@ -257,6 +302,9 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
         Logger::Error("Failed to set up ImGui renderer.");
         return;
     }
+
+    if (!m_ImguiVisible)
+        return;
 
     Draw();
 
@@ -459,7 +507,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     GetClientRect(m_Hwnd, &s_Rect);
 
     s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
-    s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
+    s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 1800.f);
 	ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
 
     m_RendererSetup = true;
@@ -528,7 +576,7 @@ void ImGuiRenderer::PostReset()
     GetClientRect(m_Hwnd, &s_Rect);
 
     s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
-    s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 2048.f);
+    s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 1800.f);
 	ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
 }
 
@@ -558,6 +606,19 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
     // Toggle imgui input when user presses the console key.
     if (s_ScanCode == ModSDK::GetInstance()->GetConsoleScanCode() && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN))
         m_ImguiHasFocus = !m_ImguiHasFocus;
+
+    if (s_ScanCode == ModSDK::GetInstance()->GetUiToggleScanCode() && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN)) {
+        if (!ModSDK::GetInstance()->HasShownUiToggleWarning()) {
+            m_ShowingUiToggleWarning = true;
+            m_ImguiHasFocus = true;
+        } else {
+            m_ImguiVisible = !m_ImguiVisible;
+
+            if (!m_ImguiVisible) {
+                m_ImguiHasFocus = false;
+            }
+        }
+    }
 
 	//Globals::InputActionManager->m_bDebugKeys = true;
 	Globals::InputActionManager->m_bEnabled = !m_ImguiHasFocus;

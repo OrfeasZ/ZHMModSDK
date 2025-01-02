@@ -37,7 +37,7 @@ private:
     volatile bool m_FreeCamActive;
     volatile bool m_ShouldToggle;
     volatile bool m_FreeCamFrozen;
-	volatile bool m_GamePaused;
+	bool m_GamePaused;
     ZEntityRef m_OriginalCam;
     ZInputAction m_ToggleFreeCamAction;
     ZInputAction m_FreezeFreeCamActionGc;
@@ -45,9 +45,11 @@ private:
 	ZInputAction m_InstantlyKillNpcAction;
 	ZInputAction m_TeleportMainCharacterAction;
 	ZInputAction m_TogglePauseGame;
+	bool m_MenuVisible;
     bool m_ControlsVisible;
     bool m_HasToggledFreecamBefore;
 	bool m_EditorStyleFreecam;
+	bool m_MoveInFreecam;
     std::unordered_map<std::string, std::string> m_PcControls;
 	std::unordered_map<std::string, std::string> m_PcControlsEditorStyle;
     std::unordered_map<std::string, std::string> m_ControllerControls;

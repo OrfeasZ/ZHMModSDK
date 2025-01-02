@@ -4,16 +4,14 @@
 
 #include "Common.h"
 
-class HookBase : public IDestructible
-{
+class HookBase : public IDestructible {
 public:
     ~HookBase() override = default;
     virtual void RemoveDetoursWithContext(void* p_Context) = 0;
     virtual void RemoveAllDetours() = 0;
 
 protected:
-    struct Detour
-    {
+    struct Detour {
         void* Context;
         void* DetourFunc;
     };
@@ -30,26 +28,21 @@ protected:
     friend class HookRegistry;
 };
 
-namespace HookAction
-{
+namespace HookAction {
     struct Return {};
+
     struct Continue {};
 }
 
 template <class T>
-class HookResult
-{
+class HookResult {
 public:
     HookResult(HookAction::Return, T p_ReturnVal) :
         m_ReturnVal(p_ReturnVal),
-        m_HasReturnVal(true)
-    {
-    }
+        m_HasReturnVal(true) {}
 
     HookResult(HookAction::Continue) :
-        m_HasReturnVal(false)
-    {
-    }
+        m_HasReturnVal(false) {}
 
 public:
     T m_ReturnVal;
@@ -57,8 +50,7 @@ public:
 };
 
 template <>
-class HookResult<void>
-{
+class HookResult<void> {
 public:
     HookResult(HookAction::Return) : m_HasReturnVal(true) {}
     HookResult(HookAction::Continue) : m_HasReturnVal(false) {}
@@ -71,38 +63,32 @@ template <class T>
 class Hook;
 
 template <class ReturnType, class... Args>
-class Hook<ReturnType(Args...)> : public HookBase
-{
+class Hook<ReturnType(Args...)> : public HookBase {
 public:
-    typedef ReturnType(__fastcall* OriginalFunc_t)(Args...);
-    typedef HookResult<ReturnType>(*DetourFunc_t)(void*, Hook<ReturnType(Args...)>*, Args...);
+    typedef ReturnType (__fastcall*OriginalFunc_t)(Args...);
+    typedef HookResult<ReturnType> (*DetourFunc_t)(void*, Hook<ReturnType(Args...)>*, Args...);
 
-    void AddDetour(void* p_Context, DetourFunc_t p_Detour)
-    {
+    void AddDetour(void* p_Context, DetourFunc_t p_Detour) {
         AddDetourInternal(p_Context, p_Detour);
     }
 
-    void RemoveDetour(DetourFunc_t p_Detour)
-    {
+    void RemoveDetour(DetourFunc_t p_Detour) {
         RemoveDetourInternal(p_Detour);
     }
 
-    ReturnType Call(Args... p_Args)
-    {
+    ReturnType Call(Args... p_Args) {
         LockForCall();
 
         auto s_Detours = GetDetours();
 
         auto s_Detour = *s_Detours;
 
-        while (s_Detour != nullptr)
-        {
+        while (s_Detour != nullptr) {
             auto s_DetourFunc = reinterpret_cast<DetourFunc_t>(s_Detour->DetourFunc);
             auto s_Result = s_DetourFunc(s_Detour->Context, this, p_Args...);
 
             // Detour returned a value. Stop execution and return it.
-            if (s_Result.m_HasReturnVal)
-            {
+            if (s_Result.m_HasReturnVal) {
                 UnlockForCall();
                 return s_Result.m_ReturnVal;
             }
@@ -116,46 +102,39 @@ public:
         return CallOriginal(p_Args...);
     }
 
-    ReturnType CallOriginal(Args... p_Args)
-    {
+    ReturnType CallOriginal(Args... p_Args) {
         assert(m_OriginalFunc != nullptr);
         return reinterpret_cast<OriginalFunc_t>(m_OriginalFunc)(p_Args...);
     }
 };
 
 template <class... Args>
-class Hook<void(Args...)> : public HookBase
-{
+class Hook<void(Args...)> : public HookBase {
 public:
-    typedef void(__fastcall* OriginalFunc_t)(Args...);
-    typedef HookResult<void>(*DetourFunc_t)(void*, Hook<void(Args...)>*, Args...);
+    typedef void (__fastcall*OriginalFunc_t)(Args...);
+    typedef HookResult<void> (*DetourFunc_t)(void*, Hook<void(Args...)>*, Args...);
 
-    void AddDetour(void* p_Context, DetourFunc_t p_Detour)
-    {
+    void AddDetour(void* p_Context, DetourFunc_t p_Detour) {
         AddDetourInternal(p_Context, p_Detour);
     }
 
-    void RemoveDetour(DetourFunc_t p_Detour)
-    {
+    void RemoveDetour(DetourFunc_t p_Detour) {
         RemoveDetourInternal(p_Detour);
     }
 
-    void Call(Args... p_Args)
-    {
+    void Call(Args... p_Args) {
         LockForCall();
 
         auto s_Detours = GetDetours();
 
         auto s_Detour = *s_Detours;
 
-        while (s_Detour != nullptr)
-        {
+        while (s_Detour != nullptr) {
             auto s_DetourFunc = reinterpret_cast<DetourFunc_t>(s_Detour->DetourFunc);
             auto s_Result = s_DetourFunc(s_Detour->Context, this, p_Args...);
 
             // Detour returned a value. Stop execution and return it.
-            if (s_Result.m_HasReturnVal)
-            {
+            if (s_Result.m_HasReturnVal) {
                 UnlockForCall();
                 return;
             }
@@ -169,8 +148,7 @@ public:
         CallOriginal(p_Args...);
     }
 
-    void CallOriginal(Args... p_Args)
-    {
+    void CallOriginal(Args... p_Args) {
         assert(m_OriginalFunc != nullptr);
         reinterpret_cast<OriginalFunc_t>(m_OriginalFunc)(p_Args...);
     }

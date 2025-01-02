@@ -21,15 +21,13 @@ class ZKnowledge;
 class ZAnimatedActor;
 
 class ICharacterCollision :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterCollision() {}
     virtual void ICharacterCollision_unk0() = 0;
 };
 
-class IActor
-{
+class IActor {
 public:
     virtual void IActor_unk0() = 0;
     virtual void RequestDisable() = 0;
@@ -89,15 +87,13 @@ public:
 };
 
 class IActorProxy :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IActorProxy() {}
     virtual void IActorProxy_unk0() = 0;
 };
 
-class ISequenceTarget
-{
+class ISequenceTarget {
 public:
     virtual void ISequenceTarget_unk0() = 0;
     virtual void ISequenceTarget_unk1() = 0;
@@ -105,8 +101,7 @@ public:
 };
 
 class ISequenceAudioPlayer :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ISequenceAudioPlayer() {}
     virtual void ISequenceAudioPlayer_unk0() = 0;
@@ -116,8 +111,7 @@ public:
 };
 
 class ICrowdAIActor :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICrowdAIActor() {}
     virtual void ICrowdAIActor_unk0() = 0;
@@ -127,14 +121,13 @@ public:
 
 // Size = 0x1410
 class ZActor :
-    public ZHM5BaseCharacter,
-    public ICharacterCollision,
-    public IActor,
-    public IActorProxy,
-    public ISequenceTarget,
-    public ISequenceAudioPlayer,
-    public ICrowdAIActor
-{
+        public ZHM5BaseCharacter,
+        public ICharacterCollision,
+        public IActor,
+        public IActorProxy,
+        public ISequenceTarget,
+        public ISequenceAudioPlayer,
+        public ICrowdAIActor {
 public:
     PAD(0x100); // 0x300
     bool m_bStartEnabled; // 0x400
@@ -209,10 +202,11 @@ public:
     PAD(0x2B0);
 
 public:
-    void PrintBitflags()
-    {
-        Logger::Debug("0:{} 1:{} 2:{} 3:{} 4:{} 5:{} 6:{} 7:{} 8:{} 9:{} 10:{} 11:{} 12:{} 13:{} 14:{} 15:{} 16:{} 17:{} 18:{} 19:{} 20:{} 21:{} 22:{} 23:{} 24:{} 25:{} 26:{} 27:{} 28:{} 29:{} 30:{} 31:{} 32:{} 33:{} 34:{} 35:{} 36:{} 37:{} 38:{} 39:{}",
-            m_bUnk0, m_bUnk1, m_bUnk2, m_bUnk3, m_bUnk4, m_bUnk5, m_bIsBeingDragged, m_bIsBeingDumped, m_bUnk8, m_bUnk9,
+    void PrintBitflags() {
+        Logger::Debug(
+            "0:{} 1:{} 2:{} 3:{} 4:{} 5:{} 6:{} 7:{} 8:{} 9:{} 10:{} 11:{} 12:{} 13:{} 14:{} 15:{} 16:{} 17:{} 18:{} 19:{} 20:{} 21:{} 22:{} 23:{} 24:{} 25:{} 26:{} 27:{} 28:{} 29:{} 30:{} 31:{} 32:{} 33:{} 34:{} 35:{} 36:{} 37:{} 38:{} 39:{}",
+            m_bUnk0, m_bUnk1, m_bUnk2, m_bUnk3, m_bUnk4, m_bUnk5, m_bIsBeingDragged, m_bIsBeingDumped, m_bUnk8,
+            m_bUnk9,
             m_bUnk10, m_bUnk11, m_bUnk12, m_bUnk13, m_bUnk14, m_bUnk15, m_bUnk16, m_bUnk17, m_bUnk18, m_bUnk19,
             m_bUnk20, m_bUnk21, m_bUnk22, m_bUnk23, m_bUnk24, m_bUnk25, m_bUnk26, m_bUnk27, m_bUnk28, m_bUnk29,
             m_bUnk30, m_bUnk31, m_bUnk32, m_bUnk33, m_bUnk34, m_bUnk35, m_bBodyHidden, m_bUnk37, m_bUnk38, m_bUnk39
@@ -228,8 +222,7 @@ static_assert(offsetof(ZActor, m_nCurrentBehaviorIndex) == 0x117C);
 class ZActorSavableHandler;
 
 class ZActorManager :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ZActorManager() {}
 
@@ -241,9 +234,8 @@ public:
     * Param p_Name: Actor's name
     * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
     */
-    ZActor* GetActorByName(const ZString& p_Name) const {
-        for (int i = 0; i < *Globals::NextActorId; ++i)
-        {
+    ZActor* GetActorByName(const ZString& p_Name) {
+        for (int i = 0; i < *Globals::NextActorId; ++i) {
             auto* s_Actor = m_aActiveActors[i].m_pInterfaceRef;
 
             if (s_Actor->m_sActorName == p_Name)
@@ -260,10 +252,8 @@ public:
     * Param p_Id: Actor's entity id
     * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
     */
-    ZActor* GetActorById(uint64_t p_Id)
-    {
-        for (int i = 0; i < *Globals::NextActorId; ++i)
-        {
+    ZActor* GetActorById(uint64_t p_Id) {
+        for (int i = 0; i < *Globals::NextActorId; ++i) {
             auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 
             ZEntityRef s_EntRef;
@@ -275,7 +265,6 @@ public:
 
         return nullptr;
     }
-
 
 public:
     PAD(0x1F60);

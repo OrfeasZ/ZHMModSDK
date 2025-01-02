@@ -5,8 +5,7 @@
 #include "ZEntity.h"
 #include "ZPrimitives.h"
 
-class ZBaseReplica
-{
+class ZBaseReplica {
 public:
     virtual ~ZBaseReplica() = default;
     virtual void ZBaseReplica_unk1() {}
@@ -34,8 +33,7 @@ class ZRakNetReplica;
 class ZNetPlayer;
 
 class ZNetPlayerController :
-    public ZBaseReplica
-{
+        public ZBaseReplica {
 public:
     uint64_t m_nUnkCounter; // 0x10 (-8) some sort of counter, only set for local player, maybe time sync?
     uint32_t m_nFlags0x10; // 0x18 (-8)
@@ -54,7 +52,8 @@ public:
     uint32_t m_nFlags0x70; // 0x78 (-8) always 0
     ZGuid m_OutfitId; // 0x80 (-8)
     ZString s_sSessionId; // 0x90 (-8) maybe a contract session id or something? timestamp-guid
-    uint32_t m_nFlags0x98; // 0xA0 (-8) set to 0 for local player on player one, 0 for both players on player two, -1 for everyone else
+    uint32_t m_nFlags0x98;
+    // 0xA0 (-8) set to 0 for local player on player one, 0 for both players on player two, -1 for everyone else
     ZEntityRef m_HitmanEntity; // 0xA8 (-8)
     void* m_pEntityVtables; // 0xB0 (-8) a pointer to the entity vtables, probably something related to the aspect dummy
     void* m_unk0xB0; // 0xB8 (-8)
@@ -65,8 +64,7 @@ public:
 static_assert(offsetof(ZNetPlayerController, m_nFlags0x34) == 0x34);
 static_assert(offsetof(ZNetPlayerController, m_bConnectedToMultiplayer) == 0x42);
 
-struct SNetPlayerData
-{
+struct SNetPlayerData {
     int32_t m_nPlayerId; // 0x00
     ZNetPlayerController m_Controller; // 0x08
 };
@@ -74,9 +72,8 @@ struct SNetPlayerData
 static_assert(sizeof(SNetPlayerData) == 0xD0);
 
 class ZPlayerRegistry :
-    public IComponentInterface,
-    public ZBaseReplica
-{
+        public IComponentInterface,
+        public ZBaseReplica {
 public:
     virtual ~ZPlayerRegistry() = 0;
 

@@ -2,8 +2,7 @@
 
 #include "Reflection.h"
 
-class IAllocator : public IComponentInterface
-{
+class IAllocator : public IComponentInterface {
 public:
     virtual ~IAllocator() {}
     virtual size_t DefaultAlignment() = 0;
@@ -14,8 +13,7 @@ public:
     virtual int64_t GetAllocationSize(void* p_Memory) = 0;
 };
 
-class IPageAllocator
-{
+class IPageAllocator {
 public:
     virtual ~IPageAllocator() = default;
     virtual void IPageAllocator_unk1() = 0;
@@ -28,8 +26,7 @@ public:
     virtual IAllocator* GetAllocator(void* object) = 0;
 };
 
-class ZMemoryManager
-{
+class ZMemoryManager {
 public:
     IPageAllocator* m_pPageAllocator;
     PAD(0x08);

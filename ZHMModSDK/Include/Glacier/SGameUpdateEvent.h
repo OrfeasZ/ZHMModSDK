@@ -2,8 +2,7 @@
 
 #include "ZGameTime.h"
 
-class SGameUpdateEvent
-{
+class SGameUpdateEvent {
 public:
     ZGameTime m_GameTimeDelta;
     ZGameTime m_GameTimeCurrent;
