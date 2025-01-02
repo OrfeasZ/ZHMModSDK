@@ -45,26 +45,35 @@ void Console::Draw(bool p_HasFocus)
             ImVec4 s_Color;
             bool s_Colored = false;
 
-            if (s_LogLine.Level == spdlog::level::trace)
-            {
-                s_Color = ImVec4(168.f / 255.f, 61.f / 255.f, 255.f / 255.f, 1.f);
-                s_Colored = true;
-            }
-            else if (s_LogLine.Level == spdlog::level::debug)
-            {
-                s_Color = ImVec4(61.f / 255.f, 129.f / 255.f, 255.f / 255.f, 1.f);
-                s_Colored = true;
-            }
-            else if (s_LogLine.Level == spdlog::level::warn)
-            {
-                s_Color = ImVec4(255.f / 255.f, 168.f / 255.f, 61.f / 255.f, 1.f);
-                s_Colored = true;
-            }
-            else if (s_LogLine.Level == spdlog::level::err || s_LogLine.Level == spdlog::level::critical)
-            {
-                s_Color = ImVec4(255.f / 255.f, 69.f / 255.f, 69.f / 255.f, 1.f);
-                s_Colored = true;
-            }
+			switch (s_LogLine.Level)
+			{
+				case spdlog::level::trace:
+					s_Color = ImVec4(168.f / 255.f, 61.f / 255.f, 1.f, 1.f);
+					s_Colored = true;
+					break;
+
+				case spdlog::level::debug:
+					s_Color = ImVec4(61.f / 255.f, 129.f / 255.f, 1.f, 1.f);
+					s_Colored = true;
+					break;
+
+				case spdlog::level::info:
+					break;
+
+				case spdlog::level::warn:
+					s_Color = ImVec4(1.f, 168.f / 255.f, 61.f / 255.f, 1.f);
+					s_Colored = true;
+					break;
+
+				case spdlog::level::err:
+				case spdlog::level::critical:
+					s_Color = ImVec4(1.f, 69.f / 255.f, 69.f / 255.f, 1.f);
+					s_Colored = true;
+					break;
+
+				case spdlog::level::off:
+					break;
+			}
 
             if (s_Colored)
                 ImGui::PushStyleColor(ImGuiCol_Text, s_Color);
