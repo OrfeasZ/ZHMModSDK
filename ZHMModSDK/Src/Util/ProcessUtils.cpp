@@ -20,21 +20,16 @@ uintptr_t ProcessUtils::SearchPattern(uintptr_t p_BaseAddress, size_t p_ScanSize
         const uint8_t* s_PatternPtr = p_Pattern;
         const uint8_t* s_MaskPtr = reinterpret_cast<const uint8_t*>(p_Mask);
 
-        bool s_Found = true;
-
         for (; s_MaskPtr[0] && (reinterpret_cast<uintptr_t>(s_MemoryPtr) < (p_BaseAddress + p_ScanSize)); ++s_MaskPtr, ++s_PatternPtr, ++s_MemoryPtr)
         {
             if (s_MaskPtr[0] != 'x')
                 continue;
 
             if (s_MemoryPtr[0] != s_PatternPtr[0])
-            {
-                s_Found = false;
                 break;
-            }
         }
 
-        if (s_Found)
+        if (!s_MaskPtr[0])
             return s_SearchAddr;
     }
 
