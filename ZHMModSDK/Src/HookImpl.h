@@ -395,6 +395,30 @@ private:
 };
 
 template <class T>
+class PatternHookEpicSteam;
+
+template <class ReturnType, class... Args>
+class PatternHookEpicSteam<ReturnType(Args...)> final : public HookImpl<ReturnType(Args...)>
+{
+public:
+    PatternHookEpicSteam(const char* p_HookName, const char* p_PatternEpic, const char* p_MaskEpic, const char* p_PatternSteam, const char* p_MaskSteam, typename Hook<ReturnType(Args...)>::OriginalFunc_t p_Detour) :
+        HookImpl<ReturnType(Args...)>(p_HookName, GetTarget(p_PatternEpic, p_MaskEpic, p_PatternSteam, p_MaskSteam), p_Detour)
+    {
+    }
+
+private:
+    void* GetTarget(const char* p_PatternEpic, const char* p_MaskEpic, const char* p_PatternSteam, const char* p_MaskSteam) const
+    {
+        const auto* s_PatternEpic = reinterpret_cast<const uint8_t*>(p_PatternEpic);
+        void* s_ResultEpic = reinterpret_cast<void*>(Util::ProcessUtils::SearchPattern(ModSDK::GetInstance()->GetModuleBase(), ModSDK::GetInstance()->GetSizeOfCode(), s_PatternEpic, p_MaskEpic));
+        if (s_ResultEpic)
+            return s_ResultEpic;
+        const auto* s_PatternSteam = reinterpret_cast<const uint8_t*>(p_PatternSteam);
+        return reinterpret_cast<void*>(Util::ProcessUtils::SearchPattern(ModSDK::GetInstance()->GetModuleBase(), ModSDK::GetInstance()->GetSizeOfCode(), s_PatternSteam, p_MaskSteam));
+    }
+};
+
+template <class T>
 class PatternCallHook;
 
 template <class ReturnType, class... Args>
@@ -587,6 +611,13 @@ private:
     Hook<HookType>* Hooks::HookName = new PatternHook<HookType>(\
         #HookName, \
         Pattern, Mask, \
+        (typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
+    );
+
+#define PATTERN_HOOK_EPIC_STEAM(PatternEpic, MaskEpic, PatternSteam, MaskSteam, HookName, HookType) \
+    Hook<HookType>* Hooks::HookName = new PatternHookEpicSteam<HookType>(\
+        #HookName, \
+        PatternEpic, MaskEpic, PatternSteam, MaskSteam, \
         (typename Hook<HookType>::OriginalFunc_t) []<class... Args>(Args... p_Args) { return Hooks::HookName->Call(p_Args...); }\
     );
 
