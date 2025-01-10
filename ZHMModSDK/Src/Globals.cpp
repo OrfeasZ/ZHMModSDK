@@ -173,41 +173,41 @@ PATTERN_RELATIVE_GLOBAL(
 PATTERN_RELATIVE_GLOBAL(
     "\x48\x8B\x15\x00\x00\x00\x00\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x48\x8B\x0D",
     "xxx????xxx????x????xxx",
-	3,
-	IEngineMode**, EngineMode
+    3,
+    IEngineMode**, EngineMode
 );
 
 PATTERN_RELATIVE_GLOBAL(
     "\x48\x8D\x05\x00\x00\x00\x00\x4C\x89\x46\x30",
     "xxx????xxxx",
-	3,
-	void*, ZTemplateEntityBlueprintFactory_vtbl
+    3,
+    void*, ZTemplateEntityBlueprintFactory_vtbl
 );
 
 PATTERN_RELATIVE_GLOBAL(
     "\x48\x8D\x0D\x00\x00\x00\x00\x0F\x10\x00\x0F\x11\x85\xA8\x02\x00\x00",
     "xxx????xxxxxxxxxx",
-	3,
-	ZInputActionManager*, InputActionManager
+    3,
+    ZInputActionManager*, InputActionManager
 );
 
 PATTERN_RELATIVE_GLOBAL(
     "\x48\x89\x05\x00\x00\x00\x00\xF2\x0F\x11\x85\xE8\x02\x00\x00",
     "xxx????xxxxxxxx",
-	3,
-	int*, InputActionManager_BindMem
+    3,
+    int*, InputActionManager_BindMem
 );
 
 PATTERN_RELATIVE_GLOBAL(
     "\xFF\x05\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x48\x8D\x05",
     "xx????x????xxx",
-	2,
-	int*, InputActionManager_Seq
+    2,
+    int*, InputActionManager_Seq
 );
 
 PATTERN_RELATIVE_GLOBAL(
     "\x48\x8D\x15\x00\x00\x00\x00\x0F\xB6\xC1\xEB",
     "xxx????xxxx",
-	3,
-	TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>*, Selections
+    3,
+    TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>*, Selections
 );

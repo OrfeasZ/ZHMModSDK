@@ -5,8 +5,7 @@
 
 #include "IPluginInterface.h"
 
-class WakingUpNpcs : public IPluginInterface
-{
+class WakingUpNpcs : public IPluginInterface {
 public:
     WakingUpNpcs();
     ~WakingUpNpcs() override;

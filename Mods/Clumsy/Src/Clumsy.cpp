@@ -14,12 +14,9 @@
 
 #include <filesystem>
 
-Clumsy::Clumsy()
-{
-}
+Clumsy::Clumsy() {}
 
-Clumsy::~Clumsy()
-{
+Clumsy::~Clumsy() {
     const ZMemberDelegate<Clumsy, void(const SGameUpdateEvent&)> s_Delegate(this, &Clumsy::OnFrameUpdate);
     Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 
@@ -29,34 +26,29 @@ Clumsy::~Clumsy()
     m_MusicLoop.reset();
 }
 
-void Clumsy::OnEngineInitialized()
-{
+void Clumsy::OnEngineInitialized() {
     m_AudioEngine = std::make_unique<DirectX::AudioEngine>(DirectX::AudioEngine_Default);
 
-	if (std::filesystem::exists("dab.wav")) {
-		m_Music = std::make_unique<DirectX::SoundEffect>(m_AudioEngine.get(), L"dab.wav");
-		m_MusicLoop = m_Music->CreateInstance();
-	}
+    if (std::filesystem::exists("dab.wav")) {
+        m_Music = std::make_unique<DirectX::SoundEffect>(m_AudioEngine.get(), L"dab.wav");
+        m_MusicLoop = m_Music->CreateInstance();
+    }
 
     const ZMemberDelegate<Clumsy, void(const SGameUpdateEvent&)> s_Delegate(this, &Clumsy::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
 
-void Clumsy::Init()
-{
+void Clumsy::Init() {
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Clumsy::OnClearScene);
 }
 
-void Clumsy::OnDrawUI(bool p_HasFocus)
-{
-    if (m_ShowBrickWarning)
-    {
+void Clumsy::OnDrawUI(bool p_HasFocus) {
+    if (m_ShowBrickWarning) {
         ImGui::PushFont(SDK()->GetImGuiBlackFont());
         const auto s_Expanded = ImGui::Begin(ICON_MD_WARNING " Clumsy Warning", &m_ShowBrickWarning);
         ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-        if (s_Expanded)
-        {
+        if (s_Expanded) {
             ImGui::Text("Could not find Clumsy brick!");
             ImGui::Text("Did you install the Clumsy SMF mod?");
         }
@@ -68,15 +60,13 @@ void Clumsy::OnDrawUI(bool p_HasFocus)
 }
 
 
-void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
-{
+void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     m_AudioEngine->Update();
 
     if (m_Ragdolling)
         m_RagdollTimer += p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-    if (m_DeactivateRagdollQueued)
-    {
+    if (m_DeactivateRagdollQueued) {
         m_DeactivateRagdollQueued = false;
 
         auto s_LocalHitman = SDK()->GetLocalPlayer();
@@ -94,8 +84,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
         // TODO: Move hitman to floor using raycast.
     }
-    else if (m_Ragdolling)
-    {
+    else if (m_Ragdolling) {
         /*auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
@@ -217,8 +206,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     }*/
 
     ZInputAction s_RagdollAction("eIAKBMCover");
-    if (Functions::ZInputAction_Digital->Call(&s_RagdollAction, -1))
-    {
+    if (Functions::ZInputAction_Digital->Call(&s_RagdollAction, -1)) {
         auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
@@ -230,32 +218,33 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
         m_Ragdolling = !m_Ragdolling;
         Logger::Debug("Ragdolling: {}", m_Ragdolling);
 
-        if (m_Ragdolling)
-        {
-            Functions::ZHM5BaseCharacter_ActivatePoweredRagdoll->Call(s_LocalHitman.m_pInterfaceRef, 0, false, true, 0, true);
+        if (m_Ragdolling) {
+            Functions::ZHM5BaseCharacter_ActivatePoweredRagdoll->Call(
+                s_LocalHitman.m_pInterfaceRef, 0, false, true, 0, true
+            );
 
             const auto s_EmitterSpatial = m_MusicEmitter.QueryInterface<ZSpatialEntity>();
 
             if (s_EmitterSpatial)
-                s_EmitterSpatial->SetWorldMatrix(s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>()->GetWorldMatrix());
+                s_EmitterSpatial->SetWorldMatrix(
+                    s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>()->GetWorldMatrix()
+                );
 
             m_ShakeEntity.SignalInputPin("Activate");
 
-			if (m_MusicLoop)
+            if (m_MusicLoop)
                 m_MusicLoop->Play(true);
         }
-        else
-        {
+        else {
             Functions::ZHM5BaseCharacter_DeactivateRagdoll->Call(s_LocalHitman.m_pInterfaceRef);
             m_ShakeEntity.SignalInputPin("Deactivate");
 
-			if (m_MusicLoop)
+            if (m_MusicLoop)
                 m_MusicLoop->Stop(true);
         }
     }
 
-    if (m_Ragdolling)
-    {
+    if (m_Ragdolling) {
         auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman)
@@ -264,8 +253,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
         const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
         const auto s_HitmanTransform = s_HitmanSpatial->GetWorldMatrix();
 
-        for (int i = 0; i < *Globals::NextActorId; ++i)
-        {
+        for (int i = 0; i < *Globals::NextActorId; ++i) {
             const auto& s_Actor = Globals::ActorManager->m_aActiveActors[i];
 
             const auto s_ActorSpatial = s_Actor.m_ref.QueryInterface<ZSpatialEntity>();
@@ -275,12 +263,14 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
             const auto s_ActorTrans = s_ActorSpatial->GetWorldMatrix();
 
-            if (float4::Distance(s_ActorTrans.Trans, s_HitmanTransform.Trans) < 4.f)
-            {
+            if (float4::Distance(s_ActorTrans.Trans, s_HitmanTransform.Trans) < 4.f) {
                 Functions::ZHM5BaseCharacter_ActivateRagdoll->Call(s_Actor.m_pInterfaceRef, true);
 
                 // pelvis = 1
-                Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(s_Actor.m_pInterfaceRef->m_pRagdollHandler, {}, s_HitmanTransform.XAxis * 22.f + float4 { 0, 0, 10.f, 0 }, 1, false);
+                Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(
+                    s_Actor.m_pInterfaceRef->m_pRagdollHandler, {},
+                    s_HitmanTransform.XAxis * 22.f + float4 {0, 0, 10.f, 0}, 1, false
+                );
             }
         }
 
@@ -293,14 +283,22 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
         // l_hand = 128
         // r_hand = 157
         //Functions::ZHM5BaseCharacter_ActivatePoweredRagdoll->Call(s_LocalHitman.m_pInterfaceRef, 0, false, true, 0.6f, false);
-        Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {}, s_HitmanTransform.Up + s_HitmanTransform.Left + s_HitmanTransform.Backward * -1, 128, false);
-        Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {}, s_HitmanTransform.Up * 0.5 + s_HitmanTransform.Left * 0.4 + s_HitmanTransform.Backward * -1, 157, false);
-        Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {}, s_HitmanTransform.Up + s_HitmanTransform.Left * -0.8 + s_HitmanTransform.Backward * -1.5, 11, false);
+        Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(
+            s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {},
+            s_HitmanTransform.Up + s_HitmanTransform.Left + s_HitmanTransform.Backward * -1, 128, false
+        );
+        Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(
+            s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {},
+            s_HitmanTransform.Up * 0.5 + s_HitmanTransform.Left * 0.4 + s_HitmanTransform.Backward * -1, 157, false
+        );
+        Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(
+            s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {},
+            s_HitmanTransform.Up + s_HitmanTransform.Left * -0.8 + s_HitmanTransform.Backward * -1.5, 11, false
+        );
     }
 }
 
-bool Clumsy::GetEntities()
-{
+bool Clumsy::GetEntities() {
     if (m_GetUpAnimation && m_ShakeEntity)
         return true;
 
@@ -314,14 +312,14 @@ bool Clumsy::GetEntities()
     m_MusicEntity = {};
     m_MusicEmitter = {};
 
-    for (auto& s_Brick : Globals::Hitman5Module->m_pEntitySceneContext->m_aLoadedBricks)
-    {
+    for (auto& s_Brick : Globals::Hitman5Module->m_pEntitySceneContext->m_aLoadedBricks) {
         if (s_Brick.runtimeResourceID != ResId<"[assembly:/_sdk/get_up.brick].pc_entitytype">)
             continue;
 
         Logger::Debug("Found get_up brick.");
 
-        const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.GetBlueprintFactory());
+        const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.
+            GetBlueprintFactory());
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeedf42ba555b602); s_Index != -1)
             m_GetUpAnimation = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
@@ -341,9 +339,8 @@ bool Clumsy::GetEntities()
     return m_GetUpAnimation && m_ShakeEntity;
 }
 
-DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
-{
-	if (m_MusicLoop)
+DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+    if (m_MusicLoop)
         m_MusicLoop->Stop(true);
 
     m_DeactivateRagdollQueued = false;

@@ -6,24 +6,20 @@
 using namespace Rendering;
 
 D3D12Device::D3D12Device(ID3D12Device10* p_Target) :
-    m_Target(p_Target)
-{
+    m_Target(p_Target) {
     m_Target->AddRef();
 }
 
-D3D12Device::~D3D12Device()
-{
+D3D12Device::~D3D12Device() {
     m_Target->Release();
 }
 
-ULONG D3D12Device::AddRef()
-{
+ULONG D3D12Device::AddRef() {
     InterlockedIncrement(&m_RefCount);
     return m_RefCount;
 }
 
-ULONG D3D12Device::Release()
-{
+ULONG D3D12Device::Release() {
     // Decrement the object's internal counter.
     const ULONG s_NewRefCount = InterlockedDecrement(&m_RefCount);
 
@@ -33,8 +29,7 @@ ULONG D3D12Device::Release()
     return s_NewRefCount;
 }
 
-HRESULT D3D12Device::QueryInterface(const IID& riid, void** ppvObject)
-{
+HRESULT D3D12Device::QueryInterface(const IID& riid, void** ppvObject) {
     if (!ppvObject)
         return E_INVALIDARG;
 
@@ -51,8 +46,7 @@ HRESULT D3D12Device::QueryInterface(const IID& riid, void** ppvObject)
         riid == __uuidof(ID3D12Device7) ||
         riid == __uuidof(ID3D12Device8) ||
         riid == __uuidof(ID3D12Device9) ||
-        riid == __uuidof(ID3D12Device10))
-    {
+        riid == __uuidof(ID3D12Device10)) {
         *ppvObject = this;
         AddRef();
 

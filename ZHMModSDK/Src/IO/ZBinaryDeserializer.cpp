@@ -2,26 +2,22 @@
 
 #include "IO/ZBinaryDeserializer.h"
 
-void* ZBinaryDeserializer::Deserialize(const std::string& filePath, const TArray<ZResourceIndex>* referenceIndices)
-{
+void* ZBinaryDeserializer::Deserialize(const std::string& filePath, const TArray<ZResourceIndex>* referenceIndices) {
     ZBinaryReader binaryReader = ZBinaryReader(filePath);
 
     return Deserialize(binaryReader, referenceIndices);
 }
 
-void* ZBinaryDeserializer::Deserialize(std::vector<char>* buffer, const TArray<ZResourceIndex>* referenceIndices)
-{
+void* ZBinaryDeserializer::Deserialize(std::vector<char>* buffer, const TArray<ZResourceIndex>* referenceIndices) {
     ZBinaryReader binaryReader = ZBinaryReader(buffer);
 
     return Deserialize(binaryReader, referenceIndices);
 }
 
-void* ZBinaryDeserializer::Deserialize(ZBinaryReader& binaryReader, const TArray<ZResourceIndex>* referenceIndices)
-{
+void* ZBinaryDeserializer::Deserialize(ZBinaryReader& binaryReader, const TArray<ZResourceIndex>* referenceIndices) {
     const unsigned int magic = binaryReader.Read<unsigned int>();
 
-    if (magic != 'BIN1')
-    {
+    if (magic != 'BIN1') {
         throw std::invalid_argument("File format not supported!");
     }
 
@@ -47,13 +43,11 @@ void* ZBinaryDeserializer::Deserialize(ZBinaryReader& binaryReader, const TArray
     ZBinaryReader dataSectionBinaryReader = ZBinaryReader(data, dataLength);
     ZBinaryWriter dataSectionBinaryWriter = ZBinaryWriter(data, dataLength);
 
-    for (unsigned char i = 0; i < sectionsCount; ++i)
-    {
+    for (unsigned char i = 0; i < sectionsCount; ++i) {
         const unsigned int sectionType = binaryReader.Read<unsigned int>();
         const unsigned int sectionSize = binaryReader.Read<unsigned int>();
 
-        switch (sectionType)
-        {
+        switch (sectionType) {
             case 0x12EBA5ED:
                 HandleRebaseSection(binaryReader, dataSectionBinaryReader, dataSectionBinaryWriter);
                 break;
@@ -61,10 +55,11 @@ void* ZBinaryDeserializer::Deserialize(ZBinaryReader& binaryReader, const TArray
                 HandleTypeReindexingSection(binaryReader, dataSectionBinaryReader, dataSectionBinaryWriter);
                 break;
             case 0x578FBCEE:
-                HandleRuntimeResourceIDReindexingSection(binaryReader, dataSectionBinaryReader, dataSectionBinaryWriter, referenceIndices);
+                HandleRuntimeResourceIDReindexingSection(
+                    binaryReader, dataSectionBinaryReader, dataSectionBinaryWriter, referenceIndices
+                );
                 break;
-            default:
-            {
+            default: {
                 std::stringstream stream;
 
                 stream << std::hex << sectionType;
@@ -79,17 +74,16 @@ void* ZBinaryDeserializer::Deserialize(ZBinaryReader& binaryReader, const TArray
     return data;
 }
 
-const unsigned char ZBinaryDeserializer::GetAlignment() const
-{
+const unsigned char ZBinaryDeserializer::GetAlignment() const {
     return alignment;
 }
 
-void ZBinaryDeserializer::HandleRebaseSection(ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter)
-{
+void ZBinaryDeserializer::HandleRebaseSection(
+    ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter
+) {
     const unsigned int numberOfRebaseLocations = binaryReader.Read<unsigned int>();
 
-    for (unsigned int i = 0; i < numberOfRebaseLocations; ++i)
-    {
+    for (unsigned int i = 0; i < numberOfRebaseLocations; ++i) {
         const unsigned int rebaseLocationOffset = binaryReader.Read<unsigned int>();
 
         dataSectionbinaryReader.Seek(rebaseLocationOffset);
@@ -97,25 +91,25 @@ void ZBinaryDeserializer::HandleRebaseSection(ZBinaryReader& binaryReader, ZBina
 
         const long long value = dataSectionbinaryReader.Read<long long>();
 
-        if (value != -1)
-        {
-            dataSectionBinaryWriter.Write<unsigned long long>(reinterpret_cast<uintptr_t>(dataSectionbinaryReader.GetData()) + value);
+        if (value != -1) {
+            dataSectionBinaryWriter.Write<unsigned long long>(
+                reinterpret_cast<uintptr_t>(dataSectionbinaryReader.GetData()) + value
+            );
         }
-        else
-        {
+        else {
             dataSectionBinaryWriter.Write<unsigned long long>(0);
         }
     }
 }
 
-void ZBinaryDeserializer::HandleTypeReindexingSection(ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter)
-{
+void ZBinaryDeserializer::HandleTypeReindexingSection(
+    ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter
+) {
     size_t sectionStartPosition = binaryReader.GetPosition();
     unsigned int numberOfOffsetsToReindex = binaryReader.Read<unsigned int>();
     std::unordered_map<unsigned int, size_t> typeIDsToReindex;
 
-    for (unsigned int i = 0; i < numberOfOffsetsToReindex; ++i)
-    {
+    for (unsigned int i = 0; i < numberOfOffsetsToReindex; ++i) {
         const unsigned int typeIDOffset = binaryReader.Read<unsigned int>();
 
         dataSectionbinaryReader.Seek(typeIDOffset);
@@ -128,8 +122,7 @@ void ZBinaryDeserializer::HandleTypeReindexingSection(ZBinaryReader& binaryReade
     const unsigned int numberOfTypeNames = binaryReader.Read<unsigned int>();
     std::vector<STypeID*> typeIDs = std::vector<STypeID*>(numberOfTypeNames);
 
-    for (unsigned int i = 0; i < numberOfTypeNames; ++i)
-    {
+    for (unsigned int i = 0; i < numberOfTypeNames; ++i) {
         size_t currentPosition = binaryReader.GetPosition() - sectionStartPosition;
 
         Align(binaryReader, currentPosition, 4);
@@ -141,16 +134,14 @@ void ZBinaryDeserializer::HandleTypeReindexingSection(ZBinaryReader& binaryReade
 
         STypeID* type = GetTypeIDFromTypeName(typeName);
 
-        if (!type)
-        {
+        if (!type) {
             throw std::invalid_argument(std::format("Type info for {} isn't available!", typeName));
         }
 
         typeIDs[typeID] = type;
     }
 
-    for (auto it = typeIDsToReindex.begin(); it != typeIDsToReindex.end(); it++)
-    {
+    for (auto it = typeIDsToReindex.begin(); it != typeIDsToReindex.end(); it++) {
         const unsigned int typeIDOffset = it->first;
         const size_t typeIDIndex = it->second;
 
@@ -159,17 +150,17 @@ void ZBinaryDeserializer::HandleTypeReindexingSection(ZBinaryReader& binaryReade
     }
 }
 
-void ZBinaryDeserializer::HandleRuntimeResourceIDReindexingSection(ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter, const TArray<ZResourceIndex>* referenceIndices)
-{
-    if (!referenceIndices)
-    {
+void ZBinaryDeserializer::HandleRuntimeResourceIDReindexingSection(
+    ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter,
+    const TArray<ZResourceIndex>* referenceIndices
+) {
+    if (!referenceIndices) {
         return;
     }
 
     const unsigned int numberOfOffsetsToReindex = binaryReader.Read<unsigned int>();
 
-    for (unsigned int i = 0; i < numberOfOffsetsToReindex; ++i)
-    {
+    for (unsigned int i = 0; i < numberOfOffsetsToReindex; ++i) {
         const unsigned int runtimeResourceIDOffset = binaryReader.Read<unsigned int>();
 
         dataSectionbinaryReader.Seek(runtimeResourceIDOffset);
@@ -177,10 +168,10 @@ void ZBinaryDeserializer::HandleRuntimeResourceIDReindexingSection(ZBinaryReader
         const unsigned int idHigh = dataSectionbinaryReader.Read<unsigned int>();
         const unsigned int idLow = dataSectionbinaryReader.Read<unsigned int>(); //Index of resource reference
 
-        if (idLow != UINT32_MAX)
-        {
+        if (idLow != UINT32_MAX) {
             ZResourceIndex referenceIndex = (*referenceIndices)[idLow];
-            ZResourceContainer::SResourceInfo resourceInfo = (*Globals::ResourceContainer)->m_resources[referenceIndex.val];
+            ZResourceContainer::SResourceInfo resourceInfo = (*Globals::ResourceContainer)->m_resources[referenceIndex.
+                val];
 
             dataSectionBinaryWriter.Seek(runtimeResourceIDOffset);
             dataSectionBinaryWriter.Write(resourceInfo.rid);
@@ -188,17 +179,14 @@ void ZBinaryDeserializer::HandleRuntimeResourceIDReindexingSection(ZBinaryReader
     }
 }
 
-void ZBinaryDeserializer::Align(ZBinaryReader& binaryReader, const size_t currentPosition, const size_t alignment)
-{
+void ZBinaryDeserializer::Align(ZBinaryReader& binaryReader, const size_t currentPosition, const size_t alignment) {
     size_t misalign = currentPosition % alignment;
 
-    if (misalign != 0)
-    {
+    if (misalign != 0) {
         binaryReader.Seek(alignment - misalign, ZBinaryReader::ESeekOrigin::current);
     }
 }
 
-STypeID* ZBinaryDeserializer::GetTypeIDFromTypeName(const std::string& typeName)
-{
+STypeID* ZBinaryDeserializer::GetTypeIDFromTypeName(const std::string& typeName) {
     return (*Globals::TypeRegistry)->m_types.find(typeName.c_str())->second;
 }

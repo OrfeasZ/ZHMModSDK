@@ -5,13 +5,11 @@
 
 #include "IPluginInterface.h"
 
-namespace discord
-{
+namespace discord {
     class Core;
 }
 
-class DiscordRichPresence : public IPluginInterface
-{
+class DiscordRichPresence : public IPluginInterface {
 public:
     DiscordRichPresence();
     ~DiscordRichPresence() override;

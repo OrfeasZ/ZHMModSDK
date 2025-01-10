@@ -5,13 +5,11 @@
 
 #include <Glacier/ZScene.h>
 
-void SkipIntro::Init()
-{
+void SkipIntro::Init() {
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &SkipIntro::OnLoadScene);
 }
 
-DEFINE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData)
-{
+DEFINE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData) {
     Logger::Debug("Loading scene: {}", p_SceneData.m_sceneName);
 
     for (auto& s_Brick : p_SceneData.m_sceneBricks)

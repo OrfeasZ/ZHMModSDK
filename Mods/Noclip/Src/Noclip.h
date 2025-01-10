@@ -7,8 +7,7 @@
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 
-class Noclip : public IPluginInterface
-{
+class Noclip : public IPluginInterface {
 public:
     Noclip();
     ~Noclip() override;

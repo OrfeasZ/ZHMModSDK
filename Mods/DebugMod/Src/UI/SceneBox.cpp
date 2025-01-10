@@ -2,10 +2,8 @@
 
 #include <Glacier/ZModule.h>
 
-void DebugMod::DrawSceneBox(bool p_HasFocus)
-{
-    if (!p_HasFocus || !m_SceneMenuActive)
-    {
+void DebugMod::DrawSceneBox(bool p_HasFocus) {
+    if (!p_HasFocus || !m_SceneMenuActive) {
         return;
     }
 
@@ -13,12 +11,14 @@ void DebugMod::DrawSceneBox(bool p_HasFocus)
     const auto s_Showing = ImGui::Begin("SCENE", &m_SceneMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing)
-    {
+    if (s_Showing) {
         static size_t s_Selected = 0;
         const ZEntitySceneContext* s_EntitySceneContext = Globals::Hitman5Module->m_pEntitySceneContext;
-        const std::string s_EntityTemplate = m_RuntimeResourceIDsToResourceIDs[s_EntitySceneContext->m_SceneConfig.m_ridSceneFactory.GetID()];
-        const std::string s_EntityBlueprint = std::format("{}.pc_entityblueprint", s_EntityTemplate.substr(0, s_EntityTemplate.find_last_of('.')));
+        const std::string s_EntityTemplate = m_RuntimeResourceIDsToResourceIDs[s_EntitySceneContext->m_SceneConfig.
+            m_ridSceneFactory.GetID()];
+        const std::string s_EntityBlueprint = std::format(
+            "{}.pc_entityblueprint", s_EntityTemplate.substr(0, s_EntityTemplate.find_last_of('.'))
+        );
 
         ImGui::Text("Scene name: %s", s_EntitySceneContext->m_sceneData.m_sceneName.c_str());
         ImGui::Text("Type: %s", s_EntitySceneContext->m_sceneData.m_type.c_str());
@@ -28,18 +28,15 @@ void DebugMod::DrawSceneBox(bool p_HasFocus)
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-        for (size_t i = 0; i < s_EntitySceneContext->m_aLoadedBricks.size(); ++i)
-        {
+        for (size_t i = 0; i < s_EntitySceneContext->m_aLoadedBricks.size(); ++i) {
             ZRuntimeResourceID s_RuntimeResourceId = s_EntitySceneContext->m_aLoadedBricks[i].runtimeResourceID;
             std::string s_ResourceId = m_RuntimeResourceIDsToResourceIDs[s_RuntimeResourceId.GetID()];
 
-			if (s_ResourceId.empty())
-			{
-				continue;
-			}
+            if (s_ResourceId.empty()) {
+                continue;
+            }
 
-            if (ImGui::Selectable(s_ResourceId.c_str(), s_Selected == i))
-            {
+            if (ImGui::Selectable(s_ResourceId.c_str(), s_Selected == i)) {
                 s_Selected = i;
             }
         }

@@ -107,7 +107,8 @@ PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x49\x89\x5B\x08\x49\x89\x6B\x10\x4D\x89\x43\x18",
     "xxxxxxxxxxxxxxx",
     ZEntityManager_NewEntity,
-    void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef& parent, void* a6, int64_t a7)
+    void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef&
+        parent, void* a6, int64_t a7)
 );
 
 // Look for camAlign_ string, go to parent xref of function using said string: function called in if flag check.
@@ -143,7 +144,8 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x55\x57\x41\x54\x41\x56\x41\x57\x48\x8D\x6C\x24\xD1",
     "xxxxxxxxxxxxxxxxxxxxxxx",
     ZCharacterSubcontrollerInventory_AddDynamicItemToInventory,
-    unsigned long long(ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId, void* unknown, unsigned int unknown2)
+    unsigned long long(ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString&
+        sOnlineInstanceId, void* unknown, unsigned int unknown2)
 );
 
 PATTERN_FUNCTION(
@@ -199,7 +201,8 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x56\x57\x41\x56\x48\x83\xEC\x00\x48\x8B\x81\xD8\x02\x00\x00\x48\x8B\xE9",
     "xxxxxxxxxxxxxxxxx?xxxxxxxxxx",
     ZActor_KillActor,
-    void(ZActor* th, TEntityRef<IItem> rKillItem, TEntityRef<ZSetpieceEntity> rKillSetpiece, EDamageEvent eDamageEvent, EDeathBehavior eDeathBehavior)
+    void(ZActor* th, TEntityRef<IItem> rKillItem, TEntityRef<ZSetpieceEntity> rKillSetpiece, EDamageEvent eDamageEvent,
+        EDeathBehavior eDeathBehavior)
 );
 
 PATTERN_FUNCTION(

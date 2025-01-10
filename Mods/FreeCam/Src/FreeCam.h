@@ -8,8 +8,7 @@
 #include <Glacier/ZInput.h>
 #include <Glacier/ZCollision.h>
 
-class FreeCam : public IPluginInterface
-{
+class FreeCam : public IPluginInterface {
 public:
     FreeCam();
     ~FreeCam() override;
@@ -24,9 +23,9 @@ private:
     void ToggleFreecam();
     void EnableFreecam();
     void DisableFreecam();
-	void InstantlyKillNpc();
-	void TeleportMainCharacter();
-	bool GetFreeCameraRayCastClosestHitQueryOutput(ZRayQueryOutput& p_RayOutput);
+    void InstantlyKillNpc();
+    void TeleportMainCharacter();
+    bool GetFreeCameraRayCastClosestHitQueryOutput(ZRayQueryOutput& p_RayOutput);
 
 private:
     DECLARE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int a2);
@@ -37,21 +36,21 @@ private:
     volatile bool m_FreeCamActive;
     volatile bool m_ShouldToggle;
     volatile bool m_FreeCamFrozen;
-	bool m_GamePaused;
+    bool m_GamePaused;
     ZEntityRef m_OriginalCam;
     ZInputAction m_ToggleFreeCamAction;
     ZInputAction m_FreezeFreeCamActionGc;
     ZInputAction m_FreezeFreeCamActionKb;
-	ZInputAction m_InstantlyKillNpcAction;
-	ZInputAction m_TeleportMainCharacterAction;
-	ZInputAction m_TogglePauseGame;
-	bool m_MenuVisible;
+    ZInputAction m_InstantlyKillNpcAction;
+    ZInputAction m_TeleportMainCharacterAction;
+    ZInputAction m_TogglePauseGame;
+    bool m_MenuVisible;
     bool m_ControlsVisible;
     bool m_HasToggledFreecamBefore;
-	bool m_EditorStyleFreecam;
-	bool m_MoveInFreecam;
+    bool m_EditorStyleFreecam;
+    bool m_MoveInFreecam;
     std::unordered_map<std::string, std::string> m_PcControls;
-	std::unordered_map<std::string, std::string> m_PcControlsEditorStyle;
+    std::unordered_map<std::string, std::string> m_PcControlsEditorStyle;
     std::unordered_map<std::string, std::string> m_ControllerControls;
 };
 

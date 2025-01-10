@@ -10,8 +10,7 @@
 
 #include "json.hpp"
 
-void AdvancedRating::Init()
-{
+void AdvancedRating::Init() {
     InitializeSRWLock(&m_EventLock);
 
     // Register all the rating events. New events should be added here.
@@ -33,26 +32,28 @@ void AdvancedRating::Init()
 
     Hooks::ZGameStatsManager_SendAISignals01->AddDetour(this, &AdvancedRating::ZGameStatsManager_SendAISignals);
     Hooks::ZGameStatsManager_SendAISignals02->AddDetour(this, &AdvancedRating::ZGameStatsManager_SendAISignals);
-    Hooks::ZAchievementManagerSimple_OnEventSent->AddDetour(this, &AdvancedRating::ZAchievementManagerSimple_OnEventSent);
+    Hooks::ZAchievementManagerSimple_OnEventSent->AddDetour(
+        this, &AdvancedRating::ZAchievementManagerSimple_OnEventSent
+    );
 }
 
-void AdvancedRating::OnDrawUI(bool p_HasFocus)
-{
+void AdvancedRating::OnDrawUI(bool p_HasFocus) {
     char s_CurrentRating[256];
-    sprintf_s(s_CurrentRating, sizeof(s_CurrentRating), "RATING: %s (%lld)###AdvancedRating", GetCurrentRating().c_str(), m_CurrentPoints);
+    sprintf_s(
+        s_CurrentRating, sizeof(s_CurrentRating), "RATING: %s (%lld)###AdvancedRating", GetCurrentRating().c_str(),
+        m_CurrentPoints
+    );
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
     const auto s_WindowExpanded = ImGui::Begin(s_CurrentRating, nullptr);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_WindowExpanded)
-    {
+    if (s_WindowExpanded) {
         ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY);
 
         AcquireSRWLockShared(&m_EventLock);
 
-        for (auto& s_Event : m_EventHistory)
-        {
+        for (auto& s_Event : m_EventHistory) {
             auto s_TypeName = s_Event.TypeToString();
 
             ImGui::TableNextRow();
@@ -72,8 +73,7 @@ void AdvancedRating::OnDrawUI(bool p_HasFocus)
     ImGui::PopFont();
 }
 
-void AdvancedRating::OnEvent(RatingEventType p_EventType)
-{
+void AdvancedRating::OnEvent(RatingEventType p_EventType) {
     const auto s_Event = m_RegisteredEvents[p_EventType];
 
     AcquireSRWLockExclusive(&m_EventLock);
@@ -87,8 +87,7 @@ void AdvancedRating::OnEvent(RatingEventType p_EventType)
     ReleaseSRWLockExclusive(&m_EventLock);
 }
 
-ZString AdvancedRating::GetCurrentRating() const
-{
+ZString AdvancedRating::GetCurrentRating() const {
     if (m_CurrentPoints < 10)
         return "Silent Assassin";
 
@@ -113,13 +112,11 @@ ZString AdvancedRating::GetCurrentRating() const
     return "Mass Murderer";
 }
 
-void AdvancedRating::RegisterEvent(RatingEventType p_EventType, int64_t p_Points)
-{
-    m_RegisteredEvents[p_EventType] = RatingEvent { p_EventType, p_Points };
+void AdvancedRating::RegisterEvent(RatingEventType p_EventType, int64_t p_Points) {
+    m_RegisteredEvents[p_EventType] = RatingEvent {p_EventType, p_Points};
 }
 
-void AdvancedRating::Reset()
-{
+void AdvancedRating::Reset() {
     AcquireSRWLockExclusive(&m_EventLock);
 
     m_CurrentPoints = 0;
@@ -128,8 +125,10 @@ void AdvancedRating::Reset()
     ReleaseSRWLockExclusive(&m_EventLock);
 }
 
-DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventId, const ZDynamicObject& event)
-{
+DEFINE_PLUGIN_DETOUR(
+    AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventId,
+    const ZDynamicObject& event
+) {
     ZString s_EventData;
     Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), &s_EventData);
 
@@ -139,15 +138,13 @@ DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent
 
     const std::string s_EventName = s_JsonEvent["Name"];
 
-    if (s_EventName == "SecuritySystemRecorder")
-    {
+    if (s_EventName == "SecuritySystemRecorder") {
         if (s_JsonEvent["Value"]["event"] == "spotted")
             OnEvent(RatingEventType::CaughtOnCamera);
         else if (s_JsonEvent["Value"]["event"] == "destroyed")
             OnEvent(RatingEventType::RecordingsRemoved);
     }
-    else if (s_EventName == "Kill")
-    {
+    else if (s_EventName == "Kill") {
         const bool s_Target = s_JsonEvent["Value"]["IsTarget"];
         const std::string s_ID = s_JsonEvent["Value"]["RepositoryId"];
         const auto s_ActorType = static_cast<EActorType>(s_JsonEvent["Value"]["ActorType"]);
@@ -158,8 +155,7 @@ DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent
         if (!s_Target && s_ActorType == EActorType::eAT_Guard)
             OnEvent(RatingEventType::GuardKilled);
     }
-    else if (s_EventName == "Pacify")
-    {
+    else if (s_EventName == "Pacify") {
         const bool s_Target = s_JsonEvent["Value"]["IsTarget"];
         const std::string s_ID = s_JsonEvent["Value"]["RepositoryId"];
         const auto s_ActorType = static_cast<EActorType>(s_JsonEvent["Value"]["ActorType"]);
@@ -167,16 +163,14 @@ DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent
         if (!s_Target)
             OnEvent(RatingEventType::ActorPacified);
     }
-    else if (s_EventName == "ContractStart")
-    {
+    else if (s_EventName == "ContractStart") {
         Reset();
     }
 
     return HookResult<void>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th)
-{
+DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th) {
     if (!th->m_oldGameState.m_bHitmanTrespassingSpotted && th->m_gameState.m_bHitmanTrespassingSpotted)
         OnEvent(RatingEventType::CaughtTrespassing);
 
@@ -189,7 +183,8 @@ DEFINE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGam
     if (!th->m_oldGameState.m_bDeadBodySeen && th->m_gameState.m_bDeadBodySeen)
         OnEvent(RatingEventType::DeadBodyFound);
 
-    if (th->m_oldGameState.m_actorCounts.m_nEnemiesIsAlerted == 0 && th->m_gameState.m_actorCounts.m_nEnemiesIsAlerted > 0)
+    if (th->m_oldGameState.m_actorCounts.m_nEnemiesIsAlerted == 0 && th->m_gameState.m_actorCounts.m_nEnemiesIsAlerted >
+        0)
         OnEvent(RatingEventType::GuardsAlerted);
 
     return HookResult<void>(HookAction::Continue());

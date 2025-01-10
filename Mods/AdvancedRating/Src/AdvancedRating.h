@@ -5,11 +5,9 @@
 
 #include "IPluginInterface.h"
 
-class AdvancedRating : public IPluginInterface
-{
+class AdvancedRating : public IPluginInterface {
 private:
-    enum class RatingEventType
-    {
+    enum class RatingEventType {
         RecordingsRemoved,
         WitnessEliminatedAccident,
         WitnessEliminatedMurder,
@@ -27,15 +25,12 @@ private:
         CivilianKilled,
     };
 
-    struct RatingEvent
-    {
+    struct RatingEvent {
         RatingEventType Type;
         int64_t Points;
 
-        ZString TypeToString() const
-        {
-            switch (Type)
-            {
+        ZString TypeToString() const {
+            switch (Type) {
                 case RatingEventType::RecordingsRemoved:
                     return "RecordingsRemoved";
                 case RatingEventType::WitnessEliminatedAccident:
@@ -84,7 +79,10 @@ private:
 
 private:
     DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th);
-    DECLARE_PLUGIN_DETOUR(AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event);
+    DECLARE_PLUGIN_DETOUR(
+        AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventIndex,
+        const ZDynamicObject& event
+    );
 
 private:
     SRWLOCK m_EventLock = {};

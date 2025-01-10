@@ -13,7 +13,7 @@ void MainMenu::Draw(bool p_HasFocus) {
     if (!p_HasFocus)
         return;
 
-    const auto &s_ImGuiIO = ImGui::GetIO();
+    const auto& s_ImGuiIO = ImGui::GetIO();
 
     ImGui::SetNextWindowSize(ImVec2(s_ImGuiIO.DisplaySize.x, 0.f), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -22,9 +22,11 @@ void MainMenu::Draw(bool p_HasFocus) {
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.14f, 0.14f, 0.14f, 1.00f));
 
-    ImGui::Begin("#MainMenu", nullptr,
-                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
-                 ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Begin(
+        "#MainMenu", nullptr,
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar
+    );
 
     ImGui::GetCurrentWindow()->DC.LayoutType = ImGuiLayoutType_Horizontal;
 

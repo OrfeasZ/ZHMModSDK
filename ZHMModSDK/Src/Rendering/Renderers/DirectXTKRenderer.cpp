@@ -29,37 +29,33 @@
 
 using namespace Rendering::Renderers;
 
-DirectXTKRenderer::DirectXTKRenderer()
-{
-}
+DirectXTKRenderer::DirectXTKRenderer() {}
 
-DirectXTKRenderer::~DirectXTKRenderer()
-{
-    const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(this, &DirectXTKRenderer::OnFrameUpdate);
+DirectXTKRenderer::~DirectXTKRenderer() {
+    const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(
+        this, &DirectXTKRenderer::OnFrameUpdate
+    );
     Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
 
     OnReset();
 
-    if (m_CommandQueue)
-    {
+    if (m_CommandQueue) {
         m_CommandQueue->Release();
         m_CommandQueue = nullptr;
     }
 }
 
-void DirectXTKRenderer::OnEngineInit()
-{
-    const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(this, &DirectXTKRenderer::OnFrameUpdate);
+void DirectXTKRenderer::OnEngineInit() {
+    const ZMemberDelegate<DirectXTKRenderer, void(const SGameUpdateEvent&)> s_Delegate(
+        this, &DirectXTKRenderer::OnFrameUpdate
+    );
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, INT_MAX, EUpdateMode::eUpdateAlways);
 }
 
-void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
-{
-}
+void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
-void DirectXTKRenderer::Draw()
-{
-    ID3D12DescriptorHeap* s_Heaps[] = { m_ResourceDescriptors->Heap() };
+void DirectXTKRenderer::Draw() {
+    ID3D12DescriptorHeap* s_Heaps[] = {m_ResourceDescriptors->Heap()};
     m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
 
     m_SpriteBatch->Begin(m_CommandList);
@@ -75,13 +71,11 @@ void DirectXTKRenderer::Draw()
     m_SpriteBatch->End();
 }
 
-void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
-{
+void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     if (!m_CommandQueue)
         return;
 
-    if (!SetupRenderer(p_SwapChain))
-    {
+    if (!SetupRenderer(p_SwapChain)) {
         Logger::Error("Failed to set up DirectXTK renderer.");
         OnReset();
         return;
@@ -91,8 +85,7 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
     auto& s_FrameCtx = m_FrameContext[++m_FrameCounter % m_FrameContext.size()];
 
     // If this context is still being rendered, we should wait for it.
-    if (s_FrameCtx.FenceValue != 0 && s_FrameCtx.FenceValue > m_Fence->GetCompletedValue())
-    {
+    if (s_FrameCtx.FenceValue != 0 && s_FrameCtx.FenceValue > m_Fence->GetCompletedValue()) {
         BreakIfFailed(m_Fence->SetEventOnCompletion(s_FrameCtx.FenceValue, m_FenceEvent.Handle));
         WaitForSingleObject(m_FenceEvent.Handle, INFINITE);
     }
@@ -112,47 +105,47 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
 
     m_CommandList->ResourceBarrier(1, &s_RTBarrier);
 
-	// Update camera matrices.
-	const auto s_CameraRight = Globals::RenderManager->m_pDevice->m_Constants.cameraRight;
-	const auto s_CameraUp = Globals::RenderManager->m_pDevice->m_Constants.cameraUp;
-	const auto s_CameraFwd = Globals::RenderManager->m_pDevice->m_Constants.cameraFwd;
-	const auto s_CameraPos = Globals::RenderManager->m_pDevice->m_Constants.cameraPos;
+    // Update camera matrices.
+    const auto s_CameraRight = Globals::RenderManager->m_pDevice->m_Constants.cameraRight;
+    const auto s_CameraUp = Globals::RenderManager->m_pDevice->m_Constants.cameraUp;
+    const auto s_CameraFwd = Globals::RenderManager->m_pDevice->m_Constants.cameraFwd;
+    const auto s_CameraPos = Globals::RenderManager->m_pDevice->m_Constants.cameraPos;
 
-	const auto s_CameraView = SMatrix {
-		{ s_CameraRight.x, s_CameraRight.y, s_CameraRight.z, 0.f },
-		{ s_CameraUp.x, s_CameraUp.y, s_CameraUp.z, 0.f },
-		{ -s_CameraFwd.x, -s_CameraFwd.y, -s_CameraFwd.z, 0.f },
-		{ s_CameraPos.x, s_CameraPos.y, s_CameraPos.z, 1.f }
-	}.Inverse();
+    const auto s_CameraView = SMatrix {
+        {s_CameraRight.x, s_CameraRight.y, s_CameraRight.z, 0.f},
+        {s_CameraUp.x, s_CameraUp.y, s_CameraUp.z, 0.f},
+        {-s_CameraFwd.x, -s_CameraFwd.y, -s_CameraFwd.z, 0.f},
+        {s_CameraPos.x, s_CameraPos.y, s_CameraPos.z, 1.f}
+    }.Inverse();
 
-	m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_CameraView);
-	m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pDevice->m_Constants.cameraViewToClip);
+    m_View = *reinterpret_cast<DirectX::FXMMATRIX*>(&s_CameraView);
+    m_Projection = *reinterpret_cast<DirectX::FXMMATRIX*>(&Globals::RenderManager->m_pDevice->m_Constants.
+        cameraViewToClip);
 
-	m_ViewProjection = m_View * m_Projection;
-	m_ProjectionViewInverse = (m_Projection * m_View).Invert();
+    m_ViewProjection = m_View * m_Projection;
+    m_ProjectionViewInverse = (m_Projection * m_View).Invert();
 
-	if (m_RendererSetup)
-	{
-		m_LineEffect->SetView(m_View);
-		m_LineEffect->SetProjection(m_Projection);
-	}
+    if (m_RendererSetup) {
+        m_LineEffect->SetView(m_View);
+        m_LineEffect->SetProjection(m_Projection);
+    }
 
-	// Set up the viewport.
-    D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
+    // Set up the viewport.
+    D3D12_VIEWPORT s_Viewport = {0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH};
     m_CommandList->RSSetViewports(1, &s_Viewport);
 
-    D3D12_RECT s_ScissorRect = { 0, 0, static_cast<LONG>(m_WindowWidth), static_cast<LONG>(m_WindowHeight) };
+    D3D12_RECT s_ScissorRect = {0, 0, static_cast<LONG>(m_WindowWidth), static_cast<LONG>(m_WindowHeight)};
     m_CommandList->RSSetScissorRects(1, &s_ScissorRect);
 
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     const CD3DX12_CPU_DESCRIPTOR_HANDLE s_RtvDescriptor(s_RtvHandle, s_BackBufferIndex, m_RtvDescriptorSize);
 
-	// Use depth buffer from the game.
-	// TODO: Remove hardcoded 12 index. Allow rendering both with and without depth clipping.
-	/*const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
-	const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, 12, m_DsvDescriptorSize);
+    // Use depth buffer from the game.
+    // TODO: Remove hardcoded 12 index. Allow rendering both with and without depth clipping.
+    /*const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
+    const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, 12, m_DsvDescriptorSize);
 
-	Logger::Debug("DSV descriptor handle: {:X}", s_DsvDescriptor.ptr);*/
+    Logger::Debug("DSV descriptor handle: {:X}", s_DsvDescriptor.ptr);*/
 
     //m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
     m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
@@ -171,18 +164,15 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
     m_CommandQueue->ExecuteCommandLists(1, CommandListCast(&m_CommandList.Ref));
 }
 
-void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult)
-{
+void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult) {
     if (!m_RendererSetup || !m_CommandQueue)
         return;
 
-    if (p_PresentResult == DXGI_ERROR_DEVICE_REMOVED || p_PresentResult == DXGI_ERROR_DEVICE_RESET)
-    {
+    if (p_PresentResult == DXGI_ERROR_DEVICE_REMOVED || p_PresentResult == DXGI_ERROR_DEVICE_RESET) {
         Logger::Error("Device lost after present.");
         abort();
     }
-    else
-    {
+    else {
         m_GraphicsMemory->Commit(m_CommandQueue);
 
         FrameContext& s_FrameCtx = m_FrameContext[m_FrameCounter % MaxRenderedFrames];
@@ -197,17 +187,14 @@ void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_Pres
     }
 }
 
-void DirectXTKRenderer::WaitForCurrentFrameToFinish() const
-{
-    if (m_FenceValue != 0 && m_FenceValue > m_Fence->GetCompletedValue())
-    {
+void DirectXTKRenderer::WaitForCurrentFrameToFinish() const {
+    if (m_FenceValue != 0 && m_FenceValue > m_Fence->GetCompletedValue()) {
         BreakIfFailed(m_Fence->SetEventOnCompletion(m_FenceValue, m_FenceEvent.Handle));
         WaitForSingleObject(m_FenceEvent.Handle, INFINITE);
     }
 }
 
-bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
-{
+bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     if (m_RendererSetup)
         return true;
 
@@ -242,11 +229,12 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
     m_FrameContext.clear();
 
-    for (UINT i = 0; i < MaxRenderedFrames; ++i)
-    {
+    for (UINT i = 0; i < MaxRenderedFrames; ++i) {
         FrameContext s_Frame {};
 
-        if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(s_Frame.CommandAllocator.ReleaseAndGetPtr())) != S_OK)
+        if (s_Device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(s_Frame.CommandAllocator.ReleaseAndGetPtr())
+        ) != S_OK)
             return false;
 
         char s_CmdAllocDebugName[128];
@@ -267,8 +255,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-    for (UINT i = 0; i < s_BufferCount; ++i)
-    {
+    for (UINT i = 0; i < s_BufferCount; ++i) {
         if (p_SwapChain->GetBuffer(i, IID_PPV_ARGS(m_BackBuffers[i].ReleaseAndGetPtr())) != S_OK)
             return false;
 
@@ -276,7 +263,10 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
         s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, s_RtvDescriptor);
     }
 
-    if (s_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr, IID_PPV_ARGS(m_CommandList.ReleaseAndGetPtr())) != S_OK ||
+    if (s_Device->CreateCommandList(
+            0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr,
+            IID_PPV_ARGS(m_CommandList.ReleaseAndGetPtr())
+        ) != S_OK ||
         m_CommandList->Close() != S_OK)
         return false;
 
@@ -299,7 +289,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     if (p_SwapChain->GetHwnd(&m_Hwnd) != S_OK)
         return false;
 
-    RECT s_Rect = { 0, 0, 0, 0 };
+    RECT s_Rect = {0, 0, 0, 0};
     GetClientRect(m_Hwnd, &s_Rect);
 
     m_WindowWidth = static_cast<float>(s_Rect.right - s_Rect.left);
@@ -307,9 +297,9 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
     m_GraphicsMemory = std::make_unique<DirectX::GraphicsMemory>(s_Device);
 
-	m_PrimitiveBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>(s_Device);
+    m_PrimitiveBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>(s_Device);
 
-	DirectX::RenderTargetState s_RtState(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_D32_FLOAT_S8X24_UINT);
+    DirectX::RenderTargetState s_RtState(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_D32_FLOAT_S8X24_UINT);
 
     {
         DirectX::EffectPipelineStateDescription s_Desc(
@@ -318,13 +308,16 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
             DirectX::CommonStates::DepthReadReverseZ,
             DirectX::CommonStates::CullNone,
             s_RtState,
-            D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+        );
 
         m_LineEffect = std::make_unique<DirectX::BasicEffect>(s_Device, DirectX::EffectFlags::VertexColor, s_Desc);
     }
 
     {
-        m_ResourceDescriptors = std::make_unique<DirectX::DescriptorHeap>(s_Device, static_cast<int>(Descriptors::Count));
+        m_ResourceDescriptors = std::make_unique<DirectX::DescriptorHeap>(
+            s_Device, static_cast<int>(Descriptors::Count)
+        );
 
         DirectX::ResourceUploadBatch s_ResourceUpload(s_Device);
 
@@ -344,7 +337,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
         s_ResourceUpload.End(m_CommandQueue).wait();
 
-        const D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
+        const D3D12_VIEWPORT s_Viewport = {0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH};
         m_SpriteBatch->SetViewport(s_Viewport);
     }
 
@@ -359,8 +352,7 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     return true;
 }
 
-void DirectXTKRenderer::OnReset()
-{
+void DirectXTKRenderer::OnReset() {
     if (!m_RendererSetup)
         return;
 
@@ -376,8 +368,7 @@ void DirectXTKRenderer::OnReset()
     m_BackBuffers.clear();
 }
 
-void DirectXTKRenderer::PostReset()
-{
+void DirectXTKRenderer::PostReset() {
     if (!m_RendererSetup)
         return;
 
@@ -399,8 +390,7 @@ void DirectXTKRenderer::PostReset()
 
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-    for (UINT i = 0; i < m_BackBuffers.size(); ++i)
-    {
+    for (UINT i = 0; i < m_BackBuffers.size(); ++i) {
         if (m_SwapChain->GetBuffer(i, IID_PPV_ARGS(m_BackBuffers[i].ReleaseAndGetPtr())) != S_OK)
             return;
 
@@ -408,23 +398,21 @@ void DirectXTKRenderer::PostReset()
         s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, s_RtvDescriptor);
     }
 
-    RECT s_Rect = { 0, 0, 0, 0 };
+    RECT s_Rect = {0, 0, 0, 0};
     GetClientRect(m_Hwnd, &s_Rect);
 
     m_WindowWidth = static_cast<float>(s_Rect.right - s_Rect.left);
     m_WindowHeight = static_cast<float>(s_Rect.bottom - s_Rect.top);
 
-    const D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
+    const D3D12_VIEWPORT s_Viewport = {0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH};
     m_SpriteBatch->SetViewport(s_Viewport);
 }
 
-void DirectXTKRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
-{
+void DirectXTKRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue) {
     if (m_CommandQueue == p_CommandQueue)
         return;
 
-    if (m_CommandQueue)
-    {
+    if (m_CommandQueue) {
         m_CommandQueue->Release();
         m_CommandQueue = nullptr;
     }
@@ -434,8 +422,9 @@ void DirectXTKRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
     m_CommandQueue->AddRef();
 }
 
-void DirectXTKRenderer::DrawLine3D(const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor)
-{
+void DirectXTKRenderer::DrawLine3D(
+    const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor
+) {
     if (!m_RendererSetup)
         return;
 
@@ -452,8 +441,10 @@ void DirectXTKRenderer::DrawLine3D(const SVector3& p_From, const SVector3& p_To,
     m_PrimitiveBatch->DrawLine(s_From, s_To);
 }
 
-void DirectXTKRenderer::DrawText2D(const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/, float p_Scale/* = 1.f*/, TextAlignment p_Alignment/* = TextAlignment::Center*/)
-{
+void DirectXTKRenderer::DrawText2D(
+    const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/,
+    float p_Scale/* = 1.f*/, TextAlignment p_Alignment/* = TextAlignment::Center*/
+) {
     if (!m_RendererSetup)
         return;
 
@@ -478,8 +469,7 @@ void DirectXTKRenderer::DrawText2D(const ZString& p_Text, const SVector2& p_Pos,
     );
 }
 
-bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out)
-{
+bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) {
     if (!m_RendererSetup)
         return false;
 
@@ -490,7 +480,9 @@ bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Ou
         return false;
 
     const float s_InvertedZ = 1.f / s_Projected.w;
-    const DirectX::SimpleMath::Vector3 s_FinalProjected(s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ);
+    const DirectX::SimpleMath::Vector3 s_FinalProjected(
+        s_Projected.x * s_InvertedZ, s_Projected.y * s_InvertedZ, s_Projected.z * s_InvertedZ
+    );
 
     p_Out.x = (1.f + s_FinalProjected.x) * 0.5f * m_WindowWidth;
     p_Out.y = (1.f - s_FinalProjected.y) * 0.5f * m_WindowHeight;
@@ -498,8 +490,7 @@ bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Ou
     return true;
 }
 
-bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut)
-{
+bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) {
     if (!m_RendererSetup)
         return false;
 
@@ -510,7 +501,9 @@ bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_W
 
     auto s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
 
-    auto s_ScreenPos = DirectX::SimpleMath::Vector3((2.0f * p_ScreenPos.x) / m_WindowWidth - 1.0f, 1.0f - (2.0f * p_ScreenPos.y) / m_WindowHeight, 1.f);
+    auto s_ScreenPos = DirectX::SimpleMath::Vector3(
+        (2.0f * p_ScreenPos.x) / m_WindowWidth - 1.0f, 1.0f - (2.0f * p_ScreenPos.y) / m_WindowHeight, 1.f
+    );
     auto s_RayClip = DirectX::SimpleMath::Vector4(s_ScreenPos.x, s_ScreenPos.y, 0.f, 1.f);
 
     DirectX::SimpleMath::Vector4 s_RayEye = DirectX::XMVector4Transform(s_RayClip, m_Projection.Invert());
@@ -531,8 +524,7 @@ bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_W
     return true;
 }
 
-void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color)
-{
+void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) {
     SVector3 s_Corners[] = {
         SVector3(p_Min.x, p_Min.y, p_Min.z),
         SVector3(p_Min.x, p_Max.y, p_Min.z),
@@ -561,13 +553,13 @@ void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, 
     DrawLine3D(s_Corners[3], s_Corners[7], p_Color, p_Color);
 }
 
-inline SVector3 XMVecToSVec3(const DirectX::XMVECTOR& p_Vec)
-{
+inline SVector3 XMVecToSVec3(const DirectX::XMVECTOR& p_Vec) {
     return SVector3(DirectX::XMVectorGetX(p_Vec), DirectX::XMVectorGetY(p_Vec), DirectX::XMVectorGetZ(p_Vec));
 }
 
-void DirectXTKRenderer::DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color)
-{
+void DirectXTKRenderer::DrawOBB3D(
+    const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color
+) {
     const auto s_Transform = *reinterpret_cast<DirectX::FXMMATRIX*>(&p_Transform);
 
     DirectX::XMVECTOR s_Corners[] = {
@@ -599,19 +591,31 @@ void DirectXTKRenderer::DrawOBB3D(const SVector3& p_Min, const SVector3& p_Max, 
 }
 
 void DirectXTKRenderer::DrawQuad3D(
-	const SVector3& p_V1,
-	const SVector4& p_Color1,
-	const SVector3& p_V2,
-	const SVector4& p_Color2,
-	const SVector3& p_V3,
-	const SVector4& p_Color3,
-	const SVector3& p_V4,
-	const SVector4& p_Color4
+    const SVector3& p_V1,
+    const SVector4& p_Color1,
+    const SVector3& p_V2,
+    const SVector4& p_Color2,
+    const SVector3& p_V3,
+    const SVector4& p_Color3,
+    const SVector3& p_V4,
+    const SVector4& p_Color4
 ) {
-	m_PrimitiveBatch->DrawQuad(
-		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z), DirectX::SimpleMath::Vector4(p_Color1.x, p_Color1.y, p_Color1.z, p_Color1.w)),
-		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V2.x, p_V2.y, p_V2.z), DirectX::SimpleMath::Vector4(p_Color2.x, p_Color2.y, p_Color2.z, p_Color2.w)),
-		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V3.x, p_V3.y, p_V3.z), DirectX::SimpleMath::Vector4(p_Color3.x, p_Color3.y, p_Color3.z, p_Color3.w)),
-		DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(p_V4.x, p_V4.y, p_V4.z), DirectX::SimpleMath::Vector4(p_Color4.x, p_Color4.y, p_Color4.z, p_Color4.w))
-	);
+    m_PrimitiveBatch->DrawQuad(
+        DirectX::VertexPositionColor(
+            DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z),
+            DirectX::SimpleMath::Vector4(p_Color1.x, p_Color1.y, p_Color1.z, p_Color1.w)
+        ),
+        DirectX::VertexPositionColor(
+            DirectX::SimpleMath::Vector3(p_V2.x, p_V2.y, p_V2.z),
+            DirectX::SimpleMath::Vector4(p_Color2.x, p_Color2.y, p_Color2.z, p_Color2.w)
+        ),
+        DirectX::VertexPositionColor(
+            DirectX::SimpleMath::Vector3(p_V3.x, p_V3.y, p_V3.z),
+            DirectX::SimpleMath::Vector4(p_Color3.x, p_Color3.y, p_Color3.z, p_Color3.w)
+        ),
+        DirectX::VertexPositionColor(
+            DirectX::SimpleMath::Vector3(p_V4.x, p_V4.y, p_V4.z),
+            DirectX::SimpleMath::Vector4(p_Color4.x, p_Color4.y, p_Color4.z, p_Color4.w)
+        )
+    );
 }

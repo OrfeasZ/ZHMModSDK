@@ -2,8 +2,7 @@
 
 #include <IPluginInterface.h>
 
-class OnlineTools : public IPluginInterface
-{
+class OnlineTools : public IPluginInterface {
 public:
     void OnEngineInitialized() override;
     ~OnlineTools() override;
@@ -43,7 +42,7 @@ private:
     bool m_AlwaysSendAuth = false;
     bool m_CertPinBypass = false;
     bool m_OptionalDynRes = false;
-    
+
     // Saved Domains
     int64_t m_DefaultDomain = -1;
     std::vector<std::string> m_Domains = {};

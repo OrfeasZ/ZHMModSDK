@@ -8,24 +8,20 @@
 using namespace Rendering;
 
 D3D12DXGIFactory::D3D12DXGIFactory(IDXGIFactory4* p_Target) :
-    m_Target(p_Target)
-{
+    m_Target(p_Target) {
     m_Target->AddRef();
 }
 
-D3D12DXGIFactory::~D3D12DXGIFactory()
-{
+D3D12DXGIFactory::~D3D12DXGIFactory() {
     m_Target->Release();
 }
 
-ULONG D3D12DXGIFactory::AddRef()
-{
+ULONG D3D12DXGIFactory::AddRef() {
     InterlockedIncrement(&m_RefCount);
     return m_RefCount;
 }
 
-ULONG D3D12DXGIFactory::Release()
-{
+ULONG D3D12DXGIFactory::Release() {
     // Decrement the object's internal counter.
     const ULONG s_NewRefCount = InterlockedDecrement(&m_RefCount);
 
@@ -35,8 +31,7 @@ ULONG D3D12DXGIFactory::Release()
     return s_NewRefCount;
 }
 
-HRESULT D3D12DXGIFactory::QueryInterface(const IID& riid, void** ppvObject)
-{
+HRESULT D3D12DXGIFactory::QueryInterface(const IID& riid, void** ppvObject) {
     if (!ppvObject)
         return E_INVALIDARG;
 
@@ -47,8 +42,7 @@ HRESULT D3D12DXGIFactory::QueryInterface(const IID& riid, void** ppvObject)
         riid == __uuidof(IDXGIFactory1) ||
         riid == __uuidof(IDXGIFactory2) ||
         riid == __uuidof(IDXGIFactory3) ||
-        riid == __uuidof(IDXGIFactory4))
-    {
+        riid == __uuidof(IDXGIFactory4)) {
         *ppvObject = this;
         AddRef();
 
@@ -58,37 +52,38 @@ HRESULT D3D12DXGIFactory::QueryInterface(const IID& riid, void** ppvObject)
     return E_NOINTERFACE;
 }
 
-HRESULT D3D12DXGIFactory::CreateSwapChain(IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain) {
-	Logger::Debug("[D3D12Hooks] Creating swap chain.");
+HRESULT D3D12DXGIFactory::CreateSwapChain(
+    IUnknown* pDevice, DXGI_SWAP_CHAIN_DESC* pDesc, IDXGISwapChain** ppSwapChain
+) {
+    Logger::Debug("[D3D12Hooks] Creating swap chain.");
 
-	IDXGISwapChain* s_SwapChain = nullptr;
+    IDXGISwapChain* s_SwapChain = nullptr;
 
-	auto s_Result = m_Target->CreateSwapChain(pDevice, pDesc, &s_SwapChain);
+    auto s_Result = m_Target->CreateSwapChain(pDevice, pDesc, &s_SwapChain);
 
-	if (s_Result != S_OK)
-		return s_Result;
+    if (s_Result != S_OK)
+        return s_Result;
 
-	ScopedD3DRef<IDXGISwapChain3> s_SwapChain3;
+    ScopedD3DRef<IDXGISwapChain3> s_SwapChain3;
 
-	if (s_SwapChain->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK)
-	{
-		Logger::Warn("[D3D12Hooks] Swap chain was not version 3. Not touching.");
-		*ppSwapChain = s_SwapChain;
-		return S_OK;
-	}
+    if (s_SwapChain->QueryInterface(REF_IID_PPV_ARGS(s_SwapChain3)) != S_OK) {
+        Logger::Warn("[D3D12Hooks] Swap chain was not version 3. Not touching.");
+        *ppSwapChain = s_SwapChain;
+        return S_OK;
+    }
 
-	Logger::Debug("[D3D12Hooks] Wrapping swap chain.");
-	auto s_WrappedSwapChain = new D3D12SwapChain(s_SwapChain3.Ref);
-	s_WrappedSwapChain->AddRef();
+    Logger::Debug("[D3D12Hooks] Wrapping swap chain.");
+    auto s_WrappedSwapChain = new D3D12SwapChain(s_SwapChain3.Ref);
+    s_WrappedSwapChain->AddRef();
 
-	*ppSwapChain = s_WrappedSwapChain;
+    *ppSwapChain = s_WrappedSwapChain;
 
-	ModSDK::GetInstance()->SetSwapChain(s_WrappedSwapChain);
+    ModSDK::GetInstance()->SetSwapChain(s_WrappedSwapChain);
 
-	ID3D12CommandQueue* s_CommandQueue = nullptr;
-	pDevice->QueryInterface(IID_PPV_ARGS(&s_CommandQueue));
+    ID3D12CommandQueue* s_CommandQueue = nullptr;
+    pDevice->QueryInterface(IID_PPV_ARGS(&s_CommandQueue));
 
-	ModSDK::GetInstance()->SetCommandQueue(s_CommandQueue);
+    ModSDK::GetInstance()->SetCommandQueue(s_CommandQueue);
 
-	return S_OK;
+    return S_OK;
 }

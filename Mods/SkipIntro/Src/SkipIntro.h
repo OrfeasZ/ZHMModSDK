@@ -5,8 +5,7 @@
 
 #include "IPluginInterface.h"
 
-class SkipIntro : public IPluginInterface
-{
+class SkipIntro : public IPluginInterface {
 public:
     void Init() override;
 
