@@ -342,7 +342,7 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
 				ToggleFreecam();
 			}
 
-			ImGui::BeginDisabled(!s_FreeCamActive);
+			ImGui::BeginDisabled(s_FreeCamActive);
 			ImGui::Checkbox("Use editor style freecam", &m_EditorStyleFreecam);
 			ImGui::EndDisabled();
 
