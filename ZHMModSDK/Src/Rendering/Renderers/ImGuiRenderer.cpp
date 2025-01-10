@@ -28,8 +28,7 @@
 
 using namespace Rendering::Renderers;
 
-ImGuiRenderer::ImGuiRenderer()
-{
+ImGuiRenderer::ImGuiRenderer() {
     QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
     QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
 
@@ -42,8 +41,9 @@ ImGuiRenderer::ImGuiRenderer()
 
     ImGui::StyleColorsDark();
 
-    s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;         // We can honor GetMouseCursor() values (optional)
-    s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;          // We can honor io.WantSetMousePos requests (optional, rarely used)
+    s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors; // We can honor GetMouseCursor() values (optional)
+    s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+    // We can honor io.WantSetMousePos requests (optional, rarely used)
     s_ImGuiIO.BackendPlatformName = "imgui_impl_win32";
 
     // Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeysDown[] array that we will update during the application lifetime.
@@ -76,28 +76,48 @@ ImGuiRenderer::ImGuiRenderer()
     // Here we merge the material icon glyphs into each of our other fonts.
     ImFontConfig s_IconsConfig {};
     s_IconsConfig.MergeMode = true;
-    s_IconsConfig.GlyphOffset = { 0.f, 6.f };
+    s_IconsConfig.GlyphOffset = {0.f, 6.f};
 
-    static constexpr ImWchar c_IconRanges[] = { ICON_MIN_MD, ICON_MAX_16_MD, 0 };
+    static constexpr ImWchar c_IconRanges[] = {ICON_MIN_MD, ICON_MAX_16_MD, 0};
 
-    m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoLight_compressed_data, RobotoLight_compressed_size, 28.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
+    m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        RobotoLight_compressed_data, RobotoLight_compressed_size, 28.f
+    );
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
+    );
     s_ImGuiIO.Fonts->Build();
 
-    m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoRegular_compressed_data, RobotoRegular_compressed_size, 28.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
+    m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        RobotoRegular_compressed_data, RobotoRegular_compressed_size, 28.f
+    );
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
+    );
     s_ImGuiIO.Fonts->Build();
 
-    m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoMedium_compressed_data, RobotoMedium_compressed_size, 28.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
+    m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        RobotoMedium_compressed_data, RobotoMedium_compressed_size, 28.f
+    );
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
+    );
     s_ImGuiIO.Fonts->Build();
 
-    m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBold_compressed_data, RobotoBold_compressed_size, 28.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
+    m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        RobotoBold_compressed_data, RobotoBold_compressed_size, 28.f
+    );
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
+    );
     s_ImGuiIO.Fonts->Build();
 
-    m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(RobotoBlack_compressed_data, RobotoBlack_compressed_size, 28.f);
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges);
+    m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        RobotoBlack_compressed_data, RobotoBlack_compressed_size, 28.f
+    );
+    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
+        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
+    );
     s_ImGuiIO.Fonts->Build();
 
     s_ImGuiIO.FontDefault = m_FontRegular;
@@ -105,16 +125,14 @@ ImGuiRenderer::ImGuiRenderer()
     SetupStyles();
 }
 
-ImGuiRenderer::~ImGuiRenderer()
-{
+ImGuiRenderer::~ImGuiRenderer() {
     if (m_RendererSetup)
         WaitForCurrentFrameToFinish();
 
     HookRegistry::ClearDetoursWithContext(this);
 }
 
-void ImGuiRenderer::SetupStyles()
-{
+void ImGuiRenderer::SetupStyles() {
     auto& s_Style = ImGui::GetStyle();
 
     s_Style.ChildRounding = 0.f;
@@ -198,15 +216,13 @@ void ImGuiRenderer::SetupStyles()
     s_Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 }
 
-void ImGuiRenderer::OnEngineInit()
-{
+void ImGuiRenderer::OnEngineInit() {
     Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(this, &ImGuiRenderer::WndProc);
     Hooks::ZKeyboardWindows_Update->AddDetour(this, &ImGuiRenderer::ZKeyboardWindows_Update);
     Hooks::ZInputAction_Analog->AddDetour(this, &ImGuiRenderer::ZInputAction_Analog);
 }
 
-void ImGuiRenderer::Draw()
-{
+void ImGuiRenderer::Draw() {
     ImGui_ImplDX12_NewFrame();
 
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
@@ -223,14 +239,11 @@ void ImGuiRenderer::Draw()
     s_ImGuiIO.KeySuper = false;
 
     // Set mouse position
-    if (m_ImguiHasFocus)
-    {
+    if (m_ImguiHasFocus) {
         s_ImGuiIO.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
 
-        if (auto* s_ForegroundWnd = GetForegroundWindow())
-        {
-            if (s_ForegroundWnd == m_Hwnd || IsChild(s_ForegroundWnd, m_Hwnd))
-            {
+        if (auto* s_ForegroundWnd = GetForegroundWindow()) {
+            if (s_ForegroundWnd == m_Hwnd || IsChild(s_ForegroundWnd, m_Hwnd)) {
                 POINT s_CursorPos;
 
                 if (GetCursorPos(&s_CursorPos) && ScreenToClient(m_Hwnd, &s_CursorPos))
@@ -258,13 +271,15 @@ void ImGuiRenderer::Draw()
             ImGui::Text("You have pressed the UI toggle key (F11 by default), which will HIDE the SDK UI.");
             ImGui::Text("You must press this key again to show the SDK UI.");
             ImGui::Text("If you want to change this key, you can do so in the mods.ini file.");
-            ImGui::Text("See the SDK readme for more information. This waning will not appear again.");
+            ImGui::Text("See the SDK readme for more information. This warning will not appear again.");
 
             ImGui::NewLine();
 
             static bool s_HasConfirmed = false;
 
-            ImGui::Checkbox("I understand I'm hiding the UI and that I must press this key to show it again", &s_HasConfirmed);
+            ImGui::Checkbox(
+                "I understand I'm hiding the UI and that I must press this key to show it again", &s_HasConfirmed
+            );
 
             ImGui::NewLine();
 
@@ -292,13 +307,11 @@ void ImGuiRenderer::Draw()
     }
 }
 
-void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
-{
+void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     if (!m_CommandQueue)
         return;
 
-    if (!SetupRenderer(p_SwapChain))
-    {
+    if (!SetupRenderer(p_SwapChain)) {
         Logger::Error("Failed to set up ImGui renderer.");
         return;
     }
@@ -314,8 +327,7 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
     auto& s_FrameCtx = m_FrameContext[++m_FrameCounter % m_FrameContext.size()];
 
     // If this context is still being rendered, we should wait for it.
-    if (s_FrameCtx.FenceValue != 0 && s_FrameCtx.FenceValue > m_Fence->GetCompletedValue())
-    {
+    if (s_FrameCtx.FenceValue != 0 && s_FrameCtx.FenceValue > m_Fence->GetCompletedValue()) {
         BreakIfFailed(m_Fence->SetEventOnCompletion(s_FrameCtx.FenceValue, m_FenceEvent.Handle));
         WaitForSingleObject(m_FenceEvent.Handle, INFINITE);
     }
@@ -356,18 +368,15 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain)
     m_CommandQueue->ExecuteCommandLists(1, CommandListCast(&m_CommandList.Ref));
 }
 
-void ImGuiRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult)
-{
+void ImGuiRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult) {
     if (!m_CommandQueue || !m_RendererSetup)
         return;
 
-    if (p_PresentResult == DXGI_ERROR_DEVICE_REMOVED || p_PresentResult == DXGI_ERROR_DEVICE_RESET)
-    {
+    if (p_PresentResult == DXGI_ERROR_DEVICE_REMOVED || p_PresentResult == DXGI_ERROR_DEVICE_RESET) {
         Logger::Error("Device lost after present.");
         abort();
     }
-    else
-    {
+    else {
         FrameContext& s_FrameCtx = m_FrameContext[m_FrameCounter % MaxRenderedFrames];
 
         // Update the fence value for this frame and ask to receive a signal with this
@@ -380,17 +389,14 @@ void ImGuiRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentR
     }
 }
 
-void ImGuiRenderer::WaitForCurrentFrameToFinish() const
-{
-    if (m_FenceValue != 0 && m_FenceValue > m_Fence->GetCompletedValue())
-    {
+void ImGuiRenderer::WaitForCurrentFrameToFinish() const {
+    if (m_FenceValue != 0 && m_FenceValue > m_Fence->GetCompletedValue()) {
         BreakIfFailed(m_Fence->SetEventOnCompletion(m_FenceValue, m_FenceEvent.Handle));
         WaitForSingleObject(m_FenceEvent.Handle, INFINITE);
     }
 }
 
-bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
-{
+bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     if (m_RendererSetup)
         return true;
 
@@ -426,7 +432,8 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     {
         D3D12_DESCRIPTOR_HEAP_DESC s_Desc = {};
         s_Desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        s_Desc.NumDescriptors = s_BufferCount; // TODO: This looks like "total texture / shared resource view count" so we should increase based on number of textures we want to render.
+        s_Desc.NumDescriptors = s_BufferCount;
+        // TODO: This looks like "total texture / shared resource view count" so we should increase based on number of textures we want to render.
         s_Desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         s_Desc.NodeMask = 0;
 
@@ -438,11 +445,12 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
     m_FrameContext.clear();
 
-    for (UINT i = 0; i < MaxRenderedFrames; ++i)
-    {
+    for (UINT i = 0; i < MaxRenderedFrames; ++i) {
         FrameContext s_Frame {};
 
-        if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(s_Frame.CommandAllocator.ReleaseAndGetPtr())) != S_OK)
+        if (s_Device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(s_Frame.CommandAllocator.ReleaseAndGetPtr())
+        ) != S_OK)
             return false;
 
         char s_CmdAllocDebugName[128];
@@ -461,8 +469,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     m_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-    for (UINT i = 0; i < s_BufferCount; ++i)
-    {
+    for (UINT i = 0; i < s_BufferCount; ++i) {
         if (p_SwapChain->GetBuffer(i, IID_PPV_ARGS(m_BackBuffers[i].ReleaseAndGetPtr())) != S_OK)
             return false;
 
@@ -470,7 +477,10 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
         s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, s_RtvDescriptor);
     }
 
-    if (s_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr, IID_PPV_ARGS(m_CommandList.ReleaseAndGetPtr())) != S_OK ||
+    if (s_Device->CreateCommandList(
+            0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr,
+            IID_PPV_ARGS(m_CommandList.ReleaseAndGetPtr())
+        ) != S_OK ||
         m_CommandList->Close() != S_OK)
         return false;
 
@@ -493,7 +503,11 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     if (p_SwapChain->GetHwnd(&m_Hwnd) != S_OK)
         return false;
 
-    if (!ImGui_ImplDX12_Init(s_Device, MaxRenderedFrames, DXGI_FORMAT_R8G8B8A8_UNORM, m_SrvDescriptorHeap, m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()))
+    if (!ImGui_ImplDX12_Init(
+        s_Device, MaxRenderedFrames, DXGI_FORMAT_R8G8B8A8_UNORM, m_SrvDescriptorHeap,
+        m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+        m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()
+    ))
         return false;
 
     if (!ImGui_ImplDX12_CreateDeviceObjects())
@@ -503,12 +517,14 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
 
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
 
-    RECT s_Rect = { 0, 0, 0, 0 };
+    RECT s_Rect = {0, 0, 0, 0};
     GetClientRect(m_Hwnd, &s_Rect);
 
-    s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
+    s_ImGuiIO.DisplaySize = ImVec2(
+        static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top)
+    );
     s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 1800.f);
-	ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
+    ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
 
     m_RendererSetup = true;
 
@@ -517,8 +533,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain)
     return true;
 }
 
-void ImGuiRenderer::OnReset()
-{
+void ImGuiRenderer::OnReset() {
     if (!m_RendererSetup)
         return;
 
@@ -536,8 +551,7 @@ void ImGuiRenderer::OnReset()
     ImGui_ImplDX12_InvalidateDeviceObjects();
 }
 
-void ImGuiRenderer::PostReset()
-{
+void ImGuiRenderer::PostReset() {
     if (!m_RendererSetup)
         return;
 
@@ -557,8 +571,7 @@ void ImGuiRenderer::PostReset()
     m_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-    for (UINT i = 0; i < m_BackBuffers.size(); ++i)
-    {
+    for (UINT i = 0; i < m_BackBuffers.size(); ++i) {
         if (m_SwapChain->GetBuffer(i, IID_PPV_ARGS(m_BackBuffers[i].ReleaseAndGetPtr())) != S_OK)
             return;
 
@@ -572,21 +585,21 @@ void ImGuiRenderer::PostReset()
     // Set scaling parameters based on new view height.
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
 
-    RECT s_Rect = { 0, 0, 0, 0 };
+    RECT s_Rect = {0, 0, 0, 0};
     GetClientRect(m_Hwnd, &s_Rect);
 
-    s_ImGuiIO.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
+    s_ImGuiIO.DisplaySize = ImVec2(
+        static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top)
+    );
     s_ImGuiIO.FontGlobalScale = (s_ImGuiIO.DisplaySize.y / 1800.f);
-	ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
+    ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
 }
 
-void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
-{
+void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue) {
     if (m_CommandQueue == p_CommandQueue)
         return;
 
-    if (m_CommandQueue)
-    {
+    if (m_CommandQueue) {
         m_CommandQueue->Release();
         m_CommandQueue = nullptr;
     }
@@ -596,22 +609,27 @@ void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue)
     m_CommandQueue->AddRef();
 }
 
-DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam, LPARAM p_Lparam)
-{
+DEFINE_DETOUR_WITH_CONTEXT(
+    ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam,
+    LPARAM p_Lparam
+) {
     if (ImGui::GetCurrentContext() == nullptr)
         return HookResult<LRESULT>(HookAction::Continue());
 
     auto s_ScanCode = static_cast<uint8_t>(p_Lparam >> 16);
 
     // Toggle imgui input when user presses the console key.
-    if (s_ScanCode == ModSDK::GetInstance()->GetConsoleScanCode() && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN))
+    if (s_ScanCode == ModSDK::GetInstance()->GetConsoleScanCode() && (p_Message == WM_KEYDOWN || p_Message ==
+        WM_SYSKEYDOWN))
         m_ImguiHasFocus = !m_ImguiHasFocus;
 
-    if (s_ScanCode == ModSDK::GetInstance()->GetUiToggleScanCode() && (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN)) {
+    if (s_ScanCode == ModSDK::GetInstance()->GetUiToggleScanCode() && (p_Message == WM_KEYDOWN || p_Message ==
+        WM_SYSKEYDOWN)) {
         if (!ModSDK::GetInstance()->HasShownUiToggleWarning()) {
             m_ShowingUiToggleWarning = true;
             m_ImguiHasFocus = true;
-        } else {
+        }
+        else {
             m_ImguiVisible = !m_ImguiVisible;
 
             if (!m_ImguiVisible) {
@@ -620,15 +638,14 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
         }
     }
 
-	//Globals::InputActionManager->m_bDebugKeys = true;
-	Globals::InputActionManager->m_bEnabled = !m_ImguiHasFocus;
+    //Globals::InputActionManager->m_bDebugKeys = true;
+    Globals::InputActionManager->m_bEnabled = !m_ImguiHasFocus;
 
     if (!m_ImguiHasFocus)
         return HookResult<LRESULT>(HookAction::Continue());
 
     // If we got a quit / close message then return control back to the process.
-    if (p_Message == WM_QUIT || p_Message == WM_DESTROY || p_Message == WM_NCDESTROY || p_Message == WM_CLOSE)
-    {
+    if (p_Message == WM_QUIT || p_Message == WM_DESTROY || p_Message == WM_NCDESTROY || p_Message == WM_CLOSE) {
         m_ImguiHasFocus = false;
         return HookResult<LRESULT>(HookAction::Continue());
     }
@@ -639,13 +656,15 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
 
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
 
-    switch (p_Message)
-    {
-        case WM_LBUTTONDOWN: case WM_LBUTTONDBLCLK:
-        case WM_RBUTTONDOWN: case WM_RBUTTONDBLCLK:
-        case WM_MBUTTONDOWN: case WM_MBUTTONDBLCLK:
-        case WM_XBUTTONDOWN: case WM_XBUTTONDBLCLK:
-        {
+    switch (p_Message) {
+        case WM_LBUTTONDOWN:
+        case WM_LBUTTONDBLCLK:
+        case WM_RBUTTONDOWN:
+        case WM_RBUTTONDBLCLK:
+        case WM_MBUTTONDOWN:
+        case WM_MBUTTONDBLCLK:
+        case WM_XBUTTONDOWN:
+        case WM_XBUTTONDBLCLK: {
             int s_Button = 0;
 
             if (p_Message == WM_LBUTTONDOWN || p_Message == WM_LBUTTONDBLCLK)
@@ -668,8 +687,7 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
         case WM_LBUTTONUP:
         case WM_RBUTTONUP:
         case WM_MBUTTONUP:
-        case WM_XBUTTONUP:
-        {
+        case WM_XBUTTONUP: {
             int s_Button = 0;
 
             if (p_Message == WM_LBUTTONUP)
@@ -690,11 +708,13 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
             break;
         }
         case WM_MOUSEWHEEL:
-            s_ImGuiIO.MouseWheel += static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(WHEEL_DELTA);
+            s_ImGuiIO.MouseWheel += static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(
+                WHEEL_DELTA);
             break;
 
         case WM_MOUSEHWHEEL:
-            s_ImGuiIO.MouseWheelH += static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(WHEEL_DELTA);
+            s_ImGuiIO.MouseWheelH += static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(
+                WHEEL_DELTA);
             break;
 
         case WM_KEYDOWN:
@@ -723,8 +743,7 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWi
     return HookResult<LRESULT>(HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam));
 }
 
-DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool)
-{
+DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool) {
     // Don't process input while the imgui overlay has focus.
     if (m_ImguiHasFocus)
         return HookResult<void>(HookAction::Return());
@@ -732,8 +751,7 @@ DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboa
     return HookResult<void>(HookAction::Continue());
 }
 
-DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction* th, int a2)
-{
+DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction* th, int a2) {
     static std::unordered_set<std::string> s_BlockedInputs = {
         "eIAKBMLookHorizontal",
         "eIAKBMLookVertical",
