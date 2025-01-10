@@ -178,9 +178,10 @@ PATTERN_HOOK(
     void(ZAchievementManagerSimple* th, const SOnlineEvent& event)
 );
 
-PATTERN_HOOK(
-    "\x48\x8B\xC4\x4C\x89\x40\x18\x55\x48\x8D\xA8\xA8\xFE\xFF\xFF\x48\x81\xEC\x00\x00\x00\x00\x48\x89\x70\xF0",
-    "xxxxxxxxxxxxxxxxxx????xxxx",
+PATTERN_VTABLE_HOOK(
+    "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x8B\xDA\x89\x74\x24\x28",
+    "xxx????xxxxxxxxx",
+    7,
     ZAchievementManagerSimple_OnEventSent,
     void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)
 );
@@ -203,7 +204,8 @@ PATTERN_HOOK(
     "\x40\x56\x41\x54\x41\x57\x48\x83\xEC\x00\x80\x79\x48",
     "xxxxxxxxx?xxx",
     ZEntityManager_DeleteEntities,
-    void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>& references)
+    void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>&
+        references)
 );
 
 PATTERN_HOOK(
@@ -290,7 +292,8 @@ PATTERN_HOOK(
     "\x4C\x89\x44\x24\x18\x48\x89\x54\x24\x10\x48\x89\x4C\x24\x08\x53\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x83\xEC\x00\x41\x8B\x00",
     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?xxx",
     ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory,
-    ZTemplateEntityBlueprintFactory*(ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending)
+    ZTemplateEntityBlueprintFactory*(ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint*
+        pTemplateEntityBlueprint, ZResourcePending& ResourcePending)
 );
 
 /*
@@ -357,4 +360,5 @@ MODULE_HOOK(
     "EOSSDK-Win64-Shipping.dll",
     "EOS_Platform_Create",
     EOS_Platform_Create,
-    EOS_PlatformHandle*(EOS_Platform_Options* Options));
+    EOS_PlatformHandle*(EOS_Platform_Options* Options)
+);
