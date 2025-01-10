@@ -61,13 +61,12 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
         }
 
         static size_t s_Selected = 0;
-        size_t count = s_Actions.size();
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-        for (size_t i = 0; i < count; i++)
+        for (size_t i = 0; i < s_Actions.size(); i++)
         {
-            ZHM5Action* s_Action = s_Actions[i];
+	        const ZHM5Action* s_Action = s_Actions[i];
             const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
             std::string s_Title = std::format("{} {}", s_Item->m_pItemConfigDescriptor->m_sTitle.c_str(), i + 1);
 
@@ -84,7 +83,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus)
         ImGui::BeginGroup();
         ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
 
-        ZHM5Action* s_Action = s_Actions[s_Selected];
+        const ZHM5Action* s_Action = s_Actions[s_Selected];
         const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
         const ZDynamicObject* s_DynamicObject = &repositoryData->find(s_Item->m_pItemConfigDescriptor->m_RepositoryId)->second;
         const auto s_Entries = s_DynamicObject->As<TArray<SDynamicObjectKeyValuePair>>();
