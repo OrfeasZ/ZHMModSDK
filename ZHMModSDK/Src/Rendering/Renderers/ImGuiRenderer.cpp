@@ -620,8 +620,14 @@ DEFINE_DETOUR_WITH_CONTEXT(
 
     // Toggle imgui input when user presses the console key.
     if (s_ScanCode == ModSDK::GetInstance()->GetConsoleScanCode() && (p_Message == WM_KEYDOWN || p_Message ==
-        WM_SYSKEYDOWN))
+        WM_SYSKEYDOWN)) {
         m_ImguiHasFocus = !m_ImguiHasFocus;
+
+        if (m_ImguiHasFocus) {
+            // Set the GUI to visible again if we toggle it on.
+            m_ImguiVisible = true;
+        }
+    }
 
     if (s_ScanCode == ModSDK::GetInstance()->GetUiToggleScanCode() && (p_Message == WM_KEYDOWN || p_Message ==
         WM_SYSKEYDOWN)) {
