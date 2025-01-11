@@ -581,9 +581,17 @@ void DebugMod::LoadRepositoryProps() {
                 if (s_Key == "Title") {
                     std::string s_Title = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
 
-                    m_RepositoryProps.insert(std::make_pair(s_Title, ZRepositoryID(s_Id.c_str())));
+                    if (!s_Title.empty() && !m_RepositoryProps.contains(s_Id)) {
+                        m_RepositoryProps.insert(std::make_pair(s_Id, s_Title));
+                    }
+                }
 
-                    break;
+                if (s_Key == "CommonName") {
+                    std::string s_CommonName = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
+
+                    if (!s_CommonName.empty() && !m_RepositoryProps.contains(s_Id)) {
+                        m_RepositoryProps.insert(std::make_pair(s_Id, s_CommonName));
+                    }
                 }
             }
         }

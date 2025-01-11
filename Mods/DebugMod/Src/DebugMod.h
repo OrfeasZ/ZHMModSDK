@@ -145,7 +145,7 @@ private:
     int m_Height = 0;
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
     std::vector<char> m_TextureResourceData;
-    std::multimap<std::string, ZRepositoryID> m_RepositoryProps;
+    std::multimap<std::string, std::string> m_RepositoryProps; // RepoId -> Title/Common Name
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
 
     bool bActorSelectedByCamera = false;
