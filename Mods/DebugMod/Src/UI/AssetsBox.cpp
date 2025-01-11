@@ -63,7 +63,9 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus) {
                     continue;
                 }
 
-                if (ImGui::Selectable(s_PropTitle.c_str())) {
+                std::string s_ButtonId = std::format("{}###{}", it->first.c_str(), it->second.ToString().c_str());
+
+                if (ImGui::Selectable(s_ButtonId.c_str())) {
                     ImGui::ClearActiveID();
                     strcpy_s(s_PropTitle_SubString, s_PropTitle.c_str());
 
