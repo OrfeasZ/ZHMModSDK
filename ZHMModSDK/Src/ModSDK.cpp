@@ -629,6 +629,9 @@ bool ModSDK::Startup() {
     // Notify all loaded mods that the engine has intialized once it has.
     Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
     Hooks::EOS_Platform_Create->AddDetour(this, &ModSDK::EOS_Platform_Create);
+    Hooks::DrawScaleform->AddDetour(this, &ModSDK::DrawScaleform);
+    Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &ModSDK::OnLoadScene);
+    Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &ModSDK::OnClearScene);
 
     m_D3D12Hooks->Startup();
 
@@ -1250,4 +1253,34 @@ void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Call
     s_Ini.set("sdk", s_SdkMap);
 
     s_File.generate(s_Ini, true);
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(
+    ModSDK, void, DrawScaleform, ZRenderContext* ctx, ZRenderTargetView** rtv, uint32_t a3,
+    ZRenderDepthStencilView** dsv,
+    uint32_t a5, bool bCaptureOnly
+) {
+    if (*dsv && m_DirectXTKRenderer) {
+        m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
+    }
+
+    return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(
+    ModSDK, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData
+) {
+    if (m_DirectXTKRenderer) {
+        m_DirectXTKRenderer->ClearDsvIndex();
+    }
+
+    return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+    if (m_DirectXTKRenderer) {
+        m_DirectXTKRenderer->ClearDsvIndex();
+    }
+
+    return HookResult<void>(HookAction::Continue());
 }

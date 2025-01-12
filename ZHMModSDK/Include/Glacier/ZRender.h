@@ -5,8 +5,50 @@
 
 #include "ZMath.h"
 #include "Reflection.h"
+#include "ZObjectPool.h"
 
 class ZEntityRef;
+
+class ZRenderTargetView;
+class ZRenderUnorderedAccessView;
+
+class ZRenderDepthStencilView {
+public:
+    virtual ~ZRenderDepthStencilView() = 0;
+
+public:
+    PAD(0x30);
+};
+
+static_assert(sizeof(ZRenderDepthStencilView) == 56);
+
+class ZRenderShaderResourceView {
+public:
+    virtual ~ZRenderShaderResourceView() = 0;
+
+public:
+    PAD(0xC); // 0x08
+    int32_t m_nHeapDescriptorIndex; // 0x14
+    PAD(0x20); // 0x18
+    D3D12_CPU_DESCRIPTOR_HANDLE m_Handle; // 0x38
+};
+
+static_assert(offsetof(ZRenderShaderResourceView, m_nHeapDescriptorIndex) == 0x14);
+static_assert(offsetof(ZRenderShaderResourceView, m_Handle) == 0x38);
+
+struct SD3D12ObjectPools {
+    PAD(0x5b0);
+    TObjectPool<ZRenderTargetView> RenderTargetViews;
+    TObjectPool<ZRenderDepthStencilView> DepthStencilViews;
+    TObjectPool<ZRenderShaderResourceView> ShaderResourceViews;
+    TObjectPool<ZRenderUnorderedAccessView> UnorderedAccessViews;
+};
+
+class ZRenderSharedResources {
+public:
+    PAD(0x4680);
+    ZRenderDepthStencilView* m_pDepthStencilView;
+};
 
 class IRenderRefCount {
 public:
@@ -134,14 +176,16 @@ public:
 public:
     PAD(0x14178);
     ZRenderDevice* m_pDevice; // 0x14180, look for ZRenderDevice constructor
-    PAD(0xF8); // 0x14188
+    PAD(0x08); // 0x14188
+    ZRenderSharedResources* m_pSharedResources; // 0x14190
+    PAD(0xE8); // 0x14198
     ZRenderContext* m_pRenderContext;
     // 0x14280, look for "ZRenderManager::RenderThread" string, first thing being constructed and assigned
 };
 
 static_assert(offsetof(ZRenderManager, m_pDevice) == 0x14180);
+static_assert(offsetof(ZRenderManager, m_pSharedResources) == 0x14190);
 static_assert(offsetof(ZRenderManager, m_pRenderContext) == 0x14280);
-
 
 class ZRenderTexture2D {
 public:
@@ -150,22 +194,6 @@ public:
 public:
     ID3D12Resource* m_pResource;
 };
-
-class ZRenderTargetView;
-
-class ZRenderShaderResourceView {
-public:
-    virtual ~ZRenderShaderResourceView() = 0;
-
-public:
-    PAD(0xC); // 0x08
-    int32_t m_nHeapDescriptorIndex; // 0x14
-    PAD(0x20); // 0x18
-    D3D12_CPU_DESCRIPTOR_HANDLE m_Handle; // 0x38
-};
-
-static_assert(offsetof(ZRenderShaderResourceView, m_nHeapDescriptorIndex) == 0x14);
-static_assert(offsetof(ZRenderShaderResourceView, m_Handle) == 0x38);
 
 class ZRenderDestination : public IRenderDestination {
 public:

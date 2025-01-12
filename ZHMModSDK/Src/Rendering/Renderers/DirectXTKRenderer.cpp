@@ -141,14 +141,18 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     const CD3DX12_CPU_DESCRIPTOR_HANDLE s_RtvDescriptor(s_RtvHandle, s_BackBufferIndex, m_RtvDescriptorSize);
 
     // Use depth buffer from the game.
-    // TODO: Remove hardcoded 12 index. Allow rendering both with and without depth clipping.
-    /*const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
-    const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, 12, m_DsvDescriptorSize);
+    // TODO: Allow rendering both with and without depth clipping.
+    if (m_DsvIndex.has_value()) {
+        const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->
+                                                         GetCPUDescriptorHandleForHeapStart();
 
-    Logger::Debug("DSV descriptor handle: {:X}", s_DsvDescriptor.ptr);*/
+        const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, *m_DsvIndex, m_DsvDescriptorSize);
 
-    //m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
-    m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
+        m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
+    }
+    else {
+        m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
+    }
 
     Draw();
 
@@ -443,7 +447,7 @@ void DirectXTKRenderer::DrawLine3D(
 
 void DirectXTKRenderer::DrawText2D(
     const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/,
-    float p_Scale/* = 1.f*/, TextAlignment p_Alignment/* = TextAlignment::Center*/
+    float p_Scale/* = 1.f*/, TextAlignment p_Alignment /* = TextAlignment::Center*/
 ) {
     if (!m_RendererSetup)
         return;

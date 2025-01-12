@@ -31,6 +31,7 @@ class ZInputActionManager;
 class ZSelectionForFreeCameraEditorStyleEntity;
 template <typename T> class TArray;
 template <typename T> class TEntityRef;
+struct SD3D12ObjectPools;
 
 class ZHMSDK_API Globals {
 public:
@@ -64,4 +65,5 @@ public:
     static int* InputActionManager_BindMem;
     static int* InputActionManager_Seq;
     static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
+    static SD3D12ObjectPools** D3D12ObjectPools;
 };

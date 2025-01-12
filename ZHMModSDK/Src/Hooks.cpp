@@ -362,3 +362,11 @@ MODULE_HOOK(
     EOS_Platform_Create,
     EOS_PlatformHandle*(EOS_Platform_Options* Options)
 );
+
+PATTERN_HOOK(
+    "\x40\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x6C\x24\x40\x0F\xB6\x05",
+    "xxxxxxxxxxxxx????xxxxxxxx",
+    DrawScaleform,
+    void(ZRenderContext* ctx, ZRenderTargetView** rtv, uint32_t a3, ZRenderDepthStencilView** dsv, uint32_t a5, bool
+        bCaptureOnly)
+);

@@ -163,6 +163,14 @@ private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
 
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
+
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, DrawScaleform, ZRenderContext* ctx, ZRenderTargetView** rtv, uint32_t a3,
+        ZRenderDepthStencilView** dsv, uint32_t a5, bool bCaptureOnly
+    );
+
     bool PatchCodeInternal(
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
         void* p_OriginalCode
