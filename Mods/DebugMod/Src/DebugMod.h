@@ -60,7 +60,6 @@ private:
     void DrawItemsBox(bool p_HasFocus);
     void DrawAssetsBox(bool p_HasFocus);
     void DrawNPCsBox(bool p_HasFocus);
-    void DrawSceneBox(bool p_HasFocus);
 
     static void EquipOutfit(
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CurrentCharSetIndex,
@@ -104,12 +103,10 @@ private:
 private:
     bool m_DebugMenuActive = false;
     bool m_PositionsMenuActive = false;
-    bool m_EntityMenuActive = false;
     bool m_PlayerMenuActive = false;
     bool m_ItemsMenuActive = false;
     bool m_AssetsMenuActive = false;
     bool m_NPCsMenuActive = false;
-    bool m_SceneMenuActive = false;
     bool m_RenderNpcBoxes = false;
     bool m_RenderNpcNames = false;
     bool m_RenderNpcRepoIds = false;
@@ -148,7 +145,7 @@ private:
     int m_Height = 0;
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
     std::vector<char> m_TextureResourceData;
-    std::multimap<std::string, ZRepositoryID> m_RepositoryProps;
+    std::multimap<std::string, std::string> m_RepositoryProps; // RepoId -> Title/Common Name
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
 
     bool bActorSelectedByCamera = false;

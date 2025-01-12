@@ -53,7 +53,7 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus) {
             ImGuiWindowFlags_ChildWindow
         )) {
             for (auto it = m_RepositoryProps.begin(); it != m_RepositoryProps.end(); ++it) {
-                const std::string s_PropTitle = it->first.c_str();
+                const std::string s_PropTitle = it->second.c_str();
 
                 if (s_PropTitle.empty()) {
                     continue;
@@ -63,12 +63,14 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus) {
                     continue;
                 }
 
-                if (ImGui::Selectable(s_PropTitle.c_str())) {
+                std::string s_ButtonId = std::format("{}###{}", it->second, it->first);
+
+                if (ImGui::Selectable(s_ButtonId.c_str())) {
                     ImGui::ClearActiveID();
                     strcpy_s(s_PropTitle_SubString, s_PropTitle.c_str());
 
                     for (size_t i = 0; i < s_NumberOfPropsToSpawn_Repo; ++i) {
-                        SpawnRepositoryProp(it->second, s_WorldInventoryButton == 1);
+                        SpawnRepositoryProp(ZRepositoryID(it->first.c_str()), s_WorldInventoryButton == 1);
                     }
                 }
             }

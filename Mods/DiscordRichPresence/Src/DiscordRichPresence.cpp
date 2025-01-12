@@ -109,6 +109,7 @@ void DiscordRichPresence::PopulateGameModes() {
         {"campaign", "Mission"},
         {"escalation", "Escalation"},
         {"elusive", "Elusive Target"},
+        {"arcade", "Elusive Target Arcade"},
         {"evergreen", "Freelancer"},
     };
 

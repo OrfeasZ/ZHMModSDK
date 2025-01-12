@@ -12,7 +12,6 @@
 #include "imgui_internal.h"
 
 void DebugMod::DrawNPCsBox(const bool p_HasFocus) {
-    static std::string s_currentlySelectActor_Name;
     static size_t s_SelectedID = -1;
 
     if (!p_HasFocus || !m_NPCsMenuActive) {
@@ -51,14 +50,15 @@ void DebugMod::DrawNPCsBox(const bool p_HasFocus) {
                 continue;
             }
 
+            std::string s_ButtonId = std::format("{}###{}", s_NPCName, i);
+
             if (!s_CurrentlySelectedActor) {
                 s_SelectedID = -1;
             }
 
-            if (ImGui::Selectable(s_NPCName.c_str(), s_SelectedID == i) || s_CurrentlySelectedActor == s_Actor) {
-                if (s_currentlySelectActor_Name != s_NPCName) // Stop it setting it all the time
+            if (ImGui::Selectable(s_ButtonId.c_str(), s_SelectedID == i) || s_CurrentlySelectedActor == s_Actor) {
+                if (s_SelectedID != i) // Stop it setting it all the time
                 {
-                    s_currentlySelectActor_Name = s_NPCName;
                     s_CurrentlySelectedActor = s_Actor;
                     s_SelectedID = i;
                     m_SelectedEntity = s_CurrentlySelectedActor->m_rCharacter.m_ref;

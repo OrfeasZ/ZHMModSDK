@@ -84,13 +84,10 @@ void DebugMod::OnDrawMenu() {
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
-    if (ImGui::Button("POSITIONS MENU")) {
-        m_PositionsMenuActive = !m_PositionsMenuActive;
-    }
-
-    if (ImGui::Button("ENTITY MENU")) {
-        m_EntityMenuActive = !m_EntityMenuActive;
-    }
+    // Disabled due to it freezing the game.
+    //if (ImGui::Button("POSITIONS MENU")) {
+    //    m_PositionsMenuActive = !m_PositionsMenuActive;
+    //}
 
     if (ImGui::Button("PLAYER MENU")) {
         m_PlayerMenuActive = !m_PlayerMenuActive;
@@ -107,10 +104,6 @@ void DebugMod::OnDrawMenu() {
     if (ImGui::Button("NPCs MENU")) {
         m_NPCsMenuActive = !m_NPCsMenuActive;
     }
-
-    if (ImGui::Button("SCENE MENU")) {
-        m_SceneMenuActive = !m_SceneMenuActive;
-    }
 }
 
 void DebugMod::OnDrawUI(bool p_HasFocus) {
@@ -121,8 +114,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus) {
     DrawItemsBox(p_HasFocus);
     DrawNPCsBox(p_HasFocus);
     DrawPlayerBox(p_HasFocus);
-    DrawPositionBox(p_HasFocus);
-    DrawSceneBox(p_HasFocus);
+    //DrawPositionBox(p_HasFocus);
 
     auto& s_ImgGuiIO = ImGui::GetIO();
 
@@ -589,9 +581,17 @@ void DebugMod::LoadRepositoryProps() {
                 if (s_Key == "Title") {
                     std::string s_Title = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
 
-                    m_RepositoryProps.insert(std::make_pair(s_Title, ZRepositoryID(s_Id.c_str())));
+                    if (!s_Title.empty() && !m_RepositoryProps.contains(s_Id)) {
+                        m_RepositoryProps.insert(std::make_pair(s_Id, s_Title));
+                    }
+                }
 
-                    break;
+                if (s_Key == "CommonName") {
+                    std::string s_CommonName = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
+
+                    if (!s_CommonName.empty() && !m_RepositoryProps.contains(s_Id)) {
+                        m_RepositoryProps.insert(std::make_pair(s_Id, s_CommonName));
+                    }
                 }
             }
         }
