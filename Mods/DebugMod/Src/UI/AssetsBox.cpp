@@ -52,25 +52,19 @@ void DebugMod::DrawAssetsBox(bool p_HasFocus) {
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
             ImGuiWindowFlags_ChildWindow
         )) {
-            for (auto it = m_RepositoryProps.begin(); it != m_RepositoryProps.end(); ++it) {
-                const std::string s_PropTitle = it->second.c_str();
-
-                if (s_PropTitle.empty()) {
+            for (auto& [s_Id, s_Name] : m_RepositoryProps) {
+                if (!FindSubstring(s_Name, s_PropTitle_SubString)) {
                     continue;
                 }
 
-                if (!FindSubstring(s_PropTitle, s_PropTitle_SubString)) {
-                    continue;
-                }
-
-                std::string s_ButtonId = std::format("{}###{}", it->second, it->first);
+                std::string s_ButtonId = std::format("{}###{}", s_Name, s_Id.ToString().c_str());
 
                 if (ImGui::Selectable(s_ButtonId.c_str())) {
                     ImGui::ClearActiveID();
-                    strcpy_s(s_PropTitle_SubString, s_PropTitle.c_str());
+                    strcpy_s(s_PropTitle_SubString, s_Name.c_str());
 
                     for (size_t i = 0; i < s_NumberOfPropsToSpawn_Repo; ++i) {
-                        SpawnRepositoryProp(ZRepositoryID(it->first.c_str()), s_WorldInventoryButton == 1);
+                        SpawnRepositoryProp(s_Id, s_WorldInventoryButton == 1);
                     }
                 }
             }
