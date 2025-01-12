@@ -179,8 +179,8 @@ PATTERN_HOOK(
 );
 
 PATTERN_VTABLE_HOOK(
-    "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x8B\xDA\x89\x74\x24\x28",
-    "xxx????xxxxxxxxx",
+    "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x07\x48\x8D\x55\x97",
+    "xxx????xxxxxxx",
     7,
     ZAchievementManagerSimple_OnEventSent,
     void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)
