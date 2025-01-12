@@ -12,34 +12,32 @@ uintptr_t ProcessUtils::SearchPattern(
     uintptr_t p_BaseAddress, size_t p_ScanSize, const uint8_t* p_Pattern, const char* p_Mask
 ) {
     const size_t s_PatternSize = strlen(p_Mask);
+
+    if (s_PatternSize <= 1) {
+        return 0;
+    }
+
     const uintptr_t s_SearchEnd = p_BaseAddress + p_ScanSize - s_PatternSize;
 
     for (uintptr_t s_SearchAddr = p_BaseAddress; s_SearchAddr <= s_SearchEnd; ++s_SearchAddr) {
         const uint8_t* s_MemoryPtr = reinterpret_cast<uint8_t*>(s_SearchAddr);
 
-        if (s_MemoryPtr[0] != p_Pattern[0]) {
-            continue;
-        }
-
-        const uint8_t* s_PatternPtr = p_Pattern;
-        const uint8_t* s_MaskPtr = reinterpret_cast<const uint8_t*>(p_Mask);
-
         bool s_Found = true;
 
-        for (; s_MaskPtr[0] && (reinterpret_cast<uintptr_t>(s_MemoryPtr) <= s_SearchEnd); ++s_MaskPtr, ++s_PatternPtr,
-               ++s_MemoryPtr) {
-            if (s_MaskPtr[0] != 'x') {
+        for (int i = 0; i < s_PatternSize; ++i) {
+            if (p_Mask[i] == '?') {
                 continue;
             }
 
-            if (s_MemoryPtr[0] != s_PatternPtr[0]) {
+            if (s_MemoryPtr[i] != p_Pattern[i]) {
                 s_Found = false;
                 break;
             }
         }
 
-        if (s_Found)
+        if (s_Found) {
             return s_SearchAddr;
+        }
     }
 
     return 0;
