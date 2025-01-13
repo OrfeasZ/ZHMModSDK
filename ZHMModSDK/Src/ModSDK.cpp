@@ -47,6 +47,7 @@
 #include <limits.h>
 
 #include "Glacier/ZPlayerRegistry.h"
+#include "Glacier/ZServerProxyRoute.h"
 
 // Needed for TaskDialogIndirect
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -756,6 +757,157 @@ void ModSDK::OnEngineInit() {
         m_DirectXTKRenderer->OnEngineInit();
         m_ImguiRenderer->OnEngineInit();
     }
+
+    /*if (Globals::ZProfileServerPageProxyBase_m_aRouteMap) {
+        for (auto s_Pair : *Globals::ZProfileServerPageProxyBase_m_aRouteMap) {
+            Logger::Debug("Route map: {} -> {}", s_Pair->first.c_str(), s_Pair->second->m_sUrl);
+
+            if (s_Pair->first == "hub") {
+                const auto s_OriginalFn = s_Pair->second->m_fnExecute;
+
+                s_Pair->second->m_fnExecute = [=](
+                    const ZDynamicObject& p_Request,
+                    std::function<void(const ZDynamicObject&)> p_OkCb,
+                    std::function<void(int)> p_ErrorCb,
+                    ZAsyncContext* p_AsyncContext,
+                    const SHttpRequestBehavior& p_Behavior
+                ) {
+                            const auto s_NewOkCb = [=](const ZDynamicObject& p_Response) {
+                                ZDynamicObject s_NewResponse = p_Response;
+
+                                // Insert custom tile to dashboard.
+                                auto s_NewDestination = ZDynamicObject::Object();
+                                s_NewDestination["Location"] = ZDynamicObject::Object();
+                                s_NewDestination["Location"]["Id"] = "CUSTOM_MISSIONS"_zs;
+                                s_NewDestination["Location"]["Guid"] = "a8b5e0a0-e7d7-4c0f-a5a1-b2d5c1e5d1d2"_zs;
+                                s_NewDestination["Location"]["Type"] = "location"_zs;
+                                s_NewDestination["Location"]["Subtype"] = "location"_zs;
+                                s_NewDestination["Location"]["RMTPrice"] = -1.0f;
+                                s_NewDestination["Location"]["GamePrice"] = -1.0f;
+                                s_NewDestination["Location"]["IsPurchasable"] = false;
+                                s_NewDestination["Location"]["IsPublished"] = true;
+                                s_NewDestination["Location"]["IsDroppable"] = false;
+                                s_NewDestination["Location"]["Capabilities"] = ZDynamicObject::Array();
+                                s_NewDestination["Location"]["Qualities"] = ZDynamicObject::Object();
+                                s_NewDestination["Location"]["Properties"] = ZDynamicObject::Object();
+                                s_NewDestination["Location"]["Properties"]["Quality"] = ""_zs;
+
+                                s_NewDestination["Location"]["Properties"]["Icon"] =
+                                        "images/locations/LOCATION_siberia/tile.jpg"_zs;
+
+                                s_NewDestination["Location"]["Properties"]["Background"] =
+                                        "images/locations/LOCATION_siberia/background.jpg"_zs;
+
+                                s_NewDestination["Location"]["Properties"]["DlcImage"] =
+                                        "images/livetile/dlc/tile_hitman3.jpg"_zs;
+
+                                s_NewDestination["Location"]["Properties"]["DlcName"] =
+                                        "GAME_STORE_METADATA_S3_GAME_TITLE"_zs;
+
+                                s_NewDestination["Location"]["Properties"]["Season"] = 1.0f;
+                                s_NewDestination["Location"]["Properties"]["Order"] = 10.0f;
+
+                                s_NewDestination["Location"]["Properties"]["ProgressionKey"] =
+                                        "LOCATION_ICA_FACILITY"_zs;
+
+                                s_NewDestination["Location"]["Properties"]["HideProgression"] = true;
+                                s_NewDestination["Location"]["Properties"]["RequiredResources"] =
+                                        ZDynamicObject::Array();
+
+
+                                s_NewResponse["data"]["DestinationsData"].Insert(0, s_NewDestination);
+
+                                // Print the response.
+                                ZString s_SerializedResponse;
+                                Functions::ZDynamicObject_ToString->Call(
+                                    &s_NewResponse, &s_SerializedResponse
+                                );
+
+                                Logger::Debug(
+                                    "[{}] response: {}", s_Pair->first.c_str(), s_SerializedResponse.c_str()
+                                );
+
+                                p_OkCb(s_NewResponse);
+                            };
+
+                            s_OriginalFn(
+                                p_Request,
+                                s_NewOkCb,
+                                p_ErrorCb,
+                                p_AsyncContext,
+                                p_Behavior
+                            );
+                        };
+            }
+
+            if (s_Pair->first == "destination") {
+                const auto s_OriginalFn = s_Pair->second->m_fnExecute;
+                s_Pair->second->m_fnExecute = [=](
+                    const ZDynamicObject& p_Request,
+                    std::function<void(const ZDynamicObject&)> p_OkCb,
+                    std::function<void(int)> p_ErrorCb,
+                    ZAsyncContext* p_AsyncContext,
+                    const SHttpRequestBehavior& p_Behavior
+                ) {
+                            ZString s_SerializedRequest;
+                            Functions::ZDynamicObject_ToString->Call(
+                                const_cast<ZDynamicObject*>(&p_Request), &s_SerializedRequest
+                            );
+
+                            Logger::Debug(
+                                "[{}] request: {}", s_Pair->first.c_str(), s_SerializedRequest.c_str()
+                            );
+
+                            ZString s_LocationId;
+                            if (p_Request.Get("locationId", s_LocationId)) {
+                                Logger::Debug("Location ID: {}", s_LocationId.c_str());
+                            }
+                            else {
+                                Logger::Debug("No location ID");
+                            }
+
+                            const auto s_NewOkCb = [=](const ZDynamicObject& p_Response) {
+                                ZDynamicObject s_NewResponse = p_Response;
+
+                                for (auto& s_MissionsData : s_NewResponse["data"]["MissionData"][
+                                         "SubLocationMissionsData"]) {
+                                    for (auto& s_Mission : s_MissionsData["Missions"]) {
+                                        s_Mission["UserCentricContract"]["Contract"]["Metadata"]["Title"] =
+                                                "El em ay oh"_zs;
+                                    }
+                                }
+
+                                Logger::Debug("Serializing response");
+
+                                ZString s_SerializedResponse;
+                                Functions::ZDynamicObject_ToString->Call(
+                                    &s_NewResponse, &s_SerializedResponse
+                                );
+
+                                Logger::Debug(
+                                    "[{}] response: {}", s_Pair->first.c_str(), s_SerializedResponse.c_str()
+                                );
+
+                                p_OkCb(s_NewResponse);
+                            };
+
+                            const auto s_NewErrorCb = [=](int p_ResponseCode) {
+                                Logger::Debug("[{}] error code: {}", s_Pair->first.c_str(), p_ResponseCode);
+
+                                p_ErrorCb(p_ResponseCode);
+                            };
+
+                            s_OriginalFn(
+                                p_Request,
+                                s_NewOkCb,
+                                s_NewErrorCb,
+                                p_AsyncContext,
+                                p_Behavior
+                            );
+                        };
+            }
+        }
+    }*/
 
     m_ModLoader->LockRead();
 
