@@ -225,3 +225,10 @@ PATTERN_FUNCTION(
     ZConfigCommand_First,
     ZConfigCommand*()
 );
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x48\x89\x74\x24\x20\x41\x56\x48\x83\xEC\x00\x4C\x8B\x51\x08",
+    "xxxxxxxxxxxxxxxxxxxx?xxxx",
+    ZDynamicObject_Set,
+    ZDynamicObject*(ZDynamicObject* th, const ZString& p_Key, const ZDynamicObject& p_Value)
+);

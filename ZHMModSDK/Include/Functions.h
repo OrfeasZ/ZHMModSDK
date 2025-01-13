@@ -112,4 +112,6 @@ public:
     static EngineFunction<void(const char* pCommandName, const char* argv)>* ZConfigCommand_ExecuteCommand;
     static EngineFunction<ZConfigCommand*(uint32_t commandNameHash)>* ZConfigCommand_GetConfigCommand;
     static EngineFunction<ZConfigCommand*()>* ZConfigCommand_First;
+
+    static EngineFunction<ZDynamicObject*(ZDynamicObject* th, const ZString& p_Key, const ZDynamicObject& p_Value)>* ZDynamicObject_Set;
 };

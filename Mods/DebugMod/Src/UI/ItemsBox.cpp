@@ -103,7 +103,7 @@ void DebugMod::DrawItemsBox(bool p_HasFocus) {
 
         for (unsigned int i = 0; i < s_Entries->size(); ++i) {
             std::string s_Key = std::format("{}:", s_Entries->operator[](i).sKey.c_str());
-            const IType* s_Type = s_Entries->operator[](i).value.m_pTypeID->typeInfo();
+            const IType* s_Type = s_Entries->operator[](i).value.GetTypeID()->typeInfo();
 
             if (strcmp(s_Type->m_pTypeName, "TArray<ZDynamicObject>") == 0) {
                 s_Key += " [";

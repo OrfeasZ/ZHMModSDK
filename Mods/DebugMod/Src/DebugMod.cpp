@@ -845,7 +845,7 @@ std::string DebugMod::FindNPCEntityNameInBrickBackReferences(
 
 std::string DebugMod::ConvertDynamicObjectValueTString(const ZDynamicObject& p_DynamicObject) {
     std::string s_Result;
-    const IType* s_Type = p_DynamicObject.m_pTypeID->typeInfo();
+    const IType* s_Type = p_DynamicObject.GetTypeID()->typeInfo();
 
     if (strcmp(s_Type->m_pTypeName, "ZString") == 0) {
         const auto s_Value = p_DynamicObject.As<ZString>();

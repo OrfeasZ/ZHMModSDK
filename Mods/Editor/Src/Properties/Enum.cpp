@@ -20,10 +20,13 @@ void Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityP
     if (ImGui::BeginCombo(p_Id.c_str(), s_CurrentValue.c_str())) {
         for (auto& s_EnumValue : s_Type->m_entries) {
             if (ImGui::Selectable(s_EnumValue.m_pName, s_EnumValue.m_nValue == s_Value)) {
+                auto s_EnumValueObj = ZObjectRef::From<int32>(s_EnumValue.m_nValue);
+                s_EnumValueObj.UNSAFE_SetType(s_PropertyInfo->m_pType);
+
                 OnSetPropertyValue(
                     p_Entity,
                     p_Property->m_nPropertyId,
-                    ZObjectRef(s_PropertyInfo->m_pType, &s_EnumValue.m_nValue),
+                    s_EnumValueObj,
                     std::nullopt
                 );
             }

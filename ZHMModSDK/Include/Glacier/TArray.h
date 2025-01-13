@@ -50,7 +50,15 @@ public:
         }
     }
 
-    TArray(TArray<T>&&) = delete;
+    TArray(TArray<T>&& p_Other) {
+        m_pBegin = p_Other.m_pBegin;
+        m_pEnd = p_Other.m_pEnd;
+        m_pAllocationEnd = p_Other.m_pAllocationEnd;
+
+        p_Other.m_pBegin = nullptr;
+        p_Other.m_pEnd = nullptr;
+        p_Other.m_pAllocationEnd = nullptr;
+    }
 
     ~TArray() {
         for (T* s_Item = begin(); s_Item != end(); ++s_Item)
@@ -75,7 +83,19 @@ public:
         return *this;
     }
 
-    TArray& operator=(TArray<T>&& p_Other) = delete;
+    TArray& operator=(TArray<T>&& p_Other) {
+        clear();
+
+        m_pBegin = p_Other.m_pBegin;
+        m_pEnd = p_Other.m_pEnd;
+        m_pAllocationEnd = p_Other.m_pAllocationEnd;
+
+        p_Other.m_pBegin = nullptr;
+        p_Other.m_pEnd = nullptr;
+        p_Other.m_pAllocationEnd = nullptr;
+
+        return *this;
+    }
 
     void push_back(const T& p_Value) {
         // If we have the inline flag, we need to copy everything into
@@ -117,6 +137,58 @@ public:
             // Write the new value.
             new(m_pEnd++) T(p_Value);
         }
+    }
+
+    void insert(size_t p_Index, const T& p_Value) {
+        // If we have the inline flag, we need to copy everything into
+        // a temporary dynamically-allocated array, and then swap it with
+        // the current one.
+        if (hasInlineFlag()) {
+            TArray<T> s_DynamicCopy(*this);
+            *this = s_DynamicCopy;
+        }
+
+        // If we're pushing after the end, just push.
+        if (p_Index >= size()) {
+            push_back(p_Value);
+            return;
+        }
+
+        // TODO: Improve this.
+        // For now we're re-allocating everything, since it's easier.
+        const size_t s_NewCapacity = capacity() == 0 ? 1 : capacity() * 2;
+        const size_t s_CurrentSize = size();
+        const auto s_NewBegin = static_cast<T*>((*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+            sizeof(T) * s_NewCapacity, alignof(T)
+        ));
+
+        // Copy the old data over to the new array.
+        // After copying, we destroy them and free the old array.
+        auto s_NewItemMem = s_NewBegin;
+
+        // We first copy the items before the index.
+        for (size_t i = 0; i < p_Index; ++i) {
+            new(s_NewItemMem++) T(operator[](i));
+        }
+
+        // Then we copy the item we're inserting.
+        new(s_NewItemMem++) T(p_Value);
+
+        // And then we copy the rest of the items (after the index).
+        for (size_t i = p_Index; i < s_CurrentSize; ++i) {
+            new(s_NewItemMem++) T(operator[](i));
+        }
+
+        // Destroy everything.
+        for (T* s_Item = begin(); s_Item != end(); ++s_Item) {
+            s_Item->~T();
+        }
+
+        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_pBegin);
+
+        m_pBegin = s_NewBegin;
+        m_pEnd = m_pBegin + s_CurrentSize + 1;
+        m_pAllocationEnd = m_pBegin + s_NewCapacity;
     }
 
     void clear() {

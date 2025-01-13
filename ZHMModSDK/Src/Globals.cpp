@@ -218,3 +218,24 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     SD3D12ObjectPools**, D3D12ObjectPools
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x48\x8B\xCE\x44\x89\x35",
+    "xxx????x????xxxxxx",
+    3,
+    ZProfileServerPageProxyBaseMap*, ZProfileServerPageProxyBase_m_aRouteMap
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x89\x3D\x00\x00\x00\x00\x48\x8D\x0D\x00\x00\x00\x00\x48\x89\x1D",
+    "xxx????xxx????xxx",
+    3,
+    ZObjectPool*, ZVariantPool1
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\xF0\x48\x0F\xB1\x0D\x00\x00\x00\x00\x75\x00\xEB\x00\xE8\x00\x00\x00\x00\x49\x8B\xD7",
+    "xxxxx????x?x?x????xxx",
+    5,
+    ZObjectPool*, ZVariantPool2
+);

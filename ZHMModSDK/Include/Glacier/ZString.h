@@ -118,3 +118,7 @@ struct fmt::formatter<ZString> {
 inline std::ostream& operator<<(std::ostream& p_Stream, const ZString& p_String) {
     return p_Stream.write(p_String.c_str(), p_String.size());
 }
+
+inline ZString operator""_zs(const char* p_String, size_t p_Size) {
+    return {p_String, p_Size};
+}

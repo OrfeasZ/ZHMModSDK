@@ -148,9 +148,11 @@ void Editor::SetEntityProperty(
 
         if (s_PropertyInfo->m_pType->typeInfo()->isEntity()) {
             if (p_JsonValue == "null") {
-                TEntityRef<ZEntityImpl> s_EntityRef;
+                auto s_EntityRefObj = ZObjectRef::From<TEntityRef<ZEntityImpl>>({});
+                s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_pType);
+
                 OnSetPropertyValue(
-                    s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, &s_EntityRef), std::move(p_ClientId)
+                    s_Entity, p_PropertyId, s_EntityRefObj, std::move(p_ClientId)
                 );
             }
             else {
@@ -162,9 +164,13 @@ void Editor::SetEntityProperty(
                 const auto s_EntitySelector = EditorServer::ReadEntitySelector(s_EntitySelectorMsg);
 
                 if (const auto s_TargetEntity = FindEntity(s_EntitySelector)) {
-                    TEntityRef<ZEntityImpl> s_EntityRef(s_TargetEntity);
+                    auto s_EntityRefObj = ZObjectRef::From<TEntityRef<ZEntityImpl>>(
+                        TEntityRef<ZEntityImpl>(s_TargetEntity)
+                    );
+                    s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_pType);
+
                     OnSetPropertyValue(
-                        s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, &s_EntityRef), std::move(p_ClientId)
+                        s_Entity, p_PropertyId, s_EntityRefObj, std::move(p_ClientId)
                     );
                 }
                 else {
@@ -195,10 +201,12 @@ void Editor::SetEntityProperty(
                 throw std::runtime_error("Unable to convert JSON to game struct.");
             }
 
+            ZObjectRef s_DataObj;
+            s_DataObj.UNSAFE_Assign(s_PropertyInfo->m_pType, s_Data);
+
             OnSetPropertyValue(
-                s_Entity, p_PropertyId, ZObjectRef(s_PropertyInfo->m_pType, s_Data), std::move(p_ClientId)
+                s_Entity, p_PropertyId, s_DataObj, std::move(p_ClientId)
             );
-            (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
         }
     }
     else {

@@ -3,6 +3,10 @@
 #include "Common.h"
 #include <cstdint>
 
+#include "Glacier/TMap.h"
+
+class ZObjectRef;
+class ZObjectPool;
 class ZCollisionManager;
 class ZResourceContainer;
 class ZResourceManager;
@@ -32,6 +36,10 @@ class ZSelectionForFreeCameraEditorStyleEntity;
 template <typename T> class TArray;
 template <typename T> class TEntityRef;
 struct SD3D12ObjectPools;
+class ZServerProxyRoute;
+class ZString;
+
+using ZProfileServerPageProxyBaseMap = TMap<ZString, ZServerProxyRoute*>;
 
 class ZHMSDK_API Globals {
 public:
@@ -66,4 +74,7 @@ public:
     static int* InputActionManager_Seq;
     static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
     static SD3D12ObjectPools** D3D12ObjectPools;
+    static ZProfileServerPageProxyBaseMap* ZProfileServerPageProxyBase_m_aRouteMap;
+    static ZObjectPool* ZVariantPool1;
+    static ZObjectPool* ZVariantPool2;
 };

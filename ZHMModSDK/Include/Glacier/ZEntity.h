@@ -355,17 +355,17 @@ public:
 
     template <typename T>
     ZVariant<T> GetProperty(const uint32_t nPropertyID) const {
-        ZObjectRef s_PropertyVal;
+        ZVariant<T> s_PropertyVal;
 
         const auto s_Entity = GetEntity();
 
         if (!s_Entity || !*Globals::MemoryManager)
-            return ZVariant<T>(std::move(s_PropertyVal));
+            return s_PropertyVal;
 
         const auto s_Type = s_Entity->GetType();
 
         if (!s_Type)
-            return ZVariant<T>(std::move(s_PropertyVal));
+            return s_PropertyVal;
 
         for (uint32_t i = 0; i < s_Type->m_pProperties01->size(); ++i) {
             const ZEntityProperty* s_Property = &s_Type->m_pProperties01->operator[](i);
@@ -379,7 +379,6 @@ public:
             const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
             const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
-            // TODO: Memory leak.
             auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
             if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
@@ -391,12 +390,12 @@ public:
                 );
             }
 
-            s_PropertyVal.Assign(s_PropertyInfo->m_pType, s_Data);
+            s_PropertyVal.UNSAFE_Assign(s_PropertyInfo->m_pType, s_Data);
 
             break;
         }
 
-        return ZVariant<T>(std::move(s_PropertyVal));
+        return s_PropertyVal;
     }
 
     template <typename T>
