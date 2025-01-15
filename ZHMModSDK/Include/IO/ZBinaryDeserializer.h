@@ -7,8 +7,7 @@
 #include "ZBinaryWriter.h"
 #include <Glacier/ZResource.h>
 
-class ZBinaryDeserializer
-{
+class ZBinaryDeserializer {
 public:
     void* Deserialize(const std::string& filePath, const TArray<ZResourceIndex>* referenceIndices = nullptr);
     void* Deserialize(std::vector<char>* buffer, const TArray<ZResourceIndex>* referenceIndices = nullptr);
@@ -16,9 +15,19 @@ public:
     const unsigned char GetAlignment() const;
 
 private:
-    void HandleRebaseSection(ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter);
-    void HandleTypeReindexingSection(ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter);
-    void HandleRuntimeResourceIDReindexingSection(ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter, const TArray<ZResourceIndex>* referenceIndices = nullptr);
+    void HandleRebaseSection(
+        ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter
+    );
+
+    void HandleTypeReindexingSection(
+        ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter
+    );
+
+    void HandleRuntimeResourceIDReindexingSection(
+        ZBinaryReader& binaryReader, ZBinaryReader& dataSectionbinaryReader, ZBinaryWriter& dataSectionBinaryWriter,
+        const TArray<ZResourceIndex>* referenceIndices = nullptr
+    );
+
     static void Align(ZBinaryReader& binaryReader, const size_t currentPosition, const size_t alignment);
     STypeID* GetTypeIDFromTypeName(const std::string& typeName);
 

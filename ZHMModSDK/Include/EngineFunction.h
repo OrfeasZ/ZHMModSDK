@@ -6,19 +6,14 @@ template <class T>
 class EngineFunction;
 
 template <class ReturnType, class... Args>
-class EngineFunction<ReturnType(Args...)>
-{
+class EngineFunction<ReturnType(Args...)> {
 protected:
     EngineFunction(void* p_Address) :
-        m_Address(p_Address)
-    {
-    }
+        m_Address(p_Address) {}
 
 public:
-    ReturnType Call(Args... p_Args)
-    {
-        if (m_Address == nullptr)
-        {
+    ReturnType Call(Args... p_Args) {
+        if (m_Address == nullptr) {
             if constexpr (std::is_pointer<ReturnType>::value)
                 return nullptr;
             else
@@ -29,21 +24,17 @@ public:
     }
 
 protected:
-    void* m_Address;
+    void* m_Address = nullptr;
 };
 
 template <class... Args>
-class EngineFunction<void(Args...)>
-{
+class EngineFunction<void(Args...)> {
 protected:
     EngineFunction(void* p_Address) :
-        m_Address(p_Address)
-    {
-    }
+        m_Address(p_Address) {}
 
 public:
-    void Call(Args... p_Args)
-    {
+    void Call(Args... p_Args) {
         if (m_Address == nullptr)
             return;
 
@@ -51,5 +42,5 @@ public:
     }
 
 protected:
-    void* m_Address;
+    void* m_Address = nullptr;
 };

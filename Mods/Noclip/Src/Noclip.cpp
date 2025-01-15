@@ -13,38 +13,26 @@
 #include "Glacier/ZKnowledge.h"
 #include "Glacier/ZModule.h"
 
-Noclip::Noclip()
-{
-}
+Noclip::Noclip() {}
 
-Noclip::~Noclip()
-{
+Noclip::~Noclip() {
     const ZMemberDelegate<Noclip, void(const SGameUpdateEvent&)> s_Delegate(this, &Noclip::OnFrameUpdate);
     Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
 
-void Noclip::OnEngineInitialized()
-{
+void Noclip::OnEngineInitialized() {
     const ZMemberDelegate<Noclip, void(const SGameUpdateEvent&)> s_Delegate(this, &Noclip::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
 
-void Noclip::Init()
-{
+void Noclip::Init() {
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Noclip::OnClearScene);
 }
 
-void Noclip::OnDrawMenu()
-{
-    if (ImGui::Checkbox(ICON_MD_SELF_IMPROVEMENT " Noclip", &m_NoclipEnabled))
-    {
-        if (m_NoclipEnabled)
-        {
-            TEntityRef<ZHitman5> s_LocalHitman;
-            Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
-
-            if (s_LocalHitman)
-            {
+void Noclip::OnDrawMenu() {
+    if (ImGui::Checkbox(ICON_MD_SELF_IMPROVEMENT " Noclip", &m_NoclipEnabled)) {
+        if (m_NoclipEnabled) {
+            if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 if (const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>())
                     m_PlayerPosition = s_HitmanSpatial->GetWorldMatrix();
             }
@@ -52,10 +40,8 @@ void Noclip::OnDrawMenu()
     }
 }
 
-void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
-{
-    TEntityRef<ZHitman5> s_LocalHitman;
-    Functions::ZPlayerRegistry_GetLocalPlayer->Call(Globals::PlayerRegistry, &s_LocalHitman);
+void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman)
         return;
@@ -72,12 +58,10 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
     // TODO: Use proper way to get inputs.
     // TODO: This triggers on every frame when the key is held down.
-    if (GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState('N'))
-    {
+    if (GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState('N')) {
         m_NoclipEnabled = !m_NoclipEnabled;
 
-        if (m_NoclipEnabled)
-        {
+        if (m_NoclipEnabled) {
             m_PlayerPosition = s_HitmanSpatial->GetWorldMatrix();
         }
     }
@@ -108,8 +92,7 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
     s_HitmanSpatial->SetWorldMatrix(m_PlayerPosition);
 }
 
-DEFINE_PLUGIN_DETOUR(Noclip, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
-{
+DEFINE_PLUGIN_DETOUR(Noclip, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
     m_NoclipEnabled = false;
     return HookResult<void>(HookAction::Continue());
 }

@@ -37,39 +37,35 @@ ZString m_LobbyName; // 0xB8 (184)
 CSteamID m_LobbyId; // 0x108 (264)
 */
 
-class ZGameLobbyManagerEpic : public ZGameLobbyManager {
-    
-};
+class ZGameLobbyManagerEpic : public ZGameLobbyManager {};
 
-class ZLobbyContext {
-	
-};
+class ZLobbyContext {};
 
 namespace hsm {
-	struct Transition {
-		void* NewBaseCtor;
-		void* Unk0x8;
-		uint32_t StateHash;
-	};
+    struct Transition {
+        void* NewBaseCtor;
+        void* Unk0x8;
+        uint32_t StateHash;
+    };
 
-	class HSMStateBase {
-	public:
-		virtual void HSMStateBase_unk0() = 0;
-		virtual void HSMStateBase_unk1() = 0;
-		virtual ~HSMStateBase() {}
-		virtual void HSMStateBase_unk3() = 0;
-		virtual void HSMStateBase_unk4() = 0;
-		virtual void OnEnter() = 0;
-		virtual void OnExit() = 0; // Called directly before destruction.
-		virtual void HSMStateBase_unk7() = 0;
-		virtual void HSMStateBase_unk8() = 0;
-		virtual void GetTransition(Transition& next) = 0; // Called directly after OnEnter.
-		virtual void Update(Transition& next) = 0;
-		virtual void HSMStateBase_unk11() = 0;
-		virtual void HSMStateBase_unk12() = 0;
-		virtual void HSMStateBase_unk13() = 0;
-		virtual uint32_t GetStateHash() = 0;
-		virtual void HSMStateBase_unk15() = 0;
-		virtual void HSMStateBase_unk16() = 0;
-	};
+    class HSMStateBase {
+    public:
+        virtual void HSMStateBase_unk0() = 0;
+        virtual void HSMStateBase_unk1() = 0;
+        virtual ~HSMStateBase() {}
+        virtual void HSMStateBase_unk3() = 0;
+        virtual void HSMStateBase_unk4() = 0;
+        virtual void OnEnter() = 0;
+        virtual void OnExit() = 0; // Called directly before destruction.
+        virtual void HSMStateBase_unk7() = 0;
+        virtual void HSMStateBase_unk8() = 0;
+        virtual void GetTransition(Transition& next) = 0; // Called directly after OnEnter.
+        virtual void Update(Transition& next) = 0;
+        virtual void HSMStateBase_unk11() = 0;
+        virtual void HSMStateBase_unk12() = 0;
+        virtual void HSMStateBase_unk13() = 0;
+        virtual uint32_t GetStateHash() = 0;
+        virtual void HSMStateBase_unk15() = 0;
+        virtual void HSMStateBase_unk16() = 0;
+    };
 }

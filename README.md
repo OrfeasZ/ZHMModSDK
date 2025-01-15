@@ -42,18 +42,62 @@ There are a few sample mods included in this repository that can be used either 
 | [NoPause](/Mods/NoPause) | Prevents the game from automatically pausing after losing focus (eg. when alt-tabbing or minimizing). |
 | [SkipIntro](/Mods/SkipIntro) | Skips the intro sequence and starts the game directly at the main menu. |
 | [WakingUpNpcs](/Mods/WakingUpNpcs) | Makes pacified NPCs wake up after a random interval between 4 and 8 minutes. |
-| [CertPinBypass](/Mods/CertPinBypass) | Disables SSL certificate pinning, allowing the game to connect to any trusted server instead of only IOI's. |
+| [OnlineTools](/Mods/OnlineTools) | Allows you to change the default domain, along with other online-centric settings. Supersedes CertPinBypass. |
 | [MaxPatchLevel](/Mods/MaxPatchLevel) | Dynamically sets the RPKG patchlevel to 1000, making the game discover patch chunks without having to modify the `packagedefinition.txt` file. |
 | [DebugMod](/Mods/DebugMod) | Adds a debug menu to test different SDK functionalities, like 3D rendering and entity information display. |
 | [FreeCam](/Mods/FreeCam) | Adds support for an in-game free camera that works with both KB+M and controllers. Can be toggled either from the SDK menu or by pressing `P`. For more details on available controls see [here](/Mods/FreeCam). |
 | [DiscordRichPresence](/Mods/DiscordRichPresence) | Sends rich presence updates to Discord with details such as level name, gamemode, etc. **[Requires additional setup!](/Mods/DiscordRichPresence)** |
-| [Editor](/Mods/Editor) | A WIP in-engine "editor". Currently supports viewing spawned entities alongside basic lookup and manipulation. **[Requires additional setup!](/Mods/Editor)** |
+| [Editor](/Mods/Editor) | A WIP in-engine "editor". Currently supports viewing spawned entities alongside basic lookup and manipulation. |
 | [Clumsy](/Mods/Clumsy) | Makes 47 very clumsy. He just can't seem to figure out how to take cover... **[Requires additional setup!](/Mods/Clumsy)** |
 
 ## Uninstalling
 
 To de-activate / uninstall the mod loader, simply delete the extracted `dinput8.dll` from your `HITMAN3\Retail` directory. You can also 
 delete all the other files / folders you previously extracted, and the `mods.ini` file (if present).
+
+## Changing the console key
+
+The console key can be changed by editing the `mods.ini` file in your game's `Retail` folder.
+
+To change the console key, open the `mods.ini` file and add the following:
+
+```ini
+[sdk]
+console_key = 0x29
+```
+
+(If the `[sdk]` section already exists, just add the `console_key` key and value)
+
+You can replace `0x29` (tilde / grave key) with a scan code of your choice. See [this table](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#scan-codes) for a list of scan codes by key (column named Scan 1 Make).
+
+For example, to change it to `F1`, write the following:
+
+```ini
+[sdk]
+console_key = 0x3B
+```
+
+## Changing the UI toggle key
+
+By default, the `F11` key is used to show and hide the SDK UI. You can change this key by editing the `mods.ini` file, similar to how you change the console key.
+
+To change the UI toggle key, open the `mods.ini` file and add the following:
+
+```ini
+[sdk]
+ui_toggle_key = 0x57
+```
+
+(If the `[sdk]` section already exists, just add the `ui_toggle_key` key and value)
+
+You can replace `0x57` (F11 key) with a scan code of your choice. See [this table](https://learn.microsoft.com/en-us/windows/win32/inputdev/about-keyboard-input#scan-codes) for a list of scan codes by key (column named Scan 1 Make).
+
+For example, to change it to `F2`, write the following:
+
+```ini
+[sdk]
+ui_toggle_key = 0x3C
+```
 
 ## Usage (for developers)
 

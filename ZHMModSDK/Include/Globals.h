@@ -3,6 +3,10 @@
 #include "Common.h"
 #include <cstdint>
 
+#include "Glacier/TMap.h"
+
+class ZObjectRef;
+class ZObjectPool;
 class ZCollisionManager;
 class ZResourceContainer;
 class ZResourceManager;
@@ -31,13 +35,17 @@ class ZInputActionManager;
 class ZSelectionForFreeCameraEditorStyleEntity;
 template <typename T> class TArray;
 template <typename T> class TEntityRef;
+struct SD3D12ObjectPools;
+class ZServerProxyRoute;
+class ZString;
 
-class ZHMSDK_API Globals
-{
+using ZProfileServerPageProxyBaseMap = TMap<ZString, ZServerProxyRoute*>;
+
+class ZHMSDK_API Globals {
 public:
     static ZGameLoopManager* GameLoopManager;
     static ZTypeRegistry** TypeRegistry;
-    static ZGameTimeManager** GameTimeManager;
+    static ZGameTimeManager* GameTimeManager;
     static ZHitman5Module* Hitman5Module;
     static ZGameContext* GameContext;
     static ZActorManager* ActorManager;
@@ -60,9 +68,13 @@ public:
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
-	static void* ZTemplateEntityBlueprintFactory_vtbl;
-	static ZInputActionManager* InputActionManager;
-	static int* InputActionManager_BindMem;
-	static int* InputActionManager_Seq;
-	static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
+    static void* ZTemplateEntityBlueprintFactory_vtbl;
+    static ZInputActionManager* InputActionManager;
+    static int* InputActionManager_BindMem;
+    static int* InputActionManager_Seq;
+    static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
+    static SD3D12ObjectPools** D3D12ObjectPools;
+    static ZProfileServerPageProxyBaseMap* ZProfileServerPageProxyBase_m_aRouteMap;
+    static ZObjectPool* ZVariantPool1;
+    static ZObjectPool* ZVariantPool2;
 };

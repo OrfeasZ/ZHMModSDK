@@ -15,9 +15,7 @@
 		{
 			"name": "usockets",
 			"default-features": false,
-			"features": [
-				"network"
-			]
+			"features": []
 		},
 		"uwebsockets",
 		"simdjson",

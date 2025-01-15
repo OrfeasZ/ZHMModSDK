@@ -6,16 +6,13 @@
 #include "Reflection.h"
 #include "TArray.h"
 
-struct TypeMapHashingPolicy
-{
-    uint64_t operator()(const ZString& p_Value)
-    {
+struct TypeMapHashingPolicy {
+    uint64_t operator()(const ZString& p_Value) {
         return Hash::Fnv1a64_Lower(p_Value.c_str(), p_Value.size());
     }
 };
 
-class ZTypeRegistry
-{
+class ZTypeRegistry {
 public:
     virtual int addRef() = 0;
     virtual int release() = 0;

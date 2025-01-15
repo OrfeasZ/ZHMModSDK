@@ -5,20 +5,17 @@
 
 class ZPhysicsObjectProxy;
 
-struct ZPhysicsObjectRef
-{
+struct ZPhysicsObjectRef {
     ZPhysicsObjectProxy* m_pProxy;
 };
 
-class ICollisionShapeListener : public IComponentInterface
-{
+class ICollisionShapeListener : public IComponentInterface {
 public:
     virtual void ICollisionShapeListener_unk5() = 0;
 };
 
 
-class IPhysicsAccessor : public IComponentInterface
-{
+class IPhysicsAccessor : public IComponentInterface {
 public:
     virtual void IPhysicsAccessor_unk5() = 0;
     virtual void IPhysicsAccessor_unk6() = 0;
@@ -28,16 +25,11 @@ public:
     virtual void IPhysicsAccessor_unk10() = 0;
 };
 
-class IStaticPhysics : public IPhysicsAccessor
-{
-};
+class IStaticPhysics : public IPhysicsAccessor {};
 
-class IDynamicPhysics : public IPhysicsAccessor
-{
-};
+class IDynamicPhysics : public IPhysicsAccessor {};
 
-class IBoneAnimator
-{
+class IBoneAnimator {
 public:
     virtual ~IBoneAnimator();
     virtual void IBoneAnimator_unk1() = 0;
@@ -46,8 +38,7 @@ public:
     virtual void IBoneAnimator_unk4() = 0;
 };
 
-class ZPhysicsBaseEntity : public ZEntityImpl
-{
+class ZPhysicsBaseEntity : public ZEntityImpl {
 public:
     virtual ~ZPhysicsBaseEntity() = default;
     virtual void ZPhysicsBaseEntity_unk20() = 0;
@@ -58,18 +49,16 @@ public:
 
 static_assert(sizeof(ZPhysicsBaseEntity) == 0x20);
 
-class IDebugPhysicsSpatialAccessor
-{
+class IDebugPhysicsSpatialAccessor {
 public:
     virtual void IDebugPhysicsSpatialAccessor_unk0() = 0;
 };
 
-class IPhysicsObject
-{
+class IPhysicsObject {
 public:
     virtual ~IPhysicsObject() = 0;
     virtual void IPhysicsObject_unk1() = 0;
-	virtual SMatrix GetTransform() const = 0;
+    virtual SMatrix GetTransform() const = 0;
     virtual void IPhysicsObject_unk3() = 0;
     virtual void IPhysicsObject_unk4() = 0;
     virtual void IPhysicsObject_unk5() = 0;
@@ -77,7 +66,7 @@ public:
     virtual void SetTransform(const SMatrix& mNewTransform) = 0;
     virtual void IPhysicsObject_unk8() = 0;
     virtual void MoveTransform(const SMatrix& mNewTransform) = 0;
-	virtual void IPhysicsObject_unk10(const SMatrix& mNewTransform) = 0;
+    virtual void IPhysicsObject_unk10(const SMatrix& mNewTransform) = 0;
     virtual float4 GetPosition() const = 0;
     virtual void IPhysicsObject_unk12() = 0;
     virtual void SetPosition(const float4& trans) = 0;
@@ -170,7 +159,7 @@ public:
     virtual void IPhysicsObject_unk100() = 0;
     virtual void IPhysicsObject_unk101() = 0;
     virtual void IPhysicsObject_unk102() = 0;
-	virtual bool GetCollisionActivity(bool bRaysInsteadOfCollision) const = 0;
+    virtual bool GetCollisionActivity(bool bRaysInsteadOfCollision) const = 0;
     virtual void IPhysicsObject_unk104() = 0;
     virtual void IPhysicsObject_unk105() = 0;
     virtual void IPhysicsObject_unk106() = 0;
@@ -195,34 +184,31 @@ public:
     virtual void IPhysicsObject_unk125() = 0;
 };
 
-class IPhysicsUserDataAccessor
-{
+class IPhysicsUserDataAccessor {
 public:
     virtual void IPhysicsUserDataAccessor_unk0() = 0;
 };
 
 class ZPhysicsObject :
-    public IPhysicsObject,
-    public IPhysicsUserDataAccessor
-{
+        public IPhysicsObject,
+        public IPhysicsUserDataAccessor {
 public:
     virtual ~ZPhysicsObject() = default;
 
 public:
-	PAD(0x50);
-	SQV m_PrevPose; //0x60
-	SQV m_CurPose; //0x80
+    PAD(0x50);
+    SQV m_PrevPose; //0x60
+    SQV m_CurPose; //0x80
     PAD(0x90);
 };
 
 static_assert(sizeof(ZPhysicsObject) == 0x130);
 
 class ZStaticPhysicsAspect :
-    public ZPhysicsBaseEntity,
-    public ICollisionShapeListener,
-    public IStaticPhysics,
-    public IDebugPhysicsSpatialAccessor
-{
+        public ZPhysicsBaseEntity,
+        public ICollisionShapeListener,
+        public IStaticPhysics,
+        public IDebugPhysicsSpatialAccessor {
 public:
     virtual ~ZStaticPhysicsAspect() = default;
     virtual void ZStaticPhysicsAspect_unk21() = 0;
@@ -237,29 +223,27 @@ static_assert(offsetof(ZStaticPhysicsAspect, m_pPhysicsObject) == 0x40);
 static_assert(sizeof(ZStaticPhysicsAspect) == 0x68);
 
 class ZDynamicPhysicsAspect :
-    public ZPhysicsBaseEntity,
-    public ICollisionShapeListener,
-    public IDynamicPhysics,
-    public IDebugPhysicsSpatialAccessor
-{
+        public ZPhysicsBaseEntity,
+        public ICollisionShapeListener,
+        public IDynamicPhysics,
+        public IDebugPhysicsSpatialAccessor {
 public:
     virtual ~ZDynamicPhysicsAspect() = default;
 
 public:
-	bool m_bRemovePhysics; // 0x38
-	bool m_bKinematic; // 0x39
-	PAD(0x28);
-	IPhysicsObject* m_pPhysicsObject; // 0x68
-	PAD(0x28);
+    bool m_bRemovePhysics; // 0x38
+    bool m_bKinematic; // 0x39
+    PAD(0x28);
+    IPhysicsObject* m_pPhysicsObject; // 0x68
+    PAD(0x28);
 };
 
 static_assert(sizeof(ZDynamicPhysicsAspect) == 0x98);
 
 class ZPhysicsSystemEntity :
-    public ZPhysicsBaseEntity,
-    public IBoneAnimator,
-    public IDebugPhysicsSpatialAccessor
-{
+        public ZPhysicsBaseEntity,
+        public IBoneAnimator,
+        public IDebugPhysicsSpatialAccessor {
 public:
     virtual ~ZPhysicsSystemEntity() = default;
 

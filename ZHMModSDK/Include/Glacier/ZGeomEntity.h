@@ -10,8 +10,7 @@ class ZRenderableEntity : public ZBoundedEntity //Size: 0xD0
 };
 
 // Size: 0x70
-class ZRenderGeometryBuffer
-{
+class ZRenderGeometryBuffer {
 public:
     virtual ~ZRenderGeometryBuffer() = default; // TODO
 
@@ -30,33 +29,29 @@ static_assert(offsetof(ZRenderGeometryBuffer, m_pCPUBuffer) == 0x58);
 static_assert(sizeof(ZRenderGeometryBuffer) == 0x70);
 
 class ZRenderVertexBuffer : public ZRenderGeometryBuffer {};
+
 class ZRenderIndexBuffer : public ZRenderGeometryBuffer {};
 
 template <class T>
-class TRenderReferencedCountedImpl : public T
-{
+class TRenderReferencedCountedImpl : public T {
 public:
     int32_t m_ReferenceCount;
 };
 
-class IRenderPrimitive : public TRenderReferencedCountedImpl<IRenderRefCount>
-{
+class IRenderPrimitive : public TRenderReferencedCountedImpl<IRenderRefCount> {
 public:
     PAD(0x56); // 0x10
     uint16_t m_BufferDataIndex; // 0x66
 };
 
 template <class T>
-class TRefCountPtrArg
-{
+class TRefCountPtrArg {
 public:
     T* m_pObject;
 };
 
 template <class T>
-class TRefCountPtr : public TRefCountPtrArg<T>
-{
-};
+class TRefCountPtr : public TRefCountPtrArg<T> {};
 
 
 class ZPrimitiveContainerEntity : public ZRenderableEntity //Size: 0x170
@@ -81,8 +76,7 @@ static_assert(sizeof(ZRenderableEntity) == 0xD0);
 static_assert(offsetof(ZGeomEntity, m_ResourceID) == 0x188);
 
 // Size: 32 (0x20)
-struct SRenderPrimitiveMeshDesc
-{
+struct SRenderPrimitiveMeshDesc {
     uint32_t nNumVertices; // 0x00
     uint32_t mNumIndices; // 0x04
     PAD(0x10); // 0x08
@@ -94,8 +88,7 @@ struct SRenderPrimitiveMeshDesc
 static_assert(sizeof(SRenderPrimitiveMeshDesc) == 0x20);
 
 // vvv Members Unverified vvv
-struct SRenderInputElementDesc
-{
+struct SRenderInputElementDesc {
     uint8 nOffset;
     __int32 eFormat : 8;
     __int32 eElement : 8;
@@ -107,8 +100,7 @@ struct SRenderInputElementDesc
 
 static_assert(sizeof(SRenderInputElementDesc) == 20);
 
-class ZRenderInputLayout
-{
+class ZRenderInputLayout {
 public:
     virtual ~ZRenderInputLayout() = default; // TODO
 
@@ -123,8 +115,7 @@ static_assert(offsetof(ZRenderInputLayout, m_nNumElements) == 0x10);
 static_assert(offsetof(ZRenderInputLayout, m_Elements) == 0x14);
 static_assert(offsetof(ZRenderInputLayout, m_ElementDesc) == 0x158);
 
-struct SPrimitiveBufferData
-{
+struct SPrimitiveBufferData {
     SRenderPrimitiveMeshDesc m_MeshDesc; // 0x00
     PAD(0x38); // 0x20
     ZRenderInputLayout* m_pInputLayout; // 0x58
@@ -139,8 +130,7 @@ static_assert(offsetof(SPrimitiveBufferData, m_pIndexBuffer) == 0x68);
 static_assert(offsetof(SPrimitiveBufferData, m_pVertexBuffers) == 0x70);
 static_assert(sizeof(SPrimitiveBufferData) == 160);
 
-class IRenderDestinationTextureEntity : public IRenderDestinationEntity
-{
+class IRenderDestinationTextureEntity : public IRenderDestinationEntity {
 public:
     virtual void IRenderDestinationTextureEntity_unk32() = 0;
     virtual TArray<ZEntityRef>* GetClients() = 0;
@@ -149,8 +139,7 @@ public:
     virtual void IRenderDestinationTextureEntity_unk36() = 0;
 };
 
-class ZRenderDestinationTextureEntity : public ZRenderableEntity, public IRenderDestinationTextureEntity
-{
+class ZRenderDestinationTextureEntity : public ZRenderableEntity, public IRenderDestinationTextureEntity {
 public:
     TArray<TEntityRef<ZRenderableEntity>> m_aMultiSource; // 0xD8
     int32 m_nSelectedSource; // 0xF0

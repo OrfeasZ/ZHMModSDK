@@ -9,8 +9,7 @@
 
 #include <Audio.h>
 
-class Clumsy : public IPluginInterface
-{
+class Clumsy : public IPluginInterface {
 public:
     Clumsy();
     ~Clumsy() override;

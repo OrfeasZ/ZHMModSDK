@@ -11,64 +11,41 @@
 #include "spdlog/common.h"
 #include "Util/StringUtils.h"
 
+#include "Glacier/TArray.h"
+
 #if _DEBUG
 DebugConsole::DebugConsole() :
     m_Running(true),
-    m_Redirected(false)
-{
+    m_Redirected(false) {
     AllocConsole();
     AttachConsole(GetCurrentProcessId());
     SetConsoleTitleA("ZHM Mod SDK - Debug Console");
 
     StartRedirecting();
 
-    m_InputThread = std::thread([&]
-        {
+    m_InputThread = std::thread(
+        [&] {
             std::string s_ReadLine;
 
-            while (m_Running)
-            {
+            while (m_Running) {
                 std::getline(std::cin, s_ReadLine);
 
                 if (s_ReadLine.size() == 0)
                     continue;
 
-                auto s_Parts = Util::StringUtils::Split(s_ReadLine, " ");
+                TArray<ZString> s_Args {};
+                std::vector<std::string> s_Split = Util::StringUtils::Split(s_ReadLine, " ");
 
-                if (s_Parts.size() == 1)
-                {
-                    if (s_Parts[0] == "unloadall")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
-                    }
-                    else if (s_Parts[0] == "reloadall")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
-                    }
-                }
-                if (s_Parts.size() == 2)
-                {
-                    if (s_Parts[0] == "load")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->LoadMod(s_Parts[1], true);
-                    }
-                    else if (s_Parts[0] == "unload")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->UnloadMod(s_Parts[1]);
-                    }
-                    else if (s_Parts[1] == "reload")
-                    {
-                        ModSDK::GetInstance()->GetModLoader()->ReloadMod(s_Parts[1]);
-                    }
-                }
+                for (const std::string& arg : s_Split)
+                    s_Args.push_back(*new ZString(arg));
 
-                Events::OnConsoleCommand->Call();
+                Events::OnConsoleCommand->Call(s_Args);
             }
-        });
+        }
+    );
 }
 
-DebugConsole::~DebugConsole()
-{
+DebugConsole::~DebugConsole() {
     m_Running = false;
 
     // Send a key event to the console so getline unblocks.
@@ -95,8 +72,7 @@ DebugConsole::~DebugConsole()
     FreeConsole();
 }
 
-void DebugConsole::StartRedirecting()
-{
+void DebugConsole::StartRedirecting() {
     if (m_Redirected)
         StopRedirecting();
 
@@ -114,8 +90,7 @@ void DebugConsole::StartRedirecting()
     SetConsoleOutputCP(CP_UTF8);
 }
 
-void DebugConsole::StopRedirecting()
-{
+void DebugConsole::StopRedirecting() {
     if (!m_Redirected)
         return;
 

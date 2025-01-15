@@ -6,13 +6,11 @@
 #include "ZResource.h"
 
 class ZSpatialEntity :
-    public ZEntityImpl
-{
+        public ZEntityImpl {
 public:
-    enum ERoomBehaviour
-    {
-        ROOM_STATIC = 0,
-        ROOM_DYNAMIC = 1,
+    enum ERoomBehaviour {
+        ROOM_STATIC                = 0,
+        ROOM_DYNAMIC               = 1,
         ROOM_STATIC_OUTSIDE_CLIENT = 2
     };
 
@@ -40,8 +38,7 @@ public:
     virtual void ZSpatialEntity_unk41() = 0;
 
 public:
-    SMatrix GetWorldMatrix()
-    {
+    SMatrix GetWorldMatrix() {
         // This is probably something like "is this transform dirty and needs to be updated?".
         if ((m_nUnknownFlags & 0x80000) != 0)
             Functions::ZSpatialEntity_UnknownTransformUpdate->Call(this);
@@ -63,8 +60,7 @@ static_assert(offsetof(ZSpatialEntity, m_nUnknownFlags) == 0x6C);
 static_assert(sizeof(ZSpatialEntity) == 0xA0);
 
 class ZBoundedEntity :
-    public ZSpatialEntity
-{
+        public ZSpatialEntity {
 public:
     PAD(0x18);
 };
@@ -73,8 +69,7 @@ static_assert(sizeof(ZBoundedEntity) == 0xB8);
 
 
 class ZPFObstacleEntity :
-    public ZBoundedEntity
-{
+        public ZBoundedEntity {
 public:
     PAD(0x08); // 0xB8
     SVector3 m_vGlobalSize; // 0xC0

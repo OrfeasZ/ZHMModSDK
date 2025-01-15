@@ -9,8 +9,12 @@ class ZRenderDestination;
 class SVector2;
 class SVector3;
 
-class IModSDK
-{
+template <typename T>
+class TEntityRef;
+
+class ZHitman5;
+
+class IModSDK {
 public:
     /**
      * Make the SDK receive focus.
@@ -70,9 +74,11 @@ public:
      * @param p_Offset The offset to add to the address where the pattern was found.
      * @return True if the pattern was found and patched, false otherwise.
      */
-    virtual bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) = 0;
+    virtual bool PatchCode(
+        const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset
+    ) = 0;
 
-    virtual void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) = 0;
+    virtual void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = {0, 0}) = 0;
 
     /**
      * Set a plugin setting value for the given name.
@@ -81,43 +87,53 @@ public:
      * @param p_Name The name of the setting.
      * @param p_Value The value of the setting.
      */
-    virtual void SetPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_Value) = 0;
+    virtual void SetPluginSetting(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_Value
+    ) = 0;
 
-	/**
-	 * Set a plugin setting integer value for the given name.
-	 * @param p_Plugin The plugin to set the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 * @param p_Value The value of the setting.
-	 */
-	virtual void SetPluginSettingInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64 p_Value) = 0;
+    /**
+     * Set a plugin setting integer value for the given name.
+     * @param p_Plugin The plugin to set the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_Value The value of the setting.
+     */
+    virtual void SetPluginSettingInt(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64 p_Value
+    ) = 0;
 
-	/**
-	 * Set a plugin setting unsigned integer value for the given name.
-	 * @param p_Plugin The plugin to set the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 * @param p_Value The value of the setting.
-	 */
-	virtual void SetPluginSettingUInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64 p_Value) = 0;
+    /**
+     * Set a plugin setting unsigned integer value for the given name.
+     * @param p_Plugin The plugin to set the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_Value The value of the setting.
+     */
+    virtual void SetPluginSettingUInt(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64 p_Value
+    ) = 0;
 
-	/**
-	 * Set a plugin setting double value for the given name.
-	 * @param p_Plugin The plugin to set the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 * @param p_Value The value of the setting.
-	 */
-	virtual void SetPluginSettingDouble(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_Value) = 0;
+    /**
+     * Set a plugin setting double value for the given name.
+     * @param p_Plugin The plugin to set the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_Value The value of the setting.
+     */
+    virtual void SetPluginSettingDouble(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_Value
+    ) = 0;
 
-	/**
-	 * Set a plugin setting boolean value for the given name.
-	 * @param p_Plugin The plugin to set the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 * @param p_Value The value of the setting.
-	 */
-	virtual void SetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_Value) = 0;
+    /**
+     * Set a plugin setting boolean value for the given name.
+     * @param p_Plugin The plugin to set the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_Value The value of the setting.
+     */
+    virtual void SetPluginSettingBool(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_Value
+    ) = 0;
 
     /**
      * Get a plugin setting string value for the given name.
@@ -127,47 +143,57 @@ public:
      * @param p_DefaultValue The default value to return if the setting does not exist.
      * @return The value of the setting, or the default value if the setting does not exist.
      */
-    virtual ZString GetPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_DefaultValue) = 0;
+    virtual ZString GetPluginSetting(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_DefaultValue
+    ) = 0;
 
-	/**
-	 * Get a plugin setting integer value for the given name.
-	 * @param p_Plugin The plugin to get the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 * @param p_DefaultValue The default value to return if the setting does not exist or is not an integer.
-	 * @return The value of the setting, or the default value if the setting does not exist or is not an integer.
-	 */
-	virtual int64 GetPluginSettingInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64 p_DefaultValue) = 0;
+    /**
+     * Get a plugin setting integer value for the given name.
+     * @param p_Plugin The plugin to get the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_DefaultValue The default value to return if the setting does not exist or is not an integer.
+     * @return The value of the setting, or the default value if the setting does not exist or is not an integer.
+     */
+    virtual int64 GetPluginSettingInt(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64 p_DefaultValue
+    ) = 0;
 
-	/**
-	 * Get a plugin setting unsigned integer value for the given name.
-	 * @param p_Plugin The plugin to get the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 * @param p_DefaultValue The default value to return if the setting does not exist or is not an unsigned integer.
-	 * @return The value of the setting, or the default value if the setting does not exist or is not an unsigned integer.
-	 */
-	virtual uint64 GetPluginSettingUInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64 p_DefaultValue) = 0;
+    /**
+     * Get a plugin setting unsigned integer value for the given name.
+     * @param p_Plugin The plugin to get the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_DefaultValue The default value to return if the setting does not exist or is not an unsigned integer.
+     * @return The value of the setting, or the default value if the setting does not exist or is not an unsigned integer.
+     */
+    virtual uint64 GetPluginSettingUInt(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64 p_DefaultValue
+    ) = 0;
 
-	/**
-	 * Get a plugin setting double value for the given name.
-	 * @param p_Plugin The plugin to get the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 * @param p_DefaultValue The default value to return if the setting does not exist or is not a double.
-	 * @return The value of the setting, or the default value if the setting does not exist or is not a double.
-	 */
-	virtual double GetPluginSettingDouble(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_DefaultValue) = 0;
+    /**
+     * Get a plugin setting double value for the given name.
+     * @param p_Plugin The plugin to get the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_DefaultValue The default value to return if the setting does not exist or is not a double.
+     * @return The value of the setting, or the default value if the setting does not exist or is not a double.
+     */
+    virtual double GetPluginSettingDouble(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_DefaultValue
+    ) = 0;
 
-	/**
-	 * Get a plugin setting boolean value for the given name.
-	 * @param p_Plugin The plugin to get the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 * @param p_DefaultValue The default value to return if the setting does not exist or is not a boolean.
-	 * @return The value of the setting, or the default value if the setting does not exist or is not a boolean.
-	 */
-	virtual bool GetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_DefaultValue) = 0;
+    /**
+     * Get a plugin setting boolean value for the given name.
+     * @param p_Plugin The plugin to get the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     * @param p_DefaultValue The default value to return if the setting does not exist or is not a boolean.
+     * @return The value of the setting, or the default value if the setting does not exist or is not a boolean.
+     */
+    virtual bool GetPluginSettingBool(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_DefaultValue
+    ) = 0;
 
     /**
      * Check if a plugin setting with the given name exists.
@@ -178,19 +204,39 @@ public:
      */
     virtual bool HasPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) = 0;
 
-	/**
-	 * Remove a plugin setting with the given name.
-	 * @param p_Plugin The plugin to remove the setting for.
-	 * @param p_Section The section of the setting in the INI file.
-	 * @param p_Name The name of the setting.
-	 */
-	 virtual void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) = 0;
+    /**
+     * Remove a plugin setting with the given name.
+     * @param p_Plugin The plugin to remove the setting for.
+     * @param p_Section The section of the setting in the INI file.
+     * @param p_Name The name of the setting.
+     */
+    virtual void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) = 0;
 
-	 /**
-	  * Reload the settings for the given plugin.
-	  * @param p_Plugin The plugin to reload the settings for.
-	  */
-	 virtual void ReloadPluginSettings(IPluginInterface* p_Plugin) = 0;
+    /**
+     * Reload the settings for the given plugin.
+     * @param p_Plugin The plugin to reload the settings for.
+     */
+    virtual void ReloadPluginSettings(IPluginInterface* p_Plugin) = 0;
+
+    /**
+     * Try to get the local Hitman player.
+     */
+    virtual TEntityRef<ZHitman5> GetLocalPlayer() = 0;
+
+    /**
+     * Search for a pattern in the game's memory and patch it with the given code, storing the original code in a provided buffer.
+     * @param p_Pattern A sequence of bytes to search for in the game's memory.
+     * @param p_Mask A mask to use when searching for the pattern. x = pattern byte, ? = any byte (eg. xxx????x).
+     * @param p_NewCode A buffer containing the new code to write to the location where the pattern was found.
+     * @param p_CodeSize The size of the code buffer.
+     * @param p_Offset The offset to add to the address where the pattern was found.
+     * @param p_OriginalCode A buffer to store the original code.
+     * @return True if the pattern was found and patched, false otherwise.
+     */
+    virtual bool PatchCodeStoreOriginal(
+        const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
+        void* p_OriginalCode
+    ) = 0;
 };
 
 /**

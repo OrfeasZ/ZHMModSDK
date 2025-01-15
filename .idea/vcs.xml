@@ -6,5 +6,11 @@
     <mapping directory="$PROJECT_DIR$/External/imgui/source" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/External/mINI" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/External/vcpkg" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/x64-Debug-Install/_deps/cista-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/x64-Debug-Install/_deps/gamenetworkingsockets-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/x64-Debug-Install/_deps/gamenetworkingsockets-src/src/external/abseil" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/x64-Debug-Install/_deps/gamenetworkingsockets-src/src/external/picojson" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/x64-Debug-Install/_deps/gamenetworkingsockets-src/src/external/webrtc" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/_build/x64-Debug-Install/_deps/zhmtools-src" vcs="Git" />
   </component>
 </project>

@@ -3,18 +3,14 @@
 #include "Logging.h"
 #include "ModSDK.h"
 
-DWORD WINAPI StartupProc(LPVOID)
-{
+DWORD WINAPI StartupProc(LPVOID) {
     ModSDK::GetInstance()->ThreadedStartup();
     return 0;
 }
 
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
-{
-    if (fdwReason == DLL_PROCESS_ATTACH)
-    {
-        if (!ModSDK::GetInstance()->Startup())
-        {
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
+    if (fdwReason == DLL_PROCESS_ATTACH) {
+        if (!ModSDK::GetInstance()->Startup()) {
             return false;
         }
 
@@ -23,8 +19,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
         // else without having to worry about weird initialization order nonsense.
         CreateThread(nullptr, 0, StartupProc, nullptr, 0, nullptr);
     }
-    else if (fdwReason == DLL_PROCESS_DETACH)
-    {
+    else if (fdwReason == DLL_PROCESS_DETACH) {
         ModSDK::DestroyInstance();
     }
 
@@ -32,8 +27,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 }
 
 #if _DEBUG
-extern "C" __declspec(dllexport) void Unload()
-{
+extern "C" __declspec(dllexport) void Unload() {
     Logger::Debug("Unload requested. Destroying Mod SDK instance.");
     ModSDK::DestroyInstance();
 }

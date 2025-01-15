@@ -5,8 +5,7 @@
 
 class ZUpdateEventContainer;
 
-class ZGameLoopManager
-{
+class ZGameLoopManager {
 public:
     virtual ~ZGameLoopManager() {}
 
@@ -15,13 +14,17 @@ public:
     ZUpdateEventContainer* m_pUpdateEventContainer; // 0x58
 
 public:
-    void RegisterFrameUpdate(const ZDelegate<void(const SGameUpdateEvent&)>& p_Delegate, int p_Priority, EUpdateMode p_UpdateMode)
-    {
+    void RegisterFrameUpdate(
+        const ZDelegate<void(const SGameUpdateEvent&)>& p_Delegate, int p_Priority, EUpdateMode p_UpdateMode
+    ) {
         Hooks::ZUpdateEventContainer_AddDelegate->Call(m_pUpdateEventContainer, p_Delegate, p_Priority, p_UpdateMode);
     }
 
-    void UnregisterFrameUpdate(const ZDelegate<void(const SGameUpdateEvent&)>& p_Delegate, int p_Priority, EUpdateMode p_UpdateMode)
-    {
-        Hooks::ZUpdateEventContainer_RemoveDelegate->Call(m_pUpdateEventContainer, p_Delegate, p_Priority, p_UpdateMode);
+    void UnregisterFrameUpdate(
+        const ZDelegate<void(const SGameUpdateEvent&)>& p_Delegate, int p_Priority, EUpdateMode p_UpdateMode
+    ) {
+        Hooks::ZUpdateEventContainer_RemoveDelegate->Call(
+            m_pUpdateEventContainer, p_Delegate, p_Priority, p_UpdateMode
+        );
     }
 };

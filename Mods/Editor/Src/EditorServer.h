@@ -21,28 +21,28 @@ struct EntitySelector {
 
 class EditorServer {
 public:
-	struct SocketUserData {
-		std::string ClientId;
-		std::string Identifier;
-	};
+    struct SocketUserData {
+        std::string ClientId;
+        std::string Identifier;
+    };
 
-	using WebSocket = uWS::WebSocket<false, true, SocketUserData>;
+    using WebSocket = uWS::WebSocket<false, true, SocketUserData>;
 
-	EditorServer();
-	~EditorServer();
+    EditorServer();
+    ~EditorServer();
 
-	void OnEntitySelected(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
-	void OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
-	void OnEntityNameChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
-	void OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyId, std::optional<std::string> p_ByClient);
-	void OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks);
-	void OnSceneClearing(bool p_ForReload);
-	void OnEntityTreeRebuilt();
-	void SetEnabled(bool p_Enabled);
-	bool GetEnabled();
+    void OnEntitySelected(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
+    void OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
+    void OnEntityNameChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
+    void OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyId, std::optional<std::string> p_ByClient);
+    void OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks);
+    void OnSceneClearing(bool p_ForReload);
+    void OnEntityTreeRebuilt();
+    void SetEnabled(bool p_Enabled);
+    bool GetEnabled();
 
 private:
-	static void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);
+    static void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);
 
 	static void SendWelcome(WebSocket* p_Socket);
 	static void SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
@@ -71,13 +71,13 @@ public:
 	static uint64_t ReadEntityId(simdjson::ondemand::value p_EntityId);
 
 private:
-	void PublishEvent(const std::string& p_Event, std::optional<std::string> p_IgnoreClient);
+    void PublishEvent(const std::string& p_Event, std::optional<std::string> p_IgnoreClient);
 
 private:
-	uint64_t m_LastClientId = 0;
-	uWS::App* m_App;
-	uWS::Loop* m_Loop;
-	std::vector<SocketUserData*> m_SocketUserDatas;
-	std::jthread m_ServerThread;
-	static bool m_Enabled;
+    uint64_t m_LastClientId = 0;
+    uWS::App* m_App;
+    uWS::Loop* m_Loop;
+    std::vector<SocketUserData*> m_SocketUserDatas;
+    std::jthread m_ServerThread;
+    static bool m_Enabled;
 };

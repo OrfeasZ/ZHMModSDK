@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ini.h>
 #include <memory>
 #include <shared_mutex>
 #include <string>
@@ -9,20 +10,17 @@
 #include "Hooks.h"
 #include "Glacier/ZEntity.h"
 
-namespace Rendering
-{
+namespace Rendering {
     class D3D12Hooks;
-	class D3D12SwapChain;
+    class D3D12SwapChain;
 }
 
-namespace Rendering::Renderers
-{
+namespace Rendering::Renderers {
     class ImGuiRenderer;
     class DirectXTKRenderer;
 }
 
-namespace UI
-{
+namespace UI {
     class ModSelector;
     class MainMenu;
     class Console;
@@ -34,8 +32,7 @@ class ModLoader;
 class DebugConsole;
 struct IDXGISwapChain3;
 
-class ModSDK : public IModSDK
-{
+class ModSDK : public IModSDK {
 private:
     static ModSDK* g_Instance;
 
@@ -56,10 +53,10 @@ public:
 
 private:
     void LoadConfiguration();
-	std::pair<uint32_t, std::string> RequestLatestVersion();
-	void ShowVersionNotice(const std::string& p_Version);
-	void SkipVersionUpdate(const std::string& p_Version);
-	void CheckForUpdates();
+    std::pair<uint32_t, std::string> RequestLatestVersion();
+    void ShowVersionNotice(const std::string& p_Version);
+    void SkipVersionUpdate(const std::string& p_Version);
+    void CheckForUpdates();
 
 public:
     void OnEngineInit();
@@ -70,7 +67,7 @@ public:
     void OnDrawMenu();
 
 public:
-	void SetSwapChain(Rendering::D3D12SwapChain* p_SwapChain);
+    void SetSwapChain(Rendering::D3D12SwapChain* p_SwapChain);
     void OnPresent(IDXGISwapChain3* p_SwapChain);
     void PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult);
     void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
@@ -80,11 +77,14 @@ public:
 public:
     std::shared_ptr<ModLoader> GetModLoader() const { return m_ModLoader; }
 
-#if _DEBUG
+    #if _DEBUG
     std::shared_ptr<DebugConsole> GetDebugConsole() const { return m_DebugConsole; }
-#endif
+    #endif
 
-    std::shared_ptr<Rendering::Renderers::DirectXTKRenderer> GetDirectXTKRenderer() const { return m_DirectXTKRenderer; }
+    std::shared_ptr<Rendering::Renderers::DirectXTKRenderer> GetDirectXTKRenderer() const {
+        return m_DirectXTKRenderer;
+    }
+
     std::shared_ptr<Rendering::Renderers::ImGuiRenderer> GetImguiRenderer() const { return m_ImguiRenderer; }
     std::shared_ptr<Rendering::D3D12Hooks> GetD3D12Hooks() const { return m_D3D12Hooks; }
 
@@ -92,7 +92,11 @@ public:
     std::shared_ptr<UI::MainMenu> GetUIMainMenu() const { return m_UIMainMenu; }
     std::shared_ptr<UI::ModSelector> GetUIModSelector() const { return m_UIModSelector; }
 
-	uint8_t GetConsoleScanCode() const { return m_ConsoleScanCode; }
+    uint8_t GetConsoleScanCode() const { return m_ConsoleScanCode; }
+    uint8_t GetUiToggleScanCode() const { return m_UiToggleScanCode; }
+    bool HasShownUiToggleWarning() const { return m_HasShownUiToggleWarning; }
+
+    void SetHasShownUiToggleWarning();
 
 public:
     void RequestUIFocus() override;
@@ -109,42 +113,88 @@ public:
     bool GetPinName(int32_t p_PinId, ZString& p_Name) override;
     bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
     bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
-    bool PatchCode(const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset) override;
-    void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) override;
+    bool PatchCode(
+        const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset
+    ) override;
+    bool PatchCodeStoreOriginal(
+        const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
+        void* p_OriginalCode
+    ) override;
+    void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = {0, 0}) override;
 
-	// Plugin settings
-	void SetPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_Value) override;
-	void SetPluginSettingInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_Value) override;
-	void SetPluginSettingUInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64_t p_Value) override;
-	void SetPluginSettingDouble(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_Value) override;
-	void SetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_Value) override;
-	ZString GetPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_DefaultValue) override;
-	int64_t GetPluginSettingInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_DefaultValue) override;
-	uint64_t GetPluginSettingUInt(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64_t p_DefaultValue) override;
-	double GetPluginSettingDouble(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_DefaultValue) override;
-	bool GetPluginSettingBool(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_DefaultValue) override;
-	bool HasPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) override;
-	void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) override;
-	void ReloadPluginSettings(IPluginInterface* p_Plugin) override;
+    // Plugin settings
+    void SetPluginSetting(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_Value
+    ) override;
+    void SetPluginSettingInt(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_Value
+    ) override;
+    void SetPluginSettingUInt(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64_t p_Value
+    ) override;
+    void SetPluginSettingDouble(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_Value
+    ) override;
+    void SetPluginSettingBool(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_Value
+    ) override;
+    ZString GetPluginSetting(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_DefaultValue
+    ) override;
+    int64_t GetPluginSettingInt(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_DefaultValue
+    ) override;
+    uint64_t GetPluginSettingUInt(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64_t p_DefaultValue
+    ) override;
+    double GetPluginSettingDouble(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_DefaultValue
+    ) override;
+    bool GetPluginSettingBool(
+        IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_DefaultValue
+    ) override;
+    bool HasPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) override;
+    void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) override;
+    void ReloadPluginSettings(IPluginInterface* p_Plugin) override;
+
+    TEntityRef<ZHitman5> GetLocalPlayer() override;
 
 private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
 
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
+
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, DrawScaleform, ZRenderContext* ctx, ZRenderTargetView** rtv, uint32_t a3,
+        ZRenderDepthStencilView** dsv, uint32_t a5, bool bCaptureOnly
+    );
+
+    bool PatchCodeInternal(
+        const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
+        void* p_OriginalCode
+    );
+
+    void UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback);
+
 private:
     bool m_UiEnabled = true;
-	uint8_t m_ConsoleScanCode = 0x29; // Grave / Tilde key
+    uint8_t m_ConsoleScanCode = 0x29; // Grave / Tilde key
+    uint8_t m_UiToggleScanCode = 0x57; // F11
+    bool m_HasShownUiToggleWarning = false;
     uintptr_t m_ModuleBase;
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;
-	std::string m_IgnoredVersion;
-	float m_LoadedModsUIScrollOffset = 0;
+    std::string m_IgnoredVersion;
+    bool m_DisableUpdateCheck = false;
+    float m_LoadedModsUIScrollOffset = 0;
 
     std::shared_ptr<ModLoader> m_ModLoader {};
 
-#if _DEBUG
+    #if _DEBUG
     std::shared_ptr<DebugConsole> m_DebugConsole {};
-#endif
+    #endif
 
     std::shared_ptr<Rendering::Renderers::DirectXTKRenderer> m_DirectXTKRenderer {};
     std::shared_ptr<Rendering::Renderers::ImGuiRenderer> m_ImguiRenderer {};

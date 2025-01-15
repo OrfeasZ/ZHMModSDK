@@ -13,39 +13,33 @@
 static std::vector<spdlog::logger*>* g_Loggers;
 
 template <class Mutex>
-class ConsoleSink : public spdlog::sinks::base_sink<Mutex>
-{
+class ConsoleSink : public spdlog::sinks::base_sink<Mutex> {
     using MyType = ConsoleSink<Mutex>;
 
 public:
-    ConsoleSink()
-    {
-    }
+    ConsoleSink() {}
 
-    static std::shared_ptr<MyType> instance()
-    {
+    static std::shared_ptr<MyType> instance() {
         static std::shared_ptr<MyType> instance = std::make_shared<MyType>();
         return instance;
     }
 
-    void sink_it_(const spdlog::details::log_msg& p_Message) override
-    {
+    void sink_it_(const spdlog::details::log_msg& p_Message) override {
         spdlog::memory_buf_t s_Formatted;
         spdlog::sinks::base_sink<Mutex>::formatter_->format(p_Message, s_Formatted);
 
-        ModSDK::GetInstance()->GetUIConsole()->AddLogLine(p_Message.level, ZString(s_Formatted.data(), s_Formatted.size()));
+        ModSDK::GetInstance()->GetUIConsole()->AddLogLine(
+            p_Message.level, ZString(s_Formatted.data(), s_Formatted.size())
+        );
     }
 
-    void flush_() override
-    {
-    }
+    void flush_() override {}
 };
 
 typedef ConsoleSink<spdlog::details::null_mutex> ConsoleSink_st;
 typedef ConsoleSink<std::mutex> ConsoleSink_mt;
 
-ZHMSDK_API LoggerList GetLoggers()
-{
+ZHMSDK_API LoggerList GetLoggers() {
     if (g_Loggers == nullptr)
         g_Loggers = new std::vector<spdlog::logger*>();
 
@@ -56,13 +50,11 @@ ZHMSDK_API LoggerList GetLoggers()
     };
 }
 
-void ClearLoggers()
-{
+void ClearLoggers() {
     if (g_Loggers == nullptr)
         return;
 
-    for (auto& s_Logger : *g_Loggers)
-    {
+    for (auto& s_Logger : *g_Loggers) {
         delete s_Logger;
     }
 
@@ -72,8 +64,7 @@ void ClearLoggers()
     g_Loggers = nullptr;
 }
 
-void SetupLogging(spdlog::level::level_enum p_LogLevel)
-{
+void SetupLogging(spdlog::level::level_enum p_LogLevel) {
     ClearLoggers();
 
     if (g_Loggers == nullptr)
@@ -83,10 +74,10 @@ void SetupLogging(spdlog::level::level_enum p_LogLevel)
     auto s_StdoutSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     auto s_UiConsoleSink = std::make_shared<ConsoleSink_mt>();
 
-#if _DEBUG
+    #if _DEBUG
     auto s_DebugSink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
     s_ConsoleDistSink->add_sink(s_DebugSink);
-#endif
+    #endif
 
     s_ConsoleDistSink->add_sink(s_StdoutSink);
     s_ConsoleDistSink->add_sink(s_UiConsoleSink);
@@ -110,13 +101,11 @@ void SetupLogging(spdlog::level::level_enum p_LogLevel)
     g_Loggers->push_back(s_FileLogger);
 }
 
-void FlushLoggers()
-{
+void FlushLoggers() {
     if (g_Loggers == nullptr)
         return;
 
-    for (auto& s_Logger : *g_Loggers)
-    {
+    for (auto& s_Logger : *g_Loggers) {
         s_Logger->flush();
     }
 }

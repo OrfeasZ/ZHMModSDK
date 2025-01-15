@@ -23,40 +23,32 @@
 #define PAD(SIZE) unsigned char MACRO_CONCAT(_pad, __COUNTER__)[SIZE];
 #endif
 
-class IDestructible
-{
+class IDestructible {
 public:
     virtual ~IDestructible() = default;
 };
 
-class ScopedDestructible
-{
+class ScopedDestructible {
 public:
     ScopedDestructible(IDestructible** p_Destructible) :
-        m_Destructible(p_Destructible)
-    {
-    }
+        m_Destructible(p_Destructible) {}
 
-    ~ScopedDestructible()
-    {
+    ~ScopedDestructible() {
         if (*m_Destructible)
-            delete* m_Destructible;
+            delete*m_Destructible;
     }
 
 private:
     IDestructible** m_Destructible;
 };
 
-class ScopedSharedGuard
-{
+class ScopedSharedGuard {
 public:
-    ScopedSharedGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock)
-    {
+    ScopedSharedGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock) {
         AcquireSRWLockShared(m_Lock);
     }
 
-    ~ScopedSharedGuard()
-    {
+    ~ScopedSharedGuard() {
         ReleaseSRWLockShared(m_Lock);
     }
 
@@ -64,16 +56,13 @@ private:
     SRWLOCK* m_Lock;
 };
 
-class ScopedExclusiveGuard
-{
+class ScopedExclusiveGuard {
 public:
-    ScopedExclusiveGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock)
-    {
+    ScopedExclusiveGuard(SRWLOCK* p_Lock) : m_Lock(p_Lock) {
         AcquireSRWLockExclusive(m_Lock);
     }
 
-    ~ScopedExclusiveGuard()
-    {
+    ~ScopedExclusiveGuard() {
         ReleaseSRWLockExclusive(m_Lock);
     }
 

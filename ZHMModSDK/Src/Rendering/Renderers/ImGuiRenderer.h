@@ -10,13 +10,10 @@
 
 struct ImFont;
 
-namespace Rendering::Renderers
-{
-    class ImGuiRenderer
-    {
+namespace Rendering::Renderers {
+    class ImGuiRenderer {
     public:
-        struct FrameContext
-        {
+        struct FrameContext {
             ScopedD3DRef<ID3D12CommandAllocator> CommandAllocator;
             volatile uint64_t FenceValue = 0;
         };
@@ -50,7 +47,9 @@ namespace Rendering::Renderers
         void WaitForCurrentFrameToFinish() const;
 
     private:
-        DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM);
+        DECLARE_DETOUR_WITH_CONTEXT(
+            ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM
+        );
         DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool);
         DECLARE_DETOUR_WITH_CONTEXT(ImGuiRenderer, double, ZInputAction_Analog, ZInputAction*, int);
 
@@ -89,5 +88,7 @@ namespace Rendering::Renderers
         ImFont* m_FontBlack = nullptr;
 
         volatile bool m_ImguiHasFocus = false;
+        volatile bool m_ImguiVisible = true;
+        bool m_ShowingUiToggleWarning = false;
     };
 }

@@ -12,14 +12,14 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: [ ptlm-runner ]
+    runs-on: ptlm-runner
 
     steps:
     - name: Get latest CMake and ninja
       uses: lukka/get-cmake@latest
 
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: recursive
 
@@ -81,19 +81,19 @@ jobs:
         Copy-Item LICENSE -Destination _sdk/LICENSE
 
     - name: Archive debug SDK and mods
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: ZHMModSDK-Debug
         path: _dist-debug/*
 
     - name: Archive release SDK and mods
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: ZHMModSDK-Release
         path: _dist-release/*
 
     - name: Archive SDK dev package
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: DevPkg-ZHMModSDK
         path: _sdk/*
@@ -113,7 +113,7 @@ jobs:
 
     steps:
     - name: Download artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: ${{ matrix.artifact }}
         path: ${{ matrix.artifact }}

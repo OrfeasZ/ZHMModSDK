@@ -5,15 +5,13 @@
 class ZRagdollHandler;
 
 class IHM5BaseCharacter :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IHM5BaseCharacter() {}
 };
 
 class ICharacterTransformState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterTransformState() {}
     virtual void ICharacterTransformState_unk0() = 0;
@@ -29,8 +27,7 @@ public:
 };
 
 class IBaseCharacter :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IBaseCharacter() {}
     virtual void IBaseCharacter_unk0() = 0;
@@ -46,8 +43,7 @@ public:
     virtual void IBaseCharacter_unk10() = 0;
 };
 
-class IMorphemeCutSequenceAnimatable
-{
+class IMorphemeCutSequenceAnimatable {
 public:
     virtual void IMorphemeCutSequenceAnimatable_unk0() = 0;
     virtual void IMorphemeCutSequenceAnimatable_unk1() = 0;
@@ -62,8 +58,7 @@ public:
     virtual void IMorphemeCutSequenceAnimatable_unk10() = 0;
 };
 
-class IBoneCollidable
-{
+class IBoneCollidable {
 public:
     virtual void IBoneCollidable_unk0() = 0;
     virtual void IBoneCollidable_unk1() = 0;
@@ -71,8 +66,7 @@ public:
 };
 
 class IItemOwner :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IItemOwner() {}
     virtual void IItemOwner_unk0() = 0;
@@ -80,8 +74,7 @@ public:
 };
 
 class ICrowdCoreProvider :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICrowdCoreProvider() {}
     virtual void ICrowdCoreProvider_unk0() = 0;
@@ -92,15 +85,14 @@ public:
 
 // Size: 0x2D0
 class ZHM5BaseCharacter :
-    public ZEntityImpl,
-    public IHM5BaseCharacter,
-    public ICharacterTransformState,
-    public IBaseCharacter,
-    public IMorphemeCutSequenceAnimatable,
-    public IBoneCollidable,
-    public IItemOwner,
-    public ICrowdCoreProvider
-{
+        public ZEntityImpl,
+        public IHM5BaseCharacter,
+        public ICharacterTransformState,
+        public IBaseCharacter,
+        public IMorphemeCutSequenceAnimatable,
+        public IBoneCollidable,
+        public IItemOwner,
+        public ICrowdCoreProvider {
 public:
     PAD(0x10); // 0x50
     ZRagdollHandler* m_pRagdollHandler; // 0x60

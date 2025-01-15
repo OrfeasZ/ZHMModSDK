@@ -2,15 +2,13 @@
 
 #include "ZPrimitives.h"
 #include "CompileReflection.h"
-#include "TArray.h"
 
 class STypeID;
 class ZString;
 class IType;
 class ZObjectRef;
 
-class IComponentInterface
-{
+class IComponentInterface {
 public:
     virtual ~IComponentInterface() = 0;
     virtual ZObjectRef* getAsObjectRef(ZObjectRef* result) = 0;
@@ -19,21 +17,19 @@ public:
     virtual void* getSubclassStart(STypeID* type) = 0;
 };
 
-enum ETypeInfoFlags : uint16_t
-{
-    TIF_Entity = 0x01,
-    TIF_Resource = 0x02,
-    TIF_Class = 0x04,
-    TIF_Enum = 0x08,
-    TIF_Container = 0x10,
-    TIF_Array = 0x20,
+enum ETypeInfoFlags : uint16_t {
+    TIF_Entity     = 0x01,
+    TIF_Resource   = 0x02,
+    TIF_Class      = 0x04,
+    TIF_Enum       = 0x08,
+    TIF_Container  = 0x10,
+    TIF_Array      = 0x20,
     TIF_FixedArray = 0x40,
-    TIF_Map = 0x200,
-    TIF_Primitive = 0x400
+    TIF_Map        = 0x200,
+    TIF_Primitive  = 0x400
 };
 
-class STypeFunctions
-{
+class STypeFunctions {
 public:
     void (*construct)(void*);
     void (*copyConstruct)(void*, const void*);
@@ -47,51 +43,41 @@ public:
     void (*div)(void*, void*, void*);
 };
 
-class IType
-{
+class IType {
 public:
-    inline bool isEntity() const
-    {
+    inline bool isEntity() const {
         return m_nTypeInfoFlags & TIF_Entity;
     }
 
-    inline bool isResource() const
-    {
+    inline bool isResource() const {
         return m_nTypeInfoFlags & TIF_Resource;
     }
 
-    inline bool isClass() const
-    {
+    inline bool isClass() const {
         return m_nTypeInfoFlags & TIF_Class;
     }
 
-    inline bool isEnum() const
-    {
+    inline bool isEnum() const {
         return m_nTypeInfoFlags & TIF_Enum;
     }
 
-    inline bool isContainer() const
-    {
+    inline bool isContainer() const {
         return m_nTypeInfoFlags & TIF_Container;
     }
 
-    inline bool isArray() const
-    {
+    inline bool isArray() const {
         return m_nTypeInfoFlags & TIF_Array;
     }
 
-    inline bool isFixedArray() const
-    {
+    inline bool isFixedArray() const {
         return m_nTypeInfoFlags & TIF_FixedArray;
     }
 
-    inline bool isMap() const
-    {
+    inline bool isMap() const {
         return m_nTypeInfoFlags & TIF_Map;
     }
 
-    inline bool isPrimitive() const
-    {
+    inline bool isPrimitive() const {
         return m_nTypeInfoFlags & TIF_Primitive;
     }
 
@@ -103,29 +89,26 @@ public:
     char* m_pTypeName;
     STypeID* m_pTypeID;
     bool (*fromString)(void*, IType*, const ZString&);
-    uint32_t(*toString)(void*, IType*, char*, uint32_t, const ZString&);
+    uint32_t (*toString)(void*, IType*, char*, uint32_t, const ZString&);
 };
 
-class SInputPinEntry
-{
+class SInputPinEntry {
 public:
     const char* m_pName;
     unsigned int m_nPinID;
     PAD(32);
 };
 
-enum EPropertyInfoFlags
-{
-    E_RUNTIME_EDITABLE = 1,
+enum EPropertyInfoFlags {
+    E_RUNTIME_EDITABLE  = 1,
     E_CONST_AFTER_START = 2,
-    E_STREAMABLE = 4,
-    E_MEDIA_STREAMABLE = 8,
+    E_STREAMABLE        = 4,
+    E_MEDIA_STREAMABLE  = 8,
     E_HAS_GETTER_SETTER = 16,
-    E_WEAK_REFERENCE = 32
+    E_WEAK_REFERENCE    = 32
 };
 
-class ZClassProperty
-{
+class ZClassProperty {
 public:
     const char* m_pName;
     uint32_t m_nPropertyID;
@@ -136,8 +119,7 @@ public:
     void (*get)(void*, void*, uint64_t);
 };
 
-class ZClassConstructorInfo
-{
+class ZClassConstructorInfo {
 public:
     uint64_t m_nArgumentCount;
     void (*m_fUnk0x8)();
@@ -145,24 +127,21 @@ public:
     STypeID* m_pArgType;
 };
 
-class ZClassConstructor
-{
+class ZClassConstructor {
 public:
     void (*construct)(void*);
     PAD(8);
     ZClassConstructorInfo* m_pInfo;
 };
 
-class ZClassComponent
-{
+class ZClassComponent {
 public:
     STypeID* m_pType;
     uint64_t m_nOffset;
 };
 
 class IClassType :
-    public IType
-{
+        public IType {
 public:
     uint16_t m_nPropertyCount;
     uint16_t m_nConstructorCount;
@@ -176,35 +155,24 @@ public:
     SInputPinEntry* m_pInputs;
 };
 
-class ZEnumEntry
-{
+class ZEnumEntry {
 public:
     char* m_pName;
     int32_t m_nValue;
 };
 
-class IEnumType :
-    public IType
-{
-public:
-    TArray<ZEnumEntry> m_entries;
-};
-
-class SArrayFunctions
-{
+class SArrayFunctions {
 public:
     void* (*begin)(void*);
     void* (*end)(void*);
     void* (*next)(void*, void*);
-    size_t(*size)(void*);
+    size_t (*size)(void*);
     // TODO: There's more shit here. Map it out.
 };
 
-class STypeID
-{
+class STypeID {
 public:
-    inline IType* typeInfo() const
-    {
+    inline IType* typeInfo() const {
         if (m_nFlags == 1 || (!m_pType && m_pSource))
             return m_pSource->m_pType;
 
@@ -219,11 +187,9 @@ public:
 };
 
 class IArrayType :
-    public IType
-{
+        public IType {
 public:
-    inline size_t fixedArraySize() const
-    {
+    inline size_t fixedArraySize() const {
         return m_nTypeSize / m_pArrayElementType->typeInfo()->m_nTypeSize;
     }
 

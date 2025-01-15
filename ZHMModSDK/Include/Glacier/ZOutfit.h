@@ -11,26 +11,22 @@ class ZActorDynamicTemplateHolder;
 class ZKeywordEntity;
 class ZTextLine;
 
-class ZOutfitVariation : public ZEntityImpl
-{
+class ZOutfitVariation : public ZEntityImpl {
 public:
     ZRuntimeResourceID m_Outfit;
 };
 
-class ZCharsetCharacterType : public ZEntityImpl
-{
+class ZCharsetCharacterType : public ZEntityImpl {
 public:
     TArray<TEntityRef<ZOutfitVariation>> m_aVariations;
 };
 
-class ZOutfitVariationCollection : public ZEntityImpl
-{
+class ZOutfitVariationCollection : public ZEntityImpl {
 public:
     TArray<TEntityRef<ZCharsetCharacterType>> m_aCharacters; // 0x18
 };
 
-struct SBodyPartDamageMultipliers
-{
+struct SBodyPartDamageMultipliers {
     float32 m_fHeadDamageMultiplier; // 0x0
     float32 m_fFaceDamageMultiplier; // 0x4
     float32 m_fArmDamageMultiplier; // 0x8
@@ -46,8 +42,7 @@ struct SBodyPartDamageMultipliers
     bool m_bApplyLeftRightScalars; // 0x30
 };
 
-class ZGlobalOutfitKit : public ZEntityImpl
-{
+class ZGlobalOutfitKit : public ZEntityImpl {
 public:
     TArray<EActorVoiceVariation> m_rDefaultVoiceVariations; // 0x18
     PAD(0x20);

@@ -42,6 +42,7 @@ public:
     virtual void IGameMode_unk18() = 0;
     virtual void IGameMode_unk19() = 0;
     virtual EGameModeId GetGameModeId() const = 0;
-    virtual bool IsLocalGamemode() = 0; // true for normal, false for versus, true when not EngineMode_Multiplayer for sniper
+    virtual bool IsLocalGamemode() = 0;
+    // true for normal, false for versus, true when not EngineMode_Multiplayer for sniper
     virtual void IGameMode_unk22() = 0;
 };

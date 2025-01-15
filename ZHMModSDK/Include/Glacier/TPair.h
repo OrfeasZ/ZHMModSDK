@@ -3,8 +3,7 @@
 #include "ZPrimitives.h"
 
 template <typename T, typename Z>
-class TPair
-{
+class TPair {
 public:
     T first;
     Z second;

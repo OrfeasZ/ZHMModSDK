@@ -5,8 +5,7 @@
 
 #include "IPluginInterface.h"
 
-class NoPause : public IPluginInterface
-{
+class NoPause : public IPluginInterface {
 public:
     void Init() override;
 

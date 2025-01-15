@@ -14,8 +14,7 @@ public:
 };*/
 
 class IFutureCameraState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IFutureCameraState() {}
     virtual void IFutureCameraState_unk0() = 0;
@@ -24,8 +23,7 @@ public:
     virtual void IFutureCameraState_unk3() = 0;
 };
 
-class IInventoryOwner
-{
+class IInventoryOwner {
 public:
     virtual void IInventoryOwner_unk0() = 0;
     virtual void IInventoryOwner_unk1() = 0;
@@ -39,8 +37,7 @@ public:
 };
 
 class IIKControllerOwner :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IIKControllerOwner() {}
     virtual void IIKControllerOwner_unk0() = 0;
@@ -81,8 +78,7 @@ public:
 };
 
 class IControllableCharacter :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IControllableCharacter() {}
     virtual void IControllableCharacter_unk0() = 0;
@@ -97,8 +93,7 @@ public:
 };
 
 class IHM5ActionEntityListener :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IHM5ActionEntityListener() {}
     virtual void IHM5ActionEntityListener_unk0() = 0;
@@ -110,8 +105,7 @@ public:
 };
 
 class ISavableEntity :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ISavableEntity() {}
     virtual void ISavableEntity_unk0() = 0;
@@ -119,16 +113,14 @@ public:
 };
 
 class IAIGameplayConcept :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~IAIGameplayConcept() {}
     virtual void IAIGameplayConcept_unk0() = 0;
 };
 
 class ICharacterMovementState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterMovementState() {}
     virtual void ICharacterMovementState_unk0() = 0;
@@ -197,8 +189,7 @@ public:
 };
 
 class ICharacterCombatState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterCombatState() {}
     virtual void ICharacterCombatState_unk0() = 0;
@@ -234,8 +225,7 @@ public:
 };
 
 class ICharacterCoreInventoryState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterCoreInventoryState() {}
     virtual void ICharacterCoreInventoryState_unk0() = 0;
@@ -248,8 +238,7 @@ public:
 };
 
 class ICharacterInventoryState :
-    public ICharacterCoreInventoryState
-{
+        public ICharacterCoreInventoryState {
 public:
     virtual ~ICharacterInventoryState() {}
     virtual void ICharacterInventoryState_unk0() = 0;
@@ -288,8 +277,7 @@ public:
 };
 
 class ICharacterFriskingState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterFriskingState() {}
     virtual void ICharacterFriskingState_unk0() = 0;
@@ -326,8 +314,7 @@ public:
 };
 
 class ICharacterShowItemState :
-    public ICharacterCoreInventoryState
-{
+        public ICharacterCoreInventoryState {
 public:
     virtual ~ICharacterShowItemState() {}
     virtual void ICharacterShowItemState_unk0() = 0;
@@ -341,8 +328,7 @@ public:
 };
 
 class ICharacterArrestState :
-    public ICharacterCoreInventoryState
-{
+        public ICharacterCoreInventoryState {
 public:
     virtual ~ICharacterArrestState() {}
     virtual void ICharacterArrestState_unk0() = 0;
@@ -352,8 +338,7 @@ public:
 };
 
 class ICharacterIllegalInteractionsState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterIllegalInteractionsState() {}
     virtual void ICharacterIllegalInteractionsState_unk0() = 0;
@@ -365,8 +350,7 @@ public:
 };
 
 class ICharacterLocationState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterLocationState() {}
     virtual void ICharacterLocationState_unk0() = 0;
@@ -377,8 +361,7 @@ public:
 };
 
 class ICharacterCameraState :
-    public IComponentInterface
-{
+        public IComponentInterface {
 public:
     virtual ~ICharacterCameraState() {}
     virtual void ICharacterCameraState_unk0() = 0;
@@ -398,14 +381,12 @@ class ZCharacter;
 class ZHM5MainCamera;
 
 class ZHM5Animator :
-    public ZEntityImpl,
-    public IBoneAnimator
-{
+        public ZEntityImpl,
+        public IBoneAnimator {
 public:
 };
 
-struct SGameInput
-{
+struct SGameInput {
     virtual ~SGameInput() = 0;
     float m_fGameInput[72];
     PAD(0x4D8);
@@ -413,8 +394,7 @@ struct SGameInput
 
 static_assert(sizeof(SGameInput) == 0x600);
 
-class ZCharacterInputProcessor
-{
+class ZCharacterInputProcessor {
 public:
     virtual ~ZCharacterInputProcessor() = 0;
 
@@ -424,24 +404,24 @@ public:
 };
 
 class ZHitman5 :
-    public ZHM5BaseCharacter,
-    public IFutureCameraState, // 720
-    public ICharacterCollision, // 728
-    public IInventoryOwner, // 736
-    public IIKControllerOwner, // 744
-    public IControllableCharacter, // 752
-    public IHM5ActionEntityListener, // 760
-    public ISavableEntity, // 768
-    public IAIGameplayConcept, // 776
-    public ICharacterMovementState, // 784
-    public ICharacterCombatState, // 792
-    public ICharacterInventoryState, // 800
-    public ICharacterFriskingState, // 808
-    public ICharacterShowItemState, // 816
-    public ICharacterArrestState, // 824
-    public ICharacterIllegalInteractionsState, // 832
-    public ICharacterLocationState, // 840
-    public ICharacterCameraState // 848
+        public ZHM5BaseCharacter,
+        public IFutureCameraState, // 720
+        public ICharacterCollision, // 728
+        public IInventoryOwner, // 736
+        public IIKControllerOwner, // 744
+        public IControllableCharacter, // 752
+        public IHM5ActionEntityListener, // 760
+        public ISavableEntity, // 768
+        public IAIGameplayConcept, // 776
+        public ICharacterMovementState, // 784
+        public ICharacterCombatState, // 792
+        public ICharacterInventoryState, // 800
+        public ICharacterFriskingState, // 808
+        public ICharacterShowItemState, // 816
+        public ICharacterArrestState, // 824
+        public ICharacterIllegalInteractionsState, // 832
+        public ICharacterLocationState, // 840
+        public ICharacterCameraState // 848
 {
 public:
     PAD(0x3B8); // 0x358
@@ -475,12 +455,10 @@ public:
     TEntityRef<ZCharacter> m_pCharacter; // 0xDA0
     PAD(0x398); // 0xDB0
 
-    union
-    {
+    union {
         uint32_t m_flags; // 0x1148
 
-        struct
-        {
+        struct {
             bool m_bActivated : 1;
             bool m_bActivatingHitman : 1;
             bool m_bInEditMode : 1;

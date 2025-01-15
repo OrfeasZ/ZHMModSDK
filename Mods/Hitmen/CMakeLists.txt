@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.12)
 
 file(GLOB_RECURSE SRC_FILES
 	CONFIGURE_DEPENDS
@@ -18,7 +18,7 @@ target_include_directories(Hitmen PRIVATE
 
 target_link_libraries(Hitmen PRIVATE
 	ZHMModSDK
-	GameNetworkingSockets::static
+	#GameNetworkingSockets::static
 )
 
 install(TARGETS Hitmen
