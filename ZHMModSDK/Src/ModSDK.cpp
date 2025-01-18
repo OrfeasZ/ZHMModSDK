@@ -454,7 +454,7 @@ void ModSDK::SkipVersionUpdate(const std::string& p_Version) {
     );
 }
 
-void ModSDK::CheckForUpdates() {
+void ModSDK::CheckForUpdates() const {
     // Try to get latest version from GitHub.
     std::pair<uint32_t, std::string> s_VersionCheckResult;
 
@@ -534,7 +534,7 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
         else if (p_Args[0] == "config") {
             ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
 
-            if (s_Command == 0)
+            if (!s_Command)
                 return Logger::Error("[ZConfigCommand] Invalid command.");
 
             switch (s_Command->GetType()) {
@@ -560,7 +560,7 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
         if (p_Args[0] == "config") {
             ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
 
-            if (s_Command == 0)
+            if (!s_Command)
                 return Logger::Info("[ZConfigCommand] Invalid command.");
 
             // Now we validate the input, we technically don't need to do this as it'll be done by the engine function
@@ -615,7 +615,7 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
             }
 
             Functions::ZConfigCommand_ExecuteCommand->Call(p_Args[1].c_str(), p_Args[2].c_str());
-            Logger::Info("[ZConfigCommand] Set \"{}\" to \"{}\"", p_Args[1], p_Args[2]);
+            Logger::Info(R"([ZConfigCommand] Set "{}" to "{}")", p_Args[1], p_Args[2]);
         }
     }
 }
@@ -666,7 +666,7 @@ bool ModSDK::Startup() {
     return true;
 }
 
-void ModSDK::ThreadedStartup() {
+void ModSDK::ThreadedStartup() const {
     m_ModLoader->LockRead();
 
     for (const auto& s_Mod : m_ModLoader->GetLoadedMods()) {
@@ -681,7 +681,7 @@ void ModSDK::ThreadedStartup() {
         OnEngineInit();
 }
 
-void ModSDK::OnDrawMenu() {
+void ModSDK::OnDrawMenu() const {
     m_ModLoader->LockRead();
 
     for (auto& s_Mod : m_ModLoader->GetLoadedMods()) {
@@ -691,7 +691,7 @@ void ModSDK::OnDrawMenu() {
     m_ModLoader->UnlockRead();
 }
 
-void ModSDK::OnDrawUI(bool p_HasFocus) {
+void ModSDK::OnDrawUI(bool p_HasFocus) const {
     m_UIConsole->Draw(p_HasFocus);
     m_UIMainMenu->Draw(p_HasFocus);
     m_UIModSelector->Draw(p_HasFocus);
@@ -704,7 +704,7 @@ void ModSDK::OnDrawUI(bool p_HasFocus) {
     m_ModLoader->UnlockRead();
 }
 
-void ModSDK::OnDraw3D() {
+void ModSDK::OnDraw3D() const {
     m_ModLoader->LockRead();
 
     for (auto& s_Mod : m_ModLoader->GetLoadedMods())
@@ -750,7 +750,7 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
 
 void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 
-void ModSDK::OnEngineInit() {
+void ModSDK::OnEngineInit() const {
     Logger::Debug("Engine was initialized.");
 
     if (m_UiEnabled) {
@@ -1336,9 +1336,9 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {
     return HookResult<bool>(HookAction::Return(), s_Result);
 }
 
-typedef int32_t EOS_Bool;
-#define EOS_TRUE 1
-#define EOS_FALSE 0
+using EOS_Bool = int32_t;
+constexpr auto EOS_TRUE = 1;
+constexpr auto EOS_FALSE = 0;
 
 struct EOS_Platform_ClientCredentials {
     const char* ClientId;
@@ -1361,8 +1361,8 @@ struct EOS_Platform_Options {
     uint32_t TickBudgetInMilliseconds;
 };
 
-#define EOS_PF_LOADING_IN_EDITOR 0x00001
-#define EOS_PF_DISABLE_OVERLAY 0x00002
+constexpr auto EOS_PF_LOADING_IN_EDITOR = 0x00001;
+constexpr auto EOS_PF_DISABLE_OVERLAY = 0x00002;
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options) {
     // Disable overlay in debug mode since it conflicts with Nsight and the like.
@@ -1371,7 +1371,7 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS
     Options->Flags |= EOS_PF_LOADING_IN_EDITOR | EOS_PF_DISABLE_OVERLAY;
     #endif
 
-    return HookResult<EOS_PlatformHandle*>(HookAction::Continue());
+    return {HookAction::Continue()};
 }
 
 void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback) {
@@ -1418,7 +1418,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
         }
     }
 
-    return HookResult<void>(HookAction::Continue());
+    return {HookAction::Continue()};
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(
@@ -1428,7 +1428,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
         m_DirectXTKRenderer->ClearDsvIndex();
     }
 
-    return HookResult<void>(HookAction::Continue());
+    return {HookAction::Continue()};
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
@@ -1436,5 +1436,5 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, 
         m_DirectXTKRenderer->ClearDsvIndex();
     }
 
-    return HookResult<void>(HookAction::Continue());
+    return {HookAction::Continue()};
 }
