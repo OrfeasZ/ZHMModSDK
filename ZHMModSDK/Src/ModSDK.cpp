@@ -1412,8 +1412,10 @@ DEFINE_DETOUR_WITH_CONTEXT(
     ZRenderDepthStencilView** dsv,
     uint32_t a5, bool bCaptureOnly
 ) {
-    if (*dsv && m_DirectXTKRenderer) {
-        m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
+    if(dsv) {
+        if (*dsv && m_DirectXTKRenderer) {
+            m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
+        }
     }
 
     return HookResult<void>(HookAction::Continue());
