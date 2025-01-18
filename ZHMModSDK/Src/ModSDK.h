@@ -53,8 +53,8 @@ public:
 
 private:
     void LoadConfiguration();
-    std::pair<uint32_t, std::string> RequestLatestVersion();
-    void ShowVersionNotice(const std::string& p_Version);
+    static std::pair<uint32_t, std::string> RequestLatestVersion();
+    static void ShowVersionNotice(const std::string& p_Version);
     void SkipVersionUpdate(const std::string& p_Version);
     void CheckForUpdates() const;
 
