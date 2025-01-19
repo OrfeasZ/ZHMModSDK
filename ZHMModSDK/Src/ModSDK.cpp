@@ -1337,8 +1337,8 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {
 }
 
 using EOS_Bool = int32_t;
-constexpr auto EOS_TRUE = 1;
-constexpr auto EOS_FALSE = 0;
+#define EOS_TRUE 1
+#define EOS_FALSE 0
 
 struct EOS_Platform_ClientCredentials {
     const char* ClientId;
@@ -1361,8 +1361,8 @@ struct EOS_Platform_Options {
     uint32_t TickBudgetInMilliseconds;
 };
 
-constexpr auto EOS_PF_LOADING_IN_EDITOR = 0x00001;
-constexpr auto EOS_PF_DISABLE_OVERLAY = 0x00002;
+#define EOS_PF_LOADING_IN_EDITOR 0x00001
+#define EOS_PF_DISABLE_OVERLAY 0x00002
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options) {
     // Disable overlay in debug mode since it conflicts with Nsight and the like.
