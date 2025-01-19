@@ -45,7 +45,7 @@ public:
     ~ModSDK();
 
     bool Startup();
-    void ThreadedStartup();
+    void ThreadedStartup() const;
 
     uintptr_t GetModuleBase() const { return m_ModuleBase; }
     uint32_t GetSizeOfCode() const { return m_SizeOfCode; }
@@ -53,18 +53,18 @@ public:
 
 private:
     void LoadConfiguration();
-    std::pair<uint32_t, std::string> RequestLatestVersion();
-    void ShowVersionNotice(const std::string& p_Version);
+    static std::pair<uint32_t, std::string> RequestLatestVersion();
+    static void ShowVersionNotice(const std::string& p_Version);
     void SkipVersionUpdate(const std::string& p_Version);
-    void CheckForUpdates();
+    void CheckForUpdates() const;
 
 public:
-    void OnEngineInit();
     void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
     void OnModUnloaded(const std::string& p_Name);
-    void OnDrawUI(bool p_HasFocus);
-    void OnDraw3D();
-    void OnDrawMenu();
+    void OnEngineInit() const;
+    void OnDrawUI(bool p_HasFocus) const;
+    void OnDraw3D() const;
+    void OnDrawMenu() const;
 
 public:
     void SetSwapChain(Rendering::D3D12SwapChain* p_SwapChain);
