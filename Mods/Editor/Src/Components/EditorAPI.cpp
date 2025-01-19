@@ -104,20 +104,6 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 			const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
 			const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
-			// Get the value of the property.
-			auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
-
-			if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
-				s_PropertyInfo->get(
-				    reinterpret_cast<void*>(s_PropertyAddress),
-				    s_Data,
-				    s_PropertyInfo->m_nOffset);
-			} else {
-				s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
-				    s_Data,
-				    reinterpret_cast<void*>(s_PropertyAddress));
-			}
-
 			const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
 			const std::string s_InputId = std::format("##Property{}", i);
 
@@ -132,6 +118,20 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 						.Size) != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
 						continue;
 					} else {
+                        // Get the value of the property.
+                        auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
+
+                        if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
+                            s_PropertyInfo->get(
+                                reinterpret_cast<void*>(s_PropertyAddress),
+                                s_Data,
+                                s_PropertyInfo->m_nOffset);
+                        }
+                        else {
+                            s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+                                s_Data,
+                                reinterpret_cast<void*>(s_PropertyAddress));
+                        }
 						//Logger::Info("Property Name: {}", std::string(s_PropertyNameView.Data, s_PropertyNameView.Size).c_str());
 						auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
 						std::string s_ResourceName = "null";
