@@ -10,7 +10,6 @@
 
 #include <queue>
 #include <utility>
-#include <spdlog/fmt/ostr.h>
 #include <numbers>
 
 ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {

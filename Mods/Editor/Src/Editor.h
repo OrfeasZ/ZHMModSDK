@@ -126,7 +126,6 @@ private:
 
     void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
-    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
 private:

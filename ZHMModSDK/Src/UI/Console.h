@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 #include <vector>
-//#include <spdlog/spdlog.h>
+#include <spdlog/spdlog.h>
 #include <Glacier/ZString.h>
 
 namespace UI
