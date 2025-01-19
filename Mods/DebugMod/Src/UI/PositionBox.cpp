@@ -43,9 +43,9 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
                         ImGui::TableSetColumnIndex(colIndex);
                         ImGui::Text("%f", s_HitmanTrans.flt[(rowIndex * 4) + colIndex]);
                     }
-
-                    ImGui::EndTable();
                 }
+
+                ImGui::EndTable();
 
                 if (ImGui::Button("Copy Hitman Transform")) {
                     CopyToClipboard(fmt::format("{}", s_HitmanTrans));

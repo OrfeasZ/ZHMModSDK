@@ -85,9 +85,9 @@ void DebugMod::OnDrawMenu() {
     }
 
     // Disabled due to it freezing the game.
-    //if (ImGui::Button("POSITIONS MENU")) {
-    //    m_PositionsMenuActive = !m_PositionsMenuActive;
-    //}
+    if (ImGui::Button("POSITIONS MENU")) {
+        m_PositionsMenuActive = !m_PositionsMenuActive;
+    }
 
     if (ImGui::Button("PLAYER MENU")) {
         m_PlayerMenuActive = !m_PlayerMenuActive;
@@ -114,7 +114,7 @@ void DebugMod::OnDrawUI(bool p_HasFocus) {
     DrawItemsBox(p_HasFocus);
     DrawNPCsBox(p_HasFocus);
     DrawPlayerBox(p_HasFocus);
-    //DrawPositionBox(p_HasFocus);
+    DrawPositionBox(p_HasFocus);
 
     auto& s_ImgGuiIO = ImGui::GetIO();
 
