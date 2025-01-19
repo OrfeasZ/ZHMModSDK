@@ -1336,7 +1336,7 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {
     return HookResult<bool>(HookAction::Return(), s_Result);
 }
 
-using EOS_Bool = int32_t;
+typedef int32_t EOS_Bool;
 #define EOS_TRUE 1
 #define EOS_FALSE 0
 
