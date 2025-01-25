@@ -171,6 +171,13 @@ private:
         ZRenderDepthStencilView** dsv, uint32_t a5, bool bCaptureOnly
     );
 
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, ZUserChannelContractsProxyBase_GetForPlay2, const ZString& id, const ZString& locationId,
+        const ZDynamicObject& extraGameChangedIds, int difficulty,
+        const std::function<void(const ZDynamicObject&)>& onOk, const std::function<void(int)>& onError,
+        ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
+    );
+
     bool PatchCodeInternal(
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
         void* p_OriginalCode

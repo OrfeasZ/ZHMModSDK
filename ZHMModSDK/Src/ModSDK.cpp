@@ -69,7 +69,7 @@ ZHMSDK_API IModSDK* SDK() {
 }
 
 extern "C" ZHMSDK_API const char* SDKVersion() {
-    return "3.0.0";
+    return "3.1.1";
 }
 
 ModSDK* ModSDK::g_Instance = nullptr;
@@ -633,6 +633,10 @@ bool ModSDK::Startup() {
     Hooks::DrawScaleform->AddDetour(this, &ModSDK::DrawScaleform);
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &ModSDK::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &ModSDK::OnClearScene);
+
+    Hooks::ZUserChannelContractsProxyBase_GetForPlay2->AddDetour(
+        this, &ModSDK::ZUserChannelContractsProxyBase_GetForPlay2
+    );
 
     m_D3D12Hooks->Startup();
 
@@ -1412,10 +1416,9 @@ DEFINE_DETOUR_WITH_CONTEXT(
     ZRenderDepthStencilView** dsv,
     uint32_t a5, bool bCaptureOnly
 ) {
-    if(dsv) {
-        if (*dsv && m_DirectXTKRenderer) {
-            m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
-        }
+    if (dsv && *dsv && m_DirectXTKRenderer) {
+        // TODO: Re-enable once we have proper functions for depth-supported drawing.
+        //m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
     }
 
     return {HookAction::Continue()};
@@ -1437,4 +1440,33 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, 
     }
 
     return {HookAction::Continue()};
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(
+    ModSDK, void, ZUserChannelContractsProxyBase_GetForPlay2, const ZString& id, const ZString& locationId,
+    const ZDynamicObject& extraGameChangedIds, int difficulty, const std::function<void(const ZDynamicObject&)>& onOk,
+    const std::function<void(int)>& onError, ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
+) {
+    /*Logger::Debug("GetForPlay2 called for id '{}' and location '{}'", id.c_str(), locationId.c_str());
+
+    auto s_NewOkCb = [=](const ZDynamicObject& p_Response) {
+        ZString s_SerializedResponse;
+        Functions::ZDynamicObject_ToString->Call(
+            const_cast<ZDynamicObject*>(&p_Response), &s_SerializedResponse
+        );
+
+        Logger::Debug(
+            "[GetForPlay2] response: {}", s_SerializedResponse.c_str()
+        );
+
+        onOk(p_Response);
+    };
+
+    p_Hook->CallOriginal(
+        id, locationId, extraGameChangedIds, difficulty, s_NewOkCb, onError, ctx, behavior
+    );*/
+
+    p_Hook->CallOriginal(id, locationId, extraGameChangedIds, difficulty, onOk, onError, ctx, behavior);
+
+    return HookResult<void>(HookAction::Return());
 }

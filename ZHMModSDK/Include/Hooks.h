@@ -67,6 +67,8 @@ class TEntityRef;
 struct EOS_PlatformHandle;
 struct EOS_Platform_Options;
 class ZRenderTargetView;
+class ZAsyncContext;
+struct SHttpRequestBehavior;
 
 class ZHMSDK_API Hooks {
 public:
@@ -172,9 +174,14 @@ public:
     //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3)>* ZAudioSwitchBlueprintFactory_DestroyEntity;
     //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3)>* ZAudioStateBlueprintFactory_DestroyEntity;
     //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3)>* ZAspectEntityBlueprintFactory_DestroyEntity;
-
     static Hook<void(
         ZRenderContext* ctx, ZRenderTargetView** rtv, uint32_t a3, ZRenderDepthStencilView** dsv, uint32_t a5,
         bool bCaptureOnly
     )>* DrawScaleform;
+
+    static Hook<void(
+        const ZString& id, const ZString& locationId, const ZDynamicObject& extraGameChangedIds, int difficulty,
+        const std::function<void(const ZDynamicObject&)>& onOk, const std::function<void(int)>& onError,
+        ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
+    )>* ZUserChannelContractsProxyBase_GetForPlay2;
 };
