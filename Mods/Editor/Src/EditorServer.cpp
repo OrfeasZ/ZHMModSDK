@@ -204,14 +204,15 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	}
 	else if (s_Type == "listAlocEntities") {
 		Plugin()->LockEntityTree();
-		std::vector < std::tuple< std::string, Quat, ZEntityRef >> s_Entities = Plugin()->FindPrims();
-		SendEntitiesDetails(p_Socket, s_Entities);
+        Plugin()->FindPrims([p_Socket](std::vector < std::tuple< std::string, Quat, ZEntityRef >> s_Entities, bool s_Done) -> void {
+            SendEntitiesDetails(p_Socket, s_Entities, s_Done);
+        });
 		Plugin()->UnlockEntityTree();
 	}
 	else if (s_Type == "listPfBoxEntities") {
 		Plugin()->LockEntityTree();
 		std::vector<std::tuple<std::string, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
-		SendEntitiesDetails(p_Socket, s_Entities);
+		SendEntitiesDetails(p_Socket, s_Entities, true);
 		Plugin()->UnlockEntityTree();
 	}
 	else if (s_Type == "loadNavp") {
@@ -811,7 +812,7 @@ bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
 	return false;
 }
 
-void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::string, Quat, ZEntityRef>> p_Entities) {
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::string, Quat, ZEntityRef>> p_Entities, bool s_Done) {
 	if (!p_Entities.empty()) {
 		Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
 
@@ -832,7 +833,9 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tup
 	} else {
 		Logger::Info("No entities found for request.", p_Entities.size());
 	}
-	p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
+    if (s_Done) {
+        p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
+    }
 }
 
 void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity) {

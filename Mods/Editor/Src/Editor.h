@@ -46,7 +46,7 @@ public:
 	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
 	ZEntityRef FindEntity(EntitySelector p_Selector);
 	std::string getCollisionHash(auto s_SelectedEntity);
-	std::vector<std::tuple<std::string, Quat, ZEntityRef>> FindPrims();
+	void FindPrims(std::function<void(std::vector<std::tuple<std::string, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback);
 	std::vector<std::tuple<std::string, Quat, ZEntityRef>> FindPfBoxEntities();
 	void RebuildEntityTree();
 	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);

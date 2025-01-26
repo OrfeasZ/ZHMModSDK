@@ -139,6 +139,7 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 						if (s_Resource && s_Resource->m_nResourceIndex >= 0) {
 							s_ResourceName = fmt::format("{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh, s_Resource->GetResourceInfo().rid.m_IDLow);
 						}
+                        (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
 						//Logger::Info("Found ALOC Resource: {}", s_ResourceName.c_str());
 						if (s_ResourceName.c_str() != "" && s_ResourceName.c_str() != NULL && s_ResourceName.c_str() != "null") { 
@@ -235,11 +236,11 @@ Quat Editor::GetParentQuat(ZEntityRef p_Entity) {
 	return s_Quat;
 }
 
-std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPrims() {
+void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::string, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback) {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
-		return {};
+		return;
 	}
 	std::vector<std::tuple<std::string, Quat, ZEntityRef>> entities;
 
@@ -249,25 +250,31 @@ std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPrims() {
 	const char* s_GEOMENTITY_TYPE = "ZGeomEntity";
 	const char* s_PURE_WATER_TYPE = "ZPureWaterAspect";
 	std::vector<std::string> s_selectorPrimHashes;
-
+    std::set<std::string> s_visitedNodes;
 	// Keep iterating through the tree until we find all the prims.
 	while (!s_NodeQueue.empty()) {
+        if (entities.size() > 10) {
+            s_SendEntitiesCallback(entities, false);
+            entities.clear();
+        }
 		// Access the first node in the queue
 		auto s_Parent = s_NodeQueue.front().first;
 		auto s_Node = s_NodeQueue.front().second;
 		s_NodeQueue.pop();
-		
+        std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
+        s_visitedNodes.insert(s_Id);
 		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
 		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
 		if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
 			if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
 				if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
-					std::string s_collision_ioi_string = getCollisionHash(s_Node->Entity);
+                    std::string s_HashString = std::format("Node TBLU <{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
+                    const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
+                    const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
+                    std::string s_PrimHashString{ std::format("{:016X}", s_PrimHash) };
+                    Logger::Info("Found PRIM with collision: '{}' '{}' '{}'", s_Id, s_HashString, s_PrimHashString);
+                    std::string s_collision_ioi_string = getCollisionHash(s_Node->Entity);
 					if (!s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
-						std::string s_HashString = std::format("Node TBLU <{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
-						const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
-						const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
-						std::string s_PrimHashString{std::format("{:016X}", s_PrimHash)};
 						bool s_Skip = false;
 						for (auto s_Interface: s_Interfaces) {
 							if (s_Interface.m_pTypeId->typeInfo() != NULL) {
@@ -280,7 +287,6 @@ std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPrims() {
 							}
 						}
 						if (!s_Skip) {
-							std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
 							//Logger::Info("Found PRIM with collision: '{}' '{}' '{}' '{}'", s_Id, s_HashString, s_PrimHashString, s_collision_ioi_string);
 							Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
 							Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
@@ -301,12 +307,18 @@ std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPrims() {
 		}
 
 		// Add children to the queue.
-		for (auto& childPair: s_Node->Children) {
-			s_NodeQueue.push(std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>{s_Node, childPair.second});
+		for (auto& s_ChildPair: s_Node->Children) {
+            std::string s_ChildId = std::format("{:016x}", s_ChildPair.second->Entity->GetType()->m_nEntityId);
+
+            if (!s_visitedNodes.contains(s_ChildId)) {
+                s_NodeQueue.push(std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>{s_Node, s_ChildPair.second});
+            }
 		}
 	}
+    s_SendEntitiesCallback(entities, true);
+    entities.clear();
 
-	return entities;
+	return;
 }
 
 std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPfBoxEntities() {
