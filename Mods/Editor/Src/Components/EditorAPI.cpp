@@ -236,24 +236,25 @@ Quat Editor::GetParentQuat(ZEntityRef p_Entity) {
 	return s_Quat;
 }
 
-void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::string, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback) {
+void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback) {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
 		return;
 	}
-	std::vector<std::tuple<std::string, Quat, ZEntityRef>> entities;
+	std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
 
 	// Create a queue and add the root to it.
 	std::queue<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodeQueue;
 	s_NodeQueue.push(std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>{std::shared_ptr<EntityTreeNode>(), m_CachedEntityTree});
 	const char* s_GEOMENTITY_TYPE = "ZGeomEntity";
+	const char* s_PRIMITIVEPROXY_TYPE = "ZPrimitiveProxyEntity";
 	const char* s_PURE_WATER_TYPE = "ZPureWaterAspect";
 	std::vector<std::string> s_selectorPrimHashes;
     std::set<std::string> s_visitedNodes;
 	// Keep iterating through the tree until we find all the prims.
 	while (!s_NodeQueue.empty()) {
-        if (entities.size() > 10) {
+        if (entities.size() >= 10) {
             s_SendEntitiesCallback(entities, false);
             entities.clear();
         }
@@ -264,47 +265,115 @@ void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::string, Qu
         std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
         s_visitedNodes.insert(s_Id);
 		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
-		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
-		if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
-			if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
-				if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
-                    std::string s_HashString = std::format("Node TBLU <{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
+        const auto typeInfo = s_Interfaces[0].m_pTypeId->typeInfo();
+        if (typeInfo == NULL) {
+            continue;
+        }
+		char* s_EntityType = typeInfo->m_pTypeName;
+        if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
+            if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
+                std::string s_HashString = std::format("<{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
+
+                std::vector<std::string> s_AlocHashes;
+                ZResourceIndex s_ResourceIndex(s_GeomEntity->m_ResourceID.m_nResourceIndex);
+                TArray<ZResourceIndex> s_Indices;
+                TArray<unsigned char> s_Flags;
+                if (s_ResourceIndex.val != -1) {
+                    Functions::ZResourceContainer_GetResourceReferences->Call(*Globals::ResourceContainer, s_ResourceIndex, s_Indices, s_Flags);
+                    for (ZResourceIndex s_CurrentResourceIndex : s_Indices) {
+                        const auto s_ReferenceResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
+                        if (s_ReferenceResourceInfo.resourceType == 'ALOC') {
+                            const auto s_AlocHash = s_ReferenceResourceInfo.rid.GetID();
+                            std::string s_AlocHashString{ std::format("{:016X}", s_AlocHash) };
+                            s_AlocHashes.push_back(s_AlocHashString);
+                            Logger::Info("Found ALOC. ID: {} TBLU: {} ALOC: {}", s_Id, s_HashString, s_AlocHashString);
+                        }
+                    }
                     const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
                     const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
                     std::string s_PrimHashString{ std::format("{:016X}", s_PrimHash) };
-                    Logger::Info("Found PRIM with collision: '{}' '{}' '{}'", s_Id, s_HashString, s_PrimHashString);
                     std::string s_collision_ioi_string = getCollisionHash(s_Node->Entity);
-					if (!s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
-						bool s_Skip = false;
-						for (auto s_Interface: s_Interfaces) {
-							if (s_Interface.m_pTypeId->typeInfo() != NULL) {
-								char* s_EntityType = s_Interface.m_pTypeId->typeInfo()->m_pTypeName;
-								if (strcmp(s_EntityType, s_PURE_WATER_TYPE) == 0) {
-									s_Skip = true;
-									//Logger::Info("Skipping PRIM with ZPureWaterAspect type: '{}' '{}' '{}'", s_HashString, s_PrimHashString, s_collision_ioi_string);
-									break;
-								}
-							}
-						}
-						if (!s_Skip) {
-							//Logger::Info("Found PRIM with collision: '{}' '{}' '{}' '{}'", s_Id, s_HashString, s_PrimHashString, s_collision_ioi_string);
-							Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-							Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
-							
-							Quat s_CombinedQuat;
-							s_CombinedQuat = s_ParentQuat * s_EntityQuat;
-							std::tuple<std::string, Quat, ZEntityRef> s_Entity = 
-								std::make_tuple(
-									s_collision_ioi_string,  
-									s_CombinedQuat, 
-									s_Node->Entity
-								);
-							entities.push_back(s_Entity);
-						}
-					}
-				}
-			}
-		}
+                    if (!s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
+                        bool s_Skip = false;
+                        for (auto s_Interface : s_Interfaces) {
+                            if (s_Interface.m_pTypeId->typeInfo() != NULL) {
+                                char* s_EntityType = s_Interface.m_pTypeId->typeInfo()->m_pTypeName;
+                                if (strcmp(s_EntityType, s_PURE_WATER_TYPE) == 0) {
+                                    s_Skip = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!s_Skip) {
+                            Logger::Info("Found ALOC. ID: {} TBLU: {} PRIM: {} ALOC: {}", s_Id, s_HashString, s_PrimHashString, s_collision_ioi_string);
+                            s_AlocHashes.push_back(s_collision_ioi_string);
+                            Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
+                            Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+
+                            Quat s_CombinedQuat;
+                            s_CombinedQuat = s_ParentQuat * s_EntityQuat;
+                            std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
+                                std::make_tuple(
+                                    s_AlocHashes,
+                                    s_CombinedQuat,
+                                    s_Node->Entity
+                                );
+                            entities.push_back(s_Entity);
+                        }
+                    }
+                }
+            }
+        }
+        else if (strcmp(s_EntityType, s_PRIMITIVEPROXY_TYPE) == 0) {
+            std::string s_HashString = std::format("<{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
+
+            std::vector<std::string> s_AlocHashes;
+            // TODO: See if there is a way to get the m_ResourceID of a ZPrimitiveProxyEntity to be able to handle Extra Factory Depends
+            //ZResourceIndex s_ResourceIndex(s_Node->Entity.m_ResourceID.m_nResourceIndex);
+            //TArray<ZResourceIndex> s_Indices;
+            //TArray<unsigned char> s_Flags;
+            //if (s_ResourceIndex.val != -1) {
+            //    Functions::ZResourceContainer_GetResourceReferences->Call(*Globals::ResourceContainer, s_ResourceIndex, s_Indices, s_Flags);
+            //    for (ZResourceIndex s_CurrentResourceIndex : s_Indices) {
+            //        const auto s_ReferenceResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
+            //        if (s_ReferenceResourceInfo.resourceType == 'ALOC') {
+            //            const auto s_AlocHash = s_ReferenceResourceInfo.rid.GetID();
+            //            std::string s_AlocHashString{ std::format("{:016X}", s_AlocHash) };
+            //            s_AlocHashes.push_back(s_AlocHashString);
+            //            Logger::Info("Found ALOC. ID: {} TBLU: {} ALOC: {}", s_Id, s_HashString, s_AlocHashString);
+            //        }
+            //    }
+            //}
+            std::string s_collision_ioi_string = getCollisionHash(s_Node->Entity);
+            if (!s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
+                bool s_Skip = false;
+                for (auto s_Interface : s_Interfaces) {
+                    if (s_Interface.m_pTypeId->typeInfo() != NULL) {
+                        char* s_EntityType = s_Interface.m_pTypeId->typeInfo()->m_pTypeName;
+                        if (strcmp(s_EntityType, s_PURE_WATER_TYPE) == 0) {
+                            s_Skip = true;
+                            break;
+                        }
+                    }
+                }
+                if (!s_Skip) {
+                    Logger::Info("Found ALOC. ID: {} TBLU: {} ALOC: {}", s_Id, s_HashString, s_collision_ioi_string);
+                    s_AlocHashes.push_back(s_collision_ioi_string);
+                    Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
+                    Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+
+                    Quat s_CombinedQuat;
+                    s_CombinedQuat = s_ParentQuat * s_EntityQuat;
+                    std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
+                        std::make_tuple(
+                            s_AlocHashes,
+                            s_CombinedQuat,
+                            s_Node->Entity
+                        );
+                    entities.push_back(s_Entity);
+                }
+            }
+        }
 
 		// Add children to the queue.
 		for (auto& s_ChildPair: s_Node->Children) {
@@ -321,13 +390,13 @@ void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::string, Qu
 	return;
 }
 
-std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPfBoxEntities() {
+std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::FindPfBoxEntities() {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
 		return {};
 	}
-	std::vector<std::tuple<std::string, Quat, ZEntityRef>> entities;
+	std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
 	const char* s_PFBOXENTITY_TYPE = "ZPFBoxEntity";
 
 	Logger::Info("Getting PfBoxEntities:");
@@ -349,9 +418,9 @@ std::vector<std::tuple<std::string, Quat, ZEntityRef>> Editor::FindPfBoxEntities
 
 			Quat s_CombinedQuat;
 			s_CombinedQuat = s_ParentQuat * s_EntityQuat;
-			std::tuple<std::string, Quat, ZEntityRef> s_Entity =
+			std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
 			    std::make_tuple(
-			        "00724CDE424AFE76",
+                    std::vector<std::string>{ "00724CDE424AFE76" },
 			        s_CombinedQuat,
 			        s_Node->Entity);
 

@@ -204,14 +204,14 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	}
 	else if (s_Type == "listAlocEntities") {
 		Plugin()->LockEntityTree();
-        Plugin()->FindPrims([p_Socket](std::vector < std::tuple< std::string, Quat, ZEntityRef >> s_Entities, bool s_Done) -> void {
+        Plugin()->FindPrims([p_Socket](std::vector < std::tuple< std::vector<std::string>, Quat, ZEntityRef >> s_Entities, bool s_Done) -> void {
             SendEntitiesDetails(p_Socket, s_Entities, s_Done);
         });
 		Plugin()->UnlockEntityTree();
 	}
 	else if (s_Type == "listPfBoxEntities") {
 		Plugin()->LockEntityTree();
-		std::vector<std::tuple<std::string, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
+		std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
 		SendEntitiesDetails(p_Socket, s_Entities, true);
 		Plugin()->UnlockEntityTree();
 	}
@@ -812,23 +812,25 @@ bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
 	return false;
 }
 
-void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::string, Quat, ZEntityRef>> p_Entities, bool s_Done) {
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> p_Entities, bool s_Done) {
 	if (!p_Entities.empty()) {
 		Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
 
-		for (std::tuple<std::string, Quat, ZEntityRef> p_Entity: p_Entities) {
+		for (std::tuple<std::vector<std::string>, Quat, ZEntityRef> p_Entity: p_Entities) {
 			bool s_SkipPrim = ExcludeFromNavMeshExport(get<2>(p_Entity));
 			if (s_SkipPrim) {
 				continue;
 			}
-			std::ostringstream s_Event;
-			s_Event << "{" << write_json("hash") << ":";
-			s_Event << write_json(get<0>(p_Entity)) << ",";
-			s_Event << write_json("entity") << ":";
-			WriteEntityTransforms(s_Event, get<1>(p_Entity), get<2>(p_Entity));
-			s_Event << "}";
-			//Logger::Info("Message that should be sent: {}", s_Event.str());
-			p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+            for (std::string s_AlocHash: get<0>(p_Entity)) {
+                std::ostringstream s_Event;
+                s_Event << "{" << write_json("hash") << ":";
+                s_Event << write_json(s_AlocHash) << ",";
+                s_Event << write_json("entity") << ":";
+                WriteEntityTransforms(s_Event, get<1>(p_Entity), get<2>(p_Entity));
+                s_Event << "}";
+                //Logger::Info("Message that should be sent: {}", s_Event.str());
+                p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+            }
 		}
 	} else {
 		Logger::Info("No entities found for request.", p_Entities.size());
