@@ -251,7 +251,6 @@ void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::vector<std
 	const char* s_PRIMITIVEPROXY_TYPE = "ZPrimitiveProxyEntity";
 	const char* s_PURE_WATER_TYPE = "ZPureWaterAspect";
 	std::vector<std::string> s_selectorPrimHashes;
-    std::set<std::string> s_visitedNodes;
 	// Keep iterating through the tree until we find all the prims.
 	while (!s_NodeQueue.empty()) {
         if (entities.size() >= 10) {
@@ -263,7 +262,6 @@ void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::vector<std
 		auto s_Node = s_NodeQueue.front().second;
 		s_NodeQueue.pop();
         std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
-        s_visitedNodes.insert(s_Id);
 		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
         const auto typeInfo = s_Interfaces[0].m_pTypeId->typeInfo();
         if (typeInfo == NULL) {
@@ -379,9 +377,7 @@ void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::vector<std
 		for (auto& s_ChildPair: s_Node->Children) {
             std::string s_ChildId = std::format("{:016x}", s_ChildPair.second->Entity->GetType()->m_nEntityId);
 
-            if (!s_visitedNodes.contains(s_ChildId)) {
-                s_NodeQueue.push(std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>{s_Node, s_ChildPair.second});
-            }
+            s_NodeQueue.push(std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>{s_Node, s_ChildPair.second});
 		}
 	}
     s_SendEntitiesCallback(entities, true);
