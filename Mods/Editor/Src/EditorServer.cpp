@@ -204,7 +204,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	}
 	else if (s_Type == "listAlocEntities") {
 		Plugin()->LockEntityTree();
-        Plugin()->FindPrims([p_Socket](std::vector < std::tuple< std::vector<std::string>, Quat, ZEntityRef >> s_Entities, bool s_Done) -> void {
+        Plugin()->FindAlocs([p_Socket](std::vector < std::tuple< std::vector<std::string>, Quat, ZEntityRef >> s_Entities, bool s_Done) -> void {
             SendEntitiesDetails(p_Socket, s_Entities, s_Done);
         });
 		Plugin()->UnlockEntityTree();
@@ -212,6 +212,12 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
 	else if (s_Type == "listPfBoxEntities") {
 		Plugin()->LockEntityTree();
 		std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
+		SendEntitiesDetails(p_Socket, s_Entities, true);
+		Plugin()->UnlockEntityTree();
+	}
+	else if (s_Type == "listPfSeedPointEntities") {
+		Plugin()->LockEntityTree();
+		std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfSeedPointEntities();
 		SendEntitiesDetails(p_Socket, s_Entities, true);
 		Plugin()->UnlockEntityTree();
 	}
@@ -880,13 +886,13 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 	}
 	p_Stream << write_json("rotation") << ":";
 	WriteQuat(p_Stream, p_Quat.m.x, p_Quat.m.y, p_Quat.m.z, p_Quat.m.w);
-	p_Stream << ",";
-	const auto s_EntityType = p_Entity->GetType();
 
 	const std::string s_ScalePropertyName = "m_PrimitiveScale";
 	const std::string s_TypePropertyName = "m_eType";
 	const std::string s_GlobalSizePropertyName = "m_vGlobalSize";
-	
+    bool shouldPlaceComma = true;
+    const auto s_EntityType = p_Entity->GetType();
+
 	if (s_EntityType && s_EntityType->m_pProperties01) {
 		for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
 			ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
@@ -903,31 +909,47 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 				if (s_PropertyName.Size > 0) {
 					std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
 					if (s_PropertyNameView == s_ScalePropertyName) {
+                        if (shouldPlaceComma) {
+                            p_Stream << ",";
+                            shouldPlaceComma = false;
+                        }
 						p_Stream << write_json("scale") << ":";
 						WriteProperty(p_Stream, p_Entity, s_Property);
 					}
 					if (s_PropertyNameView == s_TypePropertyName) {
-						p_Stream << write_json("type") << ":";
+                        if (shouldPlaceComma) {
+                            p_Stream << ",";
+                            shouldPlaceComma = false;
+                        }
+                        p_Stream << write_json("type") << ":";
 						WriteProperty(p_Stream, p_Entity, s_Property);
 						p_Stream << ",";
 					} else if (s_PropertyNameView == s_GlobalSizePropertyName) {
-						p_Stream << write_json("size") << ":";
+						p_Stream << write_json("scale") << ":";
 						WriteProperty(p_Stream, p_Entity, s_Property);
 					}
 				}
 			} else if (s_PropertyInfo->m_pName) {
 				if (s_PropertyInfo->m_pName == s_ScalePropertyName) {
-					p_Stream << write_json("scale");
+                    if (shouldPlaceComma) {
+                        p_Stream << ",";
+                        shouldPlaceComma = false;
+                    }
+                    p_Stream << write_json("scale");
 					p_Stream << ":";
 					WriteProperty(p_Stream, p_Entity, s_Property);
 				}
 				if (s_PropertyInfo->m_pName == s_TypePropertyName) {
-					p_Stream << write_json("type");
+                    if (shouldPlaceComma) {
+                        p_Stream << ",";
+                        shouldPlaceComma = false;
+                    }
+                    p_Stream << write_json("type");
 					p_Stream << ":";
 					WriteProperty(p_Stream, p_Entity, s_Property);
 					p_Stream << ",";
 				} else if (s_PropertyInfo->m_pName == s_GlobalSizePropertyName) {
-					p_Stream << write_json("size");
+					p_Stream << write_json("scale");
 					p_Stream << ":";
 					WriteProperty(p_Stream, p_Entity, s_Property);
 				}

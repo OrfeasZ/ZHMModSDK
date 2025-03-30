@@ -236,7 +236,7 @@ Quat Editor::GetParentQuat(ZEntityRef p_Entity) {
 	return s_Quat;
 }
 
-void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback) {
+void Editor::FindAlocs(std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback) {
 	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
 	if (!m_CachedEntityTree) {
@@ -326,22 +326,6 @@ void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::vector<std
             std::string s_HashString = std::format("<{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
 
             std::vector<std::string> s_AlocHashes;
-            // TODO: See if there is a way to get the m_ResourceID of a ZPrimitiveProxyEntity to be able to handle Extra Factory Depends
-            //ZResourceIndex s_ResourceIndex(s_Node->Entity.m_ResourceID.m_nResourceIndex);
-            //TArray<ZResourceIndex> s_Indices;
-            //TArray<unsigned char> s_Flags;
-            //if (s_ResourceIndex.val != -1) {
-            //    Functions::ZResourceContainer_GetResourceReferences->Call(*Globals::ResourceContainer, s_ResourceIndex, s_Indices, s_Flags);
-            //    for (ZResourceIndex s_CurrentResourceIndex : s_Indices) {
-            //        const auto s_ReferenceResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
-            //        if (s_ReferenceResourceInfo.resourceType == 'ALOC') {
-            //            const auto s_AlocHash = s_ReferenceResourceInfo.rid.GetID();
-            //            std::string s_AlocHashString{ std::format("{:016X}", s_AlocHash) };
-            //            s_AlocHashes.push_back(s_AlocHashString);
-            //            Logger::Info("Found ALOC. ID: {} TBLU: {} ALOC: {}", s_Id, s_HashString, s_AlocHashString);
-            //        }
-            //    }
-            //}
             std::string s_collision_ioi_string = getCollisionHash(s_Node->Entity);
             if (!s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
                 bool s_Skip = false;
@@ -384,6 +368,52 @@ void Editor::FindPrims(std::function<void(std::vector<std::tuple<std::vector<std
     entities.clear();
 
 	return;
+}
+
+std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::FindPfSeedPointEntities() {
+	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+
+	if (!m_CachedEntityTree) {
+		return {};
+	}
+	std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
+	const char* s_PFSEEDPOINT_TYPE = "ZPFSeedPoint";
+
+	Logger::Info("Getting PfSeedPoint Entities:");
+	// Create a queue and add the root to it.
+	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
+	s_NodeQueue.push(m_CachedEntityTree);
+
+	// Keep iterating through the tree until we find the nodes we're looking for.
+	while (!s_NodeQueue.empty()) {
+		// Access the first node in the queue
+		auto s_Node = s_NodeQueue.front();
+		s_NodeQueue.pop();
+		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
+		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
+
+		if (strcmp(s_EntityType, s_PFSEEDPOINT_TYPE) == 0) {
+			Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
+			Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+
+			Quat s_CombinedQuat;
+			s_CombinedQuat = s_ParentQuat * s_EntityQuat;
+			std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
+			    std::make_tuple(
+                    std::vector<std::string>{ "00280B8C4462FAC8" },
+			        s_CombinedQuat,
+			        s_Node->Entity);
+
+			entities.push_back(s_Entity);
+		}
+
+		// Add children to the queue.
+		for (auto& s_ChildPair: s_Node->Children) {
+			s_NodeQueue.push(s_ChildPair.second);
+		}
+	}
+
+	return entities;
 }
 
 std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::FindPfBoxEntities() {
