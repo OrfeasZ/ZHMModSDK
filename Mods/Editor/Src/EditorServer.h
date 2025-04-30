@@ -16,6 +16,7 @@
 struct EntitySelector {
     uint64_t EntityId;
     std::optional<ZRuntimeResourceID> TbluHash;
+    std::optional<std::string> PrimHash;
 };
 
 class EditorServer {
@@ -47,20 +48,22 @@ private:
     static void SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
     static void SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
     static void SendError(WebSocket* p_Socket, std::string p_Message, std::optional<int64_t> p_MessageId);
-    static void SendEntityList(
-        WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
-    );
+    static void SendEntityList(WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId);
     static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
-
+    static void SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> p_Entities, bool s_Done);
+    static void SendDoneLoadingNavpMessage(WebSocket* p_Socket);
+    static void WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity);
     static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);
     static void WriteVector3(std::ostream& p_Stream, double p_X, double p_Y, double p_Z);
     static void WriteRotation(std::ostream& p_Stream, double p_Yaw, double p_Pitch, double p_Roll);
+    static void WriteQuat(std::ostream& p_Stream, double p_x, double p_y, double p_z, double p_w);
     static void WriteTransform(std::ostream& p_Stream, SMatrix p_Transform);
     static void WritePropertyName(std::ostream& p_Stream, ZEntityProperty* p_Property);
     static void WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZEntityProperty* p_Property);
 
 public:
     static EntitySelector ReadEntitySelector(simdjson::ondemand::value p_Selector);
+    static std::vector<EntitySelector> ReadPrimEntitySelectors(simdjson::ondemand::array p_Selector);
     static SVector3 ReadVector3(simdjson::ondemand::value p_Vector);
     static EulerAngles ReadRotation(simdjson::ondemand::value p_Rotation);
     static SMatrix ReadTransform(simdjson::ondemand::value p_Transform);

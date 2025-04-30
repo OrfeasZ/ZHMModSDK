@@ -52,7 +52,13 @@ public:
     std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
     ZEntityRef FindEntity(EntitySelector p_Selector);
+    std::string getCollisionHash(auto s_SelectedEntity);
+    void FindAlocs(std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback);
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfBoxEntities();
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfSeedPointEntities();
     void RebuildEntityTree();
+    void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
+    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
     void SpawnCameras();
@@ -123,6 +129,10 @@ private:
 
     void SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
+    auto* GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property);
+    Quat GetQuatFromProperty(ZEntityRef p_Entity);
+    Quat GetParentQuat(ZEntityRef p_Entity);
+
     void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
@@ -168,6 +178,8 @@ private:
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
     bool m_ShouldScrollToEntity = false;
+
+    std::vector<std::vector<SVector3>> m_NavpAreas;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;

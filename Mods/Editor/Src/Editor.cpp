@@ -201,6 +201,19 @@ void Editor::CopyToClipboard(const std::string& p_String) const {
 void Editor::OnDraw3D(IRenderer* p_Renderer) {
     DrawEntityAABB(p_Renderer);
 
+    const auto s_NavpLineColor = SVector4(0.94, 0.12, 0.05, 1.0);
+    for (const auto s_Area: m_NavpAreas) {
+        for (int s_PointNum = 1; s_PointNum <= s_Area.size(); s_PointNum++) {
+            SVector3 s_PrevPoint = s_Area[s_PointNum - 1];
+            SVector3 s_CurPoint = s_Area[s_PointNum % s_Area.size()];
+            p_Renderer->DrawLine3D(
+                {s_PrevPoint.x, s_PrevPoint.y, s_PrevPoint.z},
+                {s_CurPoint.x, s_CurPoint.y, s_CurPoint.z},
+                s_NavpLineColor,
+                s_NavpLineColor);
+        }
+    }
+
     /*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
     const auto s_LineColor = SVector4(0.94, 0.12, 0.05, 1.0);
 
@@ -784,7 +797,7 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
 DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData) {
     /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
         p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
-    //	p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
+    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
         p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
     //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";*/
 
@@ -796,6 +809,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
     m_CachedEntityTreeMutex.unlock();
+
+    m_NavpAreas.clear();
 
     std::vector<std::string> s_Bricks;
 
@@ -826,6 +841,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
     m_CachedEntityTreeMutex.unlock();
+
+    m_NavpAreas.clear();
 
     m_Server.OnSceneClearing(forReload);
 

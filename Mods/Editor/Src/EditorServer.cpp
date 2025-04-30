@@ -31,6 +31,7 @@ EditorServer::EditorServer() {
             s_App->ws<SocketUserData>(
                 "/*", {
                     .compression = uWS::DISABLED,
+
                     .open = [this](WebSocket* p_Socket) {
                         Logger::Debug("New editor connection established.");
 
@@ -201,6 +202,35 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
         SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
         Plugin()->UnlockEntityTree();
     }
+    else if (s_Type == "listAlocEntities") {
+        Plugin()->LockEntityTree();
+        Plugin()->FindAlocs([p_Socket](std::vector < std::tuple< std::vector<std::string>, Quat, ZEntityRef >> s_Entities, bool s_Done) -> void {
+            SendEntitiesDetails(p_Socket, s_Entities, s_Done);
+        });
+        Plugin()->UnlockEntityTree();
+    }
+    else if (s_Type == "listPfBoxEntities") {
+        Plugin()->LockEntityTree();
+        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
+        SendEntitiesDetails(p_Socket, s_Entities, true);
+        Plugin()->UnlockEntityTree();
+    }
+    else if (s_Type == "listPfSeedPointEntities") {
+        Plugin()->LockEntityTree();
+        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfSeedPointEntities();
+        SendEntitiesDetails(p_Socket, s_Entities, true);
+        Plugin()->UnlockEntityTree();
+    }
+    else if (s_Type == "loadNavp") {
+        uint64_t s_ChunkIndex = s_JsonMsg["chunk"];
+        uint64_t s_ChunkCount = s_JsonMsg["chunkCount"];
+        simdjson::ondemand::array s_Areas = s_JsonMsg["areas"];
+        Plugin()->LoadNavpAreas(s_Areas, s_ChunkIndex);
+        if (s_ChunkIndex == s_ChunkCount - 1) {
+            SendDoneLoadingNavpMessage(p_Socket);
+        }
+    }
+    else if (s_Type == "getEntityDetails") {
     else if (s_Type == "getEntityDetails") {
         const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
         const auto s_Entity = Plugin()->FindEntity(s_Selector);
@@ -703,12 +733,236 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
 
     p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
+void EditorServer::SendDoneLoadingNavpMessage(WebSocket* p_Socket) {
+    p_Socket->send("Done loading Navp.", uWS::OpCode::TEXT);
+}
+
+int GetPropertyValue(const auto* s_Property, ZEntityRef& p_Entity) {
+
+    const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+
+    if (!s_PropertyInfo || !s_PropertyInfo->m_pType) {
+        return -1;
+    }
+
+    const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + s_Property->m_nOffset;
+    const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
+    const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+    const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+
+    // Get the value of the property.
+    auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
+
+    if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
+        s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
+    else
+        s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(s_Data, reinterpret_cast<void*>(s_PropertyAddress));
+
+    auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
+    (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
+
+    if (!s_JsonProperty) {
+        return -1;
+    }
+
+    std::string_view s_PropertyValue = std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize);
+    int value = s_PropertyValue == "true";
+    HM3_FreeJsonString(s_JsonProperty);
+    return value;
+}
+
+bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
+    // Check if m_bRemovePhysics is true. If it is true, skip this entity.
+    const auto s_EntityType = p_Entity->GetType();
+    const std::string s_RemovePhysicsPropertyName = "m_bRemovePhysics";
+    const std::string s_VisiblePropertyName = "m_bVisible";
+    bool s_SkipPrim = false;
+    if (s_EntityType && s_EntityType->m_pProperties01) {
+        for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
+            ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+
+            if (!s_PropertyInfo || !s_PropertyInfo->m_pType || !s_PropertyInfo->m_pType->typeInfo()) {
+                continue;
+            }
+
+            if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+                // Some properties don't have a name for some reason. Try to find using RL.
+                const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+                if (s_PropertyName.Size > 0) {
+                    std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
+                    if (s_PropertyNameView == s_RemovePhysicsPropertyName) {
+                        if (GetPropertyValue(s_Property, p_Entity) == 1) {
+                            return true;
+                        }
+                    } else if (s_PropertyNameView == s_VisiblePropertyName) {
+                        if (GetPropertyValue(s_Property, p_Entity) == 0) {
+                            return true;
+                        }
+                    }
+                }
+            } else if (s_PropertyInfo->m_pName) {
+                if (s_PropertyInfo->m_pName == s_RemovePhysicsPropertyName) {
+                    if (GetPropertyValue(s_Property, p_Entity) == 1) {
+                        return true;
+                    }
+                } else if (s_PropertyInfo->m_pName == s_VisiblePropertyName) {
+                    if (GetPropertyValue(s_Property, p_Entity) == 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> p_Entities, bool s_Done) {
+    if (!p_Entities.empty()) {
+        Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
+
+        for (std::tuple<std::vector<std::string>, Quat, ZEntityRef> p_Entity: p_Entities) {
+            bool s_SkipPrim = ExcludeFromNavMeshExport(get<2>(p_Entity));
+            if (s_SkipPrim) {
+                continue;
+            }
+            for (std::string s_AlocHash: get<0>(p_Entity)) {
+                std::ostringstream s_Event;
+                s_Event << "{" << write_json("hash") << ":";
+                s_Event << write_json(s_AlocHash) << ",";
+                s_Event << write_json("entity") << ":";
+                WriteEntityTransforms(s_Event, get<1>(p_Entity), get<2>(p_Entity));
+                s_Event << "}";
+                p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+            }
+        }
+    } else {
+        Logger::Info("No entities found for request.", p_Entities.size());
+    }
+    if (s_Done) {
+        p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
+    }
+}
+
+void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity) {
+    if (!p_Entity) {
+        p_Stream << "null";
+        return;
+    }
+
+    p_Stream << "{";
+
+    p_Stream << write_json("id") << ":" << write_json(std::format("{:016x}", p_Entity->GetType()->m_nEntityId)) << ",";
+
+    auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
+
+    if (p_Entity.GetOwningEntity()) {
+        s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetOwningEntity().GetBlueprintFactory());
+    }
+
+    if (s_Factory) {
+        auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityId);
+
+        if (s_Index != -1) {
+            const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
+            p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
+            p_Stream << write_json("tblu") << ":" << write_json(fmt::format("{:016X}", s_Factory->m_ridResource.GetID()).c_str()) << ",";
+        }
+    }
+
+    // Write transform.
+    if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
+        const auto s_Trans = s_Spatial->GetWorldMatrix();
+
+        SMatrix p_Transform = s_Spatial->GetWorldMatrix();
+        const auto s_Decomposed = p_Transform.Decompose();
+        p_Stream << write_json("position") << ":";
+        WriteVector3(p_Stream, s_Decomposed.Position.x, s_Decomposed.Position.y, s_Decomposed.Position.z);
+        p_Stream << ",";
+    }
+    p_Stream << write_json("rotation") << ":";
+    WriteQuat(p_Stream, p_Quat.m.x, p_Quat.m.y, p_Quat.m.z, p_Quat.m.w);
+
+    const std::string s_ScalePropertyName = "m_PrimitiveScale";
+    const std::string s_TypePropertyName = "m_eType";
+    const std::string s_GlobalSizePropertyName = "m_vGlobalSize";
+    bool shouldPlaceComma = true;
+    const auto s_EntityType = p_Entity->GetType();
+
+    if (s_EntityType && s_EntityType->m_pProperties01) {
+        for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
+            ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+
+            if (!s_PropertyInfo || !s_PropertyInfo->m_pType || !s_PropertyInfo->m_pType->typeInfo()) {
+                continue;
+            }
+
+            if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+                // Some properties don't have a name for some reason. Try to find using RL.
+                const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+                if (s_PropertyName.Size > 0) {
+                    std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
+                    if (s_PropertyNameView == s_ScalePropertyName) {
+                        if (shouldPlaceComma) {
+                            p_Stream << ",";
+                            shouldPlaceComma = false;
+                        }
+                        p_Stream << write_json("scale") << ":";
+                        WriteProperty(p_Stream, p_Entity, s_Property);
+                    }
+                    if (s_PropertyNameView == s_TypePropertyName) {
+                        if (shouldPlaceComma) {
+                            p_Stream << ",";
+                            shouldPlaceComma = false;
+                        }
+                        p_Stream << write_json("type") << ":";
+                        WriteProperty(p_Stream, p_Entity, s_Property);
+                        p_Stream << ",";
+                    } else if (s_PropertyNameView == s_GlobalSizePropertyName) {
+                        p_Stream << write_json("scale") << ":";
+                        WriteProperty(p_Stream, p_Entity, s_Property);
+                    }
+                }
+            } else if (s_PropertyInfo->m_pName) {
+                if (s_PropertyInfo->m_pName == s_ScalePropertyName) {
+                    if (shouldPlaceComma) {
+                        p_Stream << ",";
+                        shouldPlaceComma = false;
+                    }
+                    p_Stream << write_json("scale");
+                    p_Stream << ":";
+                    WriteProperty(p_Stream, p_Entity, s_Property);
+                }
+                if (s_PropertyInfo->m_pName == s_TypePropertyName) {
+                    if (shouldPlaceComma) {
+                        p_Stream << ",";
+                        shouldPlaceComma = false;
+                    }
+                    p_Stream << write_json("type");
+                    p_Stream << ":";
+                    WriteProperty(p_Stream, p_Entity, s_Property);
+                    p_Stream << ",";
+                } else if (s_PropertyInfo->m_pName == s_GlobalSizePropertyName) {
+                    p_Stream << write_json("scale");
+                    p_Stream << ":";
+                    WriteProperty(p_Stream, p_Entity, s_Property);
+                }
+            }
+        }
+    }
+
+    p_Stream << "}";
+}
 
 void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity) {
     if (!p_Entity) {
         p_Stream << "null";
         return;
     }
+        Logger::Info("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
 
     p_Stream << "{";
 
@@ -858,6 +1112,15 @@ void EditorServer::WriteRotation(std::ostream& p_Stream, double p_Yaw, double p_
     p_Stream << "}";
 }
 
+void EditorServer::WriteQuat(std::ostream& p_Stream, double p_x, double p_y, double p_z, double p_w) {
+    p_Stream << "{";
+    p_Stream << write_json("x") << ":" << write_json(p_x) << ",";
+    p_Stream << write_json("y") << ":" << write_json(p_y) << ",";
+    p_Stream << write_json("z") << ":" << write_json(p_z) << ",";
+    p_Stream << write_json("w") << ":" << write_json(p_w);
+    p_Stream << "}";
+}
+
 void EditorServer::WriteTransform(std::ostream& p_Stream, SMatrix p_Transform) {
     const auto s_Decomposed = p_Transform.Decompose();
     const auto s_Euler = s_Decomposed.Quaternion.ToEuler();
@@ -1004,13 +1267,31 @@ EntitySelector EditorServer::ReadEntitySelector(simdjson::ondemand::value p_Sele
         return {
             .EntityId = s_Id64,
             .TbluHash = std::make_optional(s_Tblu64),
+            .PrimHash = std::nullopt,
         };
     }
 
     return {
         .EntityId = s_Id64,
         .TbluHash = std::nullopt,
+        .PrimHash = std::nullopt,
     };
+}
+
+std::vector<EntitySelector> EditorServer::ReadPrimEntitySelectors(simdjson::ondemand::array p_Selector) {
+    std::vector<EntitySelector> s_EntitySelectors;
+    for (const std::string_view s_PrimStringView: p_Selector) {
+        const auto s_PrimString = std::string{s_PrimStringView};
+        Logger::Info("Reading PrimEntitySelector for hash: '{}'", s_PrimString);
+
+        s_EntitySelectors.push_back({
+            .EntityId = 0,
+            .TbluHash = std::nullopt,
+            .PrimHash = std::make_optional(s_PrimString),
+        });
+    }
+
+    return s_EntitySelectors;
 }
 
 SVector3 EditorServer::ReadVector3(simdjson::ondemand::value p_Vector) {
