@@ -34,24 +34,31 @@ public:
     void OnEngineInitialized() override;
 
 public:
-	void SelectEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId);
-	void SetEntityTransform(EntitySelector p_Selector, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId);
-	void SpawnEntity(ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name, std::optional<std::string> p_ClientId);
-	void DestroyEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId);
-	void SetEntityName(EntitySelector p_Selector, std::string p_Name, std::optional<std::string> p_ClientId);
-	void SetEntityProperty(EntitySelector p_Selector, uint32_t p_PropertyId, std::string_view p_JsonValue, std::optional<std::string> p_ClientId);
-	void SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p_Output);
-	void LockEntityTree() { m_CachedEntityTreeMutex.lock_shared(); }
-	std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
-	void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
-	ZEntityRef FindEntity(EntitySelector p_Selector);
-	std::string getCollisionHash(auto s_SelectedEntity);
-	void FindAlocs(std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback);
-	std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfBoxEntities();
-	std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfSeedPointEntities();
-	void RebuildEntityTree();
-	void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
-	static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
+    void SelectEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId);
+    void SetEntityTransform(
+        EntitySelector p_Selector, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
+    );
+    void SpawnEntity(
+        ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name, std::optional<std::string> p_ClientId
+    );
+    void DestroyEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId);
+    void SetEntityName(EntitySelector p_Selector, std::string p_Name, std::optional<std::string> p_ClientId);
+    void SetEntityProperty(
+        EntitySelector p_Selector, uint32_t p_PropertyId, std::string_view p_JsonValue,
+        std::optional<std::string> p_ClientId
+    );
+    void SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p_Output);
+    void LockEntityTree() { m_CachedEntityTreeMutex.lock_shared(); }
+    std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
+    void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
+    ZEntityRef FindEntity(EntitySelector p_Selector);
+    std::string getCollisionHash(auto s_SelectedEntity);
+    void FindAlocs(std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback);
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfBoxEntities();
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfSeedPointEntities();
+    void RebuildEntityTree();
+    void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
+    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
     void SpawnCameras();
@@ -67,12 +74,16 @@ private:
 
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
-	void SearchForEntityByIdPressed(const char* s_EntitySearchInput);
-	static int SearchForEntityByIdChanged(ImGuiInputTextCallbackData* data);
-	bool SearchForEntityById(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId);
-    bool SearchForEntityByType(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName);
-    bool SearchForEntityByName(ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName);
-	void UpdateEntities();
+    bool SearchForEntityById(
+        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId
+    );
+    bool SearchForEntityByType(
+        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName
+    );
+    bool SearchForEntityByName(
+        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName
+    );
+    void UpdateEntities();
 
     void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void OnEntityTransformChange(
@@ -118,15 +129,16 @@ private:
 
     void SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
-	auto* GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property);
-	Quat GetQuatFromProperty(ZEntityRef p_Entity);
-	Quat GetParentQuat(ZEntityRef p_Entity);
+    auto* GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property);
+    Quat GetQuatFromProperty(ZEntityRef p_Entity);
+    Quat GetParentQuat(ZEntityRef p_Entity);
 
-	void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-	void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
+    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
 private:
@@ -167,10 +179,7 @@ private:
     ZEntityRef m_SelectedEntity;
     bool m_ShouldScrollToEntity = false;
 
-	int m_SearchForEntityByIdIndex = -1;
-	int m_SearchForEntityByIdType = -1;
-
-	std::vector<std::vector<SVector3>> m_NavpAreas;
+    std::vector<std::vector<SVector3>> m_NavpAreas;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;

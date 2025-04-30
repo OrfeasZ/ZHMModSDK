@@ -285,13 +285,13 @@ public:
         }
     }
 
-	Quat operator*(Quat p_Other) {
-		return Quat(
-		    m.w * p_Other.m.x + m.x * p_Other.m.w + m.y * p_Other.m.z - m.z * p_Other.m.y,
-		    m.w * p_Other.m.y - m.x * p_Other.m.z + m.y * p_Other.m.w + m.z * p_Other.m.x,
-		    m.w * p_Other.m.z + m.x * p_Other.m.y - m.y * p_Other.m.x + m.z * p_Other.m.w,
-		    m.w * p_Other.m.w - m.x * p_Other.m.x - m.y * p_Other.m.y - m.z * p_Other.m.z);
-	}
+    Quat operator*(Quat p_Other) {
+        return Quat(
+            m.w * p_Other.m.x + m.x * p_Other.m.w + m.y * p_Other.m.z - m.z * p_Other.m.y,
+            m.w * p_Other.m.y - m.x * p_Other.m.z + m.y * p_Other.m.w + m.z * p_Other.m.x,
+            m.w * p_Other.m.z + m.x * p_Other.m.y - m.y * p_Other.m.x + m.z * p_Other.m.w,
+            m.w * p_Other.m.w - m.x * p_Other.m.x - m.y * p_Other.m.y - m.z * p_Other.m.z);
+    }
 
 public:
     float4 m;

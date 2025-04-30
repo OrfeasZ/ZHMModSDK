@@ -201,21 +201,21 @@ void Editor::CopyToClipboard(const std::string& p_String) const {
 void Editor::OnDraw3D(IRenderer* p_Renderer) {
     DrawEntityAABB(p_Renderer);
 
-	const auto s_NavpLineColor = SVector4(0.94, 0.12, 0.05, 1.0);
-	for (const auto s_Area: m_NavpAreas) {
-		for (int s_PointNum = 1; s_PointNum <= s_Area.size(); s_PointNum++) {
-			SVector3 s_PrevPoint = s_Area[s_PointNum - 1];
-			SVector3 s_CurPoint = s_Area[s_PointNum % s_Area.size()];
-			p_Renderer->DrawLine3D(
-				{s_PrevPoint.x, s_PrevPoint.y, s_PrevPoint.z},
-				{s_CurPoint.x, s_CurPoint.y, s_CurPoint.z},
-				s_NavpLineColor,
-				s_NavpLineColor);
-		}
-	}
+    const auto s_NavpLineColor = SVector4(0.94, 0.12, 0.05, 1.0);
+    for (const auto s_Area: m_NavpAreas) {
+        for (int s_PointNum = 1; s_PointNum <= s_Area.size(); s_PointNum++) {
+            SVector3 s_PrevPoint = s_Area[s_PointNum - 1];
+            SVector3 s_CurPoint = s_Area[s_PointNum % s_Area.size()];
+            p_Renderer->DrawLine3D(
+                {s_PrevPoint.x, s_PrevPoint.y, s_PrevPoint.z},
+                {s_CurPoint.x, s_CurPoint.y, s_CurPoint.z},
+                s_NavpLineColor,
+                s_NavpLineColor);
+        }
+    }
 
-	/*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
-	const auto s_LineColor = SVector4(0.94, 0.12, 0.05, 1.0);
+    /*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
+    const auto s_LineColor = SVector4(0.94, 0.12, 0.05, 1.0);
 
     p_Renderer->DrawQuad3D(
         { -26.179094, -25.697458, 0.5 },
@@ -810,7 +810,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
     m_CachedEntityTree.reset();
     m_CachedEntityTreeMutex.unlock();
 
-	m_NavpAreas.clear();
+    m_NavpAreas.clear();
 
     std::vector<std::string> s_Bricks;
 
@@ -842,7 +842,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
     m_CachedEntityTree.reset();
     m_CachedEntityTreeMutex.unlock();
 
-	m_NavpAreas.clear();
+    m_NavpAreas.clear();
 
     m_Server.OnSceneClearing(forReload);
 

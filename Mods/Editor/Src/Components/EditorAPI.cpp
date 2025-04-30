@@ -90,34 +90,34 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 }
 
 std::string Editor::getCollisionHash(auto s_SelectedEntity) {
-	const auto s_EntityType = s_SelectedEntity->GetType();
-	std::string s_AlocHash = "";
-	if (s_EntityType && s_EntityType->m_pProperties01) {
-		for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-			ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
-			const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+    const auto s_EntityType = s_SelectedEntity->GetType();
+    std::string s_AlocHash = "";
+    if (s_EntityType && s_EntityType->m_pProperties01) {
+        for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
+            ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
 
-			if (!s_PropertyInfo || !s_PropertyInfo->m_pType)
-				continue;
+            if (!s_PropertyInfo || !s_PropertyInfo->m_pType)
+                continue;
 
-			const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(s_SelectedEntity.m_pEntity) + s_Property->m_nOffset;
-			const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-			const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+            const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(s_SelectedEntity.m_pEntity) + s_Property->m_nOffset;
+            const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
+            const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
-			const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
-			const std::string s_InputId = std::format("##Property{}", i);
+            const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+            const std::string s_InputId = std::format("##Property{}", i);
 
-			const char* s_COLLISION_RESOURCE_ID_PROPERTY_NAME = "m_CollisionResourceID";
-			
-			if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
-				// Some properties don't have a name for some reason. Try to find using RL.
-				const auto s_PropertyNameView = HM3_GetPropertyName(s_Property->m_nPropertyId);
+            const char* s_COLLISION_RESOURCE_ID_PROPERTY_NAME = "m_CollisionResourceID";
+            
+            if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+                // Some properties don't have a name for some reason. Try to find using RL.
+                const auto s_PropertyNameView = HM3_GetPropertyName(s_Property->m_nPropertyId);
 
-				if (s_PropertyNameView.Size > 0) {
-					if (std::string(s_PropertyNameView.Data, s_PropertyNameView
-						.Size) != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
-						continue;
-					} else {
+                if (s_PropertyNameView.Size > 0) {
+                    if (std::string(s_PropertyNameView.Data, s_PropertyNameView
+                        .Size) != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
+                        continue;
+                    } else {
                         // Get the value of the property.
                         auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
@@ -132,139 +132,139 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
                                 s_Data,
                                 reinterpret_cast<void*>(s_PropertyAddress));
                         }
-						auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
-						std::string s_ResourceName = "null";
+                        auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
+                        std::string s_ResourceName = "null";
 
-						if (s_Resource && s_Resource->m_nResourceIndex >= 0) {
-							s_ResourceName = fmt::format("{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh, s_Resource->GetResourceInfo().rid.m_IDLow);
-						}
+                        if (s_Resource && s_Resource->m_nResourceIndex >= 0) {
+                            s_ResourceName = fmt::format("{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh, s_Resource->GetResourceInfo().rid.m_IDLow);
+                        }
                         (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
-						if (s_ResourceName.c_str() != "" && s_ResourceName.c_str() != NULL && s_ResourceName.c_str() != "null") { 
-							return s_ResourceName.c_str();
-						}
-					}
-					
-				}
-			}
-		}
-	}
+                        if (s_ResourceName.c_str() != "" && s_ResourceName.c_str() != NULL && s_ResourceName.c_str() != "null") { 
+                            return s_ResourceName.c_str();
+                        }
+                    }
+                    
+                }
+            }
+        }
+    }
 
-	return "";
+    return "";
 }
 
 auto* Editor::GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property) {
-	const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
-	const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + p_Property->m_nOffset;
-	const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-	const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+    const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
+    const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + p_Property->m_nOffset;
+    const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
+    const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
-	// Get the value of the property.
-	auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
+    // Get the value of the property.
+    auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
-	if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
-		s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
-	else
-		s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(s_Data, reinterpret_cast<void*>(s_PropertyAddress));
-	return s_Data;
+    if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
+        s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
+    else
+        s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(s_Data, reinterpret_cast<void*>(s_PropertyAddress));
+    return s_Data;
 }
 
 Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
 
-	const std::string s_TransformPropertyName = "m_mTransform";
-	const auto s_EntityType = p_Entity->GetType();
+    const std::string s_TransformPropertyName = "m_mTransform";
+    const auto s_EntityType = p_Entity->GetType();
 
-	for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-		ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
-		const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+    for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
+        ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+        const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
 
-		if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
-			// Some properties don't have a name for some reason. Try to find using RL.
-			const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+        if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+            // Some properties don't have a name for some reason. Try to find using RL.
+            const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
 
-			if (s_PropertyName.Size > 0) {
-				std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
-				if (s_PropertyNameView == s_TransformPropertyName) {
-					SMatrix43* s_Data43 = reinterpret_cast<SMatrix43*>(GetProperty(p_Entity, s_Property));
-					SMatrix s_Data = SMatrix(*s_Data43);
-					const auto s_Decomposed = s_Data.Decompose();
-					const auto s_Quat = s_Decomposed.Quaternion;
-					return s_Quat;
-				}
-			}
-		} else if (s_PropertyInfo->m_pName && s_PropertyInfo->m_pName == s_TransformPropertyName) {
-			SMatrix43* s_Data43 = reinterpret_cast<SMatrix43*>(GetProperty(p_Entity, s_Property));
-			SMatrix s_Data = SMatrix(*s_Data43);
-			const auto s_Decomposed = s_Data.Decompose();
-			const auto s_Quat = s_Decomposed.Quaternion;
-			return s_Quat;
-		}
-	}
-	return Quat();
+            if (s_PropertyName.Size > 0) {
+                std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
+                if (s_PropertyNameView == s_TransformPropertyName) {
+                    SMatrix43* s_Data43 = reinterpret_cast<SMatrix43*>(GetProperty(p_Entity, s_Property));
+                    SMatrix s_Data = SMatrix(*s_Data43);
+                    const auto s_Decomposed = s_Data.Decompose();
+                    const auto s_Quat = s_Decomposed.Quaternion;
+                    return s_Quat;
+                }
+            }
+        } else if (s_PropertyInfo->m_pName && s_PropertyInfo->m_pName == s_TransformPropertyName) {
+            SMatrix43* s_Data43 = reinterpret_cast<SMatrix43*>(GetProperty(p_Entity, s_Property));
+            SMatrix s_Data = SMatrix(*s_Data43);
+            const auto s_Decomposed = s_Data.Decompose();
+            const auto s_Quat = s_Decomposed.Quaternion;
+            return s_Quat;
+        }
+    }
+    return Quat();
 }
 
 
 Quat Editor::GetParentQuat(ZEntityRef p_Entity) {
-	ZSpatialEntity* s_Entity = p_Entity.QueryInterface<ZSpatialEntity>();
-	TEntityRef<ZSpatialEntity> s_EidParent;
-	std::vector<Quat> s_ParentQuats;
-	while (s_Entity->m_eidParent != NULL) {
-		s_EidParent = s_Entity->m_eidParent;
-		std::string s_Id = std::format("{:016x}", s_EidParent.m_ref->GetType()->m_nEntityId);
-		
-		s_Entity = s_EidParent.m_pInterfaceRef;
+    ZSpatialEntity* s_Entity = p_Entity.QueryInterface<ZSpatialEntity>();
+    TEntityRef<ZSpatialEntity> s_EidParent;
+    std::vector<Quat> s_ParentQuats;
+    while (s_Entity->m_eidParent != NULL) {
+        s_EidParent = s_Entity->m_eidParent;
+        std::string s_Id = std::format("{:016x}", s_EidParent.m_ref->GetType()->m_nEntityId);
 
-		s_ParentQuats.push_back(GetQuatFromProperty(s_EidParent.m_ref));
-		
-	}
+        s_Entity = s_EidParent.m_pInterfaceRef;
 
-	if (s_ParentQuats.empty()) {
-		return Quat();
-	}
-	std::reverse(s_ParentQuats.begin(), s_ParentQuats.end());
-	std::vector<Quat>::iterator s_QuatIter = s_ParentQuats.begin();
-	Quat s_Quat = *s_QuatIter;
-	while (s_QuatIter != s_ParentQuats.end()) {
-		if (s_QuatIter != s_ParentQuats.begin()) {
-			s_Quat = s_Quat * *s_QuatIter;
-		}
-		s_QuatIter++;
-	}
-	return s_Quat;
+        s_ParentQuats.push_back(GetQuatFromProperty(s_EidParent.m_ref));
+        
+    }
+
+    if (s_ParentQuats.empty()) {
+        return Quat();
+    }
+    std::reverse(s_ParentQuats.begin(), s_ParentQuats.end());
+    std::vector<Quat>::iterator s_QuatIter = s_ParentQuats.begin();
+    Quat s_Quat = *s_QuatIter;
+    while (s_QuatIter != s_ParentQuats.end()) {
+        if (s_QuatIter != s_ParentQuats.begin()) {
+            s_Quat = s_Quat * *s_QuatIter;
+        }
+        s_QuatIter++;
+    }
+    return s_Quat;
 }
 
 void Editor::FindAlocs(std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback) {
-	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+    std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-	if (!m_CachedEntityTree) {
-		return;
-	}
-	std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
+    if (!m_CachedEntityTree) {
+        return;
+    }
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
 
-	// Create a queue and add the root to it.
-	std::queue<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodeQueue;
-	s_NodeQueue.push(std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>{std::shared_ptr<EntityTreeNode>(), m_CachedEntityTree});
-	const char* s_GEOMENTITY_TYPE = "ZGeomEntity";
-	const char* s_PRIMITIVEPROXY_TYPE = "ZPrimitiveProxyEntity";
-	const char* s_PURE_WATER_TYPE = "ZPureWaterAspect";
-	std::vector<std::string> s_selectorPrimHashes;
-	// Keep iterating through the tree until we find all the prims.
-	while (!s_NodeQueue.empty()) {
+    // Create a queue and add the root to it.
+    std::queue<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodeQueue;
+    s_NodeQueue.push(std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>{std::shared_ptr<EntityTreeNode>(), m_CachedEntityTree});
+    const char* s_GEOMENTITY_TYPE = "ZGeomEntity";
+    const char* s_PRIMITIVEPROXY_TYPE = "ZPrimitiveProxyEntity";
+    const char* s_PURE_WATER_TYPE = "ZPureWaterAspect";
+    std::vector<std::string> s_selectorPrimHashes;
+    // Keep iterating through the tree until we find all the prims.
+    while (!s_NodeQueue.empty()) {
         if (entities.size() >= 10) {
             s_SendEntitiesCallback(entities, false);
             entities.clear();
         }
-		// Access the first node in the queue
-		auto s_Parent = s_NodeQueue.front().first;
-		auto s_Node = s_NodeQueue.front().second;
-		s_NodeQueue.pop();
+        // Access the first node in the queue
+        auto s_Parent = s_NodeQueue.front().first;
+        auto s_Node = s_NodeQueue.front().second;
+        s_NodeQueue.pop();
         std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
-		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
+        const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
         const auto typeInfo = s_Interfaces[0].m_pTypeId->typeInfo();
         if (typeInfo == NULL) {
             continue;
         }
-		char* s_EntityType = typeInfo->m_pTypeName;
+        char* s_EntityType = typeInfo->m_pTypeName;
         if (strcmp(s_EntityType, s_GEOMENTITY_TYPE) == 0) {
             if (const ZGeomEntity* s_GeomEntity = s_Node->Entity.QueryInterface<ZGeomEntity>()) {
                 std::string s_HashString = std::format("<{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
@@ -354,109 +354,109 @@ void Editor::FindAlocs(std::function<void(std::vector<std::tuple<std::vector<std
             }
         }
 
-		// Add children to the queue.
-		for (auto& s_ChildPair: s_Node->Children) {
+        // Add children to the queue.
+        for (auto& s_ChildPair: s_Node->Children) {
             std::string s_ChildId = std::format("{:016x}", s_ChildPair.second->Entity->GetType()->m_nEntityId);
 
             s_NodeQueue.push(std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>{s_Node, s_ChildPair.second});
-		}
-	}
+        }
+    }
     s_SendEntitiesCallback(entities, true);
     entities.clear();
 
-	return;
+    return;
 }
 
 std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::FindPfSeedPointEntities() {
-	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+    std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-	if (!m_CachedEntityTree) {
-		return {};
-	}
-	std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
-	const char* s_PFSEEDPOINT_TYPE = "ZPFSeedPoint";
+    if (!m_CachedEntityTree) {
+        return {};
+    }
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
+    const char* s_PFSEEDPOINT_TYPE = "ZPFSeedPoint";
 
-	Logger::Info("Getting PfSeedPoint Entities:");
-	// Create a queue and add the root to it.
-	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
-	s_NodeQueue.push(m_CachedEntityTree);
+    Logger::Info("Getting PfSeedPoint Entities:");
+    // Create a queue and add the root to it.
+    std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
+    s_NodeQueue.push(m_CachedEntityTree);
 
-	// Keep iterating through the tree until we find the nodes we're looking for.
-	while (!s_NodeQueue.empty()) {
-		// Access the first node in the queue
-		auto s_Node = s_NodeQueue.front();
-		s_NodeQueue.pop();
-		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
-		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
+    // Keep iterating through the tree until we find the nodes we're looking for.
+    while (!s_NodeQueue.empty()) {
+        // Access the first node in the queue
+        auto s_Node = s_NodeQueue.front();
+        s_NodeQueue.pop();
+        const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
+        char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
 
-		if (strcmp(s_EntityType, s_PFSEEDPOINT_TYPE) == 0) {
-			Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-			Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+        if (strcmp(s_EntityType, s_PFSEEDPOINT_TYPE) == 0) {
+            Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
+            Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
 
-			Quat s_CombinedQuat;
-			s_CombinedQuat = s_ParentQuat * s_EntityQuat;
-			std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
-			    std::make_tuple(
+            Quat s_CombinedQuat;
+            s_CombinedQuat = s_ParentQuat * s_EntityQuat;
+            std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
+                std::make_tuple(
                     std::vector<std::string>{ "00280B8C4462FAC8" },
-			        s_CombinedQuat,
-			        s_Node->Entity);
+                    s_CombinedQuat,
+                    s_Node->Entity);
 
-			entities.push_back(s_Entity);
-		}
+            entities.push_back(s_Entity);
+        }
 
-		// Add children to the queue.
-		for (auto& s_ChildPair: s_Node->Children) {
-			s_NodeQueue.push(s_ChildPair.second);
-		}
-	}
+        // Add children to the queue.
+        for (auto& s_ChildPair: s_Node->Children) {
+            s_NodeQueue.push(s_ChildPair.second);
+        }
+    }
 
-	return entities;
+    return entities;
 }
 
 std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::FindPfBoxEntities() {
-	std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+    std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-	if (!m_CachedEntityTree) {
-		return {};
-	}
-	std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
-	const char* s_PFBOXENTITY_TYPE = "ZPFBoxEntity";
+    if (!m_CachedEntityTree) {
+        return {};
+    }
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
+    const char* s_PFBOXENTITY_TYPE = "ZPFBoxEntity";
 
-	Logger::Info("Getting PfBoxEntities:");
-	// Create a queue and add the root to it.
-	std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
-	s_NodeQueue.push(m_CachedEntityTree);
+    Logger::Info("Getting PfBoxEntities:");
+    // Create a queue and add the root to it.
+    std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
+    s_NodeQueue.push(m_CachedEntityTree);
 
-	// Keep iterating through the tree until we find the nodes we're looking for.
-	while (!s_NodeQueue.empty()) {
-		// Access the first node in the queue
-		auto s_Node = s_NodeQueue.front();
-		s_NodeQueue.pop();
-		const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
-		char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
+    // Keep iterating through the tree until we find the nodes we're looking for.
+    while (!s_NodeQueue.empty()) {
+        // Access the first node in the queue
+        auto s_Node = s_NodeQueue.front();
+        s_NodeQueue.pop();
+        const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
+        char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
 
-		if (strcmp(s_EntityType, s_PFBOXENTITY_TYPE) == 0) {
-			Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-			Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+        if (strcmp(s_EntityType, s_PFBOXENTITY_TYPE) == 0) {
+            Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
+            Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
 
-			Quat s_CombinedQuat;
-			s_CombinedQuat = s_ParentQuat * s_EntityQuat;
-			std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
-			    std::make_tuple(
+            Quat s_CombinedQuat;
+            s_CombinedQuat = s_ParentQuat * s_EntityQuat;
+            std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
+                std::make_tuple(
                     std::vector<std::string>{ "00724CDE424AFE76" },
-			        s_CombinedQuat,
-			        s_Node->Entity);
+                    s_CombinedQuat,
+                    s_Node->Entity);
 
-			entities.push_back(s_Entity);
-		}
+            entities.push_back(s_Entity);
+        }
 
-		// Add children to the queue.
-		for (auto& s_ChildPair: s_Node->Children) {
-			s_NodeQueue.push(s_ChildPair.second);
-		}
-	}
+        // Add children to the queue.
+        for (auto& s_ChildPair: s_Node->Children) {
+            s_NodeQueue.push(s_ChildPair.second);
+        }
+    }
 
-	return entities;
+    return entities;
 }
 
 void Editor::SelectEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId) {
@@ -595,26 +595,26 @@ void Editor::SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p
 }
 
 void Editor::RebuildEntityTree() {
-	UpdateEntities();
+    UpdateEntities();
 }
 
 void Editor::LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex) {
-	Logger::Info("Loading Navp areas");	
+    Logger::Info("Loading Navp areas");    
 
-	if (p_ChunkIndex == 0) {
-		m_NavpAreas.clear();
-	}
-	for (simdjson::ondemand::array s_NavpArea: p_NavpAreas) {
-		std::vector<SVector3> s_Area;
-		for (simdjson::ondemand::array s_NavpPoint: s_NavpArea) {
-			std::vector<double> s_Point;
-			for (double coord: s_NavpPoint) {
-				s_Point.push_back(coord);
-			}
-			SVector3 point{(float) s_Point[0], (float) s_Point[1], (float) s_Point[2]};
+    if (p_ChunkIndex == 0) {
+        m_NavpAreas.clear();
+    }
+    for (simdjson::ondemand::array s_NavpArea: p_NavpAreas) {
+        std::vector<SVector3> s_Area;
+        for (simdjson::ondemand::array s_NavpPoint: s_NavpArea) {
+            std::vector<double> s_Point;
+            for (double coord: s_NavpPoint) {
+                s_Point.push_back(coord);
+            }
+            SVector3 point{(float) s_Point[0], (float) s_Point[1], (float) s_Point[2]};
 
-			s_Area.push_back(point);
-		}
-		m_NavpAreas.push_back(s_Area);
-	}
+            s_Area.push_back(point);
+        }
+        m_NavpAreas.push_back(s_Area);
+    }
 }
