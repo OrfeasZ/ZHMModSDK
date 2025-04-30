@@ -58,7 +58,6 @@ public:
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfSeedPointEntities();
     void RebuildEntityTree();
     void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
-    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
     void SpawnCameras();

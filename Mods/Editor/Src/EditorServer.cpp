@@ -231,7 +231,6 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
         }
     }
     else if (s_Type == "getEntityDetails") {
-    else if (s_Type == "getEntityDetails") {
         const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
         const auto s_Entity = Plugin()->FindEntity(s_Selector);
         SendEntityDetails(p_Socket, s_Entity, s_MessageId);
@@ -887,7 +886,6 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     const std::string s_ScalePropertyName = "m_PrimitiveScale";
     const std::string s_TypePropertyName = "m_eType";
     const std::string s_GlobalSizePropertyName = "m_vGlobalSize";
-    bool shouldPlaceComma = true;
     const auto s_EntityType = p_Entity->GetType();
 
     if (s_EntityType && s_EntityType->m_pProperties01) {
@@ -906,46 +904,34 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
                 if (s_PropertyName.Size > 0) {
                     std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
                     if (s_PropertyNameView == s_ScalePropertyName) {
-                        if (shouldPlaceComma) {
-                            p_Stream << ",";
-                            shouldPlaceComma = false;
-                        }
+                        p_Stream << ",";
                         p_Stream << write_json("scale") << ":";
                         WriteProperty(p_Stream, p_Entity, s_Property);
                     }
                     if (s_PropertyNameView == s_TypePropertyName) {
-                        if (shouldPlaceComma) {
-                            p_Stream << ",";
-                            shouldPlaceComma = false;
-                        }
+                        p_Stream << ",";
                         p_Stream << write_json("type") << ":";
                         WriteProperty(p_Stream, p_Entity, s_Property);
-                        p_Stream << ",";
                     } else if (s_PropertyNameView == s_GlobalSizePropertyName) {
+                        p_Stream << ",";
                         p_Stream << write_json("scale") << ":";
                         WriteProperty(p_Stream, p_Entity, s_Property);
                     }
                 }
             } else if (s_PropertyInfo->m_pName) {
                 if (s_PropertyInfo->m_pName == s_ScalePropertyName) {
-                    if (shouldPlaceComma) {
-                        p_Stream << ",";
-                        shouldPlaceComma = false;
-                    }
+                    p_Stream << ",";
                     p_Stream << write_json("scale");
                     p_Stream << ":";
                     WriteProperty(p_Stream, p_Entity, s_Property);
                 }
                 if (s_PropertyInfo->m_pName == s_TypePropertyName) {
-                    if (shouldPlaceComma) {
-                        p_Stream << ",";
-                        shouldPlaceComma = false;
-                    }
+                    p_Stream << ",";
                     p_Stream << write_json("type");
                     p_Stream << ":";
                     WriteProperty(p_Stream, p_Entity, s_Property);
-                    p_Stream << ",";
                 } else if (s_PropertyInfo->m_pName == s_GlobalSizePropertyName) {
+                    p_Stream << ",";
                     p_Stream << write_json("scale");
                     p_Stream << ":";
                     WriteProperty(p_Stream, p_Entity, s_Property);
