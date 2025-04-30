@@ -31,7 +31,7 @@ EditorServer::EditorServer() {
             s_App->ws<SocketUserData>(
                 "/*", {
                     .compression = uWS::DISABLED,
-
+				    .maxPayloadLength = 100 * 1024 * 1024,
                     .open = [this](WebSocket* p_Socket) {
                         Logger::Debug("New editor connection established.");
 

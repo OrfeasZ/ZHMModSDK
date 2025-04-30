@@ -295,24 +295,6 @@ bool Editor::SearchForEntityByType(
     return false;
 }
 
-void Editor::SearchForEntityByIdPressed(const char* p_EntitySearchInput) {
-	const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-	const auto s_EntityId = std::strtoull(p_EntitySearchInput, nullptr, 16);
-
-	for (int i = m_SearchForEntityByIdIndex + 1; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
-		const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
-		const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.GetBlueprintFactory());
-
-		if (SearchForEntityById(s_BpFactory, s_Brick.entityRef, s_EntityId)) {
-			Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
-			m_SelectedBrickIndex = i;
-			m_SearchForEntityByIdIndex = i;
-			return;
-		}
-	}
-	m_SearchForEntityByIdIndex = -1;
-}
-
 void Editor::DrawEntityTree() {
     ImGui::SetNextWindowPos({0, 110}, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize({700, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
@@ -343,22 +325,6 @@ void Editor::DrawEntityTree() {
                 }
             }
         }
-	/*if (s_SceneCtx && s_SceneCtx->m_pScene && s_SceneCtx->m_aLoadedBricks.size() > 0) {
-		static char s_EntitySearchInput[17] = {};
-		if (ImGui::InputText(
-		    "##",
-			s_EntitySearchInput,
-			IM_ARRAYSIZE(s_EntitySearchInput),
-			ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsNoBlank
-		)) {
-			m_SearchForEntityByIdIndex = -1;
-		}
-		ImGui::SameLine(485);
-		const char* s_SearchForEntityByIdButtonText = m_SearchForEntityByIdIndex == -1 ? ICON_MD_SEARCH " Search by ID" : ICON_MD_SEARCH " Find next by ID";
-		if (ImGui::Button(s_SearchForEntityByIdButtonText)) {
-			SearchForEntityByIdPressed(s_EntitySearchInput);
-		}*/
-
 
         static char s_EntityTypeSearchInput[2048] = {};
         if (ImGui::InputText(
@@ -437,10 +403,8 @@ void Editor::DrawEntityTree() {
 void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
     const bool s_DifferentEntity = m_SelectedEntity != p_Entity;
 
-	m_SelectedEntity = p_Entity;
-	m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;
-	m_SearchForEntityByIdIndex = -1;
-	m_SearchForEntityByIdType = -1;
+    m_SelectedEntity = p_Entity;
+    m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;
 
     if (s_DifferentEntity) {
         m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
