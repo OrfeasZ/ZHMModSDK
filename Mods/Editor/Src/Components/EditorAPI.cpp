@@ -132,7 +132,6 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
                                 s_Data,
                                 reinterpret_cast<void*>(s_PropertyAddress));
                         }
-						//Logger::Info("Property Name: {}", std::string(s_PropertyNameView.Data, s_PropertyNameView.Size).c_str());
 						auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
 						std::string s_ResourceName = "null";
 
@@ -141,7 +140,6 @@ std::string Editor::getCollisionHash(auto s_SelectedEntity) {
 						}
                         (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
-						//Logger::Info("Found ALOC Resource: {}", s_ResourceName.c_str());
 						if (s_ResourceName.c_str() != "" && s_ResourceName.c_str() != NULL && s_ResourceName.c_str() != "null") { 
 							return s_ResourceName.c_str();
 						}
@@ -213,8 +211,7 @@ Quat Editor::GetParentQuat(ZEntityRef p_Entity) {
 	while (s_Entity->m_eidParent != NULL) {
 		s_EidParent = s_Entity->m_eidParent;
 		std::string s_Id = std::format("{:016x}", s_EidParent.m_ref->GetType()->m_nEntityId);
-		//Logger::Info("Parent id: '{}'", s_Id);
-
+		
 		s_Entity = s_EidParent.m_pInterfaceRef;
 
 		s_ParentQuats.push_back(GetQuatFromProperty(s_EidParent.m_ref));
