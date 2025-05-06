@@ -145,10 +145,12 @@ private:
 private:
     ZEntityRef m_Camera;
     ZEntityRef m_CameraRT;
+    bool m_raycastLogging; // Mainly used for the raycasting logs
 
     bool m_CameraActive = false;
     ZEntityRef m_OriginalCam;
 
+    ZEntityRef s_SelectedEntity;
     ZSelectionForFreeCameraEditorStyleEntity* m_SelectionForFreeCameraEditorStyleEntity = nullptr;
 
     bool m_HoldingMouse = false;
