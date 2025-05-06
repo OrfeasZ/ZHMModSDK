@@ -62,6 +62,7 @@ void Editor::UpdateEntities() {
     // Create the root scene node.
     auto s_SceneNode = std::make_shared<EntityTreeNode>(
         "Scene Root",
+        s_SceneEnt->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->m_pTypeName,
         s_SceneEnt->GetType()->m_nEntityId,
         s_SceneFactory->m_ridResource,
         s_SceneEnt
@@ -108,15 +109,15 @@ void Editor::UpdateEntities() {
             const auto s_EntityTypeName = s_SubEntity->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->
                                                        m_pTypeName;
             const auto s_EntityHumanName = fmt::format(
-                "{}::{} ({:08x})",
+                "{} ({:08x})",
                 s_EntityName,
-                s_EntityTypeName,
                 s_SubEntityId
             );
 
             // Add the node to the map.
             const auto s_SubEntityNode = std::make_shared<EntityTreeNode>(
                 s_EntityHumanName,
+                s_EntityTypeName,
                 s_SubEntityId,
                 s_CurrentFactory->m_ridResource,
                 s_SubEntity
@@ -183,6 +184,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     if (!p_Node) return;
 
     const auto s_Entity = p_Node->Entity;
+    const auto s_EntityType = p_Node->EntityType;
     const auto s_EntityName = p_Node->Name;
     const auto s_IsSelected = s_Entity == m_SelectedEntity;
 
@@ -209,6 +211,11 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         s_EntityName.c_str(),
         s_Flags
     );
+
+    if(ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("%s", s_EntityType.c_str());
+    }
 
     if (ImGui::IsItemClicked()) {
         OnSelectEntity(s_Entity, std::nullopt);
