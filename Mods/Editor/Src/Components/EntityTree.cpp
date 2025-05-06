@@ -403,7 +403,7 @@ void Editor::DrawEntityTree() {
     }
 }
 
-void Editor::OnSelectEntity(ZEntityRef p_Entity, const std::optional<std::string>& p_ClientId) {
+void Editor::OnSelectEntity(ZEntityRef p_Entity, const std::optional<std::string> p_ClientId) {
     const bool s_DifferentEntity = m_SelectedEntity.m_pEntity != p_Entity.m_pEntity;
 
     m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;

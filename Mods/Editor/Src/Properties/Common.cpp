@@ -25,5 +25,7 @@ void Editor::UnsupportedProperty(
 ) {
     const auto s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
     const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
-    ImGui::Text(" %s (Unsupported)", s_TypeName.c_str());
+
+    constexpr auto textColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
+    ImGui::TextColored(textColor, "(Unsupported)", s_TypeName.c_str());
 }
