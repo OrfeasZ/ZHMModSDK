@@ -113,8 +113,6 @@ private:
     bool m_RenderRaycast = false;
     bool m_UseSnap = false;
 
-    bool m_raycastLogging; // Mainly used for the raycasting logs
-
     float m_SnapValue[3] = {1.0f, 1.0f, 1.0f};
 
     float4 m_From;

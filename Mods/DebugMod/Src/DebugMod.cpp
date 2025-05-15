@@ -45,8 +45,6 @@ DebugMod::~DebugMod() {
         DisableTrackCam();
     }
 
-    m_raycastLogging = false;
-
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
     Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
@@ -170,22 +168,15 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     };
 
     ZRayQueryOutput s_RayOutput {};
-    if(m_raycastLogging) {
-        Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
-    }
+    Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {
-        if(m_raycastLogging) {
-            Logger::Error("Raycast failed.");
-        }
-
+        Logger::Error("Raycast failed.");
         m_SelectedEntity = nullptr;
         return;
     }
 
-    if(m_raycastLogging) {
-        Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
-    }
+    Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
 
     m_From = s_From;
     m_To = s_To;
@@ -239,7 +230,6 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
-        ImGui::Checkbox("Raycast logging", &m_raycastLogging);
         ImGui::Checkbox("Render NPC position boxes", &m_RenderNpcBoxes);
         ImGui::Checkbox("Render NPC names", &m_RenderNpcNames);
         ImGui::Checkbox("Render NPC repository IDs", &m_RenderNpcRepoIds);

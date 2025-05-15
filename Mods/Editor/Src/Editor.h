@@ -151,7 +151,6 @@ private:
     bool m_CameraActive = false;
     ZEntityRef m_OriginalCam;
 
-    ZEntityRef s_SelectedEntity;
     ZSelectionForFreeCameraEditorStyleEntity* m_SelectionForFreeCameraEditorStyleEntity = nullptr;
 
     bool m_HoldingMouse = false;

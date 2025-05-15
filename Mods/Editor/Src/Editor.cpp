@@ -559,7 +559,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
             );
 
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-            s_SelectedEntity = s_RayOutput.m_BlockingEntity;
+            ZEntityRef s_SelectedEntity = s_RayOutput.m_BlockingEntity;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
