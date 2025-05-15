@@ -184,4 +184,6 @@ public:
         const std::function<void(const ZDynamicObject&)>& onOk, const std::function<void(int)>& onError,
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     )>* ZUserChannelContractsProxyBase_GetForPlay2;
+
+    static Hook<void*(void* th, void* newData)>* ZArray_PushBack;
 };
