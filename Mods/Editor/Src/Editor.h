@@ -100,6 +100,7 @@ private:
 
     // Properties
     void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     // Primitive properties.
     void StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
@@ -145,6 +146,7 @@ private:
 private:
     ZEntityRef m_Camera;
     ZEntityRef m_CameraRT;
+    bool m_raycastLogging; // Mainly used for the raycasting logs
 
     bool m_CameraActive = false;
     ZEntityRef m_OriginalCam;

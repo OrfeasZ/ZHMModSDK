@@ -62,6 +62,7 @@ void Editor::UpdateEntities() {
     // Create the root scene node.
     auto s_SceneNode = std::make_shared<EntityTreeNode>(
         "Scene Root",
+        s_SceneEnt->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->m_pTypeName,
         s_SceneEnt->GetType()->m_nEntityId,
         s_SceneFactory->m_ridResource,
         s_SceneEnt
@@ -108,15 +109,15 @@ void Editor::UpdateEntities() {
             const auto s_EntityTypeName = s_SubEntity->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->
                                                        m_pTypeName;
             const auto s_EntityHumanName = fmt::format(
-                "{}::{} ({:08x})",
+                "{} ({:08x})",
                 s_EntityName,
-                s_EntityTypeName,
                 s_SubEntityId
             );
 
             // Add the node to the map.
             const auto s_SubEntityNode = std::make_shared<EntityTreeNode>(
                 s_EntityHumanName,
+                s_EntityTypeName,
                 s_SubEntityId,
                 s_CurrentFactory->m_ridResource,
                 s_SubEntity
@@ -183,6 +184,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     if (!p_Node) return;
 
     const auto s_Entity = p_Node->Entity;
+    const auto s_EntityType = p_Node->EntityType;
     const auto s_EntityName = p_Node->Name;
     const auto s_IsSelected = s_Entity == m_SelectedEntity;
 
@@ -209,6 +211,11 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         s_EntityName.c_str(),
         s_Flags
     );
+
+    if(ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip("%s", s_EntityType.c_str());
+    }
 
     if (ImGui::IsItemClicked()) {
         OnSelectEntity(s_Entity, std::nullopt);
@@ -300,6 +307,8 @@ void Editor::DrawEntityTree() {
     ImGui::SetNextWindowSize({700, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_CATEGORY " Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
+    ImGui::Checkbox("Raycast logging", &m_raycastLogging);
+
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
 
     if (s_SceneCtx && s_SceneCtx->m_pScene && s_SceneCtx->m_aLoadedBricks.size() > 0) {
@@ -338,7 +347,8 @@ void Editor::DrawEntityTree() {
                 const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.
                     GetBlueprintFactory());
 
-                if (SearchForEntityByType(s_BpFactory, s_Brick.entityRef, s_EntityTypeSearchInput)) {
+                if (SearchForEntityByType(s_BpFactory, s_Brick.entityRef, s_EntityTypeSearchInput)) 
+                {
                     Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
                     m_SelectedBrickIndex = i;
                     break;
@@ -400,14 +410,18 @@ void Editor::DrawEntityTree() {
     }
 }
 
-void Editor::OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
-    const bool s_DifferentEntity = m_SelectedEntity != p_Entity;
+void Editor::OnSelectEntity(ZEntityRef p_Entity, const std::optional<std::string> p_ClientId) {
+    const bool s_DifferentEntity = m_SelectedEntity.m_pEntity != p_Entity.m_pEntity;
 
-    m_SelectedEntity = p_Entity;
     m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;
 
     if (s_DifferentEntity) {
         m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
+        m_SelectedEntity = p_Entity;
+    }
+    else
+    {
+        m_SelectedEntity = nullptr; //Unselect it
     }
 
     if (!m_SelectionForFreeCameraEditorStyleEntity) {

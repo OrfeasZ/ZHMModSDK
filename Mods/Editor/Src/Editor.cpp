@@ -70,6 +70,8 @@ Editor::Editor() {
     m_QneAddress.sin_family = AF_INET;
     m_QneAddress.sin_port = htons(49494);
     m_QneAddress.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+
+    m_raycastLogging = false;
 }
 
 Editor::~Editor() {
@@ -528,14 +530,20 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
 
     ZRayQueryOutput s_RayOutput {};
 
-    Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
+    if(m_raycastLogging) {
+        Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
+    }
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {
-        Logger::Error("Raycast failed.");
+        if(m_raycastLogging){
+            Logger::Error("Raycast failed.");
+        }
         return;
     }
 
-    Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
+    if(m_raycastLogging) {
+        Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
+    }
 
     m_From = s_From;
     m_To = s_To;
@@ -550,8 +558,8 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
                 s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId
             );
 
-            const auto s_SelectedEntity = s_RayOutput.m_BlockingEntity;
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
+            ZEntityRef s_SelectedEntity = s_RayOutput.m_BlockingEntity;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];

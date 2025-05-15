@@ -168,7 +168,6 @@ void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     };
 
     ZRayQueryOutput s_RayOutput {};
-
     Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {

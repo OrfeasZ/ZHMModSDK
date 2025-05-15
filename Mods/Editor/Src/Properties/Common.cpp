@@ -25,5 +25,39 @@ void Editor::UnsupportedProperty(
 ) {
     const auto s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
     const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
-    ImGui::Text(" %s (Unsupported)", s_TypeName.c_str());
+
+    constexpr auto textColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
+    ImGui::TextColored(textColor, "(Unsupported)", s_TypeName.c_str());
+}
+
+void Editor::TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data)
+{
+    if(auto EntityRef = reinterpret_cast<TEntityRef<void*>*>(p_Data)) {
+        ImVec4 linkColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f); // Light blue, like a link
+
+        ImGui::PushStyleColor(ImGuiCol_Text, linkColor);
+            ImGui::Text("%s", "link");
+        ImGui::PopStyleColor();
+
+        if (ImGui::IsItemHovered()) {
+            // Underline on hover
+            ImVec2 min = ImGui::GetItemRectMin();
+            ImVec2 max = ImGui::GetItemRectMax();
+            ImGui::GetWindowDrawList()->AddLine(
+                ImVec2(min.x, max.y),
+                ImVec2(max.x, max.y),
+                ImGui::GetColorU32(linkColor)
+            );
+        }
+
+        if(ImGui::IsItemClicked())
+        {
+            OnSelectEntity(EntityRef->m_ref, std::nullopt);
+        }
+    }
+    else
+    {
+        constexpr auto textColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
+        ImGui::TextColored(textColor, "(%s)", "null");
+    }
 }
