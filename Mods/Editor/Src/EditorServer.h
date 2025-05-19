@@ -50,7 +50,7 @@ private:
     static void SendError(WebSocket* p_Socket, std::string p_Message, std::optional<int64_t> p_MessageId);
     static void SendEntityList(WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId);
     static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
-    static void SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> p_Entities, bool s_Done);
+    static void SendEntitiesDetails(WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities, bool p_Done);
     static void SendDoneLoadingNavpMessage(WebSocket* p_Socket);
     static void WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity);
     static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);
@@ -72,6 +72,8 @@ public:
 
 private:
     void PublishEvent(const std::string& p_Event, std::optional<std::string> p_IgnoreClient);
+    static bool IsPropertyValueTrue(const ZEntityProperty* s_Property, const ZEntityRef& p_Entity);
+    static bool IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity);
 
 private:
     uint64_t m_LastClientId = 0;

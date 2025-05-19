@@ -204,7 +204,10 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
     }
     else if (s_Type == "listAlocEntities") {
         Plugin()->LockEntityTree();
-        Plugin()->FindAlocs([p_Socket](std::vector < std::tuple< std::vector<std::string>, Quat, ZEntityRef >> s_Entities, bool s_Done) -> void {
+        Plugin()->FindAlocs(
+            [p_Socket](
+        const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& s_Entities, const bool s_Done
+    ) -> void {
             SendEntitiesDetails(p_Socket, s_Entities, s_Done);
         });
         Plugin()->UnlockEntityTree();
@@ -217,7 +220,8 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
     }
     else if (s_Type == "listPfSeedPointEntities") {
         Plugin()->LockEntityTree();
-        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfSeedPointEntities();
+        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities =
+            Plugin()->FindPfSeedPointEntities();
         SendEntitiesDetails(p_Socket, s_Entities, true);
         Plugin()->UnlockEntityTree();
     }
@@ -736,12 +740,11 @@ void EditorServer::SendDoneLoadingNavpMessage(WebSocket* p_Socket) {
     p_Socket->send("Done loading Navp.", uWS::OpCode::TEXT);
 }
 
-int GetPropertyValue(const auto* s_Property, ZEntityRef& p_Entity) {
-
+bool EditorServer::IsPropertyValueTrue(const ZEntityProperty* s_Property, const ZEntityRef& p_Entity) {
     const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
 
     if (!s_PropertyInfo || !s_PropertyInfo->m_pType) {
-        return -1;
+        return true;
     }
 
     const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + s_Property->m_nOffset;
@@ -752,30 +755,31 @@ int GetPropertyValue(const auto* s_Property, ZEntityRef& p_Entity) {
     // Get the value of the property.
     auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
-    if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
+    if (s_PropertyInfo->m_nFlags & E_HAS_GETTER_SETTER)
         s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
     else
-        s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(s_Data, reinterpret_cast<void*>(s_PropertyAddress));
+        s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+            s_Data, reinterpret_cast<void*>(s_PropertyAddress)
+        );
 
-    auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
+    const auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
     (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
     if (!s_JsonProperty) {
-        return -1;
+        return true;
     }
 
-    std::string_view s_PropertyValue = std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize);
-    int value = s_PropertyValue == "true";
+    const auto s_PropertyValue = std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize);
+    const bool value = s_PropertyValue == "true";
     HM3_FreeJsonString(s_JsonProperty);
     return value;
 }
 
-bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
+bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
     // Check if m_bRemovePhysics is true. If it is true, skip this entity.
     const auto s_EntityType = p_Entity->GetType();
     const std::string s_RemovePhysicsPropertyName = "m_bRemovePhysics";
     const std::string s_VisiblePropertyName = "m_bVisible";
-    bool s_SkipPrim = false;
     if (s_EntityType && s_EntityType->m_pProperties01) {
         for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
             ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
@@ -785,29 +789,29 @@ bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
                 continue;
             }
 
-            if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+            if (s_PropertyInfo->m_pType->typeInfo()->isResource() ||
+                s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
                 // Some properties don't have a name for some reason. Try to find using RL.
-                const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
 
-                if (s_PropertyName.Size > 0) {
-                    std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
+                if (const auto [s_data, s_size] = HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                    auto s_PropertyNameView = std::string_view(s_data, s_size);
                     if (s_PropertyNameView == s_RemovePhysicsPropertyName) {
-                        if (GetPropertyValue(s_Property, p_Entity) == 1) {
+                        if (IsPropertyValueTrue(s_Property, p_Entity)) {
                             return true;
                         }
                     } else if (s_PropertyNameView == s_VisiblePropertyName) {
-                        if (GetPropertyValue(s_Property, p_Entity) == 0) {
+                        if (!IsPropertyValueTrue(s_Property, p_Entity)) {
                             return true;
                         }
                     }
                 }
             } else if (s_PropertyInfo->m_pName) {
                 if (s_PropertyInfo->m_pName == s_RemovePhysicsPropertyName) {
-                    if (GetPropertyValue(s_Property, p_Entity) == 1) {
+                    if (IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
                 } else if (s_PropertyInfo->m_pName == s_VisiblePropertyName) {
-                    if (GetPropertyValue(s_Property, p_Entity) == 0) {
+                    if (!IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
                 }
@@ -817,21 +821,22 @@ bool ExcludeFromNavMeshExport(ZEntityRef& p_Entity) {
     return false;
 }
 
-void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> p_Entities, bool s_Done) {
+void EditorServer::SendEntitiesDetails(
+    WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities, const bool p_Done
+) {
     if (!p_Entities.empty()) {
         Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
 
-        for (std::tuple<std::vector<std::string>, Quat, ZEntityRef> p_Entity: p_Entities) {
-            bool s_SkipPrim = ExcludeFromNavMeshExport(get<2>(p_Entity));
-            if (s_SkipPrim) {
+        for (auto& [s_AlocHashes, s_Quat, s_Entity]: p_Entities) {
+            if (IsExcludedFromNavMeshExport(s_Entity)) {
                 continue;
             }
-            for (std::string s_AlocHash: get<0>(p_Entity)) {
+            for (const std::string& s_AlocHash: s_AlocHashes) {
                 std::ostringstream s_Event;
                 s_Event << "{" << write_json("hash") << ":";
                 s_Event << write_json(s_AlocHash) << ",";
                 s_Event << write_json("entity") << ":";
-                WriteEntityTransforms(s_Event, get<1>(p_Entity), get<2>(p_Entity));
+                WriteEntityTransforms(s_Event, s_Quat, s_Entity);
                 s_Event << "}";
                 p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
             }
@@ -839,7 +844,7 @@ void EditorServer::SendEntitiesDetails(WebSocket* p_Socket, std::vector<std::tup
     } else {
         Logger::Info("No entities found for request.", p_Entities.size());
     }
-    if (s_Done) {
+    if (p_Done) {
         p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
     }
 }
@@ -852,7 +857,9 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 
     p_Stream << "{";
 
-    p_Stream << write_json("id") << ":" << write_json(std::format("{:016x}", p_Entity->GetType()->m_nEntityId)) << ",";
+    p_Stream << write_json("id") << ":" << write_json(
+        std::format("{:016x}", p_Entity->GetType()->m_nEntityId)
+    ) << ",";
 
     auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
 
@@ -861,12 +868,12 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     }
 
     if (s_Factory) {
-        auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityId);
-
-        if (s_Index != -1) {
+        if (auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityId); s_Index != -1) {
             const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
             p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
-            p_Stream << write_json("tblu") << ":" << write_json(fmt::format("{:016X}", s_Factory->m_ridResource.GetID()).c_str()) << ",";
+            p_Stream << write_json("tblu") << ":" << write_json(
+                fmt::format("{:016X}", s_Factory->m_ridResource.GetID()).c_str()
+            ) << ",";
         }
     }
 
@@ -886,9 +893,8 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     const std::string s_ScalePropertyName = "m_PrimitiveScale";
     const std::string s_TypePropertyName = "m_eType";
     const std::string s_GlobalSizePropertyName = "m_vGlobalSize";
-    const auto s_EntityType = p_Entity->GetType();
 
-    if (s_EntityType && s_EntityType->m_pProperties01) {
+    if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pProperties01) {
         for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
             ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
             const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
@@ -897,12 +903,12 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
                 continue;
             }
 
-            if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+            if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->
+                m_nPropertyId) {
                 // Some properties don't have a name for some reason. Try to find using RL.
-                const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
 
-                if (s_PropertyName.Size > 0) {
-                    std::string_view s_PropertyNameView = std::string_view(s_PropertyName.Data, s_PropertyName.Size);
+                if (const auto [s_data, s_size] = HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                    auto s_PropertyNameView = std::string_view(s_data, s_size);
                     if (s_PropertyNameView == s_ScalePropertyName) {
                         p_Stream << ",";
                         p_Stream << write_json("scale") << ":";

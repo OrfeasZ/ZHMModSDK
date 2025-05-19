@@ -52,9 +52,13 @@ public:
     std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
     ZEntityRef FindEntity(EntitySelector p_Selector);
-    std::string getCollisionHash(auto s_SelectedEntity);
-    void FindAlocs(std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool s_Done)> s_SendEntitiesCallback);
-    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfBoxEntities();
+    static std::string GetCollisionHash(auto p_SelectedEntity);
+    void FindAlocs(
+        const std::function<
+            void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>, bool p_Done)
+        >& p_SendEntitiesCallback
+    );
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfBoxEntities() const;
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindPfSeedPointEntities();
     void RebuildEntityTree();
     void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
@@ -129,16 +133,15 @@ private:
 
     void SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
-    auto* GetProperty(ZEntityRef p_Entity, ZEntityProperty* p_Property);
-    Quat GetQuatFromProperty(ZEntityRef p_Entity);
-    Quat GetParentQuat(ZEntityRef p_Entity);
+    static void* GetProperty(ZEntityRef p_Entity, const ZEntityProperty* p_Property);
+    static Quat GetQuatFromProperty(ZEntityRef p_Entity);
+    static Quat GetParentQuat(ZEntityRef p_Entity);
 
     void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
-    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
 private:
