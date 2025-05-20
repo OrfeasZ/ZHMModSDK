@@ -38,8 +38,8 @@ public:
     void OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks);
     void OnSceneClearing(bool p_ForReload);
     void OnEntityTreeRebuilt();
-    void SetEnabled(bool p_Enabled);
-    bool GetEnabled();
+    static void SetEnabled(bool p_Enabled);
+    static bool GetEnabled();
 
 private:
     static void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);
@@ -48,9 +48,14 @@ private:
     static void SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
     static void SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
     static void SendError(WebSocket* p_Socket, std::string p_Message, std::optional<int64_t> p_MessageId);
-    static void SendEntityList(WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId);
+    static void SendEntityList(
+        WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
+    );
     static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
-    static void SendEntitiesDetails(WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities, bool p_Done);
+    static void SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket);
+    static bool SendEntitiesDetails(
+        WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities
+    );
     static void SendDoneLoadingNavpMessage(WebSocket* p_Socket);
     static void WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity);
     static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);

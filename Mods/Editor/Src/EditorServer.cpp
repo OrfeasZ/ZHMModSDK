@@ -198,37 +198,15 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
         );
     }
     else if (s_Type == "listEntities") {
-        Plugin()->LockEntityTree();
         SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
-        Plugin()->UnlockEntityTree();
     }
-    else if (s_Type == "listAlocEntities") {
-        Plugin()->LockEntityTree();
-        Plugin()->FindAlocs(
-            [p_Socket](
-        const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& s_Entities, const bool s_Done
-    ) -> void {
-            SendEntitiesDetails(p_Socket, s_Entities, s_Done);
-        });
-        Plugin()->UnlockEntityTree();
-    }
-    else if (s_Type == "listPfBoxEntities") {
-        Plugin()->LockEntityTree();
-        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities = Plugin()->FindPfBoxEntities();
-        SendEntitiesDetails(p_Socket, s_Entities, true);
-        Plugin()->UnlockEntityTree();
-    }
-    else if (s_Type == "listPfSeedPointEntities") {
-        Plugin()->LockEntityTree();
-        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> s_Entities =
-            Plugin()->FindPfSeedPointEntities();
-        SendEntitiesDetails(p_Socket, s_Entities, true);
-        Plugin()->UnlockEntityTree();
+    else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
+        SendAlocPfBoxesAndSeedPointEntityList(p_Socket);
     }
     else if (s_Type == "loadNavp") {
-        uint64_t s_ChunkIndex = s_JsonMsg["chunk"];
-        uint64_t s_ChunkCount = s_JsonMsg["chunkCount"];
-        simdjson::ondemand::array s_Areas = s_JsonMsg["areas"];
+        const uint64_t s_ChunkIndex = s_JsonMsg["chunk"];
+        const uint64_t s_ChunkCount = s_JsonMsg["chunkCount"];
+        const simdjson::ondemand::array s_Areas = s_JsonMsg["areas"];
         Plugin()->LoadNavpAreas(s_Areas, s_ChunkIndex);
         if (s_ChunkIndex == s_ChunkCount - 1) {
             SendDoneLoadingNavpMessage(p_Socket);
@@ -631,6 +609,57 @@ bool EditorServer::GetEnabled() {
     return m_Enabled;
 }
 
+void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket) {
+    p_Socket->send("{\"alocs\":[", uWS::OpCode::TEXT);
+    auto s_AnyAlocSentOverall = std::make_shared<bool>(false);
+    Plugin()->FindAlocs(
+        [p_Socket, s_AnyAlocSentOverall](
+            const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
+            const bool p_IsLastAlocBatch
+        ) -> void {
+            bool s_SentAlocThisBatch = false;
+            if (!p_Entities.empty()) {
+                bool s_CurrentBatchWillSend = false;
+                for (auto& [s_Hashes, s_Quat, s_Entity] : p_Entities) {
+                    if (IsExcludedFromNavMeshExport(s_Entity)) continue;
+                    if (!s_Hashes.empty()) {
+                        s_CurrentBatchWillSend = true;
+                        break;
+                    }
+                }
+                if (s_CurrentBatchWillSend) {
+                    if (*s_AnyAlocSentOverall) {
+                        p_Socket->send(",", uWS::OpCode::TEXT);
+                    }
+                    s_SentAlocThisBatch = SendEntitiesDetails(p_Socket, p_Entities);
+                }
+            }
+            if (s_SentAlocThisBatch) {
+                *s_AnyAlocSentOverall = true;
+            }
+            if (p_IsLastAlocBatch) {
+                p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
+
+                const auto s_PfBoxEntities =
+                        Plugin()->FindEntitiesByType("ZPFBoxEntity", "00280B8C4462FAC8");
+                SendEntitiesDetails(p_Socket, s_PfBoxEntities);
+
+                p_Socket->send("],\"pfSeedPoints\":[", uWS::OpCode::TEXT);
+                const auto s_PfSeedPointEntities =
+                        Plugin()->FindEntitiesByType("ZPFSeedPoint", "00280B8C4462FAC8");
+                SendEntitiesDetails(p_Socket, s_PfSeedPointEntities);
+
+                p_Socket->send("]}", uWS::OpCode::TEXT);
+
+                p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
+            }
+        },
+        [p_Socket]() -> void {
+            p_Socket->send("Rebuilding tree.", uWS::OpCode::TEXT);
+        }
+    );
+}
+
 
 void EditorServer::SendEntityList(
     EditorServer::WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
@@ -782,7 +811,7 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
     const std::string s_VisiblePropertyName = "m_bVisible";
     if (s_EntityType && s_EntityType->m_pProperties01) {
         for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-            ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+            const ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
             const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
 
             if (!s_PropertyInfo || !s_PropertyInfo->m_pType || !s_PropertyInfo->m_pType->typeInfo()) {
@@ -793,9 +822,10 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
                 s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
                 // Some properties don't have a name for some reason. Try to find using RL.
 
-                if (const auto [s_data, s_size] = HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
-                    auto s_PropertyNameView = std::string_view(s_data, s_size);
-                    if (s_PropertyNameView == s_RemovePhysicsPropertyName) {
+                if (const auto [s_data, s_size] =
+                    HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                    if (const auto s_PropertyNameView = std::string_view(s_data, s_size);
+                        s_PropertyNameView == s_RemovePhysicsPropertyName) {
                         if (IsPropertyValueTrue(s_Property, p_Entity)) {
                             return true;
                         }
@@ -821,32 +851,34 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
     return false;
 }
 
-void EditorServer::SendEntitiesDetails(
-    WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities, const bool p_Done
+bool EditorServer::SendEntitiesDetails(
+    WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities
 ) {
-    if (!p_Entities.empty()) {
-        Logger::Info("Sending entities details for: '{}' entities", p_Entities.size());
+    bool s_IsFirstItemActuallySentInThisCall = true;
+    bool s_DidSendAnything = false;
 
-        for (auto& [s_AlocHashes, s_Quat, s_Entity]: p_Entities) {
-            if (IsExcludedFromNavMeshExport(s_Entity)) {
-                continue;
-            }
-            for (const std::string& s_AlocHash: s_AlocHashes) {
-                std::ostringstream s_Event;
-                s_Event << "{" << write_json("hash") << ":";
-                s_Event << write_json(s_AlocHash) << ",";
-                s_Event << write_json("entity") << ":";
-                WriteEntityTransforms(s_Event, s_Quat, s_Entity);
-                s_Event << "}";
-                p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
-            }
+    for (const auto& [s_AlocHashes, s_Quat, s_Entity] : p_Entities) {
+        if (IsExcludedFromNavMeshExport(s_Entity)) {
+            continue;
         }
-    } else {
-        Logger::Info("No entities found for request.", p_Entities.size());
+
+        for (const auto& s_Hash : s_AlocHashes) {
+            if (!s_IsFirstItemActuallySentInThisCall) {
+                p_Socket->send(",", uWS::OpCode::TEXT);
+            }
+            s_IsFirstItemActuallySentInThisCall = false;
+            s_DidSendAnything = true;
+
+            std::ostringstream s_Event;
+            s_Event << "{" << write_json("hash") << ":";
+            s_Event << write_json(s_Hash) << ",";
+            s_Event << write_json("entity") << ":";
+            WriteEntityTransforms(s_Event, s_Quat, s_Entity);
+            s_Event << "}";
+            p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+        }
     }
-    if (p_Done) {
-        p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
-    }
+    return s_DidSendAnything;
 }
 
 void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity) {
