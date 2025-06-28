@@ -22,6 +22,7 @@ private:
     inline void SaveProtocol();
     inline void SaveCertPin();
     inline void UpdateHeaders();
+    inline void UpdateEnableDynRes();
     inline void UpdateDynRes();
     inline void SaveDomains();
 
@@ -41,6 +42,7 @@ private:
     bool m_UseHttp = false;
     bool m_AlwaysSendAuth = false;
     bool m_CertPinBypass = false;
+    bool m_EnableDynRes = false;
     bool m_OptionalDynRes = false;
 
     // Saved Domains
