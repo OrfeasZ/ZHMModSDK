@@ -353,14 +353,15 @@ void OnlineTools::HelpMenu() {
             m_UseHttp = true;
             m_AlwaysSendAuth = true;
             m_CertPinBypass = true;
-            m_OptionalDynRes = true;
             m_EnableDynRes = true;
+            m_OptionalDynRes = true;
 
             m_Domains = {"localhost", "gm.hitmaps.com", "ghostmode.rdil.rocks"};
 
             SaveProtocol();
             SaveCertPin();
             UpdateHeaders();
+            UpdateEnableDynRes();
             UpdateDynRes();
             SaveDomains();
         }
