@@ -1226,6 +1226,10 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool
 
     m_GlobalOutfitKit = nullptr;
 
+    m_NPCsMenuActive = false;
+    s_CurrentlySelectedActor = nullptr;
+    m_SelectedEntity = nullptr;
+
     return HookResult<void>(HookAction::Continue());
 }
 
