@@ -23,6 +23,10 @@ void DebugMod::DrawNPCsBox(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing && p_HasFocus) {
+        if (!Globals::ActorManager) {
+            return;
+        }
+
         ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
         ZEntityRef ref;
 
