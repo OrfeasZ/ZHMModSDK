@@ -61,3 +61,13 @@ void Editor::TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZE
         ImGui::TextColored(textColor, "(%s)", "null");
     }
 }
+
+void Editor::ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+    if (auto RepositoryId = reinterpret_cast<ZRepositoryID*>(p_Data)) {
+        ImGui::Text("%s", RepositoryId->ToString().c_str());
+    }
+    else {
+        constexpr auto textColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
+        ImGui::TextColored(textColor, "(%s)", "null");
+    }
+}
