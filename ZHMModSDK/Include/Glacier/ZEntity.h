@@ -116,6 +116,10 @@ public:
 class ZEntityType {
 public:
     ZEntityProperty* FindProperty(uint32_t p_PropertyId) const {
+        if (!m_pProperties01) {
+            return nullptr;
+        }
+
         auto s_Property = std::find_if(
             m_pProperties01->begin(),
             m_pProperties01->end(),
