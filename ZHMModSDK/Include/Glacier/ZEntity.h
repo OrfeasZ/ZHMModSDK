@@ -364,7 +364,7 @@ public:
 
         const auto s_Type = s_Entity->GetType();
 
-        if (!s_Type)
+        if (!s_Type || !s_Type->m_pProperties01)
             return s_PropertyVal;
 
         for (uint32_t i = 0; i < s_Type->m_pProperties01->size(); ++i) {
