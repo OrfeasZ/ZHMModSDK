@@ -114,6 +114,7 @@ void OnlineTools::OnEngineInitialized() {
     m_UseHttp = GetSettingBool("online", "use_http", false);
     m_AlwaysSendAuth = GetSettingBool("online", "always_send_auth_header", false);
     m_CertPinBypass = GetSettingBool("online", "bypass_cert_pinning", false);
+    m_EnableDynRes = GetSettingBool("online", "enable_dynamic_resources", false);
     m_OptionalDynRes = GetSettingBool("online", "optional_dynamic_resources", false);
 
     // Load saved domains
@@ -124,6 +125,9 @@ void OnlineTools::OnEngineInitialized() {
 
     // Apply settings
     if (m_AlwaysSendAuth) PatchAuthHeaderChecks();
+
+    if (m_EnableDynRes)
+        Functions::ZConfigCommand_ExecuteCommand->Call("OnlineResources_Disable", "0");
 
     if (m_OptionalDynRes)
         Functions::ZConfigCommand_ExecuteCommand->Call("OnlineResources_ForceOfflineOnFailure", "0");
@@ -176,6 +180,13 @@ inline void OnlineTools::UpdateHeaders() {
     m_AlwaysSendAuth ? PatchAuthHeaderChecks() : RestoreAuthHeaderChecks();
 }
 
+inline void OnlineTools::UpdateEnableDynRes() {
+    SetSettingBool("online", "enable_dynamic_resources", m_EnableDynRes);
+    Functions::ZConfigCommand_ExecuteCommand->Call(
+        "OnlineResources_Disable", m_EnableDynRes ? "0" : "1"
+    );
+}
+
 inline void OnlineTools::UpdateDynRes() {
     SetSettingBool("online", "optional_dynamic_resources", m_OptionalDynRes);
     Functions::ZConfigCommand_ExecuteCommand->Call(
@@ -224,6 +235,12 @@ void OnlineTools::SettingsMenu() {
             SaveCertPin();
         if (ImGui::IsItemHovered()) ImGui::SetTooltip(
             "Allows you to decrypt SSL traffic between the game and a server if you use a proxy."
+        );
+
+        if (ImGui::Checkbox("Enable Online Dynamic Resources", &m_EnableDynRes))
+            UpdateEnableDynRes();
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip(
+            "Enables loading dynamic resources packages, necessary for Peacock localisation"
         );
 
         if (ImGui::Checkbox("Make Dynamic Resources Optional", &m_OptionalDynRes))
@@ -336,6 +353,7 @@ void OnlineTools::HelpMenu() {
             m_UseHttp = true;
             m_AlwaysSendAuth = true;
             m_CertPinBypass = true;
+            m_EnableDynRes = true;
             m_OptionalDynRes = true;
 
             m_Domains = {"localhost", "gm.hitmaps.com", "ghostmode.rdil.rocks"};
@@ -343,6 +361,7 @@ void OnlineTools::HelpMenu() {
             SaveProtocol();
             SaveCertPin();
             UpdateHeaders();
+            UpdateEnableDynRes();
             UpdateDynRes();
             SaveDomains();
         }
