@@ -217,6 +217,11 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         ImGui::SetTooltip("%s", s_EntityType.c_str());
     }
 
+    if (ImGui::IsItemFocused() && !s_IsSelected) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Space))
+            OnSelectEntity(s_Entity, std::nullopt);
+    }
+
     if (ImGui::IsItemClicked()) {
         OnSelectEntity(s_Entity, std::nullopt);
     }
