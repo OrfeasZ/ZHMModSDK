@@ -22,6 +22,14 @@ struct QneTransform {
     SVector3 Scale;
 };
 
+struct AlignedDeleter {
+    template <typename T>
+    void operator()(T* ptr) const {
+        if (ptr)
+            (*Globals::MemoryManager)->m_pNormalAllocator->Free(ptr);
+    }
+};
+
 class Editor : public IPluginInterface {
 public:
     Editor();
@@ -52,7 +60,16 @@ public:
     std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
     ZEntityRef FindEntity(EntitySelector p_Selector);
+    static std::string GetCollisionHash(auto p_SelectedEntity);
+    void FindAlocs(
+        const std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>&, bool p_Done)>&
+        p_SendEntitiesCallback, const std::function<void()>& p_RebuiltCallback
+    );
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindEntitiesByType(
+        const std::string& p_EntityType, const std::string& p_Hash);
     void RebuildEntityTree();
+    void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
+    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
     void SpawnCameras();
@@ -97,6 +114,14 @@ private:
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
     void ToggleEditorServerEnabled();
+    static void FindAlocForZGeomEntityNode(
+        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
+        const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType
+    );
+    static void FindAlocForZPrimitiveProxyEntityNode (
+        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& entities,
+        const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType
+    );
 
     // Properties
     void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
@@ -125,12 +150,16 @@ private:
 
     void SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
+    template <typename T>
+    static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const ZEntityProperty* p_Property);
+    static Quat GetQuatFromProperty(ZEntityRef p_Entity);
+    static Quat GetParentQuat(ZEntityRef p_Entity);
+
     void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
-    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
 private:
@@ -171,6 +200,8 @@ private:
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
     bool m_ShouldScrollToEntity = false;
+
+    std::vector<std::vector<SVector3>> m_NavpAreas;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;
