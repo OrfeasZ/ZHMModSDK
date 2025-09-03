@@ -101,12 +101,12 @@ void Editor::Init() {
     m_UseScaleSnap = GetSettingBool("general", "scale_snap", true);
     m_ScaleSnapValue = GetSettingDouble("general", "scale_snap_value", 1.0);
     m_UseQneTransforms = GetSettingBool("general", "qne_transforms", false);
+    m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
 }
 
 void Editor::OnDrawMenu() {
-    bool s_ServerEnabled = m_Server.GetEnabled();
-    if (ImGui::Checkbox("EDITOR SERVER", &s_ServerEnabled)) {
-        ToggleEditorServerEnabled();
+    if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR")) {
+        m_MenuVisible = !m_MenuVisible;
     }
 
     /*if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR"))
@@ -465,10 +465,35 @@ std::string BehaviorToString(ECompiledBehaviorType p_Type) {
 void Editor::OnDrawUI(bool p_HasFocus) {
     auto s_ImgGuiIO = ImGui::GetIO();
 
-    DrawEntityTree();
-    DrawEntityProperties();
-    DrawEntityManipulator(p_HasFocus);
-    //DrawPinTracer();
+    if (m_MenuVisible) {
+        const auto s_Center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(s_Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+        ImGui::PushFont(SDK()->GetImGuiBlackFont());
+        const auto s_MenuExpanded = ImGui::Begin(ICON_MD_VIDEO_SETTINGS "  Editor", &m_MenuVisible);
+        ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+        if (s_MenuExpanded) {
+            if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS "  SHOW EDITOR WINDOWS", &m_EditorWindowsVisible)) {
+                SetSettingBool("general", "editor_windows_visible", m_EditorWindowsVisible);
+            }
+            bool s_ServerEnabled = m_Server.GetEnabled();
+            if (ImGui::Checkbox(ICON_MD_TERMINAL "  ENABLE EDITOR SERVER", &s_ServerEnabled)) {
+                ToggleEditorServerEnabled();
+            }
+        }
+
+        ImGui::PopFont();
+        ImGui::End();
+        ImGui::PopFont();
+    }
+
+    if (m_EditorWindowsVisible) {
+        DrawEntityTree();
+        DrawEntityProperties();
+        DrawEntityManipulator(p_HasFocus);
+        //DrawPinTracer();
+    }
 
     if (m_CameraRT && m_Camera) {
         ImGui::Begin("RT Texture");

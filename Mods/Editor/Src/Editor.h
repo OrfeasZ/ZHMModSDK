@@ -192,6 +192,9 @@ private:
     double m_AngleSnapValue = 90.0;
     double m_ScaleSnapValue = 1.0;
 
+    bool m_MenuVisible = false;
+    bool m_EditorWindowsVisible = true;
+
     float4 m_From;
     float4 m_To;
     float4 m_Hit;
