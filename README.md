@@ -17,21 +17,23 @@ Right now it's at a very early stage, with only a few aspects of the engine expo
 
 2. Extract the contents of the `ZHMModSDK-Release.zip` archive to `<drive>:\Path\To\HITMAN3\Retail`, where `<drive>:\Path\To\HITMAN3` is the path to your Hitman 3 installation directory. This will be at `C:\Program Files\EpicGames\HITMAN3` or `C:\Program Files (x86)\Steam\steamapps\common\HITMAN 3` by default. Make sure that you extract the files in the `Retail` folder and not the root `HITMAN3` folder.
 
-3. Run the game like you normally would.
+4. Run the game like you normally would.
 
-4. When the game opens, you'll see a dialog asking you which mods you'd like to use. Select them and press OK. You might need to restart your game for some of them to work.
+5. When the game opens, you'll see a dialog asking you which mods you'd like to use. Select them and press OK. You might need to restart your game for some of them to work.
 
-5. Open the SDK panel with the `~` key (`^` on QWERTZ layouts) to change loaded mods at runtime and to use the menus of certain mods.
+6. Open the SDK panel with the `~` key (`^` on QWERTZ layouts) to change loaded mods at runtime and to use the menus of certain mods.
 
-6. ...
+7. ...
 
-7. Profit?
+8. Profit?
 
 > NOTE: Some mods might require additional setup. For mods bundled with the SDK, refer to the [table below](#sample-mods). For any other mod, make sure to consult its installation instructions.
 
 > NOTE: You can at any time change the mods you're using by pressing the `~` key (`^` on QWERTZ layouts) and selecting them, or by editing the `mods.ini` file inside your game's `Retail` folder.
 
 > NOTE: If you are trying to use this on a **Steam Deck** or under **Proton / Linux**, you might need to follow [these additional steps](/INSTALL-deck.md).
+
+> NOTE: For Game Pass, the installation path is `PC - HITMAN 3 - Base Game\Content\Retail`.
 
 ## Sample mods
 
