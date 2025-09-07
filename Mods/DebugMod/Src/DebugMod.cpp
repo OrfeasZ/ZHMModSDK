@@ -1,223 +1,55 @@
 #include "DebugMod.h"
-
 #include "Hooks.h"
 #include "Logging.h"
-
-#include <Glacier/ZScene.h>
-#include <Glacier/ZActor.h>
-#include <Glacier/ZSpatialEntity.h>
-#include <Glacier/EntityFactory.h>
-#include <Glacier/ZCollision.h>
-#include <Glacier/ZCameraEntity.h>
-#include <Glacier/ZGameLoopManager.h>
-#include <Glacier/ZModule.h>
-#include <Glacier/ZHitman5.h>
-#include <Glacier/ZHttp.h>
-#include <Glacier/ZPhysics.h>
-#include <Glacier/ZSetpieceEntity.h>
-#include <Glacier/ZContentKitManager.h>
-#include <Glacier/ZAction.h>
-#include <Glacier/ZItem.h>
-#include <Glacier/ZInventory.h>
-#include <Glacier/ZHM5CrippleBox.h>
-#include <Glacier/ZApplicationEngineWin32.h>
-#include <Glacier/ZFreeCamera.h>
-#include <Glacier/ZHM5InputManager.h>
-#include <IO/ZBinaryReader.h>
-#include <IO/ZBinaryDeserializer.h>
-#include <Crypto.h>
-
-#include <Functions.h>
-#include <Globals.h>
-
-#include <ImGuizmo.h>
-#include <lz4.h>
 
 #include <winhttp.h>
 #include <numbers>
 #include <filesystem>
+
 #include <imgui_internal.h>
 
-#pragma comment(lib, "urlmon.lib")
+#include <IconsMaterialDesign.h>
+
+#include <Glacier/ZScene.h>
+#include <Glacier/ZActor.h>
+#include <Glacier/ZSpatialEntity.h>
+#include <Glacier/ZGameLoopManager.h>
+#include <Glacier/ZKnowledge.h>
+
+#include <Functions.h>
+#include <Globals.h>
 
 DebugMod::~DebugMod() {
-    if (m_TrackCamActive) {
-        DisableTrackCam();
-    }
-
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
     Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
 
 void DebugMod::Init() {
+    Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &DebugMod::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &DebugMod::OnClearScene);
 }
 
 void DebugMod::OnEngineInitialized() {
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
-
-    std::thread thread(LoadHashMap);
-
-    thread.detach();
 }
 
 void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
-    if (!*Globals::ApplicationEngineWin32)
-        return;
-
-    if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
-        Logger::Debug("Creating free camera.");
-        Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
-    }
-
-    if (m_TrackCamActive) {
-        (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(
-            m_TrackCamActive
-        );
-        UpdateTrackCam();
-    }
 }
 
 void DebugMod::OnDrawMenu() {
-    if (ImGui::Button("DEBUG MENU")) {
+    if (ImGui::Button(ICON_MD_BUILD " DEBUG MENU")) {
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
-    // Disabled due to it freezing the game.
-    if (ImGui::Button("POSITIONS MENU")) {
+    if (ImGui::Button(ICON_MD_PLACE " POSITIONS MENU")) {
         m_PositionsMenuActive = !m_PositionsMenuActive;
-    }
-
-    if (ImGui::Button("PLAYER MENU")) {
-        m_PlayerMenuActive = !m_PlayerMenuActive;
-    }
-
-    if (ImGui::Button("ITEMS MENU")) {
-        m_ItemsMenuActive = !m_ItemsMenuActive;
-    }
-
-    if (ImGui::Button("ASSETS MENU")) {
-        m_AssetsMenuActive = !m_AssetsMenuActive;
-    }
-
-    if (ImGui::Button("NPCs MENU")) {
-        m_NPCsMenuActive = !m_NPCsMenuActive;
     }
 }
 
 void DebugMod::OnDrawUI(bool p_HasFocus) {
-    ImGuizmo::BeginFrame();
-
     DrawOptions(p_HasFocus);
-    DrawAssetsBox(p_HasFocus);
-    DrawItemsBox(p_HasFocus);
-    DrawNPCsBox(p_HasFocus);
-    DrawPlayerBox(p_HasFocus);
     DrawPositionBox(p_HasFocus);
-
-    auto& s_ImgGuiIO = ImGui::GetIO();
-
-    if (p_HasFocus) {
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && !s_ImgGuiIO.WantCaptureMouse) {
-            const auto s_MousePos = ImGui::GetMousePos();
-
-            OnMouseDown(SVector2(s_MousePos.x, s_MousePos.y), !m_HoldingMouse);
-
-            m_HoldingMouse = true;
-        }
-        else {
-            m_HoldingMouse = false;
-        }
-
-        if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
-            if (m_GizmoMode == ImGuizmo::TRANSLATE)
-                m_GizmoMode = ImGuizmo::ROTATE;
-            else if (m_GizmoMode == ImGuizmo::ROTATE)
-                m_GizmoMode = ImGuizmo::SCALE;
-            else if (m_GizmoMode == ImGuizmo::SCALE)
-                m_GizmoMode = ImGuizmo::TRANSLATE;
-        }
-
-        if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
-            m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
-        }
-    }
-
-    ImGuizmo::Enable(p_HasFocus);
-}
-
-void DebugMod::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
-    SVector3 s_World;
-    SVector3 s_Direction;
-    SDK()->ScreenToWorld(p_Pos, s_World, s_Direction);
-
-    float4 s_DirectionVec(s_Direction.x, s_Direction.y, s_Direction.z, 1.f);
-
-    float4 s_From = float4(s_World.x, s_World.y, s_World.z, 1.f);
-    float4 s_To = s_From + (s_DirectionVec * 200.f);
-
-    if (!*Globals::CollisionManager) {
-        Logger::Error("Collision manager not found.");
-        return;
-    }
-
-    ZRayQueryInput s_RayInput {
-        .m_vFrom = s_From,
-        .m_vTo = s_To,
-    };
-
-    ZRayQueryOutput s_RayOutput {};
-    Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
-
-    if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {
-        Logger::Error("Raycast failed.");
-        m_SelectedEntity = nullptr;
-        return;
-    }
-
-    Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
-
-    m_From = s_From;
-    m_To = s_To;
-    m_Hit = s_RayOutput.m_vPosition;
-    m_Normal = s_RayOutput.m_vNormal;
-
-    if (p_FirstClick) {
-        m_EntityMutex.lock();
-
-        if (s_RayOutput.m_BlockingEntity) {
-            const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
-            Logger::Trace(
-                "Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
-                s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId
-            );
-        }
-
-        // We've already picked this entity - so let's deselect it
-        m_SelectedEntity = s_RayOutput.m_BlockingEntity == m_SelectedEntity ? nullptr : s_RayOutput.m_BlockingEntity;
-        m_SelectedEntityName.clear();
-
-        if (m_SelectedEntity.GetOwningEntity().HasInterface<ZCharacterTemplateAspect>()) {
-            if (ZActor* tempSelectedActor = m_SelectedEntity.GetOwningEntity().QueryInterface<ZActor>()) {
-                s_CurrentlySelectedActor = tempSelectedActor;
-                bActorSelectedByCamera = true;
-            }
-        }
-
-        if (m_SelectedEntity.HasInterface<ZActor>()) {
-            if (ZActor* s_Actor = m_SelectedEntity.QueryInterface<ZActor>()) {
-                if (!s_CurrentlySelectedActor) {
-                    s_CurrentlySelectedActor = s_Actor;
-                }
-
-                if (s_CurrentlySelectedActor->m_rCharacter.m_pInterfaceRef != s_Actor->m_rCharacter.m_pInterfaceRef) {
-                    m_SelectedEntity = s_Actor->m_rCharacter.m_ref;
-                }
-            }
-        }
-        m_EntityMutex.unlock();
-    }
 }
 
 void DebugMod::DrawOptions(const bool p_HasFocus) {
@@ -233,846 +65,12 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
         ImGui::Checkbox("Render NPC position boxes", &m_RenderNpcBoxes);
         ImGui::Checkbox("Render NPC names", &m_RenderNpcNames);
         ImGui::Checkbox("Render NPC repository IDs", &m_RenderNpcRepoIds);
+        ImGui::Checkbox("Render NPC behaviors", &m_RenderNpcBehaviors);
     }
 
     ImGui::PopFont();
     ImGui::End();
     ImGui::PopFont();
-}
-
-void DebugMod::EquipOutfit(
-    const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
-    uint8_t p_CurrentCharSetIndex,
-    const std::string& p_CurrentCharSetCharacterType,
-    uint8_t p_CurrentOutfitVariationIndex,
-    ZHitman5* p_LocalHitman
-) {
-    std::vector<ZRuntimeResourceID> s_HeroOutfitVariations;
-
-    if (p_CurrentCharSetCharacterType != "HeroA") {
-        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-            p_CurrentCharSetIndex].m_pInterfaceRef;
-
-        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType2 = &s_OutfitVariationCollection->m_aCharacters[
-            2];
-        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = nullptr;
-
-        if (p_CurrentCharSetCharacterType == "Actor") {
-            s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[0];
-        }
-        else if (p_CurrentCharSetCharacterType == "Nude") {
-            s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[1];
-        }
-
-        for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
-            s_HeroOutfitVariations.push_back(
-                s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit
-            );
-        }
-
-        if (s_CharsetCharacterType) {
-            for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
-                s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
-                        s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit;
-            }
-        }
-    }
-
-    Functions::ZHitman5_SetOutfit->Call(
-        p_LocalHitman, p_GlobalOutfitKit, p_CurrentCharSetIndex, p_CurrentOutfitVariationIndex, false, false
-    );
-
-    if (p_CurrentCharSetCharacterType != "HeroA") {
-        const auto* outfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[p_CurrentCharSetIndex].
-                m_pInterfaceRef;
-        const auto* charsetCharacterType = &outfitVariationCollection->m_aCharacters[2];
-
-        for (size_t i = 0; i < s_HeroOutfitVariations.size(); ++i) {
-            charsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit = s_HeroOutfitVariations[
-                i];
-        }
-    }
-}
-
-void DebugMod::EquipOutfit(
-    const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
-    uint8_t n_CurrentCharSetIndex,
-    const std::string& s_CurrentCharSetCharacterType,
-    uint8_t n_CurrentOutfitVariationIndex,
-    ZActor* p_Actor
-) {
-    if (!p_Actor) {
-        Logger::Error("Could not equip outfit - no actor selected");
-        return;
-    }
-
-    std::vector<ZRuntimeResourceID> s_ActorOutfitVariations;
-    if (s_CurrentCharSetCharacterType != "HeroA") {
-        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-            n_CurrentCharSetIndex].m_pInterfaceRef;
-
-        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType2 = &s_OutfitVariationCollection->m_aCharacters[
-            0];
-        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = nullptr;
-
-        if (s_CurrentCharSetCharacterType == "Nude") {
-            s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[1];
-        }
-        else if (s_CurrentCharSetCharacterType == "HeroA") {
-            s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[2];
-        }
-
-        for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
-            s_ActorOutfitVariations.push_back(
-                s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit
-            );
-        }
-
-        if (s_CharsetCharacterType) {
-            for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
-                s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
-                        s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit;
-            }
-        }
-    }
-
-    Functions::ZActor_SetOutfit->Call(
-        p_Actor, p_GlobalOutfitKit, n_CurrentCharSetIndex, n_CurrentOutfitVariationIndex, false
-    );
-
-    if (s_CurrentCharSetCharacterType != "Actor") {
-        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-            n_CurrentCharSetIndex].m_pInterfaceRef;
-        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[
-            0];
-
-        for (size_t i = 0; i < s_ActorOutfitVariations.size(); ++i) {
-            s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
-                    s_ActorOutfitVariations[i];
-        }
-    }
-}
-
-void DebugMod::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld) {
-    auto s_LocalHitman = SDK()->GetLocalPlayer();
-
-    if (!s_LocalHitman) {
-        Logger::Debug("No local hitman");
-        return;
-    }
-
-    if (!addToWorld) {
-        const TArray<TEntityRef<ZCharacterSubcontroller>>* s_Controllers = &s_LocalHitman.m_pInterfaceRef->m_pCharacter.
-                m_pInterfaceRef->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
-        auto* s_Inventory = static_cast<ZCharacterSubcontrollerInventory*>(s_Controllers->operator[](6).
-            m_pInterfaceRef);
-
-        TArray<ZRepositoryID> s_ModifierIds;
-        Functions::ZCharacterSubcontrollerInventory_AddDynamicItemToInventory->Call(
-            s_Inventory, p_RepositoryId, "", &s_ModifierIds, 2
-        );
-
-        return;
-    }
-
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
-
-    if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
-        return;
-    }
-
-    const auto s_ID = ResId<"[modules:/zitemspawner.class].pc_entitytype">;
-    const auto s_ID2 = ResId<"[modules:/zitemrepositorykeyentity.class].pc_entitytype">;
-
-    TResourcePtr<ZTemplateEntityFactory> s_Resource, s_Resource2;
-
-    Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
-    Globals::ResourceManager->GetResourcePtr(s_Resource2, s_ID2, 0);
-
-    Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex, fmt::ptr(s_Resource.GetResource()));
-
-    if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
-        return;
-    }
-
-    ZEntityRef s_NewEntity, s_NewEntity2;
-
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, nullptr, -1
-    );
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity2, "", s_Resource2, s_Scene.m_ref, nullptr, -1
-    );
-
-    if (!s_NewEntity) {
-        Logger::Debug("Failed to spawn entity.");
-        return;
-    }
-
-    if (!s_NewEntity2) {
-        Logger::Debug("Failed to spawn entity2.");
-        return;
-    }
-
-    const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
-
-    const auto s_ItemSpawner = s_NewEntity.QueryInterface<ZItemSpawner>();
-
-    s_ItemSpawner->m_ePhysicsMode = ZItemSpawner::EPhysicsMode::EPM_KINEMATIC;
-    s_ItemSpawner->m_rMainItemKey.m_ref = s_NewEntity2;
-    s_ItemSpawner->m_rMainItemKey.m_pInterfaceRef = s_NewEntity2.QueryInterface<ZItemRepositoryKeyEntity>();
-    s_ItemSpawner->m_rMainItemKey.m_pInterfaceRef->m_RepositoryId = p_RepositoryId;
-    s_ItemSpawner->m_bUsePlacementAttach = false;
-    s_ItemSpawner->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
-
-    Functions::ZItemSpawner_RequestContentLoad->Call(s_ItemSpawner);
-}
-
-void DebugMod::SpawnNonRepositoryProp(const std::string& s_PropAssemblyPath) {
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
-
-    if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
-        return;
-    }
-
-    const Hash::MD5Hash s_Hash = Hash::MD5(std::string_view(s_PropAssemblyPath));
-
-    const uint32_t s_IdHigh = ((s_Hash.A >> 24) & 0x000000FF)
-            | ((s_Hash.A >> 8) & 0x0000FF00)
-            | ((s_Hash.A << 8) & 0x00FF0000);
-
-    const uint32_t s_IdLow = ((s_Hash.B >> 24) & 0x000000FF)
-            | ((s_Hash.B >> 8) & 0x0000FF00)
-            | ((s_Hash.B << 8) & 0x00FF0000)
-            | ((s_Hash.B << 24) & 0xFF000000);
-
-    const auto s_RuntimeResourceId = ZRuntimeResourceID(s_IdHigh, s_IdLow);
-
-    TResourcePtr<ZTemplateEntityFactory> s_Resource;
-    Globals::ResourceManager->GetResourcePtr(s_Resource, s_RuntimeResourceId, 0);
-
-    if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
-        return;
-    }
-
-    ZEntityRef s_NewEntity;
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, nullptr, -1
-    );
-
-    if (!s_NewEntity) {
-        Logger::Debug("Failed to spawn entity.");
-        return;
-    }
-
-    s_NewEntity.SetProperty("m_eRoomBehaviour", ZSpatialEntity::ERoomBehaviour::ROOM_DYNAMIC);
-
-    auto s_LocalHitman = SDK()->GetLocalPlayer();
-
-    if (!s_LocalHitman) {
-        Logger::Debug("No local hitman.");
-        return;
-    }
-
-    const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
-    const auto s_PropSpatialEntity = s_NewEntity.QueryInterface<ZSpatialEntity>();
-
-    s_PropSpatialEntity->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
-}
-
-auto DebugMod::SpawnNPC(
-    const std::string& p_NpcName,
-    const ZRepositoryID& repositoryID,
-    const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit,
-    uint8_t n_CurrentCharacterSetIndex,
-    const std::string& s_CurrentcharSetCharacterType,
-    uint8_t n_CurrentOutfitVariationIndex
-) -> void {
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
-
-    if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
-        return;
-    }
-
-    const auto s_RuntimeResourceId = ResId<
-        "[assembly:/templates/gameplay/ai2/actors.template?/npcactor.entitytemplate].pc_entitytype">;
-
-    TResourcePtr<ZTemplateEntityFactory> s_Resource;
-    Globals::ResourceManager->GetResourcePtr(s_Resource, s_RuntimeResourceId, 0);
-
-    if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
-        return;
-    }
-
-    ZEntityRef s_NewEntity;
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, nullptr, -1
-    );
-
-    if (!s_NewEntity) {
-        Logger::Debug("Could not spawn entity.");
-        return;
-    }
-
-    auto s_LocalHitman = SDK()->GetLocalPlayer();
-
-    if (!s_LocalHitman) {
-        Logger::Debug("No local hitman.");
-        return;
-    }
-
-    ZActor* actor = s_NewEntity.QueryInterface<ZActor>();
-
-    actor->m_sActorName = p_NpcName;
-    actor->m_bStartEnabled = true;
-    actor->m_nOutfitCharset = n_CurrentCharacterSetIndex;
-    actor->m_nOutfitVariation = n_CurrentOutfitVariationIndex;
-    actor->m_OutfitRepositoryID = repositoryID;
-    actor->m_eRequiredVoiceVariation = EActorVoiceVariation::eAVV_Undefined;
-
-    actor->Activate(0);
-
-    ZSpatialEntity* s_ActorSpatialEntity = s_NewEntity.QueryInterface<ZSpatialEntity>();
-    ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
-
-    s_ActorSpatialEntity->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
-
-    if (p_GlobalOutfitKit) {
-        EquipOutfit(
-            *p_GlobalOutfitKit, n_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType,
-            n_CurrentOutfitVariationIndex, actor
-        );
-    }
-}
-
-void DebugMod::LoadRepositoryProps() {
-    m_RepositoryProps.clear();
-
-    if (m_RepositoryResource.m_nResourceIndex == -1) {
-        const auto s_ID = ResId<"[assembly:/repository/pro.repo].pc_repo">;
-
-        Globals::ResourceManager->GetResourcePtr(m_RepositoryResource, s_ID, 0);
-    }
-
-    if (m_RepositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID) {
-        const auto s_RepositoryData = static_cast<THashMap<
-            ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
-            GetResourceData());
-
-        for (auto it = s_RepositoryData->begin(); it != s_RepositoryData->end(); ++it) {
-            const ZDynamicObject* s_DynamicObject = &it->second;
-            const TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject->As<TArray<
-                SDynamicObjectKeyValuePair>>();
-
-            std::string s_Id, s_Title, s_CommonName, s_Name, s_FinalName;
-            bool s_IsItem = false;
-
-            for (size_t i = 0; i < s_Entries->size(); ++i) {
-                std::string s_Key = s_Entries->operator[](i).sKey.c_str();
-
-                if (s_Key == "ID_") {
-                    s_Id = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
-                }
-                else if (s_Key == "Title") {
-                    s_Title = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
-                }
-                else if (s_Key == "CommonName") {
-                    s_CommonName = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
-                }
-                else if (s_Key == "Name") {
-                    s_Name = ConvertDynamicObjectValueTString(s_Entries->at(i).value);
-                }
-                else if (!s_IsItem) {
-                    s_IsItem = s_Key == "ItemType" ||
-                            s_Key == "IsHitmanSuit" ||
-                            s_Key == "IsWeapon" ||
-                            s_Key == "Items";
-                }
-            }
-
-            if (s_Id.empty() || !s_IsItem) {
-                continue;
-            }
-
-            if (s_Title.empty() && s_CommonName.empty() && s_Name.empty()) {
-                s_FinalName = "<unnamed> [" + s_Id + "]";
-            }
-            else if (!s_Title.empty()) {
-                s_FinalName = s_Title + " [" + s_Id + "]";
-            }
-            else if (!s_CommonName.empty()) {
-                s_FinalName = s_CommonName + " [" + s_Id + "]";
-            }
-            else if (!s_Name.empty()) {
-                s_FinalName = s_Name + " [" + s_Id + "]";
-            }
-
-            const auto s_RepoId = ZRepositoryID(s_Id);
-            m_RepositoryProps.push_back(std::make_tuple(s_RepoId, s_FinalName));
-        }
-    }
-
-    // Sort props based on lower-case name.
-    std::ranges::sort(
-        m_RepositoryProps, [](const auto& a, const auto& b) {
-            auto [_1, s_LowerA] = a;
-            auto [_2, s_LowerB] = b;
-
-            std::ranges::transform(s_LowerA, s_LowerA.begin(), [](unsigned char c) { return std::tolower(c); });
-            std::ranges::transform(s_LowerB, s_LowerB.begin(), [](unsigned char c) { return std::tolower(c); });
-
-            return s_LowerA < s_LowerB;
-        }
-    );
-}
-
-void DebugMod::LoadHashMap() {
-    // TODO: Re-do.
-
-    /*if (!std::filesystem::exists("hash_list.txt"))
-    {
-        DownloadHashMap();
-
-        //LZMA::Extract();
-    }
-
-    auto s_InputFile = std::ifstream("hash_list.txt", std::ios::binary | std::ios::ate);
-
-    if (s_InputFile.fail())
-    {
-        return;
-    }
-
-    const auto s_FileSize = static_cast<uint64_t>(s_InputFile.tellg());
-
-    s_InputFile.seekg(0, s_InputFile.beg);
-
-    std::vector<char> s_Data(s_FileSize, 0);
-
-    s_InputFile.read(s_Data.data(), s_FileSize);
-
-    uint64_t s_Position = 0;
-    uint64_t s_LastPosition = 0;
-    uint64_t s_LineCount = 0;
-
-    mutex.lock();
-
-    while (s_Position < s_Data.size())
-    {
-        if (s_Data[s_Position] == 0x0A)
-        {
-            s_LineCount++;
-
-            s_Data[s_Position] = 0x0;
-
-            if (s_LineCount > 3)
-            {
-                const auto s_StringView = std::string_view(&s_Data[s_LastPosition]);
-                const size_t s_Index = s_StringView.find_first_of(',');
-
-                auto s_Hash = std::string(s_StringView.substr(0, (s_Index - 5)));
-                const auto s_ResourceId = std::string(s_StringView.substr(s_Index + 1, s_StringView.length() - (s_Index + 1)));
-
-                runtimeResourceIDsToResourceIDs[std::stoull(s_Hash, nullptr, 16)] = s_ResourceId;
-
-            }
-
-            s_LastPosition = s_Position + 1;
-        }
-
-        s_Position++;
-    }
-
-    mutex.unlock();*/
-}
-
-void DebugMod::DownloadHashMap() {
-    const std::string s_FolderPath = std::format("{}\\latest-hashes.7z", std::filesystem::current_path().string());
-    URLDownloadToFileA(
-        nullptr, "https://hitmandb.glaciermodding.org/latest-hashes.7z", s_FolderPath.c_str(), 0, nullptr
-    );
-}
-
-std::string DebugMod::GetEntityName(
-    unsigned long long p_TempBrickHash,
-    unsigned long long p_EntityId,
-    unsigned long long& p_ResourceHash
-) {
-    std::string s_EntityName;
-    TResourcePtr<ZTemplateEntityFactory> s_TempBrickResource;
-
-    Globals::ResourceManager->GetResourcePtr(s_TempBrickResource, ZRuntimeResourceID(p_TempBrickHash), 0);
-
-    ZTemplateEntityFactory* s_Resource = s_TempBrickResource.GetResource();
-
-    if (!s_Resource) {
-        return s_EntityName;
-    }
-
-    ZResourceContainer::SResourceInfo s_TbluBrickResourceInfo = (*Globals::ResourceContainer)->m_resources[s_Resource->
-        m_blueprintResource.m_nResourceIndex];
-
-    unsigned int s_EntityIndex = -1;
-    static unsigned long long s_DataSectionOffset = 0x10;
-    std::vector<char> s_TempBrickResourceData;
-    std::vector<char> s_TbluBrickResourceData;
-
-    TArray<ZString>* s_MountedPackages = &(*Globals::ResourceContainer)->m_MountedPackages;
-    std::string s_RpkgFilePath = (*s_MountedPackages)[s_MountedPackages->size() - 1].c_str();
-
-    LoadResourceData(p_TempBrickHash, s_TempBrickResourceData, s_RpkgFilePath);
-    LoadResourceData(s_TbluBrickResourceInfo.rid.GetID(), s_TbluBrickResourceData, s_RpkgFilePath);
-
-    ZBinaryReader s_BinaryReader(&s_TbluBrickResourceData);
-
-    s_BinaryReader.Seek(s_DataSectionOffset + 0x8);
-
-    unsigned long long s_SubEntitiesStartOffset = s_BinaryReader.Read<unsigned long long>();
-    unsigned long long s_SubEntitiesEndOffset = s_BinaryReader.Read<unsigned long long>();
-    auto s_SubEntityCount = static_cast<unsigned int>((s_SubEntitiesEndOffset - s_SubEntitiesStartOffset) / 0xA8);
-    //0xA8 is size of STemplateBlueprintSubEntity
-
-    for (size_t i = 0; i < s_SubEntityCount; ++i) {
-        s_BinaryReader.Seek(s_DataSectionOffset + s_SubEntitiesStartOffset + i * 0xA8 + 0x28);
-
-        unsigned long long s_EntityId2 = s_BinaryReader.Read<unsigned long long>();
-
-        if (p_EntityId == s_EntityId2) {
-            s_BinaryReader.Skip(0x10);
-
-            unsigned long long entityNameOffset = s_BinaryReader.Read<unsigned long long>();
-
-            s_BinaryReader.Seek(entityNameOffset + s_DataSectionOffset - 4);
-
-            int stringLength = s_BinaryReader.Read<unsigned int>();
-            s_EntityName = s_BinaryReader.ReadString(stringLength - 1);
-            s_EntityIndex = i;
-
-            break;
-        }
-    }
-
-    if (s_EntityIndex != -1) {
-        ZBinaryReader s_BinaryReader2(&s_TempBrickResourceData);
-
-        s_BinaryReader2.Seek(s_DataSectionOffset + 0x10);
-
-        unsigned long long s_SubEntitiesStartOffset2 = s_BinaryReader2.Read<unsigned long long>();
-        unsigned long long s_SubEntityOffset = s_DataSectionOffset + s_SubEntitiesStartOffset2 + s_EntityIndex * 0x70;
-        //0x70 is size of STemplateFactorySubEntity
-
-        s_BinaryReader2.Seek(s_SubEntityOffset + 0x20);
-
-        int s_EntityTypeResourceIndex = s_BinaryReader2.Read<unsigned int>();
-
-        TArray<ZResourceIndex> s_ReferenceIndices;
-        TArray<unsigned char> s_ReferenceFlags;
-
-        Functions::ZResourceContainer_GetResourceReferences->Call(
-            *Globals::ResourceContainer, ZResourceIndex(s_TempBrickResource.m_nResourceIndex), s_ReferenceIndices,
-            s_ReferenceFlags
-        );
-
-        ZResourceContainer::SResourceInfo s_ReferenceInfo = (*Globals::ResourceContainer)->m_resources[
-            s_ReferenceIndices[s_EntityTypeResourceIndex].val];
-
-        p_ResourceHash = s_ReferenceInfo.rid.GetID();
-    }
-
-    return s_EntityName;
-}
-
-
-std::string DebugMod::FindNPCEntityNameInBrickBackReferences(
-    unsigned long long p_TempBrickHash,
-    unsigned long long p_EntityId,
-    unsigned long long& p_ResourceHash
-) {
-    std::string s_EntityName;
-    ZResourceContainer* s_ResourceContainer = *Globals::ResourceContainer;
-
-    for (size_t i = 0; i < s_ResourceContainer->m_resourcesSize; ++i) {
-        const ZResourceContainer::SResourceInfo* s_ResourceInfo = &s_ResourceContainer->m_resources[i];
-        unsigned long long s_ResourceHash2 = s_ResourceInfo->rid.GetID();
-
-        if (s_ResourceInfo->resourceType == 'TEMP' &&
-            s_ResourceInfo->numReferences > 0 &&
-            m_RuntimeResourceIDsToResourceIDs.contains(s_ResourceHash2) &&
-            m_RuntimeResourceIDsToResourceIDs[s_ResourceHash2].ends_with(".brick].pc_entitytype") &&
-            m_RuntimeResourceIDsToResourceIDs[s_ResourceHash2].contains("/npc_")) {
-            const ZResourceIndex s_ResourceIndex = s_ResourceContainer->m_indices.find(s_ResourceInfo->rid)->second;
-            TArray<ZResourceIndex> s_ReferenceIndices;
-            TArray<unsigned char> s_ReferenceFlags;
-
-            Functions::ZResourceContainer_GetResourceReferences->Call(
-                s_ResourceContainer, ZResourceIndex(s_ResourceIndex), s_ReferenceIndices, s_ReferenceFlags
-            );
-
-            for (size_t j = 0; j < s_ReferenceIndices.size(); ++j) {
-                const size_t s_ReferenceIndex = s_ReferenceIndices[j].val;
-
-                if (s_ReferenceIndex == -1) {
-                    continue;
-                }
-
-                ZResourceContainer::SResourceInfo s_ReferenceInfo = s_ResourceContainer->m_resources[s_ReferenceIndex];
-                const unsigned long long s_ReferenceHash = s_ReferenceInfo.rid.GetID();
-
-                if (s_ReferenceHash == p_TempBrickHash) {
-                    s_EntityName = GetEntityName(s_ResourceHash2, p_EntityId, p_ResourceHash);
-
-                    if (!s_EntityName.empty()) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (!s_EntityName.empty()) {
-            break;
-        }
-    }
-
-    return s_EntityName;
-}
-
-std::string DebugMod::ConvertDynamicObjectValueTString(const ZDynamicObject& p_DynamicObject) {
-    std::string s_Result;
-    const IType* s_Type = p_DynamicObject.GetTypeID()->typeInfo();
-
-    if (strcmp(s_Type->m_pTypeName, "ZString") == 0) {
-        const auto s_Value = p_DynamicObject.As<ZString>();
-        s_Result = s_Value->c_str();
-    }
-    else if (strcmp(s_Type->m_pTypeName, "bool") == 0) {
-        if (*p_DynamicObject.As<bool>()) {
-            s_Result = "true";
-        }
-        else {
-            s_Result = "false";
-        }
-    }
-    else if (strcmp(s_Type->m_pTypeName, "float64") == 0) {
-        double value = *p_DynamicObject.As<double>();
-
-        s_Result = std::to_string(value).c_str();
-    }
-    else {
-        s_Result = s_Type->m_pTypeName;
-    }
-
-    return s_Result;
-}
-
-void DebugMod::LoadResourceData(unsigned long long p_Hash, std::vector<char>& p_ResourceData) {
-    static std::string s_RpkgFilePath = GetPatchRPKGFilePath();
-    LoadResourceData(p_Hash, p_ResourceData, s_RpkgFilePath);
-}
-
-void DebugMod::LoadResourceData(
-    unsigned long long p_Hash, std::vector<char>& p_ResourceData, const std::string& p_RpkgFilePath
-) {
-    ZBinaryReader s_BinaryReader(p_RpkgFilePath);
-
-    s_BinaryReader.Seek(0xD);
-
-    unsigned int s_ResourceCount = s_BinaryReader.Read<unsigned int>();
-    unsigned int s_ResourceHeadersChunkSize = s_BinaryReader.Read<unsigned int>();
-    unsigned int s_ResourcesChunkSize = s_BinaryReader.Read<unsigned int>();
-    unsigned int s_PatchDeletionEntryCount = s_BinaryReader.Read<unsigned int>();
-    bool s_IsPatchFile = false;
-
-    if (s_PatchDeletionEntryCount * 8 + 0x2D >= s_BinaryReader.GetSize()) {
-        s_IsPatchFile = false;
-    }
-    else {
-        s_BinaryReader.Seek(s_PatchDeletionEntryCount * 8 + 0x24);
-
-        unsigned char s_TestZeroValue = s_BinaryReader.Read<unsigned char>();
-        unsigned long long s_TestHeaderOffset = s_BinaryReader.Read<unsigned long long>();
-
-        if (s_TestHeaderOffset == (s_ResourceHeadersChunkSize + s_ResourcesChunkSize + s_PatchDeletionEntryCount * 8 +
-            0x1D) && s_TestZeroValue == 0) {
-            s_IsPatchFile = true;
-        }
-    }
-
-    if (s_IsPatchFile) {
-        s_BinaryReader.Seek(0x1D);
-        s_BinaryReader.Skip(8 * s_PatchDeletionEntryCount);
-    }
-    else {
-        s_BinaryReader.Seek(0x19);
-    }
-
-    unsigned int i = 0;
-
-    while (i < s_ResourceCount) {
-        unsigned long long s_Hash2 = s_BinaryReader.Read<unsigned long long>();
-
-        if (s_Hash2 == p_Hash) {
-            unsigned long long s_ResourceDataOffset = s_BinaryReader.Read<unsigned long long>();
-            unsigned int s_DataSize = s_BinaryReader.Read<unsigned int>();
-
-            bool s_IsResourceEncrypted = (s_DataSize & 0x80000000) == 0x80000000;
-            bool s_IsResourceCompressed = (s_DataSize & 0x3FFFFFFF) != 0;
-
-            s_BinaryReader.Seek(s_ResourceDataOffset);
-
-            TResourcePtr<ZTemplateEntityFactory> s_Resource;
-
-            Globals::ResourceManager->GetResourcePtr(s_Resource, ZRuntimeResourceID(p_Hash), 0);
-
-            ZResourceContainer::SResourceInfo s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[s_Resource.
-                m_nResourceIndex];
-
-            if (s_IsResourceEncrypted) {
-                s_DataSize &= 0x3FFFFFFF;
-            }
-            else {
-                s_DataSize = s_ResourceInfo.finalDataSize;
-            }
-
-            std::vector<char> s_InputResourceData;
-
-            s_InputResourceData.reserve(s_DataSize);
-            s_BinaryReader.ReadBytes(s_InputResourceData.data(), s_DataSize);
-
-            if (s_IsResourceEncrypted) {
-                Crypto::XORData(s_InputResourceData.data(), s_DataSize);
-            }
-
-            std::vector<char> s_OutputResourceData(s_ResourceInfo.finalDataSize, 0);
-
-            if (s_IsResourceCompressed) {
-                LZ4_decompress_safe(
-                    s_InputResourceData.data(), s_OutputResourceData.data(), s_DataSize, s_ResourceInfo.finalDataSize
-                );
-
-                p_ResourceData = s_OutputResourceData;
-            }
-            else {
-                p_ResourceData = s_InputResourceData;
-            }
-
-            break;
-        }
-
-        size_t s_CurrentPosition = s_BinaryReader.GetPosition();
-
-        s_BinaryReader.Seek(s_CurrentPosition + 12);
-
-        i++;
-    }
-}
-
-std::string DebugMod::GetPatchRPKGFilePath() {
-    for (const auto& s_Entry : std::filesystem::directory_iterator("../Runtime")) {
-        if (s_Entry.path().string().starts_with("../Runtime\\chunk0")) {
-            return s_Entry.path().string();
-        }
-    }
-
-    return "";
-}
-
-unsigned long long DebugMod::GetDDSTextureHash(const std::string p_Image) {
-    static std::unordered_map<std::string, unsigned long long> g_OresEntries;
-
-    if (g_OresEntries.empty()) {
-        const auto s_ID = ResId<"[assembly:/_pro/online/default/offlineconfig/config.blobs].pc_blobs">;
-        TResourcePtr<ZTemplateEntityFactory> s_Resource;
-
-        Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
-
-        ZResourceContainer::SResourceInfo s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[s_Resource.
-            m_nResourceIndex];
-
-        unsigned long long s_OresHash = s_ResourceInfo.rid.GetID();
-        std::vector<char> s_OresResourceData;
-
-        LoadResourceData(s_OresHash, s_OresResourceData);
-
-        ZBinaryReader s_BinaryReader(&s_OresResourceData);
-
-        s_BinaryReader.Seek(0x10);
-        s_BinaryReader.Seek(s_BinaryReader.Read<unsigned int>() + 0xC);
-
-        unsigned s_ResourceCount = s_BinaryReader.Read<unsigned int>();
-
-        for (size_t i = 0; i < s_ResourceCount; ++i) {
-            auto s_StringLength = s_BinaryReader.Read<unsigned int>();
-
-            s_BinaryReader.Seek(0x4, ZBinaryReader::ESeekOrigin::current);
-
-            auto s_StringOffset = s_BinaryReader.Read<unsigned long long>();
-            auto s_RuntimeResourceId = s_BinaryReader.Read<ZRuntimeResourceID>();
-
-            size_t s_CurrentPosition = s_BinaryReader.GetPosition();
-
-            s_BinaryReader.Seek(s_StringOffset + 0x10 - 0x4);
-
-            auto s_StringLength2 = s_BinaryReader.Read<unsigned int>();
-            auto s_Image2 = s_BinaryReader.ReadString(s_StringLength2 - 1);
-
-            s_BinaryReader.Seek(s_CurrentPosition);
-
-            g_OresEntries[s_Image2.c_str()] = s_RuntimeResourceId.GetID();
-        }
-    }
-
-    return g_OresEntries[p_Image];
-}
-
-void DebugMod::EnableInfiniteAmmo() {
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
-
-    if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
-        return;
-    }
-
-    constexpr auto s_CrippleBoxFactoryId = ResId<"[modules:/zhm5cripplebox.class].pc_entitytype">;
-
-    TResourcePtr<ZTemplateEntityFactory> s_CrippleBoxFactory;
-    Globals::ResourceManager->GetResourcePtr(s_CrippleBoxFactory, s_CrippleBoxFactoryId, 0);
-
-    if (!s_CrippleBoxFactory) {
-        Logger::Debug("Resource is not loaded.");
-        return;
-    }
-
-    ZEntityRef s_NewCrippleBox;
-
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewCrippleBox, "", s_CrippleBoxFactory, s_Scene.m_ref, nullptr, -1
-    );
-
-    if (!s_NewCrippleBox) {
-        Logger::Debug("Failed to spawn entity.");
-        return;
-    }
-
-    auto s_LocalHitman = SDK()->GetLocalPlayer();
-
-    if (!s_LocalHitman) {
-        Logger::Debug("Local player is not alive.");
-        return;
-    }
-
-    ZHM5CrippleBox* hm5CrippleBox = s_NewCrippleBox.QueryInterface<ZHM5CrippleBox>();
-
-    hm5CrippleBox->m_bActivateOnStart = true;
-    hm5CrippleBox->m_rHitmanCharacter = s_LocalHitman;
-    hm5CrippleBox->m_bLimitedAmmo = false;
-
-    hm5CrippleBox->Activate(0);
 }
 
 void DebugMod::CopyToClipboard(const std::string& p_String) {
@@ -1106,8 +104,10 @@ void DebugMod::CopyToClipboard(const std::string& p_String) {
 }
 
 void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
-    if (m_RenderNpcBoxes || m_RenderNpcNames || m_RenderNpcRepoIds) {
-        for (size_t i = 0; i < *Globals::NextActorId; ++i) {
+    if (m_RenderNpcBoxes || m_RenderNpcNames || m_RenderNpcRepoIds || m_RenderNpcBehaviors)
+    {
+        for (size_t i = 0; i < *Globals::NextActorId; ++i)
+        {
             auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 
             ZEntityRef s_Ref;
@@ -1117,7 +117,8 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
 
             auto s_Transform = s_SpatialEntity->GetWorldMatrix();
 
-            if (m_RenderNpcBoxes) {
+            if (m_RenderNpcBoxes)
+            {
                 float4 s_Min, s_Max;
 
                 s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
@@ -1128,7 +129,8 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
                 );
             }
 
-            if (m_RenderNpcNames) {
+            if (m_RenderNpcNames)
+            {
                 SVector2 s_ScreenPos;
                 if (p_Renderer->WorldToScreen(
                     SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
@@ -1136,7 +138,8 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
                     p_Renderer->DrawText2D(s_Actor->m_sActorName, s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
             }
 
-            if (m_RenderNpcRepoIds) {
+            if (m_RenderNpcRepoIds)
+            {
                 auto* s_RepoEntity = s_Ref.QueryInterface<ZRepositoryItemEntity>();
                 SVector2 s_ScreenPos;
                 bool s_Success;
@@ -1155,81 +158,240 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
                         s_RepoEntity->m_sId.ToString(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f
                     );
             }
+
+            if (m_RenderNpcBehaviors)
+            {
+                const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
+
+                if (s_BehaviorBase)
+                {
+                    const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(s_BehaviorBase->m_Type);
+
+                    SVector2 s_ScreenPos;
+                    if (p_Renderer->WorldToScreen(
+                        SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
+                    ))
+                        p_Renderer->DrawText2D(BehaviorToString(s_CompiledBehaviorType), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
+                }
+            }
         }
     }
+}
 
-    /*SVector2 s_StartPos;
-    if (p_Renderer->WorldToScreen(SVector3(m_From.x, m_From.y, m_From.z), s_StartPos))
-        p_Renderer->DrawText2D("0", s_StartPos, SVector4(1, 1, 1, 1), 0, 0.5f);
-
-    SVector2 s_EndPos;
-    if (p_Renderer->WorldToScreen(SVector3(m_To.x, m_To.y, m_To.z), s_EndPos))
-        p_Renderer->DrawText2D("o", s_EndPos, SVector4(1, 1, 1, 1), 0, 0.25f);
-
-    SVector2 s_HitPos;
-    if (p_Renderer->WorldToScreen(SVector3(m_Hit.x, m_Hit.y, m_Hit.z), s_HitPos))
-        p_Renderer->DrawText2D("x", s_HitPos, SVector4(1, 1, 1, 1), 0, 0.25f);
-
-    p_Renderer->DrawBox3D(
-        SVector3(m_From.x - 0.05f, m_From.y - 0.05f, m_From.z - 0.05f),
-        SVector3(m_From.x + 0.05f, m_From.y + 0.05f, m_From.z + 0.05f),
-        SVector4(0.f, 0.f, 1.f, 1.0f)
-    );
-
-    p_Renderer->DrawBox3D(
-        SVector3(m_To.x - 0.05f, m_To.y - 0.05f, m_To.z - 0.05f),
-        SVector3(m_To.x + 0.05f, m_To.y + 0.05f, m_To.z + 0.05f),
-        SVector4(0.f, 1.f, 0.f, 1.0f)
-    );
-
-    p_Renderer->DrawBox3D(
-        SVector3(m_Hit.x - 0.01f, m_Hit.y - 0.01f, m_Hit.z - 0.01f),
-        SVector3(m_Hit.x + 0.01f, m_Hit.y + 0.01f, m_Hit.z + 0.01f),
-        SVector4(0.f, 1.f, 1.f, 1.0f)
-    );
-
-    p_Renderer->DrawLine3D(
-        SVector3(m_From.x, m_From.y, m_From.z),
-        SVector3(m_To.x, m_To.y, m_To.z),
-        SVector4(1.f, 1.f, 1.f, 1.f),
-        SVector4(1.f, 1.f, 1.f, 1.f)
-    );
-
-    p_Renderer->DrawLine3D(
-        SVector3(m_Hit.x + (m_Normal.x * 0.15f), m_From.y + (m_Normal.y * 0.15f), m_From.z + (m_Normal.z * 0.15f)),
-        SVector3(m_Hit.x, m_Hit.y, m_Hit.z),
-        SVector4(0.63f, 0.13f, 0.94f, 1.f),
-        SVector4(0.63f, 0.13f, 0.94f, 1.f)
-    );*/
+std::string DebugMod::BehaviorToString(ECompiledBehaviorType p_Type)
+{
+    switch (p_Type)
+    {
+    case ECompiledBehaviorType::BT_ConditionScope: return "BT_ConditionScope";
+    case ECompiledBehaviorType::BT_Random: return "BT_Random";
+    case ECompiledBehaviorType::BT_Match: return "BT_Match";
+    case ECompiledBehaviorType::BT_Sequence: return "BT_Sequence";
+    case ECompiledBehaviorType::BT_Dummy: return "BT_Dummy";
+    case ECompiledBehaviorType::BT_Dummy2: return "BT_Dummy2";
+    case ECompiledBehaviorType::BT_Error: return "BT_Error";
+    case ECompiledBehaviorType::BT_Wait: return "BT_Wait";
+    case ECompiledBehaviorType::BT_WaitForStanding: return "BT_WaitForStanding";
+    case ECompiledBehaviorType::BT_WaitBasedOnDistanceToTarget: return "BT_WaitBasedOnDistanceToTarget";
+    case ECompiledBehaviorType::BT_WaitForItemHandled: return "BT_WaitForItemHandled";
+    case ECompiledBehaviorType::BT_AbandonOrder: return "BT_AbandonOrder";
+    case ECompiledBehaviorType::BT_CompleteOrder: return "BT_CompleteOrder";
+    case ECompiledBehaviorType::BT_PlayAct: return "BT_PlayAct";
+    case ECompiledBehaviorType::BT_ConfiguredAct: return "BT_ConfiguredAct";
+    case ECompiledBehaviorType::BT_PlayReaction: return "BT_PlayReaction";
+    case ECompiledBehaviorType::BT_SimpleReaction: return "BT_SimpleReaction";
+    case ECompiledBehaviorType::BT_SituationAct: return "BT_SituationAct";
+    case ECompiledBehaviorType::BT_SituationApproach: return "BT_SituationApproach";
+    case ECompiledBehaviorType::BT_SituationGetHelp: return "BT_SituationGetHelp";
+    case ECompiledBehaviorType::BT_SituationFace: return "BT_SituationFace";
+    case ECompiledBehaviorType::BT_SituationConversation: return "BT_SituationConversation";
+    case ECompiledBehaviorType::BT_Holster: return "BT_Holster";
+    case ECompiledBehaviorType::BT_SpeakWait: return "BT_SpeakWait";
+    case ECompiledBehaviorType::BT_SpeakWaitWithFallbackIfAlone: return "BT_SpeakWaitWithFallbackIfAlone";
+    case ECompiledBehaviorType::BT_ConfiguredSpeak: return "BT_ConfiguredSpeak";
+    case ECompiledBehaviorType::BT_ConditionedConfiguredSpeak: return "BT_ConditionedConfiguredSpeak";
+    case ECompiledBehaviorType::BT_ConditionedConfiguredAct: return "BT_ConditionedConfiguredAct";
+    case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionAckSoundDef: return
+        "BT_SpeakCustomOrDefaultDistractionAckSoundDef";
+    case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef: return
+        "BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef";
+    case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionStndSoundDef: return
+        "BT_SpeakCustomOrDefaultDistractionStndSoundDef";
+    case ECompiledBehaviorType::BT_Pickup: return "BT_Pickup";
+    case ECompiledBehaviorType::BT_Drop: return "BT_Drop";
+    case ECompiledBehaviorType::BT_PlayConversation: return "BT_PlayConversation";
+    case ECompiledBehaviorType::BT_PlayAnimation: return "BT_PlayAnimation";
+    case ECompiledBehaviorType::BT_MoveToLocation: return "BT_MoveToLocation";
+    case ECompiledBehaviorType::BT_MoveToTargetKnownPosition: return "BT_MoveToTargetKnownPosition";
+    case ECompiledBehaviorType::BT_MoveToTargetActualPosition: return "BT_MoveToTargetActualPosition";
+    case ECompiledBehaviorType::BT_MoveToInteraction: return "BT_MoveToInteraction";
+    case ECompiledBehaviorType::BT_MoveToNPC: return "BT_MoveToNPC";
+    case ECompiledBehaviorType::BT_FollowTargetKnownPosition: return "BT_FollowTargetKnownPosition";
+    case ECompiledBehaviorType::BT_FollowTargetActualPosition: return "BT_FollowTargetActualPosition";
+    case ECompiledBehaviorType::BT_PickUpItem: return "BT_PickUpItem";
+    case ECompiledBehaviorType::BT_GrabItem: return "BT_GrabItem";
+    case ECompiledBehaviorType::BT_PutDownItem: return "BT_PutDownItem";
+    case ECompiledBehaviorType::BT_Search: return "BT_Search";
+    case ECompiledBehaviorType::BT_LimitedSearch: return "BT_LimitedSearch";
+    case ECompiledBehaviorType::BT_MoveTo: return "BT_MoveTo";
+    case ECompiledBehaviorType::BT_Reposition: return "BT_Reposition";
+    case ECompiledBehaviorType::BT_SituationMoveTo: return "BT_SituationMoveTo";
+    case ECompiledBehaviorType::BT_FormationMove: return "BT_FormationMove";
+    case ECompiledBehaviorType::BT_SituationJumpTo: return "BT_SituationJumpTo";
+    case ECompiledBehaviorType::BT_AmbientWalk: return "BT_AmbientWalk";
+    case ECompiledBehaviorType::BT_AmbientStand: return "BT_AmbientStand";
+    case ECompiledBehaviorType::BT_CrowdAmbientStand: return "BT_CrowdAmbientStand";
+    case ECompiledBehaviorType::BT_AmbientItemUse: return "BT_AmbientItemUse";
+    case ECompiledBehaviorType::BT_AmbientLook: return "BT_AmbientLook";
+    case ECompiledBehaviorType::BT_Act: return "BT_Act";
+    case ECompiledBehaviorType::BT_Patrol: return "BT_Patrol";
+    case ECompiledBehaviorType::BT_MoveToPosition: return "BT_MoveToPosition";
+    case ECompiledBehaviorType::BT_AlertedStand: return "BT_AlertedStand";
+    case ECompiledBehaviorType::BT_AlertedDebug: return "BT_AlertedDebug";
+    case ECompiledBehaviorType::BT_AttentionToPerson: return "BT_AttentionToPerson";
+    case ECompiledBehaviorType::BT_StunnedByFlashGrenade: return "BT_StunnedByFlashGrenade";
+    case ECompiledBehaviorType::BT_CuriousIdle: return "BT_CuriousIdle";
+    case ECompiledBehaviorType::BT_InvestigateWeapon: return "BT_InvestigateWeapon";
+    case ECompiledBehaviorType::BT_DeliverWeapon: return "BT_DeliverWeapon";
+    case ECompiledBehaviorType::BT_RecoverUnconscious: return "BT_RecoverUnconscious";
+    case ECompiledBehaviorType::BT_GetOutfit: return "BT_GetOutfit";
+    case ECompiledBehaviorType::BT_RadioCall: return "BT_RadioCall";
+    case ECompiledBehaviorType::BT_EscortOut: return "BT_EscortOut";
+    case ECompiledBehaviorType::BT_StashItem: return "BT_StashItem";
+    case ECompiledBehaviorType::BT_CautiousSearchPosition: return "BT_CautiousSearchPosition";
+    case ECompiledBehaviorType::BT_LockdownWarning: return "BT_LockdownWarning";
+    case ECompiledBehaviorType::BT_WakeUpUnconscious: return "BT_WakeUpUnconscious";
+    case ECompiledBehaviorType::BT_DeadBodyInvestigate: return "BT_DeadBodyInvestigate";
+    case ECompiledBehaviorType::BT_GuardDeadBody: return "BT_GuardDeadBody";
+    case ECompiledBehaviorType::BT_DragDeadBody: return "BT_DragDeadBody";
+    case ECompiledBehaviorType::BT_CuriousBystander: return "BT_CuriousBystander";
+    case ECompiledBehaviorType::BT_DeadBodyBystander: return "BT_DeadBodyBystander";
+    case ECompiledBehaviorType::BT_StandOffArrest: return "BT_StandOffArrest";
+    case ECompiledBehaviorType::BT_StandOffReposition: return "BT_StandOffReposition";
+    case ECompiledBehaviorType::BT_StandAndAim: return "BT_StandAndAim";
+    case ECompiledBehaviorType::BT_CloseCombat: return "BT_CloseCombat";
+    case ECompiledBehaviorType::BT_MoveToCloseCombat: return "BT_MoveToCloseCombat";
+    case ECompiledBehaviorType::BT_MoveAwayFromCloseCombat: return "BT_MoveAwayFromCloseCombat";
+    case ECompiledBehaviorType::BT_CoverFightSeasonTwo: return "BT_CoverFightSeasonTwo";
+    case ECompiledBehaviorType::BT_ShootFromPosition: return "BT_ShootFromPosition";
+    case ECompiledBehaviorType::BT_StandAndShoot: return "BT_StandAndShoot";
+    case ECompiledBehaviorType::BT_CheckLastPosition: return "BT_CheckLastPosition";
+    case ECompiledBehaviorType::BT_ProtoSearchIdle: return "BT_ProtoSearchIdle";
+    case ECompiledBehaviorType::BT_ProtoApproachSearchArea: return "BT_ProtoApproachSearchArea";
+    case ECompiledBehaviorType::BT_ProtoSearchPosition: return "BT_ProtoSearchPosition";
+    case ECompiledBehaviorType::BT_ShootTarget: return "BT_ShootTarget";
+    case ECompiledBehaviorType::BT_TriggerAlarm: return "BT_TriggerAlarm";
+    case ECompiledBehaviorType::BT_MoveInCover: return "BT_MoveInCover";
+    case ECompiledBehaviorType::BT_MoveToCover: return "BT_MoveToCover";
+    case ECompiledBehaviorType::BT_HomeAttackOrigin: return "BT_HomeAttackOrigin";
+    case ECompiledBehaviorType::BT_Shoot: return "BT_Shoot";
+    case ECompiledBehaviorType::BT_Aim: return "BT_Aim";
+    case ECompiledBehaviorType::BT_MoveToRandomNeighbourNode: return "BT_MoveToRandomNeighbourNode";
+    case ECompiledBehaviorType::BT_MoveToRandomNeighbourNodeAiming: return "BT_MoveToRandomNeighbourNodeAiming";
+    case ECompiledBehaviorType::BT_MoveToAndPlayCombatPositionAct: return "BT_MoveToAndPlayCombatPositionAct";
+    case ECompiledBehaviorType::BT_MoveToAimingAndPlayCombatPositionAct: return
+        "BT_MoveToAimingAndPlayCombatPositionAct";
+    case ECompiledBehaviorType::BT_PlayJumpyReaction: return "BT_PlayJumpyReaction";
+    case ECompiledBehaviorType::BT_JumpyInvestigation: return "BT_JumpyInvestigation";
+    case ECompiledBehaviorType::BT_AgitatedPatrol: return "BT_AgitatedPatrol";
+    case ECompiledBehaviorType::BT_AgitatedGuard: return "BT_AgitatedGuard";
+    case ECompiledBehaviorType::BT_HeroEscort: return "BT_HeroEscort";
+    case ECompiledBehaviorType::BT_Escort: return "BT_Escort";
+    case ECompiledBehaviorType::BT_ControlledFormationMove: return "BT_ControlledFormationMove";
+    case ECompiledBehaviorType::BT_EscortSearch: return "BT_EscortSearch";
+    case ECompiledBehaviorType::BT_LeadEscort: return "BT_LeadEscort";
+    case ECompiledBehaviorType::BT_LeadEscort2: return "BT_LeadEscort2";
+    case ECompiledBehaviorType::BT_AimReaction: return "BT_AimReaction";
+    case ECompiledBehaviorType::BT_FollowHitman: return "BT_FollowHitman";
+    case ECompiledBehaviorType::BT_RideTheLightning: return "BT_RideTheLightning";
+    case ECompiledBehaviorType::BT_Scared: return "BT_Scared";
+    case ECompiledBehaviorType::BT_Flee: return "BT_Flee";
+    case ECompiledBehaviorType::BT_AgitatedBystander: return "BT_AgitatedBystander";
+    case ECompiledBehaviorType::BT_SentryFrisk: return "BT_SentryFrisk";
+    case ECompiledBehaviorType::BT_SentryIdle: return "BT_SentryIdle";
+    case ECompiledBehaviorType::BT_SentryWarning: return "BT_SentryWarning";
+    case ECompiledBehaviorType::BT_SentryCheckItem: return "BT_SentryCheckItem";
+    case ECompiledBehaviorType::BT_VIPScared: return "BT_VIPScared";
+    case ECompiledBehaviorType::BT_VIPSafeRoomTrespasser: return "BT_VIPSafeRoomTrespasser";
+    case ECompiledBehaviorType::BT_DefendVIP: return "BT_DefendVIP";
+    case ECompiledBehaviorType::BT_CautiousVIP: return "BT_CautiousVIP";
+    case ECompiledBehaviorType::BT_CautiousGuardVIP: return "BT_CautiousGuardVIP";
+    case ECompiledBehaviorType::BT_InfectedConfused: return "BT_InfectedConfused";
+    case ECompiledBehaviorType::BT_EnterInfected: return "BT_EnterInfected";
+    case ECompiledBehaviorType::BT_CureInfected: return "BT_CureInfected";
+    case ECompiledBehaviorType::BT_SickActInfected: return "BT_SickActInfected";
+    case ECompiledBehaviorType::BT_Smart: return "BT_Smart";
+    case ECompiledBehaviorType::BT_Controlled: return "BT_Controlled";
+    case ECompiledBehaviorType::BT_SpeakTest: return "BT_SpeakTest";
+    case ECompiledBehaviorType::BT_Conversation: return "BT_Conversation";
+    case ECompiledBehaviorType::BT_RunToHelp: return "BT_RunToHelp";
+    case ECompiledBehaviorType::BT_WaitForDialog: return "BT_WaitForDialog";
+    case ECompiledBehaviorType::BT_WaitForConfiguredAct: return "BT_WaitForConfiguredAct";
+    case ECompiledBehaviorType::BT_TestFlashbangGrenadeThrow: return "BT_TestFlashbangGrenadeThrow";
+    case ECompiledBehaviorType::BT_BEHAVIORS_END: return "BT_BEHAVIORS_END";
+    case ECompiledBehaviorType::BT_RenewEvent: return "BT_RenewEvent";
+    case ECompiledBehaviorType::BT_ExpireEvent: return "BT_ExpireEvent";
+    case ECompiledBehaviorType::BT_ExpireEvents: return "BT_ExpireEvents";
+    case ECompiledBehaviorType::BT_SetEventHandled: return "BT_SetEventHandled";
+    case ECompiledBehaviorType::BT_RenewSharedEvent: return "BT_RenewSharedEvent";
+    case ECompiledBehaviorType::BT_ExpireSharedEvent: return "BT_ExpireSharedEvent";
+    case ECompiledBehaviorType::BT_ExpireAllEvents: return "BT_ExpireAllEvents";
+    case ECompiledBehaviorType::BT_CreateOrJoinSituation: return "BT_CreateOrJoinSituation";
+    case ECompiledBehaviorType::BT_JoinSituation: return "BT_JoinSituation";
+    case ECompiledBehaviorType::BT_ForceActorToJoinSituation: return "BT_ForceActorToJoinSituation";
+    case ECompiledBehaviorType::BT_JoinSituationWithActor: return "BT_JoinSituationWithActor";
+    case ECompiledBehaviorType::BT_LeaveSituation: return "BT_LeaveSituation";
+    case ECompiledBehaviorType::BT_Escalate: return "BT_Escalate";
+    case ECompiledBehaviorType::BT_GotoPhase: return "BT_GotoPhase";
+    case ECompiledBehaviorType::BT_RenewGoal: return "BT_RenewGoal";
+    case ECompiledBehaviorType::BT_ExpireGoal: return "BT_ExpireGoal";
+    case ECompiledBehaviorType::BT_RenewGoalOf: return "BT_RenewGoalOf";
+    case ECompiledBehaviorType::BT_ExpireGoalOf: return "BT_ExpireGoalOf";
+    case ECompiledBehaviorType::BT_SetTension: return "BT_SetTension";
+    case ECompiledBehaviorType::BT_TriggerSpotted: return "BT_TriggerSpotted";
+    case ECompiledBehaviorType::BT_CopyKnownLocation: return "BT_CopyKnownLocation";
+    case ECompiledBehaviorType::BT_UpdateKnownLocation: return "BT_UpdateKnownLocation";
+    case ECompiledBehaviorType::BT_TransferKnownObjectPositions: return "BT_TransferKnownObjectPositions";
+    case ECompiledBehaviorType::BT_WitnessAttack: return "BT_WitnessAttack";
+    case ECompiledBehaviorType::BT_Speak: return "BT_Speak";
+    case ECompiledBehaviorType::BT_StartDynamicEnforcer: return "BT_StartDynamicEnforcer";
+    case ECompiledBehaviorType::BT_StopDynamicEnforcer: return "BT_StopDynamicEnforcer";
+    case ECompiledBehaviorType::BT_StartRangeBasedDynamicEnforcer: return "BT_StartRangeBasedDynamicEnforcer";
+    case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcerForLocation: return
+        "BT_StopRangeBasedDynamicEnforcerForLocation";
+    case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcer: return "BT_StopRangeBasedDynamicEnforcer";
+    case ECompiledBehaviorType::BT_SetDistracted: return "BT_SetDistracted";
+    case ECompiledBehaviorType::BT_IgnoreAllDistractionsExceptTheNewest: return
+        "BT_IgnoreAllDistractionsExceptTheNewest";
+    case ECompiledBehaviorType::BT_IgnoreDistractions: return "BT_IgnoreDistractions";
+    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyWillReact: return "BT_PerceptibleEntityNotifyWillReact";
+    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyReacted: return "BT_PerceptibleEntityNotifyReacted";
+    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigating: return
+        "BT_PerceptibleEntityNotifyInvestigating";
+    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigated: return
+        "BT_PerceptibleEntityNotifyInvestigated";
+    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyTerminate: return "BT_PerceptibleEntityNotifyTerminate";
+    case ECompiledBehaviorType::BT_LeaveDistractionAssistantRole: return "BT_LeaveDistractionAssistantRole";
+    case ECompiledBehaviorType::BT_LeaveDistractionAssitingGuardRole: return "BT_LeaveDistractionAssitingGuardRole";
+    case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceOverRadio: return
+        "BT_RequestSuitcaseAssistanceOverRadio";
+    case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceFaceToFace: return
+        "BT_RequestSuitcaseAssistanceFaceToFace";
+    case ECompiledBehaviorType::BT_ExpireArrestReasons: return "BT_ExpireArrestReasons";
+    case ECompiledBehaviorType::BT_SetDialogSwitch_NPCID: return "BT_SetDialogSwitch_NPCID";
+    case ECompiledBehaviorType::BT_InfectedAssignToFollowPlayer: return "BT_InfectedAssignToFollowPlayer";
+    case ECompiledBehaviorType::BT_InfectedRemoveFromFollowPlayer: return "BT_InfectedRemoveFromFollowPlayer";
+    case ECompiledBehaviorType::BT_Log: return "BT_Log";
+    case ECompiledBehaviorType::BT_COMMANDS_END: return "BT_COMMANDS_END";
+    case ECompiledBehaviorType::BT_Invalid: return "BT_Invalid";
+    default: return "<unknown>";
+    }
 }
 
 DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&) {
-    if (m_TrackCamActive)
-        DisableTrackCam();
-    m_TrackCamActive = false;
-
     return HookResult<void>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
-    m_TextureSrvGpuHandle = {};
-    m_Width = 0;
-    m_Height = 0;
-    m_RepositoryResource = {};
-    m_TextureResourceData.clear();
-    m_RepositoryProps.clear();
-    m_Hm5CrippleBox = nullptr;
-
-    if (m_TrackCamActive)
-        DisableTrackCam();
-    m_TrackCamActive = false;
-
-    m_GlobalOutfitKit = nullptr;
-
-    m_NPCsMenuActive = false;
-    s_CurrentlySelectedActor = nullptr;
-    m_SelectedEntity = nullptr;
-
     return HookResult<void>(HookAction::Continue());
 }
 

@@ -162,6 +162,34 @@ private:
 
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
+    void DrawItems(bool p_HasFocus);
+    void DrawActors(bool p_HasFocus);
+    void DrawAssets(bool p_HasFocus);
+
+    static void EquipOutfit(
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CurrentCharSetIndex,
+        const std::string& s_CurrentCharSetCharacterType, uint8_t n_CurrentOutfitVariationindex, ZActor* p_Actor
+    );
+
+    static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld);
+    static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
+    static void SpawnNPC(
+        const std::string& s_NpcName, const ZRepositoryID& repositoryID,
+        const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8_t n_CurrentCharacterSetIndex,
+        const std::string& s_CurrentcharSetCharacterType, uint8_t p_CurrentOutfitVariationIndex
+    );
+
+    void LoadRepositoryProps();
+    std::string ConvertDynamicObjectValueToString(const ZDynamicObject& p_DynamicObject);
+
+    void EnableTrackCam();
+    void UpdateTrackCam() const;
+    void DisableTrackCam();
+    void GetPlayerCam();
+    void GetTrackCam();
+    void GetRenderDest();
+    static void SetPlayerControlActive(bool active);
+
 private:
     DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
     DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
@@ -231,6 +259,22 @@ private:
     std::unordered_map<ZEntityRef, std::string> m_EntityNames;
 
     EditorServer m_Server;
+
+    bool m_AssetsMenuActive = false;
+    bool m_ItemsMenuActive = false;
+    bool m_ActorsMenuActive = false;
+
+    TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
+    std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps; // RepoId -> Title/Common Name
+
+    ZActor* s_CurrentlySelectedActor = nullptr;
+    const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
+
+    ZActor* m_ActorTracked = nullptr;
+    bool m_TrackCamActive = false;
+    ZEntityRef m_PlayerCam = nullptr;
+    TEntityRef<ZCameraEntity> m_TrackCam{};
+    TEntityRef<IRenderDestinationEntity> m_RenderDest{};
 };
 
 DECLARE_ZHM_PLUGIN(Editor)
