@@ -606,7 +606,6 @@ void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue) {
 
     Logger::Debug("Setting up ImGui command queue.");
     m_CommandQueue = p_CommandQueue;
-    m_CommandQueue->AddRef();
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(

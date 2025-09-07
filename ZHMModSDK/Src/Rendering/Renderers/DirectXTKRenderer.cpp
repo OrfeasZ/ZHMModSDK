@@ -423,7 +423,6 @@ void DirectXTKRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue) {
 
     Logger::Debug("Setting up DirectXTK12 command queue.");
     m_CommandQueue = p_CommandQueue;
-    m_CommandQueue->AddRef();
 }
 
 void DirectXTKRenderer::DrawLine3D(
