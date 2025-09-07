@@ -62,10 +62,10 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
-        ImGui::Checkbox("Render NPC position boxes", &m_RenderNpcBoxes);
-        ImGui::Checkbox("Render NPC names", &m_RenderNpcNames);
-        ImGui::Checkbox("Render NPC repository IDs", &m_RenderNpcRepoIds);
-        ImGui::Checkbox("Render NPC behaviors", &m_RenderNpcBehaviors);
+        ImGui::Checkbox("Render Actor position boxes", &m_RenderActorBoxes);
+        ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
+        ImGui::Checkbox("Render Actor repository IDs", &m_RenderActorRepoIds);
+        ImGui::Checkbox("Render Actor behaviors", &m_RenderActorBehaviors);
     }
 
     ImGui::PopFont();
@@ -104,7 +104,7 @@ void DebugMod::CopyToClipboard(const std::string& p_String) {
 }
 
 void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
-    if (m_RenderNpcBoxes || m_RenderNpcNames || m_RenderNpcRepoIds || m_RenderNpcBehaviors)
+    if (m_RenderActorBoxes || m_RenderActorNames || m_RenderActorRepoIds || m_RenderActorBehaviors)
     {
         for (size_t i = 0; i < *Globals::NextActorId; ++i)
         {
@@ -117,7 +117,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
 
             auto s_Transform = s_SpatialEntity->GetWorldMatrix();
 
-            if (m_RenderNpcBoxes)
+            if (m_RenderActorBoxes)
             {
                 float4 s_Min, s_Max;
 
@@ -129,7 +129,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
                 );
             }
 
-            if (m_RenderNpcNames)
+            if (m_RenderActorNames)
             {
                 SVector2 s_ScreenPos;
                 if (p_Renderer->WorldToScreen(
@@ -138,13 +138,13 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
                     p_Renderer->DrawText2D(s_Actor->m_sActorName, s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
             }
 
-            if (m_RenderNpcRepoIds)
+            if (m_RenderActorRepoIds)
             {
                 auto* s_RepoEntity = s_Ref.QueryInterface<ZRepositoryItemEntity>();
                 SVector2 s_ScreenPos;
                 bool s_Success;
 
-                if (m_RenderNpcNames)
+                if (m_RenderActorNames)
                     s_Success = p_Renderer->WorldToScreen(
                         SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.1f), s_ScreenPos
                     );
@@ -159,7 +159,7 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
                     );
             }
 
-            if (m_RenderNpcBehaviors)
+            if (m_RenderActorBehaviors)
             {
                 const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
 

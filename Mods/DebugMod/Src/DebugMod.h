@@ -40,10 +40,10 @@ private:
 private:
     bool m_DebugMenuActive = false;
     bool m_PositionsMenuActive = false;
-    bool m_RenderNpcBoxes = false;
-    bool m_RenderNpcNames = false;
-    bool m_RenderNpcRepoIds = false;
-    bool m_RenderNpcBehaviors = false;
+    bool m_RenderActorBoxes = false;
+    bool m_RenderActorNames = false;
+    bool m_RenderActorRepoIds = false;
+    bool m_RenderActorBehaviors = false;
 };
 
 DECLARE_ZHM_PLUGIN(DebugMod)
