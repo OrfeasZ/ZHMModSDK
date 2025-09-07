@@ -671,15 +671,6 @@ bool ModSDK::Startup() {
 }
 
 void ModSDK::ThreadedStartup() const {
-    m_ModLoader->LockRead();
-
-    for (const auto& s_Mod : m_ModLoader->GetLoadedMods()) {
-        s_Mod->SetupUI();
-        s_Mod->Init();
-    }
-
-    m_ModLoader->UnlockRead();
-
     // If the engine is already initialized, inform the mods.
     if (Globals::Hitman5Module->IsEngineInitialized())
         OnEngineInit();
