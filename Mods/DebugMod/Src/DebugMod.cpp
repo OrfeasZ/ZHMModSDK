@@ -62,10 +62,13 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
-        ImGui::Checkbox("Render Actor position boxes", &m_RenderActorBoxes);
-        ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
-        ImGui::Checkbox("Render Actor repository IDs", &m_RenderActorRepoIds);
-        ImGui::Checkbox("Render Actor behaviors", &m_RenderActorBehaviors);
+
+        if (ImGui::CollapsingHeader("Actors")) {
+            ImGui::Checkbox("Render Actor position boxes", &m_RenderActorBoxes);
+            ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
+            ImGui::Checkbox("Render Actor repository IDs", &m_RenderActorRepoIds);
+            ImGui::Checkbox("Render Actor behaviors", &m_RenderActorBehaviors);
+        }
     }
 
     ImGui::PopFont();
