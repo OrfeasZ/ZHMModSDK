@@ -706,31 +706,15 @@ void ModSDK::OnDraw3D() const {
         s_Mod->OnDraw3D(m_DirectXTKRenderer.get());
 
     m_ModLoader->UnlockRead();
+}
 
-    /*m_EntityMutex.lock_shared();
+void ModSDK::OnDepthDraw3D() const {
+    m_ModLoader->LockRead();
 
-    for (auto s_EntityRef : m_Entities)
-    {
-        auto* s_SpatialEntity = s_EntityRef.QueryInterface<ZSpatialEntity>();
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods())
+        s_Mod->OnDepthDraw3D(m_DirectXTKRenderer.get());
 
-        if (!s_SpatialEntity)
-            continue;
-
-        SMatrix s_Transform;
-        Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
-
-        float4 s_Min, s_Max;
-
-        s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
-
-        p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(1.f, 0.f, 0.f, 1.f));
-
-        SVector2 s_ScreenPos;
-        if (p_Renderer->WorldToScreen(SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos))
-            p_Renderer->DrawText2D(std::to_string((*s_EntityRef.m_pEntity)->m_nEntityId).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
-    }
-
-    m_EntityMutex.unlock_shared();*/
+    m_ModLoader->UnlockRead();
 }
 
 void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad) {
@@ -1408,8 +1392,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
     uint32_t a5, bool bCaptureOnly
 ) {
     if (dsv && *dsv && m_DirectXTKRenderer) {
-        // TODO: Re-enable once we have proper functions for depth-supported drawing.
-        //m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
+        m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
     }
 
     return {HookAction::Continue()};

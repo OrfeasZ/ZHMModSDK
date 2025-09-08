@@ -24,6 +24,7 @@ public:
     virtual void OnEngineInitialized() {}
     virtual void OnDrawUI(bool p_HasFocus) {}
     virtual void OnDraw3D(IRenderer* p_Renderer) {}
+    virtual void OnDepthDraw3D(IRenderer* p_Renderer) {}
     virtual void OnDrawMenu() {}
 
 public:
