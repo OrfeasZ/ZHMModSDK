@@ -205,7 +205,7 @@ private:
     enum class EntityHighlightMode
     {
         Lines,
-        Rectangles
+        LinesAndTriangles
     };
 
     ZEntityRef m_Camera;
