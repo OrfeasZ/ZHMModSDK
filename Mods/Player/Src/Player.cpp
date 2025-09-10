@@ -22,7 +22,7 @@ void Player::OnDrawMenu()
 
 void Player::OnDrawUI(const bool p_HasFocus)
 {
-    if (!p_HasFocus)
+    if (!p_HasFocus || !m_PlayerMenuActive)
     {
         return;
     }
