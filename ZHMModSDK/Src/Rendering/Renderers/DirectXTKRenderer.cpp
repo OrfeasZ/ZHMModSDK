@@ -1106,10 +1106,6 @@ void DirectXTKRenderer::DrawText3D(
     int s_PrintableCharacterCount = 0;
 
     while (s_TextLength) {
-        if (*text == '\n') {
-            break;
-        }
-
         if (static_cast<unsigned char>(*text) >= 33 && static_cast<unsigned char>(*text) <= 126) {
             ++s_PrintableCharacterCount;
         }
@@ -1149,16 +1145,32 @@ void DirectXTKRenderer::DrawText3D(
 
     s_Triangles.reserve(s_VertexCount);
 
+    static const float s_LineHeight =
+        (MDF_FONT::ComputeLineHeightFromMetrics() /
+            static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
     float s_PenX = 0.f;
+    float s_PenY = 0.f;
 
     while (s_BaseTextLength) {
         if (*s_BaseText == '\n') {
-            break;
+            s_PenX = 0.f;
+            s_PenY -= s_LineHeight;
+            ++s_BaseText;
+            --s_BaseTextLength;
+
+            continue;
+        }
+
+        if (*s_BaseText == ' ') {
+            s_PenX += MDF_FONT::GetAdvanceWidth(*s_BaseText);
+            ++s_BaseText;
+            --s_BaseTextLength;
+
+            continue;
         }
 
         if (static_cast<unsigned char>(*s_BaseText) >= 33 && static_cast<unsigned char>(*s_BaseText) <= 126) {
             static const float s_Scale = 1.f;
-            static const float s_PenY = 0.f;
             float s_Vertices[8];
             float s_TextureCoordinates[8];
 
