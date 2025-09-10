@@ -202,6 +202,12 @@ private:
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
 
 private:
+    enum class EntityHighlightMode
+    {
+        Lines,
+        Rectangles
+    };
+
     ZEntityRef m_Camera;
     ZEntityRef m_CameraRT;
     bool m_raycastLogging; // Mainly used for the raycasting logs
@@ -231,6 +237,8 @@ private:
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
     bool m_ShouldScrollToEntity = false;
+
+    EntityHighlightMode m_EntityHighlightMode = EntityHighlightMode::Lines;
 
     std::vector<std::vector<SVector3>> m_NavpAreas;
 

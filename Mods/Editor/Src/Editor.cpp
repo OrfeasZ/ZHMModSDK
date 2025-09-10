@@ -221,19 +221,9 @@ void Editor::CopyToClipboard(const std::string& p_String) const {
 }
 
 void Editor::OnDraw3D(IRenderer* p_Renderer) {
-    DrawEntityAABB(p_Renderer);
-
-    const auto s_NavpLineColor = SVector4(0.94, 0.12, 0.05, 1.0);
-    for (const auto s_Area: m_NavpAreas) {
-        for (int s_PointNum = 1; s_PointNum <= s_Area.size(); s_PointNum++) {
-            SVector3 s_PrevPoint = s_Area[s_PointNum - 1];
-            SVector3 s_CurPoint = s_Area[s_PointNum % s_Area.size()];
-            p_Renderer->DrawLine3D(
-                {s_PrevPoint.x, s_PrevPoint.y, s_PrevPoint.z},
-                {s_CurPoint.x, s_CurPoint.y, s_CurPoint.z},
-                s_NavpLineColor,
-                s_NavpLineColor);
-        }
+    if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line ||
+        p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
+        DrawEntityAABB(p_Renderer);
     }
 
     /*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
@@ -293,6 +283,21 @@ void Editor::OnDrawUI(bool p_HasFocus) {
             bool s_ServerEnabled = m_Server.GetEnabled();
             if (ImGui::Checkbox(ICON_MD_TERMINAL "  ENABLE EDITOR SERVER", &s_ServerEnabled)) {
                 ToggleEditorServerEnabled();
+            }
+
+            ImGui::Spacing();
+            ImGui::Text("Entity Highlight Mode");
+
+            const int s_EntityHighlightMode = static_cast<int>(m_EntityHighlightMode);
+
+            if (ImGui::RadioButton("Lines", s_EntityHighlightMode == 0)) {
+                m_EntityHighlightMode = EntityHighlightMode::Lines;
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::RadioButton("Rectangles", s_EntityHighlightMode == 1)) {
+                m_EntityHighlightMode = EntityHighlightMode::Rectangles;
             }
         }
 

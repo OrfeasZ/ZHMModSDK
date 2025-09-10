@@ -14,10 +14,20 @@ void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
 
             s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
 
-            p_Renderer->DrawOBB3D(
-                SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
-                SVector4(0.f, 0.f, 1.f, 1.f)
-            );
+            if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line &&
+                m_EntityHighlightMode == EntityHighlightMode::Lines) {
+                p_Renderer->DrawOBB3D(
+                    SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
+                    SVector4(0.f, 0.f, 1.f, 1.f)
+                );
+            }
+            else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle &&
+                m_EntityHighlightMode == EntityHighlightMode::Rectangles) {
+                p_Renderer->DrawBoundingQuads(
+                    SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
+                    SVector4(0.f, 0.f, 1.f, 0.1f)
+                );
+            }
         }
     }
 }
