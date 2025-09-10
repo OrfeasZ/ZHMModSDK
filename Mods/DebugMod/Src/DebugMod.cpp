@@ -15,9 +15,16 @@
 #include <Glacier/ZSpatialEntity.h>
 #include <Glacier/ZGameLoopManager.h>
 #include <Glacier/ZKnowledge.h>
+#include <Glacier/ZPathfinder.h>
+#include <Glacier/SReasoningGrid.h>
+#include <Glacier/ZGridManager.h>
+#include <Glacier/ZHM5GridManager.h>
+#include <Glacier/ZCameraEntity.h>
+#include <Glacier/ZColor.h>
 
 #include <Functions.h>
 #include <Globals.h>
+#include <Rendering/FrustumCuller.h>
 
 DebugMod::~DebugMod() {
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
@@ -27,6 +34,8 @@ DebugMod::~DebugMod() {
 void DebugMod::Init() {
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &DebugMod::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &DebugMod::OnClearScene);
+
+    Hooks::ZPFObstacleEntity_UpdateObstacle->AddDetour(this, &DebugMod::ZPFObstacleEntity_UpdateObstacle);
 }
 
 void DebugMod::OnEngineInitialized() {
@@ -68,6 +77,61 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
             ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
             ImGui::Checkbox("Render Actor repository IDs", &m_RenderActorRepoIds);
             ImGui::Checkbox("Render Actor behaviors", &m_RenderActorBehaviors);
+        }
+
+        if (ImGui::CollapsingHeader("Reasoning Grid")) {
+            if (ImGui::Checkbox("Draw Reasoning Grid", &m_DrawReasoningGrid)) {
+                if (m_Triangles.size() == 0) {
+                    GenerateReasoningGridVertices();
+                }
+            }
+
+            ImGui::Checkbox("Show Visibility", &m_ShowVisibility);
+            ImGui::Checkbox("Show Layers", &m_ShowLayers);
+            ImGui::Checkbox("Show Indices", &m_ShowIndices);
+        }
+
+        if (ImGui::CollapsingHeader("Guide Path Finder")) {
+            if (ImGui::Checkbox("Draw Nav Mesh", &m_DrawNavMesh)) {
+                if (m_NavMesh.m_areas.size() == 0) {
+                    uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_NavPowerResources[0].m_pNavpowerResource);
+                    uint32_t s_NavpDataSize = Globals::Pathfinder->m_NavPowerResources[0].m_nNavpowerResourceSize;
+                    static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
+
+                    m_NavMesh.read(s_NavpData, s_NavpDataSize);
+
+                    m_Vertices.resize(m_NavMesh.m_areas.size());
+                    m_Indices.resize(m_NavMesh.m_areas.size());
+                    m_NavMeshLines.reserve(m_NavMesh.m_areas.size() * 3);
+
+                    for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
+                        const size_t s_VertexCount = m_NavMesh.m_areas[i].m_edges.size();
+
+                        m_Vertices[i].reserve(s_VertexCount);
+
+                        for (size_t j = 0; j < s_VertexCount; ++j) {
+                            m_Vertices[i].push_back(m_NavMesh.m_areas[i].m_edges[j]->m_pos);
+
+                            static const float s_ZOffset = 0.075f;
+
+                            const size_t s_NextIndex = (j + 1) % s_VertexCount;
+                            Line& s_Line = m_NavMeshLines.emplace_back();
+
+                            s_Line.start = m_NavMesh.m_areas[i].m_edges[j]->m_pos;
+                            s_Line.startColor = s_LineColor;
+                            s_Line.start.z += s_ZOffset;
+
+                            s_Line.end = m_NavMesh.m_areas[i].m_edges[s_NextIndex]->m_pos;
+                            s_Line.endColor = s_LineColor;
+                            s_Line.end.z += s_ZOffset;
+                        }
+
+                        VertexTriangluation(m_Vertices[i], m_Indices[i]);
+                    }
+                }
+            }
+
+            ImGui::Checkbox("Draw Obstacles", &m_DrawObstacles);
         }
     }
 
@@ -120,69 +184,751 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
 
             auto s_Transform = s_SpatialEntity->GetWorldMatrix();
 
-            if (m_RenderActorBoxes)
-            {
-                float4 s_Min, s_Max;
+            if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
+                if (m_RenderActorBoxes) {
+                    float4 s_Min, s_Max;
 
-                s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+                    s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
 
-                p_Renderer->DrawOBB3D(
-                    SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
-                    SVector4(1.f, 0.f, 0.f, 1.f)
-                );
+                    p_Renderer->DrawOBB3D(
+                        SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
+                        SVector4(1.f, 0.f, 0.f, 1.f)
+                    );
+                }
             }
 
-            if (m_RenderActorNames)
-            {
-                SVector2 s_ScreenPos;
-                if (p_Renderer->WorldToScreen(
-                    SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
-                ))
-                    p_Renderer->DrawText2D(s_Actor->m_sActorName, s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
-            }
-
-            if (m_RenderActorRepoIds)
-            {
-                auto* s_RepoEntity = s_Ref.QueryInterface<ZRepositoryItemEntity>();
-                SVector2 s_ScreenPos;
-                bool s_Success;
-
-                if (m_RenderActorNames)
-                    s_Success = p_Renderer->WorldToScreen(
-                        SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.1f), s_ScreenPos
-                    );
-                else
-                    s_Success = p_Renderer->WorldToScreen(
-                        SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
-                    );
-
-                if (s_Success)
-                    p_Renderer->DrawText2D(
-                        s_RepoEntity->m_sId.ToString(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f
-                    );
-            }
-
-            if (m_RenderActorBehaviors)
-            {
-                const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
-
-                if (s_BehaviorBase)
-                {
-                    const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(s_BehaviorBase->m_Type);
-
+            if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Text2D) {
+                if (m_RenderActorNames) {
                     SVector2 s_ScreenPos;
                     if (p_Renderer->WorldToScreen(
                         SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
                     ))
-                        p_Renderer->DrawText2D(BehaviorToString(s_CompiledBehaviorType), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
+                        p_Renderer->DrawText2D(s_Actor->m_sActorName, s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
+                }
+
+                if (m_RenderActorRepoIds) {
+                    auto* s_RepoEntity = s_Ref.QueryInterface<ZRepositoryItemEntity>();
+                    SVector2 s_ScreenPos;
+                    bool s_Success;
+
+                    if (m_RenderActorNames) {
+                        s_Success = p_Renderer->WorldToScreen(
+                            SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.1f), s_ScreenPos
+                        );
+                    }
+                    else {
+                        s_Success = p_Renderer->WorldToScreen(
+                            SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
+                        );
+                    }
+
+                    if (s_Success) {
+                        p_Renderer->DrawText2D(
+                            s_RepoEntity->m_sId.ToString(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f
+                        );
+                    }
+                }
+
+                if (m_RenderActorBehaviors) {
+                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
+
+                    if (s_BehaviorBase) {
+                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(s_BehaviorBase->m_Type);
+
+                        SVector2 s_ScreenPos;
+                        if (p_Renderer->WorldToScreen(
+                            SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
+                        ))
+                            p_Renderer->DrawText2D(BehaviorToString(s_CompiledBehaviorType), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
+                    }
                 }
             }
         }
     }
 }
 
-std::string DebugMod::BehaviorToString(ECompiledBehaviorType p_Type)
+void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
+    if (m_DrawReasoningGrid) {
+        DrawReasoningGrid(p_Renderer);
+    }
+
+    if (m_DrawNavMesh) {
+        DrawNavMesh(p_Renderer);
+    }
+
+    if (m_DrawObstacles) {
+        DrawObstacles(p_Renderer);
+    }
+}
+
+void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
 {
+    const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
+    const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
+
+    if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
+        for (size_t i = 0; i < s_WaypointCount * 2; ++i) {
+            p_Renderer->DrawTriangle3D(m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
+                m_Triangles[i].vertexPosition2, m_Triangles[i].vertexColor2,
+                m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3);
+        }
+
+        const ZGridNodeRef& s_HitmanNode = Globals::HM5GridManager->m_HitmanNode;
+        const size_t s_StartIndex = s_WaypointCount * 2;
+
+        static const SVector4 s_SelectedNodeVertexColor = SVector4(0.f, 1.f, 1.f, 0.43922f);
+        static const SVector4 s_LargeQuadVertexColor = SVector4(0.33333f, 0.f, 1.f, 0.43922f);
+
+        for (size_t i = s_StartIndex; i < m_Triangles.size(); ++i) {
+            const unsigned short s_WaypointIndex = static_cast<unsigned short>((i - s_WaypointCount * 2) / 2);
+
+            if (s_ReasoningGrid->GetNode(s_WaypointIndex) == s_HitmanNode.GetNode()) {
+                m_Triangles[i].vertexColor1 = s_SelectedNodeVertexColor;
+                m_Triangles[i].vertexColor2 = s_SelectedNodeVertexColor;
+                m_Triangles[i].vertexColor3 = s_SelectedNodeVertexColor;
+            }
+            else {
+                if (m_ShowVisibility) {
+                    float s_Rating = 0.f;
+
+                    if (s_HitmanNode.CheckVisibility(s_WaypointIndex, true, false)) {
+                        s_Rating = 1.f;
+                    }
+                    else if (s_HitmanNode.CheckVisibility(s_WaypointIndex, false, false)) {
+                        s_Rating = 0.5f;
+                    }
+
+                    const unsigned int s_HeatMapColor = ((*Globals::GridManager)->GetHeatmapColorFromRating(s_Rating) & 0xFFFFFF) + 0x70000000;
+                    const SVector4 s_VertexColor = ZColor::UnpackUnsigned(s_HeatMapColor);
+
+                    m_Triangles[i].vertexColor1 = s_VertexColor;
+                    m_Triangles[i].vertexColor2 = s_VertexColor;
+                    m_Triangles[i].vertexColor3 = s_VertexColor;
+                }
+                else if (m_ShowLayers) {
+                    const unsigned int s_LayerIndex = static_cast<unsigned int>(s_ReasoningGrid->m_WaypointList[s_WaypointIndex].nLayerIndex);
+                    const unsigned int s_Color = (s_LayerIndex << 6) | 0xC0000000;
+                    const SVector4 s_VertexColor = ZColor::UnpackUnsigned(s_Color);
+
+                    m_Triangles[i].vertexColor1 = s_VertexColor;
+                    m_Triangles[i].vertexColor2 = s_VertexColor;
+                    m_Triangles[i].vertexColor3 = s_VertexColor;
+                }
+                else {
+                    m_Triangles[i].vertexColor1 = s_LargeQuadVertexColor;
+                    m_Triangles[i].vertexColor2 = s_LargeQuadVertexColor;
+                    m_Triangles[i].vertexColor3 = s_LargeQuadVertexColor;
+                }
+            }
+
+            p_Renderer->DrawTriangle3D(m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
+                m_Triangles[i].vertexPosition2, m_Triangles[i].vertexColor2,
+                m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3);
+        }
+    }
+    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
+        for (size_t i = 0; i < m_Lines.size(); ++i) {
+            p_Renderer->DrawLine3D(m_Lines[i].start, m_Lines[i].end, m_Lines[i].startColor, m_Lines[i].endColor);
+        }
+    }
+    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Text3D) {
+        if (m_ShowIndices) {
+            const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+            if (!s_CurrentCamera) {
+                return;
+            }
+
+            SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+            const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
+
+            std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
+
+            const float s_MaxDrawDistance = 50.0f;
+            FrustumCuller s_Frustum;
+
+            s_Frustum.Extract(p_Renderer->GetViewProjection());
+
+            static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
+            static const float s_Scale = 0.2f;
+
+            for (size_t i = 0; i < s_WaypointCount; ++i) {
+                float4 s_WorldPosition = s_ReasoningGrid->m_WaypointList[i].vPos;
+
+                const DirectX::XMVECTOR s_WorldPosition2 = DirectX::XMVectorSet(
+                    s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
+
+                const SVector3 s_CameraToWaypoint(
+                    s_WorldPosition.x - s_WorldMatrix.Trans.x,
+                    s_WorldPosition.y - s_WorldMatrix.Trans.y,
+                    s_WorldPosition.z - s_WorldMatrix.Trans.z
+                );
+
+                if (SVector3::DotProduct(s_CameraToWaypoint, s_CameraToWaypoint) > s_MaxDrawDistance * s_MaxDrawDistance) {
+                    continue;
+                }
+
+                if (!s_Frustum.ContainsPoint(s_WorldPosition2)) {
+                    continue;
+                }
+
+                s_WorldPosition.z += 0.5f;
+                s_WorldMatrix.Trans = s_WorldPosition;
+
+                const std::string s_Text = std::to_string(i);
+
+                p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+            }
+        }
+    }
+}
+
+void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
+{
+    static const SVector4 s_GreenTriangleColor = SVector4(0.19608f, 0.80392f, 0.19608f, 0.49804f);
+    static const SVector4 s_YellowTriangleColor = SVector4(1.f, 1.f, 0.f, 0.49804f);
+
+    if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
+        for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
+            if (m_NavMesh.m_areas[i].m_area->m_usageFlags == NavPower::AreaUsageFlags::AREA_FLAT) {
+                p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_GreenTriangleColor);
+            }
+            else
+            {
+                p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_YellowTriangleColor);
+            }
+        }
+    }
+    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
+        for (size_t i = 0; i < m_NavMeshLines.size(); ++i) {
+            p_Renderer->DrawLine3D(m_NavMeshLines[i].start, m_NavMeshLines[i].end, m_NavMeshLines[i].startColor, m_NavMeshLines[i].endColor);
+        }
+    }
+}
+
+void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
+    ZPFObstacleManagerDeprecated* s_ObstacleManagerDeprecated = static_cast<ZPFObstacleManagerDeprecated*>(Globals::Pathfinder->m_obstacleManager);
+
+    if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
+        for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
+            const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 0.29804f);
+            const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
+            const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
+            const SVector3 s_MinBound = SVector3(
+                -s_HalfSize.x,
+                -s_HalfSize.y,
+                -s_HalfSize.z);
+            const SVector3 s_MaxBound = SVector3(
+                s_HalfSize.x,
+                s_HalfSize.y,
+                s_HalfSize.z);
+
+            p_Renderer->DrawBoundingQuads(s_MinBound, s_MaxBound, s_Transform, s_Color);
+        }
+    }
+    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
+        for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
+            const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 1.f);
+            const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
+            const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
+
+            const SVector3 s_MinBound = SVector3(-s_HalfSize.x, -s_HalfSize.y, -s_HalfSize.z);
+            const SVector3 s_MaxBound = SVector3(s_HalfSize.x, s_HalfSize.y, s_HalfSize.z);
+
+            p_Renderer->DrawOBB3D(s_MinBound, s_MaxBound, s_Transform, s_Color);
+        }
+    }
+    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Text3D) {
+        const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+        if (!s_CurrentCamera) {
+            return;
+        }
+
+        SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+
+        std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
+
+        static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
+        static const float s_Scale = 0.3f;
+
+        for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
+            ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*)(s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget());
+            const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
+            const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
+            const float4 s_TopCenter = s_Transform.Trans + s_Transform.ZAxis * (s_HalfSize.z + 0.5f);
+
+            s_WorldMatrix.Trans = s_TopCenter;
+
+            const std::string s_Text = fmt::format(
+                "Entity ID: {:08x}\nObstacle Flags: {:04x}\nPenalty: {}",
+                m_ObstaclesToEntityIDs[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
+                s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
+                s_PFObstacleInternalDep->m_obstacleDef.m_penalty
+            );
+
+            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+        }
+    }
+}
+
+void DebugMod::GenerateReasoningGridVertices() {
+    GenerateVerticesForSmallQuads();
+    GenerateVerticesForLargeQuads();
+    GenerateVerticesForQuadBorderLines();
+    GenerateVerticesForNeighborConnectionLines();
+}
+
+void DebugMod::GenerateVerticesForSmallQuads() {
+    const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
+    const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
+
+    m_Triangles.reserve(s_WaypointCount * 2);
+
+    for (size_t i = 0; i < s_WaypointCount; ++i) {
+        const float s_HalfBaseLength = 0.1f;
+        const float4& s_VertexPostion = s_ReasoningGrid->m_WaypointList[i].vPos;
+        const SVector4 s_VertexColor = SVector4(0.f, 0.33333f, 1.f, 0.62745f);
+        Triangle& s_Triangle1 = m_Triangles.emplace_back();
+        Triangle& s_Triangle2 = m_Triangles.emplace_back();
+
+        s_Triangle1.vertexPosition1 = {
+            s_VertexPostion.x - s_HalfBaseLength,
+            s_VertexPostion.y - s_HalfBaseLength,
+            s_VertexPostion.z + s_HalfBaseLength
+        };
+
+        s_Triangle1.vertexPosition2 = {
+            s_VertexPostion.x + s_HalfBaseLength,
+            s_VertexPostion.y - s_HalfBaseLength,
+            s_VertexPostion.z + s_HalfBaseLength
+        };
+
+        s_Triangle1.vertexPosition3 = {
+            s_VertexPostion.x - s_HalfBaseLength,
+            s_VertexPostion.y + s_HalfBaseLength,
+            s_VertexPostion.z + s_HalfBaseLength
+        };
+
+        s_Triangle1.vertexColor1 = s_VertexColor;
+        s_Triangle1.vertexColor2 = s_VertexColor;
+        s_Triangle1.vertexColor3 = s_VertexColor;
+
+        s_Triangle2.vertexPosition1 = {
+            s_VertexPostion.x + s_HalfBaseLength,
+            s_VertexPostion.y - s_HalfBaseLength,
+            s_VertexPostion.z + s_HalfBaseLength
+        };
+
+        s_Triangle2.vertexPosition2 = {
+            s_VertexPostion.x + s_HalfBaseLength,
+            s_VertexPostion.y + s_HalfBaseLength,
+            s_VertexPostion.z + s_HalfBaseLength
+        };
+
+        s_Triangle2.vertexPosition3 = {
+            s_VertexPostion.x - s_HalfBaseLength,
+            s_VertexPostion.y + s_HalfBaseLength,
+            s_VertexPostion.z + s_HalfBaseLength
+        };
+
+        s_Triangle2.vertexColor1 = s_VertexColor;
+        s_Triangle2.vertexColor2 = s_VertexColor;
+        s_Triangle2.vertexColor3 = s_VertexColor;
+    }
+}
+
+void DebugMod::GenerateVerticesForLargeQuads() {
+    const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
+    size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
+
+    m_Triangles.reserve(s_WaypointCount * 2);
+
+    for (uint32_t w = 0; w < s_WaypointCount; ++w) {
+        const float s_ZOffset = 0.05f;
+        float4 s_VertexPostion = s_ReasoningGrid->m_WaypointList[w].vPos;
+        const SVector4 s_VertexColor = SVector4(0.33333f, 0.f, 1.f, 0.43922f);
+        Triangle& s_Triangle1 = m_Triangles.emplace_back();
+        Triangle& s_Triangle2 = m_Triangles.emplace_back();
+
+        s_VertexPostion.z += s_ZOffset;
+        s_VertexPostion = (*Globals::GridManager)->GetCellUpperLeft(s_VertexPostion, s_ReasoningGrid->m_Properties);
+
+        s_Triangle1.vertexPosition1 = {
+            s_VertexPostion.x,
+            s_VertexPostion.y,
+            s_VertexPostion.z
+        };
+
+        s_Triangle1.vertexPosition2 = {
+            s_VertexPostion.x + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.y,
+            s_VertexPostion.z
+        };
+
+        s_Triangle1.vertexPosition3 = {
+            s_VertexPostion.x + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.y + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.z
+        };
+
+        s_Triangle1.vertexColor1 = s_VertexColor;
+        s_Triangle1.vertexColor2 = s_VertexColor;
+        s_Triangle1.vertexColor3 = s_VertexColor;
+
+        s_Triangle2.vertexPosition1 = {
+            s_VertexPostion.x,
+            s_VertexPostion.y,
+            s_VertexPostion.z
+        };
+
+        s_Triangle2.vertexPosition2 = {
+            s_VertexPostion.x + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.y + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.z
+        };
+
+        s_Triangle2.vertexPosition3 = {
+            s_VertexPostion.x,
+            s_VertexPostion.y + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.z
+        };
+
+        s_Triangle2.vertexColor1 = s_VertexColor;
+        s_Triangle2.vertexColor2 = s_VertexColor;
+        s_Triangle2.vertexColor3 = s_VertexColor;
+    }
+}
+
+void DebugMod::GenerateVerticesForQuadBorderLines() {
+    const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
+    const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
+
+    m_Lines.reserve(s_WaypointCount * 4);
+
+    for (size_t i = 0; i < s_WaypointCount; ++i) {
+        Line& s_TopBorder = m_Lines.emplace_back();
+        Line& s_RightBorder = m_Lines.emplace_back();
+        Line& s_BottomBorder = m_Lines.emplace_back();
+        Line& s_LeftBorder = m_Lines.emplace_back();
+        float4 s_VertexPostion = s_ReasoningGrid->m_WaypointList[i].vPos;
+        const SVector4 s_VertexColor = SVector4(0.f, 0.f, 0.f, 0.43922f);
+        const float s_ZOffset = 0.075f;
+
+        s_VertexPostion.z += s_ZOffset;
+        s_VertexPostion = (*Globals::GridManager)->GetCellUpperLeft(s_VertexPostion, s_ReasoningGrid->m_Properties);
+
+        s_TopBorder.start = {
+            s_VertexPostion.x,
+            s_VertexPostion.y,
+            s_VertexPostion.z
+        };
+
+        s_TopBorder.end = {
+            s_VertexPostion.x + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.y,
+            s_VertexPostion.z
+        };
+
+        s_TopBorder.startColor = s_VertexColor;
+        s_TopBorder.endColor = s_VertexColor;
+
+        s_RightBorder.start = {
+            s_VertexPostion.x + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.y,
+            s_VertexPostion.z
+        };
+
+        s_RightBorder.end = {
+            s_VertexPostion.x + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.y + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.z
+        };
+
+        s_RightBorder.startColor = s_VertexColor;
+        s_RightBorder.endColor = s_VertexColor;
+
+        s_BottomBorder.start = {
+            s_VertexPostion.x + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.y + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.z
+        };
+
+        s_BottomBorder.end = {
+            s_VertexPostion.x,
+            s_VertexPostion.y + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.z
+        };
+
+        s_BottomBorder.startColor = s_VertexColor;
+        s_BottomBorder.endColor = s_VertexColor;
+
+        s_LeftBorder.start = {
+            s_VertexPostion.x,
+            s_VertexPostion.y + s_ReasoningGrid->m_Properties.fGridSpacing,
+            s_VertexPostion.z
+        };
+
+        s_LeftBorder.end = {
+            s_VertexPostion.x,
+            s_VertexPostion.y,
+            s_VertexPostion.z
+        };
+
+        s_LeftBorder.startColor = s_VertexColor;
+        s_LeftBorder.endColor = s_VertexColor;
+    }
+}
+
+void DebugMod::GenerateVerticesForNeighborConnectionLines() {
+    const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
+    const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
+
+    m_Lines.reserve(s_WaypointCount * 4);
+
+    for (size_t i = 0; i < s_WaypointCount; ++i) {
+        float4 s_VertexPostion1 = s_ReasoningGrid->m_WaypointList[i].vPos;
+        const SVector4 s_VertexColor = SVector4(0.f, 0.33333f, 1.f, 0.62745f);
+        const float s_ZOffset = 0.1f;
+
+        s_VertexPostion1.z += s_ZOffset;
+
+        short s_NeighborIndex = 0;
+        int j = 4;
+
+        while (j != 0) {
+            if (s_ReasoningGrid->m_WaypointList[i].Neighbors[s_NeighborIndex] != -1) {
+                Line& s_Line = m_Lines.emplace_back();
+                const short s_Neighbor = s_ReasoningGrid->m_WaypointList[i].Neighbors[s_NeighborIndex];
+                float4 s_VertexPostion2 = s_ReasoningGrid->m_WaypointList[s_Neighbor].vPos;
+
+                s_VertexPostion2.z += s_ZOffset;
+
+                s_Line.start = {
+                    s_VertexPostion1.x,
+                    s_VertexPostion1.y,
+                    s_VertexPostion1.z
+                };
+
+                s_Line.end = {
+                    s_VertexPostion2.x,
+                    s_VertexPostion2.y,
+                    s_VertexPostion2.z
+                };
+
+                s_Line.startColor = s_VertexColor;
+                s_Line.endColor = s_VertexColor;
+            }
+
+            ++s_NeighborIndex;
+            --j;
+        }
+    }
+}
+
+float DebugMod::AngleBetween(const SVector3& a, const SVector3& b) {
+    float angle = SVector3::DotProduct(a, b);
+    angle /= (a.Magnitude() * b.Magnitude());
+    return angle = acosf(angle);
+}
+
+SVector3 DebugMod::ProjectionOnto(const SVector3& a, const SVector3& b) {
+    const SVector3 bn = b / b.Magnitude();
+    return bn * SVector3::DotProduct(a, bn);
+}
+
+bool DebugMod::AreOnSameSide(const SVector3& p1, const SVector3& p2, const SVector3& a, const SVector3& b) {
+    const SVector3 cp1 = SVector3::CrossProduct(b - a, p1 - a);
+    const SVector3 cp2 = SVector3::CrossProduct(b - a, p2 - a);
+
+    if (SVector3::DotProduct(cp1, cp2) >= 0) {
+        return true;
+    }
+
+    return false;
+}
+
+SVector3 DebugMod::ComputeTriangleNormal(const SVector3& t1, const SVector3& t2, const SVector3& t3) {
+    const SVector3 u = t2 - t1;
+    const SVector3 v = t3 - t1;
+    const SVector3 normal = SVector3::CrossProduct(u, v);
+
+    return normal;
+}
+
+bool DebugMod::IsInTriangle(const SVector3& point, const SVector3& triangle1, const SVector3& triangle2, const SVector3& triangle3) {
+    // Test to see if it is within an infinite prism that the triangle outlines.
+    const bool within_tri_prisim = AreOnSameSide(point, triangle1, triangle2, triangle3) && AreOnSameSide(point, triangle2, triangle1, triangle3)
+        && AreOnSameSide(point, triangle3, triangle1, triangle2);
+
+    // If it isn't it will never be on the triangle
+    if (!within_tri_prisim)
+    {
+        return false;
+    }
+
+    // Calulate Triangle's Normal
+    const SVector3 n = ComputeTriangleNormal(triangle1, triangle2, triangle3);
+
+    // Project the point onto this normal
+    const SVector3 proj = ProjectionOnto(point, n);
+
+    // If the distance from the triangle to the point is 0
+    //	it lies on the triangle
+    if (proj.Magnitude() == 0) {
+        return true;
+    }
+
+    return false;
+}
+
+void DebugMod::VertexTriangluation(const std::vector<SVector3>& vertices, std::vector<unsigned short>& indices) {
+    // If there are 2 or less verts,
+    // no triangle can be created,
+    // so exit
+    if (vertices.size() < 3) {
+        return;
+    }
+    // If it is a triangle no need to calculate it
+    if (vertices.size() == 3) {
+        indices.push_back(0);
+        indices.push_back(1);
+        indices.push_back(2);
+        return;
+    }
+
+    // Create a list of vertices
+    std::vector<SVector3> tVerts = vertices;
+
+    while (true) {
+        // For every vertex
+        for (int i = 0; i < int(tVerts.size()); i++) {
+            // pPrev = the previous vertex in the list
+            SVector3 pPrev;
+            if (i == 0) {
+                pPrev = tVerts[tVerts.size() - 1];
+            }
+            else {
+                pPrev = tVerts[i - 1];
+            }
+
+            // pCur = the current vertex;
+            SVector3 pCur = tVerts[i];
+
+            // pNext = the next vertex in the list
+            SVector3 pNext;
+            if (i == tVerts.size() - 1) {
+                pNext = tVerts[0];
+            }
+            else {
+                pNext = tVerts[i + 1];
+            }
+
+            // Check to see if there are only 3 verts left
+            // if so this is the last triangle
+            if (tVerts.size() == 3) {
+                // Create a triangle from pCur, pPrev, pNext
+                for (int j = 0; j < int(tVerts.size()); j++) {
+                    if (vertices[j] == pCur)
+                        indices.push_back(j);
+                    if (vertices[j] == pPrev)
+                        indices.push_back(j);
+                    if (vertices[j] == pNext)
+                        indices.push_back(j);
+                }
+
+                tVerts.clear();
+                break;
+            }
+            if (tVerts.size() == 4) {
+                // Create a triangle from pCur, pPrev, pNext
+                for (int j = 0; j < int(vertices.size()); j++) {
+                    if (vertices[j] == pCur)
+                        indices.push_back(j);
+                    if (vertices[j] == pPrev)
+                        indices.push_back(j);
+                    if (vertices[j] == pNext)
+                        indices.push_back(j);
+                }
+
+                SVector3 tempVec;
+                for (int j = 0; j < int(tVerts.size()); j++) {
+                    if (tVerts[j] != pCur
+                        && tVerts[j] != pPrev
+                        && tVerts[j] != pNext) {
+                        tempVec = tVerts[j];
+                        break;
+                    }
+                }
+
+                // Create a triangle from pCur, pPrev, pNext
+                for (int j = 0; j < int(vertices.size()); j++) {
+                    if (vertices[j] == pPrev)
+                        indices.push_back(j);
+                    if (vertices[j] == pNext)
+                        indices.push_back(j);
+                    if (vertices[j] == tempVec)
+                        indices.push_back(j);
+                }
+
+                tVerts.clear();
+                break;
+            }
+
+            // If Vertex is not an interior vertex
+            float angle = AngleBetween(pPrev - pCur, pNext - pCur) * (180 / 3.14159265359);
+            if (angle <= 0 && angle >= 180)
+                continue;
+
+            // If any vertices are within this triangle
+            bool inTri = false;
+            for (int j = 0; j < int(vertices.size()); j++) {
+                if (IsInTriangle(vertices[j], pPrev, pCur, pNext)
+                    && vertices[j] != pPrev
+                    && vertices[j] != pCur
+                    && vertices[j] != pNext) {
+                    inTri = true;
+                    break;
+                }
+            }
+            if (inTri)
+                continue;
+
+            // Create a triangle from pCur, pPrev, pNext
+            for (int j = 0; j < int(vertices.size()); j++) {
+                if (vertices[j] == pCur)
+                    indices.push_back(j);
+                if (vertices[j] == pPrev)
+                    indices.push_back(j);
+                if (vertices[j] == pNext)
+                    indices.push_back(j);
+            }
+
+            // Delete pCur from the list
+            for (int j = 0; j < int(tVerts.size()); j++) {
+                if (tVerts[j] == pCur)
+                {
+                    tVerts.erase(tVerts.begin() + j);
+                    break;
+                }
+            }
+
+            // reset i to the start
+            // -1 since loop will add 1 to it
+            i = -1;
+        }
+
+        // if no triangles were created
+        if (indices.size() == 0)
+            break;
+
+        // if no more vertices
+        if (tVerts.size() == 0)
+            break;
+    }
+}
+
+std::string DebugMod::BehaviorToString(ECompiledBehaviorType p_Type) {
     switch (p_Type)
     {
     case ECompiledBehaviorType::BT_ConditionScope: return "BT_ConditionScope";
@@ -395,7 +1141,35 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZScen
 }
 
 DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+    m_RenderActorBoxes = false;
+    m_RenderActorNames = false;
+    m_RenderActorRepoIds = false;
+    m_RenderActorBehaviors = false;
+
+    m_DrawReasoningGrid = false;
+    m_ShowVisibility = false;
+    m_ShowLayers = false;
+    m_ShowIndices = false;
+    m_Lines.clear();
+    m_Triangles.clear();
+
+    m_DrawNavMesh = false;
+    m_DrawObstacles = false;
+    m_NavMesh = {};
+    m_Vertices.clear();
+    m_Indices.clear();
+    m_NavMeshLines.clear();
+    m_ObstaclesToEntityIDs.clear();
+
     return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_PLUGIN_DETOUR(DebugMod, void, ZPFObstacleEntity_UpdateObstacle, ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate) {
+    p_Hook->CallOriginal(th, nObstacleBlockageFlags, bEnabled, forceUpdate);
+
+    m_ObstaclesToEntityIDs[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityId;
+
+    return HookResult<void>(HookAction::Return());
 }
 
 DEFINE_ZHM_PLUGIN(DebugMod);

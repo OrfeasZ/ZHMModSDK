@@ -46,18 +46,48 @@ public:
         DirectX::XMStoreFloat3(reinterpret_cast<DirectX::XMFLOAT3*>(this), p_Vector);
     }
 
-    SVector3 operator-(const SVector3& other) {
+    SVector3 operator-(const SVector3& p_Other) const {
         SVector3 result;
 
-        result.x = x - other.x;
-        result.y = y - other.y;
-        result.z = z - other.z;
+        result.x = x - p_Other.x;
+        result.y = y - p_Other.y;
+        result.z = z - p_Other.z;
 
         return result;
     }
 
+    const bool operator==(const SVector3& p_Other) const {
+        return x == p_Other.x && y == p_Other.y && z == p_Other.z;
+    }
+
+    SVector3 operator*(const float p_Value) const {
+        return SVector3(x * p_Value, y * p_Value, z * p_Value);
+    }
+
+    SVector3 operator/(const SVector3& p_Other) const {
+        return SVector3(x / p_Other.x, y / p_Other.y, z / p_Other.z);
+    }
+
+    SVector3 operator/(const float p_Value) const {
+        return SVector3(x / p_Value, y / p_Value, z / p_Value);
+    }
+
     float Length() const {
         return sqrtf(x * x + y * y + z * z);
+    }
+
+    float Magnitude() const {
+        return (sqrtf(powf(x, 2) + powf(y, 2) + powf(z, 2)));
+    }
+
+    static SVector3 CrossProduct(const SVector3& p_Vector1, const SVector3& p_Vector2) {
+        return SVector3(p_Vector1.y * p_Vector2.z - p_Vector1.z * p_Vector2.y,
+            p_Vector1.z * p_Vector2.x - p_Vector1.x * p_Vector2.z,
+            p_Vector1.x * p_Vector2.y - p_Vector1.y * p_Vector2.x);
+    }
+
+    static float DotProduct(const SVector3& p_Vector1, const SVector3& p_Vector2) {
+        return p_Vector1.x * p_Vector2.x + p_Vector1.y * p_Vector2.y + p_Vector1.z * p_Vector2.z;
     }
 
 public:
@@ -211,6 +241,16 @@ struct alignas(16) float4 {
     inline float Length() const {
         return sqrtf(x * x + y * y + z * z + w * w);
     }
+
+    inline void Normalize() {
+        const float s_Length = Length();
+
+        if (s_Length > 1e-6f) {
+            __m128 s_InvLength = _mm_set1_ps(1.0f / s_Length);
+            m = _mm_mul_ps(m, s_InvLength);
+        }
+    }
+
 
     union {
         __m128 m;
@@ -432,6 +472,30 @@ struct alignas(16) SMatrix {
         s_Matrix.ZAxis = {ZAxis.x, ZAxis.y, ZAxis.z};
         s_Matrix.Trans = {Trans.x, Trans.y, Trans.z};
         return s_Matrix;
+    }
+
+    static SMatrix ScaleTranslate(const float4& vScale, const float4& vTranslate) {
+        return SMatrix(
+            { vScale.x, 0.f, 0.f, 0.f },
+            { 0.f, vScale.y, 0.f, 0.f },
+            { 0.f, 0.f, vScale.z, 0.f },
+            { vTranslate.x, vTranslate.y, vTranslate.z, 1.f }
+        );
+    }
+
+    SMatrix AffineMultiply(const SMatrix& other) const {
+        SMatrix s_Matrix;
+
+        s_Matrix.mat[0] = mat[0] * other.mat[0].x + mat[1] * other.mat[0].y + mat[2] * other.mat[0].z;
+        s_Matrix.mat[1] = mat[0] * other.mat[1].x + mat[1] * other.mat[1].y + mat[2] * other.mat[1].z;
+        s_Matrix.mat[2] = mat[0] * other.mat[2].x + mat[1] * other.mat[2].y + mat[2] * other.mat[2].z;
+        s_Matrix.mat[3] = mat[0] * other.mat[3].x + mat[1] * other.mat[3].y + mat[2] * other.mat[3].z + mat[3];
+
+        return s_Matrix;
+    }
+
+    float4 WVectorTransform(const float4& vOper) const {
+        return mat[0] * vOper.x + mat[1] * vOper.y + mat[2] * vOper.z + mat[3];
     }
 
     union {

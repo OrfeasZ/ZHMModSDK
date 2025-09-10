@@ -38,6 +38,14 @@ template <typename T> class TEntityRef;
 struct SD3D12ObjectPools;
 class ZServerProxyRoute;
 class ZString;
+struct SReasoningGrid;
+class ZGridManager;
+class ZHM5GridManager;
+class ZPathfinder;
+
+namespace bfx {
+    class SystemInstance;
+}
 
 using ZProfileServerPageProxyBaseMap = TMap<ZString, ZServerProxyRoute*>;
 
@@ -65,6 +73,11 @@ public:
     static ZContentKitManager* ContentKitManager;
     static ZHM5ActionManager* HM5ActionManager;
     static ZBehaviorService* BehaviorService;
+    static ZGridManager** GridManager;
+    static ZHM5GridManager* HM5GridManager;
+    static ZPathfinder* Pathfinder;
+    static SReasoningGrid** ActiveGrid;
+    static bfx::SystemInstance* NavPowerSystemInstance;
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
