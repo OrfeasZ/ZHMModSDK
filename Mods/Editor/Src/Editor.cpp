@@ -296,8 +296,8 @@ void Editor::OnDrawUI(bool p_HasFocus) {
 
             ImGui::SameLine();
 
-            if (ImGui::RadioButton("Rectangles", s_EntityHighlightMode == 1)) {
-                m_EntityHighlightMode = EntityHighlightMode::Rectangles;
+            if (ImGui::RadioButton("Lines and Rectangles", s_EntityHighlightMode == 1)) {
+                m_EntityHighlightMode = EntityHighlightMode::LinesAndTriangles;
             }
         }
 
