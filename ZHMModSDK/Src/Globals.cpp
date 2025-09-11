@@ -192,8 +192,8 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
-    "\x48\x8D\x0D\x00\x00\x00\x00\x4A\x8B\x0C\xC1",
-    "xxx????xxxx",
+    "\x4C\x8D\x35\x00\x00\x00\x00\x33\xF6\x48\x8D\x05",
+    "xxx????xxxxx",
     3,
     SPrimitiveBufferData*, PrimitiveBufferData
 );

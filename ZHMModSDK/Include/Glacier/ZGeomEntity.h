@@ -17,7 +17,9 @@ public:
 public:
     PAD(0x08); // 0x08
     uint32_t m_nSize; // 0x10
-    PAD(0x20); // 0x18
+    PAD(0xC);
+    uint32_t m_nStride; //0x20
+    PAD(0x14); // 0x24
     ID3D12Resource* m_pResource; // 0x38
     PAD(0x18); // 0x40
     char* m_pCPUBuffer; // 0x58
@@ -44,6 +46,21 @@ public:
     uint16_t m_BufferDataIndex; // 0x66
 };
 
+class IRenderPrimitiveMesh : public IRenderPrimitive {
+public:
+    virtual ~IRenderPrimitiveMesh() = 0;
+};
+
+class ZRenderPrimitiveMeshBase : public IRenderPrimitiveMesh {
+public:
+    virtual ~ZRenderPrimitiveMeshBase() = 0;
+};
+
+class ZRenderPrimitiveMesh : public ZRenderPrimitiveMeshBase {
+public:
+    virtual ~ZRenderPrimitiveMesh() = 0;
+};
+
 template <class T>
 class TRefCountPtrArg {
 public:
@@ -53,6 +70,12 @@ public:
 template <class T>
 class TRefCountPtr : public TRefCountPtrArg<T> {};
 
+class ZRenderPrimitiveResource {
+public:
+    virtual ~ZRenderPrimitiveResource() = 0;
+
+    TArray<TRefCountPtr<IRenderPrimitive>> m_Primitives;
+};
 
 class ZPrimitiveContainerEntity : public ZRenderableEntity //Size: 0x170
 {
@@ -116,13 +139,28 @@ static_assert(offsetof(ZRenderInputLayout, m_Elements) == 0x14);
 static_assert(offsetof(ZRenderInputLayout, m_ElementDesc) == 0x158);
 
 struct SPrimitiveBufferData {
-    SRenderPrimitiveMeshDesc m_MeshDesc; // 0x00
-    PAD(0x38); // 0x20
+    enum ERenderPrimType : unsigned char {
+        RENDER_PRIM_TYPE_INVALID = 0,
+        RENDER_PRIM_TYPE_MESH = 1,
+        RENDER_PRIM_TYPE_MESH_SPEEDTREE = 2,
+        RENDER_PRIM_TYPE_SPRITES = 3
+    };
+
+    SRenderPrimitiveMeshDesc m_Description; // 0x00
+    float4 vTextureScaleBias; // 0x20
+    float4 vPositionScale; // 0x30
+    float4 vPositionBias; // 0x40
+    unsigned int nNumIndicesToDraw; // 0x50
+    unsigned char nZBias; // 0x54
+    unsigned char nZOffset; // 0x55
+    unsigned char nTransformMask : 4; // 0x56
+    ERenderPrimType m_eType : 8; // 0x57
     ZRenderInputLayout* m_pInputLayout; // 0x58
-    PAD(0x08); // 0x60
+    PAD(0x8); // 0x60
     ZRenderIndexBuffer* m_pIndexBuffer; // 0x68
     ZRenderVertexBuffer* m_pVertexBuffers[4]; // 0x70
-    PAD(0x10); // 0x90
+    IRenderPrimitive* m_Primitive; //0x90
+    PAD(0x8); // 0x98
 };
 
 static_assert(offsetof(SPrimitiveBufferData, m_pInputLayout) == 0x58);
