@@ -19,7 +19,10 @@ public:
     uint32_t m_nSize; // 0x10
     PAD(0xC);
     uint32_t m_nStride; //0x20
-    PAD(0x14); // 0x24
+    //PAD(0x14); // 0x24
+    PAD(0x8); // 0x24
+    uint32_t m_nOffset; // 0x2C
+    PAD(0x8)
     ID3D12Resource* m_pResource; // 0x38
     PAD(0x18); // 0x40
     char* m_pCPUBuffer; // 0x58
