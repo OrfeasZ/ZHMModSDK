@@ -49,7 +49,7 @@ FreeCam::FreeCam() :
         {"Space + W/S", "Move camera on axis"},
         {"Shift", "Increase camera speed"},
         {"F9", "Kill NPC"},
-        {"Ctrl + F9", "Teleport Hitman"},
+        {"Ctrl + F6", "Teleport Hitman"},
         {"F8", "Pause/Resume game"},
     };
 
