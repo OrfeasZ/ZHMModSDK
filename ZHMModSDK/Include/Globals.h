@@ -42,6 +42,7 @@ struct SReasoningGrid;
 class ZGridManager;
 class ZHM5GridManager;
 class ZPathfinder;
+class ZInputDeviceManager;
 
 namespace bfx {
     class SystemInstance;
@@ -82,6 +83,7 @@ public:
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
     static void* ZTemplateEntityBlueprintFactory_vtbl;
+    static ZInputDeviceManager* InputDeviceManager;
     static ZInputActionManager* InputActionManager;
     static int* InputActionManager_BindMem;
     static int* InputActionManager_Seq;
