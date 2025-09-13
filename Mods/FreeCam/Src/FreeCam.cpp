@@ -117,7 +117,6 @@ void FreeCam::OnEngineInitialized() {
     const ZMemberDelegate<FreeCam, void(const SGameUpdateEvent&)> s_Delegate(this, &FreeCam::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 
-    ZInputTokenStream::ZTokenData result;
     const char* binds = "FreeCameraInput={"
             "ToggleFreeCamera=tap(kb,k);"
             "Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f9);"
