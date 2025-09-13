@@ -119,7 +119,7 @@ void FreeCam::OnEngineInitialized() {
 
     const char* binds = "FreeCameraInput={"
             "ToggleFreeCamera=tap(kb,k);"
-            "Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f9);"
+            "Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f6);"
             "InstantKill=tap(kb,f9);"
             "TogglePauseGame=tap(kb,f8);};";
 
