@@ -46,18 +46,20 @@ public:
         DirectX::XMStoreFloat3(reinterpret_cast<DirectX::XMFLOAT3*>(this), p_Vector);
     }
 
+    SVector3 operator+(const SVector3& p_Other) const {
+        return SVector3(x + p_Other.x, y + p_Other.y, z + p_Other.z);
+    }
+
     SVector3 operator-(const SVector3& p_Other) const {
-        SVector3 result;
-
-        result.x = x - p_Other.x;
-        result.y = y - p_Other.y;
-        result.z = z - p_Other.z;
-
-        return result;
+        return SVector3(x - p_Other.x, y - p_Other.y, z - p_Other.z);
     }
 
     const bool operator==(const SVector3& p_Other) const {
         return x == p_Other.x && y == p_Other.y && z == p_Other.z;
+    }
+
+    float operator*(const SVector3& p_Other) const {
+        return x * p_Other.x + y * p_Other.y + z * p_Other.z;
     }
 
     SVector3 operator*(const float p_Value) const {
@@ -76,8 +78,15 @@ public:
         return sqrtf(x * x + y * y + z * z);
     }
 
-    float Magnitude() const {
-        return (sqrtf(powf(x, 2) + powf(y, 2) + powf(z, 2)));
+    SVector3 Cross(const SVector3& p_Other) const {
+        return SVector3(
+            y * p_Other.z - z * p_Other.y,
+            z * p_Other.x - x * p_Other.z,
+            x * p_Other.y - y * p_Other.x);
+    }
+
+    float Dot(const SVector3& p_Other) const {
+        return x * p_Other.x + y * p_Other.y + z * p_Other.z;
     }
 
     static SVector3 CrossProduct(const SVector3& p_Vector1, const SVector3& p_Vector2) {
@@ -88,6 +97,35 @@ public:
 
     static float DotProduct(const SVector3& p_Vector1, const SVector3& p_Vector2) {
         return p_Vector1.x * p_Vector2.x + p_Vector1.y * p_Vector2.y + p_Vector1.z * p_Vector2.z;
+    }
+
+    inline SVector3 Normalized() const {
+        const float s_LengthSq = x * x + y * y + z * z;
+
+        if (s_LengthSq > 1e-12f) {
+            const float s_InvLength = 1.0f / std::sqrt(s_LengthSq);
+
+            return SVector3(x * s_InvLength, y * s_InvLength, z * s_InvLength);
+        }
+
+        return SVector3(0.f, 0.f, 0.f);
+    }
+
+    inline void Normalize() {
+        *this = Normalized();
+    }
+
+
+    SVector3 GetUnitVec() const {
+        const float s_Length = Length();
+
+        if (s_Length <= 0.f) {
+            return SVector3();
+        }
+
+        const float s_InverseLength = 1.f / s_Length;
+
+        return SVector3(this->x * s_InverseLength, this->y * s_InverseLength, this->z * s_InverseLength);
     }
 
 public:
@@ -209,6 +247,10 @@ struct alignas(16) float4 {
         return *this;
     }
 
+    float4 operator-() const {
+        return float4(-x, -y, -z, -w);
+    }
+
     static float4 CrossProduct(float4& v1, float4& v2) {
         return _mm_sub_ps(
             _mm_mul_ps(
@@ -242,15 +284,20 @@ struct alignas(16) float4 {
         return sqrtf(x * x + y * y + z * z + w * w);
     }
 
-    inline void Normalize() {
-        const float s_Length = Length();
+    inline float4 Normalized() const {
+        const float s_LengthSq = DotProduct(*this, *this);
 
-        if (s_Length > 1e-6f) {
-            __m128 s_InvLength = _mm_set1_ps(1.0f / s_Length);
-            m = _mm_mul_ps(m, s_InvLength);
+        if (s_LengthSq > 1e-12f) {
+            __m128 s_InvLength = _mm_rsqrt_ps(_mm_set1_ps(s_LengthSq));
+            return _mm_mul_ps(m, s_InvLength);
         }
+
+        return _mm_setzero_ps();
     }
 
+    inline void Normalize() {
+        *this = Normalized();
+    }
 
     union {
         __m128 m;
@@ -419,6 +466,10 @@ struct alignas(16) SMatrix {
         return DirectX::XMVectorGetX(s_Determinant);
     }
 
+    SMatrix Transposed() const {
+        return DirectX::XMMatrixTranspose(DX());
+    }
+
     DecomposedTransform Decompose() const {
         DirectX::XMVECTOR s_Scale;
         DirectX::XMVECTOR s_RotQuat;
@@ -496,6 +547,10 @@ struct alignas(16) SMatrix {
 
     float4 WVectorTransform(const float4& vOper) const {
         return mat[0] * vOper.x + mat[1] * vOper.y + mat[2] * vOper.z + mat[3];
+    }
+
+    float4 WVectorTransformH(const float4& vOper) const {
+        return mat[0] * vOper.x + mat[1] * vOper.y + mat[2] * vOper.z + mat[3] * vOper.w;
     }
 
     union {
