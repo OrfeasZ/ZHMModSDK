@@ -78,6 +78,8 @@ public:
     virtual ~ZRenderPrimitiveResource() = 0;
 
     TArray<TRefCountPtr<IRenderPrimitive>> m_Primitives;
+    SVector3 m_vMin;
+    SVector3 m_vMax;
 };
 
 class ZPrimitiveContainerEntity : public ZRenderableEntity //Size: 0x170
