@@ -18,6 +18,9 @@
 #include "D3DUtils.h"
 #include "CommonStates.h"
 
+#include "../DebugEffect.h"
+#include "Rendering/ViewFrustum.h"
+
 class SGameUpdateEvent;
 
 namespace Rendering::Renderers {
@@ -106,21 +109,31 @@ namespace Rendering::Renderers {
         ) override;
 
         void DrawText3D(
-            const std::string& text, const SMatrix& world, const SVector4& color, float scale = 1.f,
-            TextAlignment horizontalAlignment = TextAlignment::Left, TextAlignment verticalAlignment = TextAlignment::Top
+            const std::string& p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
+            TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
         );
         void DrawText3D(
-            const char* text, const SMatrix& world, const SVector4& color, float scale = 1.f,
-            TextAlignment horizontalAlignment = TextAlignment::Left, TextAlignment verticalAlignment = TextAlignment::Top
+            const char* p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
+            TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
         );
 
         void DrawMesh(
-            const std::vector<SVector3>& vertices, const std::vector<unsigned short>& indices, const SVector4& vertexColor
+            const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices, const SVector4& p_VertexColor
+        ) override;
+
+        virtual void DrawMesh(
+            ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
+            const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias, const float4& p_TextureScaleBias,
+            const SVector4& p_MaterialColor
         ) override;
 
         const PrimitiveType GetCurrentPrimitiveType() const override;
 
-        DirectX::SimpleMath::Matrix GetViewProjection() const override;
+        bool IsInsideViewFrustum(const SVector3& p_Point) const override;
+        bool IsInsideViewFrustum(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform) const override;
+        bool IsInsideViewFrustum(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const override;
+
+        static AABB TransformAABB(const DirectX::SimpleMath::Matrix& p_Transform, const AABB& p_AABB);
 
     private:
         bool m_RendererSetup = false;
@@ -154,6 +167,7 @@ namespace Rendering::Renderers {
         std::unique_ptr<DirectX::BasicEffect> m_TriangleEffect{};
         std::unique_ptr<DirectX::BasicEffect> m_LineEffect{};
         std::unique_ptr<DirectX::BasicEffect> m_TextEffect{};
+        std::unique_ptr<DebugEffect> m_DebugEffect{};
         std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_PrimitiveBatch{};
         std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColorTexture>> m_TextBatch{};
 
@@ -174,5 +188,7 @@ namespace Rendering::Renderers {
         ScopedD3DRef<ID3D12Resource> m_FontDistanceFieldTexture;
         ScopedD3DRef<ID3D12DescriptorHeap> m_fontSRVDescriptorHeap;
         ScopedD3DRef<ID3D12PipelineState> m_PipelineState;
+
+        ViewFrustum m_ViewFrustum;
     };
 }

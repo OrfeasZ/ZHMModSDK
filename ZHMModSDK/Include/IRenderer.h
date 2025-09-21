@@ -5,6 +5,9 @@
 #include "Glacier/ZMath.h"
 #include "Glacier/ZString.h"
 
+class ZRenderVertexBuffer;
+class ZRenderIndexBuffer;
+
 enum class TextAlignment {
     Left,
     Center,
@@ -38,6 +41,11 @@ struct Triangle {
     SVector2 textureCoordinates1;
     SVector2 textureCoordinates2;
     SVector2 textureCoordinates3;
+};
+
+struct AABB {
+    SVector3 min;
+    SVector3 max;
 };
 
 class IRenderer {
@@ -80,19 +88,27 @@ public:
     ) = 0;
 
     virtual void DrawText3D(
-        const std::string& text, const SMatrix& world, const SVector4& color, float scale = 1.f,
-        TextAlignment horizontalAlignment = TextAlignment::Left, TextAlignment verticalAlignment = TextAlignment::Top
+        const std::string& p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
+        TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
     ) = 0;
     virtual void DrawText3D(
-        const char* text, const SMatrix& world, const SVector4& color, float scale = 1.f,
-        TextAlignment horizontalAlignment = TextAlignment::Left, TextAlignment verticalAlignment = TextAlignment::Top
+        const char* p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
+        TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
     ) = 0;
 
     virtual void DrawMesh(
-        const std::vector<SVector3>& vertices, const std::vector<unsigned short>& indices, const SVector4& vertexColor
+        const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices, const SVector4& p_VertexColor
+    ) = 0;
+
+    virtual void DrawMesh(
+        ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
+        const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias, const float4& p_TextureScaleBias,
+        const SVector4& p_MaterialColor
     ) = 0;
 
     virtual const PrimitiveType GetCurrentPrimitiveType() const = 0;
 
-    virtual DirectX::SimpleMath::Matrix GetViewProjection() const = 0;
+    virtual bool IsInsideViewFrustum(const SVector3& p_Point) const = 0;
+    virtual bool IsInsideViewFrustum(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform) const = 0;
+    virtual bool IsInsideViewFrustum(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const = 0;
 };
