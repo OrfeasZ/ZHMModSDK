@@ -127,6 +127,8 @@ namespace NavPower {
 			void SetNumEdges(uint32_t p_numEdges) { m_flags1 = (m_flags1 & ~0x7F) | (p_numEdges & 0x7F); }
 			uint32_t GetIslandNum() const { return (m_flags1 >> 7) & 0x3FFFF; }
 			void SetIslandNum(uint32_t p_islandNum) { m_flags1 = (m_flags1 & ~0x3FFFF) | ((p_islandNum << 7) & 0x3FFFF); }
+            bool IsImpassable() { return (m_flags1 & 0x20000000) != 0; }
+            bool ApplyObCostWhenFlagsDontMatch() { return (m_flags1 & 0x10000000) != 0; }
 
 			// flag 2
 			uint32_t GetAreaUsageCount() const { return m_flags2 & 0x3FF; }
@@ -244,6 +246,20 @@ namespace NavPower {
 	public:
 		Binary::Area* m_area;
 		std::vector<Binary::Edge*> m_edges;
+
+        SVector3 CalculateNormal() {
+            SVector3 v0 = m_edges.at(0)->m_pos;
+            SVector3 v1 = m_edges.at(1)->m_pos;
+            SVector3 basis = m_edges.at(2)->m_pos;
+
+            SVector3 vec1 = basis - v0;
+            SVector3 vec2 = v1 - v0;
+            SVector3 cross = vec1.Cross(vec2);
+
+            return cross.GetUnitVec();
+        }
+
+        ZHMSDK_API SVector3 CalculateCentroid();
 	};
 
 	// Helps with outputting the k-d tree as Bounding Boxes
