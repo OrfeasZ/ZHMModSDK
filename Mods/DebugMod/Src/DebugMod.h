@@ -46,6 +46,8 @@ private:
     void GenerateVerticesForQuadBorderLines();
     void GenerateVerticesForNeighborConnectionLines();
 
+    std::map<NavPower::Binary::Area*, uint32_t> GetAreaPointerToIndexMap();
+
     // Functions are adapted from OBJ Loader plugin: https://github.com/Bly7/OBJ-Loader/blob/master/Source/OBJ_Loader.h
     static void VertexTriangluation(const std::vector<SVector3>& vertices, std::vector<unsigned short>& indices);
     static float AngleBetween(const SVector3& a, const SVector3& b);
@@ -77,11 +79,18 @@ private:
     std::vector<Triangle> m_Triangles;
 
     bool m_DrawNavMesh = false;
+    bool m_DrawPlannerAreas = true;
+    bool m_DrawPlannerAreasSolid = true;
+    bool m_ColorizeAreaUsageFlags = true;
     bool m_DrawObstacles = false;
+    bool m_DrawDrawPlannerConnectivity = false;
+    bool m_DrawAreaPenaltyMults = false;
+    bool m_DrawGizmos = false;
     NavPower::NavMesh m_NavMesh;
     std::vector<std::vector<SVector3>> m_Vertices;
     std::vector<std::vector<unsigned short>> m_Indices;
     std::vector<Line> m_NavMeshLines;
+    std::vector<Line> m_NavMeshConnectivityLines;
     std::unordered_map<IPFObstacleInternal*, uint64_t> m_ObstaclesToEntityIDs;
 };
 

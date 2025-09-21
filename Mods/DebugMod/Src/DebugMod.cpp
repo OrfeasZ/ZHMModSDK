@@ -24,7 +24,6 @@
 
 #include <Functions.h>
 #include <Globals.h>
-#include <Rendering/FrustumCuller.h>
 
 DebugMod::~DebugMod() {
     const ZMemberDelegate<DebugMod, void(const SGameUpdateEvent&)> s_Delegate(this, &DebugMod::OnFrameUpdate);
@@ -97,33 +96,49 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
                     uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_NavPowerResources[0].m_pNavpowerResource);
                     uint32_t s_NavpDataSize = Globals::Pathfinder->m_NavPowerResources[0].m_nNavpowerResourceSize;
                     static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
+                    static const SVector4 s_AdjacentLineColor = SVector4(1.f, 1.f, 1.f, 1.f);
 
                     m_NavMesh.read(s_NavpData, s_NavpDataSize);
 
                     m_Vertices.resize(m_NavMesh.m_areas.size());
                     m_Indices.resize(m_NavMesh.m_areas.size());
                     m_NavMeshLines.reserve(m_NavMesh.m_areas.size() * 3);
+                    m_NavMeshConnectivityLines.reserve(m_NavMesh.m_areas.size() * 3);
+
+                    std::map<NavPower::Binary::Area*, uint32_t> s_AreaPointerToIndexMap = GetAreaPointerToIndexMap();
 
                     for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
                         const size_t s_VertexCount = m_NavMesh.m_areas[i].m_edges.size();
 
                         m_Vertices[i].reserve(s_VertexCount);
 
+                        const SVector3 s_Centroid = m_NavMesh.m_areas[i].CalculateCentroid();
+
                         for (size_t j = 0; j < s_VertexCount; ++j) {
                             m_Vertices[i].push_back(m_NavMesh.m_areas[i].m_edges[j]->m_pos);
-
-                            static const float s_ZOffset = 0.075f;
 
                             const size_t s_NextIndex = (j + 1) % s_VertexCount;
                             Line& s_Line = m_NavMeshLines.emplace_back();
 
                             s_Line.start = m_NavMesh.m_areas[i].m_edges[j]->m_pos;
                             s_Line.startColor = s_LineColor;
-                            s_Line.start.z += s_ZOffset;
 
                             s_Line.end = m_NavMesh.m_areas[i].m_edges[s_NextIndex]->m_pos;
                             s_Line.endColor = s_LineColor;
-                            s_Line.end.z += s_ZOffset;
+
+                            NavPower::Binary::Area* s_AdjArea = m_NavMesh.m_areas[i].m_edges[j]->m_pAdjArea;
+
+                            if (s_AdjArea) {
+                                const uint32_t s_AdjacentAreaIndex = s_AreaPointerToIndexMap[s_AdjArea];
+                                NavPower::Area& s_AdjacentArea = m_NavMesh.m_areas[s_AdjacentAreaIndex - 1];
+                                const SVector3 s_AdjacentCentroid = s_AdjacentArea.CalculateCentroid();
+
+                                Line& s_ConnLine = m_NavMeshConnectivityLines.emplace_back();
+                                s_ConnLine.start = s_Centroid;
+                                s_ConnLine.startColor = s_AdjacentLineColor;
+                                s_ConnLine.end = s_AdjacentCentroid;
+                                s_ConnLine.endColor = s_AdjacentLineColor;
+                            }
                         }
 
                         VertexTriangluation(m_Vertices[i], m_Indices[i]);
@@ -131,7 +146,21 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
                 }
             }
 
+            ImGui::Checkbox("Draw Planner Areas", &m_DrawPlannerAreas);
+            ImGui::Checkbox("Draw Planner Areas Solid", &m_DrawPlannerAreasSolid);
+            ImGui::Checkbox("Colorize Area Usage Flags", &m_ColorizeAreaUsageFlags);
             ImGui::Checkbox("Draw Obstacles", &m_DrawObstacles);
+            ImGui::Checkbox("Draw Planner Connectivity", &m_DrawDrawPlannerConnectivity);
+            ImGui::Checkbox("Draw Area Penalty Multipliers", &m_DrawAreaPenaltyMults);
+        }
+
+        //Rename to Debug Channels or Draw Layers
+        if (ImGui::CollapsingHeader("Gizmo"))
+        {
+            if (ImGui::Button("Test"))
+            {
+                GetGizmos();
+            }
         }
     }
 
@@ -344,31 +373,13 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
 
             std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
-            const float s_MaxDrawDistance = 50.0f;
-            FrustumCuller s_Frustum;
-
-            s_Frustum.Extract(p_Renderer->GetViewProjection());
-
             static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
             static const float s_Scale = 0.2f;
 
             for (size_t i = 0; i < s_WaypointCount; ++i) {
                 float4 s_WorldPosition = s_ReasoningGrid->m_WaypointList[i].vPos;
 
-                const DirectX::XMVECTOR s_WorldPosition2 = DirectX::XMVectorSet(
-                    s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
-
-                const SVector3 s_CameraToWaypoint(
-                    s_WorldPosition.x - s_WorldMatrix.Trans.x,
-                    s_WorldPosition.y - s_WorldMatrix.Trans.y,
-                    s_WorldPosition.z - s_WorldMatrix.Trans.z
-                );
-
-                if (SVector3::DotProduct(s_CameraToWaypoint, s_CameraToWaypoint) > s_MaxDrawDistance * s_MaxDrawDistance) {
-                    continue;
-                }
-
-                if (!s_Frustum.ContainsPoint(s_WorldPosition2)) {
+                if (!p_Renderer->IsInsideViewFrustum(SVector3(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z))) {
                     continue;
                 }
 
@@ -389,19 +400,87 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
     static const SVector4 s_YellowTriangleColor = SVector4(1.f, 1.f, 0.f, 0.49804f);
 
     if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
-        for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
-            if (m_NavMesh.m_areas[i].m_area->m_usageFlags == NavPower::AreaUsageFlags::AREA_FLAT) {
-                p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_GreenTriangleColor);
-            }
-            else
-            {
-                p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_YellowTriangleColor);
+        if (m_DrawPlannerAreasSolid) {
+            for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
+                if (m_ColorizeAreaUsageFlags && m_NavMesh.m_areas[i].m_area->m_usageFlags == NavPower::AreaUsageFlags::AREA_STEPS) {
+                    p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_YellowTriangleColor);
+                }
+                else {
+                    p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_GreenTriangleColor);
+                }
             }
         }
     }
     else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
-        for (size_t i = 0; i < m_NavMeshLines.size(); ++i) {
-            p_Renderer->DrawLine3D(m_NavMeshLines[i].start, m_NavMeshLines[i].end, m_NavMeshLines[i].startColor, m_NavMeshLines[i].endColor);
+        if (m_DrawPlannerAreas) {
+            for (size_t i = 0; i < m_NavMeshLines.size(); ++i) {
+                p_Renderer->DrawLine3D(m_NavMeshLines[i].start, m_NavMeshLines[i].end, m_NavMeshLines[i].startColor, m_NavMeshLines[i].endColor);
+            }
+        }
+
+        if (m_DrawDrawPlannerConnectivity) {
+            for (size_t i = 0; i < m_NavMeshConnectivityLines.size(); ++i) {
+                p_Renderer->DrawLine3D(m_NavMeshConnectivityLines[i].start, m_NavMeshConnectivityLines[i].end,
+                    m_NavMeshConnectivityLines[i].startColor, m_NavMeshConnectivityLines[i].endColor
+                );
+            }
+        }
+    }
+    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Text3D) {
+        if (m_DrawAreaPenaltyMults) {
+            const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+            if (!s_CurrentCamera) {
+                return;
+            }
+
+            SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+
+            std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
+
+            const float s_MaxDrawDistance = 50.0f;
+
+            static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
+            static const float s_Scale = 0.2f;
+
+            for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
+                SVector3 s_WorldPosition = m_NavMesh.m_areas[i].m_area->m_pos;
+
+                const DirectX::XMVECTOR s_WorldPosition2 = DirectX::XMVectorSet(
+                    s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
+
+                const SVector3 s_CameraToWaypoint(
+                    s_WorldPosition.x - s_WorldMatrix.Trans.x,
+                    s_WorldPosition.y - s_WorldMatrix.Trans.y,
+                    s_WorldPosition.z - s_WorldMatrix.Trans.z
+                );
+
+                if (SVector3::DotProduct(s_CameraToWaypoint, s_CameraToWaypoint) > s_MaxDrawDistance * s_MaxDrawDistance) {
+                    continue;
+                }
+
+                if (!p_Renderer->IsInsideViewFrustum(s_WorldPosition2)) {
+                    continue;
+                }
+
+                s_WorldPosition.z += 2.f;
+                s_WorldMatrix.Trans = float4(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
+
+                std::string s_Text;
+
+                if (!m_NavMesh.m_areas[i].m_area->m_flags.IsImpassable() || m_NavMesh.m_areas[i].m_area->m_flags.ApplyObCostWhenFlagsDontMatch()) {
+                    const uint32_t obCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetObCostMult();
+                    const uint32_t staticCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetStaticCostMult();
+                    const uint32_t costMult = obCostMult > staticCostMult ? obCostMult : staticCostMult;
+
+                    s_Text = std::to_string(costMult);
+                }
+                else {
+                    s_Text = "---";
+                }
+
+                p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+            }
         }
     }
 }
@@ -456,7 +535,8 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
             ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*)(s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget());
             const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
             const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
-            const float4 s_TopCenter = s_Transform.Trans + s_Transform.ZAxis * (s_HalfSize.z + 0.5f);
+            float4 s_TopCenter = s_Transform.Trans + s_Transform.ZAxis * (s_HalfSize.z + 0.5f);
+            s_TopCenter.z += 2.0f;
 
             s_WorldMatrix.Trans = s_TopCenter;
 
@@ -483,7 +563,7 @@ void DebugMod::GenerateVerticesForSmallQuads() {
     const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
     const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
-    m_Triangles.reserve(s_WaypointCount * 2);
+    m_Triangles.reserve(m_Triangles.size() + s_WaypointCount * 2);
 
     for (size_t i = 0; i < s_WaypointCount; ++i) {
         const float s_HalfBaseLength = 0.1f;
@@ -542,7 +622,7 @@ void DebugMod::GenerateVerticesForLargeQuads() {
     const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
     size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
-    m_Triangles.reserve(s_WaypointCount * 2);
+    m_Triangles.reserve(m_Triangles.size() + s_WaypointCount * 2);
 
     for (uint32_t w = 0; w < s_WaypointCount; ++w) {
         const float s_ZOffset = 0.05f;
@@ -604,7 +684,7 @@ void DebugMod::GenerateVerticesForQuadBorderLines() {
     const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
     const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
-    m_Lines.reserve(s_WaypointCount * 4);
+    m_Lines.reserve(m_Lines.size() + s_WaypointCount * 4);
 
     for (size_t i = 0; i < s_WaypointCount; ++i) {
         Line& s_TopBorder = m_Lines.emplace_back();
@@ -684,7 +764,7 @@ void DebugMod::GenerateVerticesForNeighborConnectionLines() {
     const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
     const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
-    m_Lines.reserve(s_WaypointCount * 4);
+    m_Lines.reserve(m_Lines.size() + s_WaypointCount * 4);
 
     for (size_t i = 0; i < s_WaypointCount; ++i) {
         float4 s_VertexPostion1 = s_ReasoningGrid->m_WaypointList[i].vPos;
@@ -725,15 +805,28 @@ void DebugMod::GenerateVerticesForNeighborConnectionLines() {
         }
     }
 }
+std::map<NavPower::Binary::Area*, uint32_t> DebugMod::GetAreaPointerToIndexMap() {
+    std::map<NavPower::Binary::Area*, uint32_t> s_AreaPointerToIndexMap;
+    uint32_t s_AreaIndex = 1;
+
+    for (NavPower::Area area : m_NavMesh.m_areas)
+    {
+        s_AreaPointerToIndexMap.emplace(area.m_area, s_AreaIndex);
+
+        s_AreaIndex++;
+    }
+
+    return s_AreaPointerToIndexMap;
+}
 
 float DebugMod::AngleBetween(const SVector3& a, const SVector3& b) {
     float angle = SVector3::DotProduct(a, b);
-    angle /= (a.Magnitude() * b.Magnitude());
+    angle /= (a.Length() * b.Length());
     return angle = acosf(angle);
 }
 
 SVector3 DebugMod::ProjectionOnto(const SVector3& a, const SVector3& b) {
-    const SVector3 bn = b / b.Magnitude();
+    const SVector3 bn = b / b.Length();
     return bn * SVector3::DotProduct(a, bn);
 }
 
@@ -775,7 +868,7 @@ bool DebugMod::IsInTriangle(const SVector3& point, const SVector3& triangle1, co
 
     // If the distance from the triangle to the point is 0
     //	it lies on the triangle
-    if (proj.Magnitude() == 0) {
+    if (proj.Length() == 0) {
         return true;
     }
 
