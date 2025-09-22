@@ -682,6 +682,9 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
     m_CachedEntityTree.reset();
     m_CachedEntityTreeMutex.unlock();
 
+    m_FilteredEntityTreeNodes.clear();
+    m_DirectEntityTreeNodeMatches.clear();
+
     m_NavpAreas.clear();
 
     std::vector<std::string> s_Bricks;

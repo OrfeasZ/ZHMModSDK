@@ -85,15 +85,8 @@ private:
 
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
-    bool SearchForEntityById(
-        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId
-    );
-    bool SearchForEntityByType(
-        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName
-    );
-    bool SearchForEntityByName(
-        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName
-    );
+    void FilterEntityTree();
+    bool FilterEntityTree(EntityTreeNode* p_Node);
     void UpdateEntities();
 
     void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
@@ -239,6 +232,12 @@ private:
     bool m_ShouldScrollToEntity = false;
 
     EntityHighlightMode m_EntityHighlightMode = EntityHighlightMode::Lines;
+
+    std::string m_EntityIdSearchInput;
+    std::string m_EntityTypeSearchInput;
+    std::string m_EntityNameSearchInput;
+    std::unordered_set<EntityTreeNode*> m_FilteredEntityTreeNodes;
+    std::vector<EntityTreeNode*> m_DirectEntityTreeNodeMatches;
 
     std::vector<std::vector<SVector3>> m_NavpAreas;
 
