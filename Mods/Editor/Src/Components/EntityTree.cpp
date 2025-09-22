@@ -424,7 +424,7 @@ void Editor::DrawEntityTree() {
             m_DirectEntityTreeNodeMatches.clear();
         }
 
-        if (ImGui::Button("Rebuild entity tree")) {
+        if (ImGui::Button(ICON_MD_CONSTRUCTION " Rebuild entity tree")) {
             UpdateEntities();
         }
 
