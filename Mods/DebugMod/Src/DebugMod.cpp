@@ -153,15 +153,6 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
             ImGui::Checkbox("Draw Planner Connectivity", &m_DrawDrawPlannerConnectivity);
             ImGui::Checkbox("Draw Area Penalty Multipliers", &m_DrawAreaPenaltyMults);
         }
-
-        //Rename to Debug Channels or Draw Layers
-        if (ImGui::CollapsingHeader("Gizmo"))
-        {
-            if (ImGui::Button("Test"))
-            {
-                GetGizmos();
-            }
-        }
     }
 
     ImGui::PopFont();
