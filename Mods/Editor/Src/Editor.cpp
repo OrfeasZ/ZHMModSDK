@@ -309,6 +309,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracer();
 
+        DrawAssets(p_HasFocus);
         DrawItems(p_HasFocus);
         DrawActors(p_HasFocus);
     }
