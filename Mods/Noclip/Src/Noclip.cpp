@@ -15,7 +15,12 @@
 #include "Glacier/ZInputActionManager.h"
 
 Noclip::Noclip() :
-    m_ToggleNoclipAction("ToggleNoclip")
+    m_ToggleNoclipAction("ToggleNoclip"),
+    m_ForwardAction("Forward"),
+    m_BackwardAction("Backward"),
+    m_LeftAction("Left"),
+    m_RightAction("Right"),
+    m_FastAction("Fast")
 {
 }
 
@@ -29,7 +34,12 @@ void Noclip::OnEngineInitialized() {
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 
     const char* binds = "NoclipInput={"
-        "ToggleNoclip=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,n);};";
+        "ToggleNoclip=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,n);"
+        "Forward=hold(kb,w);"
+        "Backward=hold(kb,s);"
+        "Left=hold(kb,a);"
+        "Right=hold(kb,d);"
+        "Fast=hold(kb,lshift) | hold(kb,rshift);};";
 
     if (ZInputActionManager::AddBindings(binds)) {
         Logger::Debug("Successfully added bindings.");
@@ -86,19 +96,19 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     // Meters per second.
     float s_MoveSpeed = 5.f;
 
-    if (GetAsyncKeyState(VK_SHIFT))
+    if (Functions::ZInputAction_Digital->Call(&m_FastAction, -1))
         s_MoveSpeed = 20.f;
 
-    if (GetAsyncKeyState('W'))
+    if (Functions::ZInputAction_Digital->Call(&m_ForwardAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Up * -s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-    if (GetAsyncKeyState('S'))
+    if (Functions::ZInputAction_Digital->Call(&m_BackwardAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Up * s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-    if (GetAsyncKeyState('A'))
+    if (Functions::ZInputAction_Digital->Call(&m_LeftAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Left * -s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-    if (GetAsyncKeyState('D'))
+    if (Functions::ZInputAction_Digital->Call(&m_RightAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Left * s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
     s_HitmanSpatial->SetWorldMatrix(m_PlayerPosition);

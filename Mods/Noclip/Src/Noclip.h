@@ -24,6 +24,11 @@ private:
     bool m_NoclipEnabled = false;
     SMatrix m_PlayerPosition = {};
     ZInputAction m_ToggleNoclipAction;
+    ZInputAction m_ForwardAction;
+    ZInputAction m_BackwardAction;
+    ZInputAction m_LeftAction;
+    ZInputAction m_RightAction;
+    ZInputAction m_FastAction;
 };
 
 DECLARE_ZHM_PLUGIN(Noclip)
