@@ -1277,9 +1277,9 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
 
     SNetPlayerData* s_PlayerData = nullptr;
 
-    for (int i = 0; i < _countof(Globals::PlayerRegistry->m_pPlayerData); ++i) {
-        if (!Globals::PlayerRegistry->m_pPlayerData[i]->m_Controller.m_pNetPlayer) {
-            s_PlayerData = Globals::PlayerRegistry->m_pPlayerData[i];
+    for (int i = 0; i < Globals::PlayerRegistry->m_PlayerData.size(); ++i) {
+        if (!Globals::PlayerRegistry->m_PlayerData[i].m_Controller.m_pNetPlayer) {
+            s_PlayerData = &Globals::PlayerRegistry->m_PlayerData[i];
             break;
         }
 
@@ -1289,14 +1289,9 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
         // or one that does have one but passes some check (no idea what that check is - some vfunc call).
     }
 
-    // If we still don't have a player, pick the first non-null one.
-    if (!s_PlayerData) {
-        for (int i = 0; i < _countof(Globals::PlayerRegistry->m_pPlayerData); ++i) {
-            if (Globals::PlayerRegistry->m_pPlayerData[i]) {
-                s_PlayerData = Globals::PlayerRegistry->m_pPlayerData[i];
-                break;
-            }
-        }
+    // If we still don't have a player, pick the first one.
+    if (!s_PlayerData && Globals::PlayerRegistry->m_PlayerData.size() > 0) {
+        s_PlayerData = &Globals::PlayerRegistry->m_PlayerData[0];
     }
 
     // Still nothing? Return an empty entity.

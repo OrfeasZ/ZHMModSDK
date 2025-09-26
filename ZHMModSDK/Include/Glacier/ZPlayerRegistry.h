@@ -80,10 +80,8 @@ public:
 public:
     PAD(0x40);
     SNetPlayerData m_aPlayerData[4]; // 0x50
-    SNetPlayerData* m_pPlayerData[2]; // 0x390
-    int64_t m_nLocalPlayerId; // 0x3A0
+    TArray<SNetPlayerData> m_PlayerData; // 0x390
 };
 
 static_assert(offsetof(ZPlayerRegistry, m_aPlayerData) == 0x50);
-static_assert(offsetof(ZPlayerRegistry, m_pPlayerData) == 0x390);
-static_assert(offsetof(ZPlayerRegistry, m_nLocalPlayerId) == 0x3A0);
+static_assert(offsetof(ZPlayerRegistry, m_PlayerData) == 0x390);
