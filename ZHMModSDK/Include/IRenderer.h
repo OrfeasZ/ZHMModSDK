@@ -17,13 +17,6 @@ enum class TextAlignment {
     Bottom
 };
 
-enum class PrimitiveType {
-    Line,
-    Triangle,
-    Text2D,
-    Text3D
-};
-
 struct Line {
     SVector3 start;
     SVector3 end;
@@ -105,8 +98,6 @@ public:
         const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias, const float4& p_TextureScaleBias,
         const SVector4& p_MaterialColor
     ) = 0;
-
-    virtual const PrimitiveType GetCurrentPrimitiveType() const = 0;
 
     virtual bool IsInsideViewFrustum(const SVector3& p_Point) const = 0;
     virtual bool IsInsideViewFrustum(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform) const = 0;

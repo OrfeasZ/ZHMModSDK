@@ -204,63 +204,59 @@ void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
 
             auto s_Transform = s_SpatialEntity->GetWorldMatrix();
 
-            if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
-                if (m_RenderActorBoxes) {
-                    float4 s_Min, s_Max;
+            if (m_RenderActorBoxes) {
+                float4 s_Min, s_Max;
 
-                    s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+                s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
 
-                    p_Renderer->DrawOBB3D(
-                        SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
-                        SVector4(1.f, 0.f, 0.f, 1.f)
+                p_Renderer->DrawOBB3D(
+                    SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
+                    SVector4(1.f, 0.f, 0.f, 1.f)
+                );
+            }
+
+            if (m_RenderActorNames) {
+                SVector2 s_ScreenPos;
+                if (p_Renderer->WorldToScreen(
+                    SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
+                ))
+                    p_Renderer->DrawText2D(s_Actor->m_sActorName, s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
+            }
+
+            if (m_RenderActorRepoIds) {
+                auto* s_RepoEntity = s_Ref.QueryInterface<ZRepositoryItemEntity>();
+                SVector2 s_ScreenPos;
+                bool s_Success;
+
+                if (m_RenderActorNames) {
+                    s_Success = p_Renderer->WorldToScreen(
+                        SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.1f), s_ScreenPos
+                    );
+                }
+                else {
+                    s_Success = p_Renderer->WorldToScreen(
+                        SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
+                    );
+                }
+
+                if (s_Success) {
+                    p_Renderer->DrawText2D(
+                        s_RepoEntity->m_sId.ToString(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f
                     );
                 }
             }
 
-            if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Text2D) {
-                if (m_RenderActorNames) {
+            if (m_RenderActorBehaviors) {
+                const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
+
+                if (s_BehaviorBase) {
+                    const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(s_BehaviorBase->m_Type);
+
                     SVector2 s_ScreenPos;
                     if (p_Renderer->WorldToScreen(
                         SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
                     ))
-                        p_Renderer->DrawText2D(s_Actor->m_sActorName, s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
-                }
-
-                if (m_RenderActorRepoIds) {
-                    auto* s_RepoEntity = s_Ref.QueryInterface<ZRepositoryItemEntity>();
-                    SVector2 s_ScreenPos;
-                    bool s_Success;
-
-                    if (m_RenderActorNames) {
-                        s_Success = p_Renderer->WorldToScreen(
-                            SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.1f), s_ScreenPos
-                        );
-                    }
-                    else {
-                        s_Success = p_Renderer->WorldToScreen(
-                            SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
-                        );
-                    }
-
-                    if (s_Success) {
-                        p_Renderer->DrawText2D(
-                            s_RepoEntity->m_sId.ToString(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f
-                        );
-                    }
-                }
-
-                if (m_RenderActorBehaviors) {
-                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
-
-                    if (s_BehaviorBase) {
-                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(s_BehaviorBase->m_Type);
-
-                        SVector2 s_ScreenPos;
-                        if (p_Renderer->WorldToScreen(
-                            SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
-                        ))
-                            p_Renderer->DrawText2D(BehaviorToString(s_CompiledBehaviorType), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
-                    }
+                        p_Renderer->DrawText2D(BehaviorToString(s_CompiledBehaviorType), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
                 }
             }
         }
@@ -286,101 +282,97 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
     const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
     const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
-    if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
-        for (size_t i = 0; i < s_WaypointCount * 2; ++i) {
-            p_Renderer->DrawTriangle3D(m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
-                m_Triangles[i].vertexPosition2, m_Triangles[i].vertexColor2,
-                m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3);
+    for (size_t i = 0; i < s_WaypointCount * 2; ++i) {
+        p_Renderer->DrawTriangle3D(m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
+            m_Triangles[i].vertexPosition2, m_Triangles[i].vertexColor2,
+            m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3);
+    }
+
+    const ZGridNodeRef& s_HitmanNode = Globals::HM5GridManager->m_HitmanNode;
+    const size_t s_StartIndex = s_WaypointCount * 2;
+
+    static const SVector4 s_SelectedNodeVertexColor = SVector4(0.f, 1.f, 1.f, 0.43922f);
+    static const SVector4 s_LargeQuadVertexColor = SVector4(0.33333f, 0.f, 1.f, 0.43922f);
+
+    for (size_t i = s_StartIndex; i < m_Triangles.size(); ++i) {
+        const unsigned short s_WaypointIndex = static_cast<unsigned short>((i - s_WaypointCount * 2) / 2);
+
+        if (s_ReasoningGrid->GetNode(s_WaypointIndex) == s_HitmanNode.GetNode()) {
+            m_Triangles[i].vertexColor1 = s_SelectedNodeVertexColor;
+            m_Triangles[i].vertexColor2 = s_SelectedNodeVertexColor;
+            m_Triangles[i].vertexColor3 = s_SelectedNodeVertexColor;
         }
+        else {
+            if (m_ShowVisibility) {
+                float s_Rating = 0.f;
 
-        const ZGridNodeRef& s_HitmanNode = Globals::HM5GridManager->m_HitmanNode;
-        const size_t s_StartIndex = s_WaypointCount * 2;
+                if (s_HitmanNode.CheckVisibility(s_WaypointIndex, true, false)) {
+                    s_Rating = 1.f;
+                }
+                else if (s_HitmanNode.CheckVisibility(s_WaypointIndex, false, false)) {
+                    s_Rating = 0.5f;
+                }
 
-        static const SVector4 s_SelectedNodeVertexColor = SVector4(0.f, 1.f, 1.f, 0.43922f);
-        static const SVector4 s_LargeQuadVertexColor = SVector4(0.33333f, 0.f, 1.f, 0.43922f);
+                const unsigned int s_HeatMapColor = ((*Globals::GridManager)->GetHeatmapColorFromRating(s_Rating) & 0xFFFFFF) + 0x70000000;
+                const SVector4 s_VertexColor = ZColor::UnpackUnsigned(s_HeatMapColor);
 
-        for (size_t i = s_StartIndex; i < m_Triangles.size(); ++i) {
-            const unsigned short s_WaypointIndex = static_cast<unsigned short>((i - s_WaypointCount * 2) / 2);
+                m_Triangles[i].vertexColor1 = s_VertexColor;
+                m_Triangles[i].vertexColor2 = s_VertexColor;
+                m_Triangles[i].vertexColor3 = s_VertexColor;
+            }
+            else if (m_ShowLayers) {
+                const unsigned int s_LayerIndex = static_cast<unsigned int>(s_ReasoningGrid->m_WaypointList[s_WaypointIndex].nLayerIndex);
+                const unsigned int s_Color = (s_LayerIndex << 6) | 0xC0000000;
+                const SVector4 s_VertexColor = ZColor::UnpackUnsigned(s_Color);
 
-            if (s_ReasoningGrid->GetNode(s_WaypointIndex) == s_HitmanNode.GetNode()) {
-                m_Triangles[i].vertexColor1 = s_SelectedNodeVertexColor;
-                m_Triangles[i].vertexColor2 = s_SelectedNodeVertexColor;
-                m_Triangles[i].vertexColor3 = s_SelectedNodeVertexColor;
+                m_Triangles[i].vertexColor1 = s_VertexColor;
+                m_Triangles[i].vertexColor2 = s_VertexColor;
+                m_Triangles[i].vertexColor3 = s_VertexColor;
             }
             else {
-                if (m_ShowVisibility) {
-                    float s_Rating = 0.f;
-
-                    if (s_HitmanNode.CheckVisibility(s_WaypointIndex, true, false)) {
-                        s_Rating = 1.f;
-                    }
-                    else if (s_HitmanNode.CheckVisibility(s_WaypointIndex, false, false)) {
-                        s_Rating = 0.5f;
-                    }
-
-                    const unsigned int s_HeatMapColor = ((*Globals::GridManager)->GetHeatmapColorFromRating(s_Rating) & 0xFFFFFF) + 0x70000000;
-                    const SVector4 s_VertexColor = ZColor::UnpackUnsigned(s_HeatMapColor);
-
-                    m_Triangles[i].vertexColor1 = s_VertexColor;
-                    m_Triangles[i].vertexColor2 = s_VertexColor;
-                    m_Triangles[i].vertexColor3 = s_VertexColor;
-                }
-                else if (m_ShowLayers) {
-                    const unsigned int s_LayerIndex = static_cast<unsigned int>(s_ReasoningGrid->m_WaypointList[s_WaypointIndex].nLayerIndex);
-                    const unsigned int s_Color = (s_LayerIndex << 6) | 0xC0000000;
-                    const SVector4 s_VertexColor = ZColor::UnpackUnsigned(s_Color);
-
-                    m_Triangles[i].vertexColor1 = s_VertexColor;
-                    m_Triangles[i].vertexColor2 = s_VertexColor;
-                    m_Triangles[i].vertexColor3 = s_VertexColor;
-                }
-                else {
-                    m_Triangles[i].vertexColor1 = s_LargeQuadVertexColor;
-                    m_Triangles[i].vertexColor2 = s_LargeQuadVertexColor;
-                    m_Triangles[i].vertexColor3 = s_LargeQuadVertexColor;
-                }
+                m_Triangles[i].vertexColor1 = s_LargeQuadVertexColor;
+                m_Triangles[i].vertexColor2 = s_LargeQuadVertexColor;
+                m_Triangles[i].vertexColor3 = s_LargeQuadVertexColor;
             }
-
-            p_Renderer->DrawTriangle3D(m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
-                m_Triangles[i].vertexPosition2, m_Triangles[i].vertexColor2,
-                m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3);
         }
+
+        p_Renderer->DrawTriangle3D(m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
+            m_Triangles[i].vertexPosition2, m_Triangles[i].vertexColor2,
+            m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3);
     }
-    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
-        for (size_t i = 0; i < m_Lines.size(); ++i) {
-            p_Renderer->DrawLine3D(m_Lines[i].start, m_Lines[i].end, m_Lines[i].startColor, m_Lines[i].endColor);
+
+    for (size_t i = 0; i < m_Lines.size(); ++i) {
+        p_Renderer->DrawLine3D(m_Lines[i].start, m_Lines[i].end, m_Lines[i].startColor, m_Lines[i].endColor);
+    }
+
+    if (m_ShowIndices) {
+        const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+        if (!s_CurrentCamera) {
+            return;
         }
-    }
-    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Text3D) {
-        if (m_ShowIndices) {
-            const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
-            if (!s_CurrentCamera) {
-                return;
+        SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+        const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
+
+        std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
+
+        static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
+        static const float s_Scale = 0.2f;
+
+        for (size_t i = 0; i < s_WaypointCount; ++i) {
+            float4 s_WorldPosition = s_ReasoningGrid->m_WaypointList[i].vPos;
+
+            if (!p_Renderer->IsInsideViewFrustum(SVector3(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z))) {
+                continue;
             }
 
-            SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
-            const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
+            s_WorldPosition.z += 0.5f;
+            s_WorldMatrix.Trans = s_WorldPosition;
 
-            std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
+            const std::string s_Text = std::to_string(i);
 
-            static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
-            static const float s_Scale = 0.2f;
-
-            for (size_t i = 0; i < s_WaypointCount; ++i) {
-                float4 s_WorldPosition = s_ReasoningGrid->m_WaypointList[i].vPos;
-
-                if (!p_Renderer->IsInsideViewFrustum(SVector3(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z))) {
-                    continue;
-                }
-
-                s_WorldPosition.z += 0.5f;
-                s_WorldMatrix.Trans = s_WorldPosition;
-
-                const std::string s_Text = std::to_string(i);
-
-                p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
-            }
+            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
         }
     }
 }
@@ -390,125 +382,32 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
     static const SVector4 s_GreenTriangleColor = SVector4(0.19608f, 0.80392f, 0.19608f, 0.49804f);
     static const SVector4 s_YellowTriangleColor = SVector4(1.f, 1.f, 0.f, 0.49804f);
 
-    if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
-        if (m_DrawPlannerAreasSolid) {
-            for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
-                if (m_ColorizeAreaUsageFlags && m_NavMesh.m_areas[i].m_area->m_usageFlags == NavPower::AreaUsageFlags::AREA_STEPS) {
-                    p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_YellowTriangleColor);
-                }
-                else {
-                    p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_GreenTriangleColor);
-                }
+    if (m_DrawPlannerAreasSolid) {
+        for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
+            if (m_ColorizeAreaUsageFlags && m_NavMesh.m_areas[i].m_area->m_usageFlags == NavPower::AreaUsageFlags::AREA_STEPS) {
+                p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_YellowTriangleColor);
+            }
+            else {
+                p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_GreenTriangleColor);
             }
         }
     }
-    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
-        if (m_DrawPlannerAreas) {
-            for (size_t i = 0; i < m_NavMeshLines.size(); ++i) {
-                p_Renderer->DrawLine3D(m_NavMeshLines[i].start, m_NavMeshLines[i].end, m_NavMeshLines[i].startColor, m_NavMeshLines[i].endColor);
-            }
-        }
 
-        if (m_DrawDrawPlannerConnectivity) {
-            for (size_t i = 0; i < m_NavMeshConnectivityLines.size(); ++i) {
-                p_Renderer->DrawLine3D(m_NavMeshConnectivityLines[i].start, m_NavMeshConnectivityLines[i].end,
-                    m_NavMeshConnectivityLines[i].startColor, m_NavMeshConnectivityLines[i].endColor
-                );
-            }
+    if (m_DrawPlannerAreas) {
+        for (size_t i = 0; i < m_NavMeshLines.size(); ++i) {
+            p_Renderer->DrawLine3D(m_NavMeshLines[i].start, m_NavMeshLines[i].end, m_NavMeshLines[i].startColor, m_NavMeshLines[i].endColor);
         }
     }
-    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Text3D) {
-        if (m_DrawAreaPenaltyMults) {
-            const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
-            if (!s_CurrentCamera) {
-                return;
-            }
-
-            SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
-
-            std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
-
-            const float s_MaxDrawDistance = 50.0f;
-
-            static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
-            static const float s_Scale = 0.2f;
-
-            for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
-                SVector3 s_WorldPosition = m_NavMesh.m_areas[i].m_area->m_pos;
-
-                const DirectX::XMVECTOR s_WorldPosition2 = DirectX::XMVectorSet(
-                    s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
-
-                const SVector3 s_CameraToWaypoint(
-                    s_WorldPosition.x - s_WorldMatrix.Trans.x,
-                    s_WorldPosition.y - s_WorldMatrix.Trans.y,
-                    s_WorldPosition.z - s_WorldMatrix.Trans.z
-                );
-
-                if (SVector3::DotProduct(s_CameraToWaypoint, s_CameraToWaypoint) > s_MaxDrawDistance * s_MaxDrawDistance) {
-                    continue;
-                }
-
-                if (!p_Renderer->IsInsideViewFrustum(s_WorldPosition2)) {
-                    continue;
-                }
-
-                s_WorldPosition.z += 2.f;
-                s_WorldMatrix.Trans = float4(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
-
-                std::string s_Text;
-
-                if (!m_NavMesh.m_areas[i].m_area->m_flags.IsImpassable() || m_NavMesh.m_areas[i].m_area->m_flags.ApplyObCostWhenFlagsDontMatch()) {
-                    const uint32_t obCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetObCostMult();
-                    const uint32_t staticCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetStaticCostMult();
-                    const uint32_t costMult = obCostMult > staticCostMult ? obCostMult : staticCostMult;
-
-                    s_Text = std::to_string(costMult);
-                }
-                else {
-                    s_Text = "---";
-                }
-
-                p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
-            }
+    if (m_DrawDrawPlannerConnectivity) {
+        for (size_t i = 0; i < m_NavMeshConnectivityLines.size(); ++i) {
+            p_Renderer->DrawLine3D(m_NavMeshConnectivityLines[i].start, m_NavMeshConnectivityLines[i].end,
+                m_NavMeshConnectivityLines[i].startColor, m_NavMeshConnectivityLines[i].endColor
+            );
         }
     }
-}
 
-void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
-    ZPFObstacleManagerDeprecated* s_ObstacleManagerDeprecated = static_cast<ZPFObstacleManagerDeprecated*>(Globals::Pathfinder->m_obstacleManager);
-
-    if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
-        for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
-            const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 0.29804f);
-            const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
-            const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
-            const SVector3 s_MinBound = SVector3(
-                -s_HalfSize.x,
-                -s_HalfSize.y,
-                -s_HalfSize.z);
-            const SVector3 s_MaxBound = SVector3(
-                s_HalfSize.x,
-                s_HalfSize.y,
-                s_HalfSize.z);
-
-            p_Renderer->DrawBoundingQuads(s_MinBound, s_MaxBound, s_Transform, s_Color);
-        }
-    }
-    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line) {
-        for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
-            const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 1.f);
-            const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
-            const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
-
-            const SVector3 s_MinBound = SVector3(-s_HalfSize.x, -s_HalfSize.y, -s_HalfSize.z);
-            const SVector3 s_MaxBound = SVector3(s_HalfSize.x, s_HalfSize.y, s_HalfSize.z);
-
-            p_Renderer->DrawOBB3D(s_MinBound, s_MaxBound, s_Transform, s_Color);
-        }
-    }
-    else if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Text3D) {
+    if (m_DrawAreaPenaltyMults) {
         const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
         if (!s_CurrentCamera) {
@@ -519,27 +418,112 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
 
         std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
+        const float s_MaxDrawDistance = 50.0f;
+
         static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
-        static const float s_Scale = 0.3f;
+        static const float s_Scale = 0.2f;
 
-        for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
-            ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*)(s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget());
-            const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
-            const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
-            float4 s_TopCenter = s_Transform.Trans + s_Transform.ZAxis * (s_HalfSize.z + 0.5f);
-            s_TopCenter.z += 2.0f;
+        for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
+            SVector3 s_WorldPosition = m_NavMesh.m_areas[i].m_area->m_pos;
 
-            s_WorldMatrix.Trans = s_TopCenter;
+            const DirectX::XMVECTOR s_WorldPosition2 = DirectX::XMVectorSet(
+                s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
 
-            const std::string s_Text = fmt::format(
-                "Entity ID: {:08x}\nObstacle Flags: {:04x}\nPenalty: {}",
-                m_ObstaclesToEntityIDs[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
-                s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
-                s_PFObstacleInternalDep->m_obstacleDef.m_penalty
+            const SVector3 s_CameraToWaypoint(
+                s_WorldPosition.x - s_WorldMatrix.Trans.x,
+                s_WorldPosition.y - s_WorldMatrix.Trans.y,
+                s_WorldPosition.z - s_WorldMatrix.Trans.z
             );
+
+            if (SVector3::DotProduct(s_CameraToWaypoint, s_CameraToWaypoint) > s_MaxDrawDistance * s_MaxDrawDistance) {
+                continue;
+            }
+
+            if (!p_Renderer->IsInsideViewFrustum(s_WorldPosition2)) {
+                continue;
+            }
+
+            s_WorldPosition.z += 2.f;
+            s_WorldMatrix.Trans = float4(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
+
+            std::string s_Text;
+
+            if (!m_NavMesh.m_areas[i].m_area->m_flags.IsImpassable() || m_NavMesh.m_areas[i].m_area->m_flags.ApplyObCostWhenFlagsDontMatch()) {
+                const uint32_t obCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetObCostMult();
+                const uint32_t staticCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetStaticCostMult();
+                const uint32_t costMult = obCostMult > staticCostMult ? obCostMult : staticCostMult;
+
+                s_Text = std::to_string(costMult);
+            }
+            else {
+                s_Text = "---";
+            }
 
             p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
         }
+    }
+}
+
+void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
+    ZPFObstacleManagerDeprecated* s_ObstacleManagerDeprecated = static_cast<ZPFObstacleManagerDeprecated*>(Globals::Pathfinder->m_obstacleManager);
+
+    for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
+        const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 0.29804f);
+        const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
+        const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
+        const SVector3 s_MinBound = SVector3(
+            -s_HalfSize.x,
+            -s_HalfSize.y,
+            -s_HalfSize.z);
+        const SVector3 s_MaxBound = SVector3(
+            s_HalfSize.x,
+            s_HalfSize.y,
+            s_HalfSize.z);
+
+        p_Renderer->DrawBoundingQuads(s_MinBound, s_MaxBound, s_Transform, s_Color);
+    }
+
+    for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
+        const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 1.f);
+        const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
+        const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
+
+        const SVector3 s_MinBound = SVector3(-s_HalfSize.x, -s_HalfSize.y, -s_HalfSize.z);
+        const SVector3 s_MaxBound = SVector3(s_HalfSize.x, s_HalfSize.y, s_HalfSize.z);
+
+        p_Renderer->DrawOBB3D(s_MinBound, s_MaxBound, s_Transform, s_Color);
+    }
+
+    const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+    if (!s_CurrentCamera) {
+        return;
+    }
+
+    SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+
+    std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
+
+    static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
+    static const float s_Scale = 0.3f;
+
+    for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
+        ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*)(s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget());
+        const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
+        const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
+        float4 s_TopCenter = s_Transform.Trans + s_Transform.ZAxis * (s_HalfSize.z + 0.5f);
+        s_TopCenter.z += 2.0f;
+
+        s_WorldMatrix.Trans = s_TopCenter;
+
+        const std::string s_Text = fmt::format(
+            "Entity ID: {:08x}\nObstacle Flags: {:04x}\nPenalty: {}",
+            m_ObstaclesToEntityIDs[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
+            s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
+            s_PFObstacleInternalDep->m_obstacleDef.m_penalty
+        );
+
+        p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
     }
 }
 

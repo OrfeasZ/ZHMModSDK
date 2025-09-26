@@ -221,10 +221,7 @@ void Editor::CopyToClipboard(const std::string& p_String) const {
 }
 
 void Editor::OnDraw3D(IRenderer* p_Renderer) {
-    if (p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Line ||
-        p_Renderer->GetCurrentPrimitiveType() == PrimitiveType::Triangle) {
-        DrawEntityAABB(p_Renderer);
-    }
+    DrawEntityAABB(p_Renderer);
 
     /*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
     const auto s_LineColor = SVector4(0.94, 0.12, 0.05, 1.0);

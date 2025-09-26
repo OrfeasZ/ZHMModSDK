@@ -65,36 +65,29 @@ void DirectXTKRenderer::Draw() {
 
     m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
 
+    m_TriangleBatch->Begin(m_CommandList);
+    m_LineBatch->Begin(m_CommandList);
+    m_TextBatch->Begin(m_CommandList);
+
+    ModSDK::GetInstance()->OnDraw3D();
+
+    m_TriangleBatch->End();
+    m_LineBatch->End();
+    m_TextBatch->End();
+
     ID3D12DescriptorHeap* s_Heaps[] = { m_ResourceDescriptors->Heap() };
+
     m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
-
-    m_CurrentPrimitiveType = PrimitiveType::Triangle;
-
-    m_TriangleEffect->Apply(m_CommandList);
-
-    m_PrimitiveBatch->Begin(m_CommandList);
-
-    ModSDK::GetInstance()->OnDraw3D();
-
-    m_PrimitiveBatch->End();
-
-    m_CurrentPrimitiveType = PrimitiveType::Line;
-
-    m_LineEffect->Apply(m_CommandList);
-
-    m_PrimitiveBatch->Begin(m_CommandList);
-
-    ModSDK::GetInstance()->OnDraw3D();
-
-    m_PrimitiveBatch->End();
 
     m_SpriteBatch->Begin(m_CommandList);
 
-    m_CurrentPrimitiveType = PrimitiveType::Text2D;
-
-    ModSDK::GetInstance()->OnDraw3D();
+    for (const auto& s_2DText : m_Text2DBuffer) {
+        DrawText2D(s_2DText);
+    }
 
     m_SpriteBatch->End();
+
+    m_Text2DBuffer.clear();
 }
 
 void DirectXTKRenderer::DepthDraw() {
@@ -108,39 +101,14 @@ void DirectXTKRenderer::DepthDraw() {
 
     m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
 
-    ID3D12DescriptorHeap* s_Heaps[] = { m_fontSRVDescriptorHeap.Ref, m_CommonStates->Heap() };
-    m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
-
-    m_CurrentPrimitiveType = PrimitiveType::Triangle;
-
-    m_TriangleEffect->Apply(m_CommandList);
-
-    m_PrimitiveBatch->Begin(m_CommandList);
-
-    ModSDK::GetInstance()->OnDepthDraw3D();
-
-    m_PrimitiveBatch->End();
-
-    m_CurrentPrimitiveType = PrimitiveType::Line;
-
-    m_LineEffect->Apply(m_CommandList);
-
-    m_PrimitiveBatch->Begin(m_CommandList);
-
-    ModSDK::GetInstance()->OnDepthDraw3D();
-
-    m_PrimitiveBatch->End();
-
-    m_CurrentPrimitiveType = PrimitiveType::Text3D;
-
-    m_TextEffect->Apply(m_CommandList);
-
-    m_CommandList->SetPipelineState(m_PipelineState);
-
+    m_TriangleBatch->Begin(m_CommandList);
+    m_LineBatch->Begin(m_CommandList);
     m_TextBatch->Begin(m_CommandList);
 
     ModSDK::GetInstance()->OnDepthDraw3D();
 
+    m_TriangleBatch->End();
+    m_LineBatch->End();
     m_TextBatch->End();
 }
 
@@ -344,9 +312,9 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     }
 
     if (s_Device->CreateCommandList(
-            0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr,
-            IID_PPV_ARGS(m_CommandList.ReleaseAndGetPtr())
-        ) != S_OK ||
+        0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr,
+        IID_PPV_ARGS(m_CommandList.ReleaseAndGetPtr())
+    ) != S_OK ||
         m_CommandList->Close() != S_OK)
         return false;
 
@@ -376,8 +344,6 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     m_WindowHeight = static_cast<float>(s_Rect.bottom - s_Rect.top);
 
     m_GraphicsMemory = std::make_unique<DirectX::GraphicsMemory>(s_Device);
-
-    m_PrimitiveBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>>(s_Device);
 
     DirectX::RenderTargetState s_RtState(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_D32_FLOAT_S8X24_UINT);
 
@@ -416,7 +382,25 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
 
         m_TextEffect = std::make_unique<DirectX::BasicEffect>(s_Device, DirectX::EffectFlags::VertexColor | DirectX::EffectFlags::Texture, s_Desc);
 
-        m_TextBatch = std::make_unique<DirectX::PrimitiveBatch<DirectX::VertexPositionColorTexture>>(s_Device);
+        m_TriangleBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(s_Device, [&]() {
+            m_TriangleEffect->Apply(m_CommandList);
+        });
+
+        m_LineBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(s_Device, [&]() {
+            m_LineEffect->Apply(m_CommandList);
+        });
+
+        m_TextBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColorTexture>>(s_Device, [&]() {
+            ID3D12DescriptorHeap* s_Heaps[] = { m_fontSRVDescriptorHeap.Ref, m_CommonStates->Heap() };
+
+            m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
+
+            m_TextEffect->Apply(m_CommandList);
+
+            m_CommandList->SetPipelineState(m_PipelineState);
+        });
+
+        m_Text2DBuffer.reserve(1024);
 
         if (!CreateFontDistanceFieldTexture())
         {
@@ -853,7 +837,7 @@ void DirectXTKRenderer::DrawLine3D(
         DirectX::SimpleMath::Vector4(p_ToColor.x, p_ToColor.y, p_ToColor.z, p_ToColor.w)
     );
 
-    m_PrimitiveBatch->DrawLine(s_From, s_To);
+    m_LineBatch->DrawLine(s_From, s_To);
 }
 
 void DirectXTKRenderer::DrawText2D(
@@ -863,25 +847,7 @@ void DirectXTKRenderer::DrawText2D(
     if (!m_RendererSetup)
         return;
 
-    const std::string s_Text(p_Text.c_str(), p_Text.size());
-    const DirectX::SimpleMath::Vector2 s_StringSize = m_Font->MeasureString(s_Text.c_str());
-
-    DirectX::SimpleMath::Vector2 s_Origin(0.f, 0.f);
-
-    if (p_Alignment == TextAlignment::Center)
-        s_Origin.x = s_StringSize.x / 2.f;
-    else if (p_Alignment == TextAlignment::Right)
-        s_Origin.x = s_StringSize.x;
-
-    m_Font->DrawString(
-        m_SpriteBatch.get(),
-        s_Text.c_str(),
-        DirectX::SimpleMath::Vector2(p_Pos.x, p_Pos.y),
-        DirectX::SimpleMath::Vector4(p_Color.x, p_Color.y, p_Color.z, p_Color.w),
-        p_Rotation,
-        s_Origin,
-        p_Scale
-    );
+    m_Text2DBuffer.push_back(Text2D{ p_Text.c_str(), p_Pos, p_Color, p_Rotation, p_Scale, p_Alignment});
 }
 
 bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) {
@@ -1042,7 +1008,7 @@ void DirectXTKRenderer::DrawTriangle3D(
     const SVector3& p_V2, const SVector4& p_Color2,
     const SVector3& p_V3, const SVector4& p_Color3
 ) {
-    m_PrimitiveBatch->DrawTriangle(
+    m_TriangleBatch->DrawTriangle(
         DirectX::VertexPositionColor(
             DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z),
             DirectX::SimpleMath::Vector4(p_Color1.x, p_Color1.y, p_Color1.z, p_Color1.w)
@@ -1092,7 +1058,7 @@ void DirectXTKRenderer::DrawQuad3D(
     const SVector3& p_V4,
     const SVector4& p_Color4
 ) {
-    m_PrimitiveBatch->DrawQuad(
+    m_TriangleBatch->DrawQuad(
         DirectX::VertexPositionColor(
             DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z),
             DirectX::SimpleMath::Vector4(p_Color1.x, p_Color1.y, p_Color1.z, p_Color1.w)
@@ -1272,7 +1238,7 @@ void DirectXTKRenderer::DrawMesh(const std::vector<SVector3>& p_Vertices, const 
             DirectX::SimpleMath::Vector4(p_VertexColor.x, p_VertexColor.y, p_VertexColor.z, p_VertexColor.w)));
     }
 
-    m_PrimitiveBatch->DrawIndexed(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, p_Indices.data(), p_Indices.size(), s_Vertices2.data(), s_Vertices2.size());
+    m_TriangleBatch->DrawIndexed(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, p_Indices.data(), p_Indices.size(), s_Vertices2.data(), s_Vertices2.size());
 }
 
 void DirectXTKRenderer::DrawMesh(
@@ -1312,12 +1278,28 @@ void DirectXTKRenderer::DrawMesh(
     m_CommandList->IASetIndexBuffer(&s_IndexBufferView);
     m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_CommandList->DrawIndexedInstanced(s_IndexCount, 1, 0, 0, 0);
-
-    m_TriangleEffect->Apply(m_CommandList);
 }
 
-const PrimitiveType DirectXTKRenderer::GetCurrentPrimitiveType() const {
-    return m_CurrentPrimitiveType;
+void DirectXTKRenderer::DrawText2D(const Text2D& text2D) {
+    const std::string s_Text(text2D.m_Text.c_str(), text2D.m_Text.size());
+    const DirectX::SimpleMath::Vector2 s_StringSize = m_Font->MeasureString(s_Text.c_str());
+
+    DirectX::SimpleMath::Vector2 s_Origin(0.f, 0.f);
+
+    if (text2D.m_Alignment == TextAlignment::Center)
+        s_Origin.x = s_StringSize.x / 2.f;
+    else if (text2D.m_Alignment == TextAlignment::Right)
+        s_Origin.x = s_StringSize.x;
+
+    m_Font->DrawString(
+        m_SpriteBatch.get(),
+        s_Text.c_str(),
+        DirectX::SimpleMath::Vector2(text2D.m_Position.x, text2D.m_Position.y),
+        DirectX::SimpleMath::Vector4(text2D.m_Color.x, text2D.m_Color.y, text2D.m_Color.z, text2D.m_Color.w),
+        text2D.m_Rotation,
+        s_Origin,
+        text2D.m_Scale
+    );
 }
 
 bool DirectXTKRenderer::IsInsideViewFrustum(const SVector3& p_Point) const {
