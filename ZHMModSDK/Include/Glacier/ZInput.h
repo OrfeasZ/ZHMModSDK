@@ -85,7 +85,7 @@ public:
 
 class ZKeyboardWindows : public ZKeyboardDevice {
 public:
-    PAD(0xF0);
+    PAD(0xF8);
     ZDirectInputInf dif;
 };
 
