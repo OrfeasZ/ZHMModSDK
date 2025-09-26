@@ -114,8 +114,8 @@ PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x49\x89\x5B\x08\x49\x89\x6B\x10\x4D\x89\x43\x18",
     "xxxxxxxxxxxxxxx",
     ZEntityManager_NewEntity,
-    void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef&
-        parent, void* a6, int64_t a7)
+    void(ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
+        const ZEntityRef& transformParent, const SExternalReferences* externalRefs, uint64_t entityId)
 );
 
 // Look for camAlign_ string, go to parent xref of function using said string: function called in if flag check.
