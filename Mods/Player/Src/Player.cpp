@@ -54,6 +54,15 @@ void Player::OnDrawUI(const bool p_HasFocus)
 
         static char s_OutfitName[2048]{ "" };
 
+        if (s_OutfitName[0] == '\0')
+        {
+            const char* s_OutfitName2 = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit.m_pInterfaceRef->m_sCommonName.c_str();
+
+            strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
+
+            s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
+        }
+
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
@@ -74,6 +83,13 @@ void Player::OnDrawUI(const bool p_HasFocus)
         static std::string s_CurrentcharSetCharacterType = "HeroA";
         static std::string s_CurrentcharSetCharacterType2 = "HeroA";
         static uint8_t s_CurrentOutfitVariationIndex = 1;
+
+        if (!m_GlobalOutfitKit)
+        {
+            m_GlobalOutfitKit = &s_LocalHitman.m_pInterfaceRef->m_rOutfitKit;
+            s_CurrentCharacterSetIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitCharset;
+            s_CurrentOutfitVariationIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitVariation;
+        }
 
         if (ImGui::BeginPopup(
             "##popup",
@@ -96,6 +112,9 @@ void Player::OnDrawUI(const bool p_HasFocus)
                 {
                     ImGui::ClearActiveID();
                     strcpy_s(s_OutfitName, s_OutfitName2);
+
+                    s_CurrentCharacterSetIndex = 0;
+                    s_CurrentOutfitVariationIndex = 0;
 
                     EquipOutfit(
                         it->second, s_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType.data(),
