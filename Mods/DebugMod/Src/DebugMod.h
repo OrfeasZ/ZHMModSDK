@@ -87,6 +87,7 @@ private:
     bool m_DrawAreaPenaltyMults = false;
     bool m_DrawGizmos = false;
     NavPower::NavMesh m_NavMesh;
+    std::vector<uint8_t> m_NavpData;
     std::vector<std::vector<SVector3>> m_Vertices;
     std::vector<std::vector<unsigned short>> m_Indices;
     std::vector<Line> m_NavMeshLines;
