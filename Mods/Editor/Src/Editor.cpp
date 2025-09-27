@@ -77,17 +77,16 @@ Editor::Editor() {
 
 Editor::~Editor() {
     const ZMemberDelegate<Editor, void(const SGameUpdateEvent&)> s_Delegate(this, &Editor::OnFrameUpdate);
-    Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+    Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
+
+    if (m_TrackCamActive) {
+        DisableTrackCam();
+    }
 
     if (m_SelectionForFreeCameraEditorStyleEntity) {
         Globals::Selections->clear();
         free(m_SelectionForFreeCameraEditorStyleEntity);
         m_SelectionForFreeCameraEditorStyleEntity = nullptr;
-    }
-
-    if (m_TrackCamActive)
-    {
-        DisableTrackCam();
     }
 }
 
