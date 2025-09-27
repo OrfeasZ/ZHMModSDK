@@ -196,76 +196,6 @@ void DebugMod::CopyToClipboard(const std::string& p_String) {
 }
 
 void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
-    if (m_RenderActorBoxes || m_RenderActorNames || m_RenderActorRepoIds || m_RenderActorBehaviors)
-    {
-        for (size_t i = 0; i < *Globals::NextActorId; ++i)
-        {
-            auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
-
-            ZEntityRef s_Ref;
-            s_Actor->GetID(&s_Ref);
-
-            auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
-
-            auto s_Transform = s_SpatialEntity->GetWorldMatrix();
-
-            if (m_RenderActorBoxes) {
-                float4 s_Min, s_Max;
-
-                s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
-
-                p_Renderer->DrawOBB3D(
-                    SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
-                    SVector4(1.f, 0.f, 0.f, 1.f)
-                );
-            }
-
-            if (m_RenderActorNames) {
-                SVector2 s_ScreenPos;
-                if (p_Renderer->WorldToScreen(
-                    SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
-                ))
-                    p_Renderer->DrawText2D(s_Actor->m_sActorName, s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
-            }
-
-            if (m_RenderActorRepoIds) {
-                auto* s_RepoEntity = s_Ref.QueryInterface<ZRepositoryItemEntity>();
-                SVector2 s_ScreenPos;
-                bool s_Success;
-
-                if (m_RenderActorNames) {
-                    s_Success = p_Renderer->WorldToScreen(
-                        SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.1f), s_ScreenPos
-                    );
-                }
-                else {
-                    s_Success = p_Renderer->WorldToScreen(
-                        SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
-                    );
-                }
-
-                if (s_Success) {
-                    p_Renderer->DrawText2D(
-                        s_RepoEntity->m_sId.ToString(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f
-                    );
-                }
-            }
-
-            if (m_RenderActorBehaviors) {
-                const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
-
-                if (s_BehaviorBase) {
-                    const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(s_BehaviorBase->m_Type);
-
-                    SVector2 s_ScreenPos;
-                    if (p_Renderer->WorldToScreen(
-                        SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos
-                    ))
-                        p_Renderer->DrawText2D(BehaviorToString(s_CompiledBehaviorType), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
-                }
-            }
-        }
-    }
 }
 
 void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
@@ -279,6 +209,95 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
     if (m_DrawObstacles) {
         DrawObstacles(p_Renderer);
+    }
+
+    if (m_RenderActorBoxes || m_RenderActorNames || m_RenderActorRepoIds || m_RenderActorBehaviors) {
+        for (size_t i = 0; i < *Globals::NextActorId; ++i) {
+            auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+
+            ZEntityRef s_Ref;
+            s_Actor->GetID(&s_Ref);
+
+            auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+            auto s_ActorTransform = s_SpatialEntity->GetWorldMatrix();
+
+            float4 s_Min, s_Max;
+
+            s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+
+            if (!p_Renderer->IsInsideViewFrustum(
+                SVector3(s_Min.x, s_Min.y, s_Min.z),
+                SVector3(s_Max.x, s_Max.y, s_Max.z),
+                s_ActorTransform
+            )) {
+                continue;
+            }
+
+            if (m_RenderActorBoxes) {
+                p_Renderer->DrawOBB3D(
+                    SVector3(s_Min.x, s_Min.y, s_Min.z),
+                    SVector3(s_Max.x, s_Max.y, s_Max.z),
+                    s_ActorTransform,
+                    SVector4(1.f, 0.f, 0.f, 1.f)
+                );
+            }
+            else {
+                const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+                if (!s_CurrentCamera) {
+                    return;
+                }
+
+                auto s_CameraTransform = s_CurrentCamera->GetWorldMatrix();
+
+                const float4 s_Center = (s_Min + s_Max) * 0.5f;
+                const float4 s_Extents = (s_Max - s_Min) * 0.5f;
+
+                float4 s_LocalPosition = s_Center + float4(0.f, 0.f, s_Extents.z, 0.f);
+                float4 s_WorldPosition = s_ActorTransform * s_LocalPosition;
+
+                s_WorldPosition.z -= 0.5f;
+                s_CameraTransform.Trans = s_WorldPosition;
+
+                std::string s_Text;
+
+                if (m_RenderActorNames) {
+                    s_Text += s_Actor->m_sActorName.c_str();
+                }
+
+                if (m_RenderActorRepoIds) {
+                    auto* s_RepoEntity = s_Ref.QueryInterface<ZRepositoryItemEntity>();
+
+                    if (s_Text.length() > 0) {
+                        s_Text += "\n\n";
+                    }
+
+                    s_Text += s_RepoEntity->m_sId.ToString().c_str();
+                }
+
+                if (m_RenderActorBehaviors) {
+                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
+
+                    if (s_BehaviorBase) {
+                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(s_BehaviorBase->m_Type);
+
+                        if (s_Text.length() > 0) {
+                            s_Text += "\n\n";
+                        }
+
+                        s_Text += BehaviorToString(s_CompiledBehaviorType);
+                    }
+                }
+
+                p_Renderer->DrawText3D(
+                    s_Text,
+                    s_CameraTransform, true,
+                    SVector4(1.f, 0.f, 0.f, 1.f),
+                    0.1f,
+                    TextAlignment::Center
+                );
+            }
+        }
     }
 }
 
@@ -377,7 +396,7 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
 
             const std::string s_Text = std::to_string(i);
 
-            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, true, s_Color, s_Scale);
         }
     }
 }
@@ -464,7 +483,7 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
                 s_Text = "---";
             }
 
-            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, true, s_Color, s_Scale);
         }
     }
 }
@@ -528,7 +547,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
             s_PFObstacleInternalDep->m_obstacleDef.m_penalty
         );
 
-        p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+        p_Renderer->DrawText3D(s_Text, s_WorldMatrix, true, s_Color, s_Scale);
     }
 }
 
