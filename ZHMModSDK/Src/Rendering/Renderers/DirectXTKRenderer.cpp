@@ -1109,14 +1109,16 @@ void DirectXTKRenderer::DrawQuad3D(
 }
 
 void DirectXTKRenderer::DrawText3D(
-    const std::string& p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale,
+    const std::string& p_Text, const SMatrix& p_World, const bool p_IsCameraTransform,
+    const SVector4& p_Color, float p_Scale,
     TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment
 ) {
-    DrawText3D(p_Text.c_str(), p_World, p_Color, p_Scale, p_HorizontalAlignment, p_VerticalAlignment);
+    DrawText3D(p_Text.c_str(), p_World, p_IsCameraTransform, p_Color, p_Scale, p_HorizontalAlignment, p_VerticalAlignment);
 }
 
 void DirectXTKRenderer::DrawText3D(
-    const char* p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale,
+    const char* p_Text, const SMatrix& p_World, const bool p_IsCameraTransform,
+    const SVector4& p_Color, float p_Scale,
     TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment
 ) {
     int s_TextLength = -1;
@@ -1167,7 +1169,14 @@ void DirectXTKRenderer::DrawText3D(
     const float4 s_Translate = float4(s_OffsetX * p_Scale, 0.f, s_OffsetY * p_Scale, 1.f);
     const float4 s_Scale2 = float4(p_Scale, p_Scale, p_Scale, 1.f);
     const SMatrix s_OffsetMatrix = SMatrix::ScaleTranslate(s_Scale2, s_Translate);
-    const SMatrix s_WorldMatrix = p_World.AffineMultiply(s_OffsetMatrix);
+
+    SMatrix s_World = p_World;
+
+    if (p_IsCameraTransform) {
+        std::swap(s_World.YAxis, s_World.ZAxis);
+    }
+
+    const SMatrix s_WorldMatrix = s_World.AffineMultiply(s_OffsetMatrix);
 
     const unsigned int s_VertexCount = 2 * s_PrintableCharacterCount;
     std::vector<Triangle> s_Triangles;
