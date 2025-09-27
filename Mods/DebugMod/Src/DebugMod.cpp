@@ -291,7 +291,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
                 p_Renderer->DrawText3D(
                     s_Text,
-                    s_CameraTransform, true,
+                    s_CameraTransform,
                     SVector4(1.f, 0.f, 0.f, 1.f),
                     0.1f,
                     TextAlignment::Center
@@ -396,7 +396,7 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
 
             const std::string s_Text = std::to_string(i);
 
-            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, true, s_Color, s_Scale);
+            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
         }
     }
 }
@@ -483,7 +483,7 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
                 s_Text = "---";
             }
 
-            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, true, s_Color, s_Scale);
+            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
         }
     }
 }
@@ -547,7 +547,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
             s_PFObstacleInternalDep->m_obstacleDef.m_penalty
         );
 
-        p_Renderer->DrawText3D(s_Text, s_WorldMatrix, true, s_Color, s_Scale);
+        p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
     }
 }
 

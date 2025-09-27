@@ -1109,17 +1109,19 @@ void DirectXTKRenderer::DrawQuad3D(
 }
 
 void DirectXTKRenderer::DrawText3D(
-    const std::string& p_Text, const SMatrix& p_World, const bool p_IsCameraTransform,
+    const std::string& p_Text, const SMatrix& p_World,
     const SVector4& p_Color, float p_Scale,
-    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment
+    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment,
+    const bool p_IsCameraTransform
 ) {
-    DrawText3D(p_Text.c_str(), p_World, p_IsCameraTransform, p_Color, p_Scale, p_HorizontalAlignment, p_VerticalAlignment);
+    DrawText3D(p_Text.c_str(), p_World, p_Color, p_Scale, p_HorizontalAlignment, p_VerticalAlignment, p_IsCameraTransform);
 }
 
 void DirectXTKRenderer::DrawText3D(
-    const char* p_Text, const SMatrix& p_World, const bool p_IsCameraTransform,
+    const char* p_Text, const SMatrix& p_World,
     const SVector4& p_Color, float p_Scale,
-    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment
+    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment,
+    const bool p_IsCameraTransform
 ) {
     int s_TextLength = -1;
 

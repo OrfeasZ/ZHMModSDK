@@ -81,16 +81,18 @@ public:
     ) = 0;
 
     virtual void DrawText3D(
-        const std::string& p_Text, const SMatrix& p_World, const bool p_IsCameraTransform,
+        const std::string& p_Text, const SMatrix& p_World,
         const SVector4& p_Color, float p_Scale = 1.f,
         TextAlignment p_HorizontalAlignment = TextAlignment::Left,
-        TextAlignment p_VerticalAlignment = TextAlignment::Top
+        TextAlignment p_VerticalAlignment = TextAlignment::Top,
+        const bool p_IsCameraTransform = true
     ) = 0;
     virtual void DrawText3D(
-        const char* p_Text, const SMatrix& p_World, const bool p_IsCameraTransform,
+        const char* p_Text, const SMatrix& p_World,
         const SVector4& p_Color, float p_Scale = 1.f,
         TextAlignment p_HorizontalAlignment = TextAlignment::Left,
-        TextAlignment p_VerticalAlignment = TextAlignment::Top
+        TextAlignment p_VerticalAlignment = TextAlignment::Top,
+        const bool p_IsCameraTransform = true
     ) = 0;
 
     virtual void DrawMesh(
