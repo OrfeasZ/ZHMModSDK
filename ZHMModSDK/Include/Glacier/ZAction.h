@@ -9,6 +9,7 @@ class ZSubaction;
 class ZTextListData;
 class ZIllegalActionEntity;
 class IEnableConditionListener;
+class ZSpatialEntity;
 
 class ZHM5Action : public ZEntityImpl {
 public:

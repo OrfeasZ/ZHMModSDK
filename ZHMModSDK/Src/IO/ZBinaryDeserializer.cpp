@@ -2,6 +2,8 @@
 
 #include "IO/ZBinaryDeserializer.h"
 
+#include <Glacier/ZTypeRegistry.h>
+
 void* ZBinaryDeserializer::Deserialize(const std::string& filePath, const TArray<ZResourceIndex>* referenceIndices) {
     ZBinaryReader binaryReader = ZBinaryReader(filePath);
 

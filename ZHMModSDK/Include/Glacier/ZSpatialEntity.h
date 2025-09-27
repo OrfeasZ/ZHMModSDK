@@ -4,6 +4,7 @@
 #include "ZPrimitives.h"
 #include "ZMath.h"
 #include "ZResource.h"
+#include "Functions.h"
 
 class ZSpatialEntity :
         public ZEntityImpl {

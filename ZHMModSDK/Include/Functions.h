@@ -7,6 +7,7 @@
 #include "Glacier/ZInput.h"
 #include "Glacier/ZMath.h"
 #include "Glacier/ZPrimitives.h"
+#include "Glacier/ZResource.h"
 
 class ZHitman5;
 class ZActor;
@@ -35,6 +36,11 @@ class ZInputActionManager;
 class IItem;
 class ZSetpieceEntity;
 struct SExternalReferences;
+class ZTemplateEntityFactory;
+class STemplateEntityFactory;
+class ZTemplateInstaller;
+class ZTemplateBlueprintInstaller;
+class ZResourcePending;
 
 class ZHMSDK_API Functions {
 public:
@@ -118,4 +124,20 @@ public:
     static EngineFunction<ZDynamicObject*(
         ZDynamicObject* th, const ZString& p_Key, const ZDynamicObject& p_Value
     )>* ZDynamicObject_Set;
+
+    static EngineFunction<void(ZTemplateEntityFactory* th, STemplateEntityFactory* data, ZResourcePending& pending)>*
+    ZTemplateEntityFactory_ZTemplateEntityFactory;
+
+    static EngineFunction<void(ZResourceContainer* th, ZResourceIndex& out, const ZRuntimeResourceID rid)>*
+    ZResourceContainer_AddResourceInternal;
+
+    static EngineFunction<void(
+        ZResourceReader * th, ZResourceIndex * idx, ZResourceDataPtr * pData, uint32_t dataSize
+    )>* ZResourceReader_ZResourceReader;
+
+    static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
+    ZTemplateInstaller_Install;
+
+    static EngineFunction<bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)>*
+    ZTemplateBlueprintInstaller_Install;
 };
