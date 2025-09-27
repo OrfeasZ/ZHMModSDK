@@ -1233,6 +1233,7 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool
     m_Vertices.clear();
     m_Indices.clear();
     m_NavMeshLines.clear();
+    m_NavMeshConnectivityLines.clear();
     m_ObstaclesToEntityIDs.clear();
 
     return HookResult<void>(HookAction::Continue());
