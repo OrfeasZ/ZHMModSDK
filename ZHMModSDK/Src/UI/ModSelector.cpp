@@ -71,7 +71,7 @@ void ModSelector::Draw(bool p_HasFocus) {
             ImGui::TextColored(ImVec4(1.0, 0.0, 0.0, 1.0), "NOTICE");
             ImGui::PopFont();
             ImGui::Text("The following mods are incompatible and need");
-            ImGui::Text("to be updated before they can be enable.");
+            ImGui::Text("to be updated before they can be enabled.");
             ImGui::Spacing();
         }
 

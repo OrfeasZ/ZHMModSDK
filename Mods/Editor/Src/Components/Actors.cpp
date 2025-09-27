@@ -357,6 +357,10 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
             s_CurrentlySelectedActor->GetID(&s_Ref);
 
+            if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+                UpdateEntities();
+            }
+
             OnSelectEntity(s_Ref, std::nullopt);
         }
 
