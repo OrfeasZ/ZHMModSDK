@@ -116,7 +116,7 @@ ModSDK::ModSDK() {
     m_DebugConsole = std::make_shared<DebugConsole>();
     SetupLogging(spdlog::level::trace);
     #else
-	SetupLogging(spdlog::level::info);
+    SetupLogging(spdlog::level::info);
     #endif
 
     m_ModLoader = std::make_shared<ModLoader>();
@@ -273,6 +273,10 @@ void ModSDK::LoadConfiguration() {
 
         if (s_Mod.second.has("shown_ui_toggle_warning")) {
             m_HasShownUiToggleWarning = true;
+        }
+
+        if (s_Mod.second.has("force_load")) {
+            m_ForceLoad = true;
         }
     }
 }
@@ -454,7 +458,12 @@ void ModSDK::SkipVersionUpdate(const std::string& p_Version) {
     );
 }
 
-void ModSDK::CheckForUpdates() const {
+bool ModSDK::CheckForUpdates() const {
+    if (m_DisableUpdateCheck) {
+        Logger::Debug("Update check disabled. Skipping.");
+        return false;
+    }
+
     // Try to get latest version from GitHub.
     std::pair<uint32_t, std::string> s_VersionCheckResult;
 
@@ -464,12 +473,12 @@ void ModSDK::CheckForUpdates() const {
     }
     catch (const std::exception& e) {
         Logger::Error("Could not check for updates: {}", e.what());
-        return;
+        return false;
     }
 
     if (s_VersionCheckResult.first != 200) {
         Logger::Error("Could not check for updates: HTTP status code {}", s_VersionCheckResult.first);
-        return;
+        return false;
     }
 
     // Parse the JSON response with simdjson.
@@ -484,7 +493,7 @@ void ModSDK::CheckForUpdates() const {
         // Check if we should ignore this version.
         if (m_IgnoredVersion == s_LatestVersion) {
             Logger::Info("Ignoring update notification for version {}.", s_LatestVersion);
-            return;
+            return false;
         }
 
         // Strip v prefix.
@@ -497,9 +506,11 @@ void ModSDK::CheckForUpdates() const {
         if (s_LatestSemver > s_CurrentVersion) {
             Logger::Info("A new version of the Mod SDK is available: {}.", s_LatestVersion);
             ShowVersionNotice(std::string(s_LatestVersion));
+            return true;
         }
         else {
             Logger::Info("Mod SDK is up to date.");
+            return false;
         }
     }
     catch (const simdjson::simdjson_error& e) {
@@ -508,6 +519,8 @@ void ModSDK::CheckForUpdates() const {
     catch (const std::exception& e) {
         Logger::Error("An error occurred while checking for updates: {}", e.what());
     }
+
+    return false;
 }
 
 // Built-in console commands
@@ -579,7 +592,8 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
                         return Logger::Error(
                             "[ZConfigCommand] Invalid input (float), input does not represent a float."
                         );
-                    } catch (const std::out_of_range&) {
+                    }
+                    catch (const std::out_of_range&) {
                         return Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
                     }
                     break;
@@ -599,7 +613,8 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
                         return Logger::Error(
                             "[ZConfigCommand] Invalid input (integer), input does not represent a integer."
                         );
-                    } catch (const std::out_of_range&) {
+                    }
+                    catch (const std::out_of_range&) {
                         return Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
                     }
                     break;
@@ -624,6 +639,40 @@ bool ModSDK::Startup() {
     #if _DEBUG
     m_DebugConsole->StartRedirecting();
     #endif
+
+    // If there's at least 3 failures, we probably have a problem.
+    // Unless the bypass flag is set, show a message and exit.
+    if (g_Failures >= 3 && !m_ForceLoad) {
+        Logger::Error("Too many errors occurred ({}). Unloading SDK.", g_Failures);
+
+        // Remove detours.
+        HookRegistry::ClearDetoursWithContext(this);
+        m_D3D12Hooks.reset();
+        HookRegistry::DestroyHooks();
+        Trampolines::ClearTrampolines();
+
+        std::thread s_VersionCheckThread(
+            [] {
+                if (!GetInstance()->CheckForUpdates()) {
+                    MessageBoxA(
+                        nullptr,
+                        "The Mod SDK has encountered too many errors and will now unload itself. This can usually happen after a game update, "
+                        "but no new version of the SDK is available yet (or you've disabled update checks).\n"
+                        "\n"
+                        "You can check for updates manually by going to:\n"
+                        "https://github.com/OrfeasZ/ZHMModSDK",
+                        "Mod SDK Error",
+                        MB_OK | MB_ICONERROR
+                    );
+                }
+            }
+        );
+
+        s_VersionCheckThread.detach();
+
+        // Not returning false here for a full unload because of deadlocks.
+        return true;
+    }
 
     m_ModLoader->Startup();
 

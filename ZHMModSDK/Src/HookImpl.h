@@ -9,6 +9,7 @@
 #include "Hook.h"
 #include "Util/ProcessUtils.h"
 #include "Logging.h"
+#include "Failures.h"
 
 #define MAX_TRAMPOLINES 4096
 
@@ -205,6 +206,7 @@ protected:
         m_Detours.push_back(nullptr);
 
         if (p_Target == nullptr) {
+            Fail();
             Logger::Error(
                 "Could not find address for hook '{}'. This probably means that the game was updated and the SDK requires changes.",
                 p_HookName
@@ -220,6 +222,7 @@ protected:
         auto s_Result = MH_CreateHook(m_Target, p_Detour, &s_Original);
 
         if (s_Result != MH_OK) {
+            Fail();
             Logger::Error(
                 "Could not create hook '{}' at address {}. Error code: {}.", p_HookName, fmt::ptr(p_Target),
                 static_cast<int>(s_Result)
@@ -230,6 +233,7 @@ protected:
         s_Result = MH_EnableHook(m_Target);
 
         if (s_Result != MH_OK) {
+            Fail();
             Logger::Error(
                 "Could install detour for hook '{}' at address {}. Error code: {}.", p_HookName, fmt::ptr(p_Target),
                 static_cast<int>(s_Result)
@@ -251,6 +255,7 @@ protected:
         m_Detours.push_back(nullptr);
 
         if (p_Original == nullptr) {
+            Fail();
             Logger::Error(
                 "Could not find address for hook '{}'. This probably means that the game was updated and the SDK requires changes.",
                 p_HookName
