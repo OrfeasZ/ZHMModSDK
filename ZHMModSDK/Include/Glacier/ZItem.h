@@ -42,6 +42,8 @@ public:
     ZString m_sTitle;
 };
 
+class ZVrHandAlignPose;
+
 class ZHM5Item :
         public ZEntityImpl, // Offset 0x0
         public IItemBase, // Offset 0x18
@@ -75,28 +77,34 @@ public:
     TEntityRef<IPhysicsAccessor> m_rPhysicsAccessor; // 0x128
     TEntityRef<ZSpatialEntity> m_PosHandAttach; // 0x138
     TEntityRef<ZSpatialEntity> m_PosHandAttachVROverride; // 0x148
-    TEntityRef<ZSpatialEntity> m_PosLeftHandAttach; // 0x158
-    TEntityRef<ZSpatialEntity> m_PosLeftPrimingHandAttach; // 0x168
-    TEntityRef<ZSpatialEntity> m_PosFreeBoneAttach; // 0x178
-    TEntityRef<ZSpatialEntity> m_PosBackAttach; // 0x188
-    TEntityRef<ZSpatialEntity> m_PosPlacementAttach; // 0x198
-    TEntityRef<ZBoxVolumeEntity> m_PlacementVolume; // 0x1A8
-    float32 m_fWakeTimeOnPlaceInWorld; // 0x1B8
-    TEntityRef<IAnimPlayerEntity> m_AnimPlayer; // 0x1C0
-    TEntityRef<ZBehaviorEntityBase> m_rPickupBehavior; // 0x1D0
-    TEntityRef<IItemContainer> m_rItemContainer; // 0x1E0
-    TEntityRef<ZEventConsumerCollection> m_EventConsumerCollection; // 0x1F0
-    TEntityRef<ZSpatialEntity> m_rBeaconSpatial; // 0x200
-    TEntityRef<IBoolCondition> m_rVisibleInInventory; // 0x210
-    TEntityRef<ZValueBool> m_rItemPickupEnabled; // 0x220
-    TEntityRef<ZValueBool> m_rItemVisible; // 0x230
-    TEntityRef<ZValueBool> m_rItemInPhysicsWorld; // 0x240
-    TEntityRef<ZValueBool> m_rItemDestroyed; // 0x250
-    TEntityRef<ZValueBool> m_rItemTurnedOn; // 0x260
-    TEntityRef<ZValueBool> m_rItemOwned; // 0x270
-    TEntityRef<ZValueBool> m_rItemCanTurnOn; // 0x280
-    TEntityRef<ZValueBool> m_rItemCanTurnOff; // 0x290
-    TEntityRef<IVariationResourceEntity> m_pVariationResource; // 0x2A0
+    TEntityRef<ZSpatialEntity> m_PosPrimingHandAttach; // 0x158
+    TEntityRef<ZSpatialEntity> m_PosLeftHandAttach; // 0x168
+    TEntityRef<ZSpatialEntity> m_PosLeftHandAttachVROverride; // 0x178
+    TEntityRef<ZSpatialEntity> m_PosLeftPrimingHandAttach; // 0x188
+    TEntityRef<ZSpatialEntity> m_PosHolsterAttachVR; // 0x198
+    TArray<TEntityRef<ZVrHandAlignPose>> m_aHandAlignPoses; // 0x1A8
+    TEntityRef<ZSpatialEntity> m_PivotAttacher; // 0x1C0
+    TEntityRef<ZSpatialEntity> m_PosFreeBoneAttach; // 0x1D0
+    TEntityRef<ZSpatialEntity> m_PosBackAttach; // 0x1E0
+    TEntityRef<ZSpatialEntity> m_PosDualBackAttach; // 0x1F0
+    TEntityRef<ZSpatialEntity> m_PosPlacementAttach; // 0x200
+    TEntityRef<ZBoxVolumeEntity> m_PlacementVolume; // 0x210
+    float32 m_fWakeTimeOnPlaceInWorld; // 0x220
+    TEntityRef<IAnimPlayerEntity> m_AnimPlayer; // 0x228
+    TEntityRef<ZBehaviorEntityBase> m_rPickupBehavior; // 0x238
+    TEntityRef<IItemContainer> m_rItemContainer; // 0x248
+    TEntityRef<ZEventConsumerCollection> m_EventConsumerCollection; // 0x258
+    TEntityRef<ZSpatialEntity> m_rBeaconSpatial; // 0x268
+    TEntityRef<IBoolCondition> m_rVisibleInInventory; // 0x278
+    TEntityRef<ZValueBool> m_rItemPickupEnabled; // 0x288
+    TEntityRef<ZValueBool> m_rItemVisible; // 0x298
+    TEntityRef<ZValueBool> m_rItemInPhysicsWorld; // 0x2A8
+    TEntityRef<ZValueBool> m_rItemDestroyed; // 0x2B8
+    TEntityRef<ZValueBool> m_rItemTurnedOn; // 0x2C8
+    TEntityRef<ZValueBool> m_rItemOwned; // 0x2D8
+    TEntityRef<ZValueBool> m_rItemCanTurnOn; // 0x2E8
+    TEntityRef<ZValueBool> m_rItemCanTurnOff; // 0x2F8
+    TEntityRef<IVariationResourceEntity> m_pVariationResource; // 0x308
     ZEntityRef m_rSpawner;
     ZEntityRef m_rFactoryEntity;
     PAD(0x10);
