@@ -64,6 +64,7 @@ public:
     }
 
 private:
+    std::unordered_set<std::string> m_IncompatibleMods;
     std::unordered_set<std::string> m_AvailableMods;
     std::unordered_set<std::string> m_AvailableModsLower;
     std::vector<IPluginInterface*> m_ModList;

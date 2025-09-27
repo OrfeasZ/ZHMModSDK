@@ -14,9 +14,11 @@ ModSelector::ModSelector() {
 }
 
 void ModSelector::UpdateAvailableMods(
-    const std::unordered_set<std::string>& p_Mods, const std::unordered_set<std::string>& p_ActiveMods
+    const std::unordered_set<std::string>& p_Mods, const std::unordered_set<std::string>& p_IncompatibleMods, const std::unordered_set<std::string>& p_ActiveMods
 ) {
     ScopedExclusiveGuard s_Guard(&m_Lock);
+
+    m_IncompatibleMods = p_IncompatibleMods;
 
     m_AvailableMods.clear();
 
@@ -55,12 +57,29 @@ void ModSelector::Draw(bool p_HasFocus) {
         );
         ImGui::Separator();
 
-        ImGui::BeginChild("ScrollingRegion", ImVec2(0, 200), false, ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::BeginChild("ScrollingRegion", ImVec2(0, 300), false, ImGuiWindowFlags_HorizontalScrollbar);
 
         AcquireSRWLockShared(&m_Lock);
 
         for (auto& s_Mod : m_AvailableMods) {
             ImGui::Checkbox(s_Mod.Name.c_str(), &s_Mod.Enabled);
+        }
+
+        if (m_IncompatibleMods.size() > 0) {
+            ImGui::Separator();
+            ImGui::PushFont(SDK()->GetImGuiBlackFont());
+            ImGui::TextColored(ImVec4(1.0, 0.0, 0.0, 1.0), "NOTICE");
+            ImGui::PopFont();
+            ImGui::Text("The following mods are incompatible and need");
+            ImGui::Text("to be updated before they can be enable.");
+            ImGui::Spacing();
+        }
+
+        for (auto& s_Mod : m_IncompatibleMods) {
+            ImGui::BeginDisabled(true);
+            bool off = false;
+            ImGui::Checkbox(s_Mod.c_str(), &off);
+            ImGui::EndDisabled();
         }
 
         ReleaseSRWLockShared(&m_Lock);

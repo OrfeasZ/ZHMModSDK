@@ -69,7 +69,7 @@ ZHMSDK_API IModSDK* SDK() {
 }
 
 extern "C" ZHMSDK_API const char* SDKVersion() {
-    return "3.1.1";
+    return ZHMMODSDK_VER;
 }
 
 ModSDK* ModSDK::g_Instance = nullptr;

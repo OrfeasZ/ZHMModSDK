@@ -1,5 +1,12 @@
 #pragma once
 
+// The current version of the SDK.
+#define ZHMMODSDK_VER "4.0.0"
+
+// The current version of the SDK ABI.
+// Any change to this is a breaking change.
+#define ZHMMODSDK_ABI_VER "4"
+
 #include "Glacier/ZPrimitives.h"
 #include "Common.h"
 #include "imgui.h"
