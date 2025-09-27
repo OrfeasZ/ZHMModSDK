@@ -1,0 +1,291 @@
+{
+    "subType": 2,
+    "blueprintIndexInResourceHeader": 0,
+    "rootEntityIndex": 0,
+    "subEntities": [
+        {
+            "logicalParent": {
+                "entityID": 18446744073709551615,
+                "externalSceneIndex": -1,
+                "entityIndex": -1,
+                "exposedEntity": ""
+            },
+            "entityTypeResourceIndex": 1,
+            "propertyValues": [],
+            "postInitPropertyValues": [],
+            "platformSpecificPropertyValues": []
+        },
+        {
+            "logicalParent": {
+                "entityID": 18446744073709551615,
+                "externalSceneIndex": -1,
+                "entityIndex": 0,
+                "exposedEntity": ""
+            },
+            "entityTypeResourceIndex": 2,
+            "propertyValues": [
+                {
+                    "nPropertyID": "m_mTransform",
+                    "value": {
+                        "$type": "SMatrix43",
+                        "$val": {
+                            "XAxis": {
+                                "x": -0.01750837110700898,
+                                "y": -0.9998467167227078,
+                                "z": 0.000000029802322443206464
+                            },
+                            "YAxis": {
+                                "x": 0.045330992472526366,
+                                "y": -0.0007937637378883089,
+                                "z": 0.9989717068368775
+                            },
+                            "ZAxis": {
+                                "x": -0.9988185811560752,
+                                "y": 0.017490368719671023,
+                                "z": 0.04533794149953141
+                            },
+                            "Trans": {
+                                "x": -40.105434,
+                                "y": -29.001667,
+                                "z": 2.3575625
+                            }
+                        }
+                    }
+                },
+                {
+                    "nPropertyID": "Texture2D_04_dest",
+                    "value": {
+                        "$type": "SEntityTemplateReference",
+                        "$val": {
+                            "entityID": 18446744073709551615,
+                            "externalSceneIndex": -1,
+                            "entityIndex": 2,
+                            "exposedEntity": ""
+                        }
+                    }
+                },
+                {
+                    "nPropertyID": "m_eRoomBehaviour",
+                    "value": {
+                        "$type": "ZSpatialEntity.ERoomBehaviour",
+                        "$val": "ROOM_DYNAMIC"
+                    }
+                }
+            ],
+            "postInitPropertyValues": [
+                {
+                    "nPropertyID": "m_eidParent",
+                    "value": {
+                        "$type": "SEntityTemplateReference",
+                        "$val": {
+                            "entityID": 18446744073709551615,
+                            "externalSceneIndex": -1,
+                            "entityIndex": 0,
+                            "exposedEntity": ""
+                        }
+                    }
+                }
+            ],
+            "platformSpecificPropertyValues": []
+        },
+        {
+            "logicalParent": {
+                "entityID": 18446744073709551615,
+                "externalSceneIndex": -1,
+                "entityIndex": 0,
+                "exposedEntity": ""
+            },
+            "entityTypeResourceIndex": 3,
+            "propertyValues": [
+                {
+                    "nPropertyID": "m_aMultiSource",
+                    "value": {
+                        "$type": "TArray<SEntityTemplateReference>",
+                        "$val": [
+                            {
+                                "entityID": 18446744073709551615,
+                                "externalSceneIndex": -1,
+                                "entityIndex": 3,
+                                "exposedEntity": ""
+                            }
+                        ]
+                    }
+                },
+                {
+                    "nPropertyID": "m_nWidth",
+                    "value": {
+                        "$type": "uint32",
+                        "$val": 1280
+                    }
+                },
+                {
+                    "nPropertyID": "m_nHeight",
+                    "value": {
+                        "$type": "uint32",
+                        "$val": 720
+                    }
+                },
+                {
+                    "nPropertyID": "m_bUseBGRA",
+                    "value": {
+                        "$type": "bool",
+                        "$val": true
+                    }
+                },
+                {
+                    "nPropertyID": "m_bIsPIP",
+                    "value": {
+                        "$type": "bool",
+                        "$val": false
+                    }
+                },
+                {
+                    "nPropertyID": "m_bDrawGates",
+                    "value": {
+                        "$type": "bool",
+                        "$val": true
+                    }
+                },
+                {
+                    "nPropertyID": "m_nGateTraversalDepth",
+                    "value": {
+                        "$type": "int32",
+                        "$val": 10000
+                    }
+                },
+                {
+                    "nPropertyID": "m_bForceVisible",
+                    "value": {
+                        "$type": "bool",
+                        "$val": true
+                    }
+                }
+            ],
+            "postInitPropertyValues": [],
+            "platformSpecificPropertyValues": []
+        },
+        {
+            "logicalParent": {
+                "entityID": 18446744073709551615,
+                "externalSceneIndex": -1,
+                "entityIndex": 0,
+                "exposedEntity": ""
+            },
+            "entityTypeResourceIndex": 4,
+            "propertyValues": [
+                {
+                    "nPropertyID": "m_bAllowAutoCameraCuts",
+                    "value": {
+                        "$type": "bool",
+                        "$val": false
+                    }
+                },
+                {
+                    "nPropertyID": "m_fNearZ",
+                    "value": {
+                        "$type": "float32",
+                        "$val": 0.5
+                    }
+                },
+                {
+                    "nPropertyID": "m_fAspectWByH",
+                    "value": {
+                        "$type": "float32",
+                        "$val": 1
+                    }
+                },
+                {
+                    "nPropertyID": "m_fFovYDeg",
+                    "value": {
+                        "$type": "float32",
+                        "$val": 35
+                    }
+                },
+                {
+                    "nPropertyID": "m_fFarZ",
+                    "value": {
+                        "$type": "float32",
+                        "$val": 250
+                    }
+                },
+                {
+                    "nPropertyID": "m_bIsUICamera",
+                    "value": {
+                        "$type": "bool",
+                        "$val": true
+                    }
+                },
+                {
+                    "nPropertyID": "m_mTransform",
+                    "value": {
+                        "$type": "SMatrix43",
+                        "$val": {
+                            "XAxis": {
+                                "x": -0.8307251621324028,
+                                "y": 0.5566827687292755,
+                                "z": -0.00000002980232233218416
+                            },
+                            "YAxis": {
+                                "x": -0.004676126664119318,
+                                "y": -0.006978025004794608,
+                                "z": 0.9999647198808832
+                            },
+                            "ZAxis": {
+                                "x": 0.5566631286869232,
+                                "y": 0.830695854189089,
+                                "z": 0.008399940091782798
+                            },
+                            "Trans": {
+                                "x": -40.055542,
+                                "y": -29.139544,
+                                "z": 2.3236175
+                            }
+                        }
+                    }
+                },
+                {
+                    "nPropertyID": "m_bForceVisible",
+                    "value": {
+                        "$type": "bool",
+                        "$val": true
+                    }
+                },
+                {
+                    "nPropertyID": "m_nPIPPriority",
+                    "value": {
+                        "$type": "uint32",
+                        "$val": 0
+                    }
+                }
+            ],
+            "postInitPropertyValues": [],
+            "platformSpecificPropertyValues": []
+        },
+        {
+            "logicalParent": {
+                "entityID": 18446744073709551615,
+                "externalSceneIndex": -1,
+                "entityIndex": -1,
+                "exposedEntity": ""
+            },
+            "entityTypeResourceIndex": 5,
+            "propertyValues": [],
+            "postInitPropertyValues": [],
+            "platformSpecificPropertyValues": []
+        },
+        {
+            "logicalParent": {
+                "entityID": 18446744073709551615,
+                "externalSceneIndex": -1,
+                "entityIndex": -1,
+                "exposedEntity": ""
+            },
+            "entityTypeResourceIndex": 5,
+            "propertyValues": [],
+            "postInitPropertyValues": [],
+            "platformSpecificPropertyValues": []
+        }
+    ],
+    "propertyOverrides": [],
+    "externalSceneTypeIndicesInResourceHeader": []
+}

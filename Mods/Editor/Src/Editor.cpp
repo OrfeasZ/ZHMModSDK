@@ -24,6 +24,8 @@
 #include "Glacier/ZGameLoopManager.h"
 #include "Glacier/ZKnowledge.h"
 
+#include <ResourceLib_HM3.h>
+
 Editor::Editor() {
     // Disable ZTemplateEntityBlueprintFactory freeing its associated data.
     uint8_t s_Nop[0x45] = {};
@@ -113,6 +115,222 @@ void Editor::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR")) {
         m_MenuVisible = !m_MenuVisible;
     }
+
+
+    if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  SPAWN")) {
+        auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+        if (!s_Scene) {
+            Logger::Error("Scene is not yet loaded. Cannot spawn editor cameras.");
+            return;
+        }
+
+        const std::string s_JsonData =
+                R"({"subType":2,"blueprintIndexInResourceHeader":0,"rootEntityIndex":0,"subEntities":[{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":1,"propertyValues":[],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":2,"propertyValues":[{"nPropertyID":"m_mTransform","value":{"$type":"SMatrix43","$val":{"XAxis":{"x":-0.01750837110700898,"y":-0.9998467167227078,"z":0.000000029802322443206464},"YAxis":{"x":0.045330992472526366,"y":-0.0007937637378883089,"z":0.9989717068368775},"ZAxis":{"x":-0.9988185811560752,"y":0.017490368719671023,"z":0.04533794149953141},"Trans":{"x":-40.105434,"y":-29.001667,"z":2.3575625}}}},{"nPropertyID":"Texture2D_04_dest","value":{"$type":"SEntityTemplateReference","$val":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":2,"exposedEntity":""}}},{"nPropertyID":"m_eRoomBehaviour","value":{"$type":"ZSpatialEntity.ERoomBehaviour","$val":"ROOM_DYNAMIC"}}],"postInitPropertyValues":[{"nPropertyID":"m_eidParent","value":{"$type":"SEntityTemplateReference","$val":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""}}}],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":3,"propertyValues":[{"nPropertyID":"m_aMultiSource","value":{"$type":"TArray<SEntityTemplateReference>","$val":[{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":3,"exposedEntity":""}]}},{"nPropertyID":"m_nWidth","value":{"$type":"uint32","$val":1280}},{"nPropertyID":"m_nHeight","value":{"$type":"uint32","$val":720}},{"nPropertyID":"m_bUseBGRA","value":{"$type":"bool","$val":true}},{"nPropertyID":"m_bIsPIP","value":{"$type":"bool","$val":false}},{"nPropertyID":"m_bDrawGates","value":{"$type":"bool","$val":true}},{"nPropertyID":"m_nGateTraversalDepth","value":{"$type":"int32","$val":10000}},{"nPropertyID":"m_bForceVisible","value":{"$type":"bool","$val":true}}],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":4,"propertyValues":[{"nPropertyID":"m_bAllowAutoCameraCuts","value":{"$type":"bool","$val":false}},{"nPropertyID":"m_fNearZ","value":{"$type":"float32","$val":0.5}},{"nPropertyID":"m_fAspectWByH","value":{"$type":"float32","$val":1}},{"nPropertyID":"m_fFovYDeg","value":{"$type":"float32","$val":35}},{"nPropertyID":"m_fFarZ","value":{"$type":"float32","$val":250}},{"nPropertyID":"m_bIsUICamera","value":{"$type":"bool","$val":true}},{"nPropertyID":"m_mTransform","value":{"$type":"SMatrix43","$val":{"XAxis":{"x":-0.8307251621324028,"y":0.5566827687292755,"z":-0.00000002980232233218416},"YAxis":{"x":-0.004676126664119318,"y":-0.006978025004794608,"z":0.9999647198808832},"ZAxis":{"x":0.5566631286869232,"y":0.830695854189089,"z":0.008399940091782798},"Trans":{"x":-40.055542,"y":-29.139544,"z":2.3236175}}}},{"nPropertyID":"m_bForceVisible","value":{"$type":"bool","$val":true}},{"nPropertyID":"m_nPIPPriority","value":{"$type":"uint32","$val":0}}],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":5,"propertyValues":[],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":5,"propertyValues":[],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]}],"propertyOverrides":[],"externalSceneTypeIndicesInResourceHeader":[]})";
+
+        const std::string s_JsonTbluData =
+                R"({"subType":2,"rootEntityIndex":0,"subEntities":[{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":0,"entityId":18446744073709551614,"editorOnly":false,"entityName":"editor_data","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":1,"entityId":18369452287080903649,"editorOnly":false,"entityName":"Tablet_A","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":2,"entityId":18369548849488043080,"editorOnly":false,"entityName":"RenderDestinationTexture","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":3,"entityId":18369539649893181162,"editorOnly":false,"entityName":"Camera","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":4,"entityId":18369540531306295163,"editorOnly":false,"entityName":"New Entity2","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":4,"entityId":18369352690153672810,"editorOnly":false,"entityName":"New Entity1","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]}],"externalSceneTypeIndicesInResourceHeader":[],"pinConnections":[],"inputPinForwardings":[],"outputPinForwardings":[],"overrideDeletes":[],"pinConnectionOverrides":[],"pinConnectionOverrideDeletes":[]})";
+
+        auto s_ResourceTempMem = HM3_GetGeneratorForResource("TEMP")->FromJsonStringToResourceMem(
+            s_JsonData.c_str(),
+            s_JsonData.size(),
+            false
+        );
+
+        auto s_ResourceTbluMem = HM3_GetGeneratorForResource("TBLU")->FromJsonStringToResourceMem(
+            s_JsonTbluData.c_str(),
+            s_JsonTbluData.size(),
+            false
+        );
+
+        auto LoadResource = [](
+            ResourceMem* p_ResourceMem, ZRuntimeResourceID p_ResId, std::function<void(ZResourcePending*)> p_Install
+        ) {
+            // Create a new resource index.
+            ZResourceIndex s_Index;
+            Functions::ZResourceContainer_AddResourceInternal->Call(*Globals::ResourceContainer, s_Index, p_ResId);
+            (*Globals::ResourceContainer)->m_resources[s_Index.val].numReferences = 0;
+
+            auto* s_Buffer = static_cast<ZResourceDataBuffer*>((*Globals::MemoryManager)->m_pNormalAllocator->
+                AllocateAligned(
+                    sizeof(ZResourceDataBuffer),
+                    alignof(ZResourceDataBuffer)
+                ));
+
+            new(s_Buffer) ZResourceDataBuffer();
+
+            s_Buffer->m_pData = const_cast<void*>(p_ResourceMem->ResourceData);
+            s_Buffer->m_nSize = p_ResourceMem->DataSize;
+            s_Buffer->m_iRefCount = 20;
+            s_Buffer->m_nCapacity = p_ResourceMem->DataSize;
+            s_Buffer->m_bOwnsDataPtr = false;
+
+            ZResourceDataPtr s_DataPtr {.m_pObject = s_Buffer};
+
+            auto* s_Reader = static_cast<ZResourceReader*>((*Globals::MemoryManager)->m_pNormalAllocator->
+                AllocateAligned(
+                    sizeof(ZResourceReader),
+                    alignof(ZResourceReader)
+                ));
+
+            Logger::Info(
+                "Data: {}, Buffer: {}, Data ptr: {}", fmt::ptr(p_ResourceMem->ResourceData), fmt::ptr(s_Buffer),
+                fmt::ptr(&s_DataPtr)
+            );
+
+            Functions::ZResourceReader_ZResourceReader->Call(
+                s_Reader,
+                &s_Index,
+                &s_DataPtr,
+                p_ResourceMem->DataSize
+            );
+
+            Logger::Info("Reader created!");
+
+            {
+                const auto s_Res = (*Globals::ResourceContainer)->m_resources[s_Index.val];
+                Logger::Info("Resource: {}", s_Res.rid.GetID());
+                Logger::Info("Resource data: {}", fmt::ptr(s_Res.resourceData));
+                Logger::Info("Resource offset: {}", s_Res.dataOffset);
+                Logger::Info("Resource size: {}", s_Res.dataSize);
+                Logger::Info("Resource compressed size: {}", s_Res.compressedDataSize);
+                Logger::Info("Resource status: {}", static_cast<int>(s_Res.status));
+                Logger::Info("Resource ref count: {}", s_Res.refCount);
+                Logger::Info("Resource next newest index: {}", s_Res.nextNewestIndex.val);
+                Logger::Info("Resource first reference index: {}", s_Res.firstReferenceIndex);
+                Logger::Info("Resource num references: {}", s_Res.numReferences);
+                Logger::Info("Resource type: {}", s_Res.resourceType);
+                Logger::Info("Resource monitor id: {}", s_Res.monitorId);
+                Logger::Info("Resource priority: {}", s_Res.priority);
+                Logger::Info("Resource package id: {}", s_Res.packageId);
+            }
+
+            ZResourcePending s_Pending {};
+            s_Pending.m_pResource.m_nResourceIndex = s_Index.val;
+            s_Pending.m_pResourceReader.m_pObject = s_Reader;
+
+            p_Install(&s_Pending);
+
+            {
+                const auto s_Res = (*Globals::ResourceContainer)->m_resources[s_Index.val];
+                Logger::Info("Resource: {}", s_Res.rid.GetID());
+                Logger::Info("Resource data: {}", fmt::ptr(s_Res.resourceData));
+                Logger::Info("Resource offset: {}", s_Res.dataOffset);
+                Logger::Info("Resource size: {}", s_Res.dataSize);
+                Logger::Info("Resource compressed size: {}", s_Res.compressedDataSize);
+                Logger::Info("Resource status: {}", static_cast<int>(s_Res.status));
+                Logger::Info("Resource ref count: {}", s_Res.refCount);
+                Logger::Info("Resource next newest index: {}", s_Res.nextNewestIndex.val);
+                Logger::Info("Resource first reference index: {}", s_Res.firstReferenceIndex);
+                Logger::Info("Resource num references: {}", s_Res.numReferences);
+                Logger::Info("Resource type: {}", s_Res.resourceType);
+                Logger::Info("Resource monitor id: {}", s_Res.monitorId);
+                Logger::Info("Resource priority: {}", s_Res.priority);
+                Logger::Info("Resource package id: {}", s_Res.packageId);
+            }
+
+            // TODO: Free s_Reader, s_Buffer, etc.
+
+            return s_Index;
+        };
+
+        Logger::Info("Done done onde!");
+
+        if (s_ResourceTbluMem && s_ResourceTempMem) {
+            Logger::Info("Creating TBLU resource...");
+
+            auto s_TbluIndex = LoadResource(
+                s_ResourceTbluMem, ResId<"[assembly:/_sdk/editor/editor_data.brick].pc_entityblueprint">,
+                [](ZResourcePending* r) { Functions::ZTemplateBlueprintInstaller_Install->Call(nullptr, r); }
+            );
+
+            Logger::Info("TBLU index: {}", s_TbluIndex.val);
+
+            Logger::Info("Creating TEMP resource...");
+
+            auto s_TempIndex = LoadResource(
+                s_ResourceTempMem, ResId<"[assembly:/_sdk/editor/editor_data.brick].pc_entitytype">,
+                [](ZResourcePending* r) { Functions::ZTemplateInstaller_Install->Call(nullptr, r); }
+            );
+
+            Logger::Info("TEMP index: {}", s_TempIndex.val);
+        }
+        else {
+            Logger::Error("Failed to generate editor resources.");
+        }
+
+
+        auto s_TypeInfo = (*Globals::TypeRegistry)->m_types.find("STemplateEntityFactory")->second;
+
+        // TODO: THESE LEAK!!
+        /*
+        void* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+            s_TypeInfo->typeInfo()->m_nTypeSize,
+            s_TypeInfo->typeInfo()->m_nTypeAlignment
+        );
+
+        memset(s_Data, 0xFF, s_TypeInfo->typeInfo()->m_nTypeSize);
+
+        Logger::Info("Parsing JSON...");
+
+        const bool s_Success = HM3_JsonToGameStruct(
+            "STemplateEntityFactory",
+            s_JsonData.data(),
+            s_JsonData.size(),
+            s_Data,
+            s_TypeInfo->typeInfo()->m_nTypeSize
+        );
+
+        if (!s_Success) {
+            (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
+            Logger::Error("Unable to convert JSON to game struct.");
+            return;
+        }
+
+        void* s_PendingMem = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+            sizeof(ZResourcePending),
+            alignof(ZResourcePending)
+        );
+
+        auto s_Pending = new(s_PendingMem) ZResourcePending();
+
+        void* s_FactoryMem = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+            368,
+            alignof(ZTemplateEntityFactory)
+        );
+
+        auto s_Factory = static_cast<ZTemplateEntityFactory*>(s_FactoryMem);
+        auto s_EntityFactoryData = static_cast<STemplateEntityFactory*>(s_Data);
+
+        Logger::Info("Creating factory...");
+
+        Functions::ZTemplateEntityFactory_ZTemplateEntityFactory->Call(
+            s_Factory,
+            s_EntityFactoryData,
+            *s_Pending
+        );
+
+        Logger::Info("Creating entity...");
+
+        Functions::ZEntityManager_NewEntity->Call(
+            Globals::EntityManager,
+            m_Camera,
+            "SDKCam",
+            s_Factory,
+            s_Scene.m_ref,
+            nullptr,
+            -1
+        );
+
+        if (!m_Camera) {
+            Logger::Error("Could not spawn editor camera entity.");
+            return;
+        }
+
+        Logger::Info("Spawned editor camera entity.");
+        */
+    }
+
 
     /*if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR"))
     {
@@ -659,11 +877,12 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData) {
-    /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+    if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
         p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
-    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
-        p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
-    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";*/
+        //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
+        p_SceneData.m_sceneName =
+                "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
+    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
 
 
     if (m_SelectionForFreeCameraEditorStyleEntity) {

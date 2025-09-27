@@ -87,12 +87,12 @@ void ModSDK::DestroyInstance() {
 
     // We request to pause the game as that increases our chances of succeeding at unloading
     // all our hooks, since less of them will be called.
-    if (Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef)
-        Hooks::ZGameUIManagerEntity_TryOpenMenu->Call(
-            Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef,
-            EGameUIMenu::eUIMenu_PauseMenu,
-            true
-        );
+    //if (Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef)
+    //    Hooks::ZGameUIManagerEntity_TryOpenMenu->Call(
+    //        Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef,
+    //        EGameUIMenu::eUIMenu_PauseMenu,
+    //        true
+    //    );
 
     // We do this in a different thread so the game has time to pause.
     auto* s_ExitThread = CreateThread(
