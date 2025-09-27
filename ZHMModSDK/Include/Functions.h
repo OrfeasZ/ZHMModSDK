@@ -34,6 +34,7 @@ class ZRagdollHandler;
 class ZInputActionManager;
 class IItem;
 class ZSetpieceEntity;
+struct SExternalReferences;
 
 class ZHMSDK_API Functions {
 public:
@@ -58,8 +59,8 @@ public:
     static EngineFunction<void(ZResourceManager* th, int index)>* ZResourceManager_UninstallResource;
 
     static EngineFunction<void(
-        ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory,
-        const ZEntityRef& parent, void* a6, int64_t a7
+        ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
+        const ZEntityRef& transformParent, const SExternalReferences* externalRefs, uint64_t entityId
     )>* ZEntityManager_NewEntity;
 
     static EngineFunction<void(ZSpatialEntity* th)>* ZSpatialEntity_UnknownTransformUpdate;

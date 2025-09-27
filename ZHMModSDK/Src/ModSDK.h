@@ -64,6 +64,7 @@ public:
     void OnEngineInit() const;
     void OnDrawUI(bool p_HasFocus) const;
     void OnDraw3D() const;
+    void OnDepthDraw3D() const;
     void OnDrawMenu() const;
 
 public:

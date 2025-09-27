@@ -15,8 +15,6 @@ struct ScopedD3DRef {
 
         if (Ref)
             Ref->AddRef();
-
-        return *this;
     }
 
     ScopedD3DRef(ScopedD3DRef&& p_Other) noexcept {

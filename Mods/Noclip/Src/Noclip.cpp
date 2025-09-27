@@ -12,8 +12,17 @@
 #include "Glacier/ZGeomEntity.h"
 #include "Glacier/ZKnowledge.h"
 #include "Glacier/ZModule.h"
+#include "Glacier/ZInputActionManager.h"
 
-Noclip::Noclip() {}
+Noclip::Noclip() :
+    m_ToggleNoclipAction("ToggleNoclip"),
+    m_ForwardAction("Forward"),
+    m_BackwardAction("Backward"),
+    m_LeftAction("Left"),
+    m_RightAction("Right"),
+    m_FastAction("Fast")
+{
+}
 
 Noclip::~Noclip() {
     const ZMemberDelegate<Noclip, void(const SGameUpdateEvent&)> s_Delegate(this, &Noclip::OnFrameUpdate);
@@ -23,6 +32,21 @@ Noclip::~Noclip() {
 void Noclip::OnEngineInitialized() {
     const ZMemberDelegate<Noclip, void(const SGameUpdateEvent&)> s_Delegate(this, &Noclip::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
+
+    const char* binds = "NoclipInput={"
+        "ToggleNoclip=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,n);"
+        "Forward=hold(kb,w);"
+        "Backward=hold(kb,s);"
+        "Left=hold(kb,a);"
+        "Right=hold(kb,d);"
+        "Fast=hold(kb,lshift) | hold(kb,rshift);};";
+
+    if (ZInputActionManager::AddBindings(binds)) {
+        Logger::Debug("Successfully added bindings.");
+    }
+    else {
+        Logger::Debug("Failed to add bindings.");
+    }
 }
 
 void Noclip::Init() {
@@ -56,9 +80,7 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     if (!s_CurrentCamera)
         return;
 
-    // TODO: Use proper way to get inputs.
-    // TODO: This triggers on every frame when the key is held down.
-    if (GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState('N')) {
+    if (Functions::ZInputAction_Digital->Call(&m_ToggleNoclipAction, -1)) {
         m_NoclipEnabled = !m_NoclipEnabled;
 
         if (m_NoclipEnabled) {
@@ -74,19 +96,19 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     // Meters per second.
     float s_MoveSpeed = 5.f;
 
-    if (GetAsyncKeyState(VK_SHIFT))
+    if (Functions::ZInputAction_Digital->Call(&m_FastAction, -1))
         s_MoveSpeed = 20.f;
 
-    if (GetAsyncKeyState('W'))
+    if (Functions::ZInputAction_Digital->Call(&m_ForwardAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Up * -s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-    if (GetAsyncKeyState('S'))
+    if (Functions::ZInputAction_Digital->Call(&m_BackwardAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Up * s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-    if (GetAsyncKeyState('A'))
+    if (Functions::ZInputAction_Digital->Call(&m_LeftAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Left * -s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-    if (GetAsyncKeyState('D'))
+    if (Functions::ZInputAction_Digital->Call(&m_RightAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Left * s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
     s_HitmanSpatial->SetWorldMatrix(m_PlayerPosition);

@@ -1,5 +1,7 @@
 #include <Editor.h>
 
+#include "imgui_internal.h"
+
 #include <Glacier/EntityFactory.h>
 #include <Glacier/ZModule.h>
 #include <Glacier/ZEntity.h>
@@ -8,6 +10,7 @@
 
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
+#include "Util/StringUtils.h"
 
 #include <shared_mutex>
 #include <queue>
@@ -183,6 +186,11 @@ void Editor::UpdateEntities() {
 void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     if (!p_Node) return;
 
+    if ((!m_EntityIdSearchInput.empty() || !m_EntityTypeSearchInput.empty() || !m_EntityNameSearchInput.empty()) &&
+        !m_FilteredEntityTreeNodes.contains(p_Node.get())) {
+        return;
+    }
+
     const auto s_Entity = p_Node->Entity;
     const auto s_EntityType = p_Node->EntityType;
     const auto s_EntityName = p_Node->Name;
@@ -212,7 +220,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         s_Flags
     );
 
-    if(ImGui::IsItemHovered())
+    if (ImGui::IsItemHovered())
     {
         ImGui::SetTooltip("%s", s_EntityType.c_str());
     }
@@ -237,71 +245,76 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     }
 }
 
-bool Editor::SearchForEntityById(
-    ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId
-) {
-    if (!p_BrickFactory || !p_BrickEntity) return false;
+void Editor::FilterEntityTree()
+{
+    m_FilteredEntityTreeNodes.clear();
+    m_DirectEntityTreeNodeMatches.clear();
 
-    const auto s_EntIndex = p_BrickFactory->GetSubEntityIndex(p_EntityId);
-
-    if (s_EntIndex != -1) {
-        OnSelectEntity(p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, s_EntIndex), std::nullopt);
-        return true;
+    if (!m_CachedEntityTree) {
+        return;
     }
 
-    for (int i = 0; i < p_BrickFactory->GetSubEntitiesCount(); ++i) {
-        const auto& s_SubEntity = p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, i);
-
-        if (!s_SubEntity) continue;
-
-        const auto s_SubFactory = p_BrickFactory->GetSubEntityBlueprint(i);
-
-        if (s_SubFactory &&
-            s_SubFactory->GetSubEntitiesCount() >
-            0) {
-            if (SearchForEntityById(
-                reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SubFactory),
-                s_SubEntity,
-                p_EntityId
-            ))
-                return true;
-        }
+    if (m_EntityIdSearchInput.empty() &&
+        m_EntityTypeSearchInput.empty() &&
+        m_EntityNameSearchInput.empty())
+    {
+        return;
     }
 
-    return false;
+    FilterEntityTree(m_CachedEntityTree.get());
+
+    if (m_FilteredEntityTreeNodes.empty()) {
+        m_FilteredEntityTreeNodes.insert(m_CachedEntityTree.get());
+    }
+
+    if (m_DirectEntityTreeNodeMatches.size() == 1) {
+        const EntityTreeNode* s_EntityTreeNode = *m_DirectEntityTreeNodeMatches.begin();
+
+        OnSelectEntity(s_EntityTreeNode->Entity, std::nullopt);
+    }
 }
 
-bool Editor::SearchForEntityByType(
-    ZTemplateEntityBlueprintFactory* p_BrickFactory,
-    ZEntityRef p_BrickEntity,
-    const std::string& p_TypeName
-) {
-    if (!p_BrickFactory || !p_BrickEntity) return false;
+bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
+    if (!p_Node) {
+        return false;
+    }
 
-    for (int i = 0; i < p_BrickFactory->GetSubEntitiesCount(); ++i) {
-        const auto& s_SubEntity = p_BrickFactory->GetSubEntity(p_BrickEntity.m_pEntity, i);
+    bool s_MatchesId = true;
+    bool s_MatchesType = true;
+    bool s_MatchesName = true;
 
-        if (!s_SubEntity) continue;
+    if (!m_EntityIdSearchInput.empty()) {
+        const uint64_t id = std::strtoull(m_EntityIdSearchInput.c_str(), nullptr, 16);
 
-        ZEntityRef s_Ref = s_SubEntity;
+        s_MatchesId = p_Node->EntityId == id;
+    }
 
-        if (s_Ref.HasInterface(p_TypeName)) {
-            OnSelectEntity(s_Ref, std::nullopt);
-            return true;
+    if (!m_EntityTypeSearchInput.empty()) {
+        s_MatchesType = p_Node->Entity.HasInterface(m_EntityTypeSearchInput);
+    }
+
+    if (!m_EntityNameSearchInput.empty()) {
+        s_MatchesName = Util::StringUtils::FindSubstring(p_Node->Name.c_str(), m_EntityNameSearchInput);
+    }
+
+    bool s_ChildMatches = false;
+
+    for (auto& child : p_Node->Children) {
+        if (FilterEntityTree(child.second.get())) {
+            s_ChildMatches = true;
         }
+    }
 
-        const auto s_SubFactory = p_BrickFactory->GetSubEntityBlueprint(i);
+    const bool s_Matches = s_MatchesId && s_MatchesType && s_MatchesName;
 
-        if (s_SubFactory &&
-            s_SubFactory->GetSubEntitiesCount() >
-            0) {
-            if (SearchForEntityByType(
-                reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SubFactory),
-                s_SubEntity,
-                p_TypeName
-            ))
-                return true;
-        }
+    if (s_Matches) {
+        m_DirectEntityTreeNodeMatches.push_back(p_Node);
+    }
+
+    if (s_Matches || s_ChildMatches) {
+        m_FilteredEntityTreeNodes.insert(p_Node);
+
+        return true;
     }
 
     return false;
@@ -325,43 +338,93 @@ void Editor::DrawEntityTree() {
             ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsHexadecimal |
             ImGuiInputTextFlags_CharsNoBlank
         )) {
-            const auto s_EntityId = std::strtoull(s_EntitySearchInput, nullptr, 16);
+            m_EntityIdSearchInput = s_EntitySearchInput;
 
-            for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
-                const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
-                const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.
-                    GetBlueprintFactory());
-
-                if (SearchForEntityById(s_BpFactory, s_Brick.entityRef, s_EntityId)) {
-                    Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
-                    m_SelectedBrickIndex = i;
-                    break;
-                }
-            }
+            FilterEntityTree();
         }
 
         static char s_EntityTypeSearchInput[2048] = {};
-        if (ImGui::InputText(
-            ICON_MD_SEARCH " Search by type",
-            s_EntityTypeSearchInput,
-            IM_ARRAYSIZE(s_EntityTypeSearchInput),
+        const bool s_IsInputTextEnterPressed = ImGui::InputText(
+            ICON_MD_SEARCH " Search by type", s_EntityTypeSearchInput, sizeof(s_EntityTypeSearchInput),
             ImGuiInputTextFlags_EnterReturnsTrue
-        )) {
-            for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
-                const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
-                const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.
-                    GetBlueprintFactory());
+        );
+        const bool s_IsInputTextActive = ImGui::IsItemActive();
 
-                if (SearchForEntityByType(s_BpFactory, s_Brick.entityRef, s_EntityTypeSearchInput)) 
-                {
-                    Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
-                    m_SelectedBrickIndex = i;
-                    break;
-                }
-            }
+        if (ImGui::IsItemActivated())
+        {
+            ImGui::OpenPopup("##popup");
         }
 
-        if (ImGui::Button("Rebuild entity tree")) {
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
+        ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
+
+        if (ImGui::BeginPopup(
+            "##popup",
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_ChildWindow
+        )) {
+            ZTypeRegistry* typeRegistry = *Globals::TypeRegistry;
+            std::vector<std::string> typeNames;
+
+            typeNames.reserve(typeRegistry->m_types.size());
+
+            for (auto& pair : typeRegistry->m_types) {
+                if (!pair.second->typeInfo()->isClass())
+                    continue;
+
+                if (!Util::StringUtils::FindSubstring(pair.first.c_str(), s_EntityTypeSearchInput))
+                    continue;
+
+                typeNames.push_back(pair.first.c_str());
+            }
+
+            std::sort(typeNames.begin(), typeNames.end());
+
+            for (auto& typeName : typeNames) {
+                if (ImGui::Selectable(typeName.c_str())) {
+                    ImGui::ClearActiveID();
+                    strcpy_s(s_EntityTypeSearchInput, typeName.c_str());
+
+                    m_EntityTypeSearchInput = s_EntityTypeSearchInput;
+
+                    FilterEntityTree();
+                }
+            }
+
+            if (s_IsInputTextEnterPressed || (!s_IsInputTextActive && !ImGui::IsWindowFocused())) {
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        static char s_EntityNameSearchInput[2048] = {};
+
+        if (ImGui::InputText(
+            ICON_MD_SEARCH " Search by name",
+            s_EntityNameSearchInput,
+            IM_ARRAYSIZE(s_EntityNameSearchInput),
+            ImGuiInputTextFlags_EnterReturnsTrue
+        )) {
+            m_EntityNameSearchInput = s_EntityNameSearchInput;
+
+            FilterEntityTree();
+        }
+
+        if (ImGui::Button(ICON_MD_CLEAR " Clear Filters")) {
+            m_EntityIdSearchInput.clear();
+            m_EntityTypeSearchInput.clear();
+            m_EntityNameSearchInput.clear();
+
+            memset(s_EntitySearchInput, 0, sizeof(s_EntitySearchInput));
+            memset(s_EntityTypeSearchInput, 0, sizeof(s_EntityTypeSearchInput));
+            memset(s_EntityNameSearchInput, 0, sizeof(s_EntityNameSearchInput));
+
+            m_FilteredEntityTreeNodes.clear();
+            m_DirectEntityTreeNodeMatches.clear();
+        }
+
+        if (ImGui::Button(ICON_MD_CONSTRUCTION " Rebuild entity tree")) {
             UpdateEntities();
         }
 

@@ -49,7 +49,7 @@ FreeCam::FreeCam() :
         {"Space + W/S", "Move camera on axis"},
         {"Shift", "Increase camera speed"},
         {"F9", "Kill NPC"},
-        {"Ctrl + F9", "Teleport Hitman"},
+        {"Ctrl + F6", "Teleport Hitman"},
         {"F8", "Pause/Resume game"},
     };
 
@@ -117,10 +117,9 @@ void FreeCam::OnEngineInitialized() {
     const ZMemberDelegate<FreeCam, void(const SGameUpdateEvent&)> s_Delegate(this, &FreeCam::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 
-    ZInputTokenStream::ZTokenData result;
     const char* binds = "FreeCameraInput={"
             "ToggleFreeCamera=tap(kb,k);"
-            "Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f9);"
+            "Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f6);"
             "InstantKill=tap(kb,f9);"
             "TogglePauseGame=tap(kb,f8);};";
 

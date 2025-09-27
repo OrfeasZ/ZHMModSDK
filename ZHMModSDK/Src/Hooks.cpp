@@ -23,8 +23,8 @@ PATTERN_HOOK(
 );
 
 PATTERN_HOOK(
-    "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x48\x89\x74\x24\x20\x57\x48\x83\xEC\x00\x8B\x05\x00\x00\x00\x00\x0F\xB6\xF2",
-    "xxxxxxxxxxxxxxxxxxx?xx????xxx",
+    "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\x05",
+    "xxxxxxxxxxxxxxxxxxxx?xx",
     ZEntitySceneContext_ClearScene,
     void(ZEntitySceneContext*, bool forReload)
 );
@@ -45,7 +45,7 @@ PATTERN_HOOK(
 
 // Look for ProfileWholeApplication string
 PATTERN_HOOK(
-    "\x48\x89\x54\x24\x10\x55\x56\x41\x54\x41\x56\x41\x57\x48\x8D\xAC\x24\x80\xFC\xFF\xFF",
+    "\x48\x89\x54\x24\x10\x55\x56\x41\x54\x41\x56\x41\x57\x48\x8D\xAC\x24\xF0\xFB\xFF\xFF",
     "xxxxxxxxxxxxxxxxxxxxx",
     Engine_Init,
     bool(void*, void*)
@@ -74,8 +74,8 @@ PATTERN_HOOK(
 
 // Look for DefWindowProcW import
 PATTERN_HOOK(
-    "\x48\x89\x54\x24\x10\x55\x53\x56\x57\x41\x54\x41\x56\x41\x57\x48\x8D\x6C\x24\xE1",
-    "xxxxxxxxxxxxxxxxxxxx",
+    "\x48\x89\x5C\x24\x08\x48\x89\x54\x24\x10\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xE1",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxx",
     ZApplicationEngineWin32_MainWindowProc,
     LRESULT(ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM)
 );
@@ -378,4 +378,19 @@ PATTERN_HOOK(
     void(const ZString& id, const ZString& locationId, const ZDynamicObject& extraGameChangedIds, int difficulty,
         const std::function<void(const ZDynamicObject&)>& onOk, const std::function<void(int)>& onError,
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x18\x55\x56\x57\x41\x56\x41\x57\x48\x83\xEC\x00\x45\x33\xFF\x49\x8B\xF1",
+    "xxxxxxxxxxxxxxx?xxxxxx",
+    ZPathfinder_CreateObstacle,
+    ZPFObstacleHandle* (ZPathfinder* th, ZPFObstacleHandle* result, const SMatrix& mTransform, float4 vHalfSize,
+        float32 fPenaltyMultiplier, uint32 nObstacleBlockageFlags, EPFObstacleClient eDebugObstacleClient)
+);
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x48\x89\x58\x10\x48\x89\x70\x18\x48\x89\x78\x20\x55\x41\x56\x41\x57\x48\x8D\x68\xA1\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xD9",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxx????xxx",
+    ZPFObstacleEntity_UpdateObstacle,
+    void(ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate)
 );

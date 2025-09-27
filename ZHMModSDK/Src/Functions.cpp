@@ -44,7 +44,7 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-    "\x40\x53\x48\x83\xEC\x00\x48\x8B\x1D\x00\x00\x00\x00\x48\x85\xDB\x74\x00\x48\x8B\x03\x48\x8B\xCB\xFF\x50\x20\x84\xC0\x74\x00\x48\x8B\x03\x48\x8B\xCB\xFF\x50\x60\x83\xF8\x00\x75",
+    "\x40\x53\x48\x83\xEC\x00\x48\x8B\x1D\x00\x00\x00\x00\x48\x85\xDB\x74\x00\x48\x8B\x03\x48\x8B\xCB\xFF\x50\x28\x84\xC0\x74\x00\x48\x8B\x03\x48\x8B\xCB\xFF\x50\x70\x83\xF8\x00\x75",
     "xxxxx?xxx????xxxx?xxxxxxxxxxxx?xxxxxxxxxxx?x",
     GetCurrentCamera,
     ZCameraEntity*()
@@ -114,8 +114,8 @@ PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x49\x89\x5B\x08\x49\x89\x6B\x10\x4D\x89\x43\x18",
     "xxxxxxxxxxxxxxx",
     ZEntityManager_NewEntity,
-    void(ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory, const ZEntityRef&
-        parent, void* a6, int64_t a7)
+    void(ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
+        const ZEntityRef& transformParent, const SExternalReferences* externalRefs, uint64_t entityId)
 );
 
 // Look for camAlign_ string, go to parent xref of function using said string: function called in if flag check.
@@ -141,7 +141,7 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-    "\x40\x56\x48\x81\xEC\x00\x00\x00\x00\xF6\x81\x33\x01\x00\x00",
+    "\x40\x56\x48\x81\xEC\x00\x00\x00\x00\xF6\x81\x34\x01\x00\x00",
     "xxxxx????xxxxxx",
     ZItemSpawner_RequestContentLoad,
     void(ZItemSpawner* th)

@@ -4,9 +4,24 @@
 #include <Glacier/IEnumType.h>
 
 void Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
-    auto s_Value = *static_cast<int32*>(p_Data);
     const auto s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
     auto s_Type = reinterpret_cast<IEnumType*>(s_PropertyInfo->m_pType->typeInfo());
+    int64_t s_Value = 0;
+
+    switch (s_Type->m_nTypeSize) {
+    case 1:
+        s_Value = *static_cast<int8_t*>(p_Data); 
+        break;
+    case 2:
+        s_Value = *static_cast<int16_t*>(p_Data);
+        break;
+    case 4:
+        s_Value = *static_cast<int32_t*>(p_Data);
+        break;
+    case 8:
+        s_Value = *static_cast<int64_t*>(p_Data);
+        break;
+    }
 
     std::string s_CurrentValue;
 

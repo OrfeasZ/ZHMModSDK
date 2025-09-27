@@ -8,7 +8,6 @@
 
 #include "DescriptorHeap.h"
 #include "Effects.h"
-#include "PrimitiveBatch.h"
 #include "SimpleMath.h"
 #include "SpriteBatch.h"
 #include "VertexTypes.h"
@@ -16,6 +15,11 @@
 #include "IRenderer.h"
 #include "SpriteFont.h"
 #include "D3DUtils.h"
+#include "CommonStates.h"
+
+#include "../DebugEffect.h"
+#include "Rendering/ViewFrustum.h"
+#include "../CustomPrimitiveBatch.h"
 
 class SGameUpdateEvent;
 
@@ -31,6 +35,22 @@ namespace Rendering::Renderers {
             FontRegular,
             FontBold,
             Count
+        };
+
+        enum RootParameterIndex {
+            ConstantBuffer,
+            TextureSRV,
+            TextureSampler,
+            RootParameterCount
+        };
+
+        struct Text2D {
+            std::string m_Text;
+            SVector2 m_Position;
+            SVector4 m_Color;
+            float m_Rotation = 0.f;
+            float m_Scale = 1.f;
+            TextAlignment m_Alignment = TextAlignment::Center;
         };
 
     public:
@@ -53,7 +73,13 @@ namespace Rendering::Renderers {
         void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
         bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
         void Draw();
+        void DepthDraw();
         void WaitForCurrentFrameToFinish() const;
+
+        bool CompileShaderFromString(const std::string& p_ShaderCode, const std::string& p_EntryPoint, const std::string& p_ShaderModel, ID3DBlob** p_ShaderBlob);
+        bool CreateFontDistanceFieldTexture();
+
+        void DrawText2D(const Text2D& text2D);
 
     public:
         void DrawLine3D(
@@ -73,10 +99,50 @@ namespace Rendering::Renderers {
             const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color
         ) override;
 
+        void DrawBoundingQuads(
+            const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color
+        ) override;
+
+        void DrawTriangle3D(
+            const SVector3& p_V1, const SVector4& p_Color1,
+            const SVector3& p_V2, const SVector4& p_Color2,
+            const SVector3& p_V3, const SVector4& p_Color3
+        ) override;
+        void DrawTriangle3D(
+            const SVector3& p_V1, const SVector4& p_Color1, const SVector2& p_TextureCoordinates1,
+            const SVector3& p_V2, const SVector4& p_Color2, const SVector2& p_TextureCoordinates2,
+            const SVector3& p_V3, const SVector4& p_Color3, const SVector2& p_TextureCoordinates3
+        ) override;
+
         void DrawQuad3D(
             const SVector3& p_V1, const SVector4& p_Color1, const SVector3& p_V2, const SVector4& p_Color2,
             const SVector3& p_V3, const SVector4& p_Color3, const SVector3& p_V4, const SVector4& p_Color4
         ) override;
+
+        void DrawText3D(
+            const std::string& p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
+            TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
+        );
+        void DrawText3D(
+            const char* p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
+            TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
+        );
+
+        void DrawMesh(
+            const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices, const SVector4& p_VertexColor
+        ) override;
+
+        virtual void DrawMesh(
+            ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
+            const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias, const float4& p_TextureScaleBias,
+            const SVector4& p_MaterialColor
+        ) override;
+
+        bool IsInsideViewFrustum(const SVector3& p_Point) const override;
+        bool IsInsideViewFrustum(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform) const override;
+        bool IsInsideViewFrustum(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const override;
+
+        static AABB TransformAABB(const DirectX::SimpleMath::Matrix& p_Transform, const AABB& p_AABB);
 
     private:
         bool m_RendererSetup = false;
@@ -106,20 +172,33 @@ namespace Rendering::Renderers {
         float m_WindowWidth = 1;
         float m_WindowHeight = 1;
 
-        std::unique_ptr<DirectX::GraphicsMemory> m_GraphicsMemory {};
-        std::unique_ptr<DirectX::BasicEffect> m_LineEffect {};
-        std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_PrimitiveBatch {};
+        std::unique_ptr<DirectX::GraphicsMemory> m_GraphicsMemory{};
+        std::unique_ptr<DirectX::BasicEffect> m_TriangleEffect{};
+        std::unique_ptr<DirectX::BasicEffect> m_LineEffect{};
+        std::unique_ptr<DirectX::BasicEffect> m_TextEffect{};
+        std::unique_ptr<DebugEffect> m_DebugEffect{};
+        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColor>> m_TriangleBatch{};
+        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColor>> m_LineBatch{};
+        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColorTexture>> m_TextBatch{};
+        std::vector<Text2D> m_Text2DBuffer;
 
-        DirectX::SimpleMath::Matrix m_World {};
-        DirectX::SimpleMath::Matrix m_View {};
-        DirectX::SimpleMath::Matrix m_Projection {};
-        DirectX::SimpleMath::Matrix m_ViewProjection {};
-        DirectX::SimpleMath::Matrix m_ProjectionViewInverse {};
+        DirectX::SimpleMath::Matrix m_World{};
+        DirectX::SimpleMath::Matrix m_View{};
+        DirectX::SimpleMath::Matrix m_Projection{};
+        DirectX::SimpleMath::Matrix m_ViewProjection{};
+        DirectX::SimpleMath::Matrix m_ProjectionViewInverse{};
 
-        std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors {};
-        std::unique_ptr<DirectX::SpriteFont> m_Font {};
-        std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch {};
+        std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors{};
+        std::unique_ptr<DirectX::SpriteFont> m_Font{};
+        std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch{};
 
         std::optional<size_t> m_DsvIndex = std::nullopt;
+
+        std::unique_ptr<DirectX::CommonStates> m_CommonStates;
+        ScopedD3DRef<ID3D12Resource> m_FontDistanceFieldTexture;
+        ScopedD3DRef<ID3D12DescriptorHeap> m_fontSRVDescriptorHeap;
+        ScopedD3DRef<ID3D12PipelineState> m_PipelineState;
+
+        ViewFrustum m_ViewFrustum;
     };
 }
