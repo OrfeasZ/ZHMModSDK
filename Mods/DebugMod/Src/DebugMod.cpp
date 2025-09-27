@@ -93,12 +93,17 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
         if (ImGui::CollapsingHeader("Guide Path Finder")) {
             if (ImGui::Checkbox("Draw Nav Mesh", &m_DrawNavMesh)) {
                 if (m_NavMesh.m_areas.size() == 0) {
-                    uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_NavPowerResources[0].m_pNavpowerResource);
-                    uint32_t s_NavpDataSize = Globals::Pathfinder->m_NavPowerResources[0].m_nNavpowerResourceSize;
                     static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
                     static const SVector4 s_AdjacentLineColor = SVector4(1.f, 1.f, 1.f, 1.f);
 
-                    m_NavMesh.read(s_NavpData, s_NavpDataSize);
+                    const uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_NavPowerResources[0].m_pNavpowerResource);
+                    const uint32_t s_NavpDataSize = Globals::Pathfinder->m_NavPowerResources[0].m_nNavpowerResourceSize;
+
+                    m_NavpData.resize(s_NavpDataSize);
+
+                    std::memcpy(m_NavpData.data(), reinterpret_cast<void*>(s_NavpData), s_NavpDataSize);
+
+                    m_NavMesh.read(reinterpret_cast<uintptr_t>(m_NavpData.data()), s_NavpDataSize);
 
                     m_Vertices.resize(m_NavMesh.m_areas.size());
                     m_Indices.resize(m_NavMesh.m_areas.size());
@@ -1224,6 +1229,7 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool
     m_DrawNavMesh = false;
     m_DrawObstacles = false;
     m_NavMesh = {};
+    m_NavpData.clear();
     m_Vertices.clear();
     m_Indices.clear();
     m_NavMeshLines.clear();
