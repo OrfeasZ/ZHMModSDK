@@ -1,13 +1,11 @@
 #pragma once
 
-class ISharedPointerTarget
-{
+class ISharedPointerTarget {
 public:
-	virtual ~ISharedPointerTarget() = 0;
+    virtual ~ISharedPointerTarget() = 0;
 };
 
-class ZSharedPointerTarget : public ISharedPointerTarget
-{
+class ZSharedPointerTarget : public ISharedPointerTarget {
 public:
-	int m_iRefCount;
+    int m_iRefCount;
 };

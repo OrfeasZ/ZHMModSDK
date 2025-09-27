@@ -1,9 +1,7 @@
 #pragma once
 
-namespace MDF_FONT
-{
-    struct SFontHeader
-    {
+namespace MDF_FONT {
+    struct SFontHeader {
         unsigned int m_anTexRes[2];
         unsigned int m_anLowRes[2];
         unsigned int m_anHighRes[2];
@@ -12,8 +10,7 @@ namespace MDF_FONT
         bool m_bASCII;
     };
 
-    struct SGlyphData
-    {
+    struct SGlyphData {
         float m_afTexU[2];
         float m_afTexV[2];
         float m_afSize[2];
@@ -23,8 +20,7 @@ namespace MDF_FONT
         unsigned int m_nCharcode;
     };
 
-    struct STextBoundingBox
-    {
+    struct STextBoundingBox {
         float m_fMinX;
         float m_fMaxX;
         float m_fMinY;
@@ -32,8 +28,10 @@ namespace MDF_FONT
     };
 
     const SGlyphData* GetGlyphData(const unsigned int nCharcode);
-	void CalcBoundingBox(STextBoundingBox& TextBoundingBox, const char* pszString);
-	void RenderQuad(unsigned int nCharcode, const float fScale, float& fPenX, const float fPenY, float* pVertices, float* pTexCoords);
+    void CalcBoundingBox(STextBoundingBox& TextBoundingBox, const char* pszString);
+    void RenderQuad(
+        unsigned int nCharcode, const float fScale, float& fPenX, const float fPenY, float* pVertices, float* pTexCoords
+    );
 
     float ComputeLineHeightFromMetrics();
     float GetAdvanceWidth(const unsigned int charcode);

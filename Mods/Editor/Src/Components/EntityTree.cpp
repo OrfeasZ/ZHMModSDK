@@ -220,8 +220,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         s_Flags
     );
 
-    if (ImGui::IsItemHovered())
-    {
+    if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", s_EntityType.c_str());
     }
 
@@ -245,8 +244,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     }
 }
 
-void Editor::FilterEntityTree()
-{
+void Editor::FilterEntityTree() {
     m_FilteredEntityTreeNodes.clear();
     m_DirectEntityTreeNodeMatches.clear();
 
@@ -256,8 +254,7 @@ void Editor::FilterEntityTree()
 
     if (m_EntityIdSearchInput.empty() &&
         m_EntityTypeSearchInput.empty() &&
-        m_EntityNameSearchInput.empty())
-    {
+        m_EntityNameSearchInput.empty()) {
         return;
     }
 
@@ -350,8 +347,7 @@ void Editor::DrawEntityTree() {
         );
         const bool s_IsInputTextActive = ImGui::IsItemActive();
 
-        if (ImGui::IsItemActivated())
-        {
+        if (ImGui::IsItemActivated()) {
             ImGui::OpenPopup("##popup");
         }
 
@@ -487,8 +483,7 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, const std::optional<std::string
         m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
         m_SelectedEntity = p_Entity;
     }
-    else
-    {
+    else {
         m_SelectedEntity = nullptr; //Unselect it
     }
 

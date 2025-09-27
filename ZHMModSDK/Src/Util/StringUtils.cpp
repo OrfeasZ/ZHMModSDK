@@ -35,22 +35,19 @@ std::string StringUtils::ToUpperCase(const std::string& p_String) {
 }
 
 bool StringUtils::FindSubstring(const std::string& str, const std::string& substring, const bool bCaseSensitive) {
-    if (substring.empty())
-    {
+    if (substring.empty()) {
         return true;
     }
 
     const auto it = std::ranges::search(
-        str, substring,
-        [bCaseSensitive](const char ch1, const char ch2)
-        {
-            if (bCaseSensitive)
-            {
-                return ch1 == ch2;
-            }
-            return std::tolower(ch1) == std::tolower(ch2);
-        }
-    )
-        .begin();
+                str, substring,
+                [bCaseSensitive](const char ch1, const char ch2) {
+                    if (bCaseSensitive) {
+                        return ch1 == ch2;
+                    }
+                    return std::tolower(ch1) == std::tolower(ch2);
+                }
+            )
+            .begin();
     return (it != str.end());
 }

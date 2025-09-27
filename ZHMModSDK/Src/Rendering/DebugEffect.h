@@ -10,11 +10,9 @@
 
 struct CD3DX12_RESOURCE_DESC;
 
-class DebugEffect
-{
+class DebugEffect {
 public:
-    struct Constants
-    {
+    struct Constants {
         DirectX::XMFLOAT4X4 world;
         DirectX::XMFLOAT4X4 view;
         DirectX::XMFLOAT4X4 projection;
@@ -26,8 +24,7 @@ public:
         DirectX::XMFLOAT4 materialColor;
     };
 
-    enum RootParameterIndex
-    {
+    enum RootParameterIndex {
         ConstantBuffer,
         TextureSRV,
         TextureSampler,
@@ -47,7 +44,10 @@ public:
         ScopedD3DRef<ID3D12Device> p_Device, ScopedD3DRef<ID3D12GraphicsCommandList> p_CommandList,
         ScopedD3DRef<ID3D12CommandQueue> p_CommandQueue
     );
-    void CreateShaderResourceView(ScopedD3DRef<ID3D12Device> p_Device, const CD3DX12_RESOURCE_DESC& p_TextureDesc, ID3D12Resource* p_TextureResource);
+    void CreateShaderResourceView(
+        ScopedD3DRef<ID3D12Device> p_Device, const CD3DX12_RESOURCE_DESC& p_TextureDesc,
+        ID3D12Resource* p_TextureResource
+    );
     void CreateSampler(ScopedD3DRef<ID3D12Device> p_Device);
 
     void Apply(ScopedD3DRef<ID3D12Device> p_Device, ScopedD3DRef<ID3D12GraphicsCommandList> p_CommandList);

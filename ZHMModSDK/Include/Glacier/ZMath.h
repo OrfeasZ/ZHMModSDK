@@ -82,7 +82,8 @@ public:
         return SVector3(
             y * p_Other.z - z * p_Other.y,
             z * p_Other.x - x * p_Other.z,
-            x * p_Other.y - y * p_Other.x);
+            x * p_Other.y - y * p_Other.x
+        );
     }
 
     float Dot(const SVector3& p_Other) const {
@@ -90,9 +91,11 @@ public:
     }
 
     static SVector3 CrossProduct(const SVector3& p_Vector1, const SVector3& p_Vector2) {
-        return SVector3(p_Vector1.y * p_Vector2.z - p_Vector1.z * p_Vector2.y,
+        return SVector3(
+            p_Vector1.y * p_Vector2.z - p_Vector1.z * p_Vector2.y,
             p_Vector1.z * p_Vector2.x - p_Vector1.x * p_Vector2.z,
-            p_Vector1.x * p_Vector2.y - p_Vector1.y * p_Vector2.x);
+            p_Vector1.x * p_Vector2.y - p_Vector1.y * p_Vector2.x
+        );
     }
 
     static float DotProduct(const SVector3& p_Vector1, const SVector3& p_Vector2) {
@@ -377,7 +380,8 @@ public:
             m.w * p_Other.m.x + m.x * p_Other.m.w + m.y * p_Other.m.z - m.z * p_Other.m.y,
             m.w * p_Other.m.y - m.x * p_Other.m.z + m.y * p_Other.m.w + m.z * p_Other.m.x,
             m.w * p_Other.m.z + m.x * p_Other.m.y - m.y * p_Other.m.x + m.z * p_Other.m.w,
-            m.w * p_Other.m.w - m.x * p_Other.m.x - m.y * p_Other.m.y - m.z * p_Other.m.z);
+            m.w * p_Other.m.w - m.x * p_Other.m.x - m.y * p_Other.m.y - m.z * p_Other.m.z
+        );
     }
 
 public:
@@ -527,10 +531,10 @@ struct alignas(16) SMatrix {
 
     static SMatrix ScaleTranslate(const float4& vScale, const float4& vTranslate) {
         return SMatrix(
-            { vScale.x, 0.f, 0.f, 0.f },
-            { 0.f, vScale.y, 0.f, 0.f },
-            { 0.f, 0.f, vScale.z, 0.f },
-            { vTranslate.x, vTranslate.y, vTranslate.z, 1.f }
+            {vScale.x, 0.f, 0.f, 0.f},
+            {0.f, vScale.y, 0.f, 0.f},
+            {0.f, 0.f, vScale.z, 0.f},
+            {vTranslate.x, vTranslate.y, vTranslate.z, 1.f}
         );
     }
 

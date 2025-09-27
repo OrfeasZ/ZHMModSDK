@@ -14,7 +14,8 @@ ModSelector::ModSelector() {
 }
 
 void ModSelector::UpdateAvailableMods(
-    const std::unordered_set<std::string>& p_Mods, const std::unordered_set<std::string>& p_IncompatibleMods, const std::unordered_set<std::string>& p_ActiveMods
+    const std::unordered_set<std::string>& p_Mods, const std::unordered_set<std::string>& p_IncompatibleMods,
+    const std::unordered_set<std::string>& p_ActiveMods
 ) {
     ScopedExclusiveGuard s_Guard(&m_Lock);
 

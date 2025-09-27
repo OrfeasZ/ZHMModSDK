@@ -30,13 +30,14 @@ void Editor::UnsupportedProperty(
     ImGui::TextColored(textColor, "(Unsupported)", s_TypeName.c_str());
 }
 
-void Editor::TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data)
-{
-    if(auto EntityRef = reinterpret_cast<TEntityRef<void*>*>(p_Data)) {
+void Editor::TEntityRefProperty(
+    const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data
+) {
+    if (auto EntityRef = reinterpret_cast<TEntityRef<void*>*>(p_Data)) {
         ImVec4 linkColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f); // Light blue, like a link
 
         ImGui::PushStyleColor(ImGuiCol_Text, linkColor);
-            ImGui::Text("%s", "link");
+        ImGui::Text("%s", "link");
         ImGui::PopStyleColor();
 
         if (ImGui::IsItemHovered()) {
@@ -50,19 +51,19 @@ void Editor::TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZE
             );
         }
 
-        if(ImGui::IsItemClicked())
-        {
+        if (ImGui::IsItemClicked()) {
             OnSelectEntity(EntityRef->m_ref, std::nullopt);
         }
     }
-    else
-    {
+    else {
         constexpr auto textColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
         ImGui::TextColored(textColor, "(%s)", "null");
     }
 }
 
-void Editor::ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+void Editor::ZRepositoryIDProperty(
+    const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data
+) {
     if (auto RepositoryId = reinterpret_cast<ZRepositoryID*>(p_Data)) {
         ImGui::Text("%s", RepositoryId->ToString().c_str());
     }

@@ -66,7 +66,8 @@ public:
         p_SendEntitiesCallback, const std::function<void()>& p_RebuiltCallback
     );
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindEntitiesByType(
-        const std::string& p_EntityType, const std::string& p_Hash);
+        const std::string& p_EntityType, const std::string& p_Hash
+    );
     void RebuildEntityTree();
     void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
@@ -111,7 +112,7 @@ private:
         std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
         const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType
     );
-    static void FindAlocForZPrimitiveProxyEntityNode (
+    static void FindAlocForZPrimitiveProxyEntityNode(
         std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& entities,
         const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType
     );
@@ -119,7 +120,7 @@ private:
     // Properties
     void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);   
+    void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     // Primitive properties.
     void StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
@@ -195,8 +196,7 @@ private:
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
 
 private:
-    enum class EntityHighlightMode
-    {
+    enum class EntityHighlightMode {
         Lines,
         LinesAndTriangles
     };
@@ -275,13 +275,13 @@ private:
     std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps; // RepoId -> Title/Common Name
 
     ZActor* s_CurrentlySelectedActor = nullptr;
-    const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
+    const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
 
     ZActor* m_ActorTracked = nullptr;
     bool m_TrackCamActive = false;
     ZEntityRef m_PlayerCam = nullptr;
-    TEntityRef<ZCameraEntity> m_TrackCam{};
-    TEntityRef<IRenderDestinationEntity> m_RenderDest{};
+    TEntityRef<ZCameraEntity> m_TrackCam {};
+    TEntityRef<IRenderDestinationEntity> m_RenderDest {};
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

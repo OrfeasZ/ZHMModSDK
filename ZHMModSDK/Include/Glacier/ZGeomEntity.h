@@ -145,10 +145,10 @@ static_assert(offsetof(ZRenderInputLayout, m_ElementDesc) == 0x158);
 
 struct SPrimitiveBufferData {
     enum ERenderPrimType : unsigned char {
-        RENDER_PRIM_TYPE_INVALID = 0,
-        RENDER_PRIM_TYPE_MESH = 1,
+        RENDER_PRIM_TYPE_INVALID        = 0,
+        RENDER_PRIM_TYPE_MESH           = 1,
         RENDER_PRIM_TYPE_MESH_SPEEDTREE = 2,
-        RENDER_PRIM_TYPE_SPRITES = 3
+        RENDER_PRIM_TYPE_SPRITES        = 3
     };
 
     SRenderPrimitiveMeshDesc m_Description; // 0x00

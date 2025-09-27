@@ -189,7 +189,7 @@ public:
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     )>* ZUserChannelContractsProxyBase_GetForPlay2;
 
-    static Hook<ZPFObstacleHandle* (
+    static Hook<ZPFObstacleHandle*(
         ZPathfinder* th,
         ZPFObstacleHandle* result,
         const SMatrix& mTransform,
@@ -198,5 +198,6 @@ public:
         uint32 nObstacleBlockageFlags,
         EPFObstacleClient eDebugObstacleClient
     )>* ZPathfinder_CreateObstacle;
-    static Hook<void(ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate)>* ZPFObstacleEntity_UpdateObstacle;
+    static Hook<void(ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate)>*
+    ZPFObstacleEntity_UpdateObstacle;
 };

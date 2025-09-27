@@ -169,18 +169,15 @@ void Editor::OnDrawMenu() {
         }
     }*/
 
-    if (ImGui::Button(ICON_MD_TUNE " ASSETS MENU"))
-    {
+    if (ImGui::Button(ICON_MD_TUNE " ASSETS MENU")) {
         m_AssetsMenuActive = !m_AssetsMenuActive;
     }
 
-    if (ImGui::Button(ICON_MD_TUNE " ITEMS MENU"))
-    {
+    if (ImGui::Button(ICON_MD_TUNE " ITEMS MENU")) {
         m_ItemsMenuActive = !m_ItemsMenuActive;
     }
 
-    if (ImGui::Button(ICON_MD_PEOPLE " ACTORS MENU"))
-    {
+    if (ImGui::Button(ICON_MD_PEOPLE " ACTORS MENU")) {
         m_ActorsMenuActive = !m_ActorsMenuActive;
     }
 }
@@ -363,13 +360,11 @@ void Editor::OnDrawUI(bool p_HasFocus) {
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
-    if (m_TrackCamActive)
-    {
+    if (m_TrackCamActive) {
         if (!*Globals::ApplicationEngineWin32)
             return;
 
-        if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef)
-        {
+        if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
             Logger::Debug("Creating free camera.");
             Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
         }
@@ -404,18 +399,18 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
 
     ZRayQueryOutput s_RayOutput {};
 
-    if(m_raycastLogging) {
+    if (m_raycastLogging) {
         Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
     }
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {
-        if(m_raycastLogging){
+        if (m_raycastLogging) {
             Logger::Error("Raycast failed.");
         }
         return;
     }
 
-    if(m_raycastLogging) {
+    if (m_raycastLogging) {
         Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
     }
 
@@ -692,8 +687,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
 
     m_Server.OnSceneLoading(p_SceneData.m_sceneName.c_str(), s_Bricks);
 
-    if (m_TrackCamActive)
-    {
+    if (m_TrackCamActive) {
         DisableTrackCam();
 
         m_TrackCamActive = false;
@@ -728,8 +722,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
     m_RepositoryResource = {};
     m_RepositoryProps.clear();
 
-    if (m_TrackCamActive)
-    {
+    if (m_TrackCamActive) {
         DisableTrackCam();
 
         m_TrackCamActive = false;

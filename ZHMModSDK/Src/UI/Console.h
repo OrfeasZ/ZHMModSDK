@@ -5,13 +5,10 @@
 #include <spdlog/spdlog.h>
 #include <Glacier/ZString.h>
 
-namespace UI
-{
-    class Console
-    {
+namespace UI {
+    class Console {
     private:
-        struct LogLine
-        {
+        struct LogLine {
             spdlog::level::level_enum Level;
             std::string Text;
         };

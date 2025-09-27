@@ -163,7 +163,7 @@ public:
 };
 
 typedef IPluginInterface* (__cdecl*GetPluginInterface_t)();
-typedef const char* (__cdecl* CompiledSdkAbiVersion_t)();
+typedef const char* (__cdecl*CompiledSdkAbiVersion_t)();
 
 #define DECLARE_ZHM_PLUGIN(PluginClass) \
     extern "C" __declspec(dllexport) IPluginInterface* GetPluginInterface();\

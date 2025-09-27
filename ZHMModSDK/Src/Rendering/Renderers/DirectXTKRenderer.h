@@ -76,7 +76,10 @@ namespace Rendering::Renderers {
         void DepthDraw();
         void WaitForCurrentFrameToFinish() const;
 
-        bool CompileShaderFromString(const std::string& p_ShaderCode, const std::string& p_EntryPoint, const std::string& p_ShaderModel, ID3DBlob** p_ShaderBlob);
+        bool CompileShaderFromString(
+            const std::string& p_ShaderCode, const std::string& p_EntryPoint, const std::string& p_ShaderModel,
+            ID3DBlob** p_ShaderBlob
+        );
         bool CreateFontDistanceFieldTexture();
 
         void DrawText2D(const Text2D& text2D);
@@ -121,26 +124,35 @@ namespace Rendering::Renderers {
 
         void DrawText3D(
             const std::string& p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
-            TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
+            TextAlignment p_HorizontalAlignment = TextAlignment::Left,
+            TextAlignment p_VerticalAlignment = TextAlignment::Top
         );
         void DrawText3D(
             const char* p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
-            TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
+            TextAlignment p_HorizontalAlignment = TextAlignment::Left,
+            TextAlignment p_VerticalAlignment = TextAlignment::Top
         );
 
         void DrawMesh(
-            const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices, const SVector4& p_VertexColor
+            const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices,
+            const SVector4& p_VertexColor
         ) override;
 
         virtual void DrawMesh(
-            ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
-            const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias, const float4& p_TextureScaleBias,
+            ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount,
+            ZRenderIndexBuffer* p_IndexBuffer,
+            const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias,
+            const float4& p_TextureScaleBias,
             const SVector4& p_MaterialColor
         ) override;
 
         bool IsInsideViewFrustum(const SVector3& p_Point) const override;
-        bool IsInsideViewFrustum(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform) const override;
-        bool IsInsideViewFrustum(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const override;
+        bool IsInsideViewFrustum(
+            const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform
+        ) const override;
+        bool IsInsideViewFrustum(
+            const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize
+        ) const override;
 
         static AABB TransformAABB(const DirectX::SimpleMath::Matrix& p_Transform, const AABB& p_AABB);
 
@@ -172,25 +184,25 @@ namespace Rendering::Renderers {
         float m_WindowWidth = 1;
         float m_WindowHeight = 1;
 
-        std::unique_ptr<DirectX::GraphicsMemory> m_GraphicsMemory{};
-        std::unique_ptr<DirectX::BasicEffect> m_TriangleEffect{};
-        std::unique_ptr<DirectX::BasicEffect> m_LineEffect{};
-        std::unique_ptr<DirectX::BasicEffect> m_TextEffect{};
-        std::unique_ptr<DebugEffect> m_DebugEffect{};
-        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColor>> m_TriangleBatch{};
-        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColor>> m_LineBatch{};
-        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColorTexture>> m_TextBatch{};
+        std::unique_ptr<DirectX::GraphicsMemory> m_GraphicsMemory {};
+        std::unique_ptr<DirectX::BasicEffect> m_TriangleEffect {};
+        std::unique_ptr<DirectX::BasicEffect> m_LineEffect {};
+        std::unique_ptr<DirectX::BasicEffect> m_TextEffect {};
+        std::unique_ptr<DebugEffect> m_DebugEffect {};
+        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColor>> m_TriangleBatch {};
+        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColor>> m_LineBatch {};
+        std::unique_ptr<CustomPrimitiveBatch<DirectX::VertexPositionColorTexture>> m_TextBatch {};
         std::vector<Text2D> m_Text2DBuffer;
 
-        DirectX::SimpleMath::Matrix m_World{};
-        DirectX::SimpleMath::Matrix m_View{};
-        DirectX::SimpleMath::Matrix m_Projection{};
-        DirectX::SimpleMath::Matrix m_ViewProjection{};
-        DirectX::SimpleMath::Matrix m_ProjectionViewInverse{};
+        DirectX::SimpleMath::Matrix m_World {};
+        DirectX::SimpleMath::Matrix m_View {};
+        DirectX::SimpleMath::Matrix m_Projection {};
+        DirectX::SimpleMath::Matrix m_ViewProjection {};
+        DirectX::SimpleMath::Matrix m_ProjectionViewInverse {};
 
-        std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors{};
-        std::unique_ptr<DirectX::SpriteFont> m_Font{};
-        std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch{};
+        std::unique_ptr<DirectX::DescriptorHeap> m_ResourceDescriptors {};
+        std::unique_ptr<DirectX::SpriteFont> m_Font {};
+        std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch {};
 
         std::optional<size_t> m_DsvIndex = std::nullopt;
 

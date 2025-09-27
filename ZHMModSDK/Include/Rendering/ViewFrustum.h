@@ -22,14 +22,18 @@ private:
         CHECK_INSIDE_UNKNOWN
     };
 
-    SMatrix MatrixPerspectiveFovRH(const float p_FovYDeg, const float p_AspectWByH, const float p_NearZ, const float p_FarZ);
+    SMatrix MatrixPerspectiveFovRH(
+        const float p_FovYDeg, const float p_AspectWByH, const float p_NearZ, const float p_FarZ
+    );
     SMatrix MatrixPerspectiveRH(const float p_Width, const float p_Height, const float p_NearZ, const float p_FarZ);
     void MatrixCreateClipPlanes(float4* p_Planes, const SMatrix& p_ViewProjection);
     void MatrixCreateClipPlanesNormalized(float4* p_Planes, const SMatrix& p_ViewProjection);
 
     ECheckInsideFlag CheckPointInsidePlanes(const SVector3& p_Point) const;
     ECheckInsideFlag CheckAABBInsidePlanes(const AABB& p_AABB) const;
-    ECheckInsideFlag CheckOBBInsidePlanes(const SMatrix& p_ObjectInternal, const float4& p_LocalCenter, const float4& p_LocalSize) const;
+    ECheckInsideFlag CheckOBBInsidePlanes(
+        const SMatrix& p_ObjectInternal, const float4& p_LocalCenter, const float4& p_LocalSize
+    ) const;
 
     float m_MaxDrawDistance = 50.f;
     SMatrix m_ClipPlaneProjectionMatrix;

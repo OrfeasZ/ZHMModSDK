@@ -31,7 +31,7 @@ EditorServer::EditorServer() {
             s_App->ws<SocketUserData>(
                 "/*", {
                     .compression = uWS::DISABLED,
-				    .maxPayloadLength = 100 * 1024 * 1024,
+                    .maxPayloadLength = 100 * 1024 * 1024,
                     .open = [this](WebSocket* p_Socket) {
                         Logger::Debug("New editor connection established.");
 
@@ -614,9 +614,9 @@ void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket) {
     auto s_AnyAlocSentOverall = std::make_shared<bool>(false);
     Plugin()->FindAlocs(
         [p_Socket, s_AnyAlocSentOverall](
-            const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
-            const bool p_IsLastAlocBatch
-        ) -> void {
+    const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
+    const bool p_IsLastAlocBatch
+) -> void {
             bool s_SentAlocThisBatch = false;
             if (!p_Entities.empty()) {
                 bool s_CurrentBatchWillSend = false;
@@ -765,6 +765,7 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
 
     p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
+
 void EditorServer::SendDoneLoadingNavpMessage(WebSocket* p_Socket) {
     p_Socket->send("Done loading Navp.", uWS::OpCode::TEXT);
 }
@@ -823,24 +824,27 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
                 // Some properties don't have a name for some reason. Try to find using RL.
 
                 if (const auto [s_data, s_size] =
-                    HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                        HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
                     if (const auto s_PropertyNameView = std::string_view(s_data, s_size);
                         s_PropertyNameView == s_RemovePhysicsPropertyName) {
                         if (IsPropertyValueTrue(s_Property, p_Entity)) {
                             return true;
                         }
-                    } else if (s_PropertyNameView == s_VisiblePropertyName) {
+                    }
+                    else if (s_PropertyNameView == s_VisiblePropertyName) {
                         if (!IsPropertyValueTrue(s_Property, p_Entity)) {
                             return true;
                         }
                     }
                 }
-            } else if (s_PropertyInfo->m_pName) {
+            }
+            else if (s_PropertyInfo->m_pName) {
                 if (s_PropertyInfo->m_pName == s_RemovePhysicsPropertyName) {
                     if (IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
-                } else if (s_PropertyInfo->m_pName == s_VisiblePropertyName) {
+                }
+                else if (s_PropertyInfo->m_pName == s_VisiblePropertyName) {
                     if (!IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
@@ -896,7 +900,8 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
 
     if (p_Entity.GetOwningEntity()) {
-        s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetOwningEntity().GetBlueprintFactory());
+        s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetOwningEntity().
+            GetBlueprintFactory());
     }
 
     if (s_Factory) {
@@ -950,13 +955,15 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
                         p_Stream << ",";
                         p_Stream << write_json("type") << ":";
                         WriteProperty(p_Stream, p_Entity, s_Property);
-                    } else if (s_PropertyNameView == s_GlobalSizePropertyName) {
+                    }
+                    else if (s_PropertyNameView == s_GlobalSizePropertyName) {
                         p_Stream << ",";
                         p_Stream << write_json("scale") << ":";
                         WriteProperty(p_Stream, p_Entity, s_Property);
                     }
                 }
-            } else if (s_PropertyInfo->m_pName) {
+            }
+            else if (s_PropertyInfo->m_pName) {
                 if (s_PropertyInfo->m_pName == s_ScalePropertyName) {
                     p_Stream << ",";
                     p_Stream << write_json("scale");
@@ -968,7 +975,8 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
                     p_Stream << write_json("type");
                     p_Stream << ":";
                     WriteProperty(p_Stream, p_Entity, s_Property);
-                } else if (s_PropertyInfo->m_pName == s_GlobalSizePropertyName) {
+                }
+                else if (s_PropertyInfo->m_pName == s_GlobalSizePropertyName) {
                     p_Stream << ",";
                     p_Stream << write_json("scale");
                     p_Stream << ":";
@@ -986,7 +994,7 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
         p_Stream << "null";
         return;
     }
-        Logger::Info("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
+    Logger::Info("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
 
     p_Stream << "{";
 
@@ -1304,15 +1312,17 @@ EntitySelector EditorServer::ReadEntitySelector(simdjson::ondemand::value p_Sele
 
 std::vector<EntitySelector> EditorServer::ReadPrimEntitySelectors(simdjson::ondemand::array p_Selector) {
     std::vector<EntitySelector> s_EntitySelectors;
-    for (const std::string_view s_PrimStringView: p_Selector) {
-        const auto s_PrimString = std::string{s_PrimStringView};
+    for (const std::string_view s_PrimStringView : p_Selector) {
+        const auto s_PrimString = std::string {s_PrimStringView};
         Logger::Info("Reading PrimEntitySelector for hash: '{}'", s_PrimString);
 
-        s_EntitySelectors.push_back({
-            .EntityId = 0,
-            .TbluHash = std::nullopt,
-            .PrimHash = std::make_optional(s_PrimString),
-        });
+        s_EntitySelectors.push_back(
+            {
+                .EntityId = 0,
+                .TbluHash = std::nullopt,
+                .PrimHash = std::make_optional(s_PrimString),
+            }
+        );
     }
 
     return s_EntitySelectors;

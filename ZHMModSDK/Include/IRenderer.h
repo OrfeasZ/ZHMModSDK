@@ -82,24 +82,32 @@ public:
 
     virtual void DrawText3D(
         const std::string& p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
-        TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
+        TextAlignment p_HorizontalAlignment = TextAlignment::Left,
+        TextAlignment p_VerticalAlignment = TextAlignment::Top
     ) = 0;
     virtual void DrawText3D(
         const char* p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale = 1.f,
-        TextAlignment p_HorizontalAlignment = TextAlignment::Left, TextAlignment p_VerticalAlignment = TextAlignment::Top
+        TextAlignment p_HorizontalAlignment = TextAlignment::Left,
+        TextAlignment p_VerticalAlignment = TextAlignment::Top
     ) = 0;
 
     virtual void DrawMesh(
-        const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices, const SVector4& p_VertexColor
+        const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices,
+        const SVector4& p_VertexColor
     ) = 0;
 
     virtual void DrawMesh(
         ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
-        const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias, const float4& p_TextureScaleBias,
+        const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias,
+        const float4& p_TextureScaleBias,
         const SVector4& p_MaterialColor
     ) = 0;
 
     virtual bool IsInsideViewFrustum(const SVector3& p_Point) const = 0;
-    virtual bool IsInsideViewFrustum(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform) const = 0;
-    virtual bool IsInsideViewFrustum(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const = 0;
+    virtual bool IsInsideViewFrustum(
+        const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform
+    ) const = 0;
+    virtual bool IsInsideViewFrustum(
+        const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize
+    ) const = 0;
 };

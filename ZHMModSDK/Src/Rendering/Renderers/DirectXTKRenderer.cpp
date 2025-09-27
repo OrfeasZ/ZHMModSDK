@@ -75,7 +75,7 @@ void DirectXTKRenderer::Draw() {
     m_LineBatch->End();
     m_TextBatch->End();
 
-    ID3D12DescriptorHeap* s_Heaps[] = { m_ResourceDescriptors->Heap() };
+    ID3D12DescriptorHeap* s_Heaps[] = {m_ResourceDescriptors->Heap()};
 
     m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
 
@@ -96,7 +96,8 @@ void DirectXTKRenderer::DepthDraw() {
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     const CD3DX12_CPU_DESCRIPTOR_HANDLE s_RtvDescriptor(s_RtvHandle, s_BackBufferIndex, m_RtvDescriptorSize);
 
-    const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->GetCPUDescriptorHandleForHeapStart();
+    const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->
+                                                     GetCPUDescriptorHandleForHeapStart();
     const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, *m_DsvIndex, m_DsvDescriptorSize);
 
     m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
@@ -166,8 +167,10 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     m_ViewProjection = m_View * m_Projection;
     m_ProjectionViewInverse = (m_Projection * m_View).Invert();
 
-    m_ViewFrustum.UpdateClipPlanes(s_CameraView, Globals::RenderManager->m_pDevice->m_Constants.
-        cameraViewToClip);
+    m_ViewFrustum.UpdateClipPlanes(
+        s_CameraView, Globals::RenderManager->m_pDevice->m_Constants.
+                                              cameraViewToClip
+    );
 
     if (m_RendererSetup) {
         m_TriangleEffect->SetView(m_View);
@@ -312,9 +315,9 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     }
 
     if (s_Device->CreateCommandList(
-        0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr,
-        IID_PPV_ARGS(m_CommandList.ReleaseAndGetPtr())
-    ) != S_OK ||
+            0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_FrameContext[0].CommandAllocator, nullptr,
+            IID_PPV_ARGS(m_CommandList.ReleaseAndGetPtr())
+        ) != S_OK ||
         m_CommandList->Close() != S_OK)
         return false;
 
@@ -361,7 +364,8 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
         s_AlphaBlend.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
         s_AlphaBlend.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
         s_AlphaBlend.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
-        s_AlphaBlend.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_RED | D3D12_COLOR_WRITE_ENABLE_GREEN | D3D12_COLOR_WRITE_ENABLE_BLUE;
+        s_AlphaBlend.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_RED |
+                D3D12_COLOR_WRITE_ENABLE_GREEN | D3D12_COLOR_WRITE_ENABLE_BLUE;
 
         DirectX::EffectPipelineStateDescription s_Desc(
             &DirectX::VertexPositionColor::InputLayout,
@@ -369,7 +373,8 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
             DirectX::CommonStates::DepthReadReverseZ,
             DirectX::CommonStates::CullNone,
             s_RtState,
-            D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+        );
 
         m_TriangleEffect = std::make_unique<DirectX::BasicEffect>(s_Device, DirectX::EffectFlags::VertexColor, s_Desc);
 
@@ -380,36 +385,45 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
         s_Desc.inputLayout = DirectX::VertexPositionColorTexture::InputLayout;
         s_Desc.primitiveTopology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-        m_TextEffect = std::make_unique<DirectX::BasicEffect>(s_Device, DirectX::EffectFlags::VertexColor | DirectX::EffectFlags::Texture, s_Desc);
+        m_TextEffect = std::make_unique<DirectX::BasicEffect>(
+            s_Device, DirectX::EffectFlags::VertexColor | DirectX::EffectFlags::Texture, s_Desc
+        );
 
-        m_TriangleBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(s_Device, [&]() {
-            m_TriangleEffect->Apply(m_CommandList);
-        });
+        m_TriangleBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(
+            s_Device, [&]() {
+                m_TriangleEffect->Apply(m_CommandList);
+            }
+        );
 
-        m_LineBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(s_Device, [&]() {
-            m_LineEffect->Apply(m_CommandList);
-        });
+        m_LineBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(
+            s_Device, [&]() {
+                m_LineEffect->Apply(m_CommandList);
+            }
+        );
 
-        m_TextBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColorTexture>>(s_Device, [&]() {
-            ID3D12DescriptorHeap* s_Heaps[] = { m_fontSRVDescriptorHeap.Ref, m_CommonStates->Heap() };
+        m_TextBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColorTexture>>(
+            s_Device, [&]() {
+                ID3D12DescriptorHeap* s_Heaps[] = {m_fontSRVDescriptorHeap.Ref, m_CommonStates->Heap()};
 
-            m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
+                m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
 
-            m_TextEffect->Apply(m_CommandList);
+                m_TextEffect->Apply(m_CommandList);
 
-            m_CommandList->SetPipelineState(m_PipelineState);
-        });
+                m_CommandList->SetPipelineState(m_PipelineState);
+            }
+        );
 
         m_Text2DBuffer.reserve(1024);
 
-        if (!CreateFontDistanceFieldTexture())
-        {
+        if (!CreateFontDistanceFieldTexture()) {
             return false;
         }
 
         m_CommonStates = std::make_unique<DirectX::CommonStates>(s_Device.Ref);
 
-        m_TextEffect->SetTexture(m_fontSRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_CommonStates->LinearClamp());
+        m_TextEffect->SetTexture(
+            m_fontSRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart(), m_CommonStates->LinearClamp()
+        );
 
         const std::string s_DebugRenderDistanceFieldFontVertexShader = R"(
 			cbuffer Parameters : register(b0)
@@ -523,34 +537,43 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
         ScopedD3DRef<ID3DBlob> s_VertexShaderBlob;
         ScopedD3DRef<ID3DBlob> s_PixelShaderBlob;
 
-        if (!CompileShaderFromString(s_DebugRenderDistanceFieldFontVertexShader, "VSBasicTxVcNoFog", "vs_5_0", &s_VertexShaderBlob.Ref))
-        {
+        if (!CompileShaderFromString(
+            s_DebugRenderDistanceFieldFontVertexShader, "VSBasicTxVcNoFog", "vs_5_0", &s_VertexShaderBlob.Ref
+        )) {
             return false;
         }
 
-        if (!CompileShaderFromString(s_DebugRenderDistanceFieldFontPixelShader, "mainPS", "ps_5_0", &s_PixelShaderBlob.Ref))
-        {
+        if (!CompileShaderFromString(
+            s_DebugRenderDistanceFieldFontPixelShader, "mainPS", "ps_5_0", &s_PixelShaderBlob.Ref
+        )) {
             return false;
         }
 
         D3D12_ROOT_SIGNATURE_FLAGS s_RootSignatureFlags =
-            D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-            D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
+                D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+                D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+                D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+                D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
 
         CD3DX12_ROOT_PARAMETER s_RootParameters[RootParameterIndex::RootParameterCount] = {};
-        s_RootParameters[RootParameterIndex::ConstantBuffer].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL);
+        s_RootParameters[RootParameterIndex::ConstantBuffer].
+                InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL);
 
         CD3DX12_ROOT_SIGNATURE_DESC s_RootSignatureDesc = {};
 
         const CD3DX12_DESCRIPTOR_RANGE s_TextureSRV(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
         const CD3DX12_DESCRIPTOR_RANGE s_TextureSampler(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, 0);
 
-        s_RootParameters[RootParameterIndex::TextureSRV].InitAsDescriptorTable(1, &s_TextureSRV, D3D12_SHADER_VISIBILITY_PIXEL);
-        s_RootParameters[RootParameterIndex::TextureSampler].InitAsDescriptorTable(1, &s_TextureSampler, D3D12_SHADER_VISIBILITY_PIXEL);
+        s_RootParameters[RootParameterIndex::TextureSRV].InitAsDescriptorTable(
+            1, &s_TextureSRV, D3D12_SHADER_VISIBILITY_PIXEL
+        );
+        s_RootParameters[RootParameterIndex::TextureSampler].InitAsDescriptorTable(
+            1, &s_TextureSampler, D3D12_SHADER_VISIBILITY_PIXEL
+        );
 
-        s_RootSignatureDesc.Init(static_cast<UINT>(std::size(s_RootParameters)), s_RootParameters, 0, nullptr, s_RootSignatureFlags);
+        s_RootSignatureDesc.Init(
+            static_cast<UINT>(std::size(s_RootParameters)), s_RootParameters, 0, nullptr, s_RootSignatureFlags
+        );
 
         ScopedD3DRef<ID3D12RootSignature> s_RootSignature;
 
@@ -569,12 +592,12 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
 
         const D3D12_INPUT_ELEMENT_DESC s_InputElementDescs[] =
         {
-            { "POSITION", 0, DXGI_FORMAT_R16G16B16A16_SNORM, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "NORMAL",   0, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TANGENT",  0, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 4,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "BINORMAL", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 8,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R16G16_SNORM,   1, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+            {"POSITION", 0, DXGI_FORMAT_R16G16B16A16_SNORM, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"NORMAL", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"TANGENT", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 4, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"BINORMAL", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"TEXCOORD", 0, DXGI_FORMAT_R16G16_SNORM, 1, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+            {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
         };
 
         D3D12_INPUT_LAYOUT_DESC s_InputLayoutDesc = {};
@@ -711,9 +734,9 @@ bool DirectXTKRenderer::CompileShaderFromString(
 ) {
     UINT s_CompileFlags = 0;
 
-#if defined(_DEBUG)
+    #if defined(_DEBUG)
     s_CompileFlags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
+    #endif
 
     ScopedD3DRef<ID3DBlob> s_ErrorBlob;
 
@@ -728,12 +751,11 @@ bool DirectXTKRenderer::CompileShaderFromString(
         s_CompileFlags,
         0,
         p_ShaderBlob,
-        &s_ErrorBlob.Ref);
+        &s_ErrorBlob.Ref
+    );
 
-    if (FAILED(s_Result))
-    {
-        if (s_ErrorBlob)
-        {
+    if (FAILED(s_Result)) {
+        if (s_ErrorBlob) {
             Logger::Error("{}", static_cast<const char*>(s_ErrorBlob->GetBufferPointer()));
         }
 
@@ -764,7 +786,8 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
         DXGI_FORMAT_R8_UNORM,
         1, 0,
         D3D12_TEXTURE_LAYOUT_UNKNOWN,
-        D3D12_RESOURCE_FLAG_NONE);
+        D3D12_RESOURCE_FLAG_NONE
+    );
 
     CD3DX12_HEAP_PROPERTIES s_DefaultHeap(D3D12_HEAP_TYPE_DEFAULT);
 
@@ -774,7 +797,8 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
         &s_TextureDesc,
         D3D12_RESOURCE_STATE_COPY_DEST,
         nullptr,
-        IID_PPV_ARGS(&m_FontDistanceFieldTexture.Ref));
+        IID_PPV_ARGS(&m_FontDistanceFieldTexture.Ref)
+    );
 
     if (FAILED(s_Result)) {
         Logger::Error("Failed to create committed resource for FontDistanceFieldTexture!");
@@ -788,9 +812,11 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
 
     s_Upload.Upload(m_FontDistanceFieldTexture.Ref, 0, &s_InitData, 1);
 
-    s_Upload.Transition(m_FontDistanceFieldTexture.Ref,
+    s_Upload.Transition(
+        m_FontDistanceFieldTexture.Ref,
         D3D12_RESOURCE_STATE_COPY_DEST,
-        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+    );
 
     auto s_Finish = s_Upload.End(m_CommandQueue);
 
@@ -816,7 +842,9 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
     s_SRVDesc.Texture2D.MostDetailedMip = 0;
     s_SRVDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
-    s_Device->CreateShaderResourceView(m_FontDistanceFieldTexture.Ref, &s_SRVDesc, m_fontSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    s_Device->CreateShaderResourceView(
+        m_FontDistanceFieldTexture.Ref, &s_SRVDesc, m_fontSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart()
+    );
 
     return true;
 }
@@ -847,7 +875,7 @@ void DirectXTKRenderer::DrawText2D(
     if (!m_RendererSetup)
         return;
 
-    m_Text2DBuffer.push_back(Text2D{ p_Text.c_str(), p_Pos, p_Color, p_Rotation, p_Scale, p_Alignment});
+    m_Text2DBuffer.push_back(Text2D {p_Text.c_str(), p_Pos, p_Color, p_Rotation, p_Scale, p_Alignment});
 }
 
 bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) {
@@ -971,7 +999,9 @@ void DirectXTKRenderer::DrawOBB3D(
     DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
 }
 
-void DirectXTKRenderer::DrawBoundingQuads(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color) {
+void DirectXTKRenderer::DrawBoundingQuads(
+    const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color
+) {
     const auto s_Transform = *reinterpret_cast<DirectX::FXMMATRIX*>(&p_Transform);
 
     DirectX::XMVECTOR s_Corners[] = {
@@ -1145,8 +1175,8 @@ void DirectXTKRenderer::DrawText3D(
     s_Triangles.reserve(s_VertexCount);
 
     static const float s_LineHeight =
-        (MDF_FONT::ComputeLineHeightFromMetrics() /
-            static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
+    (MDF_FONT::ComputeLineHeightFromMetrics() /
+        static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
     float s_PenX = 0.f;
     float s_PenY = 0.f;
 
@@ -1173,7 +1203,9 @@ void DirectXTKRenderer::DrawText3D(
             float s_Vertices[8];
             float s_TextureCoordinates[8];
 
-            MDF_FONT::RenderQuad(static_cast<unsigned int>(*s_BaseText), s_Scale, s_PenX, s_PenY, s_Vertices, s_TextureCoordinates);
+            MDF_FONT::RenderQuad(
+                static_cast<unsigned int>(*s_BaseText), s_Scale, s_PenX, s_PenY, s_Vertices, s_TextureCoordinates
+            );
 
             float4 s_BottomLeft = float4(s_Vertices[0], 0.f, s_Vertices[1], 1.f);
             float4 s_BottomRight = float4(s_Vertices[2], 0.f, s_Vertices[3], 1.f);
@@ -1188,13 +1220,13 @@ void DirectXTKRenderer::DrawText3D(
             Triangle& s_Triangle1 = s_Triangles.emplace_back();
             Triangle& s_Triangle2 = s_Triangles.emplace_back();
 
-            s_Triangle1.vertexPosition1 = SVector3{ s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z };
-            s_Triangle1.vertexPosition2 = SVector3{ s_BottomRight.x, s_BottomRight.y, s_BottomRight.z };
-            s_Triangle1.vertexPosition3 = SVector3{ s_TopLeft.x, s_TopLeft.y, s_TopLeft.z };
+            s_Triangle1.vertexPosition1 = SVector3 {s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z};
+            s_Triangle1.vertexPosition2 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle1.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
-            s_Triangle2.vertexPosition1 = SVector3{ s_BottomRight.x, s_BottomRight.y, s_BottomRight.z };
-            s_Triangle2.vertexPosition2 = SVector3{ s_TopRight.x, s_TopRight.y, s_TopRight.z };
-            s_Triangle2.vertexPosition3 = SVector3{ s_TopLeft.x, s_TopLeft.y, s_TopLeft.z };
+            s_Triangle2.vertexPosition1 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle2.vertexPosition2 = SVector3 {s_TopRight.x, s_TopRight.y, s_TopRight.z};
+            s_Triangle2.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
             s_Triangle1.vertexColor1 = p_Color;
             s_Triangle1.vertexColor2 = p_Color;
@@ -1204,13 +1236,13 @@ void DirectXTKRenderer::DrawText3D(
             s_Triangle2.vertexColor2 = p_Color;
             s_Triangle2.vertexColor3 = p_Color;
 
-            s_Triangle1.textureCoordinates1 = SVector2{ s_TextureCoordinates[0], s_TextureCoordinates[1] };
-            s_Triangle1.textureCoordinates2 = SVector2{ s_TextureCoordinates[2], s_TextureCoordinates[3] };
-            s_Triangle1.textureCoordinates3 = SVector2{ s_TextureCoordinates[6], s_TextureCoordinates[7] };
+            s_Triangle1.textureCoordinates1 = SVector2 {s_TextureCoordinates[0], s_TextureCoordinates[1]};
+            s_Triangle1.textureCoordinates2 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
+            s_Triangle1.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
 
-            s_Triangle2.textureCoordinates1 = SVector2{ s_TextureCoordinates[2], s_TextureCoordinates[3] };
-            s_Triangle2.textureCoordinates2 = SVector2{ s_TextureCoordinates[4], s_TextureCoordinates[5] };
-            s_Triangle2.textureCoordinates3 = SVector2{ s_TextureCoordinates[6], s_TextureCoordinates[7] };
+            s_Triangle2.textureCoordinates1 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
+            s_Triangle2.textureCoordinates2 = SVector2 {s_TextureCoordinates[4], s_TextureCoordinates[5]};
+            s_Triangle2.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
         }
 
         ++s_BaseText;
@@ -1226,7 +1258,9 @@ void DirectXTKRenderer::DrawText3D(
     }
 }
 
-void DirectXTKRenderer::DrawMesh(const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices, const SVector4& p_VertexColor) {
+void DirectXTKRenderer::DrawMesh(
+    const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices, const SVector4& p_VertexColor
+) {
     std::vector<DirectX::VertexPositionColor> s_Vertices2;
 
     s_Vertices2.reserve(p_Vertices.size());
@@ -1234,16 +1268,23 @@ void DirectXTKRenderer::DrawMesh(const std::vector<SVector3>& p_Vertices, const 
     for (size_t i = 0; i < p_Vertices.size(); ++i) {
         const SVector3& s_Vertex = p_Vertices[i];
 
-        s_Vertices2.push_back(DirectX::VertexPositionColor(DirectX::SimpleMath::Vector3(s_Vertex.x, s_Vertex.y, s_Vertex.z),
-            DirectX::SimpleMath::Vector4(p_VertexColor.x, p_VertexColor.y, p_VertexColor.z, p_VertexColor.w)));
+        s_Vertices2.push_back(
+            DirectX::VertexPositionColor(
+                DirectX::SimpleMath::Vector3(s_Vertex.x, s_Vertex.y, s_Vertex.z),
+                DirectX::SimpleMath::Vector4(p_VertexColor.x, p_VertexColor.y, p_VertexColor.z, p_VertexColor.w)
+            )
+        );
     }
 
-    m_TriangleBatch->DrawIndexed(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, p_Indices.data(), p_Indices.size(), s_Vertices2.data(), s_Vertices2.size());
+    m_TriangleBatch->DrawIndexed(
+        D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, p_Indices.data(), p_Indices.size(), s_Vertices2.data(), s_Vertices2.size()
+    );
 }
 
 void DirectXTKRenderer::DrawMesh(
     ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
-    const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias, const float4& p_TextureScaleBias,
+    const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias,
+    const float4& p_TextureScaleBias,
     const SVector4& p_MaterialColor
 ) {
     ScopedD3DRef<ID3D12Device> s_Device;
@@ -1255,7 +1296,8 @@ void DirectXTKRenderer::DrawMesh(
     std::vector<D3D12_VERTEX_BUFFER_VIEW> s_VertexBufferViews(p_VertexBufferCount);
 
     for (uint32_t i = 0; i < p_VertexBufferCount; ++i) {
-        s_VertexBufferViews[i].BufferLocation = p_VertexBuffers[i]->m_pResource->GetGPUVirtualAddress() + p_VertexBuffers[i]->m_nOffset;
+        s_VertexBufferViews[i].BufferLocation = p_VertexBuffers[i]->m_pResource->GetGPUVirtualAddress() +
+                p_VertexBuffers[i]->m_nOffset;
         s_VertexBufferViews[i].StrideInBytes = p_VertexBuffers[i]->m_nStride;
         s_VertexBufferViews[i].SizeInBytes = p_VertexBuffers[i]->m_nSize;
     }
@@ -1306,7 +1348,9 @@ bool DirectXTKRenderer::IsInsideViewFrustum(const SVector3& p_Point) const {
     return m_ViewFrustum.ContainsPoint(p_Point);
 }
 
-bool DirectXTKRenderer::IsInsideViewFrustum(const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform) const {
+bool DirectXTKRenderer::IsInsideViewFrustum(
+    const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform
+) const {
     const DirectX::SimpleMath::Matrix s_World = *reinterpret_cast<const DirectX::SimpleMath::Matrix*>(&p_Transform);
 
     AABB s_AABB;
@@ -1318,7 +1362,9 @@ bool DirectXTKRenderer::IsInsideViewFrustum(const SVector3& p_Min, const SVector
     return m_ViewFrustum.ContainsAABB(s_TransformedAABB);
 }
 
-bool DirectXTKRenderer::IsInsideViewFrustum(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const {
+bool DirectXTKRenderer::IsInsideViewFrustum(
+    const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize
+) const {
     return m_ViewFrustum.ContainsOBB(p_Transform, p_Center, p_HalfSize);
 }
 
@@ -1335,11 +1381,13 @@ AABB DirectXTKRenderer::TransformAABB(const DirectX::SimpleMath::Matrix& p_Trans
     };
 
     AABB s_TransformedAABB;
-    s_TransformedAABB.min = { FLT_MAX, FLT_MAX, FLT_MAX };
-    s_TransformedAABB.max = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+    s_TransformedAABB.min = {FLT_MAX, FLT_MAX, FLT_MAX};
+    s_TransformedAABB.max = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
 
     for (int i = 0; i < 8; ++i) {
-        const DirectX::SimpleMath::Vector3 s_TransformedCorner = DirectX::SimpleMath::Vector3::Transform(s_Corners[i], p_Transform);
+        const DirectX::SimpleMath::Vector3 s_TransformedCorner = DirectX::SimpleMath::Vector3::Transform(
+            s_Corners[i], p_Transform
+        );
 
         s_TransformedAABB.min.x = std::min(s_TransformedAABB.min.x, s_TransformedCorner.x);
         s_TransformedAABB.min.y = std::min(s_TransformedAABB.min.y, s_TransformedCorner.y);

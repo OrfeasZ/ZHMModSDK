@@ -99,7 +99,7 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
                 continue;
 
             const auto s_PropertyAddress =
-                reinterpret_cast<uintptr_t>(p_SelectedEntity.m_pEntity) + s_Property->m_nOffset;
+                    reinterpret_cast<uintptr_t>(p_SelectedEntity.m_pEntity) + s_Property->m_nOffset;
             const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
             const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
@@ -107,7 +107,7 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
                 s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
                 // Some properties don't have a name for some reason. Try to find using RL.
                 if (const auto [s_data, s_size] =
-                    HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                        HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
                     if (const auto s_COLLISION_RESOURCE_ID_PROPERTY_NAME = "m_CollisionResourceID"; std::string(
                         s_data, s_size
                     ) != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
@@ -122,12 +122,14 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
                         s_PropertyInfo->get(
                             reinterpret_cast<void*>(s_PropertyAddress),
                             s_Data,
-                            s_PropertyInfo->m_nOffset);
+                            s_PropertyInfo->m_nOffset
+                        );
                     }
                     else {
                         s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
                             s_Data,
-                            reinterpret_cast<void*>(s_PropertyAddress));
+                            reinterpret_cast<void*>(s_PropertyAddress)
+                        );
                     }
                     const auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
                     std::string s_ResourceName = "null";
@@ -155,13 +157,14 @@ template <typename T>
 std::unique_ptr<T, AlignedDeleter> Editor::GetProperty(ZEntityRef p_Entity, const ZEntityProperty* p_Property) {
     const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
     const auto s_PropertyAddress =
-        reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + p_Property->m_nOffset;
+            reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + p_Property->m_nOffset;
     const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
     const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
 
     // Get the value of the property.
     T* s_Data =
-        static_cast<T*>((*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment));
+            static_cast<T*>((*Globals::MemoryManager)->m_pNormalAllocator->
+                                                       AllocateAligned(s_TypeSize, s_TypeAlignment));
 
     if (s_PropertyInfo->m_nFlags & E_HAS_GETTER_SETTER)
         s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
@@ -184,7 +187,7 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
             // Some properties don't have a name for some reason. Try to find using RL.
 
             if (const auto [s_data, s_size] =
-                HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                    HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
                 if (auto s_PropertyNameView = std::string_view(s_data, s_size);
                     s_PropertyNameView == s_TransformPropertyName) {
                     if (auto s_Data43 = GetProperty<SMatrix43>(p_Entity, s_Property)) {
@@ -195,7 +198,8 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
                     }
                 }
             }
-        } else if (s_PropertyInfo->m_pName && s_PropertyInfo->m_pName == s_TransformPropertyName) {
+        }
+        else if (s_PropertyInfo->m_pName && s_PropertyInfo->m_pName == s_TransformPropertyName) {
             if (auto s_Data43 = GetProperty<SMatrix43>(p_Entity, s_Property)) {
                 auto s_Data = SMatrix(*s_Data43);
                 const auto s_Decomposed = s_Data.Decompose();
@@ -267,7 +271,7 @@ void Editor::FindAlocForZGeomEntityNode(
         const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->
                 m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
         const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
-        std::string s_PrimHashString{ std::format("{:016X}", s_PrimHash) };
+        std::string s_PrimHashString {std::format("{:016X}", s_PrimHash)};
         if (std::string s_collision_ioi_string = GetCollisionHash(p_Node->Entity);
             !s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
             bool s_Skip = false;
@@ -390,7 +394,7 @@ void Editor::FindAlocs(
         // Add children to the queue.
         for (auto& node : s_Node->Children | std::views::values) {
             std::string s_ChildId = std::format("{:016x}", node->Entity->GetType()->m_nEntityId);
-            s_NodeQueue.push(std::pair{s_Node, node});
+            s_NodeQueue.push(std::pair {s_Node, node});
         }
     }
     p_SendEntitiesCallback(entities, true);
@@ -426,10 +430,11 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
             Quat s_CombinedQuat;
             s_CombinedQuat = s_ParentQuat * s_EntityQuat;
             std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
-                std::make_tuple(
-                    std::vector{ p_Hash },
-                    s_CombinedQuat,
-                    s_Node->Entity);
+                    std::make_tuple(
+                        std::vector {p_Hash},
+                        s_CombinedQuat,
+                        s_Node->Entity
+                    );
 
             entities.push_back(s_Entity);
         }

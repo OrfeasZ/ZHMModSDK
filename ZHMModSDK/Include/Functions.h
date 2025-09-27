@@ -41,7 +41,7 @@ public:
     static EngineFunction<void(ZActor* th)>* ZActor_OnOutfitChanged;
     static EngineFunction<void(ZActor* th)>* ZActor_ReviveActor;
     static EngineFunction<void(ZDynamicObject* th, ZString* a2)>* ZDynamicObject_ToString;
-    static EngineFunction<ZDynamicObject* (ZDynamicObject* th, char* jsonStr, int strLen)>* ZDynamicObject_ParseString;
+    static EngineFunction<ZDynamicObject*(ZDynamicObject* th, char* jsonStr, int strLen)>* ZDynamicObject_ParseString;
     static EngineFunction<void(ZHM5BaseCharacter* th, bool inMotion)>* ZHM5BaseCharacter_ActivateRagdoll;
     static EngineFunction<void(ZHM5BaseCharacter* th)>* ZHM5BaseCharacter_DeactivateRagdoll;
     static EngineFunction<ZCameraEntity*()>* GetCurrentCamera;
@@ -115,5 +115,7 @@ public:
     static EngineFunction<ZConfigCommand*(uint32_t commandNameHash)>* ZConfigCommand_GetConfigCommand;
     static EngineFunction<ZConfigCommand*()>* ZConfigCommand_First;
 
-    static EngineFunction<ZDynamicObject*(ZDynamicObject* th, const ZString& p_Key, const ZDynamicObject& p_Value)>* ZDynamicObject_Set;
+    static EngineFunction<ZDynamicObject*(
+        ZDynamicObject* th, const ZString& p_Key, const ZDynamicObject& p_Value
+    )>* ZDynamicObject_Set;
 };

@@ -71,11 +71,9 @@ public:
     virtual ~IInputDevice() = 0;
 };
 
-class ZInputDevice : public IInputDevice {
-};
+class ZInputDevice : public IInputDevice {};
 
-class ZKeyboardDevice : public ZInputDevice {
-};
+class ZKeyboardDevice : public ZInputDevice {};
 
 class ZDirectInputInf {
 public:
