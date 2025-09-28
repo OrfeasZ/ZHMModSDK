@@ -141,18 +141,6 @@
                     "value": 0
                 }
             }
-        },
-        "feedb7c987a6ef7b": {
-            "parent": null,
-            "name": "New Entity2",
-            "factory": "[modules:/zentity.class].pc_entitytype",
-            "blueprint": "[modules:/zentity.class].pc_entityblueprint"
-        },
-        "feed0cf25a79d06a": {
-            "parent": null,
-            "name": "New Entity1",
-            "factory": "[modules:/zentity.class].pc_entitytype",
-            "blueprint": "[modules:/zentity.class].pc_entityblueprint"
         }
     },
     "propertyOverrides": [],
