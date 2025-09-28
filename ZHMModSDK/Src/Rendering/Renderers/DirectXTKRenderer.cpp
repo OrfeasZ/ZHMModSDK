@@ -1109,15 +1109,19 @@ void DirectXTKRenderer::DrawQuad3D(
 }
 
 void DirectXTKRenderer::DrawText3D(
-    const std::string& p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale,
-    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment
+    const std::string& p_Text, const SMatrix& p_World,
+    const SVector4& p_Color, float p_Scale,
+    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment,
+    const bool p_IsCameraTransform
 ) {
-    DrawText3D(p_Text.c_str(), p_World, p_Color, p_Scale, p_HorizontalAlignment, p_VerticalAlignment);
+    DrawText3D(p_Text.c_str(), p_World, p_Color, p_Scale, p_HorizontalAlignment, p_VerticalAlignment, p_IsCameraTransform);
 }
 
 void DirectXTKRenderer::DrawText3D(
-    const char* p_Text, const SMatrix& p_World, const SVector4& p_Color, float p_Scale,
-    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment
+    const char* p_Text, const SMatrix& p_World,
+    const SVector4& p_Color, float p_Scale,
+    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment,
+    const bool p_IsCameraTransform
 ) {
     int s_TextLength = -1;
 
@@ -1130,32 +1134,21 @@ void DirectXTKRenderer::DrawText3D(
         s_TextLength = 255;
     }
 
-    const char* s_BaseText = p_Text;
-    int s_BaseTextLength = s_TextLength;
     int s_PrintableCharacterCount = 0;
 
-    while (s_TextLength) {
-        if (static_cast<unsigned char>(*p_Text) >= 33 && static_cast<unsigned char>(*p_Text) <= 126) {
+    for (int i = 0; i < s_TextLength; ++i) {
+        unsigned char c = static_cast<unsigned char>(p_Text[i]);
+
+        if (c >= 33 && c <= 126) {
             ++s_PrintableCharacterCount;
         }
-
-        ++p_Text;
-        --s_TextLength;
     }
 
     MDF_FONT::STextBoundingBox s_TextBoundingBox;
 
-    MDF_FONT::CalcBoundingBox(s_TextBoundingBox, s_BaseText);
+    MDF_FONT::CalcBoundingBox(s_TextBoundingBox, p_Text);
 
-    float s_OffsetX = 0.f;
     float s_OffsetY = 0.f;
-
-    if (p_HorizontalAlignment == TextAlignment::Center) {
-        s_OffsetX = (s_TextBoundingBox.m_fMaxX - s_TextBoundingBox.m_fMinX) * -0.5f;
-    }
-    else if (p_HorizontalAlignment == TextAlignment::Right) {
-        s_OffsetX = (s_TextBoundingBox.m_fMaxX - s_TextBoundingBox.m_fMinX) * -1.f;
-    }
 
     if (p_VerticalAlignment == TextAlignment::Middle) {
         s_OffsetY = (s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY) * -0.5f;
@@ -1164,10 +1157,17 @@ void DirectXTKRenderer::DrawText3D(
         s_OffsetY = (s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY) * -1.f;
     }
 
-    const float4 s_Translate = float4(s_OffsetX * p_Scale, 0.f, s_OffsetY * p_Scale, 1.f);
+    const float4 s_Translate = float4(0.f, 0.f, s_OffsetY * p_Scale, 1.f);
     const float4 s_Scale2 = float4(p_Scale, p_Scale, p_Scale, 1.f);
     const SMatrix s_OffsetMatrix = SMatrix::ScaleTranslate(s_Scale2, s_Translate);
-    const SMatrix s_WorldMatrix = p_World.AffineMultiply(s_OffsetMatrix);
+
+    SMatrix s_World = p_World;
+
+    if (p_IsCameraTransform) {
+        std::swap(s_World.YAxis, s_World.ZAxis);
+    }
+
+    const SMatrix s_WorldMatrix = s_World.AffineMultiply(s_OffsetMatrix);
 
     const unsigned int s_VertexCount = 2 * s_PrintableCharacterCount;
     std::vector<Triangle> s_Triangles;
@@ -1175,36 +1175,56 @@ void DirectXTKRenderer::DrawText3D(
     s_Triangles.reserve(s_VertexCount);
 
     static const float s_LineHeight =
-    (MDF_FONT::ComputeLineHeightFromMetrics() /
-        static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
-    float s_PenX = 0.f;
-    float s_PenY = 0.f;
+        (MDF_FONT::ComputeLineHeightFromMetrics() /
+            static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
 
-    while (s_BaseTextLength) {
-        if (*s_BaseText == '\n') {
-            s_PenX = 0.f;
-            s_PenY -= s_LineHeight;
-            ++s_BaseText;
-            --s_BaseTextLength;
+    std::string s_Text(p_Text);
+    std::string s_Line;
+    std::istringstream s_InputStringStream(s_Text);
+    int s_LineIndex = 0;
 
-            continue;
-        }
-
-        if (*s_BaseText == ' ') {
-            s_PenX += MDF_FONT::GetAdvanceWidth(*s_BaseText);
-            ++s_BaseText;
-            --s_BaseTextLength;
+    while (std::getline(s_InputStringStream, s_Line)) {
+        if (s_Line.empty()) {
+            ++s_LineIndex;
 
             continue;
         }
 
-        if (static_cast<unsigned char>(*s_BaseText) >= 33 && static_cast<unsigned char>(*s_BaseText) <= 126) {
+        MDF_FONT::STextBoundingBox s_TextBoundingBox2;
+
+        MDF_FONT::CalcBoundingBox(s_TextBoundingBox2, s_Line.c_str());
+
+        float s_OffsetX = 0.f;
+
+        if (p_HorizontalAlignment == TextAlignment::Center) {
+            s_OffsetX = (s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX) * -0.5f;
+        }
+        else if (p_HorizontalAlignment == TextAlignment::Right) {
+            s_OffsetX = (s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX) * -1.f;
+        }
+
+        float s_PenX = s_OffsetX;
+        float s_PenY = -(s_LineIndex * s_LineHeight);
+
+        for (size_t i = 0; i < s_Line.size(); ++i) {
+            const unsigned char c = static_cast<unsigned char>(s_Line[i]);
+
+            if (c == ' ') {
+                s_PenX += MDF_FONT::GetAdvanceWidth(c);
+
+                continue;
+            }
+
+            if (c < 33 || c > 126) {
+                continue;
+            }
+
             static const float s_Scale = 1.f;
             float s_Vertices[8];
             float s_TextureCoordinates[8];
 
             MDF_FONT::RenderQuad(
-                static_cast<unsigned int>(*s_BaseText), s_Scale, s_PenX, s_PenY, s_Vertices, s_TextureCoordinates
+                static_cast<unsigned int>(c), s_Scale, s_PenX, s_PenY, s_Vertices, s_TextureCoordinates
             );
 
             float4 s_BottomLeft = float4(s_Vertices[0], 0.f, s_Vertices[1], 1.f);
@@ -1220,13 +1240,13 @@ void DirectXTKRenderer::DrawText3D(
             Triangle& s_Triangle1 = s_Triangles.emplace_back();
             Triangle& s_Triangle2 = s_Triangles.emplace_back();
 
-            s_Triangle1.vertexPosition1 = SVector3 {s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z};
-            s_Triangle1.vertexPosition2 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
-            s_Triangle1.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
+            s_Triangle1.vertexPosition1 = SVector3{ s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z };
+            s_Triangle1.vertexPosition2 = SVector3{ s_BottomRight.x, s_BottomRight.y, s_BottomRight.z };
+            s_Triangle1.vertexPosition3 = SVector3{ s_TopLeft.x, s_TopLeft.y, s_TopLeft.z };
 
-            s_Triangle2.vertexPosition1 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
-            s_Triangle2.vertexPosition2 = SVector3 {s_TopRight.x, s_TopRight.y, s_TopRight.z};
-            s_Triangle2.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
+            s_Triangle2.vertexPosition1 = SVector3{ s_BottomRight.x, s_BottomRight.y, s_BottomRight.z };
+            s_Triangle2.vertexPosition2 = SVector3{ s_TopRight.x, s_TopRight.y, s_TopRight.z };
+            s_Triangle2.vertexPosition3 = SVector3{ s_TopLeft.x, s_TopLeft.y, s_TopLeft.z };
 
             s_Triangle1.vertexColor1 = p_Color;
             s_Triangle1.vertexColor2 = p_Color;
@@ -1236,17 +1256,16 @@ void DirectXTKRenderer::DrawText3D(
             s_Triangle2.vertexColor2 = p_Color;
             s_Triangle2.vertexColor3 = p_Color;
 
-            s_Triangle1.textureCoordinates1 = SVector2 {s_TextureCoordinates[0], s_TextureCoordinates[1]};
-            s_Triangle1.textureCoordinates2 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
-            s_Triangle1.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
+            s_Triangle1.textureCoordinates1 = SVector2{ s_TextureCoordinates[0], s_TextureCoordinates[1] };
+            s_Triangle1.textureCoordinates2 = SVector2{ s_TextureCoordinates[2], s_TextureCoordinates[3] };
+            s_Triangle1.textureCoordinates3 = SVector2{ s_TextureCoordinates[6], s_TextureCoordinates[7] };
 
-            s_Triangle2.textureCoordinates1 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
-            s_Triangle2.textureCoordinates2 = SVector2 {s_TextureCoordinates[4], s_TextureCoordinates[5]};
-            s_Triangle2.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
+            s_Triangle2.textureCoordinates1 = SVector2{ s_TextureCoordinates[2], s_TextureCoordinates[3] };
+            s_Triangle2.textureCoordinates2 = SVector2{ s_TextureCoordinates[4], s_TextureCoordinates[5] };
+            s_Triangle2.textureCoordinates3 = SVector2{ s_TextureCoordinates[6], s_TextureCoordinates[7] };
         }
 
-        ++s_BaseText;
-        --s_BaseTextLength;
+        ++s_LineIndex;
     }
 
     for (size_t i = 0; i < s_Triangles.size(); ++i) {

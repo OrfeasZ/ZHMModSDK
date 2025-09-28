@@ -10,6 +10,7 @@ class ZHM5CrippleBox;
 
 class Player : public IPluginInterface {
 public:
+    void Init() override;
     void OnDrawMenu() override;
     void OnDrawUI(bool p_HasFocus) override;
 
@@ -20,6 +21,8 @@ private:
     );
 
     static void EnableInfiniteAmmo();
+
+    DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
 
     bool m_PlayerMenuActive = false;
 
