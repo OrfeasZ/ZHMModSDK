@@ -12,6 +12,11 @@
 #include <Glacier/ZModule.h>
 #include <Glacier/ZItem.h>
 
+void Player::Init()
+{
+    Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Player::OnClearScene);
+}
+
 void Player::OnDrawMenu()
 {
     if (ImGui::Button(ICON_MD_MAN " PLAYER MENU"))
@@ -459,6 +464,14 @@ void Player::EnableInfiniteAmmo()
     hm5CrippleBox->m_bLimitedAmmo = false;
 
     hm5CrippleBox->Activate(0);
+}
+
+DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
+{
+    m_Hm5CrippleBox = nullptr;
+    m_GlobalOutfitKit = nullptr;
+
+    return HookResult<void>(HookAction::Continue());
 }
 
 DEFINE_ZHM_PLUGIN(Player);
