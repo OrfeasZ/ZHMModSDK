@@ -203,6 +203,7 @@ private:
 
     ZEntityRef m_Camera;
     ZEntityRef m_CameraRT;
+    ZEntityRef m_Thing;
     bool m_raycastLogging; // Mainly used for the raycasting logs
 
     bool m_CameraActive = false;

@@ -68,10 +68,14 @@ private:
     ZInfiniteBuffer<T> m_Buffer;
 };
 
-struct SResourceReferenceFlags {
-    uint8_t languageCode : 5;
-    uint8_t acquired : 1;
-    int8_t referenceType : 2;
+union SResourceReferenceFlags {
+    struct {
+        uint8_t languageCode : 5;
+        uint8_t acquired : 1;
+        int8_t referenceType : 2;
+    };
+
+    uint8_t flags;
 };
 
 class ZResourceContainer {
@@ -93,9 +97,16 @@ public:
         int8 packageId;
     };
 
+    /**
+     * Packed reference information.
+     * - 8 bits for the flags
+     * - 1 bit for some flag that inverts the index (multiplies it by -1), not sure why
+     * - 23 bits for the index
+     */
     struct SResourceReferenceInfo {
-        ZResourceIndex m_Index;
-        SResourceReferenceFlags m_Flags;
+        uint32_t flags : 8;
+        uint32_t unknown : 1;
+        uint32_t index : 23;
     };
 
 public:
@@ -113,16 +124,16 @@ public:
 
 public:
     ZResourceContainer::SResourceInfo& GetResourceInfo() const {
-        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex];
+        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
 
         return s_ResourceInfo;
     }
 
     void* GetResourceData() const {
-        if (m_nResourceIndex < 0)
+        if (m_nResourceIndex.val < 0)
             return nullptr;
 
-        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex];
+        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
 
         return s_ResourceInfo.resourceData;
     }
@@ -132,9 +143,11 @@ public:
     }
 
 public:
-    int32_t m_nResourceIndex = -1;
-    uint32_t m_Padding;
+    ZResourceIndex m_nResourceIndex;
+    uint32_t m_Padding = 0;
 };
+
+static_assert(sizeof(ZResourcePtr) == 8);
 
 template <typename T>
 class TResourcePtr : public ZResourcePtr {
@@ -144,6 +157,15 @@ public:
             std::is_base_of_v<IComponentInterface, T>,
             "TResourcePtr type must implement IComponentInterface."
         );
+    }
+
+    explicit TResourcePtr(const ZResourceIndex p_Index) {
+        static_assert(
+            std::is_base_of_v<IComponentInterface, T>,
+            "TResourcePtr type must implement IComponentInterface."
+        );
+
+        m_nResourceIndex = p_Index;
     }
 
 public:

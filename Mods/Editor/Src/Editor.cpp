@@ -24,6 +24,8 @@
 #include "Glacier/ZGameLoopManager.h"
 #include "Glacier/ZKnowledge.h"
 
+#include "../qnc/bindings.hpp"
+
 #include <ResourceLib_HM3.h>
 
 Editor::Editor() {
@@ -125,31 +127,126 @@ void Editor::OnDrawMenu() {
             return;
         }
 
-        const std::string s_JsonData =
-                R"({"subType":2,"blueprintIndexInResourceHeader":0,"rootEntityIndex":0,"subEntities":[{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":1,"propertyValues":[],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":2,"propertyValues":[{"nPropertyID":"m_mTransform","value":{"$type":"SMatrix43","$val":{"XAxis":{"x":-0.01750837110700898,"y":-0.9998467167227078,"z":0.000000029802322443206464},"YAxis":{"x":0.045330992472526366,"y":-0.0007937637378883089,"z":0.9989717068368775},"ZAxis":{"x":-0.9988185811560752,"y":0.017490368719671023,"z":0.04533794149953141},"Trans":{"x":-40.105434,"y":-29.001667,"z":2.3575625}}}},{"nPropertyID":"Texture2D_04_dest","value":{"$type":"SEntityTemplateReference","$val":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":2,"exposedEntity":""}}},{"nPropertyID":"m_eRoomBehaviour","value":{"$type":"ZSpatialEntity.ERoomBehaviour","$val":"ROOM_DYNAMIC"}}],"postInitPropertyValues":[{"nPropertyID":"m_eidParent","value":{"$type":"SEntityTemplateReference","$val":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""}}}],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":3,"propertyValues":[{"nPropertyID":"m_aMultiSource","value":{"$type":"TArray<SEntityTemplateReference>","$val":[{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":3,"exposedEntity":""}]}},{"nPropertyID":"m_nWidth","value":{"$type":"uint32","$val":1280}},{"nPropertyID":"m_nHeight","value":{"$type":"uint32","$val":720}},{"nPropertyID":"m_bUseBGRA","value":{"$type":"bool","$val":true}},{"nPropertyID":"m_bIsPIP","value":{"$type":"bool","$val":false}},{"nPropertyID":"m_bDrawGates","value":{"$type":"bool","$val":true}},{"nPropertyID":"m_nGateTraversalDepth","value":{"$type":"int32","$val":10000}},{"nPropertyID":"m_bForceVisible","value":{"$type":"bool","$val":true}}],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":4,"propertyValues":[{"nPropertyID":"m_bAllowAutoCameraCuts","value":{"$type":"bool","$val":false}},{"nPropertyID":"m_fNearZ","value":{"$type":"float32","$val":0.5}},{"nPropertyID":"m_fAspectWByH","value":{"$type":"float32","$val":1}},{"nPropertyID":"m_fFovYDeg","value":{"$type":"float32","$val":35}},{"nPropertyID":"m_fFarZ","value":{"$type":"float32","$val":250}},{"nPropertyID":"m_bIsUICamera","value":{"$type":"bool","$val":true}},{"nPropertyID":"m_mTransform","value":{"$type":"SMatrix43","$val":{"XAxis":{"x":-0.8307251621324028,"y":0.5566827687292755,"z":-0.00000002980232233218416},"YAxis":{"x":-0.004676126664119318,"y":-0.006978025004794608,"z":0.9999647198808832},"ZAxis":{"x":0.5566631286869232,"y":0.830695854189089,"z":0.008399940091782798},"Trans":{"x":-40.055542,"y":-29.139544,"z":2.3236175}}}},{"nPropertyID":"m_bForceVisible","value":{"$type":"bool","$val":true}},{"nPropertyID":"m_nPIPPriority","value":{"$type":"uint32","$val":0}}],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":5,"propertyValues":[],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":5,"propertyValues":[],"postInitPropertyValues":[],"platformSpecificPropertyValues":[]}],"propertyOverrides":[],"externalSceneTypeIndicesInResourceHeader":[]})";
+        const std::string s_JsonQnData =
+                R"({"tempHash":"00644fe9eb9feff5","tbluHash":"005474211f99b411","rootEntity":"fffffffffffffffe","entities":{"fffffffffffffffe":{"parent":null,"name":"editor_data","factory":"[modules:/zspatialentity.class].pc_entitytype","blueprint":"[modules:/zspatialentity.class].pc_entityblueprint"},"feed678791f1b3e1":{"parent":"fffffffffffffffe","name":"Tablet_A","factory":"[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entitytype","blueprint":"[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entityblueprint","properties":{"m_mTransform":{"type":"SMatrix43","value":{"rotation":{"x":-87.4014365441793,"y":0.0000017075472925031877,"z":91.0032070293913},"position":{"x":-40.105434,"y":-29.001667,"z":2.3575625}}},"Texture2D_04_dest":{"type":"SEntityTemplateReference","value":"feedbf5a41eb9c48"},"m_eRoomBehaviour":{"type":"ZSpatialEntity.ERoomBehaviour","value":"ROOM_DYNAMIC"},"m_eidParent":{"type":"SEntityTemplateReference","value":"fffffffffffffffe","postInit":true}}},"feedbf5a41eb9c48":{"parent":"fffffffffffffffe","name":"RenderDestinationTexture","factory":"[modules:/zrenderdestinationtextureentity.class].pc_entitytype","blueprint":"[modules:/zrenderdestinationtextureentity.class].pc_entityblueprint","properties":{"m_aMultiSource":{"type":"TArray<SEntityTemplateReference>","value":["feedb6fc4f5626ea"]},"m_nWidth":{"type":"uint32","value":1280},"m_nHeight":{"type":"uint32","value":720},"m_bUseBGRA":{"type":"bool","value":true},"m_bIsPIP":{"type":"bool","value":false},"m_bDrawGates":{"type":"bool","value":true},"m_nGateTraversalDepth":{"type":"int32","value":10000},"m_bForceVisible":{"type":"bool","value":true}}},"feedb6fc4f5626ea":{"parent":"fffffffffffffffe","name":"Camera","factory":"[modules:/zcameraentity.class].pc_entitytype","blueprint":"[modules:/zcameraentity.class].pc_entityblueprint","properties":{"m_bAllowAutoCameraCuts":{"type":"bool","value":false},"m_fNearZ":{"type":"float32","value":0.5},"m_fAspectWByH":{"type":"float32","value":1},"m_fFovYDeg":{"type":"float32","value":35},"m_fFarZ":{"type":"float32","value":250},"m_bIsUICamera":{"type":"bool","value":true},"m_mTransform":{"type":"SMatrix43","value":{"rotation":{"x":-89.51871322461322,"y":-0.0000017075472925031877,"z":-146.17330189917143},"position":{"x":-40.055542,"y":-29.139544,"z":2.3236175}}},"m_bForceVisible":{"type":"bool","value":true},"m_nPIPPriority":{"type":"uint32","value":0}}},"feedb7c987a6ef7b":{"parent":null,"name":"New Entity2","factory":"[modules:/zentity.class].pc_entitytype","blueprint":"[modules:/zentity.class].pc_entityblueprint"},"feed0cf25a79d06a":{"parent":null,"name":"New Entity1","factory":"[modules:/zentity.class].pc_entitytype","blueprint":"[modules:/zentity.class].pc_entityblueprint"}},"propertyOverrides":[],"overrideDeletes":[],"pinConnectionOverrides":[],"pinConnectionOverrideDeletes":[],"externalScenes":[],"subType":"brick","quickEntityVersion":3.1,"extraFactoryDependencies":[],"extraBlueprintDependencies":[],"comments":[]})";
 
-        const std::string s_JsonTbluData =
-                R"({"subType":2,"rootEntityIndex":0,"subEntities":[{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":0,"entityId":18446744073709551614,"editorOnly":false,"entityName":"editor_data","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":1,"entityId":18369452287080903649,"editorOnly":false,"entityName":"Tablet_A","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":2,"entityId":18369548849488043080,"editorOnly":false,"entityName":"RenderDestinationTexture","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":0,"exposedEntity":""},"entityTypeResourceIndex":3,"entityId":18369539649893181162,"editorOnly":false,"entityName":"Camera","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":4,"entityId":18369540531306295163,"editorOnly":false,"entityName":"New Entity2","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]},{"logicalParent":{"entityID":18446744073709551615,"externalSceneIndex":-1,"entityIndex":-1,"exposedEntity":""},"entityTypeResourceIndex":4,"entityId":18369352690153672810,"editorOnly":false,"entityName":"New Entity1","propertyAliases":[],"exposedEntities":[],"exposedInterfaces":[],"entitySubsets":[]}],"externalSceneTypeIndicesInResourceHeader":[],"pinConnections":[],"inputPinForwardings":[],"outputPinForwardings":[],"overrideDeletes":[],"pinConnectionOverrides":[],"pinConnectionOverrideDeletes":[]})";
+        const auto s_QnData = convert_qn_entity(
+            reinterpret_cast<const uint8_t*>(s_JsonQnData.data()), s_JsonQnData.size()
+        );
+
+        const std::string s_FactoryJson {s_QnData.factory_json, s_QnData.factory_json_len};
+        const std::string s_FactoryMetaJson {s_QnData.factory_meta_json, s_QnData.factory_meta_json_len};
+        const std::string s_BlueprintJson {s_QnData.blueprint_json, s_QnData.blueprint_json_len};
+        const std::string s_BlueprintMetaJson {s_QnData.blueprint_meta_json, s_QnData.blueprint_meta_json_len};
+
+        free_qn_converted_data(s_QnData);
+
+        Logger::Debug("TBLU Meta: {}", s_BlueprintMetaJson);
+        Logger::Debug("TEMP Meta: {}", s_FactoryMetaJson);
+
+        const auto s_FirstResource = (*Globals::ResourceContainer)->m_resources[3];
+        Logger::Debug(
+            "First Resource: {}, reference index = {}, count = {}", s_FirstResource.rid,
+            s_FirstResource.firstReferenceIndex, s_FirstResource.numReferences
+        );
+
+        for (int i = s_FirstResource.firstReferenceIndex;
+             i < s_FirstResource.firstReferenceIndex + s_FirstResource.numReferences; ++i) {
+            const auto s_Ref = (*Globals::ResourceContainer)->m_references[i];
+
+            Logger::Debug("Reference at index {}: {} [{:X}] {}", i, s_Ref.index, s_Ref.flags, s_Ref.unknown);
+        }
+
+        for (auto& ref : (*Globals::ResourceContainer)->m_references) {
+            if (ref.unknown) {
+                Logger::Debug("Funky thing: {} ({:X})", ref.index, ref.flags);
+            }
+        }
 
         auto s_ResourceTempMem = HM3_GetGeneratorForResource("TEMP")->FromJsonStringToResourceMem(
-            s_JsonData.c_str(),
-            s_JsonData.size(),
+            s_FactoryJson.c_str(),
+            s_FactoryJson.size(),
             false
         );
 
         auto s_ResourceTbluMem = HM3_GetGeneratorForResource("TBLU")->FromJsonStringToResourceMem(
-            s_JsonTbluData.c_str(),
-            s_JsonTbluData.size(),
+            s_BlueprintJson.c_str(),
+            s_BlueprintJson.size(),
             false
         );
 
         auto LoadResource = [](
-            ResourceMem* p_ResourceMem, ZRuntimeResourceID p_ResId, std::function<void(ZResourcePending*)> p_Install
+            ResourceMem* p_ResourceMem, const std::string& p_MetaJson, std::function<void(ZResourcePending*)> p_Install
         ) {
+            // Parse meta, create resource, and register references.
+            simdjson::ondemand::parser s_Parser;
+            const auto s_Json = simdjson::padded_string(p_MetaJson);
+            simdjson::ondemand::document s_JsonMsg = s_Parser.iterate(s_Json);
+
+            const std::string s_ResIdStr {std::string_view(s_JsonMsg["hash_value"])};
+            const auto s_ResId = ZRuntimeResourceID::FromString(s_ResIdStr);
+
             // Create a new resource index.
             ZResourceIndex s_Index;
-            Functions::ZResourceContainer_AddResourceInternal->Call(*Globals::ResourceContainer, s_Index, p_ResId);
-            (*Globals::ResourceContainer)->m_resources[s_Index.val].numReferences = 0;
+            Functions::ZResourceContainer_AddResourceInternal->Call(*Globals::ResourceContainer, s_Index, s_ResId);
+
+            auto& s_ResInfo = (*Globals::ResourceContainer)->m_resources[s_Index.val];
+
+            std::vector<std::pair<ZRuntimeResourceID, SResourceReferenceFlags>> s_References;
+            for (auto s_Ref : s_JsonMsg["hash_reference_data"]) {
+                const std::string s_Hash {std::string_view(s_Ref["hash"])};
+                const std::string s_Flag {std::string_view(s_Ref["flag"])};
+
+                const auto s_RefId = ZRuntimeResourceID::FromString(s_Hash);
+
+                // Parse flag as hex byte.
+                const SResourceReferenceFlags s_Flags {
+                    .flags = static_cast<uint8_t>(std::stoul(s_Flag, nullptr, 16))
+                };
+
+                s_References.emplace_back(s_RefId, s_Flags);
+            }
+
+            if (!s_References.empty()) {
+                s_ResInfo.firstReferenceIndex = (*Globals::ResourceContainer)->m_references.size();
+                s_ResInfo.numReferences = s_References.size();
+
+                for (const auto& [s_RefId, s_RefFlags] : s_References) {
+                    Logger::Debug("Adding reference {} -> {} (flags = {:x}).", s_ResId, s_RefId, s_RefFlags.flags);
+
+                    /*const auto it = (*Globals::ResourceContainer)->m_indices.find(s_RefId);
+
+                    if (it == (*Globals::ResourceContainer)->m_indices.end()) {
+                        Logger::Warn("Resource not found: {}", s_RefId);
+                        return s_Index;
+                    }
+
+                    Logger::Debug("Found resource index: {}", it->second.val);
+
+                    const auto s_RefRes = (*Globals::ResourceContainer)->m_resources[it->second.val];
+
+                    Logger::Debug("Found resource res id: {}", s_RefRes.rid);
+
+                    ZResourceContainer::SResourceReferenceInfo s_RefInfo {
+                        .flags = s_RefFlags.flags,
+                        .unknown = 0,
+                        .index = static_cast<uint32_t>(it->second.val),
+                    };
+
+                    (*Globals::ResourceContainer)->m_references.push_back(s_RefInfo);*/
+                    Functions::ZResourceContainer_AddResourceReferenceInternal->Call(
+                        *Globals::ResourceContainer, s_RefId, s_RefFlags
+                    );
+                }
+
+                for (int i = s_ResInfo.firstReferenceIndex; i < s_ResInfo.firstReferenceIndex + s_ResInfo.numReferences;
+                     ++i) {
+                    Logger::Debug(
+                        "Added reference: {} ({:X})", (*Globals::ResourceContainer)->m_references[i].index,
+                        (*Globals::ResourceContainer)->m_references[i].flags
+                    );
+                }
+            }
 
             auto* s_Buffer = static_cast<ZResourceDataBuffer*>((*Globals::MemoryManager)->m_pNormalAllocator->
                 AllocateAligned(
@@ -240,7 +337,7 @@ void Editor::OnDrawMenu() {
             Logger::Info("Creating TBLU resource...");
 
             auto s_TbluIndex = LoadResource(
-                s_ResourceTbluMem, ResId<"[assembly:/_sdk/editor/editor_data.brick].pc_entityblueprint">,
+                s_ResourceTbluMem, s_BlueprintMetaJson,
                 [](ZResourcePending* r) { Functions::ZTemplateBlueprintInstaller_Install->Call(nullptr, r); }
             );
 
@@ -249,11 +346,32 @@ void Editor::OnDrawMenu() {
             Logger::Info("Creating TEMP resource...");
 
             auto s_TempIndex = LoadResource(
-                s_ResourceTempMem, ResId<"[assembly:/_sdk/editor/editor_data.brick].pc_entitytype">,
+                s_ResourceTempMem, s_FactoryMetaJson,
                 [](ZResourcePending* r) { Functions::ZTemplateInstaller_Install->Call(nullptr, r); }
             );
 
             Logger::Info("TEMP index: {}", s_TempIndex.val);
+
+            TResourcePtr<ZTemplateEntityFactory> s_RTResource;
+            Globals::ResourceManager->GetResourcePtr(
+                s_RTResource, ZRuntimeResourceID::FromString("00644fe9eb9feff5"), 0
+            );
+
+            if (!s_RTResource) {
+                Logger::Error("Could not get editor camera resource.");
+                return;
+            }
+
+            Functions::ZEntityManager_NewEntity->Call(
+                Globals::EntityManager, m_Thing, "SDKThing", s_RTResource, s_Scene.m_ref, nullptr, -1
+            );
+
+            if (!m_Thing) {
+                Logger::Error("Could not spawn editor camera texture entity.");
+                return;
+            }
+
+            Logger::Info("Spawned editor thing entity: {}", fmt::ptr(m_Thing.GetEntity()));
         }
         else {
             Logger::Error("Failed to generate editor resources.");
@@ -584,7 +702,9 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
         if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
             Logger::Debug("Creating free camera.");
-            Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
+            Functions::ZEngineAppCommon_CreateFreeCamera->Call(
+                &(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon
+            );
         }
 
         (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(
@@ -916,11 +1036,13 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
 }
 
 DEFINE_PLUGIN_DETOUR(
-    Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor, ZTemplateEntityBlueprintFactory* th,
+    Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor,
+    ZTemplateEntityBlueprintFactory* th,
     STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending
 ) {
-    //Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
-    return HookResult<ZTemplateEntityBlueprintFactory*>(HookAction::Continue());
+    Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
+    auto s_Result = p_Hook->CallOriginal(th, pTemplateEntityBlueprint, ResourcePending);
+    return HookResult(HookAction::Return(), s_Result);
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {

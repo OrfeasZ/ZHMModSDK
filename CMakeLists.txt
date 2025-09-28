@@ -23,7 +23,7 @@ find_package(OpenSSL REQUIRED)
 find_package(semver CONFIG REQUIRED)
 #CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
 CPMAddPackage("gh:felixguendling/cista@0.14")
-CPMAddPackage("gh:OrfeasZ/ZHMTools@3.6.4")
+CPMAddPackage("gh:OrfeasZ/ZHMTools@3.6.9")
 #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
 add_subdirectory(External/imgui)
 add_subdirectory(External/imguizmo)
@@ -34,49 +34,49 @@ add_subdirectory(DirectInputProxy)
 
 # Mods.
 set(MODS
-	WakingUpNpcs
-	NoPause
-	SkipIntro
-	MaxPatchLevel
-	DebugMod
-	AdvancedRating
-	FreeCam
-	DiscordRichPresence
-	Editor
-	Clumsy
-	Noclip
-	#Hitmen
-	DebugCheckKeyEntityEnabler
-	OnlineTools
-    Player
+        WakingUpNpcs
+        NoPause
+        SkipIntro
+        MaxPatchLevel
+        DebugMod
+        AdvancedRating
+        FreeCam
+        DiscordRichPresence
+        Editor
+        Clumsy
+        Noclip
+        #Hitmen
+        DebugCheckKeyEntityEnabler
+        OnlineTools
+        Player
 )
 
-foreach(MOD IN LISTS MODS)
-	add_subdirectory("Mods/${MOD}")
-endforeach()
+foreach (MOD IN LISTS MODS)
+    add_subdirectory("Mods/${MOD}")
+endforeach ()
 
 # Tools.
 add_subdirectory("Tools/DevLoader")
 
 # Make sure to compile everything before the devloader.
-add_dependencies(DevLoader 
-	DirectInputProxy 
-	ZHMModSDK 
-	${MODS}
+add_dependencies(DevLoader
+        DirectInputProxy
+        ZHMModSDK
+        ${MODS}
 )
 
 # Install ZHMModSDK, dinput8, and all the mods in the game folder.
 if (EXISTS "${GAME_INSTALL_PATH}/Retail")
-	install(FILES "$<TARGET_FILE:DirectInputProxy>" DESTINATION "${GAME_INSTALL_PATH}/Retail")
-	install(FILES "$<TARGET_FILE:ZHMModSDK>" DESTINATION "${GAME_INSTALL_PATH}/Retail")
+    install(FILES "$<TARGET_FILE:DirectInputProxy>" DESTINATION "${GAME_INSTALL_PATH}/Retail")
+    install(FILES "$<TARGET_FILE:ZHMModSDK>" DESTINATION "${GAME_INSTALL_PATH}/Retail")
 
-	foreach(MOD IN LISTS MODS)
-		install(FILES "$<TARGET_FILE:${MOD}>" DESTINATION "${GAME_INSTALL_PATH}/Retail/mods")
-    endforeach()
+    foreach (MOD IN LISTS MODS)
+        install(FILES "$<TARGET_FILE:${MOD}>" DESTINATION "${GAME_INSTALL_PATH}/Retail/mods")
+    endforeach ()
 
     # Install ResourceLib, needed by the Editor mod.
     install(FILES "$<TARGET_FILE:ResourceLib_HM3>" DESTINATION "${GAME_INSTALL_PATH}/Retail")
-endif()
+endif ()
 
 # Collect all licenses from ${VCPKG_BUILD_ROOT}/share/<lib>/copyright into licenses/<lib>.txt
 install(CODE "set(VCPKG_BUILD_ROOT \"${VCPKG_BUILD_ROOT}\")")
@@ -103,18 +103,18 @@ install(FILES "External/mINI/LICENSE" DESTINATION licenses RENAME mINI.txt)
 install(FILES "External/IconFontCppHeaders/licence.txt" DESTINATION licenses RENAME IconFontCppHeaders.txt)
 
 # Install licenses from CPM packages.
-foreach(PACKAGE ${CPM_PACKAGES})
-	message(STATUS "Checking for licenses in ${PACKAGE} (${${PACKAGE}_SOURCE_DIR})...")
-	file(GLOB CPM_PACKAGE_LICENSES
-		"${${PACKAGE}_SOURCE_DIR}/license*"
-		"${${PACKAGE}_SOURCE_DIR}/licence*"
-		"${${PACKAGE}_SOURCE_DIR}/copying*"
-		"${${PACKAGE}_SOURCE_DIR}/copyright*"
-	)
+foreach (PACKAGE ${CPM_PACKAGES})
+    message(STATUS "Checking for licenses in ${PACKAGE} (${${PACKAGE}_SOURCE_DIR})...")
+    file(GLOB CPM_PACKAGE_LICENSES
+            "${${PACKAGE}_SOURCE_DIR}/license*"
+            "${${PACKAGE}_SOURCE_DIR}/licence*"
+            "${${PACKAGE}_SOURCE_DIR}/copying*"
+            "${${PACKAGE}_SOURCE_DIR}/copyright*"
+    )
 
-	# If we found any license files, copy the first one.
-	if(CPM_PACKAGE_LICENSES)
-		list(GET CPM_PACKAGE_LICENSES 0 CPM_PACKAGE_LICENSE)
-		install(FILES "${CPM_PACKAGE_LICENSE}" DESTINATION licenses RENAME "${PACKAGE}.txt")
-	endif()
-endforeach()
+    # If we found any license files, copy the first one.
+    if (CPM_PACKAGE_LICENSES)
+        list(GET CPM_PACKAGE_LICENSES 0 CPM_PACKAGE_LICENSE)
+        install(FILES "${CPM_PACKAGE_LICENSE}" DESTINATION licenses RENAME "${PACKAGE}.txt")
+    endif ()
+endforeach ()

@@ -276,3 +276,10 @@ PATTERN_VTABLE_FUNCTION(
     ZTemplateBlueprintInstaller_Install,
     bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)
 );
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x54\x24\x10\x57\x48\x83\xEC\x00\x4C\x8B\x51\x48",
+    "xxxxxxxxxxxxxx?xxxx",
+    ZResourceContainer_AddResourceReferenceInternal,
+    void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)
+);

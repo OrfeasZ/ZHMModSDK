@@ -301,7 +301,7 @@ void Editor::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
     Globals::ResourceManager->GetResourcePtr(s_Resource2, s_ID2, 0);
 
-    Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex, fmt::ptr(s_Resource.GetResource()));
+    Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex.val, fmt::ptr(s_Resource.GetResource()));
 
     if (!s_Resource) {
         Logger::Debug("Resource is not loaded.");
@@ -465,7 +465,7 @@ auto Editor::SpawnNPC(
 void Editor::LoadRepositoryProps() {
     m_RepositoryProps.clear();
 
-    if (m_RepositoryResource.m_nResourceIndex == -1) {
+    if (m_RepositoryResource.m_nResourceIndex.val == -1) {
         const auto s_ID = ResId<"[assembly:/repository/pro.repo].pc_repo">;
 
         Globals::ResourceManager->GetResourcePtr(m_RepositoryResource, s_ID, 0);

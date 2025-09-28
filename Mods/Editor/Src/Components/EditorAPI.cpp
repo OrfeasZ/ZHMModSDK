@@ -134,7 +134,7 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
                     const auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
                     std::string s_ResourceName = "null";
 
-                    if (s_Resource && s_Resource->m_nResourceIndex >= 0) {
+                    if (s_Resource && s_Resource->m_nResourceIndex.val >= 0) {
                         s_ResourceName = fmt::format(
                             "{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh,
                             s_Resource->GetResourceInfo().rid.m_IDLow
@@ -269,7 +269,7 @@ void Editor::FindAlocForZGeomEntityNode(
             }
         }
         const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->
-                m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
+                m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex.val];
         const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
         std::string s_PrimHashString {std::format("{:016X}", s_PrimHash)};
         if (std::string s_collision_ioi_string = GetCollisionHash(p_Node->Entity);

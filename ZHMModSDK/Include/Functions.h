@@ -132,7 +132,7 @@ public:
     ZResourceContainer_AddResourceInternal;
 
     static EngineFunction<void(
-        ZResourceReader * th, ZResourceIndex * idx, ZResourceDataPtr * pData, uint32_t dataSize
+        ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize
     )>* ZResourceReader_ZResourceReader;
 
     static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
@@ -140,4 +140,7 @@ public:
 
     static EngineFunction<bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateBlueprintInstaller_Install;
+
+    static EngineFunction<void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)>*
+    ZResourceContainer_AddResourceReferenceInternal;
 };
