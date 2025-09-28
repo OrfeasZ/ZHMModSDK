@@ -292,7 +292,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 p_Renderer->DrawText3D(
                     s_Text,
                     s_CameraTransform,
-                    SVector4(1.f, 0.f, 0.f, 1.f),
+                    SVector4(1.f, 1.f, 0.f, 1.f),
                     0.1f,
                     TextAlignment::Center
                 );
