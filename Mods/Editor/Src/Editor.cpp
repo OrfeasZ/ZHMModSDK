@@ -270,37 +270,44 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
         return false;
     }
 
-    const std::string s_JsonQnData =
+    const std::string s_TestData =
             R"({"tempHash":"00644fe9eb9feff5","tbluHash":"005474211f99b411","rootEntity":"fffffffffffffffe","entities":{"fffffffffffffffe":{"parent":null,"name":"editor_data","factory":"[modules:/zspatialentity.class].pc_entitytype","blueprint":"[modules:/zspatialentity.class].pc_entityblueprint"},"feed678791f1b3e1":{"parent":"fffffffffffffffe","name":"Tablet_A","factory":"[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entitytype","blueprint":"[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entityblueprint","properties":{"m_mTransform":{"type":"SMatrix43","value":{"rotation":{"x":-87.4014365441793,"y":0.0000017075472925031877,"z":91.0032070293913},"position":{"x":-40.105434,"y":-29.001667,"z":2.3575625}}},"Texture2D_04_dest":{"type":"SEntityTemplateReference","value":"feedbf5a41eb9c48"},"m_eRoomBehaviour":{"type":"ZSpatialEntity.ERoomBehaviour","value":"ROOM_DYNAMIC"},"m_eidParent":{"type":"SEntityTemplateReference","value":"fffffffffffffffe","postInit":true}}},"feedbf5a41eb9c48":{"parent":"fffffffffffffffe","name":"RenderDestinationTexture","factory":"[modules:/zrenderdestinationtextureentity.class].pc_entitytype","blueprint":"[modules:/zrenderdestinationtextureentity.class].pc_entityblueprint","properties":{"m_aMultiSource":{"type":"TArray<SEntityTemplateReference>","value":["feedb6fc4f5626ea"]},"m_nWidth":{"type":"uint32","value":1280},"m_nHeight":{"type":"uint32","value":720},"m_bUseBGRA":{"type":"bool","value":true},"m_bIsPIP":{"type":"bool","value":false},"m_bDrawGates":{"type":"bool","value":true},"m_nGateTraversalDepth":{"type":"int32","value":10000},"m_bForceVisible":{"type":"bool","value":true}}},"feedb6fc4f5626ea":{"parent":"fffffffffffffffe","name":"Camera","factory":"[modules:/zcameraentity.class].pc_entitytype","blueprint":"[modules:/zcameraentity.class].pc_entityblueprint","properties":{"m_bAllowAutoCameraCuts":{"type":"bool","value":false},"m_fNearZ":{"type":"float32","value":0.5},"m_fAspectWByH":{"type":"float32","value":1},"m_fFovYDeg":{"type":"float32","value":35},"m_fFarZ":{"type":"float32","value":250},"m_bIsUICamera":{"type":"bool","value":true},"m_mTransform":{"type":"SMatrix43","value":{"rotation":{"x":-89.51871322461322,"y":-0.0000017075472925031877,"z":-146.17330189917143},"position":{"x":-40.055542,"y":-29.139544,"z":2.3236175}}},"m_bForceVisible":{"type":"bool","value":true},"m_nPIPPriority":{"type":"uint32","value":0}}},"feedb7c987a6ef7b":{"parent":null,"name":"New Entity2","factory":"[modules:/zentity.class].pc_entitytype","blueprint":"[modules:/zentity.class].pc_entityblueprint"},"feed0cf25a79d06a":{"parent":null,"name":"New Entity1","factory":"[modules:/zentity.class].pc_entitytype","blueprint":"[modules:/zentity.class].pc_entityblueprint"}},"propertyOverrides":[],"overrideDeletes":[],"pinConnectionOverrides":[],"pinConnectionOverrideDeletes":[],"externalScenes":[],"subType":"brick","quickEntityVersion":3.1,"extraFactoryDependencies":[],"extraBlueprintDependencies":[],"comments":[]})";
+
+    p_Json = s_TestData.c_str();
+
+    Logger::Debug("Converting QN entity JSON to RT JSON and meta...");
 
     const auto s_QnData = convert_qn_entity(
         reinterpret_cast<const uint8_t*>(p_Json), strlen(p_Json)
     );
 
-    const std::string s_FactoryJson {s_QnData.factory_json, s_QnData.factory_json_len};
-    const std::string s_FactoryMetaJson {s_QnData.factory_meta_json, s_QnData.factory_meta_json_len};
-    const std::string s_BlueprintJson {s_QnData.blueprint_json, s_QnData.blueprint_json_len};
-    const std::string s_BlueprintMetaJson {s_QnData.blueprint_meta_json, s_QnData.blueprint_meta_json_len};
+    Logger::Debug("Converted!");
 
-    free_qn_converted_data(s_QnData);
+    const std::string_view s_FactoryJson {s_QnData.factory_json, s_QnData.factory_json_len};
+    const std::string_view s_FactoryMetaJson {s_QnData.factory_meta_json, s_QnData.factory_meta_json_len};
+    const std::string_view s_BlueprintJson {s_QnData.blueprint_json, s_QnData.blueprint_json_len};
+    const std::string_view s_BlueprintMetaJson {s_QnData.blueprint_meta_json, s_QnData.blueprint_meta_json_len};
 
-    Logger::Debug("TBLU Meta: {}", s_BlueprintMetaJson);
-    Logger::Debug("TEMP Meta: {}", s_FactoryMetaJson);
+    //free_qn_converted_data(s_QnData);
 
-    auto s_ResourceTempMem = HM3_GetGeneratorForResource("TEMP")->FromJsonStringToResourceMem(
-        s_FactoryJson.c_str(),
+    Logger::Debug("Generating BIN1 resources from RT JSON...");
+
+    const auto s_ResourceTempMem = HM3_GetGeneratorForResource("TEMP")->FromJsonStringToResourceMem(
+        s_FactoryJson.data(),
         s_FactoryJson.size(),
         false
     );
 
-    auto s_ResourceTbluMem = HM3_GetGeneratorForResource("TBLU")->FromJsonStringToResourceMem(
-        s_BlueprintJson.c_str(),
+    const auto s_ResourceTbluMem = HM3_GetGeneratorForResource("TBLU")->FromJsonStringToResourceMem(
+        s_BlueprintJson.data(),
         s_BlueprintJson.size(),
         false
     );
 
+    Logger::Debug("Generated!");
+
     auto LoadResource = [](
-        ResourceMem* p_ResourceMem, const std::string& p_MetaJson,
+        ResourceMem* p_ResourceMem, std::string_view p_MetaJson,
         std::function<void(ZResourcePending*)> p_Install
     ) {
         // Parse meta, create resource, and register references.
@@ -311,11 +318,14 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
         const std::string s_ResIdStr {std::string_view(s_JsonMsg["hash_value"])};
         const auto s_ResId = ZRuntimeResourceID::FromString(s_ResIdStr);
 
+        Logger::Debug("Loading resource {}...", s_ResId);
+
         // Create a new resource index.
         ZResourceIndex s_Index;
         Functions::ZResourceContainer_AddResourceInternal->Call(*Globals::ResourceContainer, s_Index, s_ResId);
 
-        Logger::Debug("Created resource index {} for rid {}.", s_Index.val, s_ResId);
+        Logger::Debug("Got resource index {} for rid {}.", s_Index.val, s_ResId);
+        Logger::Debug("Collecting references from meta...");
 
         std::vector<std::pair<ZRuntimeResourceID, SResourceReferenceFlags>> s_References;
         for (auto s_Ref : s_JsonMsg["hash_reference_data"]) {
@@ -332,7 +342,10 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
             s_References.emplace_back(s_RefId, s_Flags);
         }
 
+        Logger::Debug("Found {} references! Adding...", s_References.size());
+
         auto& s_ResInfo = (*Globals::ResourceContainer)->m_resources[s_Index.val];
+        s_ResInfo.refCount = 69;
 
         if (!s_References.empty()) {
             s_ResInfo.firstReferenceIndex = (*Globals::ResourceContainer)->m_references.size();
@@ -355,6 +368,8 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
 
                     ZResourcePtr s_LoadedRes;
                     Globals::ResourceManager->LoadResource(s_LoadedRes, s_RefId);
+
+                    Logger::Debug("Loaded reference data: {}", fmt::ptr(s_LoadedRes.GetResourceData()));
                 }
             }
         }
@@ -369,7 +384,7 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
 
         s_Buffer->m_pData = const_cast<void*>(p_ResourceMem->ResourceData);
         s_Buffer->m_nSize = p_ResourceMem->DataSize;
-        s_Buffer->m_iRefCount = 2;
+        s_Buffer->m_iRefCount = 69;
         s_Buffer->m_nCapacity = p_ResourceMem->DataSize;
         s_Buffer->m_bOwnsDataPtr = false;
 
@@ -407,7 +422,7 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
             [](ZResourcePending* r) { Functions::ZTemplateBlueprintInstaller_Install->Call(nullptr, r); }
         );
 
-        Logger::Info("TBLU index: {}", s_TbluIndex.val);
+        Logger::Info("TBLU rid = {}, index = {}", s_TbluId, s_TbluIndex.val);
 
         Logger::Info("Creating TEMP resource...");
 
@@ -416,12 +431,10 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
             [](ZResourcePending* r) { Functions::ZTemplateInstaller_Install->Call(nullptr, r); }
         );
 
-        Logger::Info("TEMP index: {}", s_TempIndex.val);
+        Logger::Info("TEMP rid = {}, index = {}", s_TempId, s_TempIndex.val);
 
         TResourcePtr<ZTemplateEntityFactory> s_RTResource;
-        Globals::ResourceManager->GetResourcePtr(
-            s_RTResource, s_TempId, 0
-        );
+        Globals::ResourceManager->GetResourcePtr(s_RTResource, s_TempId, 0);
 
         if (!s_RTResource) {
             Logger::Error("Could not get editor camera resource.");
@@ -442,77 +455,6 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
     else {
         Logger::Error("Failed to generate editor resources.");
     }
-
-
-    auto s_TypeInfo = (*Globals::TypeRegistry)->m_types.find("STemplateEntityFactory")->second;
-
-    // TODO: THESE LEAK!!
-    /*
-    void* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-        s_TypeInfo->typeInfo()->m_nTypeSize,
-        s_TypeInfo->typeInfo()->m_nTypeAlignment
-    );
-
-    memset(s_Data, 0xFF, s_TypeInfo->typeInfo()->m_nTypeSize);
-
-    Logger::Info("Parsing JSON...");
-
-    const bool s_Success = HM3_JsonToGameStruct(
-        "STemplateEntityFactory",
-        s_JsonData.data(),
-        s_JsonData.size(),
-        s_Data,
-        s_TypeInfo->typeInfo()->m_nTypeSize
-    );
-
-    if (!s_Success) {
-        (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
-        Logger::Error("Unable to convert JSON to game struct.");
-        return;
-    }
-
-    void* s_PendingMem = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-        sizeof(ZResourcePending),
-        alignof(ZResourcePending)
-    );
-
-    auto s_Pending = new(s_PendingMem) ZResourcePending();
-
-    void* s_FactoryMem = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-        368,
-        alignof(ZTemplateEntityFactory)
-    );
-
-    auto s_Factory = static_cast<ZTemplateEntityFactory*>(s_FactoryMem);
-    auto s_EntityFactoryData = static_cast<STemplateEntityFactory*>(s_Data);
-
-    Logger::Info("Creating factory...");
-
-    Functions::ZTemplateEntityFactory_ZTemplateEntityFactory->Call(
-        s_Factory,
-        s_EntityFactoryData,
-        *s_Pending
-    );
-
-    Logger::Info("Creating entity...");
-
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager,
-        m_Camera,
-        "SDKCam",
-        s_Factory,
-        s_Scene.m_ref,
-        nullptr,
-        -1
-    );
-
-    if (!m_Camera) {
-        Logger::Error("Could not spawn editor camera entity.");
-        return;
-    }
-
-    Logger::Info("Spawned editor camera entity.");
-    */
 }
 
 void Editor::OnDrawUI(bool p_HasFocus) {
@@ -973,9 +915,10 @@ DEFINE_PLUGIN_DETOUR(
     ZTemplateEntityBlueprintFactory* th,
     STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending
 ) {
-    Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
-    auto s_Result = p_Hook->CallOriginal(th, pTemplateEntityBlueprint, ResourcePending);
-    return HookResult(HookAction::Return(), s_Result);
+    //Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
+    //auto s_Result = p_Hook->CallOriginal(th, pTemplateEntityBlueprint, ResourcePending);
+    //return HookResult(HookAction::Return(), s_Result);
+    return {HookAction::Continue()};
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
