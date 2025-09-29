@@ -83,9 +83,13 @@ jobs:
                     Copy-Item LICENSE -Destination _sdk/LICENSE
 
             -   name: Upload symbols to sentry
+                env:
+                    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+                    SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+                    SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
                 run: |
-                    npx @sentry/cli debug-files upload --org f5f1297d1554 --project native _dist-debug/
-                    npx @sentry/cli debug-files upload --org f5f1297d1554 --project native _dist-release/
+                    npx @sentry/cli debug-files upload _dist-debug/
+                    npx @sentry/cli debug-files upload _dist-release/
 
             -   name: Archive debug SDK and mods
                 uses: actions/upload-artifact@v4
