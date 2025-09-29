@@ -192,6 +192,7 @@ private:
     uint8_t m_UiToggleScanCode = 0x57; // F11
     bool m_HasShownUiToggleWarning = false;
     bool m_ForceLoad = false;
+    bool m_EnableSentry = false;
     uintptr_t m_ModuleBase;
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;
