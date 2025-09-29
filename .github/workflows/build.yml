@@ -28,17 +28,6 @@ jobs:
                 with:
                     arch: x64
 
-            -   name: Restore cache
-                id: cache-restore
-                uses: actions/cache/restore@v4
-                with:
-                    path: |
-                        _build
-                        External/vcpkg/buildtrees
-                        External/vcpkg/downloads
-                        External/vcpkg/packages
-                    key: build-cache
-
             -   name: Build and install debug
                 run: |
                     cmake --preset x64-Debug .
@@ -50,17 +39,6 @@ jobs:
                     cmake --preset x64-Release .
                     cmake --build _build/x64-Release -j12
                     cmake --install _build/x64-Release
-
-            -   name: Save cache
-                id: cache-save
-                uses: actions/cache/save@v4
-                with:
-                    path: |
-                        _build
-                        External/vcpkg/buildtrees
-                        External/vcpkg/downloads
-                        External/vcpkg/packages
-                    key: build-cache
 
             -   name: Copy debug artifacts
                 run: |
