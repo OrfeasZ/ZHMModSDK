@@ -1,7 +1,5 @@
 use quickentity_rs::convert_to_rt;
 use quickentity_rs::qn_structs::Entity;
-use quickentity_rs::rpkg_structs::ResourceMeta;
-use quickentity_rs::rt_structs::{RTBlueprint, RTFactory};
 use std::ffi::{c_char, CString};
 
 fn read_as_entity(json_data: &[u8]) -> Entity {
