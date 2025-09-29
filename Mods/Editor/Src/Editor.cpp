@@ -627,7 +627,10 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
             return false;
         }
 
-        Logger::Info("Spawned entity from rid {}!", s_RTResource.GetResourceInfo().rid);
+        Logger::Info(
+            "Spawned entity from rid {} with id {}!", s_RTResource.GetResourceInfo().rid,
+            p_Entity->GetType()->m_nEntityId
+        );
     }
     else {
         Logger::Error("Failed to generate editor resources.");
@@ -701,14 +704,43 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         ImGui::End();
     }
 
+    ImGui::SetNextWindowPos({750, 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({800, 1000}, ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Entity spawner")) {
         ImGui::Text("Paste your QN entity JSON here:");
 
         static char s_Buffer[10 * 1024 * 1024] = {};
-        ImGui::InputTextMultiline("##qn_json", s_Buffer, sizeof(s_Buffer));
 
+        // Get available content region
+        ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+
+        // Reserve space for the button (button height + spacing)
+        float buttonHeight = ImGui::GetFrameHeight();
+        float spacing = ImGui::GetStyle().ItemSpacing.y;
+        float multilineHeight = contentRegion.y - buttonHeight - spacing;
+
+        // Make the multiline input fill the available width and calculated height
+        ImGui::InputTextMultiline(
+            "##qn_json", s_Buffer, sizeof(s_Buffer),
+            ImVec2(contentRegion.x, multilineHeight)
+        );
+
+        // Position the button at the bottom left
         if (ImGui::Button("Spawn")) {
-            SpawnEntity2(s_Buffer, m_Thing);
+            ZEntityRef s_Ent;
+            SpawnEntity2(s_Buffer, s_Ent);
+
+            if (s_Ent) {
+                m_CachedEntityTreeMutex.lock();
+
+                m_SpawnedEntities.push_back(s_Ent);
+
+                if (m_CachedEntityTree && m_CachedEntityTreeMap.size() > 0) {
+                    UpdateEntityTree(m_CachedEntityTreeMap, {s_Ent});
+                }
+
+                m_CachedEntityTreeMutex.unlock();
+            }
         }
     }
     ImGui::End();

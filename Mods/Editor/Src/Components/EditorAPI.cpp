@@ -21,11 +21,12 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 
     // When TBLU hash is not set, we're selecting from spawned entities.
     if (!p_Selector.TbluHash.has_value()) {
-        const auto s_Entity = m_SpawnedEntities.find(p_Selector.EntityId);
-
-        if (s_Entity != m_SpawnedEntities.end()) {
-            return s_Entity->second;
-        }
+        // TODO
+        //const auto s_Entity = m_SpawnedEntities.find(p_Selector.EntityId);
+        //
+        //if (s_Entity != m_SpawnedEntities.end()) {
+        //    return s_Entity->second;
+        //}
 
         return {};
     }

@@ -17,62 +17,31 @@
 #include <map>
 #include <utility>
 
-void Editor::UpdateEntities() {
-    const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-
-    if (!s_SceneCtx
-        || !s_SceneCtx->m_pScene
-        || !s_SceneCtx->m_pScene.m_ref
-        || s_SceneCtx->m_aLoadedBricks.size() == 0) {
-        return;
-    }
-
-    const auto s_SceneEnt = s_SceneCtx->m_pScene.m_ref;
-
+void Editor::UpdateEntityTree(
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+    const std::vector<ZEntityRef>& p_Entities
+) {
     // Go through a first pass by creating all the nodes of the tree using a BFS
     // approach. We'll also opportunistically assign children nodes to parents we've
     // seen before. Then, as a second pass we'll go through and assign the remaining
     // children nodes to their parents.
 
-    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
     std::queue<std::pair<ZEntityBlueprintFactoryBase*, ZEntityRef>> s_NodeQueue;
     std::queue<std::shared_ptr<EntityTreeNode>> s_ParentlessNodes;
 
-    // Add all the brick nodes to the queue.
-    for (const auto& s_Brick : s_SceneCtx->m_aLoadedBricks) {
-        auto s_BrickEnt = s_Brick.entityRef;
-
-        if (!s_BrickEnt) {
+    for (const auto& s_Entity : p_Entities) {
+        if (!s_Entity) {
             continue;
         }
 
-        const auto s_BpFactory = s_BrickEnt.GetBlueprintFactory();
+        auto s_BpFactory = s_Entity.GetBlueprintFactory();
 
         if (!s_BpFactory) {
             continue;
         }
 
-        s_NodeQueue.emplace(s_BpFactory, s_BrickEnt);
+        s_NodeQueue.emplace(s_BpFactory, s_Entity);
     }
-
-    auto s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetBlueprintFactory());
-
-    if (s_SceneEnt.GetOwningEntity()) {
-        s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetOwningEntity().
-            GetBlueprintFactory());
-    }
-
-    // Create the root scene node.
-    auto s_SceneNode = std::make_shared<EntityTreeNode>(
-        "Scene Root",
-        s_SceneEnt->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->m_pTypeName,
-        s_SceneEnt->GetType()->m_nEntityId,
-        s_SceneFactory->m_ridResource,
-        s_SceneEnt
-    );
-
-    s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
-    s_NodeMap.emplace(ZEntityRef(), s_SceneNode);
 
     while (!s_NodeQueue.empty()) {
         // Pop the next factory and its root entity off the queue.
@@ -92,7 +61,7 @@ void Editor::UpdateEntities() {
             }
 
             // If this sub-entity has already been added to the tree, skip it.
-            if (s_NodeMap.contains(s_SubEntity)) {
+            if (p_NodeMap.contains(s_SubEntity)) {
                 continue;
             }
 
@@ -129,9 +98,9 @@ void Editor::UpdateEntities() {
             const auto s_LogicalParent = s_SubEntity.GetLogicalParent();
 
             if (s_LogicalParent) {
-                auto s_ParentNode = s_NodeMap.find(s_LogicalParent);
+                auto s_ParentNode = p_NodeMap.find(s_LogicalParent);
 
-                if (s_ParentNode != s_NodeMap.end()) {
+                if (s_ParentNode != p_NodeMap.end()) {
                     // If we have already seen the logical parent of this sub-entity, add it to the parent's children.
                     s_ParentNode->second->Children.insert({s_EntityHumanName, s_SubEntityNode});
                 }
@@ -150,7 +119,7 @@ void Editor::UpdateEntities() {
                 s_NodeQueue.emplace(s_SubEntityFactory, s_SubEntity);
             }
 
-            s_NodeMap[s_SubEntity] = s_SubEntityNode;
+            p_NodeMap[s_SubEntity] = s_SubEntityNode;
         }
     }
 
@@ -163,21 +132,74 @@ void Editor::UpdateEntities() {
 
         // If it has a logical parent and that parent is in the map, add it to the parent's children.
         if (s_LogicalParent) {
-            auto s_ParentNode = s_NodeMap.find(s_LogicalParent);
+            auto s_ParentNode = p_NodeMap.find(s_LogicalParent);
 
-            if (s_ParentNode != s_NodeMap.end()) {
+            if (s_ParentNode != p_NodeMap.end()) {
                 s_ParentNode->second->Children.insert({s_Node->Name, s_Node});
                 continue;
             }
         }
 
         // Otherwise, add it to the root node.
-        s_NodeMap[ZEntityRef()] = s_Node;
+        p_NodeMap[ZEntityRef()] = s_Node;
     }
+}
+
+void Editor::UpdateEntities() {
+    const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
+
+    if (!s_SceneCtx
+        || !s_SceneCtx->m_pScene
+        || !s_SceneCtx->m_pScene.m_ref
+        || s_SceneCtx->m_aLoadedBricks.size() == 0) {
+        return;
+    }
+
+    const auto s_SceneEnt = s_SceneCtx->m_pScene.m_ref;
+
+    std::vector<ZEntityRef> s_EntsToProcess;
+
+    // Add all the brick nodes to the queue.
+    for (const auto& s_Brick : s_SceneCtx->m_aLoadedBricks) {
+        auto s_BrickEnt = s_Brick.entityRef;
+
+        if (!s_BrickEnt) {
+            continue;
+        }
+
+        s_EntsToProcess.push_back(s_BrickEnt);
+    }
+
+    // Add all custom entities to the queue.
+    for (const auto& s_Entity : m_SpawnedEntities) {
+        s_EntsToProcess.push_back(s_Entity);
+    }
+
+    auto s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetBlueprintFactory());
+
+    if (s_SceneEnt.GetOwningEntity()) {
+        s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetOwningEntity().
+            GetBlueprintFactory());
+    }
+
+    // Create the root scene node.
+    auto s_SceneNode = std::make_shared<EntityTreeNode>(
+        "Scene Root",
+        s_SceneEnt->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->m_pTypeName,
+        s_SceneEnt->GetType()->m_nEntityId,
+        s_SceneFactory->m_ridResource,
+        s_SceneEnt
+    );
+
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
+    s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
+    s_NodeMap.emplace(ZEntityRef(), s_SceneNode);
+    UpdateEntityTree(s_NodeMap, s_EntsToProcess);
 
     // Update the cached tree.
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree = std::move(s_SceneNode);
+    m_CachedEntityTreeMap = std::move(s_NodeMap);
     m_CachedEntityTreeMutex.unlock();
 
     m_Server.OnEntityTreeRebuilt();
