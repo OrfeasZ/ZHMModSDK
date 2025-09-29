@@ -11,6 +11,7 @@
 #include <Glacier/ZHM5CrippleBox.h>
 #include <Glacier/ZModule.h>
 #include <Glacier/ZItem.h>
+#include <Glacier/SExternalReferences.h>
 
 void Player::Init()
 {
@@ -438,9 +439,10 @@ void Player::EnableInfiniteAmmo()
     }
 
     ZEntityRef s_NewCrippleBox;
+    SExternalReferences s_ExternalRefs;
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewCrippleBox, "", s_CrippleBoxFactory, s_Scene.m_ref, nullptr, -1
+        Globals::EntityManager, s_NewCrippleBox, "", s_CrippleBoxFactory, s_Scene.m_ref, s_ExternalRefs, -1
     );
 
     if (!s_NewCrippleBox)

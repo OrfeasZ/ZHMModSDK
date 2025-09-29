@@ -23,6 +23,7 @@
 #include "Glacier/ZActor.h"
 #include "Glacier/ZGameLoopManager.h"
 #include "Glacier/ZKnowledge.h"
+#include "Glacier/SExternalReferences.h"
 
 Editor::Editor() {
     // Disable ZTemplateEntityBlueprintFactory freeing its associated data.
@@ -464,8 +465,10 @@ void Editor::SpawnCameras() {
             return;
         }
 
+        SExternalReferences s_ExternalRefs;
+
         Functions::ZEntityManager_NewEntity->Call(
-            Globals::EntityManager, m_Camera, "SDKCam", s_CameraResource, s_Scene.m_ref, nullptr, -1
+            Globals::EntityManager, m_Camera, "SDKCam", s_CameraResource, s_Scene.m_ref, s_ExternalRefs, -1
         );
 
         if (!m_Camera) {
@@ -485,8 +488,10 @@ void Editor::SpawnCameras() {
             return;
         }
 
+        SExternalReferences s_ExternalRefs;
+
         Functions::ZEntityManager_NewEntity->Call(
-            Globals::EntityManager, m_CameraRT, "SDKCamRT", s_RTResource, s_Scene.m_ref, nullptr, -1
+            Globals::EntityManager, m_CameraRT, "SDKCamRT", s_RTResource, s_Scene.m_ref, s_ExternalRefs, -1
         );
 
         if (!m_CameraRT) {
