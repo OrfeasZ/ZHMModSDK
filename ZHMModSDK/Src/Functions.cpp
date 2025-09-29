@@ -283,3 +283,10 @@ PATTERN_FUNCTION(
     ZResourceContainer_AddResourceReferenceInternal,
     void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)
 );
+
+PATTERN_FUNCTION(
+    "\x48\x8B\xC4\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x89\x58\x10\x4C\x89\x60\xF0",
+    "xxxxxxx????xxxxxxxx",
+    ZResourceContainer_AcquireReferences,
+    void(ZResourceContainer* th, ZResourceIndex index)
+);

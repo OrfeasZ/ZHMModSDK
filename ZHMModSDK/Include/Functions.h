@@ -143,4 +143,7 @@ public:
 
     static EngineFunction<void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)>*
     ZResourceContainer_AddResourceReferenceInternal;
+
+    static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index)>*
+    ZResourceContainer_AcquireReferences;
 };

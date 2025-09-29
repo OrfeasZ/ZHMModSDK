@@ -271,9 +271,166 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
     }
 
     const std::string s_TestData =
-            R"({"tempHash":"00644fe9eb9feff5","tbluHash":"005474211f99b411","rootEntity":"fffffffffffffffe","entities":{"fffffffffffffffe":{"parent":null,"name":"editor_data","factory":"[modules:/zspatialentity.class].pc_entitytype","blueprint":"[modules:/zspatialentity.class].pc_entityblueprint"},"feed678791f1b3e1":{"parent":"fffffffffffffffe","name":"Tablet_A","factory":"[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entitytype","blueprint":"[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entityblueprint","properties":{"m_mTransform":{"type":"SMatrix43","value":{"rotation":{"x":-87.4014365441793,"y":0.0000017075472925031877,"z":91.0032070293913},"position":{"x":-40.105434,"y":-29.001667,"z":2.3575625}}},"Texture2D_04_dest":{"type":"SEntityTemplateReference","value":"feedbf5a41eb9c48"},"m_eRoomBehaviour":{"type":"ZSpatialEntity.ERoomBehaviour","value":"ROOM_DYNAMIC"},"m_eidParent":{"type":"SEntityTemplateReference","value":"fffffffffffffffe","postInit":true}}},"feedbf5a41eb9c48":{"parent":"fffffffffffffffe","name":"RenderDestinationTexture","factory":"[modules:/zrenderdestinationtextureentity.class].pc_entitytype","blueprint":"[modules:/zrenderdestinationtextureentity.class].pc_entityblueprint","properties":{"m_aMultiSource":{"type":"TArray<SEntityTemplateReference>","value":["feedb6fc4f5626ea"]},"m_nWidth":{"type":"uint32","value":1280},"m_nHeight":{"type":"uint32","value":720},"m_bUseBGRA":{"type":"bool","value":true},"m_bIsPIP":{"type":"bool","value":false},"m_bDrawGates":{"type":"bool","value":true},"m_nGateTraversalDepth":{"type":"int32","value":10000},"m_bForceVisible":{"type":"bool","value":true}}},"feedb6fc4f5626ea":{"parent":"fffffffffffffffe","name":"Camera","factory":"[modules:/zcameraentity.class].pc_entitytype","blueprint":"[modules:/zcameraentity.class].pc_entityblueprint","properties":{"m_bAllowAutoCameraCuts":{"type":"bool","value":false},"m_fNearZ":{"type":"float32","value":0.5},"m_fAspectWByH":{"type":"float32","value":1},"m_fFovYDeg":{"type":"float32","value":35},"m_fFarZ":{"type":"float32","value":250},"m_bIsUICamera":{"type":"bool","value":true},"m_mTransform":{"type":"SMatrix43","value":{"rotation":{"x":-89.51871322461322,"y":-0.0000017075472925031877,"z":-146.17330189917143},"position":{"x":-40.055542,"y":-29.139544,"z":2.3236175}}},"m_bForceVisible":{"type":"bool","value":true},"m_nPIPPriority":{"type":"uint32","value":0}}},"feedb7c987a6ef7b":{"parent":null,"name":"New Entity2","factory":"[modules:/zentity.class].pc_entitytype","blueprint":"[modules:/zentity.class].pc_entityblueprint"},"feed0cf25a79d06a":{"parent":null,"name":"New Entity1","factory":"[modules:/zentity.class].pc_entitytype","blueprint":"[modules:/zentity.class].pc_entityblueprint"}},"propertyOverrides":[],"overrideDeletes":[],"pinConnectionOverrides":[],"pinConnectionOverrideDeletes":[],"externalScenes":[],"subType":"brick","quickEntityVersion":3.1,"extraFactoryDependencies":[],"extraBlueprintDependencies":[],"comments":[]})";
+            R"(
+{
+    "tempHash": "00644fe9eb9feff5",
+    "tbluHash": "005474211f99b411",
+    "rootEntity": "fffffffffffffffe",
+    "entities": {
+        "fffffffffffffffe": {
+            "parent": null,
+            "name": "editor_data",
+            "factory": "[modules:/zspatialentity.class].pc_entitytype",
+            "blueprint": "[modules:/zspatialentity.class].pc_entityblueprint"
+        },
+        "feed678791f1b3e1": {
+            "parent": "fffffffffffffffe",
+            "name": "Tablet_A",
+            "factory": "[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entitytype",
+            "blueprint": "[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entityblueprint",
+            "properties": {
+                "m_mTransform": {
+                    "type": "SMatrix43",
+                    "value": {
+                        "rotation": {
+                            "x": -87.4014365441793,
+                            "y": 0.0000017075472925031877,
+                            "z": 91.0032070293913
+                        },
+                        "position": {
+                            "x": -40.105434,
+                            "y": -29.001667,
+                            "z": 2.3575625
+                        }
+                    }
+                },
+                "Texture2D_04_dest": {
+                    "type": "SEntityTemplateReference",
+                    "value": "feedbf5a41eb9c48"
+                },
+                "m_eRoomBehaviour": {
+                    "type": "ZSpatialEntity.ERoomBehaviour",
+                    "value": "ROOM_DYNAMIC"
+                },
+                "m_eidParent": {
+                    "type": "SEntityTemplateReference",
+                    "value": "fffffffffffffffe",
+                    "postInit": true
+                }
+            }
+        },
+        "feedbf5a41eb9c48": {
+            "parent": "fffffffffffffffe",
+            "name": "RenderDestinationTexture",
+            "factory": "[modules:/zrenderdestinationtextureentity.class].pc_entitytype",
+            "blueprint": "[modules:/zrenderdestinationtextureentity.class].pc_entityblueprint",
+            "properties": {
+                "m_aMultiSource": {
+                    "type": "TArray<SEntityTemplateReference>",
+                    "value": [
+                        "feedb6fc4f5626ea"
+                    ]
+                },
+                "m_nWidth": {
+                    "type": "uint32",
+                    "value": 1280
+                },
+                "m_nHeight": {
+                    "type": "uint32",
+                    "value": 720
+                },
+                "m_bUseBGRA": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_bIsPIP": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_bDrawGates": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_nGateTraversalDepth": {
+                    "type": "int32",
+                    "value": 10000
+                },
+                "m_bForceVisible": {
+                    "type": "bool",
+                    "value": true
+                }
+            }
+        },
+        "feedb6fc4f5626ea": {
+            "parent": "fffffffffffffffe",
+            "name": "Camera",
+            "factory": "[modules:/zcameraentity.class].pc_entitytype",
+            "blueprint": "[modules:/zcameraentity.class].pc_entityblueprint",
+            "properties": {
+                "m_bAllowAutoCameraCuts": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_fNearZ": {
+                    "type": "float32",
+                    "value": 0.5
+                },
+                "m_fAspectWByH": {
+                    "type": "float32",
+                    "value": 1
+                },
+                "m_fFovYDeg": {
+                    "type": "float32",
+                    "value": 35
+                },
+                "m_fFarZ": {
+                    "type": "float32",
+                    "value": 250
+                },
+                "m_bIsUICamera": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_mTransform": {
+                    "type": "SMatrix43",
+                    "value": {
+                        "rotation": {
+                            "x": -73.77378164046733,
+                            "y": 1.7075472925031877e-06,
+                            "z": 90.61792971868923
+                        },
+                        "position": {
+                            "x": -43.491676,
+                            "y": -28.87086,
+                            "z": 3.2203503
+                        }
+                    }
+                },
+                "m_bForceVisible": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_nPIPPriority": {
+                    "type": "uint32",
+                    "value": 0
+                }
+            }
+        }
+    },
+    "propertyOverrides": [],
+    "overrideDeletes": [],
+    "pinConnectionOverrides": [],
+    "pinConnectionOverrideDeletes": [],
+    "externalScenes": [],
+    "subType": "brick",
+    "quickEntityVersion": 3.1,
+    "extraFactoryDependencies": [],
+    "extraBlueprintDependencies": [],
+    "comments": []
+}
+)";
 
-    p_Json = s_TestData.c_str();
+    //p_Json = s_TestData.c_str();
 
     Logger::Debug("Converting QN entity JSON to RT JSON and meta...");
 
@@ -350,6 +507,9 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
         if (!s_References.empty()) {
             s_ResInfo.firstReferenceIndex = (*Globals::ResourceContainer)->m_references.size();
             s_ResInfo.numReferences = s_References.size();
+            s_ResInfo.dataSize = p_ResourceMem->DataSize;
+            s_ResInfo.compressedDataSize = p_ResourceMem->DataSize;
+            s_ResInfo.dataOffset = 0;
 
             for (const auto& [s_RefId, s_RefFlags] : s_References) {
                 Logger::Debug("Adding reference {} -> {} (flags = {:x}).", s_ResId, s_RefId, s_RefFlags.flags);
@@ -358,19 +518,33 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
                 );
             }
 
-            // Load references that are not yet loaded.
-            for (const auto& [s_RefId, _] : s_References) {
+            Functions::ZResourceContainer_AcquireReferences->Call(*Globals::ResourceContainer, s_Index);
+
+            Logger::Debug(
+                "Acquired references!", s_ResInfo.firstReferenceIndex, s_ResInfo.numReferences
+            );
+
+            while (!Globals::ResourceManager->DoneLoading()) {
+                Logger::Debug("Waiting for references to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
+
+                for (const auto& s_RefId : s_References | std::views::keys) {
+                    ZResourcePtr s_RefRes;
+                    Globals::ResourceManager->GetResourcePtr(s_RefRes, s_RefId, 0);
+
+                    if (!s_RefRes) {
+                        Logger::Debug("Reference '{}' not loaded!", s_RefId);
+                    }
+                }
+
+                Globals::ResourceManager->Update(true);
+            }
+
+            Logger::Debug("All references loaded!");
+
+            for (const auto& s_RefId : s_References | std::views::keys) {
                 ZResourcePtr s_RefRes;
                 Globals::ResourceManager->GetResourcePtr(s_RefRes, s_RefId, 0);
-
-                if (!s_RefRes) {
-                    Logger::Debug("Reference '{}' not loaded, so we're loading it manually instead...", s_RefId);
-
-                    ZResourcePtr s_LoadedRes;
-                    Globals::ResourceManager->LoadResource(s_LoadedRes, s_RefId);
-
-                    Logger::Debug("Loaded reference data: {}", fmt::ptr(s_LoadedRes.GetResourceData()));
-                }
+                Logger::Debug("Reference '{}' loaded at: {}", s_RefId, fmt::ptr(s_RefRes.GetResourceData()));
             }
         }
 
@@ -407,6 +581,9 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
         s_Pending.m_pResource.m_nResourceIndex = s_Index.val;
         s_Pending.m_pResourceReader.m_pObject = s_Reader;
 
+        // Increment m_nNumProcessing by 1 because installing will set the
+        // resource status to valid, which will decrement m_nNumProcessing.
+        InterlockedIncrement(&Globals::ResourceManager->m_nNumProcessing);
         p_Install(&s_Pending);
 
         // TODO: Free s_Reader, s_Buffer, etc.

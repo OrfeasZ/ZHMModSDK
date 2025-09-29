@@ -200,7 +200,7 @@ public:
     virtual void ZResourceManager_unk21() = 0;
     virtual void ZResourceManager_unk22() = 0;
     virtual void ZResourceManager_unk23() = 0;
-    virtual void ZResourceManager_unk24() = 0;
+    virtual void Update(bool bSendStatusChangedNotifications) = 0;
     virtual void ZResourceManager_unk25() = 0;
     virtual void ZResourceManager_unk26() = 0;
     virtual void ZResourceManager_unk27() = 0;
@@ -223,7 +223,7 @@ public:
     virtual void ZResourceManager_unk44() = 0;
     virtual void ZResourceManager_unk45() = 0;
     virtual void ZResourceManager_unk46() = 0;
-    virtual void ZResourceManager_unk47() = 0;
+    virtual bool DoneLoading() = 0;
     virtual void ZResourceManager_unk48() = 0;
     virtual void ZResourceManager_unk49() = 0;
     virtual void ZResourceManager_unk50() = 0;
@@ -233,6 +233,10 @@ public:
     virtual void ZResourceManager_unk54() = 0;
     virtual void ZResourceManager_unk55() = 0;
     virtual void ZResourceManager_unk56() = 0;
+
+public:
+    PAD(420);
+    volatile LONG m_nNumProcessing; // 428 (0x1AC)
 };
 
 class ZResourceDataBuffer : public ZSharedPointerTarget {
