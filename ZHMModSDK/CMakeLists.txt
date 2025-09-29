@@ -70,6 +70,7 @@ install(TARGETS ZHMModSDK
         ARCHIVE DESTINATION lib
 )
 
+
 # Install ZHMModSDK header files.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Include/"
         DESTINATION include
@@ -78,6 +79,9 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Include/"
 
 # Install ZHMModSDK pdb file.
 install(FILES $<TARGET_PDB_FILE:ZHMModSDK> DESTINATION bin)
+
+# Install the crashpad handler helper.
+install(FILES "${VCPKG_BUILD_ROOT}/tools/sentry-native/crashpad_handler.exe" DESTINATION bin)
 
 # Install spdlog and fmt header files.
 install(DIRECTORY "${VCPKG_BUILD_ROOT}/include/spdlog/"

@@ -646,33 +646,6 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
 }
 
 bool ModSDK::Startup() {
-    if (m_EnableSentry) {
-        sentry_options_t* options = sentry_options_new();
-
-        sentry_options_set_dsn(
-            options, "https://10110a45be28f09d9727f423ac6abc07@o4510104306909184.ingest.de.sentry.io/4510104308154448"
-        );
-
-        // Set db path to %LocalAppData%/ZHMModSDK/
-        PWSTR s_LocalAppDataPath;
-        if (SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &s_LocalAppDataPath) == S_OK) {
-            const std::wstring s_DbPath = std::wstring(s_LocalAppDataPath) + L"\\ZHMModSDK";
-            sentry_options_set_database_pathw(options, s_DbPath.c_str());
-        }
-
-        sentry_options_set_release(options, "ZHMModSDK@" ZHMMODSDK_VER);
-        sentry_options_set_debug(options, 1);
-        sentry_init(options);
-
-        sentry_capture_event(
-            sentry_value_new_message_event(
-                /*   level */ SENTRY_LEVEL_INFO,
-                              /*  logger */ "custom",
-                              /* message */ "It works!"
-            )
-        );
-    }
-
     #if _DEBUG
     m_DebugConsole->StartRedirecting();
     #endif
@@ -757,6 +730,25 @@ bool ModSDK::Startup() {
 }
 
 void ModSDK::ThreadedStartup() const {
+    if (m_EnableSentry) {
+        sentry_options_t* options = sentry_options_new();
+
+        sentry_options_set_dsn(
+            options, "https://10110a45be28f09d9727f423ac6abc07@o4510104306909184.ingest.de.sentry.io/4510104308154448"
+        );
+
+        // Set db path to %LocalAppData%/ZHMModSDK/
+        PWSTR s_LocalAppDataPath;
+        if (SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &s_LocalAppDataPath) == S_OK) {
+            const std::wstring s_DbPath = std::wstring(s_LocalAppDataPath) + L"\\ZHMModSDK";
+            sentry_options_set_database_pathw(options, s_DbPath.c_str());
+        }
+
+        sentry_options_set_release(options, "ZHMModSDK@" ZHMMODSDK_VER);
+        sentry_options_set_debug(options, 1);
+        sentry_init(options);
+    }
+
     // If the engine is already initialized, inform the mods.
     if (Globals::Hitman5Module->IsEngineInitialized())
         OnEngineInit();

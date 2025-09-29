@@ -66,6 +66,7 @@ jobs:
                     Remove-Item _sdk/release/bin/mods -Recurse
                     Remove-Item _sdk/release/bin/dinput8.dll
                     Remove-Item _sdk/release/bin/ResourceLib_HM3.dll
+                    Remove-Item _sdk/release/bin/crashpad_handler.exe
                     
                     mkdir _sdk/debug
                     Copy-Item _install/x64-Debug/lib -Destination _sdk/debug/ -Recurse
@@ -73,6 +74,7 @@ jobs:
                     Remove-Item _sdk/debug/bin/mods -Recurse
                     Remove-Item _sdk/debug/bin/dinput8.dll
                     Remove-Item _sdk/debug/bin/ResourceLib_HM3.dll
+                    Remove-Item _sdk/debug/bin/crashpad_handler.exe
                     
                     mkdir _sdk/cmake
                     Copy-Item cmake/zhm-mod.cmake -Destination _sdk/cmake/zhm-mod.cmake

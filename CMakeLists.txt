@@ -77,6 +77,9 @@ if (EXISTS "${GAME_INSTALL_PATH}/Retail")
 
     # Install ResourceLib, needed by the Editor mod.
     install(FILES "$<TARGET_FILE:ResourceLib_HM3>" DESTINATION "${GAME_INSTALL_PATH}/Retail")
+
+    # Install crashpad_handler, needed by Sentry.
+    install(FILES "${VCPKG_BUILD_ROOT}/tools/sentry-native/crashpad_handler.exe" DESTINATION "${GAME_INSTALL_PATH}/Retail")
 endif ()
 
 # Collect all licenses from ${VCPKG_BUILD_ROOT}/share/<lib>/copyright into licenses/<lib>.txt
