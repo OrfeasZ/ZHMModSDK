@@ -14,8 +14,8 @@
 void Editor::DrawEntityProperties() {
     auto s_ImgGuiIO = ImGui::GetIO();
 
-    ImGui::SetNextWindowPos({s_ImgGuiIO.DisplaySize.x - 600, 110}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({600, s_ImgGuiIO.DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos({s_ImgGuiIO.DisplaySize.x - 500, 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({500, s_ImgGuiIO.DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_TUNE " Entity Properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;

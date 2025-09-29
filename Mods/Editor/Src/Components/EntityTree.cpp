@@ -341,7 +341,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
 
 void Editor::DrawEntityTree() {
     ImGui::SetNextWindowPos({0, 110}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({700, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({615, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_CATEGORY " Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     ImGui::Checkbox("Raycast logging", &m_raycastLogging);

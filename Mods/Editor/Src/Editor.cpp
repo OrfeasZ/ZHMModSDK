@@ -687,6 +687,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawAssets(p_HasFocus);
         DrawItems(p_HasFocus);
         DrawActors(p_HasFocus);
+        DrawLibrary();
     }
 
     if (m_CameraRT && m_Camera) {
@@ -705,7 +706,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
     }
 
     ImGui::SetNextWindowPos({750, 110}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({800, 1000}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({800, 800}, ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Entity spawner")) {
         ImGui::Text("Paste your QN entity JSON here:");
 
