@@ -710,6 +710,13 @@ bool ModSDK::Startup() {
         );
     }
 
+    // Patch call to SetUnhandledExceptionFilter to nop it out.
+    if (!PatchCode(
+        "\xFF\x15\x00\x00\x00\x00\x48\x8D\x8D\xD0\x01\x00\x00", "xx????xxxxxxx", s_NopBytes, 6, 0
+    )) {
+        Logger::Warn("Could not patch SetUnhandledExceptionFilter. Crash reporting will not work.");
+    }
+
     // Setup custom multiplayer code.
     //Multiplayer::Lobby::Setup();
 
@@ -745,7 +752,7 @@ void ModSDK::ThreadedStartup() const {
         }
 
         sentry_options_set_release(options, "ZHMModSDK@" ZHMMODSDK_VER);
-        sentry_options_set_debug(options, 1);
+        sentry_options_set_debug(options, 0);
         sentry_init(options);
     }
 
