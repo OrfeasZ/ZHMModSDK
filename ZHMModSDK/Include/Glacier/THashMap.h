@@ -183,6 +183,6 @@ public:
 
 public:
     uint32_t m_nSize = 0;
-    uint32_t m_nFreeSlots = -1;
+    uint32_t m_nFreeSlots = UINT32_MAX;
     SHashMapInfo<value_type> m_Info;
 };

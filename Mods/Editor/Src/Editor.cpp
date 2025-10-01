@@ -620,7 +620,7 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
         }
 
         Functions::ZEntityManager_NewEntity->Call(
-            Globals::EntityManager, p_Entity, "SDKThing", s_RTResource, s_Scene.m_ref, nullptr, -1
+            Globals::EntityManager, p_Entity, "SDKThing", s_RTResource, s_Scene.m_ref, {}, -1
         );
 
         if (!p_Entity) {
