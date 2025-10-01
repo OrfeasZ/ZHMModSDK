@@ -817,6 +817,9 @@ void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 void ModSDK::OnEngineInit() const {
     Logger::Debug("Engine was initialized.");
 
+    // Re-install here to overwrite any exception handlers the game might have set.
+    sentry_reinstall_backend();
+
     if (m_UiEnabled) {
         m_DirectXTKRenderer->OnEngineInit();
         m_ImguiRenderer->OnEngineInit();
