@@ -6,6 +6,7 @@
 #include "ZObject.h"
 #include "Hooks.h"
 #include "Globals.h"
+#include "Functions.h"
 
 class IEntityBlueprintFactory;
 class ZEntityBlueprintFactoryBase;
@@ -234,6 +235,13 @@ public:
             reinterpret_cast<ZEntityType**>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Entity->GetType()->
                 m_nLogicalParentEntityOffset)
         };
+    }
+
+    void SetLogicalParent(ZEntityRef entityRef) {
+        const auto s_Entity = GetEntity();
+        ZEntityType* s_EntityType = Functions::ZEntityImpl_EnsureUniqueType->Call(s_Entity, 0);
+
+        s_EntityType->m_nLogicalParentEntityOffset = reinterpret_cast<uintptr_t>(entityRef.m_pEntity) - reinterpret_cast<uintptr_t>(m_pEntity);
     }
 
     bool IsAnyParent(const ZEntityRef& p_Other) const {

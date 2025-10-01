@@ -5,6 +5,7 @@
 
 #include "Common.h"
 #include "Enums.h"
+#include "Reflection.h"
 
 class ZActionMapTree {
 public:

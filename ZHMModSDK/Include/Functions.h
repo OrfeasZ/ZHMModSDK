@@ -3,11 +3,11 @@
 #include "Common.h"
 #include "EngineFunction.h"
 #include "Glacier/ZConfigCommand.h"
-#include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 #include "Glacier/ZMath.h"
 #include "Glacier/ZPrimitives.h"
 #include "Glacier/ZResource.h"
+#include "Glacier/Reflection.h"
 
 class ZHitman5;
 class ZActor;
@@ -41,6 +41,8 @@ class STemplateEntityFactory;
 class ZTemplateInstaller;
 class ZTemplateBlueprintInstaller;
 class ZResourcePending;
+class ZEntityType;
+class ZEntityImpl;
 
 class ZHMSDK_API Functions {
 public:
@@ -66,13 +68,13 @@ public:
 
     static EngineFunction<void(
         ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
-        const ZEntityRef& transformParent, const SExternalReferences* externalRefs, uint64_t entityId
+        const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId
     )>* ZEntityManager_NewEntity;
 
     static EngineFunction<void(ZSpatialEntity* th)>* ZSpatialEntity_UnknownTransformUpdate;
 
     static EngineFunction<void(
-        ZEntityManager* th, const ZEntityRef& entity, THashMap<ZRuntimeResourceID, ZEntityRef>& references
+        ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs
     )>* ZEntityManager_DeleteEntity;
 
     static EngineFunction<void(
@@ -140,6 +142,8 @@ public:
 
     static EngineFunction<bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateBlueprintInstaller_Install;
+
+    static EngineFunction<ZEntityType* (ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
 
     static EngineFunction<void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)>*
     ZResourceContainer_AddResourceReferenceInternal;

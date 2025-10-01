@@ -7,6 +7,7 @@
 #include <Glacier/ZModule.h>
 #include <Glacier/ZHitman5.h>
 #include <Glacier/ZItem.h>
+#include <Glacier/SExternalReferences.h>
 
 #include <Util/StringUtils.h>
 
@@ -309,12 +310,14 @@ void Editor::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     }
 
     ZEntityRef s_NewEntity, s_NewEntity2;
+    SExternalReferences s_ExternalRefs;
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, nullptr, -1
+        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, s_ExternalRefs, -1
     );
+
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity2, "", s_Resource2, s_Scene.m_ref, nullptr, -1
+        Globals::EntityManager, s_NewEntity2, "", s_Resource2, s_Scene.m_ref, s_ExternalRefs, -1
     );
 
     if (!s_NewEntity) {
@@ -371,8 +374,10 @@ void Editor::SpawnNonRepositoryProp(const std::string& s_PropAssemblyPath) {
     }
 
     ZEntityRef s_NewEntity;
+    SExternalReferences s_ExternalRefs;
+
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, nullptr, -1
+        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, s_ExternalRefs, -1
     );
 
     if (!s_NewEntity) {
@@ -422,8 +427,10 @@ auto Editor::SpawnNPC(
     }
 
     ZEntityRef s_NewEntity;
+    SExternalReferences s_ExternalRefs;
+
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, nullptr, -1
+        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, s_ExternalRefs, -1
     );
 
     if (!s_NewEntity) {
