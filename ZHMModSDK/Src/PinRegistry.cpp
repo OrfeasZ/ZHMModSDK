@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-std::unordered_map<int32_t, ZString> g_PinRegistry
+std::unordered_map<int32_t, std::string> g_PinRegistry
 {
     {568878519, "AI_Info_Displayed"},
     {-506102458, "Aborted"},
@@ -1801,7 +1801,7 @@ std::unordered_map<int32_t, ZString> g_PinRegistry
     {-1061239543, "reportSetpieceUsed"},
 };
 
-bool TryGetPinName(int32_t p_PinId, ZString& p_Name) {
+bool TryGetPinName(int32_t p_PinId, std::string& p_Name) {
     auto it = g_PinRegistry.find(p_PinId);
 
     if (it == g_PinRegistry.end())

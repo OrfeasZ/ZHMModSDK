@@ -2,4 +2,4 @@
 
 #include "Glacier/ZPrimitives.h"
 
-bool TryGetPinName(int32_t p_PinId, ZString& p_Name);
+bool TryGetPinName(int32_t p_PinId, std::string& p_Name);

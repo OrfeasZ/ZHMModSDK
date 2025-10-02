@@ -1,0 +1,94 @@
+{
+	"subType": 2,
+	"blueprintIndexInResourceHeader": 0,
+	"rootEntityIndex": 0,
+	"subEntities": [{
+		"logicalParent": {
+			"entityID": 18446744073709551615,
+			"externalSceneIndex": -1,
+			"entityIndex": -1,
+			"exposedEntity": ""
+		},
+		"entityTypeResourceIndex": 1,
+		"propertyValues": [{
+			"nPropertyID": "m_eRoomBehaviour",
+			"value": {
+				"$type": "ZSpatialEntity.ERoomBehaviour",
+				"$val": "ROOM_DYNAMIC"
+			}
+		}, {
+			"nPropertyID": "m_bAllowAutoCameraCuts",
+			"value": {
+				"$type": "bool",
+				"$val": true
+			}
+		}, {
+			"nPropertyID": "m_fNearZ",
+			"value": {
+				"$type": "float32",
+				"$val": 0.5
+			}
+		}, {
+			"nPropertyID": "m_fAspectWByH",
+			"value": {
+				"$type": "float32",
+				"$val": 1
+			}
+		}, {
+			"nPropertyID": "m_fFovYDeg",
+			"value": {
+				"$type": "float32",
+				"$val": 35
+			}
+		}, {
+			"nPropertyID": "m_fFarZ",
+			"value": {
+				"$type": "float32",
+				"$val": 250
+			}
+		}, {
+			"nPropertyID": "m_bIsUICamera",
+			"value": {
+				"$type": "bool",
+				"$val": false
+			}
+		}, {
+			"nPropertyID": "m_mTransform",
+			"value": {
+				"$type": "SMatrix43",
+				"$val": {
+					"XAxis": {
+						"x": 1,
+						"y": 0,
+						"z": 0
+					},
+					"YAxis": {
+						"x": 0,
+						"y": 1,
+						"z": 0
+					},
+					"ZAxis": {
+						"x": 0,
+						"y": 0,
+						"z": 1
+					},
+					"Trans": {
+						"x": 0,
+						"y": 0,
+						"z": 0
+					}
+				}
+			}
+		}, {
+			"nPropertyID": "m_bForceVisible",
+			"value": {
+				"$type": "bool",
+				"$val": true
+			}
+		}],
+		"postInitPropertyValues": [],
+		"platformSpecificPropertyValues": []
+	}],
+	"propertyOverrides": [],
+	"externalSceneTypeIndicesInResourceHeader": []
+}

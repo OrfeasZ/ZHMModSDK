@@ -7,7 +7,7 @@ void Editor::ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEnt
     auto* s_Resource = static_cast<ZResourcePtr*>(p_Data);
     std::string s_ResourceName = "null";
 
-    if (s_Resource && s_Resource->m_nResourceIndex >= 0)
+    if (s_Resource && s_Resource->m_nResourceIndex.val >= 0)
         s_ResourceName = fmt::format("{}", s_Resource->GetResourceInfo().rid);
 
     ImGui::Text(" %s", s_ResourceName.c_str());

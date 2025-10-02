@@ -281,3 +281,10 @@ PATTERN_RELATIVE_GLOBAL(
     5,
     ZObjectPool*, ZVariantPool2
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x0D\x00\x00\x00\x00\x48\x8B\x01\xFF\x50\x08\x48\x8B\x0D",
+    "xxx????xxxxxxxxx",
+    3,
+    ZPackageManagerBase**, PackageManager
+);

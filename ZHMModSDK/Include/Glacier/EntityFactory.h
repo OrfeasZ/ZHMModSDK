@@ -88,7 +88,8 @@ public:
     ZRuntimeResourceID m_ridResource;
     PAD(0x10);
     int32_t m_rootEntityIndex; // 0x20
-    PAD(0x20); // 0x24
+    PAD(0x0C); // 0x24
+    TArray<IEntityBlueprintFactory*> m_ExternalSceneBlueprints; // 0x30
 };
 
 static_assert(offsetof(ZEntityBlueprintFactoryBase, m_rootEntityIndex) == 0x20);
