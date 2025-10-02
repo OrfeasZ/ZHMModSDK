@@ -114,6 +114,7 @@ public:
     TArray<SResourceReferenceInfo> m_references;
     THashMap<ZRuntimeResourceID, ZResourceIndex, TDefaultHashMapPolicy<ZRuntimeResourceID>> m_indices;
     TArray<ZString> m_MountedPackages;
+    TArray<ZResourceIndex> m_aUnknown;
 };
 
 static_assert(sizeof(ZResourceContainer::SResourceInfo) == 64);
@@ -266,3 +267,75 @@ public:
     ZResourcePtr m_pResource;
     ZResourceReaderPtr m_pResourceReader;
 };
+
+class IPackageManager : public IComponentInterface {
+public:
+    enum EPartitionType {
+        Standard,
+        Addon,
+    };
+
+    struct SPartitionInfo {
+        uint32_t m_nIndex; // 0
+        ZString m_sPartitionID; // 8
+        EPartitionType m_eType; // 24
+        uint32_t m_patchLevel; // 28
+        uint64_t a32; // 32
+        uint64_t a40; // 40
+        ZString m_sMountPath; // 48
+        uint64_t a64; // 64
+        bool a72; // 72
+        SPartitionInfo* m_pParent; // 80
+        TArray<SPartitionInfo*> m_aAddons; // 88
+    };
+
+    virtual ~IPackageManager() {}
+
+public:
+    PAD(24);
+};
+
+static_assert(sizeof(IPackageManager::SPartitionInfo) == 112);
+
+class ZPackageManagerBase : public IPackageManager {
+public:
+    virtual ~ZPackageManagerBase() {}
+    virtual void ZPackageManagerBase_unk5() = 0;
+    virtual void ZPackageManagerBase_unk6() = 0;
+    virtual void MountPartitionsForRoots(const TArray<ZResourceID>& roots) = 0;
+    virtual void ZPackageManagerBase_unk8() = 0;
+    virtual void ZPackageManagerBase_unk9() = 0;
+    virtual void ZPackageManagerBase_unk10() = 0;
+    virtual void ZPackageManagerBase_unk11() = 0;
+    virtual void ZPackageManagerBase_unk12() = 0;
+    virtual void ZPackageManagerBase_unk13() = 0;
+    virtual void ZPackageManagerBase_unk14() = 0;
+    virtual void ZPackageManagerBase_unk15() = 0;
+    virtual void ZPackageManagerBase_unk16() = 0;
+    virtual void ZPackageManagerBase_unk17() = 0;
+    virtual void ZPackageManagerBase_unk18() = 0;
+    virtual void ZPackageManagerBase_unk19() = 0;
+    virtual void ZPackageManagerBase_unk20() = 0;
+    virtual void ZPackageManagerBase_unk21() = 0;
+    virtual void ZPackageManagerBase_unk22() = 0;
+    virtual void ZPackageManagerBase_unk23() = 0;
+    virtual void ZPackageManagerBase_unk24() = 0;
+    virtual void ZPackageManagerBase_unk25() = 0;
+    virtual void ZPackageManagerBase_unk26() = 0;
+    virtual void ZPackageManagerBase_unk27() = 0;
+    virtual void ZPackageManagerBase_unk28() = 0;
+    virtual void ZPackageManagerBase_unk29() = 0;
+    virtual void ZPackageManagerBase_unk30() = 0;
+    virtual void MountResourcePackagesInPartition(SPartitionInfo* info, SPartitionInfo* languagePartition) = 0;
+    virtual void ZPackageManagerBase_unk32() = 0;
+    virtual void ZPackageManagerBase_unk33() = 0;
+
+public:
+    PAD(0x48);
+    TArray<SPartitionInfo*> m_aPartitionInfos; // 0x68
+    PAD(0x490);
+    THashMap<ZResourceID, SPartitionInfo*> m_sceneToPartitionMap; // 0x510
+};
+
+static_assert(offsetof(ZPackageManagerBase, m_aPartitionInfos) == 0x68);
+static_assert(offsetof(ZPackageManagerBase, m_sceneToPartitionMap) == 0x510);

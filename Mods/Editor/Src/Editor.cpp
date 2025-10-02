@@ -271,6 +271,48 @@ bool SpawnEntity2(const char* p_Json, ZEntityRef& p_Entity) {
         return false;
     }
 
+    TArray<ZResourceID> s_RidToMount;
+
+    auto PrintMountedPackages = []() {
+        Logger::Debug("Mounted packages:");
+        for (const auto& s_Package : (*Globals::ResourceContainer)->m_MountedPackages) {
+            Logger::Debug(" - {}", s_Package);
+        }
+    };
+
+    PrintMountedPackages();
+
+    for (auto& info : (*Globals::PackageManager)->m_aPartitionInfos) {
+        Logger::Debug("================================================");
+        Logger::Debug("Index: {} ({})", info->m_nIndex, fmt::ptr(info));
+        Logger::Debug("Partition ID: {}", info->m_sPartitionID);
+        Logger::Debug("Type: {}", static_cast<int>(info->m_eType));
+        Logger::Debug("Patch level: {}", info->m_patchLevel);
+        Logger::Debug("a32: {}", info->a32);
+        Logger::Debug("a40: {}", info->a40);
+        Logger::Debug("a48: {}", info->a64);
+        Logger::Debug("Mount path: {}", info->m_sMountPath);
+        Logger::Debug("a72: {}", info->a72);
+        Logger::Debug("Parent: {}", fmt::ptr(info->m_pParent));
+        Logger::Debug("Addon count: {}", info->m_aAddons.size());
+
+        if (info->m_nIndex >= 24) {
+            continue;
+        }
+
+        (*Globals::PackageManager)->MountResourcePackagesInPartition(info, nullptr);
+
+        Logger::Debug(
+            "Resource count after: {}, ref count: {}", (*Globals::ResourceContainer)->m_resources.size(),
+            (*Globals::ResourceContainer)->m_references.size()
+        );
+
+        PrintMountedPackages();
+    }
+
+    (*Globals::PackageManager)->MountPartitionsForRoots(s_RidToMount);
+
+
     const std::string s_TestData =
             R"(
 {
@@ -1090,11 +1132,11 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData) {
-    /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+    if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
         p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
         //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
         p_SceneData.m_sceneName =
-                "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";*/
+                "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
     //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";
 
 
