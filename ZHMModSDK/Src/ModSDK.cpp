@@ -686,7 +686,7 @@ bool ModSDK::Startup() {
 
     m_ModLoader->Startup();
 
-    // Notify all loaded mods that the engine has intialized once it has.
+    // Notify all loaded mods that the engine has initialized once it has.
     Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
     Hooks::EOS_Platform_Create->AddDetour(this, &ModSDK::EOS_Platform_Create);
     Hooks::DrawScaleform->AddDetour(this, &ModSDK::DrawScaleform);
@@ -817,8 +817,10 @@ void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 void ModSDK::OnEngineInit() const {
     Logger::Debug("Engine was initialized.");
 
-    // Re-install here to overwrite any exception handlers the game might have set.
-    sentry_reinstall_backend();
+    if (m_EnableSentry) {
+        // Re-install here to overwrite any exception handlers the game might have set.
+        sentry_reinstall_backend();
+    }
 
     if (m_UiEnabled) {
         m_DirectXTKRenderer->OnEngineInit();
@@ -1085,7 +1087,13 @@ ImFont* ModSDK::GetImGuiBlackFont() {
 }
 
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name) {
-    return TryGetPinName(p_PinId, p_Name);
+    std::string s_Name;
+    if (TryGetPinName(p_PinId, s_Name)) {
+        p_Name = s_Name;
+        return true;
+    }
+
+    return false;
 }
 
 bool ModSDK::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) {
@@ -1388,6 +1396,23 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
     }
 
     return TEntityRef<ZHitman5>(s_PlayerData->m_Controller.m_HitmanEntity);
+}
+
+void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size) {
+    if (Globals::Hitman5Module->IsEngineInitialized()) {
+        // If engine is initialized, allocate the normal way.
+        p_Target->m_nLength = p_Size;
+        p_Target->m_pChars = Functions::ZStringCollection_Allocate->Call(p_Str, p_Size)->m_pDataStart;
+    }
+    else {
+        // Otherwise, allocate ourselves and make the game think it's a static allocation.
+        // This will leak memory, but best we can do for now before the engine is initialized.
+        auto* s_String = new char[p_Size + 1] {};
+        memcpy(s_String, p_Str, p_Size);
+        s_String[p_Size] = '\0';
+
+        *p_Target = ZString(std::string_view(s_String, p_Size));
+    }
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {

@@ -160,6 +160,8 @@ public:
 
     TEntityRef<ZHitman5> GetLocalPlayer() override;
 
+    void AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size);
+
 private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);

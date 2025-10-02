@@ -143,11 +143,15 @@ public:
     static EngineFunction<bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateBlueprintInstaller_Install;
 
-    static EngineFunction<ZEntityType* (ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
+    static EngineFunction<ZEntityType*(ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
 
     static EngineFunction<void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)>*
     ZResourceContainer_AddResourceReferenceInternal;
 
     static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index)>*
     ZResourceContainer_AcquireReferences;
+
+    static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
+
+    static EngineFunction<ZString::ZImpl*(const char* buf, size_t size)>* ZStringCollection_Allocate;
 };

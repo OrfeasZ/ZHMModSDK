@@ -297,3 +297,17 @@ PATTERN_FUNCTION(
     ZResourceContainer_AcquireReferences,
     void(ZResourceContainer* th, ZResourceIndex index)
 );
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x18\x48\x89\x6C\x24\x20\x56\x48\x83\xEC\x00\x48\x8B\xF1\xE8",
+    "xxxxxxxxxxxxxx?xxxx",
+    ZString_ZImpl_Free,
+    void(ZString::ZImpl* th)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x20\x57\x41\x56\x41\x57\x48\x83\xEC\x00\x8B\xEA",
+    "xxxxxxxxxxxxxxxxxxxxxxx?xx",
+    ZStringCollection_Allocate,
+    ZString::ZImpl* (const char* buf, size_t size)
+);

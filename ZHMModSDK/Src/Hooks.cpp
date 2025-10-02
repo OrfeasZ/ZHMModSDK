@@ -346,14 +346,14 @@ PATTERN_HOOK(
     "\x48\x89\x5C\x24\x00\x55\x48\x8D\x6C\x24\x00\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xDA\x48\x8D\x0D",
     "xxxx?xxxxx?xxx????xxxxxx",
     ZOnlineVersionConfig_GetConfigHost,
-    ZString*(void* th, void* a1)
+    ZString*(ZOnlineVersionConfig* th, ZString* out)
 );
 
 PATTERN_HOOK(
     "\x48\x89\x5C\x24\x00\x48\x89\x7C\x24\x00\x55\x48\x8D\x6C\x24\x00\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xDA\xC7\x44\x24",
     "xxxx?xxxx?xxxxx?xxx????xxxxxx",
     ZOnlineVersionConfig_GetConfigUrl,
-    ZString*(void* th, void* a1, void* a2, void* a3)
+    ZString*(ZOnlineVersionConfig* th, ZString* out)
 );
 
 MODULE_HOOK(
