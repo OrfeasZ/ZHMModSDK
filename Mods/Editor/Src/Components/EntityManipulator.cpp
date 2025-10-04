@@ -16,8 +16,15 @@ void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
 
             p_Renderer->DrawOBB3D(
                 SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
-                SVector4(0.f, 0.f, 1.f, 1.f)
+                SVector4(0.f, 1.f, 1.f, 1.f)
             );
+
+            if (m_EntityHighlightMode == EntityHighlightMode::LinesAndTriangles) {
+                p_Renderer->DrawBoundingQuads(
+                    SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform,
+                    SVector4(0.f, 1.f, 1.f, 0.1f)
+                );
+            }
         }
     }
 }

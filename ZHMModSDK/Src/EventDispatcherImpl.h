@@ -9,30 +9,26 @@
 
 class IPluginInterface;
 
-class EventDispatcherRegistry
-{
+class EventDispatcherRegistry {
 private:
     static std::unordered_set<EventDispatcherBase*>* g_Dispatchers;
 
 public:
-    static void RegisterDispatcher(EventDispatcherBase* p_Dispatcher)
-    {
+    static void RegisterDispatcher(EventDispatcherBase* p_Dispatcher) {
         if (g_Dispatchers == nullptr)
             g_Dispatchers = new std::unordered_set<EventDispatcherBase*>();
 
         g_Dispatchers->insert(p_Dispatcher);
     }
 
-    static void RemoveDispatcher(EventDispatcherBase* p_Dispatcher)
-    {
+    static void RemoveDispatcher(EventDispatcherBase* p_Dispatcher) {
         if (g_Dispatchers == nullptr)
             return;
 
         g_Dispatchers->erase(p_Dispatcher);
     }
 
-    static void ClearPluginListeners(IPluginInterface* p_Plugin)
-    {
+    static void ClearPluginListeners(IPluginInterface* p_Plugin) {
         if (g_Dispatchers == nullptr)
             return;
 
@@ -42,11 +38,9 @@ public:
 };
 
 template <class... Args>
-class EventDispatcherImpl : public EventDispatcher<Args...>
-{
+class EventDispatcherImpl : public EventDispatcher<Args...> {
 public:
-    EventDispatcherImpl()
-    {
+    EventDispatcherImpl() {
         InitializeSRWLock(&m_Lock);
 
         // We push null here because that's what's used by the caller
@@ -56,8 +50,7 @@ public:
         EventDispatcherRegistry::RegisterDispatcher(this);
     }
 
-    ~EventDispatcherImpl() override
-    {
+    ~EventDispatcherImpl() override {
         AcquireSRWLockExclusive(&m_Lock);
         m_Listeners.clear();
         ReleaseSRWLockExclusive(&m_Lock);
@@ -65,25 +58,20 @@ public:
         EventDispatcherRegistry::RemoveDispatcher(this);
     }
 
-    void RemoveListenersWithContext(void* p_Context) override
-    {
+    void RemoveListenersWithContext(void* p_Context) override {
         AcquireSRWLockExclusive(&m_Lock);
 
-        for (auto it = m_Listeners.begin(); it != m_Listeners.end();)
-        {
-            if (*it == nullptr)
-            {
+        for (auto it = m_Listeners.begin(); it != m_Listeners.end();) {
+            if (*it == nullptr) {
                 ++it;
                 continue;
             }
 
-            if ((*it)->Context == p_Context)
-            {
-                delete* it;
+            if ((*it)->Context == p_Context) {
+                delete*it;
                 it = m_Listeners.erase(it);
             }
-            else
-            {
+            else {
                 ++it;
             }
         }
@@ -92,8 +80,7 @@ public:
     }
 
 protected:
-    void AddListenerInternal(void* p_Context, void* p_Listener) override
-    {
+    void AddListenerInternal(void* p_Context, void* p_Listener) override {
         // We remove it first to make sure we only have unique listeners
         // in our list. We could use a set to make this easier but iteration
         // performance wouldn't be very great.
@@ -110,25 +97,20 @@ protected:
         ReleaseSRWLockExclusive(&m_Lock);
     }
 
-    void RemoveListenerInternal(void* p_Listener) override
-    {
+    void RemoveListenerInternal(void* p_Listener) override {
         AcquireSRWLockExclusive(&m_Lock);
 
-        for (auto it = m_Listeners.begin(); it != m_Listeners.end();)
-        {
-            if (*it == nullptr)
-            {
+        for (auto it = m_Listeners.begin(); it != m_Listeners.end();) {
+            if (*it == nullptr) {
                 ++it;
                 continue;
             }
 
-            if ((*it)->Listener == p_Listener)
-            {
-                delete* it;
+            if ((*it)->Listener == p_Listener) {
+                delete*it;
                 it = m_Listeners.erase(it);
             }
-            else
-            {
+            else {
                 ++it;
             }
         }
@@ -136,18 +118,15 @@ protected:
         ReleaseSRWLockExclusive(&m_Lock);
     }
 
-    EventDispatcherBase::EventListenerRegistration** GetRegistrations() override
-    {
+    EventDispatcherBase::EventListenerRegistration** GetRegistrations() override {
         return m_Listeners.data();
     }
 
-    void LockForCall() override
-    {
+    void LockForCall() override {
         AcquireSRWLockShared(&m_Lock);
     }
 
-    void UnlockForCall() override
-    {
+    void UnlockForCall() override {
         ReleaseSRWLockShared(&m_Lock);
     }
 

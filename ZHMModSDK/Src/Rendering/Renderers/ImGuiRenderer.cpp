@@ -606,7 +606,6 @@ void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue) {
 
     Logger::Debug("Setting up ImGui command queue.");
     m_CommandQueue = p_CommandQueue;
-    m_CommandQueue->AddRef();
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(
@@ -626,6 +625,18 @@ DEFINE_DETOUR_WITH_CONTEXT(
         if (m_ImguiHasFocus) {
             // Set the GUI to visible again if we toggle it on.
             m_ImguiVisible = true;
+        }
+
+        if (!m_ImguiHasFocus) {
+            DWORD s_EventCount = 256;
+            DIDEVICEOBJECTDATA s_Buffer[256];
+            ZKeyboardWindows* s_KeyboardWindows = static_cast<ZKeyboardWindows*>(Globals::InputDeviceManager->m_devices[
+                4]);
+
+            if (s_KeyboardWindows->dif.m_pDev) {
+                // Prevents buffered events from being processed by the game after imgui is closed
+                s_KeyboardWindows->dif.m_pDev->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), s_Buffer, &s_EventCount, 0);
+            }
         }
     }
 

@@ -19,6 +19,7 @@ class ZCompiledBehaviorTree;
 class ZSpatialEntity;
 class ZKnowledge;
 class ZAnimatedActor;
+class ZGlobalOutfitKit;
 
 class ICharacterCollision :
         public IComponentInterface {

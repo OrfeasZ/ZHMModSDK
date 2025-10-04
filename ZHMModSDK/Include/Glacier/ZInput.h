@@ -1,7 +1,11 @@
 #pragma once
 
+#define DIRECTINPUT_VERSION 0x0800
+#include <dinput.h>
+
 #include "Common.h"
 #include "Enums.h"
+#include "Reflection.h"
 
 class ZActionMapTree {
 public:
@@ -61,4 +65,35 @@ public:
 
     const char* m_szData;
     ZTokenData kaTokens[1];
+};
+
+class IInputDevice {
+public:
+    virtual ~IInputDevice() = 0;
+};
+
+class ZInputDevice : public IInputDevice {};
+
+class ZKeyboardDevice : public ZInputDevice {};
+
+class ZDirectInputInf {
+public:
+    LPDIRECTINPUT8 m_pDI;
+    LPDIRECTINPUTDEVICE8 m_pDev;
+};
+
+class ZKeyboardWindows : public ZKeyboardDevice {
+public:
+    PAD(0xF8);
+    ZDirectInputInf dif;
+};
+
+class IInputDeviceManager : public IComponentInterface {
+public:
+    virtual ~IInputDeviceManager() = 0;
+};
+
+class ZInputDeviceManager : public IInputDeviceManager {
+public:
+    ZInputDevice* m_devices[32];
 };

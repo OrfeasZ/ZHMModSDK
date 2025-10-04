@@ -25,6 +25,7 @@ public:
     virtual void OnDrawUI(bool p_HasFocus) {}
     virtual void OnDraw3D(IRenderer* p_Renderer) {}
     virtual void OnDrawMenu() {}
+    virtual void OnDepthDraw3D(IRenderer* p_Renderer) {}
 
 public:
     /**
@@ -162,8 +163,12 @@ public:
 };
 
 typedef IPluginInterface* (__cdecl*GetPluginInterface_t)();
+typedef const char* (__cdecl*CompiledSdkAbiVersion_t)();
 
-#define DECLARE_ZHM_PLUGIN(PluginClass) extern "C" __declspec(dllexport) IPluginInterface* GetPluginInterface();\
+#define DECLARE_ZHM_PLUGIN(PluginClass) \
+    extern "C" __declspec(dllexport) IPluginInterface* GetPluginInterface();\
+    extern "C" __declspec(dllexport) const char* CompiledSdkVersion(); \
+    extern "C" __declspec(dllexport) const char* CompiledSdkAbiVersion(); \
     \
     inline PluginClass* Plugin()\
     {\
@@ -179,7 +184,10 @@ typedef IPluginInterface* (__cdecl*GetPluginInterface_t)();
             g_ ## PluginClass ## _Instance = new PluginClass();\
         \
         return g_ ## PluginClass ## _Instance;\
-    }
+    }\
+    \
+    extern "C" __declspec(dllexport) const char* CompiledSdkVersion() { return ZHMMODSDK_VER; } \
+    extern "C" __declspec(dllexport) const char* CompiledSdkAbiVersion() { return ZHMMODSDK_ABI_VER; }
 
 #define DECLARE_PLUGIN_DETOUR(PluginClass, ReturnType, DetourName, ...) DECLARE_DETOUR_WITH_CONTEXT(PluginClass, ReturnType, DetourName, __VA_ARGS__)
 

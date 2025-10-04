@@ -2,8 +2,7 @@
 #include <thread>
 
 #if _DEBUG
-class DebugConsole
-{
+class DebugConsole {
 public:
     DebugConsole();
     ~DebugConsole();

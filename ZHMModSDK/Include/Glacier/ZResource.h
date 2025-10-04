@@ -1,15 +1,20 @@
 #pragma once
 
 #include "Globals.h"
-#include "Functions.h"
 #include "ZPrimitives.h"
+#include "ZObjectPool.h"
+#include "ZResourceID.h"
+#include "TArray.h"
+#include "THashMap.h"
+#include "TSharedPointer.h"
+#include "ZSharedPointerTarget.h"
 
 class ZRuntimeResourceID;
 
 class ZResourceIndex {
 public:
-    ZResourceIndex(int val) :
-        val(val) {}
+    ZResourceIndex() : val(-1) {}
+    ZResourceIndex(int val) : val(val) {}
 
     int val;
 };
@@ -22,45 +27,89 @@ enum EResourceStatus {
     RESOURCE_STATUS_VALID      = 4,
 };
 
+template <typename T, size_t N>
+class TNonReallocatingArray {
+public:
+    T& operator[](size_t p_Index) {
+        return m_Buffer.m_pData[p_Index];
+    }
+
+    const T& operator[](size_t p_Index) const {
+        return m_Buffer.m_pData[p_Index];
+    }
+
+    T* begin() {
+        return m_Buffer.m_pData;
+    }
+
+    T* end() {
+        return m_Buffer.m_pData + m_nSize;
+    }
+
+    const T* begin() const {
+        return m_Buffer.m_pData;
+    }
+
+    const T* end() const {
+        return m_Buffer.m_pData + m_nSize;
+    }
+
+    size_t size() const {
+        return m_nSize;
+    }
+
+    size_t capacity() const {
+        return m_nCapacity;
+    }
+
+private:
+    uint32_t m_nSize;
+    uint32_t m_nCapacity;
+    ZInfiniteBuffer<T> m_Buffer;
+};
+
+struct SResourceReferenceFlags {
+    uint8_t languageCode : 5;
+    uint8_t acquired : 1;
+    int8_t referenceType : 2;
+};
+
 class ZResourceContainer {
 public:
     struct SResourceInfo {
         ZRuntimeResourceID rid;
         void* resourceData;
         unsigned long long dataOffset;
-        unsigned int finalDataSize;
-        unsigned int dataSize;
+        uint32 dataSize;
+        uint32 compressedDataSize;
         EResourceStatus status;
         long refCount;
         ZResourceIndex nextNewestIndex;
-        unsigned int firstReferenceIndex;
-        unsigned int numReferences;
+        int firstReferenceIndex;
+        int numReferences;
         unsigned int resourceType;
         int32_t monitorId;
         short priority;
         int8 packageId;
     };
 
+    struct SResourceReferenceInfo {
+        ZResourceIndex m_Index;
+        SResourceReferenceFlags m_Flags;
+    };
+
 public:
-    unsigned int m_resourcesSize;
-    unsigned int m_Unknown;
-    TArray<SResourceInfo> m_resources;
-    TArray<unsigned int> m_references;
+    TNonReallocatingArray<SResourceInfo, 4194304> m_resources;
+    TArray<SResourceReferenceInfo> m_references;
     THashMap<ZRuntimeResourceID, ZResourceIndex, TDefaultHashMapPolicy<ZRuntimeResourceID>> m_indices;
     TArray<ZString> m_MountedPackages;
 };
 
+static_assert(sizeof(ZResourceContainer::SResourceInfo) == 64);
+
 class ZResourcePtr {
 public:
-    ~ZResourcePtr() {
-        if (m_nResourceIndex < 0)
-            return;
-
-        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex];
-
-        if (InterlockedDecrement(&s_ResourceInfo.refCount) == 0 && s_ResourceInfo.resourceData)
-            Functions::ZResourceManager_UninstallResource->Call(Globals::ResourceManager, m_nResourceIndex);
-    }
+    ZHMSDK_API ~ZResourcePtr();
 
 public:
     ZResourceContainer::SResourceInfo& GetResourceInfo() const {
@@ -92,7 +141,8 @@ class TResourcePtr : public ZResourcePtr {
 public:
     TResourcePtr() {
         static_assert(
-            std::is_base_of_v<IComponentInterface, T>, "TResourcePtr type must implement IComponentInterface."
+            std::is_base_of_v<IComponentInterface, T>,
+            "TResourcePtr type must implement IComponentInterface."
         );
     }
 
@@ -161,4 +211,32 @@ public:
     virtual void ZResourceManager_unk54() = 0;
     virtual void ZResourceManager_unk55() = 0;
     virtual void ZResourceManager_unk56() = 0;
+};
+
+class ZResourceDataBuffer : public ZSharedPointerTarget {
+public:
+    void* m_pData = nullptr;
+    uint32 m_nSize = 0;
+    uint32 m_nCapacity = 0;
+    bool m_bOwnsDataPtr = false;
+};
+
+typedef TSharedPointer<ZResourceDataBuffer> ZResourceDataPtr;
+
+class ZResourceReader : public ZSharedPointerTarget {
+    ZResourceIndex m_ResourceIndex;
+    ZResourceDataPtr m_pResourceData;
+    uint32 m_nResourceDataSize = 0;
+    TArray<ZResourceIndex> m_ReferenceIndices;
+    TArray<SResourceReferenceFlags> m_ReferenceFlags;
+};
+
+static_assert(sizeof(ZResourceReader) == 88);
+
+typedef TSharedPointer<ZResourceReader> ZResourceReaderPtr;
+
+class ZResourcePending {
+public:
+    ZResourcePtr m_pResource;
+    ZResourceReaderPtr m_pResourceReader;
 };

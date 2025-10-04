@@ -11,6 +11,7 @@
 #include <Glacier/TArray.h>
 #include <Glacier/THashMap.h>
 #include <Glacier/ZDelegate.h>
+#include <Glacier/ZMath.h>
 
 class ZRenderDepthStencilView;
 class ZRuntimeResourceID;
@@ -69,6 +70,9 @@ struct EOS_Platform_Options;
 class ZRenderTargetView;
 class ZAsyncContext;
 struct SHttpRequestBehavior;
+class ZPFObstacleHandle;
+enum EPFObstacleClient;
+class ZPFObstacleEntity;
 
 class ZHMSDK_API Hooks {
 public:
@@ -186,4 +190,16 @@ public:
     )>* ZUserChannelContractsProxyBase_GetForPlay2;
 
     static Hook<void*(void* th, void* newData)>* ZArray_PushBack;
+
+    static Hook<ZPFObstacleHandle*(
+        ZPathfinder* th,
+        ZPFObstacleHandle* result,
+        const SMatrix& mTransform,
+        float4 vHalfSize,
+        float32 fPenaltyMultiplier,
+        uint32 nObstacleBlockageFlags,
+        EPFObstacleClient eDebugObstacleClient
+    )>* ZPathfinder_CreateObstacle;
+    static Hook<void(ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate)>*
+    ZPFObstacleEntity_UpdateObstacle;
 };

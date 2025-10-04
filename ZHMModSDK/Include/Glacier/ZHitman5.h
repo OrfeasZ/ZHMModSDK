@@ -403,6 +403,8 @@ public:
     SGameInput* m_pInput;
 };
 
+class ZFabricColliderBaseEntity;
+
 class ZHitman5 :
         public ZHM5BaseCharacter,
         public IFutureCameraState, // 720
@@ -431,52 +433,38 @@ public:
     TEntityRef<ZPhysicsSystemEntity> m_rRagdollEntity; // 0x730
     TEntityRef<IChildNetworkEntity> m_rDefaultPickupNetwork; // 0x740
     TEntityRef<ZItemPlacementConfigurationEntity> m_placementconfiguration; // 0x750
-    bool m_bStreamableDisguiseGive; // 0x760
-    TEntityRef<IVariationResourceEntity> m_DefaultWeaponVariationResource; // 0x768
-    PAD(0x30); // 0x778
-    ZGuid m_CharacterId; // 0x7A8
-    PAD(0x38); // 0x7B8
-    ZCharacterInputProcessor* m_pCharacterInputProcessor; // 0x7F0
-    PAD(0x38); // 0x7F8
-    TEntityRef<ZBodyPartEntity> m_pVRHeadReplacement; // 0x830
-    TEntityRef<ZBodyPartEntity> m_pVROldHeadReplacement; // 0x840
-    ZRuntimeResourceID m_SeasonOneHead1; // 0x850
-    ZRuntimeResourceID m_SeasonOneHead2; // 0x858
-    ZRuntimeResourceID m_SeasonOneHead3; // 0x860
-    ZRuntimeResourceID m_SeasonOneHead4; // 0x868
-    ZRuntimeResourceID m_SeasonOneHead5; // 0x870
-    PAD(0x4D0); // 0x878
-    bool m_bIsInvincible; // 0xD48
-    TEntityRef<ZHeroGuideController> m_pGuideController; // 0xD50
-    TEntityRef<ZHeroIKController> m_pIKController; // 0xD60
-    TEntityRef<ZCheatController> m_pCheatController; // 0xD70
-    TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xD80
-    TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xD90
-    TEntityRef<ZCharacter> m_pCharacter; // 0xDA0
-    PAD(0x398); // 0xDB0
-
-    union {
-        uint32_t m_flags; // 0x1148
-
-        struct {
-            bool m_bActivated : 1;
-            bool m_bActivatingHitman : 1;
-            bool m_bInEditMode : 1;
-            bool m_bUnk3 : 1;
-        };
-    };
-
-    PAD(0x1C); // 0x114C
-    TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1168
-    PAD(0x98); // 0x1178
+    TEntityRef<ZItemPlacementConfigurationEntity> m_placementconfigurationLeft; // 0x760
+    bool m_bStreamableDisguiseGive; // 0x770
+    PAD(0x7); // 0x771
+    TEntityRef<IVariationResourceEntity> m_DefaultWeaponVariationResource; // 0x778
+    TArray<TEntityRef<ZFabricColliderBaseEntity>> m_EnvironmentClothColliders; // 0x788
+    PAD(0x18); // 0x7A0
+    ZGuid m_CharacterId; // 0x7B8
+    PAD(0x38); // 0x7C8
+    ZCharacterInputProcessor* m_pCharacterInputProcessor; // 0x800
+    PAD(0x110); // 0x808
+    TEntityRef<ZBodyPartEntity> m_pVRHeadReplacement; // 0x918
+    TEntityRef<ZBodyPartEntity> m_pVROldHeadReplacement; // 0x928
+    PAD(0x20); // 0x938
+    ZRuntimeResourceID m_SeasonOneHead1; // 0x958
+    ZRuntimeResourceID m_SeasonOneHead2; // 0x960
+    ZRuntimeResourceID m_SeasonOneHead3; // 0x968
+    ZRuntimeResourceID m_SeasonOneHead4; // 0x970
+    ZRuntimeResourceID m_SeasonOneHead5; // 0x978
+    PAD(0x4F0); // 0x980
+    bool m_bIsInvincible; // 0xE70
+    PAD(0x7); // 0xE71
+    TEntityRef<ZHeroGuideController> m_pGuideController; // 0xE78
+    TEntityRef<ZHeroIKController> m_pIKController; // 0xE88
+    TEntityRef<ZCheatController> m_pCheatController; // 0xE98
+    TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xEA8
+    TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xEB8
+    TEntityRef<ZCharacter> m_pCharacter; // 0xEC8
+    PAD(0xB0); // 0xED8
+    TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0xF88
+    int32 m_nOutfitCharset; // 0xF98
+    int32 m_nOutfitVariation; // 0xF9C
+    PAD(0x368); // 0xFA0
+    TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1308
+    PAD(0xA8); // 0x1318
 };
-
-static_assert(offsetof(ZHitman5, m_InitialOutfitId) == 0x710);
-static_assert(offsetof(ZHitman5, m_CharacterId) == 0x7A8);
-static_assert(offsetof(ZHitman5, m_pCharacterInputProcessor) == 0x7F0);
-static_assert(offsetof(ZHitman5, m_pVRHeadReplacement) == 0x830);
-static_assert(offsetof(ZHitman5, m_bIsInvincible) == 0xD48);
-static_assert(offsetof(ZHitman5, m_pCharacter) == 0xDA0);
-static_assert(offsetof(ZHitman5, m_flags) == 0x1148);
-static_assert(offsetof(ZHitman5, m_rMainCamera) == 0x1168);
-static_assert(sizeof(ZHitman5) == 0x1210);

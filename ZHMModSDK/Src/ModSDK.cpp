@@ -69,7 +69,7 @@ ZHMSDK_API IModSDK* SDK() {
 }
 
 extern "C" ZHMSDK_API const char* SDKVersion() {
-    return "3.1.1";
+    return ZHMMODSDK_VER;
 }
 
 ModSDK* ModSDK::g_Instance = nullptr;
@@ -116,7 +116,7 @@ ModSDK::ModSDK() {
     m_DebugConsole = std::make_shared<DebugConsole>();
     SetupLogging(spdlog::level::trace);
     #else
-	SetupLogging(spdlog::level::info);
+    SetupLogging(spdlog::level::info);
     #endif
 
     m_ModLoader = std::make_shared<ModLoader>();
@@ -273,6 +273,10 @@ void ModSDK::LoadConfiguration() {
 
         if (s_Mod.second.has("shown_ui_toggle_warning")) {
             m_HasShownUiToggleWarning = true;
+        }
+
+        if (s_Mod.second.has("force_load")) {
+            m_ForceLoad = true;
         }
     }
 }
@@ -454,7 +458,12 @@ void ModSDK::SkipVersionUpdate(const std::string& p_Version) {
     );
 }
 
-void ModSDK::CheckForUpdates() const {
+bool ModSDK::CheckForUpdates() const {
+    if (m_DisableUpdateCheck) {
+        Logger::Debug("Update check disabled. Skipping.");
+        return false;
+    }
+
     // Try to get latest version from GitHub.
     std::pair<uint32_t, std::string> s_VersionCheckResult;
 
@@ -464,12 +473,12 @@ void ModSDK::CheckForUpdates() const {
     }
     catch (const std::exception& e) {
         Logger::Error("Could not check for updates: {}", e.what());
-        return;
+        return false;
     }
 
     if (s_VersionCheckResult.first != 200) {
         Logger::Error("Could not check for updates: HTTP status code {}", s_VersionCheckResult.first);
-        return;
+        return false;
     }
 
     // Parse the JSON response with simdjson.
@@ -484,7 +493,7 @@ void ModSDK::CheckForUpdates() const {
         // Check if we should ignore this version.
         if (m_IgnoredVersion == s_LatestVersion) {
             Logger::Info("Ignoring update notification for version {}.", s_LatestVersion);
-            return;
+            return false;
         }
 
         // Strip v prefix.
@@ -497,9 +506,11 @@ void ModSDK::CheckForUpdates() const {
         if (s_LatestSemver > s_CurrentVersion) {
             Logger::Info("A new version of the Mod SDK is available: {}.", s_LatestVersion);
             ShowVersionNotice(std::string(s_LatestVersion));
+            return true;
         }
         else {
             Logger::Info("Mod SDK is up to date.");
+            return false;
         }
     }
     catch (const simdjson::simdjson_error& e) {
@@ -508,6 +519,8 @@ void ModSDK::CheckForUpdates() const {
     catch (const std::exception& e) {
         Logger::Error("An error occurred while checking for updates: {}", e.what());
     }
+
+    return false;
 }
 
 // Built-in console commands
@@ -579,7 +592,8 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
                         return Logger::Error(
                             "[ZConfigCommand] Invalid input (float), input does not represent a float."
                         );
-                    } catch (const std::out_of_range&) {
+                    }
+                    catch (const std::out_of_range&) {
                         return Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
                     }
                     break;
@@ -599,7 +613,8 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
                         return Logger::Error(
                             "[ZConfigCommand] Invalid input (integer), input does not represent a integer."
                         );
-                    } catch (const std::out_of_range&) {
+                    }
+                    catch (const std::out_of_range&) {
                         return Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
                     }
                     break;
@@ -624,6 +639,40 @@ bool ModSDK::Startup() {
     #if _DEBUG
     m_DebugConsole->StartRedirecting();
     #endif
+
+    // If there's at least 3 failures, we probably have a problem.
+    // Unless the bypass flag is set, show a message and exit.
+    if (g_Failures >= 3 && !m_ForceLoad) {
+        Logger::Error("Too many errors occurred ({}). Unloading SDK.", g_Failures);
+
+        // Remove detours.
+        HookRegistry::ClearDetoursWithContext(this);
+        m_D3D12Hooks.reset();
+        HookRegistry::DestroyHooks();
+        Trampolines::ClearTrampolines();
+
+        std::thread s_VersionCheckThread(
+            [] {
+                if (!GetInstance()->CheckForUpdates()) {
+                    MessageBoxA(
+                        nullptr,
+                        "The Mod SDK has encountered too many errors and will now unload itself. This can usually happen after a game update, "
+                        "but no new version of the SDK is available yet (or you've disabled update checks).\n"
+                        "\n"
+                        "You can check for updates manually by going to:\n"
+                        "https://github.com/OrfeasZ/ZHMModSDK",
+                        "Mod SDK Error",
+                        MB_OK | MB_ICONERROR
+                    );
+                }
+            }
+        );
+
+        s_VersionCheckThread.detach();
+
+        // Not returning false here for a full unload because of deadlocks.
+        return true;
+    }
 
     m_ModLoader->Startup();
 
@@ -671,15 +720,6 @@ bool ModSDK::Startup() {
 }
 
 void ModSDK::ThreadedStartup() const {
-    m_ModLoader->LockRead();
-
-    for (const auto& s_Mod : m_ModLoader->GetLoadedMods()) {
-        s_Mod->SetupUI();
-        s_Mod->Init();
-    }
-
-    m_ModLoader->UnlockRead();
-
     // If the engine is already initialized, inform the mods.
     if (Globals::Hitman5Module->IsEngineInitialized())
         OnEngineInit();
@@ -715,31 +755,15 @@ void ModSDK::OnDraw3D() const {
         s_Mod->OnDraw3D(m_DirectXTKRenderer.get());
 
     m_ModLoader->UnlockRead();
+}
 
-    /*m_EntityMutex.lock_shared();
+void ModSDK::OnDepthDraw3D() const {
+    m_ModLoader->LockRead();
 
-    for (auto s_EntityRef : m_Entities)
-    {
-        auto* s_SpatialEntity = s_EntityRef.QueryInterface<ZSpatialEntity>();
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods())
+        s_Mod->OnDepthDraw3D(m_DirectXTKRenderer.get());
 
-        if (!s_SpatialEntity)
-            continue;
-
-        SMatrix s_Transform;
-        Functions::ZSpatialEntity_WorldTransform->Call(s_SpatialEntity, &s_Transform);
-
-        float4 s_Min, s_Max;
-
-        s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
-
-        p_Renderer->DrawOBB3D(SVector3(s_Min.x, s_Min.y, s_Min.z), SVector3(s_Max.x, s_Max.y, s_Max.z), s_Transform, SVector4(1.f, 0.f, 0.f, 1.f));
-
-        SVector2 s_ScreenPos;
-        if (p_Renderer->WorldToScreen(SVector3(s_Transform.mat[3].x, s_Transform.mat[3].y, s_Transform.mat[3].z + 2.05f), s_ScreenPos))
-            p_Renderer->DrawText2D(std::to_string((*s_EntityRef.m_pEntity)->m_nEntityId).c_str(), s_ScreenPos, SVector4(1.f, 0.f, 0.f, 1.f), 0.f, 0.5f);
-    }
-
-    m_EntityMutex.unlock_shared();*/
+    m_ModLoader->UnlockRead();
 }
 
 void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad) {
@@ -1302,9 +1326,9 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
 
     SNetPlayerData* s_PlayerData = nullptr;
 
-    for (int i = 0; i < _countof(Globals::PlayerRegistry->m_pPlayerData); ++i) {
-        if (!Globals::PlayerRegistry->m_pPlayerData[i]->m_Controller.m_pNetPlayer) {
-            s_PlayerData = Globals::PlayerRegistry->m_pPlayerData[i];
+    for (int i = 0; i < Globals::PlayerRegistry->m_PlayerData.size(); ++i) {
+        if (!Globals::PlayerRegistry->m_PlayerData[i].m_Controller.m_pNetPlayer) {
+            s_PlayerData = &Globals::PlayerRegistry->m_PlayerData[i];
             break;
         }
 
@@ -1314,14 +1338,9 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
         // or one that does have one but passes some check (no idea what that check is - some vfunc call).
     }
 
-    // If we still don't have a player, pick the first non-null one.
-    if (!s_PlayerData) {
-        for (int i = 0; i < _countof(Globals::PlayerRegistry->m_pPlayerData); ++i) {
-            if (Globals::PlayerRegistry->m_pPlayerData[i]) {
-                s_PlayerData = Globals::PlayerRegistry->m_pPlayerData[i];
-                break;
-            }
-        }
+    // If we still don't have a player, pick the first one.
+    if (!s_PlayerData && Globals::PlayerRegistry->m_PlayerData.size() > 0) {
+        s_PlayerData = &Globals::PlayerRegistry->m_PlayerData[0];
     }
 
     // Still nothing? Return an empty entity.
@@ -1417,8 +1436,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
     uint32_t a5, bool bCaptureOnly
 ) {
     if (dsv && *dsv && m_DirectXTKRenderer) {
-        // TODO: Re-enable once we have proper functions for depth-supported drawing.
-        //m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
+        m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
     }
 
     return {HookAction::Continue()};

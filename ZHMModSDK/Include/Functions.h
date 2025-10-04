@@ -3,10 +3,11 @@
 #include "Common.h"
 #include "EngineFunction.h"
 #include "Glacier/ZConfigCommand.h"
-#include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 #include "Glacier/ZMath.h"
 #include "Glacier/ZPrimitives.h"
+#include "Glacier/ZResource.h"
+#include "Glacier/Reflection.h"
 
 class ZHitman5;
 class ZActor;
@@ -34,12 +35,21 @@ class ZRagdollHandler;
 class ZInputActionManager;
 class IItem;
 class ZSetpieceEntity;
+struct SExternalReferences;
+class ZTemplateEntityFactory;
+class STemplateEntityFactory;
+class ZTemplateInstaller;
+class ZTemplateBlueprintInstaller;
+class ZResourcePending;
+class ZEntityType;
+class ZEntityImpl;
 
 class ZHMSDK_API Functions {
 public:
     static EngineFunction<void(ZActor* th)>* ZActor_OnOutfitChanged;
     static EngineFunction<void(ZActor* th)>* ZActor_ReviveActor;
     static EngineFunction<void(ZDynamicObject* th, ZString* a2)>* ZDynamicObject_ToString;
+    static EngineFunction<ZDynamicObject*(ZDynamicObject* th, char* jsonStr, int strLen)>* ZDynamicObject_ParseString;
     static EngineFunction<void(ZHM5BaseCharacter* th, bool inMotion)>* ZHM5BaseCharacter_ActivateRagdoll;
     static EngineFunction<void(ZHM5BaseCharacter* th)>* ZHM5BaseCharacter_DeactivateRagdoll;
     static EngineFunction<ZCameraEntity*()>* GetCurrentCamera;
@@ -57,14 +67,14 @@ public:
     static EngineFunction<void(ZResourceManager* th, int index)>* ZResourceManager_UninstallResource;
 
     static EngineFunction<void(
-        ZEntityManager* th, ZEntityRef& result, const ZString& debugName, IEntityFactory* factory,
-        const ZEntityRef& parent, void* a6, int64_t a7
+        ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
+        const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId
     )>* ZEntityManager_NewEntity;
 
     static EngineFunction<void(ZSpatialEntity* th)>* ZSpatialEntity_UnknownTransformUpdate;
 
     static EngineFunction<void(
-        ZEntityManager* th, const ZEntityRef& entity, THashMap<ZRuntimeResourceID, ZEntityRef>& references
+        ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs
     )>* ZEntityManager_DeleteEntity;
 
     static EngineFunction<void(
@@ -113,5 +123,25 @@ public:
     static EngineFunction<ZConfigCommand*(uint32_t commandNameHash)>* ZConfigCommand_GetConfigCommand;
     static EngineFunction<ZConfigCommand*()>* ZConfigCommand_First;
 
-    static EngineFunction<ZDynamicObject*(ZDynamicObject* th, const ZString& p_Key, const ZDynamicObject& p_Value)>* ZDynamicObject_Set;
+    static EngineFunction<ZDynamicObject*(
+        ZDynamicObject* th, const ZString& p_Key, const ZDynamicObject& p_Value
+    )>* ZDynamicObject_Set;
+
+    static EngineFunction<void(ZTemplateEntityFactory* th, STemplateEntityFactory* data, ZResourcePending& pending)>*
+    ZTemplateEntityFactory_ZTemplateEntityFactory;
+
+    static EngineFunction<void(ZResourceContainer* th, ZResourceIndex& out, const ZRuntimeResourceID rid)>*
+    ZResourceContainer_AddResourceInternal;
+
+    static EngineFunction<void(
+        ZResourceReader * th, ZResourceIndex * idx, ZResourceDataPtr * pData, uint32_t dataSize
+    )>* ZResourceReader_ZResourceReader;
+
+    static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
+    ZTemplateInstaller_Install;
+
+    static EngineFunction<bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)>*
+    ZTemplateBlueprintInstaller_Install;
+
+    static EngineFunction<ZEntityType* (ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
 };

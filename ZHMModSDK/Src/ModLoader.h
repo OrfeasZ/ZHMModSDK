@@ -9,14 +9,12 @@
 
 class IPluginInterface;
 
-class ModLoader
-{
+class ModLoader {
 private:
-    struct LoadedMod
-    {
+    struct LoadedMod {
         HMODULE Module;
         IPluginInterface* PluginInterface;
-	    ModSettings* Settings;
+        ModSettings* Settings;
     };
 
 public:
@@ -36,34 +34,30 @@ public:
     void UnloadAllMods();
     void ReloadAllMods();
     IPluginInterface* GetModByName(const std::string& p_Name);
-	ModSettings* GetModSettings(IPluginInterface* p_PluginInterface);
+    ModSettings* GetModSettings(IPluginInterface* p_PluginInterface);
 
-    std::vector<IPluginInterface*> GetLoadedMods() const
-    {
+    std::vector<IPluginInterface*> GetLoadedMods() const {
         return m_ModList;
     }
 
-    void LockRead()
-    {
+    void LockRead() {
         m_Mutex.lock_shared();
     }
 
-    void UnlockRead()
-    {
+    void UnlockRead() {
         m_Mutex.unlock_shared();
     }
 
-    void Lock()
-    {
+    void Lock() {
         m_Mutex.lock();
     }
 
-    void Unlock()
-    {
+    void Unlock() {
         m_Mutex.unlock();
     }
 
 private:
+    std::unordered_set<std::string> m_IncompatibleMods;
     std::unordered_set<std::string> m_AvailableMods;
     std::unordered_set<std::string> m_AvailableModsLower;
     std::vector<IPluginInterface*> m_ModList;

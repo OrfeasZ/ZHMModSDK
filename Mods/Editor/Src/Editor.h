@@ -22,6 +22,14 @@ struct QneTransform {
     SVector3 Scale;
 };
 
+struct AlignedDeleter {
+    template <typename T>
+    void operator()(T* ptr) const {
+        if (ptr)
+            (*Globals::MemoryManager)->m_pNormalAllocator->Free(ptr);
+    }
+};
+
 class Editor : public IPluginInterface {
 public:
     Editor();
@@ -52,7 +60,17 @@ public:
     std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
     ZEntityRef FindEntity(EntitySelector p_Selector);
+    static std::string GetCollisionHash(auto p_SelectedEntity);
+    void FindAlocs(
+        const std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>&, bool p_Done)>&
+        p_SendEntitiesCallback, const std::function<void()>& p_RebuiltCallback
+    );
+    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindEntitiesByType(
+        const std::string& p_EntityType, const std::string& p_Hash
+    );
     void RebuildEntityTree();
+    void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
+    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
     void SpawnCameras();
@@ -68,15 +86,8 @@ private:
 
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
-    bool SearchForEntityById(
-        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, uint64_t p_EntityId
-    );
-    bool SearchForEntityByType(
-        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_TypeName
-    );
-    bool SearchForEntityByName(
-        ZTemplateEntityBlueprintFactory* p_BrickFactory, ZEntityRef p_BrickEntity, const std::string& p_EntityName
-    );
+    void FilterEntityTree();
+    bool FilterEntityTree(EntityTreeNode* p_Node);
     void UpdateEntities();
 
     void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
@@ -97,9 +108,19 @@ private:
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
     void ToggleEditorServerEnabled();
+    static void FindAlocForZGeomEntityNode(
+        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
+        const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType
+    );
+    static void FindAlocForZPrimitiveProxyEntityNode(
+        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& entities,
+        const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType
+    );
 
     // Properties
     void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     // Primitive properties.
     void StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
@@ -123,13 +144,45 @@ private:
 
     void SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
+    template <typename T>
+    static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const ZEntityProperty* p_Property);
+    static Quat GetQuatFromProperty(ZEntityRef p_Entity);
+    static Quat GetParentQuat(ZEntityRef p_Entity);
+
     void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
-    static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
+
+    void DrawItems(bool p_HasFocus);
+    void DrawActors(bool p_HasFocus);
+    void DrawAssets(bool p_HasFocus);
+
+    static void EquipOutfit(
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CurrentCharSetIndex,
+        const std::string& s_CurrentCharSetCharacterType, uint8_t n_CurrentOutfitVariationindex, ZActor* p_Actor
+    );
+
+    static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld);
+    static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
+    static void SpawnNPC(
+        const std::string& s_NpcName, const ZRepositoryID& repositoryID,
+        const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8_t n_CurrentCharacterSetIndex,
+        const std::string& s_CurrentcharSetCharacterType, uint8_t p_CurrentOutfitVariationIndex
+    );
+
+    void LoadRepositoryProps();
+    std::string ConvertDynamicObjectValueToString(const ZDynamicObject& p_DynamicObject);
+
+    void EnableTrackCam();
+    void UpdateTrackCam() const;
+    void DisableTrackCam();
+    void GetPlayerCam();
+    void GetTrackCam();
+    void GetRenderDest();
+    static void SetPlayerControlActive(bool active);
 
 private:
     DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
@@ -143,8 +196,14 @@ private:
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
 
 private:
+    enum class EntityHighlightMode {
+        Lines,
+        LinesAndTriangles
+    };
+
     ZEntityRef m_Camera;
     ZEntityRef m_CameraRT;
+    bool m_raycastLogging; // Mainly used for the raycasting logs
 
     bool m_CameraActive = false;
     ZEntityRef m_OriginalCam;
@@ -160,6 +219,9 @@ private:
     double m_AngleSnapValue = 90.0;
     double m_ScaleSnapValue = 1.0;
 
+    bool m_MenuVisible = false;
+    bool m_EditorWindowsVisible = true;
+
     float4 m_From;
     float4 m_To;
     float4 m_Hit;
@@ -168,6 +230,16 @@ private:
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
     bool m_ShouldScrollToEntity = false;
+
+    EntityHighlightMode m_EntityHighlightMode = EntityHighlightMode::Lines;
+
+    std::string m_EntityIdSearchInput;
+    std::string m_EntityTypeSearchInput;
+    std::string m_EntityNameSearchInput;
+    std::unordered_set<EntityTreeNode*> m_FilteredEntityTreeNodes;
+    std::vector<EntityTreeNode*> m_DirectEntityTreeNodeMatches;
+
+    std::vector<std::vector<SVector3>> m_NavpAreas;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;
@@ -194,6 +266,22 @@ private:
     std::unordered_map<ZEntityRef, std::string> m_EntityNames;
 
     EditorServer m_Server;
+
+    bool m_AssetsMenuActive = false;
+    bool m_ItemsMenuActive = false;
+    bool m_ActorsMenuActive = false;
+
+    TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
+    std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps; // RepoId -> Title/Common Name
+
+    ZActor* s_CurrentlySelectedActor = nullptr;
+    const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
+
+    ZActor* m_ActorTracked = nullptr;
+    bool m_TrackCamActive = false;
+    ZEntityRef m_PlayerCam = nullptr;
+    TEntityRef<ZCameraEntity> m_TrackCam {};
+    TEntityRef<IRenderDestinationEntity> m_RenderDest {};
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

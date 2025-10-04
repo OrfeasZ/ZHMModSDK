@@ -8,9 +8,10 @@ public:
     uint32_t m_nUniqueID;
 };
 
+template <typename T>
 class ZInfiniteBuffer {
 public:
-    void* m_pData;
+    T* m_pData;
     uint32_t m_nSize;
     uint32_t m_nActualSize;
     uint32_t m_nMaxSize;
@@ -25,7 +26,7 @@ public:
     uint32_t m_nGrowCount;
     uint32_t m_nObjectDelta;
     uint32_t m_nSize;
-    ZInfiniteBuffer m_Buffer;
+    ZInfiniteBuffer<void> m_Buffer;
     ZMutex m_Mutex;
 
     [[nodiscard]] bool BelongsToPool(void* p_Object) const {

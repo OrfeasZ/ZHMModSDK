@@ -365,6 +365,9 @@ void Editor::DrawEntityProperties() {
                     ImGui::Text("%s", s_PropertyInfo->m_pName);
                 }
 
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("%s", s_PropertyInfo->m_pType->typeInfo()->m_pTypeName);
+                }
                 ImGui::PopFont();
                 ImGui::SameLine();
 
@@ -431,6 +434,12 @@ void Editor::DrawEntityProperties() {
                 }
                 else if (s_PropertyInfo->m_pType->typeInfo()->isResource()) {
                     ResourceProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
+                }
+                else if (s_TypeName.starts_with("TEntityRef<")) {
+                    TEntityRefProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
+                }
+                else if (s_TypeName == "ZRepositoryID") {
+                    ZRepositoryIDProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
                 }
                 else {
                     UnsupportedProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);

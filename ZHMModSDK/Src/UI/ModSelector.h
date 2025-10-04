@@ -5,13 +5,10 @@
 #include <string>
 #include <unordered_map>
 
-namespace UI
-{
-    class ModSelector
-    {
+namespace UI {
+    class ModSelector {
     private:
-        struct AvailableMod
-        {
+        struct AvailableMod {
             std::string Name;
             bool Enabled;
         };
@@ -21,7 +18,10 @@ namespace UI
 
     public:
         void Draw(bool p_HasFocus);
-        void UpdateAvailableMods(const std::unordered_set<std::string>& p_Mods, const std::unordered_set<std::string>& p_ActiveMods);
+        void UpdateAvailableMods(
+            const std::unordered_set<std::string>& p_Mods, const std::unordered_set<std::string>& p_IncompatibleMods,
+            const std::unordered_set<std::string>& p_ActiveMods
+        );
         void Show() { m_Open = true; }
 
     private:
@@ -30,6 +30,7 @@ namespace UI
     private:
         bool m_Open = false;
         SRWLOCK m_Lock {};
+        std::unordered_set<std::string> m_IncompatibleMods;
         std::vector<AvailableMod> m_AvailableMods;
         bool m_ShouldShow = false;
     };

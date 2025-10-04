@@ -48,6 +48,7 @@ set(MODS
 	#Hitmen
 	DebugCheckKeyEntityEnabler
 	OnlineTools
+    Player
 )
 
 foreach(MOD IN LISTS MODS)

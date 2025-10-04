@@ -56,7 +56,7 @@ private:
     static std::pair<uint32_t, std::string> RequestLatestVersion();
     static void ShowVersionNotice(const std::string& p_Version);
     void SkipVersionUpdate(const std::string& p_Version);
-    void CheckForUpdates() const;
+    bool CheckForUpdates() const;
 
 public:
     void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
@@ -64,6 +64,7 @@ public:
     void OnEngineInit() const;
     void OnDrawUI(bool p_HasFocus) const;
     void OnDraw3D() const;
+    void OnDepthDraw3D() const;
     void OnDrawMenu() const;
 
 public:
@@ -190,6 +191,7 @@ private:
     uint8_t m_ConsoleScanCode = 0x29; // Grave / Tilde key
     uint8_t m_UiToggleScanCode = 0x57; // F11
     bool m_HasShownUiToggleWarning = false;
+    bool m_ForceLoad = false;
     uintptr_t m_ModuleBase;
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;

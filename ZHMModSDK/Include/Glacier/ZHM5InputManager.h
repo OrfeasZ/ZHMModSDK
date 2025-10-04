@@ -8,6 +8,6 @@ public:
 
 class ZHM5InputControl {
 public:
-    PAD(0x130);
+    PAD(0x138);
     bool m_bActive; // 0x130
 };

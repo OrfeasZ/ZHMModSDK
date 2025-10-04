@@ -4,6 +4,7 @@
 #include "ZPrimitives.h"
 #include "ZMath.h"
 #include "ZResource.h"
+#include "Functions.h"
 
 class ZSpatialEntity :
         public ZEntityImpl {
@@ -66,15 +67,3 @@ public:
 };
 
 static_assert(sizeof(ZBoundedEntity) == 0xB8);
-
-
-class ZPFObstacleEntity :
-        public ZBoundedEntity {
-public:
-    PAD(0x08); // 0xB8
-    SVector3 m_vGlobalSize; // 0xC0
-    float32 m_fPenaltyMultiplier; // 0xCC
-    uint32 m_nObstacleBlockageFlags; // 0xD0
-    bool m_bEnabled; // 0xD4
-    ZResourcePtr m_pHelper; // 0xD8
-};
