@@ -189,6 +189,8 @@ public:
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     )>* ZUserChannelContractsProxyBase_GetForPlay2;
 
+    static Hook<void*(void* th, void* newData)>* ZArray_PushBack;
+
     static Hook<ZPFObstacleHandle*(
         ZPathfinder* th,
         ZPFObstacleHandle* result,
