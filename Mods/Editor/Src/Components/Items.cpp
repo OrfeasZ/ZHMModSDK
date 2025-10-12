@@ -14,7 +14,7 @@ void Editor::DrawItems(bool p_HasFocus) {
     const auto s_Showing = ImGui::Begin("ITEMS", &m_ItemsMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing && p_HasFocus) {
+    if (s_Showing) {
         const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
         std::vector<ZHM5Action*> s_Actions;
 

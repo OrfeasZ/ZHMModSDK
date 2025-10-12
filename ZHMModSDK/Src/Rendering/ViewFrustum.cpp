@@ -13,7 +13,7 @@ void ViewFrustum::UpdateClipPlanes(const SMatrix& p_View, const SMatrix& p_Proje
         return;
     }
 
-    if (m_MaxDrawDistance > 0.f) {
+    if (m_IsDistanceCullingEnabled && m_MaxDrawDistance > 0.f) {
         const float s_FovYDeg = s_CurrentCamera->GetFovYDeg();
         const float s_AspectWByH = s_CurrentCamera->GetAspectWByH();
         const float s_NearZ = s_CurrentCamera->GetNearZ();
@@ -24,11 +24,13 @@ void ViewFrustum::UpdateClipPlanes(const SMatrix& p_View, const SMatrix& p_Proje
             m_FovYDeg = s_FovYDeg;
             m_AspectWByH = s_AspectWByH;
             m_NearZ = s_NearZ;
+            m_CurrentFarZ = m_MaxDrawDistance;
 
             m_ClipPlaneProjectionMatrix = MatrixPerspectiveFovRH(m_FovYDeg, m_AspectWByH, m_NearZ, m_MaxDrawDistance);
         }
     }
     else {
+        m_CurrentFarZ = -1.f;
         m_ClipPlaneProjectionMatrix = p_Projection;
     }
 
@@ -94,6 +96,22 @@ bool ViewFrustum::ContainsAABB(const AABB& p_AABB) const {
 
 bool ViewFrustum::ContainsOBB(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const {
     return CheckOBBInsidePlanes(p_Transform, p_Center, p_HalfSize) != ECheckInsideFlag::CHECK_INSIDE_FULLY_OUTSIDE;
+}
+
+void ViewFrustum::SetDistanceCullingEnabled(const bool p_Enabled) {
+    m_IsDistanceCullingEnabled = p_Enabled;
+}
+
+bool ViewFrustum::IsDistanceCullingEnabled() const {
+    return m_IsDistanceCullingEnabled;
+}
+
+void ViewFrustum::SetMaxDrawDistance(const float p_MaxDrawDistance) {
+    m_MaxDrawDistance = p_MaxDrawDistance;
+}
+
+float ViewFrustum::GetMaxDrawDistance() const {
+    return m_MaxDrawDistance;
 }
 
 ViewFrustum::ECheckInsideFlag ViewFrustum::CheckPointInsidePlanes(const SVector3& p_Point) const {

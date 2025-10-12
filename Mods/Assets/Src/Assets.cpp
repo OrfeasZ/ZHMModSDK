@@ -1,4 +1,6 @@
-#include "Editor.h"
+#include "Assets.h"
+
+#include <IconsMaterialDesign.h>
 
 #include "imgui_internal.h"
 
@@ -11,7 +13,17 @@
 
 #include <Util/StringUtils.h>
 
-void Editor::DrawAssets(bool p_HasFocus) {
+void Assets::Init() {
+    Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Assets::OnClearScene);
+}
+
+void Assets::OnDrawMenu() {
+    if (ImGui::Button(ICON_MD_TUNE " ASSETS MENU")) {
+        m_AssetsMenuActive = !m_AssetsMenuActive;
+    }
+}
+
+void Assets::OnDrawUI(bool p_HasFocus) {
     if (!p_HasFocus || !m_AssetsMenuActive) {
         return;
     }
@@ -20,22 +32,22 @@ void Editor::DrawAssets(bool p_HasFocus) {
     const auto s_Showing = ImGui::Begin("ASSETS", &m_AssetsMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing && p_HasFocus) {
+    if (s_Showing) {
         if (m_RepositoryProps.size() == 0) {
             LoadRepositoryProps();
         }
 
         ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
 
-        static char s_PropTitle_SubString[2048] {""};
-        static char s_PropAssemblyPath[2048] {""};
+        static char s_PropTitle[2048]{ "" };
+        static char s_PropAssemblyPath[2048]{ "" };
 
-        static int s_NumberOfPropsToSpawn_Repo = 1;
-        static int s_NumberOfPropsToSpawn_NonRepo = 1;
-        static int s_NumberOfPropsToSpawn_NPCs = 1;
+        static int s_RepositoryPropSpawnCount = 1;
+        static int s_NonRepositoryPropSpawnCount = 1;
+        static int s_ActorSpawnCount = 1;
 
         static int s_WorldInventoryButton = 1;
-        static char s_NpcName[2048] {};
+        static char s_ActorName[2048]{};
 
         ImGui::Text("Repository Props");
         ImGui::Text("");
@@ -43,7 +55,7 @@ void Editor::DrawAssets(bool p_HasFocus) {
         ImGui::SameLine();
 
         const bool s_IsInputTextEnterPressed = ImGui::InputText(
-            "##PropRepositoryID", s_PropTitle_SubString, sizeof(s_PropTitle_SubString),
+            "##PropRepositoryID", s_PropTitle, sizeof(s_PropTitle),
             ImGuiInputTextFlags_EnterReturnsTrue
         );
         const bool s_IsInputTextActive = ImGui::IsItemActive();
@@ -61,7 +73,7 @@ void Editor::DrawAssets(bool p_HasFocus) {
             ImGuiWindowFlags_ChildWindow
         )) {
             for (auto& [s_Id, s_Name] : m_RepositoryProps) {
-                if (!Util::StringUtils::FindSubstring(s_Name, s_PropTitle_SubString)) {
+                if (!Util::StringUtils::FindSubstring(s_Name, s_PropTitle)) {
                     continue;
                 }
 
@@ -69,9 +81,9 @@ void Editor::DrawAssets(bool p_HasFocus) {
 
                 if (ImGui::Selectable(s_ButtonId.c_str())) {
                     ImGui::ClearActiveID();
-                    strcpy_s(s_PropTitle_SubString, s_Name.c_str());
+                    strcpy_s(s_PropTitle, s_Name.c_str());
 
-                    for (size_t i = 0; i < s_NumberOfPropsToSpawn_Repo; ++i) {
+                    for (size_t i = 0; i < s_RepositoryPropSpawnCount; ++i) {
                         SpawnRepositoryProp(s_Id, s_WorldInventoryButton == 1);
                     }
                 }
@@ -97,7 +109,7 @@ void Editor::DrawAssets(bool p_HasFocus) {
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
-        ImGui::InputInt("##NumberOfPropsToSpawn_Repo)", &s_NumberOfPropsToSpawn_Repo);
+        ImGui::InputInt("##RepositoryPropSpawnCount", &s_RepositoryPropSpawnCount);
 
         ImGui::Separator();
         ImGui::Text("Non Repository Props");
@@ -105,11 +117,11 @@ void Editor::DrawAssets(bool p_HasFocus) {
         ImGui::Text("Prop Assembly Path");
         ImGui::SameLine();
 
-        ImGui::InputText("##Prop Assembly Path", s_PropAssemblyPath, sizeof(s_PropAssemblyPath));
+        ImGui::InputText("##PropAssemblyPath", s_PropAssemblyPath, sizeof(s_PropAssemblyPath));
         ImGui::SameLine();
 
         if (ImGui::Button("Spawn Prop")) {
-            for (size_t i = 0; i < s_NumberOfPropsToSpawn_Repo; ++i) {
+            for (size_t i = 0; i < s_NonRepositoryPropSpawnCount; ++i) {
                 SpawnNonRepositoryProp(s_PropAssemblyPath);
             }
         }
@@ -117,23 +129,23 @@ void Editor::DrawAssets(bool p_HasFocus) {
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
-        ImGui::InputInt("##NumberOfPropsToSpawn_NonRepo", &s_NumberOfPropsToSpawn_NonRepo);
+        ImGui::InputInt("##NonRepositoryPropSpawnCount", &s_NonRepositoryPropSpawnCount);
         ImGui::Separator();
 
-        ImGui::Text("NPCs");
+        ImGui::Text("Actors");
         ImGui::Text("");
-        ImGui::Text("NPC Name");
+        ImGui::Text("Actor Name");
         ImGui::SameLine();
 
-        ImGui::InputText("##NPCName", s_NpcName, sizeof(s_NpcName));
+        ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
 
-        static char outfitName_SubString[2048] {""};
+        static char s_OutfitName[2048]{ "" };
 
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
         const bool s_IsInputTextEnterPressed2 = ImGui::InputText(
-            "##OutfitName", outfitName_SubString, sizeof(outfitName_SubString), ImGuiInputTextFlags_EnterReturnsTrue
+            "##OutfitName", s_OutfitName, sizeof(s_OutfitName), ImGuiInputTextFlags_EnterReturnsTrue
         );
         const bool s_IsInputTextActive2 = ImGui::IsItemActive();
 
@@ -146,9 +158,9 @@ void Editor::DrawAssets(bool p_HasFocus) {
 
         static ZRepositoryID s_RepositoryId = ZRepositoryID("");
         static TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit = nullptr;
-        static uint8_t n_CurrentCharacterSetIndex = 0;
-        static std::string s_CurrentcharSetCharacterType = "HeroA";
-        static uint8_t n_CurrentOutfitVariationIndex = 0;
+        static uint8_t s_CurrentCharacterSetIndex = 0;
+        static std::string s_CurrentCharSetCharacterType = "HeroA";
+        static uint8_t s_CurrentOutfitVariationIndex = 0;
 
         if (ImGui::BeginPopup(
             "##popup2",
@@ -156,21 +168,21 @@ void Editor::DrawAssets(bool p_HasFocus) {
             ImGuiWindowFlags_ChildWindow
         )) {
             for (auto it = s_ContentKitManager->m_repositoryGlobalOutfitKits.begin(); it != s_ContentKitManager->
-                 m_repositoryGlobalOutfitKits.end(); ++it) {
+                m_repositoryGlobalOutfitKits.end(); ++it) {
                 TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit2 = &it->second;
-                const std::string outfitName = s_GlobalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
+                const std::string s_OutfitName2 = s_GlobalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
 
-                if (outfitName.empty()) {
+                if (s_OutfitName2.empty()) {
                     continue;
                 }
 
-                if (!Util::StringUtils::FindSubstring(outfitName, outfitName_SubString)) {
+                if (!Util::StringUtils::FindSubstring(s_OutfitName2, s_OutfitName)) {
                     continue;
                 }
 
-                if (ImGui::Selectable(outfitName.c_str())) {
+                if (ImGui::Selectable(s_OutfitName2.c_str())) {
                     ImGui::ClearActiveID();
-                    strcpy_s(outfitName_SubString, outfitName.c_str());
+                    strcpy_s(s_OutfitName, s_OutfitName2.c_str());
 
                     s_RepositoryId = it->first;
                     s_GlobalOutfitKit = s_GlobalOutfitKit2;
@@ -187,13 +199,13 @@ void Editor::DrawAssets(bool p_HasFocus) {
         ImGui::Text("Character Set Index");
         ImGui::SameLine();
 
-        if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(n_CurrentCharacterSetIndex).data())) {
+        if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(s_CurrentCharacterSetIndex).data())) {
             if (s_GlobalOutfitKit) {
                 for (size_t i = 0; i < s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i) {
-                    const bool s_IsSelected = n_CurrentCharacterSetIndex == i;
+                    const bool s_IsSelected = s_CurrentCharacterSetIndex == i;
 
-                    if (ImGui::Selectable(std::to_string(n_CurrentCharacterSetIndex).data(), s_IsSelected)) {
-                        n_CurrentCharacterSetIndex = i;
+                    if (ImGui::Selectable(std::to_string(s_CurrentCharacterSetIndex).data(), s_IsSelected)) {
+                        s_CurrentCharacterSetIndex = i;
                     }
                 }
             }
@@ -204,13 +216,13 @@ void Editor::DrawAssets(bool p_HasFocus) {
         ImGui::Text("CharSet Character Type");
         ImGui::SameLine();
 
-        if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentcharSetCharacterType.data())) {
+        if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
             if (s_GlobalOutfitKit) {
                 for (const auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
-                    const bool s_IsSelected = s_CurrentcharSetCharacterType == m_CharSetCharacterType;
+                    const bool s_IsSelected = s_CurrentCharSetCharacterType == m_CharSetCharacterType;
 
                     if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
-                        s_CurrentcharSetCharacterType = m_CharSetCharacterType;
+                        s_CurrentCharSetCharacterType = m_CharSetCharacterType;
                     }
                 }
             }
@@ -221,19 +233,20 @@ void Editor::DrawAssets(bool p_HasFocus) {
         ImGui::Text("Outfit Variation");
         ImGui::SameLine();
 
-        if (ImGui::BeginCombo("##OutfitVariation", std::to_string(n_CurrentOutfitVariationIndex).data())) {
-            if (s_GlobalOutfitKit) {
-                const uint8_t s_CurrentCharacterSetIndex2 = n_CurrentCharacterSetIndex;
-                const size_t s_VariationCount = s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets[
-                            s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->
-                        m_aVariations.
-                        size();
+        if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
+            if (s_GlobalOutfitKit)
+            {
+                const uint8_t s_CurrentCharacterSetIndex2 = s_CurrentCharacterSetIndex;
+                const TEntityRef<ZOutfitVariationCollection>& s_OutfitVariationCollection =
+                    s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex2];
+                const ZCharsetCharacterType* s_CharsetCharacterType = s_OutfitVariationCollection.m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef;
+                const size_t s_VariationCount = s_CharsetCharacterType->m_aVariations.size();
 
                 for (size_t i = 0; i < s_VariationCount; ++i) {
-                    const bool s_IsSelected = n_CurrentOutfitVariationIndex == i;
+                    const bool s_IsSelected = s_CurrentOutfitVariationIndex == i;
 
                     if (ImGui::Selectable(std::to_string(i).data(), s_IsSelected)) {
-                        n_CurrentOutfitVariationIndex = i;
+                        s_CurrentOutfitVariationIndex = i;
                     }
                 }
             }
@@ -244,17 +257,17 @@ void Editor::DrawAssets(bool p_HasFocus) {
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
-        ImGui::InputInt("##NumberOfPropsToSpawn_NPCs", &s_NumberOfPropsToSpawn_NPCs);
+        ImGui::InputInt("##ActorSpawnCount", &s_ActorSpawnCount);
 
-        if (ImGui::Button("Spawn NPC")) {
-            for (size_t i = 0; i < s_NumberOfPropsToSpawn_NPCs; ++i) {
-                SpawnNPC(
-                    s_NpcName,
+        if (ImGui::Button("Spawn Actor")) {
+            for (size_t i = 0; i < s_ActorSpawnCount; ++i) {
+                SpawnActor(
+                    s_ActorName,
                     s_RepositoryId,
                     s_GlobalOutfitKit,
-                    n_CurrentCharacterSetIndex,
-                    s_CurrentcharSetCharacterType,
-                    n_CurrentOutfitVariationIndex
+                    s_CurrentCharacterSetIndex,
+                    s_CurrentCharSetCharacterType,
+                    s_CurrentOutfitVariationIndex
                 );
             }
         }
@@ -265,7 +278,7 @@ void Editor::DrawAssets(bool p_HasFocus) {
     ImGui::PopFont();
 }
 
-void Editor::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld) {
+void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool p_AddToWorld) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
@@ -273,11 +286,10 @@ void Editor::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
         return;
     }
 
-    if (!addToWorld) {
-        const TArray<TEntityRef<ZCharacterSubcontroller>>* s_Controllers = &s_LocalHitman.m_pInterfaceRef->m_pCharacter.
-                m_pInterfaceRef->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
-        auto* s_Inventory = static_cast<ZCharacterSubcontrollerInventory*>(s_Controllers->operator[](6).
-            m_pInterfaceRef);
+    if (!p_AddToWorld) {
+        const auto s_Character = s_LocalHitman.m_pInterfaceRef->m_pCharacter.m_pInterfaceRef;
+        const auto s_Controllers = &s_Character->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
+        const auto s_Inventory = static_cast<ZCharacterSubcontrollerInventory*>((*s_Controllers)[6].m_pInterfaceRef);
 
         TArray<ZRepositoryID> s_ModifierIds;
         Functions::ZCharacterSubcontrollerInventory_AddDynamicItemToInventory->Call(
@@ -331,7 +343,6 @@ void Editor::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     }
 
     const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
-
     const auto s_ItemSpawner = s_NewEntity.QueryInterface<ZItemSpawner>();
 
     s_ItemSpawner->m_ePhysicsMode = ZItemSpawner::EPhysicsMode::EPM_KINEMATIC;
@@ -344,7 +355,7 @@ void Editor::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     Functions::ZItemSpawner_RequestContentLoad->Call(s_ItemSpawner);
 }
 
-void Editor::SpawnNonRepositoryProp(const std::string& s_PropAssemblyPath) {
+void Assets::SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath) {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
@@ -352,21 +363,21 @@ void Editor::SpawnNonRepositoryProp(const std::string& s_PropAssemblyPath) {
         return;
     }
 
-    const Hash::MD5Hash s_Hash = Hash::MD5(std::string_view(s_PropAssemblyPath));
+    const Hash::MD5Hash s_Hash = Hash::MD5(std::string_view(p_PropAssemblyPath));
 
     const uint32_t s_IdHigh = ((s_Hash.A >> 24) & 0x000000FF)
-            | ((s_Hash.A >> 8) & 0x0000FF00)
-            | ((s_Hash.A << 8) & 0x00FF0000);
+        | ((s_Hash.A >> 8) & 0x0000FF00)
+        | ((s_Hash.A << 8) & 0x00FF0000);
 
     const uint32_t s_IdLow = ((s_Hash.B >> 24) & 0x000000FF)
-            | ((s_Hash.B >> 8) & 0x0000FF00)
-            | ((s_Hash.B << 8) & 0x00FF0000)
-            | ((s_Hash.B << 24) & 0xFF000000);
+        | ((s_Hash.B >> 8) & 0x0000FF00)
+        | ((s_Hash.B << 8) & 0x00FF0000)
+        | ((s_Hash.B << 24) & 0xFF000000);
 
-    const auto s_RuntimeResourceId = ZRuntimeResourceID(s_IdHigh, s_IdLow);
+    const auto s_RuntimeResourceID = ZRuntimeResourceID(s_IdHigh, s_IdLow);
 
     TResourcePtr<ZTemplateEntityFactory> s_Resource;
-    Globals::ResourceManager->GetResourcePtr(s_Resource, s_RuntimeResourceId, 0);
+    Globals::ResourceManager->GetResourcePtr(s_Resource, s_RuntimeResourceID, 0);
 
     if (!s_Resource) {
         Logger::Debug("Resource is not loaded.");
@@ -400,14 +411,14 @@ void Editor::SpawnNonRepositoryProp(const std::string& s_PropAssemblyPath) {
     s_PropSpatialEntity->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
 }
 
-auto Editor::SpawnNPC(
-    const std::string& p_NpcName,
-    const ZRepositoryID& repositoryID,
+void Assets::SpawnActor(
+    const std::string& p_ActorName,
+    const ZRepositoryID& p_RepositoryID,
     const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit,
-    uint8_t n_CurrentCharacterSetIndex,
-    const std::string& s_CurrentcharSetCharacterType,
-    uint8_t n_CurrentOutfitVariationIndex
-) -> void {
+    uint8_t p_CharacterSetIndex,
+    const std::string& p_CharSetCharacterType,
+    uint8_t p_OutfitVariationIndex
+) {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
@@ -445,16 +456,16 @@ auto Editor::SpawnNPC(
         return;
     }
 
-    ZActor* actor = s_NewEntity.QueryInterface<ZActor>();
+    ZActor* s_Actor = s_NewEntity.QueryInterface<ZActor>();
 
-    actor->m_sActorName = p_NpcName;
-    actor->m_bStartEnabled = true;
-    actor->m_nOutfitCharset = n_CurrentCharacterSetIndex;
-    actor->m_nOutfitVariation = n_CurrentOutfitVariationIndex;
-    actor->m_OutfitRepositoryID = repositoryID;
-    actor->m_eRequiredVoiceVariation = EActorVoiceVariation::eAVV_Undefined;
+    s_Actor->m_sActorName = p_ActorName;
+    s_Actor->m_bStartEnabled = true;
+    s_Actor->m_nOutfitCharset = p_CharacterSetIndex;
+    s_Actor->m_nOutfitVariation = p_OutfitVariationIndex;
+    s_Actor->m_OutfitRepositoryID = p_RepositoryID;
+    s_Actor->m_eRequiredVoiceVariation = EActorVoiceVariation::eAVV_Undefined;
 
-    actor->Activate(0);
+    s_Actor->Activate(0);
 
     ZSpatialEntity* s_ActorSpatialEntity = s_NewEntity.QueryInterface<ZSpatialEntity>();
     ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
@@ -463,13 +474,76 @@ auto Editor::SpawnNPC(
 
     if (p_GlobalOutfitKit) {
         EquipOutfit(
-            *p_GlobalOutfitKit, n_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType,
-            n_CurrentOutfitVariationIndex, actor
+            *p_GlobalOutfitKit,
+            p_CharacterSetIndex,
+            p_CharSetCharacterType,
+            p_OutfitVariationIndex,
+            s_Actor
         );
     }
 }
 
-void Editor::LoadRepositoryProps() {
+void Assets::EquipOutfit(
+    const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
+    uint8_t p_CharSetIndex,
+    const std::string& p_CharSetCharacterType,
+    uint8_t p_OutfitVariationIndex,
+    ZActor* p_Actor
+) {
+    if (!p_Actor) {
+        Logger::Error("Could not equip outfit - no actor selected");
+        return;
+    }
+
+    std::vector<ZRuntimeResourceID> s_ActorOutfitVariations;
+
+    if (p_CharSetCharacterType != "HeroA") {
+        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
+            p_CharSetIndex].m_pInterfaceRef;
+
+        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType2 = &s_OutfitVariationCollection->m_aCharacters[
+            0];
+        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = nullptr;
+
+        if (p_CharSetCharacterType == "Nude") {
+            s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[1];
+        }
+        else if (p_CharSetCharacterType == "HeroA") {
+            s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[2];
+        }
+
+        for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
+            s_ActorOutfitVariations.push_back(
+                s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit
+            );
+        }
+
+        if (s_CharsetCharacterType) {
+            for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
+                s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
+                    s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit;
+            }
+        }
+    }
+
+    Functions::ZActor_SetOutfit->Call(
+        p_Actor, p_GlobalOutfitKit, p_CharSetIndex, p_OutfitVariationIndex, false
+    );
+
+    if (p_CharSetCharacterType != "Actor") {
+        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
+            p_CharSetIndex].m_pInterfaceRef;
+        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[
+            0];
+
+        for (size_t i = 0; i < s_ActorOutfitVariations.size(); ++i) {
+            s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
+                s_ActorOutfitVariations[i];
+        }
+    }
+}
+
+void Assets::LoadRepositoryProps() {
     m_RepositoryProps.clear();
 
     if (m_RepositoryResource.m_nResourceIndex.val == -1) {
@@ -481,36 +555,32 @@ void Editor::LoadRepositoryProps() {
     if (m_RepositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID) {
         const auto s_RepositoryData = static_cast<THashMap<
             ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
-            GetResourceData());
+                GetResourceData());
 
-        for (auto it = s_RepositoryData->begin(); it != s_RepositoryData->end(); ++it) {
-            const ZDynamicObject* s_DynamicObject = &it->second;
-            const TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject->As<TArray<
+        for (const auto& [s_RepositoryID, s_DynamicObject] : *s_RepositoryData) {
+            const TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
                 SDynamicObjectKeyValuePair>>();
 
             std::string s_Id, s_Title, s_CommonName, s_Name, s_FinalName;
             bool s_IsItem = false;
 
-            for (size_t i = 0; i < s_Entries->size(); ++i) {
-                std::string s_Key = s_Entries->operator[](i).sKey.c_str();
+            for (const auto& s_Entry : *s_Entries) {
+                const std::string s_Key = std::string(s_Entry.sKey.c_str(), s_Entry.sKey.size());
 
                 if (s_Key == "ID_") {
-                    s_Id = ConvertDynamicObjectValueToString(s_Entries->at(i).value);
+                    s_Id = ConvertDynamicObjectValueToString(s_Entry.value);
                 }
                 else if (s_Key == "Title") {
-                    s_Title = ConvertDynamicObjectValueToString(s_Entries->at(i).value);
+                    s_Title = ConvertDynamicObjectValueToString(s_Entry.value);
                 }
                 else if (s_Key == "CommonName") {
-                    s_CommonName = ConvertDynamicObjectValueToString(s_Entries->at(i).value);
+                    s_CommonName = ConvertDynamicObjectValueToString(s_Entry.value);
                 }
                 else if (s_Key == "Name") {
-                    s_Name = ConvertDynamicObjectValueToString(s_Entries->at(i).value);
+                    s_Name = ConvertDynamicObjectValueToString(s_Entry.value);
                 }
                 else if (!s_IsItem) {
-                    s_IsItem = s_Key == "ItemType" ||
-                            s_Key == "IsHitmanSuit" ||
-                            s_Key == "IsWeapon" ||
-                            s_Key == "Items";
+                    s_IsItem = s_Key == "ItemType";
                 }
             }
 
@@ -532,11 +602,11 @@ void Editor::LoadRepositoryProps() {
             }
 
             const auto s_RepoId = ZRepositoryID(s_Id);
+
             m_RepositoryProps.push_back(std::make_pair(s_RepoId, s_FinalName));
         }
     }
 
-    // Sort props based on lower-case name.
     std::ranges::sort(
         m_RepositoryProps, [](const auto& a, const auto& b) {
             auto [_1, s_LowerA] = a;
@@ -550,7 +620,7 @@ void Editor::LoadRepositoryProps() {
     );
 }
 
-std::string Editor::ConvertDynamicObjectValueToString(const ZDynamicObject& p_DynamicObject) {
+std::string Assets::ConvertDynamicObjectValueToString(const ZDynamicObject& p_DynamicObject) {
     std::string s_Result;
     const IType* s_Type = p_DynamicObject.GetTypeID()->typeInfo();
 
@@ -577,3 +647,12 @@ std::string Editor::ConvertDynamicObjectValueToString(const ZDynamicObject& p_Dy
 
     return s_Result;
 }
+
+DEFINE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+    m_RepositoryResource = {};
+    m_RepositoryProps.clear();
+
+    return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_ZHM_PLUGIN(Assets);

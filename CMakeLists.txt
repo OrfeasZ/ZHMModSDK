@@ -36,21 +36,22 @@ add_subdirectory(DirectInputProxy)
 
 # Mods.
 set(MODS
-        WakingUpNpcs
-        NoPause
-        SkipIntro
-        MaxPatchLevel
-        DebugMod
-        AdvancedRating
-        FreeCam
-        DiscordRichPresence
-        Editor
-        Clumsy
-        Noclip
-        #Hitmen
-        DebugCheckKeyEntityEnabler
-        OnlineTools
-        Player
+	WakingUpNpcs
+	NoPause
+	SkipIntro
+	MaxPatchLevel
+	DebugMod
+	AdvancedRating
+	FreeCam
+	DiscordRichPresence
+	Editor
+	Clumsy
+	Noclip
+	#Hitmen
+	DebugCheckKeyEntityEnabler
+	OnlineTools
+    Player
+    Assets
 )
 
 foreach (MOD IN LISTS MODS)

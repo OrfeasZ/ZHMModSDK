@@ -44,6 +44,7 @@ class ZHM5GridManager;
 class ZPathfinder;
 class ZInputDeviceManager;
 class ZPackageManagerBase;
+class ZUIText;
 
 namespace bfx {
     class SystemInstance;
@@ -94,4 +95,5 @@ public:
     static ZObjectPool* ZVariantPool1;
     static ZObjectPool* ZVariantPool2;
     static ZPackageManagerBase** PackageManager;
+    static ZUIText* UIText;
 };

@@ -5,9 +5,13 @@
 #include "ZEntity.h"
 #include "ZPhysics.h"
 
-class ZSpatialEntity;
 
-struct ZRayQueryInput {
+class ZSpatialEntity;
+class ZRenderMaterialInstance;
+class ZRenderPrimitiveResource;
+
+class ZRayQueryInput {
+public:
     float4 m_vFrom;
     float4 m_vTo;
     uint32 m_nRayFilter;
@@ -20,16 +24,34 @@ struct ZRayQueryInput {
 
 static_assert(sizeof(ZRayQueryInput) == 0x60);
 
-struct ZRayQueryOutput {
+struct SBoneCollision {
+    uint8 m_nBoneId;
+    float m_nT;
+};
+
+class ZRayQueryOutputBase {
+public:
     float4 m_vPosition;
-    float4 m_vNormal; // 0x10
-    PAD(0x20); // 0x20
-    ZEntityRef m_BlockingEntity; // 0x40
-    PAD(0x58); // 0x48
+    float4 m_vNormal;
+    float32 m_nT;
+    TResourcePtr<ZRenderMaterialInstance> m_pBlockingMaterial;
+    uint8 m_nIntersectedBoneMeshId;
+    bool m_bHasHit;
+};
+
+class ZRayQueryOutput : public ZRayQueryOutputBase {
+public:
+    ZEntityRef m_BlockingEntity;
+    ZPhysicsObjectRef m_pBlockingPhysicsObject;
+    TEntityRef<ZSpatialEntity> m_pBlockingSpatialEntity;
+    TResourcePtr<ZRenderPrimitiveResource> m_pBlockingPrimitive;
+    uint32 m_nHitCollisionLayer;
+    float4 m_vDecalPosition;
+    float4 m_vDecalNormal;
+    TArray<SBoneCollision> m_aAllIntersectedBones;
 };
 
 static_assert(sizeof(ZRayQueryOutput) == 0xA0);
-static_assert(offsetof(ZRayQueryOutput, m_BlockingEntity) == 0x40);
 
 class ZCollisionManager : public IComponentInterface {
 public:
@@ -58,7 +80,7 @@ public:
     virtual void ZCollisionManager_unk27() = 0;
     virtual void ZCollisionManager_unk28() = 0;
     virtual void ZCollisionManager_unk29() = 0;
-    virtual void ZCollisionManager_unk30() = 0;
+    virtual uint32 GetCollisionFilter(uint16 iCollisionLayer) = 0;
     virtual void ZCollisionManager_unk31() = 0;
     virtual void ZCollisionManager_unk32() = 0;
     virtual void ZCollisionManager_unk33() = 0;

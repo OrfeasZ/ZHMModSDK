@@ -225,14 +225,6 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
             s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
 
-            if (!p_Renderer->IsInsideViewFrustum(
-                SVector3(s_Min.x, s_Min.y, s_Min.z),
-                SVector3(s_Max.x, s_Max.y, s_Max.z),
-                s_ActorTransform
-            )) {
-                continue;
-            }
-
             if (m_RenderActorBoxes) {
                 p_Renderer->DrawOBB3D(
                     SVector3(s_Min.x, s_Min.y, s_Min.z),
@@ -387,10 +379,6 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
         for (size_t i = 0; i < s_WaypointCount; ++i) {
             float4 s_WorldPosition = s_ReasoningGrid->m_WaypointList[i].vPos;
 
-            if (!p_Renderer->IsInsideViewFrustum(SVector3(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z))) {
-                continue;
-            }
-
             s_WorldPosition.z += 0.5f;
             s_WorldMatrix.Trans = s_WorldPosition;
 
@@ -442,8 +430,6 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
 
         std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
-        const float s_MaxDrawDistance = 50.0f;
-
         static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
         static const float s_Scale = 0.2f;
 
@@ -452,20 +438,6 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
 
             const DirectX::XMVECTOR s_WorldPosition2 = DirectX::XMVectorSet(
                 s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
-
-            const SVector3 s_CameraToWaypoint(
-                s_WorldPosition.x - s_WorldMatrix.Trans.x,
-                s_WorldPosition.y - s_WorldMatrix.Trans.y,
-                s_WorldPosition.z - s_WorldMatrix.Trans.z
-            );
-
-            if (SVector3::DotProduct(s_CameraToWaypoint, s_CameraToWaypoint) > s_MaxDrawDistance * s_MaxDrawDistance) {
-                continue;
-            }
-
-            if (!p_Renderer->IsInsideViewFrustum(s_WorldPosition2)) {
-                continue;
-            }
 
             s_WorldPosition.z += 2.f;
             s_WorldMatrix.Trans = float4(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
@@ -495,16 +467,10 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 0.29804f);
         const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
         const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
-        const SVector3 s_MinBound = SVector3(
-            -s_HalfSize.x,
-            -s_HalfSize.y,
-            -s_HalfSize.z);
-        const SVector3 s_MaxBound = SVector3(
-            s_HalfSize.x,
-            s_HalfSize.y,
-            s_HalfSize.z);
+        const SVector3 s_MinBound = -s_HalfSize;
+        const SVector3 s_MaxBound = s_HalfSize;
 
-        p_Renderer->DrawBoundingQuads(s_MinBound, s_MaxBound, s_Transform, s_Color);
+        p_Renderer->DrawBoundingQuads3D(s_MinBound, s_MaxBound, s_Transform, s_Color);
     }
 
     for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {

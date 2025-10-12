@@ -3,7 +3,7 @@
 #include "Functions.h"
 
 STypeID* ZObjectRef::GetVoidType() {
-    static STypeID* s_VoidType = (*Globals::TypeRegistry)->m_types.find("void")->second;
+    static STypeID* s_VoidType = (*Globals::TypeRegistry)->GetTypeID("void");
     return s_VoidType;
 }
 

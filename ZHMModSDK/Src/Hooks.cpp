@@ -394,3 +394,10 @@ PATTERN_HOOK(
     ZPFObstacleEntity_UpdateObstacle,
     void(ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate)
 );
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x00\x48\x8D\x59\x28",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx?xxxx",
+    ZUIText_TryGetTextFromNameHash,
+    bool(ZUIText* th, int32 nNameHash, ZString& sResult, int& outMarkupResult)
+);

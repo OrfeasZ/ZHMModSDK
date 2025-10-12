@@ -43,6 +43,7 @@ class ZTemplateBlueprintInstaller;
 class ZResourcePending;
 class ZEntityType;
 class ZEntityImpl;
+class ZUIText;
 
 class ZHMSDK_API Functions {
 public:
@@ -71,7 +72,7 @@ public:
         const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId
     )>* ZEntityManager_NewEntity;
 
-    static EngineFunction<void(ZSpatialEntity* th)>* ZSpatialEntity_UnknownTransformUpdate;
+    static EngineFunction<void(const ZSpatialEntity* th)>* ZSpatialEntity_UpdateCachedWorldMat;
 
     static EngineFunction<void(
         ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs
@@ -154,4 +155,6 @@ public:
     static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
 
     static EngineFunction<ZString::ZImpl*(const char* buf, size_t size)>* ZStringCollection_Allocate;
+
+    static EngineFunction<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
 };

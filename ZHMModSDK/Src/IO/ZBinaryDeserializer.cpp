@@ -190,5 +190,5 @@ void ZBinaryDeserializer::Align(ZBinaryReader& binaryReader, const size_t curren
 }
 
 STypeID* ZBinaryDeserializer::GetTypeIDFromTypeName(const std::string& typeName) {
-    return (*Globals::TypeRegistry)->m_types.find(typeName)->second;
+    return (*Globals::TypeRegistry)->GetTypeID(typeName);
 }

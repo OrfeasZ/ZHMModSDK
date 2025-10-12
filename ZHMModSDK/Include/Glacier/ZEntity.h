@@ -311,13 +311,29 @@ public:
         if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
             return nullptr;
 
-        const auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+        const auto s_TypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
 
-        if (it == (*Globals::TypeRegistry)->m_types.end())
+        if (!s_TypeID)
             return nullptr;
 
         for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == it->second) {
+            if (s_Interface.m_pTypeId == s_TypeID) {
+                return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Interface.m_nOffset);
+            }
+        }
+
+        return nullptr;
+    }
+
+    template <class T>
+    T* QueryInterface(STypeID* p_TypeID) const {
+        const auto s_Entity = GetEntity();
+
+        if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
+            return nullptr;
+
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
+            if (s_Interface.m_pTypeId == p_TypeID) {
                 return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Interface.m_nOffset);
             }
         }
@@ -332,13 +348,13 @@ public:
         if (!s_Entity || !*Globals::TypeRegistry)
             return false;
 
-        const auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+        const auto s_TypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
 
-        if (it == (*Globals::TypeRegistry)->m_types.end())
+        if (!s_TypeID)
             return false;
 
         for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == it->second) {
+            if (s_Interface.m_pTypeId == s_TypeID) {
                 return true;
             }
         }
@@ -352,13 +368,13 @@ public:
         if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
             return false;
 
-        const auto it = (*Globals::TypeRegistry)->m_types.find(p_TypeName);
+        const auto s_TypeID = (*Globals::TypeRegistry)->GetTypeID(p_TypeName);
 
-        if (it == (*Globals::TypeRegistry)->m_types.end())
+        if (!s_TypeID)
             return false;
 
         for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == it->second) {
+            if (s_Interface.m_pTypeId == s_TypeID) {
                 return true;
             }
         }

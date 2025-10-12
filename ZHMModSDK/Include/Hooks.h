@@ -202,4 +202,6 @@ public:
 
     static Hook<void(ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate)>*
     ZPFObstacleEntity_UpdateObstacle;
+
+    static Hook<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
 };

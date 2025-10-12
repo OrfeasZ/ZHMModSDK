@@ -14,6 +14,12 @@ public:
     bool ContainsAABB(const AABB& p_AABB) const;
     bool ContainsOBB(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const;
 
+    void SetDistanceCullingEnabled(const bool p_Enabled);
+    bool IsDistanceCullingEnabled() const;
+
+    void SetMaxDrawDistance(const float p_MaxDrawDistance);
+    float GetMaxDrawDistance() const;
+
 private:
     enum class ECheckInsideFlag {
         CHECK_INSIDE_FULLY_OUTSIDE,
@@ -35,10 +41,12 @@ private:
         const SMatrix& p_ObjectInternal, const float4& p_LocalCenter, const float4& p_LocalSize
     ) const;
 
+    bool m_IsDistanceCullingEnabled = false;
     float m_MaxDrawDistance = 50.f;
     SMatrix m_ClipPlaneProjectionMatrix;
     float4 m_Planes[6];
     float m_FovYDeg = 0.f;
     float m_AspectWByH = 0.f;
     float m_NearZ = 0.f;
+    float m_CurrentFarZ = -1.f;
 };

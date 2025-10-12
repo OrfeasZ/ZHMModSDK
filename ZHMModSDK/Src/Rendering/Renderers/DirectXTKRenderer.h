@@ -50,7 +50,8 @@ namespace Rendering::Renderers {
             SVector4 m_Color;
             float m_Rotation = 0.f;
             float m_Scale = 1.f;
-            TextAlignment m_Alignment = TextAlignment::Center;
+            TextAlignment m_HorizontalAlignment = TextAlignment::Center;
+            TextAlignment m_VerticalAlignment = TextAlignment::Center;
         };
 
     public:
@@ -82,27 +83,29 @@ namespace Rendering::Renderers {
         );
         bool CreateFontDistanceFieldTexture();
 
-        void DrawText2D(const Text2D& text2D);
+        void DrawText2D(const Text2D& p_Text2D);
 
     public:
+        bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
+        bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
+
         void DrawLine3D(
             const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor
         ) override;
-
-        void DrawText2D(
-            const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation = 0.f,
-            float p_Scale = 1.f, TextAlignment p_Alignment = TextAlignment::Center
-        ) override;
-
-        bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
-        bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
+        
         void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) override;
+        void DrawBox3D(
+            const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
+        ) override;
+        void DrawBoxWire3D(
+            const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
+        ) override;
 
         void DrawOBB3D(
             const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color
         ) override;
 
-        void DrawBoundingQuads(
+        void DrawBoundingQuads3D(
             const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color
         ) override;
 
@@ -111,6 +114,7 @@ namespace Rendering::Renderers {
             const SVector3& p_V2, const SVector4& p_Color2,
             const SVector3& p_V3, const SVector4& p_Color3
         ) override;
+
         void DrawTriangle3D(
             const SVector3& p_V1, const SVector4& p_Color1, const SVector2& p_TextureCoordinates1,
             const SVector3& p_V2, const SVector4& p_Color2, const SVector2& p_TextureCoordinates2,
@@ -122,15 +126,22 @@ namespace Rendering::Renderers {
             const SVector3& p_V3, const SVector4& p_Color3, const SVector3& p_V4, const SVector4& p_Color4
         ) override;
 
+        void DrawText2D(
+            const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation = 0.f,
+            float p_Scale = 1.f, TextAlignment p_HorizontalAlignment = TextAlignment::Center,
+            TextAlignment p_VerticalAlignment = TextAlignment::Top
+        ) override;
+
         void DrawText3D(
-            const std::string& p_Text, const SMatrix& p_World,
+            const std::string& p_Text, const SMatrix& p_Transform,
             const SVector4& p_Color, float p_Scale = 1.f,
             TextAlignment p_HorizontalAlignment = TextAlignment::Left,
             TextAlignment p_VerticalAlignment = TextAlignment::Top,
             const bool p_IsCameraTransform = true
         );
+
         void DrawText3D(
-            const char* p_Text, const SMatrix& p_World,
+            const char* p_Text, const SMatrix& p_Transform,
             const SVector4& p_Color, float p_Scale = 1.f,
             TextAlignment p_HorizontalAlignment = TextAlignment::Left,
             TextAlignment p_VerticalAlignment = TextAlignment::Top,
@@ -142,21 +153,31 @@ namespace Rendering::Renderers {
             const SVector4& p_VertexColor
         ) override;
 
-        virtual void DrawMesh(
+        void DrawMesh(
+            ZRenderPrimitiveResource* s_pRenderPrimitiveResource,
             ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount,
             ZRenderIndexBuffer* p_IndexBuffer,
-            const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias,
+            const SMatrix& p_Transform, const float4& p_PositionScale, const float4& p_PositionBias,
             const float4& p_TextureScaleBias,
             const SVector4& p_MaterialColor
         ) override;
 
-        bool IsInsideViewFrustum(const SVector3& p_Point) const override;
-        bool IsInsideViewFrustum(
+        bool IsPointInsideViewFrustum(const SVector3& p_Point) const override;
+        bool IsAABBInsideViewFrustum(
             const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform
         ) const override;
-        bool IsInsideViewFrustum(
-            const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize
+        bool IsOBBInsideViewFrustum(
+            const float4& p_Center, const float4& p_HalfSize, const SMatrix& p_Transform
         ) const override;
+
+        void SetFrustumCullingEnabled(const bool p_Enabled) override;
+        bool IsFrustumCullingEnabled() const override;
+
+        void SetDistanceCullingEnabled(const bool p_Enabled) override;
+        bool IsDistanceCullingEnabled() const override;
+
+        void SetMaxDrawDistance(const float p_MaxDrawDistance) override;
+        float GetMaxDrawDistance() const override;
 
         static AABB TransformAABB(const DirectX::SimpleMath::Matrix& p_Transform, const AABB& p_AABB);
 
@@ -216,5 +237,6 @@ namespace Rendering::Renderers {
         ScopedD3DRef<ID3D12PipelineState> m_PipelineState;
 
         ViewFrustum m_ViewFrustum;
+        bool m_IsFrustumCullingEnabled = true;
     };
 }

@@ -106,10 +106,10 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         m_PlayerPosition.Trans += s_CameraTrans.Up * s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
     if (Functions::ZInputAction_Digital->Call(&m_LeftAction, -1))
-        m_PlayerPosition.Trans += s_CameraTrans.Left * -s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
+        m_PlayerPosition.Trans += s_CameraTrans.Right * -s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
     if (Functions::ZInputAction_Digital->Call(&m_RightAction, -1))
-        m_PlayerPosition.Trans += s_CameraTrans.Left * s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
+        m_PlayerPosition.Trans += s_CameraTrans.Right * s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
     s_HitmanSpatial->SetWorldMatrix(m_PlayerPosition);
 }

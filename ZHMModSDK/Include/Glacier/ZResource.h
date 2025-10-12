@@ -153,19 +153,9 @@ static_assert(sizeof(ZResourcePtr) == 8);
 template <typename T>
 class TResourcePtr : public ZResourcePtr {
 public:
-    TResourcePtr() {
-        static_assert(
-            std::is_base_of_v<IComponentInterface, T>,
-            "TResourcePtr type must implement IComponentInterface."
-        );
-    }
+    TResourcePtr() = default;
 
     explicit TResourcePtr(const ZResourceIndex p_Index) {
-        static_assert(
-            std::is_base_of_v<IComponentInterface, T>,
-            "TResourcePtr type must implement IComponentInterface."
-        );
-
         m_nResourceIndex = p_Index;
     }
 

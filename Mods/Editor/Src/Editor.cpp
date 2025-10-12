@@ -174,16 +174,16 @@ void Editor::OnDrawMenu() {
         }
     }*/
 
-    if (ImGui::Button(ICON_MD_TUNE " ASSETS MENU")) {
-        m_AssetsMenuActive = !m_AssetsMenuActive;
-    }
-
     if (ImGui::Button(ICON_MD_TUNE " ITEMS MENU")) {
         m_ItemsMenuActive = !m_ItemsMenuActive;
     }
 
     if (ImGui::Button(ICON_MD_PEOPLE " ACTORS MENU")) {
         m_ActorsMenuActive = !m_ActorsMenuActive;
+    }
+
+    if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS MENU")) {
+        m_DebugChannelsMenuActive = !m_DebugChannelsMenuActive;
     }
 }
 
@@ -242,6 +242,10 @@ void Editor::OnDraw3D(IRenderer* p_Renderer) {
     //p_Renderer->DrawLine3D({ -27.71298, -24.866821, 0.4925564 }, { -26.691515, -38.064953, 0.4925564 }, s_LineColor, s_LineColor);
     //p_Renderer->DrawLine3D({ -26.691515, -38.064953, 0.4925564 }, { -41.43283, -33.25945, 0.49255627 }, s_LineColor, s_LineColor);
     //p_Renderer->DrawLine3D({ -41.43283, -33.25945, 0.49255627 }, { -35.352013, -23.58427, 0.4925564 }, s_LineColor, s_LineColor);
+}
+
+void Editor::OnDepthDraw3D(IRenderer* p_Renderer) {
+    DrawDebugEntities(p_Renderer);
 }
 
 void Editor::OnEngineInitialized() {
@@ -730,9 +734,9 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracer();
 
-        DrawAssets(p_HasFocus);
         DrawItems(p_HasFocus);
         DrawActors(p_HasFocus);
+        DrawDebugChannels(p_HasFocus);
         DrawLibrary();
     }
 
@@ -851,6 +855,10 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     SVector3 s_Direction;
     SDK()->ScreenToWorld(p_Pos, s_World, s_Direction);
 
+    if (m_DrawGizmos && RayCastGizmos(s_World, s_Direction)) {
+        return;
+    }
+
     float4 s_DirectionVec(s_Direction.x, s_Direction.y, s_Direction.z, 1.f);
 
     float4 s_From = float4(s_World.x, s_World.y, s_World.z, 1.f);
@@ -889,15 +897,15 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     m_Normal = s_RayOutput.m_vNormal;
 
     if (p_FirstClick) {
-        if (s_RayOutput.m_BlockingEntity) {
-            const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
+        if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
+            const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaces;
             Logger::Trace(
                 "Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
-                s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId
+                s_RayOutput.m_pBlockingSpatialEntity.m_ref->GetType()->m_nEntityId
             );
 
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-            ZEntityRef s_SelectedEntity = s_RayOutput.m_BlockingEntity;
+            ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_ref;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
@@ -1196,16 +1204,17 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
 
     m_Server.OnSceneClearing(forReload);
 
-    m_RepositoryResource = {};
-    m_RepositoryProps.clear();
-
     if (m_TrackCamActive) {
         DisableTrackCam();
 
         m_TrackCamActive = false;
     }
 
-    s_CurrentlySelectedActor = nullptr;
+    m_CurrentlySelectedActor = nullptr;
+
+    m_SelectedGizmoEntity = nullptr;
+
+    m_DebugEntities.clear();
 
     return HookResult<void>(HookAction::Continue());
 }
