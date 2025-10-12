@@ -53,7 +53,6 @@ target_link_libraries(Editor PRIVATE
         imguizmo::imguizmo
         unofficial::imgui-node-editor::imgui-node-editor
         ws2_32
-        cista
         ResourceLib_HM3
         $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>
         ZLIB::ZLIB
