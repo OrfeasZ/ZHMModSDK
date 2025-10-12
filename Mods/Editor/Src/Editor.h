@@ -394,7 +394,6 @@ private:
     bool m_DrawAllGizmos = false;
     bool m_DrawShapes = false;
     GizmoEntity* m_SelectedGizmoEntity = nullptr;
-    std::unordered_map<ZCoverPlane*, uint64> planes;
 
     bool m_DrawCoverInvalidOnNPCErrors = true;
     bool m_DrawHeroGuidesSolid = false;
