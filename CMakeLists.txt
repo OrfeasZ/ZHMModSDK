@@ -49,6 +49,7 @@ set(MODS
 	DebugCheckKeyEntityEnabler
 	OnlineTools
     Player
+    Assets
 )
 
 foreach(MOD IN LISTS MODS)
