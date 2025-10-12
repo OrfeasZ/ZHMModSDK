@@ -1087,8 +1087,8 @@ void Editor::AddGizmoEntity(
     const ZResourcePtr s_ResourcePtr = p_EntityRef.GetProperty<ZResourcePtr>(p_PropertyName).Get();
     const ZRuntimeResourceID s_RuntimeResourceID;
 
-    if (s_ResourcePtr.m_nResourceIndex != -1) {
-        const ZRuntimeResourceID s_RuntimeResourceID = (*Globals::ResourceContainer)->m_resources[s_ResourcePtr.m_nResourceIndex].rid;
+    if (s_ResourcePtr.m_nResourceIndex.val != -1) {
+        const ZRuntimeResourceID s_RuntimeResourceID = (*Globals::ResourceContainer)->m_resources[s_ResourcePtr.m_nResourceIndex.val].rid;
 
         auto s_GizmoEntity = std::make_unique<GizmoEntity>();
 
