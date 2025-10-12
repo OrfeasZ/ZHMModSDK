@@ -495,16 +495,10 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 0.29804f);
         const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
         const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
-        const SVector3 s_MinBound = SVector3(
-            -s_HalfSize.x,
-            -s_HalfSize.y,
-            -s_HalfSize.z);
-        const SVector3 s_MaxBound = SVector3(
-            s_HalfSize.x,
-            s_HalfSize.y,
-            s_HalfSize.z);
+        const SVector3 s_MinBound = -s_HalfSize;
+        const SVector3 s_MaxBound = s_HalfSize;
 
-        p_Renderer->DrawBoundingQuads(s_MinBound, s_MaxBound, s_Transform, s_Color);
+        p_Renderer->DrawBoundingQuads3D(s_MinBound, s_MaxBound, s_Transform, s_Color);
     }
 
     for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
