@@ -100,11 +100,17 @@ private:
 
     void DrawEntityProperties();
 
+    void DrawLibrary();
+
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
     void FilterEntityTree();
     bool FilterEntityTree(EntityTreeNode* p_Node);
     void UpdateEntities();
+    void UpdateEntityTree(
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+        const std::vector<ZEntityRef>& p_Entities
+    );
 
     void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void OnEntityTransformChange(
@@ -362,9 +368,10 @@ private:
     sockaddr_in m_QneAddress = {};
 
     std::shared_mutex m_CachedEntityTreeMutex;
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeMap;
     std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
 
-    std::unordered_map<uint64_t, ZEntityRef> m_SpawnedEntities;
+    std::vector<ZEntityRef> m_SpawnedEntities;
     std::unordered_map<ZEntityRef, std::string> m_EntityNames;
 
     EditorServer m_Server;

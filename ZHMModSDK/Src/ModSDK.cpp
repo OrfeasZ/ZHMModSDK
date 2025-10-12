@@ -46,6 +46,8 @@
 #include <semver.hpp>
 #include <limits.h>
 
+#include <sentry.h>
+
 #include "Glacier/ZPlayerRegistry.h"
 #include "Glacier/ZServerProxyRoute.h"
 
@@ -87,12 +89,12 @@ void ModSDK::DestroyInstance() {
 
     // We request to pause the game as that increases our chances of succeeding at unloading
     // all our hooks, since less of them will be called.
-    if (Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef)
-        Hooks::ZGameUIManagerEntity_TryOpenMenu->Call(
-            Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef,
-            EGameUIMenu::eUIMenu_PauseMenu,
-            true
-        );
+    //if (Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef)
+    //    Hooks::ZGameUIManagerEntity_TryOpenMenu->Call(
+    //        Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef,
+    //        EGameUIMenu::eUIMenu_PauseMenu,
+    //        true
+    //    );
 
     // We do this in a different thread so the game has time to pause.
     auto* s_ExitThread = CreateThread(
@@ -154,6 +156,10 @@ ModSDK::~ModSDK() {
 
     m_DebugConsole.reset();
     #endif
+
+    if (m_EnableSentry) {
+        sentry_close();
+    }
 }
 
 bool ModSDK::PatchCode(
@@ -277,6 +283,10 @@ void ModSDK::LoadConfiguration() {
 
         if (s_Mod.second.has("force_load")) {
             m_ForceLoad = true;
+        }
+
+        if (s_Mod.second.has("crash_reporting")) {
+            m_EnableSentry = true;
         }
     }
 }
@@ -676,7 +686,7 @@ bool ModSDK::Startup() {
 
     m_ModLoader->Startup();
 
-    // Notify all loaded mods that the engine has intialized once it has.
+    // Notify all loaded mods that the engine has initialized once it has.
     Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
     Hooks::EOS_Platform_Create->AddDetour(this, &ModSDK::EOS_Platform_Create);
     Hooks::DrawScaleform->AddDetour(this, &ModSDK::DrawScaleform);
@@ -700,6 +710,13 @@ bool ModSDK::Startup() {
         );
     }
 
+    // Patch call to SetUnhandledExceptionFilter to nop it out.
+    if (!PatchCode(
+        "\xFF\x15\x00\x00\x00\x00\x48\x8D\x8D\xD0\x01\x00\x00", "xx????xxxxxxx", s_NopBytes, 6, 0
+    )) {
+        Logger::Warn("Could not patch SetUnhandledExceptionFilter. Crash reporting will not work.");
+    }
+
     // Setup custom multiplayer code.
     //Multiplayer::Lobby::Setup();
 
@@ -720,6 +737,25 @@ bool ModSDK::Startup() {
 }
 
 void ModSDK::ThreadedStartup() const {
+    if (m_EnableSentry) {
+        sentry_options_t* options = sentry_options_new();
+
+        sentry_options_set_dsn(
+            options, "https://10110a45be28f09d9727f423ac6abc07@o4510104306909184.ingest.de.sentry.io/4510104308154448"
+        );
+
+        // Set db path to %LocalAppData%/ZHMModSDK/
+        PWSTR s_LocalAppDataPath;
+        if (SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &s_LocalAppDataPath) == S_OK) {
+            const std::wstring s_DbPath = std::wstring(s_LocalAppDataPath) + L"\\ZHMModSDK";
+            sentry_options_set_database_pathw(options, s_DbPath.c_str());
+        }
+
+        sentry_options_set_release(options, "ZHMModSDK@" ZHMMODSDK_VER);
+        sentry_options_set_debug(options, 0);
+        sentry_init(options);
+    }
+
     // If the engine is already initialized, inform the mods.
     if (Globals::Hitman5Module->IsEngineInitialized())
         OnEngineInit();
@@ -798,6 +834,11 @@ void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 
 void ModSDK::OnEngineInit() const {
     Logger::Debug("Engine was initialized.");
+
+    if (m_EnableSentry) {
+        // Re-install here to overwrite any exception handlers the game might have set.
+        sentry_reinstall_backend();
+    }
 
     if (m_UiEnabled) {
         m_DirectXTKRenderer->OnEngineInit();
@@ -1064,7 +1105,13 @@ ImFont* ModSDK::GetImGuiBlackFont() {
 }
 
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name) {
-    return TryGetPinName(p_PinId, p_Name);
+    std::string s_Name;
+    if (TryGetPinName(p_PinId, s_Name)) {
+        p_Name = s_Name;
+        return true;
+    }
+
+    return false;
 }
 
 bool ModSDK::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) {
@@ -1367,6 +1414,23 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
     }
 
     return TEntityRef<ZHitman5>(s_PlayerData->m_Controller.m_HitmanEntity);
+}
+
+void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size) {
+    if (Globals::Hitman5Module->IsEngineInitialized()) {
+        // If engine is initialized, allocate the normal way.
+        p_Target->m_nLength = p_Size;
+        p_Target->m_pChars = Functions::ZStringCollection_Allocate->Call(p_Str, p_Size)->m_pDataStart;
+    }
+    else {
+        // Otherwise, allocate ourselves and make the game think it's a static allocation.
+        // This will leak memory, but best we can do for now before the engine is initialized.
+        auto* s_String = new char[p_Size + 1] {};
+        memcpy(s_String, p_Str, p_Size);
+        s_String[p_Size] = '\0';
+
+        *p_Target = ZString(std::string_view(s_String, p_Size));
+    }
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {

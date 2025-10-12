@@ -2,5 +2,5 @@
 #include "ZEntity.h"
 
 struct SExternalReferences {
-    THashMap<ZRuntimeResourceID, ZEntityType**, TDefaultHashMapPolicy<ZRuntimeResourceID>> externalScenes;
+    THashMap<ZRuntimeResourceID, ZEntityRef> externalScenes;
 };

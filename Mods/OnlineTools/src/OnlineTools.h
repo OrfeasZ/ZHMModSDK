@@ -27,7 +27,7 @@ private:
     inline void SaveDomains();
 
     // Hooks
-    DECLARE_PLUGIN_DETOUR(OnlineTools, ZString*, GetConfigHost, void* th, void* a1);
+    DECLARE_PLUGIN_DETOUR(OnlineTools, ZString*, GetConfigHost, ZOnlineVersionConfig* th, ZString* out);
     DECLARE_PLUGIN_DETOUR(OnlineTools, bool, Check_SSL_Cert, void*, void*);
 
 private:

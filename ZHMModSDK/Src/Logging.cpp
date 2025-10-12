@@ -29,7 +29,7 @@ public:
         spdlog::sinks::base_sink<Mutex>::formatter_->format(p_Message, s_Formatted);
 
         ModSDK::GetInstance()->GetUIConsole()->AddLogLine(
-            p_Message.level, ZString(s_Formatted.data(), s_Formatted.size())
+            p_Message.level, std::string(s_Formatted.data(), s_Formatted.size())
         );
     }
 

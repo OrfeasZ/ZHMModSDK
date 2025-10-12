@@ -148,19 +148,26 @@ OnlineTools::~OnlineTools() {
 
 #pragma region Hooks
 
-DEFINE_PLUGIN_DETOUR(OnlineTools, ZString*, GetConfigHost, void* th, void* a1) {
-    if (!m_UseHttp) return HookResult<ZString*>(HookAction::Continue());
+DEFINE_PLUGIN_DETOUR(OnlineTools, ZString*, GetConfigHost, ZOnlineVersionConfig* th, ZString* out) {
+    if (!m_UseHttp) {
+        return {HookAction::Continue()};
+    }
 
-    ZString* s_OriginalUrl = p_Hook->CallOriginal(th, a1);
-    ZString* s_NewUrl = new ZString(std::regex_replace(s_OriginalUrl->c_str(), std::regex("https://"), "http://"));
+    const auto s_OriginalUrl = p_Hook->CallOriginal(th, out);
 
-    return HookResult<ZString*>(HookAction::Return(), s_NewUrl);
+    if (s_OriginalUrl->StartsWith("https://")) {
+        *out = s_OriginalUrl->Replace("https://", "http://");
+    }
+
+    return {HookAction::Return(), out};
 }
 
 DEFINE_PLUGIN_DETOUR(OnlineTools, bool, Check_SSL_Cert, void* unk1, void* unk2) {
-    if (!m_CertPinBypass) return HookResult<bool>(HookAction::Continue());
+    if (!m_CertPinBypass) {
+        return {HookAction::Continue()};
+    }
 
-    return HookResult<bool>(HookAction::Return(), true);
+    return {HookAction::Return(), true};
 }
 
 #pragma endregion
@@ -221,33 +228,38 @@ void OnlineTools::SettingsMenu() {
 
         if (ImGui::Checkbox("Use HTTP", &m_UseHttp))
             SaveProtocol();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(
-            "Use http:// instead of https://. Useful if the server you're connecting to is local or doesn't support secure connections."
-        );
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(
+                "Use http:// instead of https://. Useful if the server you're connecting to is local or doesn't support secure connections."
+            );
 
         if (ImGui::Checkbox("Always Send Authorization Header", &m_AlwaysSendAuth))
             UpdateHeaders();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(
-            "Always send a token that can identify you to the server. This is only required if the server is not using HTTPS and is not a trusted domain (i.e. one ran by IO Interactive)."
-        );
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(
+                "Always send a token that can identify you to the server. This is only required if the server is not using HTTPS and is not a trusted domain (i.e. one ran by IO Interactive)."
+            );
 
         if (ImGui::Checkbox("Bypass SSL Certificate Pinning", &m_CertPinBypass))
             SaveCertPin();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(
-            "Allows you to decrypt SSL traffic between the game and a server if you use a proxy."
-        );
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(
+                "Allows you to decrypt SSL traffic between the game and a server if you use a proxy."
+            );
 
         if (ImGui::Checkbox("Enable Online Dynamic Resources", &m_EnableDynRes))
             UpdateEnableDynRes();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(
-            "Enables loading dynamic resources packages, necessary for Peacock localisation"
-        );
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(
+                "Enables loading dynamic resources packages, necessary for Peacock localisation"
+            );
 
         if (ImGui::Checkbox("Make Dynamic Resources Optional", &m_OptionalDynRes))
             UpdateDynRes();
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(
-            "Makes the dynamic resources package optional, meaning if a server doesn't have it, you won't be forced offline."
-        );
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(
+                "Makes the dynamic resources package optional, meaning if a server doesn't have it, you won't be forced offline."
+            );
 
         // Domains
         ImGui::SeparatorText("Domains");
@@ -302,9 +314,10 @@ void OnlineTools::SettingsMenu() {
             ImGui::SameLine();
             if (ImGui::Button((ICON_MD_KEYBOARD_RETURN "##" + std::to_string(i)).c_str()))
                 Functions::ZConfigCommand_ExecuteCommand->Call("online_VersionConfigDomain", s_Domain);
-            if (ImGui::IsItemHovered()) ImGui::SetTooltip(
-                "Apply this domain now, it will persist until you apply a different one or close the game."
-            );
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(
+                    "Apply this domain now, it will persist until you apply a different one or close the game."
+                );
 
             // Domain box
             ImGui::SameLine();
@@ -326,9 +339,10 @@ void OnlineTools::SettingsMenu() {
         ImGui::SameLine();
         if (ImGui::Button(ICON_MD_RESTORE " Restore to Official"))
             Functions::ZConfigCommand_ExecuteCommand->Call("online_VersionConfigDomain", "config.hitman.io");
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip(
-            "Restore the domain to official's. It will be overridden if you apply a different domain or have a default set on game startup."
-        );
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(
+                "Restore the domain to official's. It will be overridden if you apply a different domain or have a default set on game startup."
+            );
 
         ImGui::SameLine();
         if (ImGui::Button(ICON_MD_HELP " Help"))

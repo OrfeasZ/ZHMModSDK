@@ -241,7 +241,8 @@ public:
         const auto s_Entity = GetEntity();
         ZEntityType* s_EntityType = Functions::ZEntityImpl_EnsureUniqueType->Call(s_Entity, 0);
 
-        s_EntityType->m_nLogicalParentEntityOffset = reinterpret_cast<uintptr_t>(entityRef.m_pEntity) - reinterpret_cast<uintptr_t>(m_pEntity);
+        s_EntityType->m_nLogicalParentEntityOffset = reinterpret_cast<uintptr_t>(entityRef.m_pEntity) - reinterpret_cast
+                <uintptr_t>(m_pEntity);
     }
 
     bool IsAnyParent(const ZEntityRef& p_Other) const {

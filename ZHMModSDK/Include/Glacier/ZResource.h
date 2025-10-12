@@ -68,10 +68,14 @@ private:
     ZInfiniteBuffer<T> m_Buffer;
 };
 
-struct SResourceReferenceFlags {
-    uint8_t languageCode : 5;
-    uint8_t acquired : 1;
-    int8_t referenceType : 2;
+union SResourceReferenceFlags {
+    struct {
+        uint8_t languageCode : 5;
+        uint8_t acquired : 1;
+        int8_t referenceType : 2;
+    };
+
+    uint8_t flags;
 };
 
 class ZResourceContainer {
@@ -93,9 +97,16 @@ public:
         int8 packageId;
     };
 
+    /**
+     * Packed reference information.
+     * - 8 bits for the flags
+     * - 1 bit for some flag that inverts the index (multiplies it by -1), not sure why
+     * - 23 bits for the index
+     */
     struct SResourceReferenceInfo {
-        ZResourceIndex m_Index;
-        SResourceReferenceFlags m_Flags;
+        uint32_t flags : 8;
+        uint32_t unknown : 1;
+        uint32_t index : 23;
     };
 
 public:
@@ -103,6 +114,7 @@ public:
     TArray<SResourceReferenceInfo> m_references;
     THashMap<ZRuntimeResourceID, ZResourceIndex, TDefaultHashMapPolicy<ZRuntimeResourceID>> m_indices;
     TArray<ZString> m_MountedPackages;
+    TArray<ZResourceIndex> m_aUnknown;
 };
 
 static_assert(sizeof(ZResourceContainer::SResourceInfo) == 64);
@@ -113,16 +125,16 @@ public:
 
 public:
     ZResourceContainer::SResourceInfo& GetResourceInfo() const {
-        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex];
+        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
 
         return s_ResourceInfo;
     }
 
     void* GetResourceData() const {
-        if (m_nResourceIndex < 0)
+        if (m_nResourceIndex.val < 0)
             return nullptr;
 
-        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex];
+        auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
 
         return s_ResourceInfo.resourceData;
     }
@@ -132,12 +144,19 @@ public:
     }
 
 public:
-    int32_t m_nResourceIndex = -1;
-    uint32_t m_Padding;
+    ZResourceIndex m_nResourceIndex;
+    uint32_t m_Padding = 0;
 };
+
+static_assert(sizeof(ZResourcePtr) == 8);
 
 template <typename T>
 class TResourcePtr : public ZResourcePtr {
+public:
+    explicit TResourcePtr(const ZResourceIndex p_Index) {
+        m_nResourceIndex = p_Index;
+    }
+
 public:
     T* GetResource() const {
         return static_cast<T*>(GetResourceData());
@@ -155,7 +174,7 @@ public:
     virtual void ZResourceManager_unk6() = 0;
     virtual void ZResourceManager_unk7() = 0;
     virtual void GetResourcePtr(ZResourcePtr& result, const ZRuntimeResourceID& ridResource, int nPriority) = 0;
-    virtual void ZResourceManager_unk9() = 0;
+    virtual void LoadResource(ZResourcePtr& result, const ZRuntimeResourceID& ridResource) = 0;
     virtual void ZResourceManager_unk10() = 0;
     virtual void ZResourceManager_unk11() = 0;
     virtual void ZResourceManager_unk12() = 0;
@@ -170,7 +189,7 @@ public:
     virtual void ZResourceManager_unk21() = 0;
     virtual void ZResourceManager_unk22() = 0;
     virtual void ZResourceManager_unk23() = 0;
-    virtual void ZResourceManager_unk24() = 0;
+    virtual void Update(bool bSendStatusChangedNotifications) = 0;
     virtual void ZResourceManager_unk25() = 0;
     virtual void ZResourceManager_unk26() = 0;
     virtual void ZResourceManager_unk27() = 0;
@@ -193,7 +212,7 @@ public:
     virtual void ZResourceManager_unk44() = 0;
     virtual void ZResourceManager_unk45() = 0;
     virtual void ZResourceManager_unk46() = 0;
-    virtual void ZResourceManager_unk47() = 0;
+    virtual bool DoneLoading() = 0;
     virtual void ZResourceManager_unk48() = 0;
     virtual void ZResourceManager_unk49() = 0;
     virtual void ZResourceManager_unk50() = 0;
@@ -203,6 +222,10 @@ public:
     virtual void ZResourceManager_unk54() = 0;
     virtual void ZResourceManager_unk55() = 0;
     virtual void ZResourceManager_unk56() = 0;
+
+public:
+    PAD(420);
+    volatile LONG m_nNumProcessing; // 428 (0x1AC)
 };
 
 class ZResourceDataBuffer : public ZSharedPointerTarget {
@@ -232,3 +255,75 @@ public:
     ZResourcePtr m_pResource;
     ZResourceReaderPtr m_pResourceReader;
 };
+
+class IPackageManager : public IComponentInterface {
+public:
+    enum EPartitionType {
+        Standard,
+        Addon,
+    };
+
+    struct SPartitionInfo {
+        uint32_t m_nIndex; // 0
+        ZString m_sPartitionID; // 8
+        EPartitionType m_eType; // 24
+        uint32_t m_patchLevel; // 28
+        uint64_t a32; // 32
+        uint64_t a40; // 40
+        ZString m_sMountPath; // 48
+        uint64_t a64; // 64
+        bool a72; // 72
+        SPartitionInfo* m_pParent; // 80
+        TArray<SPartitionInfo*> m_aAddons; // 88
+    };
+
+    virtual ~IPackageManager() {}
+
+public:
+    PAD(24);
+};
+
+static_assert(sizeof(IPackageManager::SPartitionInfo) == 112);
+
+class ZPackageManagerBase : public IPackageManager {
+public:
+    virtual ~ZPackageManagerBase() {}
+    virtual void ZPackageManagerBase_unk5() = 0;
+    virtual void ZPackageManagerBase_unk6() = 0;
+    virtual void MountPartitionsForRoots(const TArray<ZResourceID>& roots) = 0;
+    virtual void ZPackageManagerBase_unk8() = 0;
+    virtual void ZPackageManagerBase_unk9() = 0;
+    virtual void ZPackageManagerBase_unk10() = 0;
+    virtual void ZPackageManagerBase_unk11() = 0;
+    virtual void ZPackageManagerBase_unk12() = 0;
+    virtual void ZPackageManagerBase_unk13() = 0;
+    virtual void ZPackageManagerBase_unk14() = 0;
+    virtual void ZPackageManagerBase_unk15() = 0;
+    virtual void ZPackageManagerBase_unk16() = 0;
+    virtual void ZPackageManagerBase_unk17() = 0;
+    virtual void ZPackageManagerBase_unk18() = 0;
+    virtual void ZPackageManagerBase_unk19() = 0;
+    virtual void ZPackageManagerBase_unk20() = 0;
+    virtual void ZPackageManagerBase_unk21() = 0;
+    virtual void ZPackageManagerBase_unk22() = 0;
+    virtual void ZPackageManagerBase_unk23() = 0;
+    virtual void ZPackageManagerBase_unk24() = 0;
+    virtual void ZPackageManagerBase_unk25() = 0;
+    virtual void ZPackageManagerBase_unk26() = 0;
+    virtual void ZPackageManagerBase_unk27() = 0;
+    virtual void ZPackageManagerBase_unk28() = 0;
+    virtual void ZPackageManagerBase_unk29() = 0;
+    virtual void ZPackageManagerBase_unk30() = 0;
+    virtual void MountResourcePackagesInPartition(SPartitionInfo* info, SPartitionInfo* languagePartition) = 0;
+    virtual void ZPackageManagerBase_unk32() = 0;
+    virtual void ZPackageManagerBase_unk33() = 0;
+
+public:
+    PAD(0x48);
+    TArray<SPartitionInfo*> m_aPartitionInfos; // 0x68
+    PAD(0x490);
+    THashMap<ZResourceID, SPartitionInfo*> m_sceneToPartitionMap; // 0x510
+};
+
+static_assert(offsetof(ZPackageManagerBase, m_aPartitionInfos) == 0x68);
+static_assert(offsetof(ZPackageManagerBase, m_sceneToPartitionMap) == 0x510);

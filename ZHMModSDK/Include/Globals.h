@@ -43,6 +43,7 @@ class ZGridManager;
 class ZHM5GridManager;
 class ZPathfinder;
 class ZInputDeviceManager;
+class ZPackageManagerBase;
 class ZUIText;
 
 namespace bfx {
@@ -93,5 +94,6 @@ public:
     static ZProfileServerPageProxyBaseMap* ZProfileServerPageProxyBase_m_aRouteMap;
     static ZObjectPool* ZVariantPool1;
     static ZObjectPool* ZVariantPool2;
+    static ZPackageManagerBase** PackageManager;
     static ZUIText* UIText;
 };

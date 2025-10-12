@@ -23,6 +23,10 @@ public:
         return reinterpret_cast<ReturnType(*)(Args...)>(m_Address)(p_Args...);
     }
 
+    bool Exists() const {
+        return m_Address != nullptr;
+    }
+
 protected:
     void* m_Address = nullptr;
 };
@@ -39,6 +43,10 @@ public:
             return;
 
         reinterpret_cast<void(*)(Args...)>(m_Address)(p_Args...);
+    }
+
+    bool Exists() const {
+        return m_Address != nullptr;
     }
 
 protected:

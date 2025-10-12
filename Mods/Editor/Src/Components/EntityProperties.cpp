@@ -14,8 +14,8 @@
 void Editor::DrawEntityProperties() {
     auto s_ImgGuiIO = ImGui::GetIO();
 
-    ImGui::SetNextWindowPos({s_ImgGuiIO.DisplaySize.x - 600, 110}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({600, s_ImgGuiIO.DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos({s_ImgGuiIO.DisplaySize.x - 500, 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({500, s_ImgGuiIO.DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_TUNE " Entity Properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
@@ -130,9 +130,9 @@ void Editor::DrawEntityProperties() {
         }
 
         if (const ZGeomEntity* s_GeomEntity = s_SelectedEntity.QueryInterface<ZGeomEntity>()) {
-            if (s_GeomEntity->m_ResourceID.m_nResourceIndex != -1) {
+            if (s_GeomEntity->m_ResourceID.m_nResourceIndex.val != -1) {
                 const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.
-                    m_nResourceIndex];
+                    m_nResourceIndex.val];
                 const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
 
                 ImGui::TextUnformatted(fmt::format("Associated PRIM: {:016X}", s_PrimHash).c_str());
