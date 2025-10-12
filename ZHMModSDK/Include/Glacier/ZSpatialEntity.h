@@ -46,6 +46,10 @@ public:
         return m_mTransform;
     }
 
+    float4 GetWorldDirection(const float4& p_LocalDirection) const {
+        return GetWorldMatrix().WVectorRotate(p_LocalDirection);
+    }
+
 public:
     PAD(0x08);
     SMatrix43 m_mTransform; // 0x20
