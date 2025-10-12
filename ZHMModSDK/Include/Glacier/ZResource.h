@@ -153,6 +153,8 @@ static_assert(sizeof(ZResourcePtr) == 8);
 template <typename T>
 class TResourcePtr : public ZResourcePtr {
 public:
+    TResourcePtr() = default;
+
     explicit TResourcePtr(const ZResourceIndex p_Index) {
         m_nResourceIndex = p_Index;
     }
