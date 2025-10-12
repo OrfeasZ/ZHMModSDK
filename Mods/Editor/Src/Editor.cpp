@@ -170,10 +170,6 @@ void Editor::OnDrawMenu() {
         }
     }*/
 
-    if (ImGui::Button(ICON_MD_TUNE " ASSETS MENU")) {
-        m_AssetsMenuActive = !m_AssetsMenuActive;
-    }
-
     if (ImGui::Button(ICON_MD_TUNE " ITEMS MENU")) {
         m_ItemsMenuActive = !m_ItemsMenuActive;
     }
@@ -306,7 +302,6 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracer();
 
-        DrawAssets(p_HasFocus);
         DrawItems(p_HasFocus);
         DrawActors(p_HasFocus);
     }
@@ -723,9 +718,6 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
     m_NavpAreas.clear();
 
     m_Server.OnSceneClearing(forReload);
-
-    m_RepositoryResource = {};
-    m_RepositoryProps.clear();
 
     if (m_TrackCamActive) {
         DisableTrackCam();

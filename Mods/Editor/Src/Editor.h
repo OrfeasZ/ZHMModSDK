@@ -158,7 +158,6 @@ private:
 
     void DrawItems(bool p_HasFocus);
     void DrawActors(bool p_HasFocus);
-    void DrawAssets(bool p_HasFocus);
 
     static void EquipOutfit(
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CurrentCharSetIndex,
@@ -267,12 +266,9 @@ private:
 
     EditorServer m_Server;
 
-    bool m_AssetsMenuActive = false;
     bool m_ItemsMenuActive = false;
     bool m_ActorsMenuActive = false;
 
-    TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
-    std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps; // RepoId -> Title/Common Name
 
     ZActor* s_CurrentlySelectedActor = nullptr;
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
