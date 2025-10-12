@@ -71,7 +71,7 @@ public:
         const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId
     )>* ZEntityManager_NewEntity;
 
-    static EngineFunction<void(ZSpatialEntity* th)>* ZSpatialEntity_UnknownTransformUpdate;
+    static EngineFunction<void(const ZSpatialEntity* th)>* ZSpatialEntity_UpdateCachedWorldMat;
 
     static EngineFunction<void(
         ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs

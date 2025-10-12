@@ -122,8 +122,8 @@ PATTERN_FUNCTION(
 PATTERN_FUNCTION(
     "\x48\x8B\xC4\x53\x48\x81\xEC\x00\x00\x00\x00\xF7\x41\x6C\x00\x00\x00\x00\x48\x8B\xD9\x0F\x84",
     "xxxxxxx????xxx????xxxxx",
-    ZSpatialEntity_UnknownTransformUpdate,
-    void(ZSpatialEntity* th)
+    ZSpatialEntity_UpdateCachedWorldMat,
+    void(const ZSpatialEntity* th)
 );
 
 PATTERN_FUNCTION(
