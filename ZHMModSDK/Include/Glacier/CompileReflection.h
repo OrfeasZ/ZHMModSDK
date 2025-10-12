@@ -76,6 +76,8 @@ namespace detail {
 
         std::size_t s_FinalSize = 0;
 
+        bool s_IsEnum = false;
+
         for (std::size_t i = 0; i < N; ++i) {
             if (p_TypeName[i] == 'c' && i + s_ClassPrefix.size() < N &&
                 p_TypeName.substr(i, s_ClassPrefix.size()) == s_ClassPrefix) {
@@ -92,6 +94,11 @@ namespace detail {
             if (p_TypeName[i] == 'e' && i + s_EnumPrefix.size() < N &&
                 p_TypeName.substr(i, s_EnumPrefix.size()) == s_EnumPrefix) {
                 i += s_EnumPrefix.size() - 1;
+
+                if (!s_IsEnum) {
+                    s_IsEnum = true;
+                }
+
                 continue;
             }
 
@@ -102,6 +109,15 @@ namespace detail {
             }
 
             s_ZHMTypeNameStorage[s_FinalSize++] = p_TypeName[i];
+        }
+
+        if (s_IsEnum) {
+            for (std::size_t i = s_FinalSize; i-- > 0;) {
+                if (s_ZHMTypeNameStorage[i] == '_') {
+                    s_ZHMTypeNameStorage[i] = '.';
+                    break;
+                }
+            }
         }
 
         return ZHMTypeNameData<N> {s_ZHMTypeNameStorage, s_FinalSize};
