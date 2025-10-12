@@ -421,15 +421,15 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     m_Normal = s_RayOutput.m_vNormal;
 
     if (p_FirstClick) {
-        if (s_RayOutput.m_BlockingEntity) {
-            const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
+        if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
+            const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaces;
             Logger::Trace(
                 "Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
-                s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId
+                s_RayOutput.m_pBlockingSpatialEntity.m_ref->GetType()->m_nEntityId
             );
 
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-            ZEntityRef s_SelectedEntity = s_RayOutput.m_BlockingEntity;
+            ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_ref;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
