@@ -139,14 +139,6 @@ public:
 template <typename T>
 class TResourcePtr : public ZResourcePtr {
 public:
-    TResourcePtr() {
-        static_assert(
-            std::is_base_of_v<IComponentInterface, T>,
-            "TResourcePtr type must implement IComponentInterface."
-        );
-    }
-
-public:
     T* GetResource() const {
         return static_cast<T*>(GetResourceData());
     }
