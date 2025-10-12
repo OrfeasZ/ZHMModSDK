@@ -29,5 +29,10 @@
         },
         "imguizmo",
         "imgui-node-editor"
-    ]
+    ],
+    "vcpkg-configuration": {
+        "overlay-ports": [
+            "./cmake/vcpkg-ports"
+        ]
+    }
 }

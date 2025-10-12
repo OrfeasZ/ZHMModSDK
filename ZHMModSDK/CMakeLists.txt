@@ -108,4 +108,5 @@ install(FILES "${CMAKE_SOURCE_DIR}/External/IconFontCppHeaders/IconsMaterialDesi
 install(FILES "${VCPKG_BUILD_ROOT}/lib/imgui.lib" DESTINATION lib)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imconfig.h" DESTINATION include)
+install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stacklayout.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stdlib.h" DESTINATION include)
