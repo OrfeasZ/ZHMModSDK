@@ -127,6 +127,13 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xF1\x0F\x57\xC0\x48\xB8\x00\x00\x00\x00\x00\x00\x00\x00\x48\x8D\x4C\x24\x30",
+    "xxxxxxxxxxxxxx?xxxxxxxx????????xxxxx",
+    ZEntityManager_DeleteEntity,
+    void(ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs)
+);
+
+PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x55\x56\x41\x54\x41\x56\x41\x57\x48\x83\xEC",
     "xxxxxxxxxxxxxx",
     ZHitman5_SetOutfit,
