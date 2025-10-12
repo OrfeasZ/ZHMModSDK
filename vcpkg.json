@@ -20,6 +20,14 @@
         "uwebsockets",
         "simdjson",
         "neargye-semver",
-        "sentry-native"
+        "sentry-native",
+        {
+            "name": "imgui",
+            "features": [
+                "dx12-binding"
+            ]
+        },
+        "imguizmo",
+        "imgui-node-editor"
     ]
 }

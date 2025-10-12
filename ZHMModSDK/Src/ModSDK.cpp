@@ -1124,7 +1124,7 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
             (p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
 
     ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_SetGameDescriptorHeap, nullptr);
-    ImGui::Image(reinterpret_cast<ImTextureID>(s_Handle.ptr), s_Size);
+    ImGui::Image(s_Handle.ptr, s_Size);
     ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetDescriptorHeap, nullptr);
 }
 

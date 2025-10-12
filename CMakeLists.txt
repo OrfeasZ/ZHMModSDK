@@ -22,12 +22,13 @@ find_package(simdjson CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(semver CONFIG REQUIRED)
 find_package(sentry CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
+find_package(imguizmo CONFIG REQUIRED)
+find_package(unofficial-imgui-node-editor CONFIG REQUIRED)
 #CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
 CPMAddPackage("gh:felixguendling/cista@0.14")
-CPMAddPackage("gh:OrfeasZ/ZHMTools@3.6.9")
+CPMAddPackage("gh:OrfeasZ/ZHMTools@3.6.10")
 #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
-add_subdirectory(External/imgui)
-add_subdirectory(External/imguizmo)
 
 # Core modules.
 add_subdirectory(ZHMModSDK)
@@ -101,8 +102,6 @@ install(CODE [[
 ]])
 
 # Install licenses from external projects.
-install(FILES "External/imgui/source/LICENSE.txt" DESTINATION licenses RENAME imgui.txt)
-install(FILES "External/imguizmo/source/LICENSE" DESTINATION licenses RENAME imguizmo.txt)
 install(FILES "External/mINI/LICENSE" DESTINATION licenses RENAME mINI.txt)
 install(FILES "External/IconFontCppHeaders/licence.txt" DESTINATION licenses RENAME IconFontCppHeaders.txt)
 

@@ -54,7 +54,7 @@ target_link_libraries(ZHMModSDK PUBLIC
         Microsoft::DirectX-Headers
         semver::semver
         simdjson::simdjson
-        imgui
+        imgui::imgui
         d3d12
         dxgi
         delayimp
@@ -103,3 +103,9 @@ endif ()
 
 # Install icon header.
 install(FILES "${CMAKE_SOURCE_DIR}/External/IconFontCppHeaders/IconsMaterialDesign.h" DESTINATION include)
+
+# Install imgui lib and headers.
+install(FILES "${VCPKG_BUILD_ROOT}/lib/imgui.lib" DESTINATION lib)
+install(FILES "${VCPKG_BUILD_ROOT}/include/imgui.h" DESTINATION include)
+install(FILES "${VCPKG_BUILD_ROOT}/include/imconfig.h" DESTINATION include)
+install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stdlib.h" DESTINATION include)

@@ -50,7 +50,8 @@ find_library(USOCKETS_LIB
 
 target_link_libraries(Editor PRIVATE
         ZHMModSDK
-        imguizmo
+        imguizmo::imguizmo
+        unofficial::imgui-node-editor::imgui-node-editor
         ws2_32
         cista
         ResourceLib_HM3
