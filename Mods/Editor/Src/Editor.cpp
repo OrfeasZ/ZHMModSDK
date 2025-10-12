@@ -737,7 +737,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawItems(p_HasFocus);
         DrawActors(p_HasFocus);
         DrawDebugChannels(p_HasFocus);
-        DrawLibrary();
+        //DrawLibrary();
     }
 
     if (m_CameraRT && m_Camera) {
@@ -755,7 +755,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         ImGui::End();
     }
 
-    ImGui::SetNextWindowPos({750, 110}, ImGuiCond_FirstUseEver);
+    /*ImGui::SetNextWindowPos({750, 110}, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize({800, 800}, ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Entity spawner")) {
         ImGui::Text("Paste your QN entity JSON here:");
@@ -794,7 +794,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
             }
         }
     }
-    ImGui::End();
+    ImGui::End();*/
 
     /*ImGui::PushFont(SDK()->GetImGuiBlackFont());
     const auto s_Expanded = ImGui::Begin("Behaviors");
