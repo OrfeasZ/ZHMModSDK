@@ -368,7 +368,7 @@ public:
         if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
             return false;
 
-        const auto s_TypeID = (*Globals::TypeRegistry)->GetTypeID(p_TypeName.c_str());
+        const auto s_TypeID = (*Globals::TypeRegistry)->GetTypeID(p_TypeName);
 
         if (!s_TypeID)
             return false;
