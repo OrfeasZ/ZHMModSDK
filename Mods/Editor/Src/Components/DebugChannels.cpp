@@ -487,14 +487,14 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::DarkLightEntity]
     );
 
-    if (auto s_CoverPlane = p_EntityTreeNode->Entity.QueryInterface<ZCoverPlane>(
+    /*if (auto s_CoverPlane = p_EntityTreeNode->Entity.QueryInterface<ZCoverPlane>(
         m_DebugEntityTypeIds[DebugEntityTypeName::CoverPlane]
     )) {
         if (EntityIDMatches(s_CoverPlane, p_EntityTreeNode->EntityId)) {
             AddDebugEntity(p_EntityTreeNode->Entity, "ZCoverPlane", DEBUGCHANNEL_GUIDES_COVER);
         }
-    }
-    else if (auto s_GuideLadder = p_EntityTreeNode->Entity.QueryInterface<ZGuideLadder>(
+    }*/
+    if (auto s_GuideLadder = p_EntityTreeNode->Entity.QueryInterface<ZGuideLadder>(
         m_DebugEntityTypeIds[DebugEntityTypeName::GuideLadder]
     )) {
         if (EntityIDMatches(s_GuideLadder, p_EntityTreeNode->EntityId)) {
