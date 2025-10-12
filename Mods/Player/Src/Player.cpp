@@ -441,14 +441,13 @@ void Player::EnableInfiniteAmmo()
         return;
     }
 
-    ZEntityRef s_NewCrippleBox;
     SExternalReferences s_ExternalRefs;
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewCrippleBox, "", s_CrippleBoxFactory, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager, m_HM5CrippleBoxEntity, "", s_CrippleBoxFactory, s_Scene.m_ref, s_ExternalRefs, -1
     );
 
-    if (!s_NewCrippleBox)
+    if (!m_HM5CrippleBoxEntity)
     {
         Logger::Debug("Failed to spawn entity.");
         return;
@@ -462,7 +461,7 @@ void Player::EnableInfiniteAmmo()
         return;
     }
 
-    ZHM5CrippleBox* s_HM5CrippleBox = s_NewCrippleBox.QueryInterface<ZHM5CrippleBox>();
+    ZHM5CrippleBox* s_HM5CrippleBox = m_HM5CrippleBoxEntity.QueryInterface<ZHM5CrippleBox>();
 
     s_HM5CrippleBox->m_bActivateOnStart = true;
     s_HM5CrippleBox->m_rHitmanCharacter = s_LocalHitman;
@@ -473,6 +472,13 @@ void Player::EnableInfiniteAmmo()
 
 DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
 {
+    if (m_HM5CrippleBoxEntity.m_pEntity)
+    {
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
+
+        m_HM5CrippleBoxEntity = {};
+    }
+
     m_GlobalOutfitKit = nullptr;
 
     return HookResult<void>(HookAction::Continue());

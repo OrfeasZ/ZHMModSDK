@@ -29,6 +29,8 @@ private:
     const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
 
     TEntityRef<ZGlobalOutfitKit>* m_GlobalOutfitKit = nullptr;
+
+    ZEntityRef m_HM5CrippleBoxEntity;
 };
 
 DECLARE_ZHM_PLUGIN(Player)
