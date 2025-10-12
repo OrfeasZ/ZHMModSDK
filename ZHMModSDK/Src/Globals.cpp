@@ -281,3 +281,10 @@ PATTERN_RELATIVE_GLOBAL(
     5,
     ZObjectPool*, ZVariantPool2
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x84\xC0\x75\x00\x8B\x7C\x24\x40\x48\x8D\x55\xE0",
+    "xxx????x????xxx?xxxxxxxx",
+    3,
+    ZUIText*, UIText
+);
