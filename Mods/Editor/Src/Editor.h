@@ -11,6 +11,7 @@
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 #include "Glacier/ZFreeCamera.h"
+#include "Glacier/EDebugChannel.h"
 
 #include "ImGuizmo.h"
 #include "EditorServer.h"
@@ -39,6 +40,7 @@ public:
     void OnDrawMenu() override;
     void OnDrawUI(bool p_HasFocus) override;
     void OnDraw3D(IRenderer* p_Renderer) override;
+    void OnDepthDraw3D(IRenderer* p_Renderer) override;
     void OnEngineInitialized() override;
 
 public:
@@ -73,6 +75,20 @@ public:
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
+    struct DebugEntity {
+        std::string m_TypeName;
+        ZEntityRef m_EntityRef;
+        EDebugChannel m_DebugChannel;
+        bool m_HasGizmo;
+    };
+
+    struct GizmoEntity : DebugEntity {
+        ZRuntimeResourceID m_RuntimeResourceID;
+        ZResourcePtr m_PrimResourcePtr;
+        SVector4 m_Color;
+        SMatrix m_Transform;
+    };
+
     void SpawnCameras();
     void ActivateCamera(ZEntityRef* m_CameraEntity);
     void DeactivateCamera();
@@ -158,22 +174,12 @@ private:
 
     void DrawItems(bool p_HasFocus);
     void DrawActors(bool p_HasFocus);
+    void DrawDebugChannels(bool p_HasFocus);
 
     static void EquipOutfit(
-        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CurrentCharSetIndex,
-        const std::string& s_CurrentCharSetCharacterType, uint8_t n_CurrentOutfitVariationindex, ZActor* p_Actor
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t P_CharSetIndex,
+        const std::string& P_CharSetCharacterType, uint8_t P_OutfitVariationindex, ZActor* p_Actor
     );
-
-    static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool addToWorld);
-    static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
-    static void SpawnNPC(
-        const std::string& s_NpcName, const ZRepositoryID& repositoryID,
-        const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8_t n_CurrentCharacterSetIndex,
-        const std::string& s_CurrentcharSetCharacterType, uint8_t p_CurrentOutfitVariationIndex
-    );
-
-    void LoadRepositoryProps();
-    std::string ConvertDynamicObjectValueToString(const ZDynamicObject& p_DynamicObject);
 
     void EnableTrackCam();
     void UpdateTrackCam() const;
@@ -182,6 +188,37 @@ private:
     void GetTrackCam();
     void GetRenderDest();
     static void SetPlayerControlActive(bool active);
+
+    void InitializeDebugChannels();
+    void InitializeDebugEntityTypeIDs();
+    void DrawDebugEntities(IRenderer* p_Renderer);
+    void DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer);
+    void DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer);
+    void GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTreeNode);
+    void AddDebugEntity(
+        const ZEntityRef p_EntityRef,
+        const std::string& p_TypeName,
+        const EDebugChannel p_DebugChannel
+    );
+    void AddGizmoEntity(
+        const ZEntityRef p_EntityRef,
+        const std::string& p_TypeName,
+        const EDebugChannel p_DebugChannel,
+        const uint64_t p_RuntimeResourceID,
+        const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
+        const SMatrix& p_Transform = SMatrix()
+    );
+    void AddGizmoEntity(
+        const ZEntityRef p_EntityRef,
+        const std::string& p_TypeName,
+        const EDebugChannel p_DebugChannel,
+        const std::string& p_PropertyName,
+        const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
+        const SMatrix& p_Transform = SMatrix()
+    );
+    EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
+    static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
+    bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
 
 private:
     DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
@@ -198,6 +235,72 @@ private:
     enum class EntityHighlightMode {
         Lines,
         LinesAndTriangles
+    };
+
+    enum DebugEntityTypeName {
+        CoverPlane,
+        GuideLadder,
+        GuideWindow,
+        PFBoxEntity,
+        PFObstacleEntity,
+        PFSeedPoint,
+        DebugGizmoEntity,
+        PureWaveModifierEntity,
+        LightEntity,
+        DarkLightEntity,
+        BoxReflectionEntity,
+        CubemapProbeEntity,
+        VolumeLightEntity,
+        ParticleEmitterBoxEntity,
+        ParticleEmitterEmitterEntity,
+        ParticleEmitterMeshEntity,
+        ParticleEmitterPointEntity,
+        ParticleGlobalAttractorEntity,
+        ParticleKillVolumeEntity,
+        GateEntity,
+        OccluderEntity,
+        DecalsSpawnEntity,
+        StaticDecalEntity,
+        LiquidTrailEntity,
+        CrowdActorGroupEntity,
+        CrowdActorGroupFocalPointEntity,
+        CrowdEntity,
+        ManualActorEntity,
+        SplineCrowdFlowEntity,
+        BoxShapeAspect,
+        CapsuleShapeAspect,
+        SphereShapeAspect,
+        WindEntity,
+        AISoundConnector,
+        AISoundConnectorTarget,
+        AISoundModifierVolume,
+        AIVisionBlockerPlane,
+        AgitatedGuardPointEntity,
+        AgitatedWaypointEntity,
+        CombatActEntity,
+        LookAtEntity,
+        OutfitProviderEntity,
+        PointOfInterestEntity,
+        ActBehaviorEntity,
+        SpawnPointEntity,
+        BystanderPointEntity,
+        WaypointEntity,
+        PatrolBehaviorEntity,
+        PostfilterAreaBoxEntity,
+        FogBoxEntity,
+        BoxVolumeEntity,
+        SphereVolumeEntity,
+        VolumeShapeEntity,
+        CameraEntity,
+        OrientationEntity,
+        ScatterContainerEntity,
+        TrailShapeEntity,
+        SplineEntity,
+        SplineControlPointEntity,
+        AudioEmitterSpatialAspect,
+        AudioEmitterVolumetricAspect,
+        ClothWireEntity,
+        Count
     };
 
     ZEntityRef m_Camera;
@@ -268,6 +371,7 @@ private:
 
     bool m_ItemsMenuActive = false;
     bool m_ActorsMenuActive = false;
+    bool m_DebugChannelsMenuActive = false;
 
     ZActor* m_CurrentlySelectedActor = nullptr;
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
@@ -277,6 +381,26 @@ private:
     ZEntityRef m_PlayerCam = nullptr;
     TEntityRef<ZCameraEntity> m_TrackCam {};
     TEntityRef<IRenderDestinationEntity> m_RenderDest {};
+
+    std::vector<std::unique_ptr<DebugEntity>> m_DebugEntities;
+    std::vector<std::pair<std::string, EDebugChannel>> m_DebugChannels;
+    std::unordered_map<std::string, std::vector<std::string>> m_DebugChannelNameToTypeNames;
+    std::unordered_map<EDebugChannel, uint32> m_DebugChannelToDebugEntityCount;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, uint32_t>> m_DebugChannelToTypeNameToDebugEntityCount;
+    std::unordered_map<EDebugChannel, bool> m_DebugChannelToVisibility;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToVisibility;
+    std::vector<STypeID*> m_DebugEntityTypeIds;
+    bool m_DrawGizmos = true;
+    bool m_DrawAllGizmos = false;
+    bool m_DrawShapes = false;
+    GizmoEntity* m_SelectedGizmoEntity = nullptr;
+    std::unordered_map<ZCoverPlane*, uint64> planes;
+
+    bool m_DrawCoverInvalidOnNPCErrors = true;
+    bool m_DrawHeroGuidesSolid = false;
+    bool m_AlwaysDrawDebugBoxForColiValidityCheck = false;
+    bool m_DrawPushDebug = false;
+    bool m_DrawSafeZones = true;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)
