@@ -725,7 +725,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
         m_TrackCamActive = false;
     }
 
-    s_CurrentlySelectedActor = nullptr;
+    m_CurrentlySelectedActor = nullptr;
 
     return HookResult<void>(HookAction::Continue());
 }

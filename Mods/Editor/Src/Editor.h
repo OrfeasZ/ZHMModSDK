@@ -269,8 +269,7 @@ private:
     bool m_ItemsMenuActive = false;
     bool m_ActorsMenuActive = false;
 
-
-    ZActor* s_CurrentlySelectedActor = nullptr;
+    ZActor* m_CurrentlySelectedActor = nullptr;
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
 
     ZActor* m_ActorTracked = nullptr;
