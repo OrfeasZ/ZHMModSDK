@@ -39,8 +39,7 @@ public:
     virtual void ZSpatialEntity_unk41() = 0;
 
 public:
-    SMatrix GetWorldMatrix() {
-        // This is probably something like "is this transform dirty and needs to be updated?".
+    SMatrix GetWorldMatrix() const {
         if ((m_nUnknownFlags & 0x80000) != 0)
             Functions::ZSpatialEntity_UpdateCachedWorldMat->Call(this);
 
