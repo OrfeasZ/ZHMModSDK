@@ -43,6 +43,7 @@ class ZTemplateBlueprintInstaller;
 class ZResourcePending;
 class ZEntityType;
 class ZEntityImpl;
+class ZUIText;
 
 class ZHMSDK_API Functions {
 public:
@@ -144,4 +145,6 @@ public:
     ZTemplateBlueprintInstaller_Install;
 
     static EngineFunction<ZEntityType* (ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
+
+    static EngineFunction<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
 };
