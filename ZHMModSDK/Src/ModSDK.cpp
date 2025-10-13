@@ -157,7 +157,7 @@ ModSDK::~ModSDK() {
     m_DebugConsole.reset();
     #endif
 
-    if (m_EnableSentry) {
+    if (m_EnableSentry.value_or(false)) {
         sentry_close();
     }
 }
@@ -286,7 +286,8 @@ void ModSDK::LoadConfiguration() {
         }
 
         if (s_Mod.second.has("crash_reporting")) {
-            m_EnableSentry = true;
+            const auto s_Value = s_Mod.second.get("crash_reporting");
+            m_EnableSentry = s_Value == "true" || s_Value == "1";
         }
     }
 }
@@ -737,7 +738,7 @@ bool ModSDK::Startup() {
 }
 
 void ModSDK::ThreadedStartup() const {
-    if (m_EnableSentry) {
+    if (m_EnableSentry.value_or(false)) {
         sentry_options_t* options = sentry_options_new();
 
         sentry_options_set_dsn(
@@ -771,10 +772,77 @@ void ModSDK::OnDrawMenu() const {
     m_ModLoader->UnlockRead();
 }
 
-void ModSDK::OnDrawUI(bool p_HasFocus) const {
+void ModSDK::OnDrawUI(bool p_HasFocus) {
     m_UIConsole->Draw(p_HasFocus);
     m_UIMainMenu->Draw(p_HasFocus);
     m_UIModSelector->Draw(p_HasFocus);
+
+    // If crash reporting is not configured, ask the user if they want to enable it.
+    if (!m_EnableSentry.has_value()) {
+        if (!p_HasFocus) {
+            SDK()->RequestUIFocus();
+        }
+
+        // Show window in the middle of the screen.
+        ImGui::SetNextWindowPos(
+            ImVec2(
+                ImGui::GetIO().DisplaySize.x * 0.5f,
+                ImGui::GetIO().DisplaySize.y * 0.5f
+            ),
+            ImGuiCond_Always,
+            ImVec2(0.5f, 0.5f)
+        );
+
+        ImGui::PushFont(SDK()->GetImGuiBlackFont());
+        ImGui::Begin(
+            "Enable Crash Reporting?", nullptr,
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoCollapse
+        );
+        ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+        ImGui::Text(
+            "Do you want to send crash information to the developers, which can be used to debug and fix issues?"
+        );
+
+        ImGui::Text(
+            "Crash reports will be kept for 90 days and may include sensitive information, such as your Windows username."
+        );
+
+        ImGui::Text("You can always change this setting later by modifying the 'crash_reporting' setting in mods.ini.");
+
+        ImGui::NewLine();
+
+        auto& s_Style = ImGui::GetStyle();
+
+        ImVec2 s_ButtonSize(100.f, 0.f);
+        float s_WidthNeeded = s_ButtonSize.x + s_Style.ItemSpacing.x + s_ButtonSize.x;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - s_WidthNeeded);
+
+        if (ImGui::Button("Disable", s_ButtonSize)) {
+            m_EnableSentry = false;
+            UpdateSdkIni(
+                [&](auto& s_SdkMap) {
+                    s_SdkMap.set("crash_reporting", "false");
+                }
+            );
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Enable", s_ButtonSize)) {
+            m_EnableSentry = true;
+            UpdateSdkIni(
+                [&](auto& s_SdkMap) {
+                    s_SdkMap.set("crash_reporting", "true");
+                }
+            );
+        }
+
+        ImGui::PopFont();
+        ImGui::End();
+        ImGui::PopFont();
+    }
 
     m_ModLoader->LockRead();
 
@@ -835,7 +903,7 @@ void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 void ModSDK::OnEngineInit() const {
     Logger::Debug("Engine was initialized.");
 
-    if (m_EnableSentry) {
+    if (m_EnableSentry.value_or(false)) {
         // Re-install here to overwrite any exception handlers the game might have set.
         sentry_reinstall_backend();
     }

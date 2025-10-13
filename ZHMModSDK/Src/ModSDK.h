@@ -62,7 +62,7 @@ public:
     void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
     void OnModUnloaded(const std::string& p_Name);
     void OnEngineInit() const;
-    void OnDrawUI(bool p_HasFocus) const;
+    void OnDrawUI(bool p_HasFocus);
     void OnDraw3D() const;
     void OnDepthDraw3D() const;
     void OnDrawMenu() const;
@@ -194,7 +194,7 @@ private:
     uint8_t m_UiToggleScanCode = 0x57; // F11
     bool m_HasShownUiToggleWarning = false;
     bool m_ForceLoad = false;
-    bool m_EnableSentry = false;
+    std::optional<bool> m_EnableSentry;
     uintptr_t m_ModuleBase;
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;
