@@ -60,6 +60,9 @@ foreach (MOD IN LISTS MODS)
     install(FILES $<TARGET_PDB_FILE:${MOD}> DESTINATION bin/mods)
 endforeach ()
 
+# Install the discord SDK DLL.
+install(FILES ${DISCORD_SDK_DLL_PATH} DESTINATION bin)
+
 # Tools.
 add_subdirectory("Tools/DevLoader")
 

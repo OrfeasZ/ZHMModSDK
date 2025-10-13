@@ -78,6 +78,3 @@ target_link_libraries(DiscordRichPresence PRIVATE
         ZHMModSDK
         DiscordSdk
 )
-
-# Install the discord SDK DLL.
-install(FILES ${DISCORD_SDK_DLL_PATH} DESTINATION bin)
