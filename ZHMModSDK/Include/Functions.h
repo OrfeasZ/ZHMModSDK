@@ -155,6 +155,4 @@ public:
     static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
 
     static EngineFunction<ZString::ZImpl*(const char* buf, size_t size)>* ZStringCollection_Allocate;
-
-    static EngineFunction<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
 };
