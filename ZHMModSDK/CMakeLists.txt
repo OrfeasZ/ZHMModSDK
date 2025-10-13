@@ -1,5 +1,22 @@
 cmake_minimum_required(VERSION 3.12)
 
+# The current version of the SDK.
+set(ZHMMODSDK_VER_MAJOR 4)
+set(ZHMMODSDK_VER_MINOR 0)
+set(ZHMMODSDK_VER_PATCH 0)
+
+# The current version of the SDK ABI.
+# Any change to this is a breaking change.
+set(ZHMMODSDK_ABI_VER 4)
+
+# Generate version-related files.
+set(ZHMMODSDK_RCVERSION "${ZHMMODSDK_VER_MAJOR},${ZHMMODSDK_VER_MINOR},${ZHMMODSDK_VER_PATCH},0")
+set(ZHMMODSDK_RCVERSION_STR "${ZHMMODSDK_VER_MAJOR}.${ZHMMODSDK_VER_MINOR}.${ZHMMODSDK_VER_PATCH}.0")
+set(ZHMMODSDK_VERSION_STR "${ZHMMODSDK_VER_MAJOR}.${ZHMMODSDK_VER_MINOR}.${ZHMMODSDK_VER_PATCH}")
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ZHMModSDK.rc.in ${CMAKE_CURRENT_BINARY_DIR}/ZHMModSDK.rc)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ModSDKVersion.h.in ${CMAKE_CURRENT_SOURCE_DIR}/Include/ModSDKVersion.h)
+
 file(GLOB_RECURSE SRC_FILES
         CONFIGURE_DEPENDS
         Src/*.cpp
@@ -24,6 +41,7 @@ add_library(ZHMModSDK SHARED
         ${CMAKE_SOURCE_DIR}/External/RakNet/Source/LocklessTypes.cpp
         ${CMAKE_SOURCE_DIR}/External/RakNet/Source/RakThread.cpp
         ${CMAKE_SOURCE_DIR}/External/RakNet/Source/RakSleep.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/ZHMModSDK.rc
 )
 
 target_include_directories(ZHMModSDK PRIVATE
@@ -39,6 +57,7 @@ target_include_directories(ZHMModSDK PUBLIC
 
 target_compile_definitions(ZHMModSDK PRIVATE
         LOADER_EXPORTS
+
 )
 
 target_link_options(ZHMModSDK PRIVATE

@@ -382,3 +382,6 @@ CMakeUserPresets.json
 
 /Mods/Editor/qnc/bindings.hpp
 /Mods/Editor/qnc/target/
+
+ModSDKVersion.h
+ZHMModSDK.rc

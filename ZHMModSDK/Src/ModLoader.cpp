@@ -86,7 +86,7 @@ void ModLoader::ScanAvailableMods() {
 
             const auto s_CompiledSdkAbiVersionFn = reinterpret_cast<CompiledSdkAbiVersion_t>(
                 s_CompiledSdkAbiVersionAddr);
-            const std::string s_CompiledSdkAbiVersion = s_CompiledSdkAbiVersionFn();
+            const int s_CompiledSdkAbiVersion = s_CompiledSdkAbiVersionFn();
             FreeLibrary(s_Module);
 
             if (s_CompiledSdkAbiVersion != ZHMMODSDK_ABI_VER) {
@@ -299,7 +299,7 @@ void ModLoader::LoadMod(const std::string& p_Name, bool p_LiveLoad) {
         }
 
         const auto s_CompiledSdkAbiVersionFn = reinterpret_cast<CompiledSdkAbiVersion_t>(s_CompiledSdkAbiVersionAddr);
-        const std::string s_CompiledSdkAbiVersion = s_CompiledSdkAbiVersionFn();
+        const int s_CompiledSdkAbiVersion = s_CompiledSdkAbiVersionFn();
 
         if (s_CompiledSdkAbiVersion != ZHMMODSDK_ABI_VER) {
             Logger::Warn(
