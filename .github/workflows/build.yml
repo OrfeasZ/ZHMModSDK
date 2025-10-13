@@ -28,22 +28,6 @@ jobs:
                 with:
                     arch: x64
 
-            # If cache files exist in C:\cache, copy them to the workspace
-            -   name: Copy files from cache
-                shell: powershell
-                run: |
-                    if (Test-Path C:\cache\vcpkg-buildtrees) {
-                        Copy-Item C:\cache\vcpkg-buildtrees -Destination External/vcpkg/buildtrees -Recurse
-                    }
-                    
-                    if (Test-Path C:\cache\vcpkg-downloads) {
-                        Copy-Item C:\cache\vcpkg-downloads -Destination External/vcpkg/downloads -Recurse
-                    }
-                    
-                    if (Test-Path C:\cache\vcpkg-packages) {
-                        Copy-Item C:\cache\vcpkg-packages -Destination External/vcpkg/packages -Recurse
-                    }                
-
             -   name: Build and install debug
                 run: |
                     cmake --preset x64-Debug .
@@ -55,22 +39,6 @@ jobs:
                     cmake --preset x64-Release .
                     cmake --build _build/x64-Release -j12
                     cmake --install _build/x64-Release
-
-            # Clear cache folder and copy new files to it
-            -   name: Copy files to cache
-                shell: powershell
-                run: |
-                    Remove-Item C:\cache\vcpkg-buildtrees -Recurse -ErrorAction SilentlyContinue
-                    Remove-Item C:\cache\vcpkg-downloads -Recurse -ErrorAction SilentlyContinue
-                    Remove-Item C:\cache\vcpkg-packages -Recurse -ErrorAction SilentlyContinue
-                    
-                    Remove-Item C:\cache\vcpkg-buildtrees -ErrorAction SilentlyContinue
-                    Remove-Item C:\cache\vcpkg-downloads -ErrorAction SilentlyContinue
-                    Remove-Item C:\cache\vcpkg-packages -ErrorAction SilentlyContinue
-
-                    Copy-Item External/vcpkg/buildtrees -Destination C:\cache\vcpkg-buildtrees -Recurse
-                    Copy-Item External/vcpkg/downloads -Destination C:\cache\vcpkg-downloads -Recurse
-                    Copy-Item External/vcpkg/packages -Destination C:\cache\vcpkg-packages -Recurse
 
             -   name: Copy debug artifacts
                 run: |
