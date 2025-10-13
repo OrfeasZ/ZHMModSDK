@@ -7,7 +7,7 @@ set(ZHMMODSDK_VER_PATCH 0)
 
 # The current version of the SDK ABI.
 # Any change to this is a breaking change.
-set(ZHMMODSDK_ABI_VER 4)
+set(ZHMMODSDK_ABI_VER 1)
 
 # Generate version-related files.
 set(ZHMMODSDK_RCVERSION "${ZHMMODSDK_VER_MAJOR},${ZHMMODSDK_VER_MINOR},${ZHMMODSDK_VER_PATCH},0")
