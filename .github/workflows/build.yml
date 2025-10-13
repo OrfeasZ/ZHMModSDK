@@ -42,11 +42,7 @@ jobs:
                     
                     if (Test-Path C:\cache\vcpkg-packages) {
                         Copy-Item C:\cache\vcpkg-packages -Destination External/vcpkg/packages -Recurse
-                    }
-                    
-                    if (Test-Path C:\cache\_build) {
-                        Copy-Item C:\cache\_build -Destination _build -Recurse
-                    }                    
+                    }                
 
             -   name: Build and install debug
                 run: |
@@ -67,12 +63,10 @@ jobs:
                     Remove-Item C:\cache\vcpkg-buildtrees -Recurse -ErrorAction SilentlyContinue
                     Remove-Item C:\cache\vcpkg-downloads -Recurse -ErrorAction SilentlyContinue
                     Remove-Item C:\cache\vcpkg-packages -Recurse -ErrorAction SilentlyContinue
-                    Remove-Item C:\cache\_build -Recurse -ErrorAction SilentlyContinue
 
                     Copy-Item External/vcpkg/buildtrees -Destination C:\cache\vcpkg-buildtrees -Recurse
                     Copy-Item External/vcpkg/downloads -Destination C:\cache\vcpkg-downloads -Recurse
                     Copy-Item External/vcpkg/packages -Destination C:\cache\vcpkg-packages -Recurse
-                    Copy-Item _build -Destination C:\cache\_build -Recurse
 
             -   name: Copy debug artifacts
                 run: |
