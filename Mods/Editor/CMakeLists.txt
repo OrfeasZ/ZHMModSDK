@@ -62,10 +62,8 @@ target_link_libraries(Editor PRIVATE
         #	TracyClient
 )
 
-install(TARGETS Editor
-        RUNTIME DESTINATION bin/mods
-)
-
 install(TARGETS ResourceLib_HM3
         RUNTIME DESTINATION bin
 )
+
+install(FILES $<TARGET_PDB_FILE:ResourceLib_HM3> DESTINATION bin)

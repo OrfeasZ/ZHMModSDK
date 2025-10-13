@@ -127,11 +127,23 @@ jobs:
                     name: ZHMModSDK-Debug
                     path: _dist-debug/*
 
+            -   name: Move release PDBs recursively into a separate folder
+                shell: powershell
+                run: |
+                    mkdir _dist-release-pdbs
+                    Move-Item _dist-release/*.pdb -Destination _dist-release-pdbs/ -Recurse
+
             -   name: Archive release SDK and mods
                 uses: actions/upload-artifact@v4
                 with:
                     name: ZHMModSDK-Release
                     path: _dist-release/*
+
+            -   name: Archive release PDBs
+                uses: actions/upload-artifact@v4
+                with:
+                    name: ZHMModSDK-Release-PDBs
+                    path: _dist-release-pdbs/*
 
             -   name: Archive SDK dev package
                 uses: actions/upload-artifact@v4
@@ -149,6 +161,7 @@ jobs:
             matrix:
                 artifact:
                     - ZHMModSDK-Release
+                    - ZHMModSDK-Release-PDBs
                     - ZHMModSDK-Debug
                     - DevPkg-ZHMModSDK
 

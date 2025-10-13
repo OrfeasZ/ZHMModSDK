@@ -26,7 +26,7 @@ find_package(imgui CONFIG REQUIRED)
 find_package(imguizmo CONFIG REQUIRED)
 find_package(unofficial-imgui-node-editor CONFIG REQUIRED)
 #CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
-CPMAddPackage("gh:OrfeasZ/ZHMTools@3.6.10")
+CPMAddPackage("gh:OrfeasZ/ZHMTools@3.6.11")
 #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
 
 # Core modules.
@@ -55,6 +55,9 @@ set(MODS
 
 foreach (MOD IN LISTS MODS)
     add_subdirectory("Mods/${MOD}")
+
+    install(TARGETS ${MOD} RUNTIME DESTINATION bin/mods)
+    install(FILES $<TARGET_PDB_FILE:${MOD}> DESTINATION bin/mods)
 endforeach ()
 
 # Tools.
