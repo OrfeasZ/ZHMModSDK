@@ -362,7 +362,7 @@ public:
         return false;
     }
 
-    bool HasInterface(const std::string& p_TypeName) const {
+    bool HasInterface(const ZString& p_TypeName) const {
         const auto s_Entity = GetEntity();
 
         if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
