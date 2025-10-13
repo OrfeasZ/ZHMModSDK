@@ -63,6 +63,10 @@ jobs:
                     Remove-Item C:\cache\vcpkg-buildtrees -Recurse -ErrorAction SilentlyContinue
                     Remove-Item C:\cache\vcpkg-downloads -Recurse -ErrorAction SilentlyContinue
                     Remove-Item C:\cache\vcpkg-packages -Recurse -ErrorAction SilentlyContinue
+                    
+                    Remove-Item C:\cache\vcpkg-buildtrees -ErrorAction SilentlyContinue
+                    Remove-Item C:\cache\vcpkg-downloads -ErrorAction SilentlyContinue
+                    Remove-Item C:\cache\vcpkg-packages -ErrorAction SilentlyContinue
 
                     Copy-Item External/vcpkg/buildtrees -Destination C:\cache\vcpkg-buildtrees -Recurse
                     Copy-Item External/vcpkg/downloads -Destination C:\cache\vcpkg-downloads -Recurse
