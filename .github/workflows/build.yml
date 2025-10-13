@@ -135,7 +135,7 @@ jobs:
                 shell: powershell
                 run: |
                     mkdir _dist-release-pdbs
-                    Move-Item _dist-release/*.pdb -Destination _dist-release-pdbs/ -Recurse
+                    Get-ChildItem -Path _dist-release\* -Include *.pdb -Recurse | Move-Item -Destination _dist-release-pdbs
 
             -   name: Archive release SDK and mods
                 uses: actions/upload-artifact@v4
