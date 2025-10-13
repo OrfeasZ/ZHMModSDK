@@ -267,8 +267,8 @@ void FreeCam::DisableFreecam() {
 void FreeCam::InstantlyKillNpc() {
     ZRayQueryOutput s_RayOutput {};
 
-    if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_BlockingEntity) {
-        ZEntityRef s_LogicalParent = s_RayOutput.m_BlockingEntity.GetLogicalParent();
+    if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
+        ZEntityRef s_LogicalParent = s_RayOutput.m_pBlockingSpatialEntity.m_ref.GetLogicalParent();
         ZActor* s_Actor = s_LogicalParent.QueryInterface<ZActor>();
 
         if (s_Actor) {
@@ -285,7 +285,7 @@ void FreeCam::InstantlyKillNpc() {
 void FreeCam::TeleportMainCharacter() {
     ZRayQueryOutput s_RayOutput {};
 
-    if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_BlockingEntity) {
+    if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
         if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
             ZSpatialEntity* s_SpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
             SMatrix s_WorldMatrix = s_SpatialEntity->GetWorldMatrix();

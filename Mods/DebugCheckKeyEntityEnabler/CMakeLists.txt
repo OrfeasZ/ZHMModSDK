@@ -19,7 +19,3 @@ target_include_directories(DebugCheckKeyEntityEnabler PRIVATE
 target_link_libraries(DebugCheckKeyEntityEnabler PRIVATE
 	ZHMModSDK
 )
-
-install(TARGETS DebugCheckKeyEntityEnabler
-	RUNTIME DESTINATION bin/mods
-)

@@ -120,7 +120,7 @@ void Console::Draw(bool p_HasFocus) {
     ImGui::PopFont();
 }
 
-void Console::AddLogLine(spdlog::level::level_enum p_Level, const ZString& p_Text) {
+void Console::AddLogLine(spdlog::level::level_enum p_Level, const std::string& p_Text) {
     AcquireSRWLockExclusive(&m_Lock);
 
     m_LogLines.push_back(LogLine {p_Level, std::string(p_Text.c_str(), p_Text.size())});

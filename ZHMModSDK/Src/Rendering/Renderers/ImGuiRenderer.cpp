@@ -5,11 +5,11 @@
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
 
-#include <imgui.h>
 #include "ImGuiImpl.h"
 #include <DDSTextureLoader.h>
 #include <ResourceUploadBatch.h>
 #include <DirectXHelpers.h>
+#include <windowsx.h>
 
 #include "Hooks.h"
 #include "Logging.h"
@@ -45,31 +45,6 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
     // We can honor io.WantSetMousePos requests (optional, rarely used)
     s_ImGuiIO.BackendPlatformName = "imgui_impl_win32";
-
-    // Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeysDown[] array that we will update during the application lifetime.
-    s_ImGuiIO.KeyMap[ImGuiKey_Tab] = VK_TAB;
-    s_ImGuiIO.KeyMap[ImGuiKey_LeftArrow] = VK_LEFT;
-    s_ImGuiIO.KeyMap[ImGuiKey_RightArrow] = VK_RIGHT;
-    s_ImGuiIO.KeyMap[ImGuiKey_UpArrow] = VK_UP;
-    s_ImGuiIO.KeyMap[ImGuiKey_DownArrow] = VK_DOWN;
-    s_ImGuiIO.KeyMap[ImGuiKey_PageUp] = VK_PRIOR;
-    s_ImGuiIO.KeyMap[ImGuiKey_PageDown] = VK_NEXT;
-    s_ImGuiIO.KeyMap[ImGuiKey_Home] = VK_HOME;
-    s_ImGuiIO.KeyMap[ImGuiKey_End] = VK_END;
-    s_ImGuiIO.KeyMap[ImGuiKey_Insert] = VK_INSERT;
-    s_ImGuiIO.KeyMap[ImGuiKey_Delete] = VK_DELETE;
-    s_ImGuiIO.KeyMap[ImGuiKey_Backspace] = VK_BACK;
-    s_ImGuiIO.KeyMap[ImGuiKey_Space] = VK_SPACE;
-    s_ImGuiIO.KeyMap[ImGuiKey_Enter] = VK_RETURN;
-    s_ImGuiIO.KeyMap[ImGuiKey_Escape] = VK_ESCAPE;
-    s_ImGuiIO.KeyMap[ImGuiKey_KeypadEnter] = VK_RETURN;
-    s_ImGuiIO.KeyMap[ImGuiKey_A] = 'A';
-    s_ImGuiIO.KeyMap[ImGuiKey_C] = 'C';
-    s_ImGuiIO.KeyMap[ImGuiKey_V] = 'V';
-    s_ImGuiIO.KeyMap[ImGuiKey_X] = 'X';
-    s_ImGuiIO.KeyMap[ImGuiKey_Y] = 'Y';
-    s_ImGuiIO.KeyMap[ImGuiKey_Z] = 'Z';
-
     s_ImGuiIO.BackendRendererName = "imgui_impl_dx12";
     s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 
@@ -233,24 +208,8 @@ void ImGuiRenderer::Draw() {
     s_ImGuiIO.DeltaTime = static_cast<float>(s_CurrentTime - m_Time) / m_TicksPerSecond;
     m_Time = s_CurrentTime;
 
-    s_ImGuiIO.KeyCtrl = (::GetKeyState(VK_CONTROL) & 0x8000) != 0;
-    s_ImGuiIO.KeyShift = (::GetKeyState(VK_SHIFT) & 0x8000) != 0;
-    s_ImGuiIO.KeyAlt = (::GetKeyState(VK_MENU) & 0x8000) != 0;
-    s_ImGuiIO.KeySuper = false;
-
-    // Set mouse position
-    if (m_ImguiHasFocus) {
-        s_ImGuiIO.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
-
-        if (auto* s_ForegroundWnd = GetForegroundWindow()) {
-            if (s_ForegroundWnd == m_Hwnd || IsChild(s_ForegroundWnd, m_Hwnd)) {
-                POINT s_CursorPos;
-
-                if (GetCursorPos(&s_CursorPos) && ScreenToClient(m_Hwnd, &s_CursorPos))
-                    s_ImGuiIO.MousePos = ImVec2(static_cast<float>(s_CursorPos.x), static_cast<float>(s_CursorPos.y));
-            }
-        }
-    }
+    UpdateMouseData(s_ImGuiIO);
+    ProcessKeyEventsWorkarounds(s_ImGuiIO);
 
     // Construct the UI.
     ImGui::NewFrame();
@@ -608,6 +567,246 @@ void ImGuiRenderer::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue) {
     m_CommandQueue = p_CommandQueue;
 }
 
+ImGuiMouseSource ImGuiRenderer::GetMouseSourceFromMessageExtraInfo() {
+    const auto s_ExtraInfo = ::GetMessageExtraInfo();
+
+    if ((s_ExtraInfo & 0xFFFFFF80) == 0xFF515700) {
+        return ImGuiMouseSource_Pen;
+    }
+
+    if ((s_ExtraInfo & 0xFFFFFF80) == 0xFF515780) {
+        return ImGuiMouseSource_TouchScreen;
+    }
+
+    return ImGuiMouseSource_Mouse;
+}
+
+bool ImGuiRenderer::IsVkDown(int p_Vk) {
+    return (::GetKeyState(p_Vk) & 0x8000) != 0;
+}
+
+void ImGuiRenderer::UpdateKeyModifiers(ImGuiIO& p_ImGuiIO) {
+    p_ImGuiIO.AddKeyEvent(ImGuiMod_Ctrl, IsVkDown(VK_CONTROL));
+    p_ImGuiIO.AddKeyEvent(ImGuiMod_Shift, IsVkDown(VK_SHIFT));
+    p_ImGuiIO.AddKeyEvent(ImGuiMod_Alt, IsVkDown(VK_MENU));
+    p_ImGuiIO.AddKeyEvent(ImGuiMod_Super, IsVkDown(VK_LWIN) || IsVkDown(VK_RWIN));
+}
+
+void ImGuiRenderer::UpdateKeyboardCodePage() {
+    // Retrieve keyboard code page, required for handling of non-Unicode Windows.
+    const auto s_KeyboardLayout = ::GetKeyboardLayout(0);
+    const auto s_KeyboardLcid = MAKELCID(HIWORD(s_KeyboardLayout), SORT_DEFAULT);
+
+    if (::GetLocaleInfoA(
+        s_KeyboardLcid, (LOCALE_RETURN_NUMBER | LOCALE_IDEFAULTANSICODEPAGE),
+        reinterpret_cast<LPSTR>(&m_KeyboardCodePage),
+        sizeof(m_KeyboardCodePage)
+    ) == 0) {
+        m_KeyboardCodePage = CP_ACP; // Fallback to default ANSI code page when fails.
+    }
+}
+
+ImGuiKey ImGuiRenderer::KeyEventToImGuiKey(WPARAM p_Wparam, LPARAM p_Lparam) {
+    // There is no distinct VK_xxx for keypad enter, instead it is VK_RETURN + KF_EXTENDED.
+    if ((p_Wparam == VK_RETURN) && (HIWORD(p_Lparam) & KF_EXTENDED))
+        return ImGuiKey_KeypadEnter;
+
+    const int s_Scancode = LOBYTE(HIWORD(p_Lparam));
+
+    switch (p_Wparam) {
+        case VK_TAB: return ImGuiKey_Tab;
+        case VK_LEFT: return ImGuiKey_LeftArrow;
+        case VK_RIGHT: return ImGuiKey_RightArrow;
+        case VK_UP: return ImGuiKey_UpArrow;
+        case VK_DOWN: return ImGuiKey_DownArrow;
+        case VK_PRIOR: return ImGuiKey_PageUp;
+        case VK_NEXT: return ImGuiKey_PageDown;
+        case VK_HOME: return ImGuiKey_Home;
+        case VK_END: return ImGuiKey_End;
+        case VK_INSERT: return ImGuiKey_Insert;
+        case VK_DELETE: return ImGuiKey_Delete;
+        case VK_BACK: return ImGuiKey_Backspace;
+        case VK_SPACE: return ImGuiKey_Space;
+        case VK_RETURN: return ImGuiKey_Enter;
+        case VK_ESCAPE: return ImGuiKey_Escape;
+        //case VK_OEM_7: return ImGuiKey_Apostrophe;
+        case VK_OEM_COMMA: return ImGuiKey_Comma;
+        //case VK_OEM_MINUS: return ImGuiKey_Minus;
+        case VK_OEM_PERIOD: return ImGuiKey_Period;
+        //case VK_OEM_2: return ImGuiKey_Slash;
+        //case VK_OEM_1: return ImGuiKey_Semicolon;
+        //case VK_OEM_PLUS: return ImGuiKey_Equal;
+        //case VK_OEM_4: return ImGuiKey_LeftBracket;
+        //case VK_OEM_5: return ImGuiKey_Backslash;
+        //case VK_OEM_6: return ImGuiKey_RightBracket;
+        //case VK_OEM_3: return ImGuiKey_GraveAccent;
+        case VK_CAPITAL: return ImGuiKey_CapsLock;
+        case VK_SCROLL: return ImGuiKey_ScrollLock;
+        case VK_NUMLOCK: return ImGuiKey_NumLock;
+        case VK_SNAPSHOT: return ImGuiKey_PrintScreen;
+        case VK_PAUSE: return ImGuiKey_Pause;
+        case VK_NUMPAD0: return ImGuiKey_Keypad0;
+        case VK_NUMPAD1: return ImGuiKey_Keypad1;
+        case VK_NUMPAD2: return ImGuiKey_Keypad2;
+        case VK_NUMPAD3: return ImGuiKey_Keypad3;
+        case VK_NUMPAD4: return ImGuiKey_Keypad4;
+        case VK_NUMPAD5: return ImGuiKey_Keypad5;
+        case VK_NUMPAD6: return ImGuiKey_Keypad6;
+        case VK_NUMPAD7: return ImGuiKey_Keypad7;
+        case VK_NUMPAD8: return ImGuiKey_Keypad8;
+        case VK_NUMPAD9: return ImGuiKey_Keypad9;
+        case VK_DECIMAL: return ImGuiKey_KeypadDecimal;
+        case VK_DIVIDE: return ImGuiKey_KeypadDivide;
+        case VK_MULTIPLY: return ImGuiKey_KeypadMultiply;
+        case VK_SUBTRACT: return ImGuiKey_KeypadSubtract;
+        case VK_ADD: return ImGuiKey_KeypadAdd;
+        case VK_LSHIFT: return ImGuiKey_LeftShift;
+        case VK_LCONTROL: return ImGuiKey_LeftCtrl;
+        case VK_LMENU: return ImGuiKey_LeftAlt;
+        case VK_LWIN: return ImGuiKey_LeftSuper;
+        case VK_RSHIFT: return ImGuiKey_RightShift;
+        case VK_RCONTROL: return ImGuiKey_RightCtrl;
+        case VK_RMENU: return ImGuiKey_RightAlt;
+        case VK_RWIN: return ImGuiKey_RightSuper;
+        case VK_APPS: return ImGuiKey_Menu;
+        case '0': return ImGuiKey_0;
+        case '1': return ImGuiKey_1;
+        case '2': return ImGuiKey_2;
+        case '3': return ImGuiKey_3;
+        case '4': return ImGuiKey_4;
+        case '5': return ImGuiKey_5;
+        case '6': return ImGuiKey_6;
+        case '7': return ImGuiKey_7;
+        case '8': return ImGuiKey_8;
+        case '9': return ImGuiKey_9;
+        case 'A': return ImGuiKey_A;
+        case 'B': return ImGuiKey_B;
+        case 'C': return ImGuiKey_C;
+        case 'D': return ImGuiKey_D;
+        case 'E': return ImGuiKey_E;
+        case 'F': return ImGuiKey_F;
+        case 'G': return ImGuiKey_G;
+        case 'H': return ImGuiKey_H;
+        case 'I': return ImGuiKey_I;
+        case 'J': return ImGuiKey_J;
+        case 'K': return ImGuiKey_K;
+        case 'L': return ImGuiKey_L;
+        case 'M': return ImGuiKey_M;
+        case 'N': return ImGuiKey_N;
+        case 'O': return ImGuiKey_O;
+        case 'P': return ImGuiKey_P;
+        case 'Q': return ImGuiKey_Q;
+        case 'R': return ImGuiKey_R;
+        case 'S': return ImGuiKey_S;
+        case 'T': return ImGuiKey_T;
+        case 'U': return ImGuiKey_U;
+        case 'V': return ImGuiKey_V;
+        case 'W': return ImGuiKey_W;
+        case 'X': return ImGuiKey_X;
+        case 'Y': return ImGuiKey_Y;
+        case 'Z': return ImGuiKey_Z;
+        case VK_F1: return ImGuiKey_F1;
+        case VK_F2: return ImGuiKey_F2;
+        case VK_F3: return ImGuiKey_F3;
+        case VK_F4: return ImGuiKey_F4;
+        case VK_F5: return ImGuiKey_F5;
+        case VK_F6: return ImGuiKey_F6;
+        case VK_F7: return ImGuiKey_F7;
+        case VK_F8: return ImGuiKey_F8;
+        case VK_F9: return ImGuiKey_F9;
+        case VK_F10: return ImGuiKey_F10;
+        case VK_F11: return ImGuiKey_F11;
+        case VK_F12: return ImGuiKey_F12;
+        case VK_F13: return ImGuiKey_F13;
+        case VK_F14: return ImGuiKey_F14;
+        case VK_F15: return ImGuiKey_F15;
+        case VK_F16: return ImGuiKey_F16;
+        case VK_F17: return ImGuiKey_F17;
+        case VK_F18: return ImGuiKey_F18;
+        case VK_F19: return ImGuiKey_F19;
+        case VK_F20: return ImGuiKey_F20;
+        case VK_F21: return ImGuiKey_F21;
+        case VK_F22: return ImGuiKey_F22;
+        case VK_F23: return ImGuiKey_F23;
+        case VK_F24: return ImGuiKey_F24;
+        case VK_BROWSER_BACK: return ImGuiKey_AppBack;
+        case VK_BROWSER_FORWARD: return ImGuiKey_AppForward;
+        default: break;
+    }
+
+    // Fallback to scancode
+    // https://handmade.network/forums/t/2011-keyboard_inputs_-_scancodes,_raw_input,_text_input,_key_names
+    switch (s_Scancode) {
+        case 41: return ImGuiKey_GraveAccent;
+        // VK_OEM_8 in EN-UK, VK_OEM_3 in EN-US, VK_OEM_7 in FR, VK_OEM_5 in DE, etc.
+        case 12: return ImGuiKey_Minus;
+        case 13: return ImGuiKey_Equal;
+        case 26: return ImGuiKey_LeftBracket;
+        case 27: return ImGuiKey_RightBracket;
+        case 86: return ImGuiKey_Oem102;
+        case 43: return ImGuiKey_Backslash;
+        case 39: return ImGuiKey_Semicolon;
+        case 40: return ImGuiKey_Apostrophe;
+        case 51: return ImGuiKey_Comma;
+        case 52: return ImGuiKey_Period;
+        case 53: return ImGuiKey_Slash;
+        default: break;
+    }
+
+    return ImGuiKey_None;
+}
+
+void ImGuiRenderer::AddKeyEvent(
+    ImGuiIO& p_ImGuiIO, ImGuiKey p_Key, bool p_Down, int p_NativeKeycode, int p_NativeScancode
+) {
+    p_ImGuiIO.AddKeyEvent(p_Key, p_Down);
+    p_ImGuiIO.SetKeyEventNativeData(p_Key, p_NativeKeycode, p_NativeScancode);
+}
+
+void ImGuiRenderer::UpdateMouseData(ImGuiIO& p_ImGuiIO) {
+    const auto s_FocusedWindow = ::GetForegroundWindow();
+    const bool s_IsAppFocused = (s_FocusedWindow == m_Hwnd);
+
+    if (s_IsAppFocused) {
+        // (Optional) Set OS mouse position from Dear ImGui if requested (rarely used, only when io.ConfigNavMoveSetMousePos is enabled by user)
+        if (p_ImGuiIO.WantSetMousePos) {
+            POINT s_Pos = {static_cast<int>(p_ImGuiIO.MousePos.x), static_cast<int>(p_ImGuiIO.MousePos.y)};
+            if (::ClientToScreen(m_Hwnd, &s_Pos)) {
+                ::SetCursorPos(s_Pos.x, s_Pos.y);
+            }
+        }
+
+        // (Optional) Fallback to provide mouse position when focused (WM_MOUSEMOVE already provides this when hovered or captured)
+        // This also fills a short gap when clicking non-client area: WM_NCMOUSELEAVE -> modal OS move -> gap -> WM_NCMOUSEMOVE
+        if (!p_ImGuiIO.WantSetMousePos && m_MouseTrackedArea == 0) {
+            POINT s_Pos;
+            if (::GetCursorPos(&s_Pos) && ::ScreenToClient(m_Hwnd, &s_Pos)) {
+                p_ImGuiIO.AddMousePosEvent(static_cast<float>(s_Pos.x), static_cast<float>(s_Pos.y));
+            }
+        }
+    }
+}
+
+void ImGuiRenderer::ProcessKeyEventsWorkarounds(ImGuiIO& io) {
+    // Left & right Shift keys: when both are pressed together, Windows tend to not generate the WM_KEYUP event for the first released one.
+    if (ImGui::IsKeyDown(ImGuiKey_LeftShift) && !IsVkDown(VK_LSHIFT)) {
+        AddKeyEvent(io, ImGuiKey_LeftShift, false, VK_LSHIFT);
+    }
+
+    if (ImGui::IsKeyDown(ImGuiKey_RightShift) && !IsVkDown(VK_RSHIFT)) {
+        AddKeyEvent(io, ImGuiKey_RightShift, false, VK_RSHIFT);
+    }
+
+    // Sometimes WM_KEYUP for Win key is not passed down to the app (e.g. for Win+V on some setups, according to GLFW).
+    if (ImGui::IsKeyDown(ImGuiKey_LeftSuper) && !IsVkDown(VK_LWIN)) {
+        AddKeyEvent(io, ImGuiKey_LeftSuper, false, VK_LWIN);
+    }
+
+    if (ImGui::IsKeyDown(ImGuiKey_RightSuper) && !IsVkDown(VK_RWIN)) {
+        AddKeyEvent(io, ImGuiKey_RightSuper, false, VK_RWIN);
+    }
+}
+
 DEFINE_DETOUR_WITH_CONTEXT(
     ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32* th, HWND p_Hwnd, UINT p_Message, WPARAM p_Wparam,
     LPARAM p_Lparam
@@ -630,8 +829,9 @@ DEFINE_DETOUR_WITH_CONTEXT(
         if (!m_ImguiHasFocus) {
             DWORD s_EventCount = 256;
             DIDEVICEOBJECTDATA s_Buffer[256];
-            ZKeyboardWindows* s_KeyboardWindows = static_cast<ZKeyboardWindows*>(Globals::InputDeviceManager->m_devices[
-                4]);
+            ZKeyboardWindows* s_KeyboardWindows = static_cast<ZKeyboardWindows*>(
+                Globals::InputDeviceManager->m_devices[4]
+            );
 
             if (s_KeyboardWindows->dif.m_pDev) {
                 // Prevents buffered events from being processed by the game after imgui is closed
@@ -674,6 +874,66 @@ DEFINE_DETOUR_WITH_CONTEXT(
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
 
     switch (p_Message) {
+        case WM_MOUSEMOVE:
+        case WM_NCMOUSEMOVE: {
+            // We need to call TrackMouseEvent in order to receive WM_MOUSELEAVE events
+            const auto s_MouseSource = GetMouseSourceFromMessageExtraInfo();
+            const int s_Area = (p_Message == WM_MOUSEMOVE) ? 1 : 2;
+            m_MouseHwnd = p_Hwnd;
+
+            if (m_MouseTrackedArea != s_Area) {
+                TRACKMOUSEEVENT s_TmeCancel = {sizeof(s_TmeCancel), TME_CANCEL, p_Hwnd, 0};
+                TRACKMOUSEEVENT s_TmeTrack = {
+                    sizeof(s_TmeTrack), static_cast<DWORD>(s_Area == 2 ? (TME_LEAVE | TME_NONCLIENT) : TME_LEAVE),
+                    p_Hwnd, 0
+                };
+
+                if (m_MouseTrackedArea != 0) {
+                    ::TrackMouseEvent(&s_TmeCancel);
+                }
+
+                ::TrackMouseEvent(&s_TmeTrack);
+                m_MouseTrackedArea = s_Area;
+            }
+
+            POINT s_MousePos = {static_cast<LONG>(GET_X_LPARAM(p_Lparam)), static_cast<LONG>(GET_Y_LPARAM(p_Lparam))};
+
+            if (p_Message == WM_NCMOUSEMOVE && ::ScreenToClient(p_Hwnd, &s_MousePos) == FALSE) {
+                // WM_NCMOUSEMOVE are provided in absolute coordinates.
+                break;
+            }
+
+            s_ImGuiIO.AddMouseSourceEvent(s_MouseSource);
+            s_ImGuiIO.AddMousePosEvent(static_cast<float>(s_MousePos.x), static_cast<float>(s_MousePos.y));
+
+            break;
+        }
+
+        case WM_MOUSELEAVE:
+        case WM_NCMOUSELEAVE: {
+            if (const int s_Area = (p_Message == WM_MOUSELEAVE) ? 1 : 2; m_MouseTrackedArea == s_Area) {
+                if (m_MouseHwnd == p_Hwnd) {
+                    m_MouseHwnd = nullptr;
+                }
+
+                m_MouseTrackedArea = 0;
+                s_ImGuiIO.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+            }
+
+            break;
+        }
+
+        case WM_DESTROY:
+            if (m_MouseHwnd == p_Hwnd && m_MouseTrackedArea != 0) {
+                TRACKMOUSEEVENT s_TmeCancel = {sizeof(s_TmeCancel), TME_CANCEL, p_Hwnd, 0};
+                ::TrackMouseEvent(&s_TmeCancel);
+                m_MouseHwnd = nullptr;
+                m_MouseTrackedArea = 0;
+                s_ImGuiIO.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+            }
+
+            break;
+
         case WM_LBUTTONDOWN:
         case WM_LBUTTONDBLCLK:
         case WM_RBUTTONDOWN:
@@ -682,21 +942,31 @@ DEFINE_DETOUR_WITH_CONTEXT(
         case WM_MBUTTONDBLCLK:
         case WM_XBUTTONDOWN:
         case WM_XBUTTONDBLCLK: {
+            const auto s_MouseSource = GetMouseSourceFromMessageExtraInfo();
             int s_Button = 0;
 
-            if (p_Message == WM_LBUTTONDOWN || p_Message == WM_LBUTTONDBLCLK)
-                s_Button = 0;
-            if (p_Message == WM_RBUTTONDOWN || p_Message == WM_RBUTTONDBLCLK)
-                s_Button = 1;
-            if (p_Message == WM_MBUTTONDOWN || p_Message == WM_MBUTTONDBLCLK)
-                s_Button = 2;
-            if (p_Message == WM_XBUTTONDOWN || p_Message == WM_XBUTTONDBLCLK)
-                s_Button = (GET_XBUTTON_WPARAM(p_Wparam) == XBUTTON1) ? 3 : 4;
+            if (p_Message == WM_LBUTTONDOWN || p_Message == WM_LBUTTONDBLCLK) { s_Button = 0; }
+            if (p_Message == WM_RBUTTONDOWN || p_Message == WM_RBUTTONDBLCLK) { s_Button = 1; }
+            if (p_Message == WM_MBUTTONDOWN || p_Message == WM_MBUTTONDBLCLK) { s_Button = 2; }
+            if (p_Message == WM_XBUTTONDOWN || p_Message == WM_XBUTTONDBLCLK) {
+                s_Button = GET_XBUTTON_WPARAM(p_Wparam) == XBUTTON1 ? 3 : 4;
+            }
 
-            if (!ImGui::IsAnyMouseDown() && GetCapture() == nullptr)
-                SetCapture(p_Hwnd);
+            HWND s_HwndWithCapture = ::GetCapture();
 
-            s_ImGuiIO.MouseDown[s_Button] = true;
+            if (m_MouseButtonsDown != 0 && s_HwndWithCapture != p_Hwnd) {
+                // Did we externally lose capture?
+                m_MouseButtonsDown = 0;
+            }
+
+            if (m_MouseButtonsDown == 0 && s_HwndWithCapture == nullptr) {
+                ::SetCapture(p_Hwnd);
+            }
+
+            // Allow us to read mouse coordinates when dragging mouse outside our window bounds.
+            m_MouseButtonsDown |= 1 << s_Button;
+            s_ImGuiIO.AddMouseSourceEvent(s_MouseSource);
+            s_ImGuiIO.AddMouseButtonEvent(s_Button, true);
 
             break;
         }
@@ -705,59 +975,123 @@ DEFINE_DETOUR_WITH_CONTEXT(
         case WM_RBUTTONUP:
         case WM_MBUTTONUP:
         case WM_XBUTTONUP: {
+            const auto s_MouseSource = GetMouseSourceFromMessageExtraInfo();
             int s_Button = 0;
 
-            if (p_Message == WM_LBUTTONUP)
-                s_Button = 0;
-            if (p_Message == WM_RBUTTONUP)
-                s_Button = 1;
-            if (p_Message == WM_MBUTTONUP)
-                s_Button = 2;
+            if (p_Message == WM_LBUTTONUP) { s_Button = 0; }
+            if (p_Message == WM_RBUTTONUP) { s_Button = 1; }
+            if (p_Message == WM_MBUTTONUP) { s_Button = 2; }
+            if (p_Message == WM_XBUTTONUP) { s_Button = (GET_XBUTTON_WPARAM(p_Wparam) == XBUTTON1) ? 3 : 4; }
 
-            if (p_Message == WM_XBUTTONUP)
-                s_Button = (GET_XBUTTON_WPARAM(p_Wparam) == XBUTTON1) ? 3 : 4;
+            m_MouseButtonsDown &= ~(1 << s_Button);
 
-            s_ImGuiIO.MouseDown[s_Button] = false;
+            if (m_MouseButtonsDown == 0 && ::GetCapture() == p_Hwnd) {
+                ::ReleaseCapture();
+            }
 
-            if (!ImGui::IsAnyMouseDown() && GetCapture() == p_Hwnd)
-                ReleaseCapture();
+            s_ImGuiIO.AddMouseSourceEvent(s_MouseSource);
+            s_ImGuiIO.AddMouseButtonEvent(s_Button, false);
 
             break;
         }
+
         case WM_MOUSEWHEEL:
-            s_ImGuiIO.MouseWheel += static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(
-                WHEEL_DELTA);
+            s_ImGuiIO.AddMouseWheelEvent(
+                0.0f, static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(WHEEL_DELTA)
+            );
             break;
 
         case WM_MOUSEHWHEEL:
-            s_ImGuiIO.MouseWheelH += static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(
-                WHEEL_DELTA);
+            s_ImGuiIO.AddMouseWheelEvent(
+                -static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(WHEEL_DELTA), 0.0f
+            );
             break;
 
         case WM_KEYDOWN:
+        case WM_KEYUP:
         case WM_SYSKEYDOWN:
-            if (p_Wparam < 256)
-                s_ImGuiIO.KeysDown[p_Wparam] = true;
+        case WM_SYSKEYUP: {
+            const bool s_IsKeyDown = (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN);
 
+            if (p_Wparam < 256) {
+                // Submit modifiers
+                UpdateKeyModifiers(s_ImGuiIO);
+
+                // Obtain virtual key code and convert to ImGuiKey
+                const ImGuiKey s_Key = KeyEventToImGuiKey(p_Wparam, p_Lparam);
+                const int s_Vk = static_cast<int>(p_Wparam);
+                const int s_Scancode = LOBYTE(HIWORD(p_Lparam));
+
+                // Special behavior for VK_SNAPSHOT / ImGuiKey_PrintScreen as Windows doesn't emit the key down event.
+                if (s_Key == ImGuiKey_PrintScreen && !s_IsKeyDown) {
+                    AddKeyEvent(s_ImGuiIO, s_Key, true, s_Vk, s_Scancode);
+                }
+
+                // Submit key event
+                if (s_Key != ImGuiKey_None) {
+                    AddKeyEvent(s_ImGuiIO, s_Key, s_IsKeyDown, s_Vk, s_Scancode);
+                }
+
+                // Submit individual left/right modifier events
+                if (s_Vk == VK_SHIFT) {
+                    // Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in ImGui_ImplWin32_ProcessKeyEventsWorkarounds()
+                    if (IsVkDown(VK_LSHIFT) == s_IsKeyDown) {
+                        AddKeyEvent(s_ImGuiIO, ImGuiKey_LeftShift, s_IsKeyDown, VK_LSHIFT, s_Scancode);
+                    }
+                    if (IsVkDown(VK_RSHIFT) == s_IsKeyDown) {
+                        AddKeyEvent(s_ImGuiIO, ImGuiKey_RightShift, s_IsKeyDown, VK_RSHIFT, s_Scancode);
+                    }
+                }
+                else if (s_Vk == VK_CONTROL) {
+                    if (IsVkDown(VK_LCONTROL) == s_IsKeyDown) {
+                        AddKeyEvent(s_ImGuiIO, ImGuiKey_LeftCtrl, s_IsKeyDown, VK_LCONTROL, s_Scancode);
+                    }
+                    if (IsVkDown(VK_RCONTROL) == s_IsKeyDown) {
+                        AddKeyEvent(s_ImGuiIO, ImGuiKey_RightCtrl, s_IsKeyDown, VK_RCONTROL, s_Scancode);
+                    }
+                }
+                else if (s_Vk == VK_MENU) {
+                    if (IsVkDown(VK_LMENU) == s_IsKeyDown) {
+                        AddKeyEvent(s_ImGuiIO, ImGuiKey_LeftAlt, s_IsKeyDown, VK_LMENU, s_Scancode);
+                    }
+                    if (IsVkDown(VK_RMENU) == s_IsKeyDown) {
+                        AddKeyEvent(s_ImGuiIO, ImGuiKey_RightAlt, s_IsKeyDown, VK_RMENU, s_Scancode);
+                    }
+                }
+            }
+            break;
+        }
+
+        case WM_SETFOCUS:
+        case WM_KILLFOCUS:
+            s_ImGuiIO.AddFocusEvent(p_Message == WM_SETFOCUS);
             break;
 
-        case WM_KEYUP:
-        case WM_SYSKEYUP:
-            if (p_Wparam < 256)
-                s_ImGuiIO.KeysDown[p_Wparam] = false;
-
+        case WM_INPUTLANGCHANGE:
+            UpdateKeyboardCodePage();
             break;
 
         case WM_CHAR:
-            // You can also use ToAscii()+GetKeyboardState() to retrieve characters.
-            if (p_Wparam > 0 && p_Wparam < 0x10000)
-                s_ImGuiIO.AddInputCharacterUTF16(static_cast<unsigned short>(p_Wparam));
+            if (::IsWindowUnicode(p_Hwnd)) {
+                // You can also use ToAscii()+GetKeyboardState() to retrieve characters.
+                if (p_Wparam > 0 && p_Wparam < 0x10000) {
+                    s_ImGuiIO.AddInputCharacterUTF16(static_cast<unsigned short>(p_Wparam));
+                }
+            }
+            else {
+                wchar_t s_Wch = 0;
+                ::MultiByteToWideChar(
+                    m_KeyboardCodePage, MB_PRECOMPOSED, reinterpret_cast<char*>(&p_Wparam), 1, &s_Wch, 1
+                );
+
+                s_ImGuiIO.AddInputCharacter(s_Wch);
+            }
 
             break;
     }
 
     // Don't call the original function so input isn't passed down to the game.
-    return HookResult<LRESULT>(HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam));
+    return {HookAction::Return(), DefWindowProcW(p_Hwnd, p_Message, p_Wparam, p_Lparam)};
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ImGuiRenderer, void, ZKeyboardWindows_Update, ZKeyboardWindows*, bool) {

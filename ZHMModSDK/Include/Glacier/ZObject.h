@@ -128,7 +128,7 @@ public:
     void Replace(const T& p_Value) {
         Clear();
 
-        m_pTypeID = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>)->second;
+        m_pTypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
         m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
             m_pTypeID->typeInfo()->m_nTypeSize,
             m_pTypeID->typeInfo()->m_nTypeAlignment
@@ -237,7 +237,7 @@ class ZVariantRef :
         public ZObjectRef {
 public:
     ZVariantRef(T* p_Value) {
-        m_pTypeID = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>)->second;
+        m_pTypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
         m_pData = p_Value;
     }
 

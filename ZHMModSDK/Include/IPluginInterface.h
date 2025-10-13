@@ -163,12 +163,12 @@ public:
 };
 
 typedef IPluginInterface* (__cdecl*GetPluginInterface_t)();
-typedef const char* (__cdecl*CompiledSdkAbiVersion_t)();
+typedef int (__cdecl*CompiledSdkAbiVersion_t)();
 
 #define DECLARE_ZHM_PLUGIN(PluginClass) \
     extern "C" __declspec(dllexport) IPluginInterface* GetPluginInterface();\
     extern "C" __declspec(dllexport) const char* CompiledSdkVersion(); \
-    extern "C" __declspec(dllexport) const char* CompiledSdkAbiVersion(); \
+    extern "C" __declspec(dllexport) int CompiledSdkAbiVersion(); \
     \
     inline PluginClass* Plugin()\
     {\
@@ -187,7 +187,7 @@ typedef const char* (__cdecl*CompiledSdkAbiVersion_t)();
     }\
     \
     extern "C" __declspec(dllexport) const char* CompiledSdkVersion() { return ZHMMODSDK_VER; } \
-    extern "C" __declspec(dllexport) const char* CompiledSdkAbiVersion() { return ZHMMODSDK_ABI_VER; }
+    extern "C" __declspec(dllexport) int CompiledSdkAbiVersion() { return ZHMMODSDK_ABI_VER; }
 
 #define DECLARE_PLUGIN_DETOUR(PluginClass, ReturnType, DetourName, ...) DECLARE_DETOUR_WITH_CONTEXT(PluginClass, ReturnType, DetourName, __VA_ARGS__)
 

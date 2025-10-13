@@ -42,8 +42,7 @@ void DebugMod::OnEngineInitialized() {
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 }
 
-void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
-}
+void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
 void DebugMod::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_BUILD " DEBUG MENU")) {
@@ -70,7 +69,6 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
-
         if (ImGui::CollapsingHeader("Actors")) {
             ImGui::Checkbox("Render Actor position boxes", &m_RenderActorBoxes);
             ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
@@ -96,7 +94,8 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
                     static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
                     static const SVector4 s_AdjacentLineColor = SVector4(1.f, 1.f, 1.f, 1.f);
 
-                    const uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_NavPowerResources[0].m_pNavpowerResource);
+                    const uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_NavPowerResources[0]
+                        .m_pNavpowerResource);
                     const uint32_t s_NavpDataSize = Globals::Pathfinder->m_NavPowerResources[0].m_nNavpowerResourceSize;
 
                     m_NavpData.resize(s_NavpDataSize);
@@ -195,8 +194,7 @@ void DebugMod::CopyToClipboard(const std::string& p_String) {
     CloseClipboard();
 }
 
-void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
-}
+void DebugMod::OnDraw3D(IRenderer* p_Renderer) {}
 
 void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
     if (m_DrawReasoningGrid) {
@@ -224,14 +222,6 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
             float4 s_Min, s_Max;
 
             s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
-
-            if (!p_Renderer->IsInsideViewFrustum(
-                SVector3(s_Min.x, s_Min.y, s_Min.z),
-                SVector3(s_Max.x, s_Max.y, s_Max.z),
-                s_ActorTransform
-            )) {
-                continue;
-            }
 
             if (m_RenderActorBoxes) {
                 p_Renderer->DrawOBB3D(
@@ -276,10 +266,12 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 }
 
                 if (m_RenderActorBehaviors) {
-                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].m_pCurrentBehavior;
+                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].
+                            m_pCurrentBehavior;
 
                     if (s_BehaviorBase) {
-                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(s_BehaviorBase->m_Type);
+                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(
+                            s_BehaviorBase->m_Type);
 
                         if (s_Text.length() > 0) {
                             s_Text += "\n\n";
@@ -290,7 +282,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 }
 
                 p_Renderer->DrawText3D(
-                    s_Text,
+                    s_Text.c_str(),
                     s_CameraTransform,
                     SVector4(1.f, 1.f, 0.f, 1.f),
                     0.1f,
@@ -301,15 +293,16 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
     }
 }
 
-void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
-{
+void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
     const SReasoningGrid* s_ReasoningGrid = *Globals::ActiveGrid;
     const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
     for (size_t i = 0; i < s_WaypointCount * 2; ++i) {
-        p_Renderer->DrawTriangle3D(m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
+        p_Renderer->DrawTriangle3D(
+            m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
             m_Triangles[i].vertexPosition2, m_Triangles[i].vertexColor2,
-            m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3);
+            m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3
+        );
     }
 
     const ZGridNodeRef& s_HitmanNode = Globals::HM5GridManager->m_HitmanNode;
@@ -337,7 +330,8 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
                     s_Rating = 0.5f;
                 }
 
-                const unsigned int s_HeatMapColor = ((*Globals::GridManager)->GetHeatmapColorFromRating(s_Rating) & 0xFFFFFF) + 0x70000000;
+                const unsigned int s_HeatMapColor = ((*Globals::GridManager)->GetHeatmapColorFromRating(s_Rating) &
+                    0xFFFFFF) + 0x70000000;
                 const SVector4 s_VertexColor = ZColor::UnpackUnsigned(s_HeatMapColor);
 
                 m_Triangles[i].vertexColor1 = s_VertexColor;
@@ -345,7 +339,8 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
                 m_Triangles[i].vertexColor3 = s_VertexColor;
             }
             else if (m_ShowLayers) {
-                const unsigned int s_LayerIndex = static_cast<unsigned int>(s_ReasoningGrid->m_WaypointList[s_WaypointIndex].nLayerIndex);
+                const unsigned int s_LayerIndex = static_cast<unsigned int>(s_ReasoningGrid->m_WaypointList[
+                    s_WaypointIndex].nLayerIndex);
                 const unsigned int s_Color = (s_LayerIndex << 6) | 0xC0000000;
                 const SVector4 s_VertexColor = ZColor::UnpackUnsigned(s_Color);
 
@@ -360,9 +355,11 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
             }
         }
 
-        p_Renderer->DrawTriangle3D(m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
+        p_Renderer->DrawTriangle3D(
+            m_Triangles[i].vertexPosition1, m_Triangles[i].vertexColor1,
             m_Triangles[i].vertexPosition2, m_Triangles[i].vertexColor2,
-            m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3);
+            m_Triangles[i].vertexPosition3, m_Triangles[i].vertexColor3
+        );
     }
 
     for (size_t i = 0; i < m_Lines.size(); ++i) {
@@ -387,28 +384,24 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer)
         for (size_t i = 0; i < s_WaypointCount; ++i) {
             float4 s_WorldPosition = s_ReasoningGrid->m_WaypointList[i].vPos;
 
-            if (!p_Renderer->IsInsideViewFrustum(SVector3(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z))) {
-                continue;
-            }
-
             s_WorldPosition.z += 0.5f;
             s_WorldMatrix.Trans = s_WorldPosition;
 
             const std::string s_Text = std::to_string(i);
 
-            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+            p_Renderer->DrawText3D(s_Text.c_str(), s_WorldMatrix, s_Color, s_Scale);
         }
     }
 }
 
-void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
-{
+void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
     static const SVector4 s_GreenTriangleColor = SVector4(0.19608f, 0.80392f, 0.19608f, 0.49804f);
     static const SVector4 s_YellowTriangleColor = SVector4(1.f, 1.f, 0.f, 0.49804f);
 
     if (m_DrawPlannerAreasSolid) {
         for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
-            if (m_ColorizeAreaUsageFlags && m_NavMesh.m_areas[i].m_area->m_usageFlags == NavPower::AreaUsageFlags::AREA_STEPS) {
+            if (m_ColorizeAreaUsageFlags && m_NavMesh.m_areas[i].m_area->m_usageFlags ==
+                NavPower::AreaUsageFlags::AREA_STEPS) {
                 p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_YellowTriangleColor);
             }
             else {
@@ -419,13 +412,16 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
 
     if (m_DrawPlannerAreas) {
         for (size_t i = 0; i < m_NavMeshLines.size(); ++i) {
-            p_Renderer->DrawLine3D(m_NavMeshLines[i].start, m_NavMeshLines[i].end, m_NavMeshLines[i].startColor, m_NavMeshLines[i].endColor);
+            p_Renderer->DrawLine3D(
+                m_NavMeshLines[i].start, m_NavMeshLines[i].end, m_NavMeshLines[i].startColor, m_NavMeshLines[i].endColor
+            );
         }
     }
 
     if (m_DrawDrawPlannerConnectivity) {
         for (size_t i = 0; i < m_NavMeshConnectivityLines.size(); ++i) {
-            p_Renderer->DrawLine3D(m_NavMeshConnectivityLines[i].start, m_NavMeshConnectivityLines[i].end,
+            p_Renderer->DrawLine3D(
+                m_NavMeshConnectivityLines[i].start, m_NavMeshConnectivityLines[i].end,
                 m_NavMeshConnectivityLines[i].startColor, m_NavMeshConnectivityLines[i].endColor
             );
         }
@@ -442,8 +438,6 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
 
         std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
-        const float s_MaxDrawDistance = 50.0f;
-
         static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
         static const float s_Scale = 0.2f;
 
@@ -451,28 +445,16 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
             SVector3 s_WorldPosition = m_NavMesh.m_areas[i].m_area->m_pos;
 
             const DirectX::XMVECTOR s_WorldPosition2 = DirectX::XMVectorSet(
-                s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
-
-            const SVector3 s_CameraToWaypoint(
-                s_WorldPosition.x - s_WorldMatrix.Trans.x,
-                s_WorldPosition.y - s_WorldMatrix.Trans.y,
-                s_WorldPosition.z - s_WorldMatrix.Trans.z
+                s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f
             );
-
-            if (SVector3::DotProduct(s_CameraToWaypoint, s_CameraToWaypoint) > s_MaxDrawDistance * s_MaxDrawDistance) {
-                continue;
-            }
-
-            if (!p_Renderer->IsInsideViewFrustum(s_WorldPosition2)) {
-                continue;
-            }
 
             s_WorldPosition.z += 2.f;
             s_WorldMatrix.Trans = float4(s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f);
 
             std::string s_Text;
 
-            if (!m_NavMesh.m_areas[i].m_area->m_flags.IsImpassable() || m_NavMesh.m_areas[i].m_area->m_flags.ApplyObCostWhenFlagsDontMatch()) {
+            if (!m_NavMesh.m_areas[i].m_area->m_flags.IsImpassable() || m_NavMesh.m_areas[i].m_area->m_flags.
+                ApplyObCostWhenFlagsDontMatch()) {
                 const uint32_t obCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetObCostMult();
                 const uint32_t staticCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetStaticCostMult();
                 const uint32_t costMult = obCostMult > staticCostMult ? obCostMult : staticCostMult;
@@ -483,28 +465,23 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer)
                 s_Text = "---";
             }
 
-            p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+            p_Renderer->DrawText3D(s_Text.c_str(), s_WorldMatrix, s_Color, s_Scale);
         }
     }
 }
 
 void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
-    ZPFObstacleManagerDeprecated* s_ObstacleManagerDeprecated = static_cast<ZPFObstacleManagerDeprecated*>(Globals::Pathfinder->m_obstacleManager);
+    ZPFObstacleManagerDeprecated* s_ObstacleManagerDeprecated = static_cast<ZPFObstacleManagerDeprecated*>(
+        Globals::Pathfinder->m_obstacleManager);
 
     for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
         const SVector4 s_Color = SVector4(1.f, 1.f, 0.f, 0.29804f);
         const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
         const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
-        const SVector3 s_MinBound = SVector3(
-            -s_HalfSize.x,
-            -s_HalfSize.y,
-            -s_HalfSize.z);
-        const SVector3 s_MaxBound = SVector3(
-            s_HalfSize.x,
-            s_HalfSize.y,
-            s_HalfSize.z);
+        const SVector3 s_MinBound = -s_HalfSize;
+        const SVector3 s_MaxBound = s_HalfSize;
 
-        p_Renderer->DrawBoundingQuads(s_MinBound, s_MaxBound, s_Transform, s_Color);
+        p_Renderer->DrawBoundingQuads3D(s_MinBound, s_MaxBound, s_Transform, s_Color);
     }
 
     for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
@@ -532,7 +509,9 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
     static const float s_Scale = 0.3f;
 
     for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
-        ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*)(s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget());
+        ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (
+            ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*) (s_ObstacleManagerDeprecated->m_obstacles[i].
+                                                                    m_internal.GetTarget());
         const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
         const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
         float4 s_TopCenter = s_Transform.Trans + s_Transform.ZAxis * (s_HalfSize.z + 0.5f);
@@ -547,7 +526,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
             s_PFObstacleInternalDep->m_obstacleDef.m_penalty
         );
 
-        p_Renderer->DrawText3D(s_Text, s_WorldMatrix, s_Color, s_Scale);
+        p_Renderer->DrawText3D(s_Text.c_str(), s_WorldMatrix, s_Color, s_Scale);
     }
 }
 
@@ -804,12 +783,12 @@ void DebugMod::GenerateVerticesForNeighborConnectionLines() {
         }
     }
 }
+
 std::map<NavPower::Binary::Area*, uint32_t> DebugMod::GetAreaPointerToIndexMap() {
     std::map<NavPower::Binary::Area*, uint32_t> s_AreaPointerToIndexMap;
     uint32_t s_AreaIndex = 1;
 
-    for (NavPower::Area area : m_NavMesh.m_areas)
-    {
+    for (NavPower::Area area : m_NavMesh.m_areas) {
         s_AreaPointerToIndexMap.emplace(area.m_area, s_AreaIndex);
 
         s_AreaIndex++;
@@ -848,14 +827,17 @@ SVector3 DebugMod::ComputeTriangleNormal(const SVector3& t1, const SVector3& t2,
     return normal;
 }
 
-bool DebugMod::IsInTriangle(const SVector3& point, const SVector3& triangle1, const SVector3& triangle2, const SVector3& triangle3) {
+bool DebugMod::IsInTriangle(
+    const SVector3& point, const SVector3& triangle1, const SVector3& triangle2, const SVector3& triangle3
+) {
     // Test to see if it is within an infinite prism that the triangle outlines.
-    const bool within_tri_prisim = AreOnSameSide(point, triangle1, triangle2, triangle3) && AreOnSameSide(point, triangle2, triangle1, triangle3)
-        && AreOnSameSide(point, triangle3, triangle1, triangle2);
+    const bool within_tri_prisim = AreOnSameSide(point, triangle1, triangle2, triangle3) && AreOnSameSide(
+                point, triangle2, triangle1, triangle3
+            )
+            && AreOnSameSide(point, triangle3, triangle1, triangle2);
 
     // If it isn't it will never be on the triangle
-    if (!within_tri_prisim)
-    {
+    if (!within_tri_prisim) {
         return false;
     }
 
@@ -998,8 +980,7 @@ void DebugMod::VertexTriangluation(const std::vector<SVector3>& vertices, std::v
 
             // Delete pCur from the list
             for (int j = 0; j < int(tVerts.size()); j++) {
-                if (tVerts[j] == pCur)
-                {
+                if (tVerts[j] == pCur) {
                     tVerts.erase(tVerts.begin() + j);
                     break;
                 }
@@ -1021,210 +1002,209 @@ void DebugMod::VertexTriangluation(const std::vector<SVector3>& vertices, std::v
 }
 
 std::string DebugMod::BehaviorToString(ECompiledBehaviorType p_Type) {
-    switch (p_Type)
-    {
-    case ECompiledBehaviorType::BT_ConditionScope: return "BT_ConditionScope";
-    case ECompiledBehaviorType::BT_Random: return "BT_Random";
-    case ECompiledBehaviorType::BT_Match: return "BT_Match";
-    case ECompiledBehaviorType::BT_Sequence: return "BT_Sequence";
-    case ECompiledBehaviorType::BT_Dummy: return "BT_Dummy";
-    case ECompiledBehaviorType::BT_Dummy2: return "BT_Dummy2";
-    case ECompiledBehaviorType::BT_Error: return "BT_Error";
-    case ECompiledBehaviorType::BT_Wait: return "BT_Wait";
-    case ECompiledBehaviorType::BT_WaitForStanding: return "BT_WaitForStanding";
-    case ECompiledBehaviorType::BT_WaitBasedOnDistanceToTarget: return "BT_WaitBasedOnDistanceToTarget";
-    case ECompiledBehaviorType::BT_WaitForItemHandled: return "BT_WaitForItemHandled";
-    case ECompiledBehaviorType::BT_AbandonOrder: return "BT_AbandonOrder";
-    case ECompiledBehaviorType::BT_CompleteOrder: return "BT_CompleteOrder";
-    case ECompiledBehaviorType::BT_PlayAct: return "BT_PlayAct";
-    case ECompiledBehaviorType::BT_ConfiguredAct: return "BT_ConfiguredAct";
-    case ECompiledBehaviorType::BT_PlayReaction: return "BT_PlayReaction";
-    case ECompiledBehaviorType::BT_SimpleReaction: return "BT_SimpleReaction";
-    case ECompiledBehaviorType::BT_SituationAct: return "BT_SituationAct";
-    case ECompiledBehaviorType::BT_SituationApproach: return "BT_SituationApproach";
-    case ECompiledBehaviorType::BT_SituationGetHelp: return "BT_SituationGetHelp";
-    case ECompiledBehaviorType::BT_SituationFace: return "BT_SituationFace";
-    case ECompiledBehaviorType::BT_SituationConversation: return "BT_SituationConversation";
-    case ECompiledBehaviorType::BT_Holster: return "BT_Holster";
-    case ECompiledBehaviorType::BT_SpeakWait: return "BT_SpeakWait";
-    case ECompiledBehaviorType::BT_SpeakWaitWithFallbackIfAlone: return "BT_SpeakWaitWithFallbackIfAlone";
-    case ECompiledBehaviorType::BT_ConfiguredSpeak: return "BT_ConfiguredSpeak";
-    case ECompiledBehaviorType::BT_ConditionedConfiguredSpeak: return "BT_ConditionedConfiguredSpeak";
-    case ECompiledBehaviorType::BT_ConditionedConfiguredAct: return "BT_ConditionedConfiguredAct";
-    case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionAckSoundDef: return
-        "BT_SpeakCustomOrDefaultDistractionAckSoundDef";
-    case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef: return
-        "BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef";
-    case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionStndSoundDef: return
-        "BT_SpeakCustomOrDefaultDistractionStndSoundDef";
-    case ECompiledBehaviorType::BT_Pickup: return "BT_Pickup";
-    case ECompiledBehaviorType::BT_Drop: return "BT_Drop";
-    case ECompiledBehaviorType::BT_PlayConversation: return "BT_PlayConversation";
-    case ECompiledBehaviorType::BT_PlayAnimation: return "BT_PlayAnimation";
-    case ECompiledBehaviorType::BT_MoveToLocation: return "BT_MoveToLocation";
-    case ECompiledBehaviorType::BT_MoveToTargetKnownPosition: return "BT_MoveToTargetKnownPosition";
-    case ECompiledBehaviorType::BT_MoveToTargetActualPosition: return "BT_MoveToTargetActualPosition";
-    case ECompiledBehaviorType::BT_MoveToInteraction: return "BT_MoveToInteraction";
-    case ECompiledBehaviorType::BT_MoveToNPC: return "BT_MoveToNPC";
-    case ECompiledBehaviorType::BT_FollowTargetKnownPosition: return "BT_FollowTargetKnownPosition";
-    case ECompiledBehaviorType::BT_FollowTargetActualPosition: return "BT_FollowTargetActualPosition";
-    case ECompiledBehaviorType::BT_PickUpItem: return "BT_PickUpItem";
-    case ECompiledBehaviorType::BT_GrabItem: return "BT_GrabItem";
-    case ECompiledBehaviorType::BT_PutDownItem: return "BT_PutDownItem";
-    case ECompiledBehaviorType::BT_Search: return "BT_Search";
-    case ECompiledBehaviorType::BT_LimitedSearch: return "BT_LimitedSearch";
-    case ECompiledBehaviorType::BT_MoveTo: return "BT_MoveTo";
-    case ECompiledBehaviorType::BT_Reposition: return "BT_Reposition";
-    case ECompiledBehaviorType::BT_SituationMoveTo: return "BT_SituationMoveTo";
-    case ECompiledBehaviorType::BT_FormationMove: return "BT_FormationMove";
-    case ECompiledBehaviorType::BT_SituationJumpTo: return "BT_SituationJumpTo";
-    case ECompiledBehaviorType::BT_AmbientWalk: return "BT_AmbientWalk";
-    case ECompiledBehaviorType::BT_AmbientStand: return "BT_AmbientStand";
-    case ECompiledBehaviorType::BT_CrowdAmbientStand: return "BT_CrowdAmbientStand";
-    case ECompiledBehaviorType::BT_AmbientItemUse: return "BT_AmbientItemUse";
-    case ECompiledBehaviorType::BT_AmbientLook: return "BT_AmbientLook";
-    case ECompiledBehaviorType::BT_Act: return "BT_Act";
-    case ECompiledBehaviorType::BT_Patrol: return "BT_Patrol";
-    case ECompiledBehaviorType::BT_MoveToPosition: return "BT_MoveToPosition";
-    case ECompiledBehaviorType::BT_AlertedStand: return "BT_AlertedStand";
-    case ECompiledBehaviorType::BT_AlertedDebug: return "BT_AlertedDebug";
-    case ECompiledBehaviorType::BT_AttentionToPerson: return "BT_AttentionToPerson";
-    case ECompiledBehaviorType::BT_StunnedByFlashGrenade: return "BT_StunnedByFlashGrenade";
-    case ECompiledBehaviorType::BT_CuriousIdle: return "BT_CuriousIdle";
-    case ECompiledBehaviorType::BT_InvestigateWeapon: return "BT_InvestigateWeapon";
-    case ECompiledBehaviorType::BT_DeliverWeapon: return "BT_DeliverWeapon";
-    case ECompiledBehaviorType::BT_RecoverUnconscious: return "BT_RecoverUnconscious";
-    case ECompiledBehaviorType::BT_GetOutfit: return "BT_GetOutfit";
-    case ECompiledBehaviorType::BT_RadioCall: return "BT_RadioCall";
-    case ECompiledBehaviorType::BT_EscortOut: return "BT_EscortOut";
-    case ECompiledBehaviorType::BT_StashItem: return "BT_StashItem";
-    case ECompiledBehaviorType::BT_CautiousSearchPosition: return "BT_CautiousSearchPosition";
-    case ECompiledBehaviorType::BT_LockdownWarning: return "BT_LockdownWarning";
-    case ECompiledBehaviorType::BT_WakeUpUnconscious: return "BT_WakeUpUnconscious";
-    case ECompiledBehaviorType::BT_DeadBodyInvestigate: return "BT_DeadBodyInvestigate";
-    case ECompiledBehaviorType::BT_GuardDeadBody: return "BT_GuardDeadBody";
-    case ECompiledBehaviorType::BT_DragDeadBody: return "BT_DragDeadBody";
-    case ECompiledBehaviorType::BT_CuriousBystander: return "BT_CuriousBystander";
-    case ECompiledBehaviorType::BT_DeadBodyBystander: return "BT_DeadBodyBystander";
-    case ECompiledBehaviorType::BT_StandOffArrest: return "BT_StandOffArrest";
-    case ECompiledBehaviorType::BT_StandOffReposition: return "BT_StandOffReposition";
-    case ECompiledBehaviorType::BT_StandAndAim: return "BT_StandAndAim";
-    case ECompiledBehaviorType::BT_CloseCombat: return "BT_CloseCombat";
-    case ECompiledBehaviorType::BT_MoveToCloseCombat: return "BT_MoveToCloseCombat";
-    case ECompiledBehaviorType::BT_MoveAwayFromCloseCombat: return "BT_MoveAwayFromCloseCombat";
-    case ECompiledBehaviorType::BT_CoverFightSeasonTwo: return "BT_CoverFightSeasonTwo";
-    case ECompiledBehaviorType::BT_ShootFromPosition: return "BT_ShootFromPosition";
-    case ECompiledBehaviorType::BT_StandAndShoot: return "BT_StandAndShoot";
-    case ECompiledBehaviorType::BT_CheckLastPosition: return "BT_CheckLastPosition";
-    case ECompiledBehaviorType::BT_ProtoSearchIdle: return "BT_ProtoSearchIdle";
-    case ECompiledBehaviorType::BT_ProtoApproachSearchArea: return "BT_ProtoApproachSearchArea";
-    case ECompiledBehaviorType::BT_ProtoSearchPosition: return "BT_ProtoSearchPosition";
-    case ECompiledBehaviorType::BT_ShootTarget: return "BT_ShootTarget";
-    case ECompiledBehaviorType::BT_TriggerAlarm: return "BT_TriggerAlarm";
-    case ECompiledBehaviorType::BT_MoveInCover: return "BT_MoveInCover";
-    case ECompiledBehaviorType::BT_MoveToCover: return "BT_MoveToCover";
-    case ECompiledBehaviorType::BT_HomeAttackOrigin: return "BT_HomeAttackOrigin";
-    case ECompiledBehaviorType::BT_Shoot: return "BT_Shoot";
-    case ECompiledBehaviorType::BT_Aim: return "BT_Aim";
-    case ECompiledBehaviorType::BT_MoveToRandomNeighbourNode: return "BT_MoveToRandomNeighbourNode";
-    case ECompiledBehaviorType::BT_MoveToRandomNeighbourNodeAiming: return "BT_MoveToRandomNeighbourNodeAiming";
-    case ECompiledBehaviorType::BT_MoveToAndPlayCombatPositionAct: return "BT_MoveToAndPlayCombatPositionAct";
-    case ECompiledBehaviorType::BT_MoveToAimingAndPlayCombatPositionAct: return
-        "BT_MoveToAimingAndPlayCombatPositionAct";
-    case ECompiledBehaviorType::BT_PlayJumpyReaction: return "BT_PlayJumpyReaction";
-    case ECompiledBehaviorType::BT_JumpyInvestigation: return "BT_JumpyInvestigation";
-    case ECompiledBehaviorType::BT_AgitatedPatrol: return "BT_AgitatedPatrol";
-    case ECompiledBehaviorType::BT_AgitatedGuard: return "BT_AgitatedGuard";
-    case ECompiledBehaviorType::BT_HeroEscort: return "BT_HeroEscort";
-    case ECompiledBehaviorType::BT_Escort: return "BT_Escort";
-    case ECompiledBehaviorType::BT_ControlledFormationMove: return "BT_ControlledFormationMove";
-    case ECompiledBehaviorType::BT_EscortSearch: return "BT_EscortSearch";
-    case ECompiledBehaviorType::BT_LeadEscort: return "BT_LeadEscort";
-    case ECompiledBehaviorType::BT_LeadEscort2: return "BT_LeadEscort2";
-    case ECompiledBehaviorType::BT_AimReaction: return "BT_AimReaction";
-    case ECompiledBehaviorType::BT_FollowHitman: return "BT_FollowHitman";
-    case ECompiledBehaviorType::BT_RideTheLightning: return "BT_RideTheLightning";
-    case ECompiledBehaviorType::BT_Scared: return "BT_Scared";
-    case ECompiledBehaviorType::BT_Flee: return "BT_Flee";
-    case ECompiledBehaviorType::BT_AgitatedBystander: return "BT_AgitatedBystander";
-    case ECompiledBehaviorType::BT_SentryFrisk: return "BT_SentryFrisk";
-    case ECompiledBehaviorType::BT_SentryIdle: return "BT_SentryIdle";
-    case ECompiledBehaviorType::BT_SentryWarning: return "BT_SentryWarning";
-    case ECompiledBehaviorType::BT_SentryCheckItem: return "BT_SentryCheckItem";
-    case ECompiledBehaviorType::BT_VIPScared: return "BT_VIPScared";
-    case ECompiledBehaviorType::BT_VIPSafeRoomTrespasser: return "BT_VIPSafeRoomTrespasser";
-    case ECompiledBehaviorType::BT_DefendVIP: return "BT_DefendVIP";
-    case ECompiledBehaviorType::BT_CautiousVIP: return "BT_CautiousVIP";
-    case ECompiledBehaviorType::BT_CautiousGuardVIP: return "BT_CautiousGuardVIP";
-    case ECompiledBehaviorType::BT_InfectedConfused: return "BT_InfectedConfused";
-    case ECompiledBehaviorType::BT_EnterInfected: return "BT_EnterInfected";
-    case ECompiledBehaviorType::BT_CureInfected: return "BT_CureInfected";
-    case ECompiledBehaviorType::BT_SickActInfected: return "BT_SickActInfected";
-    case ECompiledBehaviorType::BT_Smart: return "BT_Smart";
-    case ECompiledBehaviorType::BT_Controlled: return "BT_Controlled";
-    case ECompiledBehaviorType::BT_SpeakTest: return "BT_SpeakTest";
-    case ECompiledBehaviorType::BT_Conversation: return "BT_Conversation";
-    case ECompiledBehaviorType::BT_RunToHelp: return "BT_RunToHelp";
-    case ECompiledBehaviorType::BT_WaitForDialog: return "BT_WaitForDialog";
-    case ECompiledBehaviorType::BT_WaitForConfiguredAct: return "BT_WaitForConfiguredAct";
-    case ECompiledBehaviorType::BT_TestFlashbangGrenadeThrow: return "BT_TestFlashbangGrenadeThrow";
-    case ECompiledBehaviorType::BT_BEHAVIORS_END: return "BT_BEHAVIORS_END";
-    case ECompiledBehaviorType::BT_RenewEvent: return "BT_RenewEvent";
-    case ECompiledBehaviorType::BT_ExpireEvent: return "BT_ExpireEvent";
-    case ECompiledBehaviorType::BT_ExpireEvents: return "BT_ExpireEvents";
-    case ECompiledBehaviorType::BT_SetEventHandled: return "BT_SetEventHandled";
-    case ECompiledBehaviorType::BT_RenewSharedEvent: return "BT_RenewSharedEvent";
-    case ECompiledBehaviorType::BT_ExpireSharedEvent: return "BT_ExpireSharedEvent";
-    case ECompiledBehaviorType::BT_ExpireAllEvents: return "BT_ExpireAllEvents";
-    case ECompiledBehaviorType::BT_CreateOrJoinSituation: return "BT_CreateOrJoinSituation";
-    case ECompiledBehaviorType::BT_JoinSituation: return "BT_JoinSituation";
-    case ECompiledBehaviorType::BT_ForceActorToJoinSituation: return "BT_ForceActorToJoinSituation";
-    case ECompiledBehaviorType::BT_JoinSituationWithActor: return "BT_JoinSituationWithActor";
-    case ECompiledBehaviorType::BT_LeaveSituation: return "BT_LeaveSituation";
-    case ECompiledBehaviorType::BT_Escalate: return "BT_Escalate";
-    case ECompiledBehaviorType::BT_GotoPhase: return "BT_GotoPhase";
-    case ECompiledBehaviorType::BT_RenewGoal: return "BT_RenewGoal";
-    case ECompiledBehaviorType::BT_ExpireGoal: return "BT_ExpireGoal";
-    case ECompiledBehaviorType::BT_RenewGoalOf: return "BT_RenewGoalOf";
-    case ECompiledBehaviorType::BT_ExpireGoalOf: return "BT_ExpireGoalOf";
-    case ECompiledBehaviorType::BT_SetTension: return "BT_SetTension";
-    case ECompiledBehaviorType::BT_TriggerSpotted: return "BT_TriggerSpotted";
-    case ECompiledBehaviorType::BT_CopyKnownLocation: return "BT_CopyKnownLocation";
-    case ECompiledBehaviorType::BT_UpdateKnownLocation: return "BT_UpdateKnownLocation";
-    case ECompiledBehaviorType::BT_TransferKnownObjectPositions: return "BT_TransferKnownObjectPositions";
-    case ECompiledBehaviorType::BT_WitnessAttack: return "BT_WitnessAttack";
-    case ECompiledBehaviorType::BT_Speak: return "BT_Speak";
-    case ECompiledBehaviorType::BT_StartDynamicEnforcer: return "BT_StartDynamicEnforcer";
-    case ECompiledBehaviorType::BT_StopDynamicEnforcer: return "BT_StopDynamicEnforcer";
-    case ECompiledBehaviorType::BT_StartRangeBasedDynamicEnforcer: return "BT_StartRangeBasedDynamicEnforcer";
-    case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcerForLocation: return
-        "BT_StopRangeBasedDynamicEnforcerForLocation";
-    case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcer: return "BT_StopRangeBasedDynamicEnforcer";
-    case ECompiledBehaviorType::BT_SetDistracted: return "BT_SetDistracted";
-    case ECompiledBehaviorType::BT_IgnoreAllDistractionsExceptTheNewest: return
-        "BT_IgnoreAllDistractionsExceptTheNewest";
-    case ECompiledBehaviorType::BT_IgnoreDistractions: return "BT_IgnoreDistractions";
-    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyWillReact: return "BT_PerceptibleEntityNotifyWillReact";
-    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyReacted: return "BT_PerceptibleEntityNotifyReacted";
-    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigating: return
-        "BT_PerceptibleEntityNotifyInvestigating";
-    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigated: return
-        "BT_PerceptibleEntityNotifyInvestigated";
-    case ECompiledBehaviorType::BT_PerceptibleEntityNotifyTerminate: return "BT_PerceptibleEntityNotifyTerminate";
-    case ECompiledBehaviorType::BT_LeaveDistractionAssistantRole: return "BT_LeaveDistractionAssistantRole";
-    case ECompiledBehaviorType::BT_LeaveDistractionAssitingGuardRole: return "BT_LeaveDistractionAssitingGuardRole";
-    case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceOverRadio: return
-        "BT_RequestSuitcaseAssistanceOverRadio";
-    case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceFaceToFace: return
-        "BT_RequestSuitcaseAssistanceFaceToFace";
-    case ECompiledBehaviorType::BT_ExpireArrestReasons: return "BT_ExpireArrestReasons";
-    case ECompiledBehaviorType::BT_SetDialogSwitch_NPCID: return "BT_SetDialogSwitch_NPCID";
-    case ECompiledBehaviorType::BT_InfectedAssignToFollowPlayer: return "BT_InfectedAssignToFollowPlayer";
-    case ECompiledBehaviorType::BT_InfectedRemoveFromFollowPlayer: return "BT_InfectedRemoveFromFollowPlayer";
-    case ECompiledBehaviorType::BT_Log: return "BT_Log";
-    case ECompiledBehaviorType::BT_COMMANDS_END: return "BT_COMMANDS_END";
-    case ECompiledBehaviorType::BT_Invalid: return "BT_Invalid";
-    default: return "<unknown>";
+    switch (p_Type) {
+        case ECompiledBehaviorType::BT_ConditionScope: return "BT_ConditionScope";
+        case ECompiledBehaviorType::BT_Random: return "BT_Random";
+        case ECompiledBehaviorType::BT_Match: return "BT_Match";
+        case ECompiledBehaviorType::BT_Sequence: return "BT_Sequence";
+        case ECompiledBehaviorType::BT_Dummy: return "BT_Dummy";
+        case ECompiledBehaviorType::BT_Dummy2: return "BT_Dummy2";
+        case ECompiledBehaviorType::BT_Error: return "BT_Error";
+        case ECompiledBehaviorType::BT_Wait: return "BT_Wait";
+        case ECompiledBehaviorType::BT_WaitForStanding: return "BT_WaitForStanding";
+        case ECompiledBehaviorType::BT_WaitBasedOnDistanceToTarget: return "BT_WaitBasedOnDistanceToTarget";
+        case ECompiledBehaviorType::BT_WaitForItemHandled: return "BT_WaitForItemHandled";
+        case ECompiledBehaviorType::BT_AbandonOrder: return "BT_AbandonOrder";
+        case ECompiledBehaviorType::BT_CompleteOrder: return "BT_CompleteOrder";
+        case ECompiledBehaviorType::BT_PlayAct: return "BT_PlayAct";
+        case ECompiledBehaviorType::BT_ConfiguredAct: return "BT_ConfiguredAct";
+        case ECompiledBehaviorType::BT_PlayReaction: return "BT_PlayReaction";
+        case ECompiledBehaviorType::BT_SimpleReaction: return "BT_SimpleReaction";
+        case ECompiledBehaviorType::BT_SituationAct: return "BT_SituationAct";
+        case ECompiledBehaviorType::BT_SituationApproach: return "BT_SituationApproach";
+        case ECompiledBehaviorType::BT_SituationGetHelp: return "BT_SituationGetHelp";
+        case ECompiledBehaviorType::BT_SituationFace: return "BT_SituationFace";
+        case ECompiledBehaviorType::BT_SituationConversation: return "BT_SituationConversation";
+        case ECompiledBehaviorType::BT_Holster: return "BT_Holster";
+        case ECompiledBehaviorType::BT_SpeakWait: return "BT_SpeakWait";
+        case ECompiledBehaviorType::BT_SpeakWaitWithFallbackIfAlone: return "BT_SpeakWaitWithFallbackIfAlone";
+        case ECompiledBehaviorType::BT_ConfiguredSpeak: return "BT_ConfiguredSpeak";
+        case ECompiledBehaviorType::BT_ConditionedConfiguredSpeak: return "BT_ConditionedConfiguredSpeak";
+        case ECompiledBehaviorType::BT_ConditionedConfiguredAct: return "BT_ConditionedConfiguredAct";
+        case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionAckSoundDef: return
+                    "BT_SpeakCustomOrDefaultDistractionAckSoundDef";
+        case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef: return
+                    "BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef";
+        case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionStndSoundDef: return
+                    "BT_SpeakCustomOrDefaultDistractionStndSoundDef";
+        case ECompiledBehaviorType::BT_Pickup: return "BT_Pickup";
+        case ECompiledBehaviorType::BT_Drop: return "BT_Drop";
+        case ECompiledBehaviorType::BT_PlayConversation: return "BT_PlayConversation";
+        case ECompiledBehaviorType::BT_PlayAnimation: return "BT_PlayAnimation";
+        case ECompiledBehaviorType::BT_MoveToLocation: return "BT_MoveToLocation";
+        case ECompiledBehaviorType::BT_MoveToTargetKnownPosition: return "BT_MoveToTargetKnownPosition";
+        case ECompiledBehaviorType::BT_MoveToTargetActualPosition: return "BT_MoveToTargetActualPosition";
+        case ECompiledBehaviorType::BT_MoveToInteraction: return "BT_MoveToInteraction";
+        case ECompiledBehaviorType::BT_MoveToNPC: return "BT_MoveToNPC";
+        case ECompiledBehaviorType::BT_FollowTargetKnownPosition: return "BT_FollowTargetKnownPosition";
+        case ECompiledBehaviorType::BT_FollowTargetActualPosition: return "BT_FollowTargetActualPosition";
+        case ECompiledBehaviorType::BT_PickUpItem: return "BT_PickUpItem";
+        case ECompiledBehaviorType::BT_GrabItem: return "BT_GrabItem";
+        case ECompiledBehaviorType::BT_PutDownItem: return "BT_PutDownItem";
+        case ECompiledBehaviorType::BT_Search: return "BT_Search";
+        case ECompiledBehaviorType::BT_LimitedSearch: return "BT_LimitedSearch";
+        case ECompiledBehaviorType::BT_MoveTo: return "BT_MoveTo";
+        case ECompiledBehaviorType::BT_Reposition: return "BT_Reposition";
+        case ECompiledBehaviorType::BT_SituationMoveTo: return "BT_SituationMoveTo";
+        case ECompiledBehaviorType::BT_FormationMove: return "BT_FormationMove";
+        case ECompiledBehaviorType::BT_SituationJumpTo: return "BT_SituationJumpTo";
+        case ECompiledBehaviorType::BT_AmbientWalk: return "BT_AmbientWalk";
+        case ECompiledBehaviorType::BT_AmbientStand: return "BT_AmbientStand";
+        case ECompiledBehaviorType::BT_CrowdAmbientStand: return "BT_CrowdAmbientStand";
+        case ECompiledBehaviorType::BT_AmbientItemUse: return "BT_AmbientItemUse";
+        case ECompiledBehaviorType::BT_AmbientLook: return "BT_AmbientLook";
+        case ECompiledBehaviorType::BT_Act: return "BT_Act";
+        case ECompiledBehaviorType::BT_Patrol: return "BT_Patrol";
+        case ECompiledBehaviorType::BT_MoveToPosition: return "BT_MoveToPosition";
+        case ECompiledBehaviorType::BT_AlertedStand: return "BT_AlertedStand";
+        case ECompiledBehaviorType::BT_AlertedDebug: return "BT_AlertedDebug";
+        case ECompiledBehaviorType::BT_AttentionToPerson: return "BT_AttentionToPerson";
+        case ECompiledBehaviorType::BT_StunnedByFlashGrenade: return "BT_StunnedByFlashGrenade";
+        case ECompiledBehaviorType::BT_CuriousIdle: return "BT_CuriousIdle";
+        case ECompiledBehaviorType::BT_InvestigateWeapon: return "BT_InvestigateWeapon";
+        case ECompiledBehaviorType::BT_DeliverWeapon: return "BT_DeliverWeapon";
+        case ECompiledBehaviorType::BT_RecoverUnconscious: return "BT_RecoverUnconscious";
+        case ECompiledBehaviorType::BT_GetOutfit: return "BT_GetOutfit";
+        case ECompiledBehaviorType::BT_RadioCall: return "BT_RadioCall";
+        case ECompiledBehaviorType::BT_EscortOut: return "BT_EscortOut";
+        case ECompiledBehaviorType::BT_StashItem: return "BT_StashItem";
+        case ECompiledBehaviorType::BT_CautiousSearchPosition: return "BT_CautiousSearchPosition";
+        case ECompiledBehaviorType::BT_LockdownWarning: return "BT_LockdownWarning";
+        case ECompiledBehaviorType::BT_WakeUpUnconscious: return "BT_WakeUpUnconscious";
+        case ECompiledBehaviorType::BT_DeadBodyInvestigate: return "BT_DeadBodyInvestigate";
+        case ECompiledBehaviorType::BT_GuardDeadBody: return "BT_GuardDeadBody";
+        case ECompiledBehaviorType::BT_DragDeadBody: return "BT_DragDeadBody";
+        case ECompiledBehaviorType::BT_CuriousBystander: return "BT_CuriousBystander";
+        case ECompiledBehaviorType::BT_DeadBodyBystander: return "BT_DeadBodyBystander";
+        case ECompiledBehaviorType::BT_StandOffArrest: return "BT_StandOffArrest";
+        case ECompiledBehaviorType::BT_StandOffReposition: return "BT_StandOffReposition";
+        case ECompiledBehaviorType::BT_StandAndAim: return "BT_StandAndAim";
+        case ECompiledBehaviorType::BT_CloseCombat: return "BT_CloseCombat";
+        case ECompiledBehaviorType::BT_MoveToCloseCombat: return "BT_MoveToCloseCombat";
+        case ECompiledBehaviorType::BT_MoveAwayFromCloseCombat: return "BT_MoveAwayFromCloseCombat";
+        case ECompiledBehaviorType::BT_CoverFightSeasonTwo: return "BT_CoverFightSeasonTwo";
+        case ECompiledBehaviorType::BT_ShootFromPosition: return "BT_ShootFromPosition";
+        case ECompiledBehaviorType::BT_StandAndShoot: return "BT_StandAndShoot";
+        case ECompiledBehaviorType::BT_CheckLastPosition: return "BT_CheckLastPosition";
+        case ECompiledBehaviorType::BT_ProtoSearchIdle: return "BT_ProtoSearchIdle";
+        case ECompiledBehaviorType::BT_ProtoApproachSearchArea: return "BT_ProtoApproachSearchArea";
+        case ECompiledBehaviorType::BT_ProtoSearchPosition: return "BT_ProtoSearchPosition";
+        case ECompiledBehaviorType::BT_ShootTarget: return "BT_ShootTarget";
+        case ECompiledBehaviorType::BT_TriggerAlarm: return "BT_TriggerAlarm";
+        case ECompiledBehaviorType::BT_MoveInCover: return "BT_MoveInCover";
+        case ECompiledBehaviorType::BT_MoveToCover: return "BT_MoveToCover";
+        case ECompiledBehaviorType::BT_HomeAttackOrigin: return "BT_HomeAttackOrigin";
+        case ECompiledBehaviorType::BT_Shoot: return "BT_Shoot";
+        case ECompiledBehaviorType::BT_Aim: return "BT_Aim";
+        case ECompiledBehaviorType::BT_MoveToRandomNeighbourNode: return "BT_MoveToRandomNeighbourNode";
+        case ECompiledBehaviorType::BT_MoveToRandomNeighbourNodeAiming: return "BT_MoveToRandomNeighbourNodeAiming";
+        case ECompiledBehaviorType::BT_MoveToAndPlayCombatPositionAct: return "BT_MoveToAndPlayCombatPositionAct";
+        case ECompiledBehaviorType::BT_MoveToAimingAndPlayCombatPositionAct: return
+                    "BT_MoveToAimingAndPlayCombatPositionAct";
+        case ECompiledBehaviorType::BT_PlayJumpyReaction: return "BT_PlayJumpyReaction";
+        case ECompiledBehaviorType::BT_JumpyInvestigation: return "BT_JumpyInvestigation";
+        case ECompiledBehaviorType::BT_AgitatedPatrol: return "BT_AgitatedPatrol";
+        case ECompiledBehaviorType::BT_AgitatedGuard: return "BT_AgitatedGuard";
+        case ECompiledBehaviorType::BT_HeroEscort: return "BT_HeroEscort";
+        case ECompiledBehaviorType::BT_Escort: return "BT_Escort";
+        case ECompiledBehaviorType::BT_ControlledFormationMove: return "BT_ControlledFormationMove";
+        case ECompiledBehaviorType::BT_EscortSearch: return "BT_EscortSearch";
+        case ECompiledBehaviorType::BT_LeadEscort: return "BT_LeadEscort";
+        case ECompiledBehaviorType::BT_LeadEscort2: return "BT_LeadEscort2";
+        case ECompiledBehaviorType::BT_AimReaction: return "BT_AimReaction";
+        case ECompiledBehaviorType::BT_FollowHitman: return "BT_FollowHitman";
+        case ECompiledBehaviorType::BT_RideTheLightning: return "BT_RideTheLightning";
+        case ECompiledBehaviorType::BT_Scared: return "BT_Scared";
+        case ECompiledBehaviorType::BT_Flee: return "BT_Flee";
+        case ECompiledBehaviorType::BT_AgitatedBystander: return "BT_AgitatedBystander";
+        case ECompiledBehaviorType::BT_SentryFrisk: return "BT_SentryFrisk";
+        case ECompiledBehaviorType::BT_SentryIdle: return "BT_SentryIdle";
+        case ECompiledBehaviorType::BT_SentryWarning: return "BT_SentryWarning";
+        case ECompiledBehaviorType::BT_SentryCheckItem: return "BT_SentryCheckItem";
+        case ECompiledBehaviorType::BT_VIPScared: return "BT_VIPScared";
+        case ECompiledBehaviorType::BT_VIPSafeRoomTrespasser: return "BT_VIPSafeRoomTrespasser";
+        case ECompiledBehaviorType::BT_DefendVIP: return "BT_DefendVIP";
+        case ECompiledBehaviorType::BT_CautiousVIP: return "BT_CautiousVIP";
+        case ECompiledBehaviorType::BT_CautiousGuardVIP: return "BT_CautiousGuardVIP";
+        case ECompiledBehaviorType::BT_InfectedConfused: return "BT_InfectedConfused";
+        case ECompiledBehaviorType::BT_EnterInfected: return "BT_EnterInfected";
+        case ECompiledBehaviorType::BT_CureInfected: return "BT_CureInfected";
+        case ECompiledBehaviorType::BT_SickActInfected: return "BT_SickActInfected";
+        case ECompiledBehaviorType::BT_Smart: return "BT_Smart";
+        case ECompiledBehaviorType::BT_Controlled: return "BT_Controlled";
+        case ECompiledBehaviorType::BT_SpeakTest: return "BT_SpeakTest";
+        case ECompiledBehaviorType::BT_Conversation: return "BT_Conversation";
+        case ECompiledBehaviorType::BT_RunToHelp: return "BT_RunToHelp";
+        case ECompiledBehaviorType::BT_WaitForDialog: return "BT_WaitForDialog";
+        case ECompiledBehaviorType::BT_WaitForConfiguredAct: return "BT_WaitForConfiguredAct";
+        case ECompiledBehaviorType::BT_TestFlashbangGrenadeThrow: return "BT_TestFlashbangGrenadeThrow";
+        case ECompiledBehaviorType::BT_BEHAVIORS_END: return "BT_BEHAVIORS_END";
+        case ECompiledBehaviorType::BT_RenewEvent: return "BT_RenewEvent";
+        case ECompiledBehaviorType::BT_ExpireEvent: return "BT_ExpireEvent";
+        case ECompiledBehaviorType::BT_ExpireEvents: return "BT_ExpireEvents";
+        case ECompiledBehaviorType::BT_SetEventHandled: return "BT_SetEventHandled";
+        case ECompiledBehaviorType::BT_RenewSharedEvent: return "BT_RenewSharedEvent";
+        case ECompiledBehaviorType::BT_ExpireSharedEvent: return "BT_ExpireSharedEvent";
+        case ECompiledBehaviorType::BT_ExpireAllEvents: return "BT_ExpireAllEvents";
+        case ECompiledBehaviorType::BT_CreateOrJoinSituation: return "BT_CreateOrJoinSituation";
+        case ECompiledBehaviorType::BT_JoinSituation: return "BT_JoinSituation";
+        case ECompiledBehaviorType::BT_ForceActorToJoinSituation: return "BT_ForceActorToJoinSituation";
+        case ECompiledBehaviorType::BT_JoinSituationWithActor: return "BT_JoinSituationWithActor";
+        case ECompiledBehaviorType::BT_LeaveSituation: return "BT_LeaveSituation";
+        case ECompiledBehaviorType::BT_Escalate: return "BT_Escalate";
+        case ECompiledBehaviorType::BT_GotoPhase: return "BT_GotoPhase";
+        case ECompiledBehaviorType::BT_RenewGoal: return "BT_RenewGoal";
+        case ECompiledBehaviorType::BT_ExpireGoal: return "BT_ExpireGoal";
+        case ECompiledBehaviorType::BT_RenewGoalOf: return "BT_RenewGoalOf";
+        case ECompiledBehaviorType::BT_ExpireGoalOf: return "BT_ExpireGoalOf";
+        case ECompiledBehaviorType::BT_SetTension: return "BT_SetTension";
+        case ECompiledBehaviorType::BT_TriggerSpotted: return "BT_TriggerSpotted";
+        case ECompiledBehaviorType::BT_CopyKnownLocation: return "BT_CopyKnownLocation";
+        case ECompiledBehaviorType::BT_UpdateKnownLocation: return "BT_UpdateKnownLocation";
+        case ECompiledBehaviorType::BT_TransferKnownObjectPositions: return "BT_TransferKnownObjectPositions";
+        case ECompiledBehaviorType::BT_WitnessAttack: return "BT_WitnessAttack";
+        case ECompiledBehaviorType::BT_Speak: return "BT_Speak";
+        case ECompiledBehaviorType::BT_StartDynamicEnforcer: return "BT_StartDynamicEnforcer";
+        case ECompiledBehaviorType::BT_StopDynamicEnforcer: return "BT_StopDynamicEnforcer";
+        case ECompiledBehaviorType::BT_StartRangeBasedDynamicEnforcer: return "BT_StartRangeBasedDynamicEnforcer";
+        case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcerForLocation: return
+                    "BT_StopRangeBasedDynamicEnforcerForLocation";
+        case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcer: return "BT_StopRangeBasedDynamicEnforcer";
+        case ECompiledBehaviorType::BT_SetDistracted: return "BT_SetDistracted";
+        case ECompiledBehaviorType::BT_IgnoreAllDistractionsExceptTheNewest: return
+                    "BT_IgnoreAllDistractionsExceptTheNewest";
+        case ECompiledBehaviorType::BT_IgnoreDistractions: return "BT_IgnoreDistractions";
+        case ECompiledBehaviorType::BT_PerceptibleEntityNotifyWillReact: return "BT_PerceptibleEntityNotifyWillReact";
+        case ECompiledBehaviorType::BT_PerceptibleEntityNotifyReacted: return "BT_PerceptibleEntityNotifyReacted";
+        case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigating: return
+                    "BT_PerceptibleEntityNotifyInvestigating";
+        case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigated: return
+                    "BT_PerceptibleEntityNotifyInvestigated";
+        case ECompiledBehaviorType::BT_PerceptibleEntityNotifyTerminate: return "BT_PerceptibleEntityNotifyTerminate";
+        case ECompiledBehaviorType::BT_LeaveDistractionAssistantRole: return "BT_LeaveDistractionAssistantRole";
+        case ECompiledBehaviorType::BT_LeaveDistractionAssitingGuardRole: return "BT_LeaveDistractionAssitingGuardRole";
+        case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceOverRadio: return
+                    "BT_RequestSuitcaseAssistanceOverRadio";
+        case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceFaceToFace: return
+                    "BT_RequestSuitcaseAssistanceFaceToFace";
+        case ECompiledBehaviorType::BT_ExpireArrestReasons: return "BT_ExpireArrestReasons";
+        case ECompiledBehaviorType::BT_SetDialogSwitch_NPCID: return "BT_SetDialogSwitch_NPCID";
+        case ECompiledBehaviorType::BT_InfectedAssignToFollowPlayer: return "BT_InfectedAssignToFollowPlayer";
+        case ECompiledBehaviorType::BT_InfectedRemoveFromFollowPlayer: return "BT_InfectedRemoveFromFollowPlayer";
+        case ECompiledBehaviorType::BT_Log: return "BT_Log";
+        case ECompiledBehaviorType::BT_COMMANDS_END: return "BT_COMMANDS_END";
+        case ECompiledBehaviorType::BT_Invalid: return "BT_Invalid";
+        default: return "<unknown>";
     }
 }
 
@@ -1258,7 +1238,10 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool
     return HookResult<void>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, ZPFObstacleEntity_UpdateObstacle, ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate) {
+DEFINE_PLUGIN_DETOUR(
+    DebugMod, void, ZPFObstacleEntity_UpdateObstacle, ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags,
+    bool bEnabled, bool forceUpdate
+) {
     p_Hook->CallOriginal(th, nObstacleBlockageFlags, bEnabled, forceUpdate);
 
     m_ObstaclesToEntityIDs[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityId;

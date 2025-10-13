@@ -43,6 +43,7 @@ class ZTemplateBlueprintInstaller;
 class ZResourcePending;
 class ZEntityType;
 class ZEntityImpl;
+class ZUIText;
 
 class ZHMSDK_API Functions {
 public:
@@ -71,7 +72,7 @@ public:
         const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId
     )>* ZEntityManager_NewEntity;
 
-    static EngineFunction<void(ZSpatialEntity* th)>* ZSpatialEntity_UnknownTransformUpdate;
+    static EngineFunction<void(const ZSpatialEntity* th)>* ZSpatialEntity_UpdateCachedWorldMat;
 
     static EngineFunction<void(
         ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs
@@ -134,7 +135,7 @@ public:
     ZResourceContainer_AddResourceInternal;
 
     static EngineFunction<void(
-        ZResourceReader * th, ZResourceIndex * idx, ZResourceDataPtr * pData, uint32_t dataSize
+        ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize
     )>* ZResourceReader_ZResourceReader;
 
     static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
@@ -143,5 +144,15 @@ public:
     static EngineFunction<bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateBlueprintInstaller_Install;
 
-    static EngineFunction<ZEntityType* (ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
+    static EngineFunction<ZEntityType*(ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
+
+    static EngineFunction<void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)>*
+    ZResourceContainer_AddResourceReferenceInternal;
+
+    static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index)>*
+    ZResourceContainer_AcquireReferences;
+
+    static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
+
+    static EngineFunction<ZString::ZImpl*(const char* buf, size_t size)>* ZStringCollection_Allocate;
 };
