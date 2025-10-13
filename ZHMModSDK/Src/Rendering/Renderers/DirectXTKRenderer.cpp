@@ -983,9 +983,9 @@ void DirectXTKRenderer::DrawBox3D(
     };
 
     static constexpr int s_Edges[12][2] = {
-        { 0, 1 }, { 1, 2 }, { 2, 3 }, {3 ,0 }, // bottom face
-        { 4, 5 }, { 5, 6 }, { 6, 7 }, {7 ,4 }, // top face
-        { 0, 6 }, { 1, 5 }, { 2, 4 }, {3 ,7 }  // vertical edges
+        {0, 1}, {1, 2}, {2, 3}, {3, 0}, // bottom face
+        {4, 5}, {5, 6}, {6, 7}, {7, 4}, // top face
+        {0, 6}, {1, 5}, {2, 4}, {3, 7} // vertical edges
     };
 
     for (const auto& s_Edge : s_Edges) {
@@ -1017,12 +1017,12 @@ void DirectXTKRenderer::DrawBoxWire3D(
     };
 
     static constexpr int s_Faces[12][3] = {
-        { 0, 1, 2 }, { 0, 2, 3 }, // bottom
-        { 4, 6, 5 }, { 4, 7, 6 }, // top
-        { 0, 3, 7 }, { 0, 7, 4 }, // front
-        { 1, 5, 6 }, { 1, 6, 2 }, // back
-        { 0, 4, 5 }, { 0, 5, 1 }, // left
-        { 3, 2, 6 }, { 3, 6, 7 }  // right
+        {0, 1, 2}, {0, 2, 3}, // bottom
+        {4, 6, 5}, {4, 7, 6}, // top
+        {0, 3, 7}, {0, 7, 4}, // front
+        {1, 5, 6}, {1, 6, 2}, // back
+        {0, 4, 5}, {0, 5, 1}, // left
+        {3, 2, 6}, {3, 6, 7} // right
     };
 
     for (const auto& s_Face : s_Faces) {
@@ -1215,7 +1215,7 @@ void DirectXTKRenderer::DrawText2D(
     const TextAlignment p_VerticalAlignment
 ) {
     m_Text2DBuffer.push_back(
-        Text2D{
+        Text2D {
             p_Text.c_str(),
             p_Pos, p_Color,
             p_Rotation,
@@ -1254,23 +1254,6 @@ void DirectXTKRenderer::DrawText2D(const Text2D& p_Text2D) {
         p_Text2D.m_Rotation,
         s_Origin,
         p_Text2D.m_Scale
-    );
-}
-
-void DirectXTKRenderer::DrawText3D(
-    const std::string& p_Text, const SMatrix& p_Transform,
-    const SVector4& p_Color, const float p_Scale,
-    const TextAlignment p_HorizontalAlignment, const TextAlignment p_VerticalAlignment,
-    const bool p_IsCameraTransform
-) {
-    DrawText3D(
-        p_Text.c_str(),
-        p_Transform,
-        p_Color,
-        p_Scale,
-        p_HorizontalAlignment,
-        p_VerticalAlignment,
-        p_IsCameraTransform
     );
 }
 
@@ -1337,8 +1320,8 @@ void DirectXTKRenderer::DrawText3D(
     s_Triangles.reserve(s_VertexCount);
 
     static const float s_LineHeight =
-        (MDF_FONT::ComputeLineHeightFromMetrics() /
-            static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
+    (MDF_FONT::ComputeLineHeightFromMetrics() /
+        static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
 
     std::string s_Text(p_Text);
     std::string s_Line;
@@ -1402,13 +1385,13 @@ void DirectXTKRenderer::DrawText3D(
             Triangle& s_Triangle1 = s_Triangles.emplace_back();
             Triangle& s_Triangle2 = s_Triangles.emplace_back();
 
-            s_Triangle1.vertexPosition1 = SVector3{ s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z };
-            s_Triangle1.vertexPosition2 = SVector3{ s_BottomRight.x, s_BottomRight.y, s_BottomRight.z };
-            s_Triangle1.vertexPosition3 = SVector3{ s_TopLeft.x, s_TopLeft.y, s_TopLeft.z };
+            s_Triangle1.vertexPosition1 = SVector3 {s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z};
+            s_Triangle1.vertexPosition2 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle1.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
-            s_Triangle2.vertexPosition1 = SVector3{ s_BottomRight.x, s_BottomRight.y, s_BottomRight.z };
-            s_Triangle2.vertexPosition2 = SVector3{ s_TopRight.x, s_TopRight.y, s_TopRight.z };
-            s_Triangle2.vertexPosition3 = SVector3{ s_TopLeft.x, s_TopLeft.y, s_TopLeft.z };
+            s_Triangle2.vertexPosition1 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle2.vertexPosition2 = SVector3 {s_TopRight.x, s_TopRight.y, s_TopRight.z};
+            s_Triangle2.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
             s_Triangle1.vertexColor1 = p_Color;
             s_Triangle1.vertexColor2 = p_Color;
@@ -1418,13 +1401,13 @@ void DirectXTKRenderer::DrawText3D(
             s_Triangle2.vertexColor2 = p_Color;
             s_Triangle2.vertexColor3 = p_Color;
 
-            s_Triangle1.textureCoordinates1 = SVector2{ s_TextureCoordinates[0], s_TextureCoordinates[1] };
-            s_Triangle1.textureCoordinates2 = SVector2{ s_TextureCoordinates[2], s_TextureCoordinates[3] };
-            s_Triangle1.textureCoordinates3 = SVector2{ s_TextureCoordinates[6], s_TextureCoordinates[7] };
+            s_Triangle1.textureCoordinates1 = SVector2 {s_TextureCoordinates[0], s_TextureCoordinates[1]};
+            s_Triangle1.textureCoordinates2 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
+            s_Triangle1.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
 
-            s_Triangle2.textureCoordinates1 = SVector2{ s_TextureCoordinates[2], s_TextureCoordinates[3] };
-            s_Triangle2.textureCoordinates2 = SVector2{ s_TextureCoordinates[4], s_TextureCoordinates[5] };
-            s_Triangle2.textureCoordinates3 = SVector2{ s_TextureCoordinates[6], s_TextureCoordinates[7] };
+            s_Triangle2.textureCoordinates1 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
+            s_Triangle2.textureCoordinates2 = SVector2 {s_TextureCoordinates[4], s_TextureCoordinates[5]};
+            s_Triangle2.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
         }
 
         ++s_LineIndex;
@@ -1496,8 +1479,7 @@ void DirectXTKRenderer::DrawMesh(
     const SVector3 s_Extents = (s_pRenderPrimitiveResource->m_vMax - s_pRenderPrimitiveResource->m_vMin) * 0.5f;
 
     if (m_IsFrustumCullingEnabled &&
-        !IsOBBInsideViewFrustum(float4(s_Center, 1.f), float4(s_Extents, 1.f), p_Transform))
-    {
+        !IsOBBInsideViewFrustum(float4(s_Center, 1.f), float4(s_Extents, 1.f), p_Transform)) {
         return;
     }
 

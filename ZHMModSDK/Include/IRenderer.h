@@ -1,7 +1,5 @@
 #pragma once
 
-#include <SimpleMath.h>
-
 #include "Glacier/ZMath.h"
 #include "Glacier/ZString.h"
 
@@ -52,9 +50,11 @@ public:
     ) = 0;
 
     virtual void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) = 0;
+
     virtual void DrawBox3D(
         const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
     ) = 0;
+
     virtual void DrawBoxWire3D(
         const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
     ) = 0;
@@ -91,7 +91,7 @@ public:
 
     virtual void DrawMesh(
         ZRenderPrimitiveResource* s_pRenderPrimitiveResource,
-        ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
+        ZRenderVertexBuffer** p_VertexBuffers, uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
         const SMatrix& p_Transform, const float4& p_PositionScale, const float4& p_PositionBias,
         const float4& p_TextureScaleBias,
         const SVector4& p_MaterialColor
@@ -99,41 +99,35 @@ public:
 
     virtual void DrawText2D(
         const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color,
-        const float p_Rotation = 0.f, const float p_Scale = 1.f,
-        const TextAlignment p_HorizontalAlignment = TextAlignment::Center,
-        const TextAlignment p_VerticalAlignment = TextAlignment::Top
-    ) = 0;
-
-    virtual void DrawText3D(
-        const std::string& p_Text, const SMatrix& p_World,
-        const SVector4& p_Color, const float p_Scale = 1.f,
-        const TextAlignment p_HorizontalAlignment = TextAlignment::Left,
-        const TextAlignment p_VerticalAlignment = TextAlignment::Top,
-        const bool p_IsCameraTransform = true
+        float p_Rotation = 0.f, float p_Scale = 1.f,
+        TextAlignment p_HorizontalAlignment = TextAlignment::Center,
+        TextAlignment p_VerticalAlignment = TextAlignment::Top
     ) = 0;
 
     virtual void DrawText3D(
         const char* p_Text, const SMatrix& p_World,
-        const SVector4& p_Color, const float p_Scale = 1.f,
-        const TextAlignment p_HorizontalAlignment = TextAlignment::Left,
-        const TextAlignment p_VerticalAlignment = TextAlignment::Top,
-        const bool p_IsCameraTransform = true
+        const SVector4& p_Color, float p_Scale = 1.f,
+        TextAlignment p_HorizontalAlignment = TextAlignment::Left,
+        TextAlignment p_VerticalAlignment = TextAlignment::Top,
+        bool p_IsCameraTransform = true
     ) = 0;
 
     virtual bool IsPointInsideViewFrustum(const SVector3& p_Point) const = 0;
+
     virtual bool IsAABBInsideViewFrustum(
         const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform
     ) const = 0;
+
     virtual bool IsOBBInsideViewFrustum(
         const float4& p_Center, const float4& p_HalfSize, const SMatrix& p_Transform
     ) const = 0;
 
-    virtual void SetFrustumCullingEnabled(const bool p_Enabled) = 0;
+    virtual void SetFrustumCullingEnabled(bool p_Enabled) = 0;
     virtual bool IsFrustumCullingEnabled() const = 0;
 
-    virtual void SetDistanceCullingEnabled(const bool p_Enabled) = 0;
+    virtual void SetDistanceCullingEnabled(bool p_Enabled) = 0;
     virtual bool IsDistanceCullingEnabled() const = 0;
 
-    virtual void SetMaxDrawDistance(const float p_MaxDrawDistance) = 0;
+    virtual void SetMaxDrawDistance(float p_MaxDrawDistance) = 0;
     virtual float GetMaxDrawDistance() const = 0;
 };

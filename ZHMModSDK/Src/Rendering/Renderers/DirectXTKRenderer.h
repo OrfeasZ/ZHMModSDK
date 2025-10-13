@@ -92,7 +92,7 @@ namespace Rendering::Renderers {
         void DrawLine3D(
             const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor
         ) override;
-        
+
         void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) override;
         void DrawBox3D(
             const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
@@ -133,19 +133,11 @@ namespace Rendering::Renderers {
         ) override;
 
         void DrawText3D(
-            const std::string& p_Text, const SMatrix& p_Transform,
-            const SVector4& p_Color, float p_Scale = 1.f,
-            TextAlignment p_HorizontalAlignment = TextAlignment::Left,
-            TextAlignment p_VerticalAlignment = TextAlignment::Top,
-            const bool p_IsCameraTransform = true
-        );
-
-        void DrawText3D(
             const char* p_Text, const SMatrix& p_Transform,
             const SVector4& p_Color, float p_Scale = 1.f,
             TextAlignment p_HorizontalAlignment = TextAlignment::Left,
             TextAlignment p_VerticalAlignment = TextAlignment::Top,
-            const bool p_IsCameraTransform = true
+            bool p_IsCameraTransform = true
         );
 
         void DrawMesh(
@@ -155,7 +147,7 @@ namespace Rendering::Renderers {
 
         void DrawMesh(
             ZRenderPrimitiveResource* s_pRenderPrimitiveResource,
-            ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount,
+            ZRenderVertexBuffer** p_VertexBuffers, uint32_t p_VertexBufferCount,
             ZRenderIndexBuffer* p_IndexBuffer,
             const SMatrix& p_Transform, const float4& p_PositionScale, const float4& p_PositionBias,
             const float4& p_TextureScaleBias,
@@ -170,13 +162,13 @@ namespace Rendering::Renderers {
             const float4& p_Center, const float4& p_HalfSize, const SMatrix& p_Transform
         ) const override;
 
-        void SetFrustumCullingEnabled(const bool p_Enabled) override;
+        void SetFrustumCullingEnabled(bool p_Enabled) override;
         bool IsFrustumCullingEnabled() const override;
 
-        void SetDistanceCullingEnabled(const bool p_Enabled) override;
+        void SetDistanceCullingEnabled(bool p_Enabled) override;
         bool IsDistanceCullingEnabled() const override;
 
-        void SetMaxDrawDistance(const float p_MaxDrawDistance) override;
+        void SetMaxDrawDistance(float p_MaxDrawDistance) override;
         float GetMaxDrawDistance() const override;
 
         static AABB TransformAABB(const DirectX::SimpleMath::Matrix& p_Transform, const AABB& p_AABB);

@@ -6,6 +6,8 @@
 
 #include "Logging.h"
 
+#include <SimpleMath.h>
+
 class ZGuideLadder;
 class ZGuideWindow;
 class ZPFBoxEntity;
