@@ -99,7 +99,9 @@ jobs:
                     Copy-Item _install/x64-Release/bin -Destination _sdk/release/ -Recurse
                     Remove-Item _sdk/release/bin/mods -Recurse
                     Remove-Item _sdk/release/bin/dinput8.dll
+                    Remove-Item _sdk/release/bin/dinput8.pdb
                     Remove-Item _sdk/release/bin/ResourceLib_HM3.dll
+                    Remove-Item _sdk/release/bin/ResourceLib_HM3.pdb
                     Remove-Item _sdk/release/bin/crashpad_handler.exe
                     
                     mkdir _sdk/debug
@@ -107,7 +109,9 @@ jobs:
                     Copy-Item _install/x64-Debug/bin -Destination _sdk/debug/ -Recurse
                     Remove-Item _sdk/debug/bin/mods -Recurse
                     Remove-Item _sdk/debug/bin/dinput8.dll
+                    Remove-Item _sdk/debug/bin/dinput8.pdb
                     Remove-Item _sdk/debug/bin/ResourceLib_HM3.dll
+                    Remove-Item _sdk/debug/bin/ResourceLib_HM3.pdb
                     Remove-Item _sdk/debug/bin/crashpad_handler.exe
                     
                     mkdir _sdk/cmake
