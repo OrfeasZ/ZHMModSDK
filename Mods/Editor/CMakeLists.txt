@@ -1,19 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.12)
 
-include(FetchContent)
-
-FetchContent_Declare(
-        Corrosion
-        GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
-        GIT_TAG v0.5.2
-)
-
-set(Rust_TOOLCHAIN nightly)
-FetchContent_MakeAvailable(Corrosion)
-
-# Load quickentity-rs bindings rust lib.
-corrosion_import_crate(MANIFEST_PATH qnc/Cargo.toml)
-
 # Discover source files.
 file(GLOB_RECURSE SRC_FILES
         CONFIGURE_DEPENDS
@@ -53,17 +39,9 @@ target_link_libraries(Editor PRIVATE
         imguizmo::imguizmo
         unofficial::imgui-node-editor::imgui-node-editor
         ws2_32
-        ResourceLib_HM3
         $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>
         ZLIB::ZLIB
         "${USOCKETS_LIB}"
         simdjson::simdjson
-        qnc
         #	TracyClient
 )
-
-install(TARGETS ResourceLib_HM3
-        RUNTIME DESTINATION bin
-)
-
-install(FILES $<TARGET_PDB_FILE:ResourceLib_HM3> DESTINATION bin)

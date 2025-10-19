@@ -35,6 +35,8 @@ public:
     void OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
     void OnEntityNameChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
     void OnEntityPropertySet(ZEntityRef p_Entity, uint32_t p_PropertyId, std::optional<std::string> p_ByClient);
+    void OnEntitySpawned(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
+    void OnEntityDestroying(uint64_t p_EntityId, std::optional<std::string> p_ByClient);
     void OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks);
     void OnSceneClearing(bool p_ForReload);
     void OnEntityTreeRebuilt();

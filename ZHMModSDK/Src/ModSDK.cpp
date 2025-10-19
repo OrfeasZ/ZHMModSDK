@@ -48,6 +48,7 @@
 
 #include <sentry.h>
 
+#include "zhmmodsdk_rs.h"
 #include "Glacier/ZPlayerRegistry.h"
 #include "Glacier/ZServerProxyRoute.h"
 
@@ -718,6 +719,17 @@ bool ModSDK::Startup() {
         Logger::Warn("Could not patch SetUnhandledExceptionFilter. Crash reporting will not work.");
     }
 
+    // Patch local mounted package count variable from int8_t to uint8_t.
+    // This allows us to mount up to 256 chunks at a time (up from 128).
+    // Patch `movsx r14d, byte ptr [rbp+0x88]` to `movzx r14d, byte ptr [rbp+0x88]`.
+    // TODO: There's more int8 places to patch... ain't no way
+    /*uint8_t s_SecondMovBytes[8] = {0x44, 0x0F, 0xB6, 0xB5, 0x88, 0x00, 0x00, 0x00};
+    if (!PatchCode("\x44\x0F\xBE\xB5\x88\x00\x00\x00", "xxxxxxxx", s_SecondMovBytes, 8, 0)) {
+        Logger::Warn(
+            "Could not patch local mounted package count #2. You will not be able to mount more than 128 chunks."
+        );
+    }*/
+
     // Setup custom multiplayer code.
     //Multiplayer::Lobby::Setup();
 
@@ -737,7 +749,7 @@ bool ModSDK::Startup() {
     return true;
 }
 
-void ModSDK::ThreadedStartup() const {
+void ModSDK::ThreadedStartup() {
     if (m_EnableSentry.value_or(false)) {
         sentry_options_t* options = sentry_options_new();
 
@@ -806,7 +818,7 @@ void ModSDK::OnDrawUI(bool p_HasFocus) {
         );
 
         ImGui::Text(
-            "Crash reports will be kept for 90 days and may include sensitive information, such as your Windows username."
+            "Crash reports will be kept for 30 days and may include sensitive information, such as your Windows username."
         );
 
         ImGui::Text("You can always change this setting later by modifying the 'crash_reporting' setting in mods.ini.");
@@ -900,7 +912,7 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
 
 void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 
-void ModSDK::OnEngineInit() const {
+void ModSDK::OnEngineInit() {
     Logger::Debug("Engine was initialized.");
 
     if (m_EnableSentry.value_or(false)) {
@@ -1191,7 +1203,7 @@ bool ModSDK::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut,
 }
 
 void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size) {
-    if (!p_RT)
+    if (!p_RT || !Globals::RenderManager->m_pDevice || !Globals::RenderManager->m_pDevice->m_pDevice)
         return;
 
     auto s_Size = p_Size;

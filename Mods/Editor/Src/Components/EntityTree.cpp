@@ -7,6 +7,7 @@
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZFreeCamera.h>
 #include <Glacier/ZComponentCreateInfo.h>
+#include <Glacier/SExternalReferences.h>
 
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
@@ -75,6 +76,10 @@ void Editor::UpdateEntityTree(
                 if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
                     s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[i].entityName;
                 }
+            }
+
+            if (const auto s_Name = m_EntityNames.find(s_SubEntity); s_Name != m_EntityNames.end()) {
+                s_EntityName = s_Name->second;
             }
 
             // Format a human-readable name for the entity.
@@ -171,7 +176,7 @@ void Editor::UpdateEntities() {
     }
 
     // Add all custom entities to the queue.
-    for (const auto& s_Entity : m_SpawnedEntities) {
+    for (const auto& s_Entity : m_SpawnedEntities | std::views::values) {
         s_EntsToProcess.push_back(s_Entity);
     }
 
@@ -524,6 +529,62 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, const std::optional<std::string
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.push_back(p_Entity);
     }
+}
+
+void Editor::OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
+    m_EntityDestructionMutex.lock();
+    m_EntitiesToDestroy.push_back({p_Entity, std::move(p_ClientId)});
+    m_EntityDestructionMutex.unlock();
+}
+
+
+void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
+    m_CachedEntityTreeMutex.lock();
+
+    m_EntityNames.erase(p_Entity);
+    m_SpawnedEntities.erase(p_Entity->GetType()->m_nEntityId);
+
+    if (m_SelectedEntity == p_Entity) {
+        m_SelectedEntity = {};
+    }
+
+    // Remove from the tree.
+    const auto s_EntityIter = m_CachedEntityTreeMap.find(p_Entity);
+
+    if (s_EntityIter != m_CachedEntityTreeMap.end()) {
+        const auto s_NodeToRemove = s_EntityIter->second;
+        m_CachedEntityTreeMap.erase(s_EntityIter);
+
+        // Walk the tree and remove any references to this entity non-recursively.
+        if (m_CachedEntityTree) {
+            // Use a queue to traverse the tree non-recursively (BFS).
+            std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
+            s_NodeQueue.push(m_CachedEntityTree);
+
+            while (!s_NodeQueue.empty()) {
+                auto s_CurrentNode = s_NodeQueue.front();
+                s_NodeQueue.pop();
+
+                // Check if any of this node's children is the node we want to remove.
+                for (auto it = s_CurrentNode->Children.begin(); it != s_CurrentNode->Children.end();) {
+                    if (it->second == s_NodeToRemove) {
+                        // Remove this child from the parent's children.
+                        it = s_CurrentNode->Children.erase(it);
+                    }
+                    else {
+                        // Add this child to the queue for further processing.
+                        s_NodeQueue.push(it->second);
+                        ++it;
+                    }
+                }
+            }
+        }
+    }
+
+    m_CachedEntityTreeMutex.unlock();
+
+    m_Server.OnEntityDestroying(p_Entity->GetType()->m_nEntityId, std::move(p_ClientId));
+    Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, p_Entity, {});
 }
 
 void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId) {

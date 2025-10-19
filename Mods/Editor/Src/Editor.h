@@ -48,9 +48,10 @@ public:
     void SetEntityTransform(
         EntitySelector p_Selector, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
     );
-    void SpawnEntity(
-        ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name, std::optional<std::string> p_ClientId
+    void SpawnQnEntity(
+        const std::string& p_QnJson, uint64_t p_EntityId, std::string p_Name, std::optional<std::string> p_ClientId
     );
+    void CreateEntityResources(const std::string& p_QnJson, std::optional<std::string> p_ClientId);
     void DestroyEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId);
     void SetEntityName(EntitySelector p_Selector, std::string p_Name, std::optional<std::string> p_ClientId);
     void SetEntityProperty(
@@ -113,6 +114,8 @@ private:
     );
 
     void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
+    void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
+    void DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void OnEntityTransformChange(
         ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
     );
@@ -310,8 +313,6 @@ private:
         Count
     };
 
-    ZEntityRef m_Camera;
-    ZEntityRef m_CameraRT;
     bool m_raycastLogging; // Mainly used for the raycasting logs
 
     bool m_CameraActive = false;
@@ -372,8 +373,11 @@ private:
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeMap;
     std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
 
-    std::vector<ZEntityRef> m_SpawnedEntities;
+    std::unordered_map<uint64_t, ZEntityRef> m_SpawnedEntities;
     std::unordered_map<ZEntityRef, std::string> m_EntityNames;
+
+    std::mutex m_EntityDestructionMutex;
+    std::vector<std::tuple<ZEntityRef, std::optional<std::string>>> m_EntitiesToDestroy;
 
     EditorServer m_Server;
 
@@ -394,7 +398,8 @@ private:
     std::vector<std::pair<std::string, EDebugChannel>> m_DebugChannels;
     std::unordered_map<std::string, std::vector<std::string>> m_DebugChannelNameToTypeNames;
     std::unordered_map<EDebugChannel, uint32> m_DebugChannelToDebugEntityCount;
-    std::unordered_map<EDebugChannel, std::unordered_map<std::string, uint32_t>> m_DebugChannelToTypeNameToDebugEntityCount;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, uint32_t>>
+    m_DebugChannelToTypeNameToDebugEntityCount;
     std::unordered_map<EDebugChannel, bool> m_DebugChannelToVisibility;
     std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToVisibility;
     std::vector<STypeID*> m_DebugEntityTypeIds;
@@ -408,6 +413,10 @@ private:
     bool m_AlwaysDrawDebugBoxForColiValidityCheck = false;
     bool m_DrawPushDebug = false;
     bool m_DrawSafeZones = true;
+
+    ZEntityRef m_EditorData {};
+    TEntityRef<ZCameraEntity> m_EditorCamera {};
+    TEntityRef<ZRenderDestinationTextureEntity> m_EditorCameraRT {};
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

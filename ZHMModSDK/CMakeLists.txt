@@ -44,8 +44,32 @@ add_library(ZHMModSDK SHARED
         ${CMAKE_CURRENT_BINARY_DIR}/ZHMModSDK.rc
 )
 
+# Set up Rust helper library.
+include(FetchContent)
+FetchContent_Declare(
+        Corrosion
+        GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+        GIT_TAG v0.5.2
+)
+
+set(Rust_TOOLCHAIN nightly)
+FetchContent_MakeAvailable(Corrosion)
+
+# Import the Rust helper library.
+corrosion_import_crate(MANIFEST_PATH Rust/Cargo.toml)
+
+# Create a target to generate C headers for the Rust helper library.
+add_custom_target(ZHMModSDK_RustHeaders
+        COMMAND cargo test --features c-headers -- generate_headers
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Rust
+        COMMENT "Generating C headers for the Rust helper library..."
+        VERBATIM
+)
+add_dependencies(ZHMModSDK ZHMModSDK_RustHeaders)
+
 target_include_directories(ZHMModSDK PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/Src
+        ${CMAKE_CURRENT_SOURCE_DIR}/Rust
         ${CMAKE_SOURCE_DIR}/External/mINI/src/mini
         ${CMAKE_SOURCE_DIR}/External/RakNet/Source/
 )
@@ -81,6 +105,8 @@ target_link_libraries(ZHMModSDK PUBLIC
         winhttp
         comctl32
         sentry::sentry
+        zhmmodsdk_rs
+        ResourceLib_HM3
 )
 
 install(TARGETS ZHMModSDK
@@ -129,3 +155,10 @@ install(FILES "${VCPKG_BUILD_ROOT}/include/imgui.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imconfig.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stacklayout.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stdlib.h" DESTINATION include)
+
+# Install ResourceLib.
+install(TARGETS ResourceLib_HM3
+        RUNTIME DESTINATION bin
+)
+
+install(FILES $<TARGET_PDB_FILE:ResourceLib_HM3> DESTINATION bin)

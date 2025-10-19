@@ -49,6 +49,22 @@ void Editor::DrawEntityProperties() {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Deselect");
 
+        // Only show destroy button for custom entities.
+        if (m_EntityNames.contains(s_SelectedEntity)) {
+            ImGui::SameLine(0, 5);
+
+            if (ImGui::Button(ICON_MD_DELETE)) {
+                OnDestroyEntity(s_SelectedEntity, std::nullopt);
+
+                // Prevent crash on destroy.
+                ImGui::End();
+                return;
+            }
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Destroy Entity");
+        }
+
         static bool s_LocalTransform = false;
         ImGui::Checkbox("Local Transforms", &s_LocalTransform);
 

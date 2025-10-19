@@ -58,5 +58,15 @@ namespace Util {
 
             return (it != p_String.end());
         }
+
+        static bool EndsWith(const std::string& p_String, const std::string& p_Suffix) {
+            return p_String.size() >= p_Suffix.size() &&
+                    p_String.compare(p_String.size() - p_Suffix.size(), p_Suffix.size(), p_Suffix) == 0;
+        }
+
+        static bool StartsWith(const std::string& p_String, const std::string& p_Prefix) {
+            return p_String.size() >= p_Prefix.size() &&
+                    p_String.compare(0, p_Prefix.size(), p_Prefix) == 0;
+        }
     };
 }

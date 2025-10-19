@@ -10,6 +10,8 @@
 #include "Hooks.h"
 #include "Glacier/ZEntity.h"
 
+struct ResourceMem;
+
 namespace Rendering {
     class D3D12Hooks;
     class D3D12SwapChain;
@@ -45,7 +47,7 @@ public:
     ~ModSDK();
 
     bool Startup();
-    void ThreadedStartup() const;
+    void ThreadedStartup();
 
     uintptr_t GetModuleBase() const { return m_ModuleBase; }
     uint32_t GetSizeOfCode() const { return m_SizeOfCode; }
@@ -61,7 +63,7 @@ private:
 public:
     void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
     void OnModUnloaded(const std::string& p_Name);
-    void OnEngineInit() const;
+    void OnEngineInit();
     void OnDrawUI(bool p_HasFocus);
     void OnDraw3D() const;
     void OnDepthDraw3D() const;
@@ -100,6 +102,8 @@ public:
     void SetHasShownUiToggleWarning();
 
 public:
+    #pragma region IModSDK implementation
+
     void RequestUIFocus() override;
     void ReleaseUIFocus() override;
     ImGuiContext* GetImGuiContext() override;
@@ -114,55 +118,72 @@ public:
     bool GetPinName(int32_t p_PinId, ZString& p_Name) override;
     bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
     bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
+
     bool PatchCode(
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset
     ) override;
+
     bool PatchCodeStoreOriginal(
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
         void* p_OriginalCode
     ) override;
+
     void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = {0, 0}) override;
 
     // Plugin settings
     void SetPluginSetting(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_Value
     ) override;
+
     void SetPluginSettingInt(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_Value
     ) override;
+
     void SetPluginSettingUInt(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64_t p_Value
     ) override;
+
     void SetPluginSettingDouble(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_Value
     ) override;
+
     void SetPluginSettingBool(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_Value
     ) override;
+
     ZString GetPluginSetting(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, const ZString& p_DefaultValue
     ) override;
+
     int64_t GetPluginSettingInt(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, int64_t p_DefaultValue
     ) override;
+
     uint64_t GetPluginSettingUInt(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, uint64_t p_DefaultValue
     ) override;
+
     double GetPluginSettingDouble(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, double p_DefaultValue
     ) override;
+
     bool GetPluginSettingBool(
         IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name, bool p_DefaultValue
     ) override;
+
     bool HasPluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) override;
     void RemovePluginSetting(IPluginInterface* p_Plugin, const ZString& p_Section, const ZString& p_Name) override;
     void ReloadPluginSettings(IPluginInterface* p_Plugin) override;
 
     TEntityRef<ZHitman5> GetLocalPlayer() override;
 
+    #pragma endregion
+
     void AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size);
 
 private:
+    #pragma region Detours
+
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
 
@@ -181,12 +202,35 @@ private:
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     );
 
+    #pragma endregion
+
     bool PatchCodeInternal(
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
         void* p_OriginalCode
     );
 
     void UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback);
+
+    #pragma region ResourceLoading
+
+public:
+    bool LoadQnEntity(
+        const ZString& p_Json,
+        TResourcePtr<ZTemplateEntityBlueprintFactory>& p_BlueprintFactoryOut,
+        TResourcePtr<ZTemplateEntityFactory>& p_FactoryOut
+    ) override;
+
+    bool IsChunkMounted(uint32_t p_ChunkIndex) override;
+    void MountChunk(uint32_t p_ChunkIndex) override;
+
+private:
+    std::tuple<ZResourceIndex, ZRuntimeResourceID> LoadResourceFromBIN1(
+        ResourceMem* p_ResourceMem, std::string_view p_MetaJson, std::function<void(ZResourcePending*)> p_Install
+    );
+
+    void LoadResourceChunkMap();
+
+    #pragma endregion
 
 private:
     bool m_UiEnabled = true;
@@ -201,6 +245,8 @@ private:
     std::string m_IgnoredVersion;
     bool m_DisableUpdateCheck = false;
     float m_LoadedModsUIScrollOffset = 0;
+
+    std::unordered_map<ZRuntimeResourceID, std::vector<uint32_t>> m_ResourceIdToChunkMap;
 
     std::shared_ptr<ModLoader> m_ModLoader {};
 

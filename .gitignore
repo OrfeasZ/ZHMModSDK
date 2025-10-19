@@ -380,8 +380,8 @@ FodyWeavers.xsd
 out/
 CMakeUserPresets.json
 
-/Mods/Editor/qnc/bindings.hpp
-/Mods/Editor/qnc/target/
+/ZHMModSDK/Rust/zhmmodsdk_rs.h
+/ZHMModSDK/Rust/target/
 
 ModSDKVersion.h
 ZHMModSDK.rc

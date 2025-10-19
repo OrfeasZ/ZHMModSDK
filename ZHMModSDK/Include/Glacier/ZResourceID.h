@@ -32,7 +32,8 @@ public:
      */
     static ZRuntimeResourceID FromString(const std::string& p_String) {
         // If hash starts with 00, is exactly 16 chars long, and is hex, then decode it directly to a uint64.
-        if (p_String.starts_with("00") && p_String.size() == 16 && p_String.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos) {
+        if (p_String.starts_with("00") && p_String.size() == 16 && p_String.find_first_not_of("0123456789abcdefABCDEF")
+            == std::string::npos) {
             return {std::stoull(p_String, nullptr, 16)};
         }
 
@@ -70,6 +71,14 @@ public:
             uint32_t m_IDLow;
         };
     };
+};
+
+
+template <>
+struct std::hash<ZRuntimeResourceID> {
+    size_t operator()(const ZRuntimeResourceID& p_Value) const noexcept {
+        return p_Value.GetID();
+    }
 };
 
 inline std::ostream& operator<<(std::ostream& p_Stream, const ZRuntimeResourceID& p_Value) {

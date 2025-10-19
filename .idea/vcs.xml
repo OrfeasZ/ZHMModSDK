@@ -3,7 +3,6 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/External/IconFontCppHeaders" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/External/imgui/source" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/External/mINI" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/External/vcpkg" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/_build/x64-Debug-Install/_deps/cista-src" vcs="Git" />
