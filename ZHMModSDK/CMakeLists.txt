@@ -59,6 +59,12 @@ FetchContent_MakeAvailable(Corrosion)
 # Import the Rust helper library.
 corrosion_import_crate(MANIFEST_PATH Rust/Cargo.toml)
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    corrosion_set_env_vars(zhmmodsdk_rs "CFLAGS=-MTd" "CXXFLAGS=-MTd")
+else ()
+    corrosion_set_env_vars(zhmmodsdk_rs "CFLAGS=-MT" "CXXFLAGS=-MT")
+endif ()
+
 # Create a target to generate C headers for the Rust helper library.
 add_custom_target(ZHMModSDK_RustHeaders
         COMMAND cargo test --features c-headers -- generate_headers
