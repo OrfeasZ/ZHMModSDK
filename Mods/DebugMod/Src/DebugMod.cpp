@@ -373,10 +373,10 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
             return;
         }
 
+        p_Renderer->SetDistanceCullingEnabled(true);
+
         SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
         const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
-
-        std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
         static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
         static const float s_Scale = 0.2f;
@@ -391,6 +391,8 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
 
             p_Renderer->DrawText3D(s_Text.c_str(), s_WorldMatrix, s_Color, s_Scale);
         }
+
+        p_Renderer->SetDistanceCullingEnabled(false);
     }
 }
 
@@ -435,8 +437,6 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
         }
 
         SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
-
-        std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
         static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
         static const float s_Scale = 0.2f;
@@ -502,8 +502,6 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
     }
 
     SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
-
-    std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
     static const float s_Scale = 0.3f;

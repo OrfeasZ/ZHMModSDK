@@ -893,7 +893,7 @@ void ModSDK::OnDepthDraw3D() const {
         s_Mod->OnDepthDraw3D(m_DirectXTKRenderer.get());
 
         m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsFrustumCullingEnabled);
-        m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsDistanceCullingEnabled);
+        m_DirectXTKRenderer->SetDistanceCullingEnabled(s_IsDistanceCullingEnabled);
         m_DirectXTKRenderer->SetMaxDrawDistance(s_MaxDrawDistance);
     }
 
