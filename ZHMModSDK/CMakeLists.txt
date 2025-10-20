@@ -53,6 +53,7 @@ FetchContent_Declare(
 )
 
 set(Rust_TOOLCHAIN nightly)
+set(Rust_CARGO_TARGET x86_64-pc-windows-msvc)
 FetchContent_MakeAvailable(Corrosion)
 
 # Import the Rust helper library.
