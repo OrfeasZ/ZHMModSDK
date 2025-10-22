@@ -437,7 +437,7 @@ DEFINE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int 
     return HookResult<bool>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&) {
+DEFINE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
     if (m_FreeCamActive)
         DisableFreecam();
 

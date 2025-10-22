@@ -25,7 +25,7 @@ class ZApplicationEngineWin32;
 class ZEntityImpl;
 class ZObjectRef;
 class ZEntitySceneContext;
-class ZSceneData;
+struct SSceneInitParameters;
 class ZString;
 class ZEntityRef;
 class ZRenderDevice;
@@ -78,8 +78,8 @@ class ZOnlineVersionConfig;
 class ZHMSDK_API Hooks {
 public:
     static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
-    static Hook<void(ZEntitySceneContext*, ZSceneData&)>* ZEntitySceneContext_LoadScene;
-    static Hook<void(ZEntitySceneContext*, bool forReload)>* ZEntitySceneContext_ClearScene;
+    static Hook<void(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
+    static Hook<void(ZEntitySceneContext*, bool bFullyUnloadScene)>* ZEntitySceneContext_ClearScene;
 
     static Hook<void(
         ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode

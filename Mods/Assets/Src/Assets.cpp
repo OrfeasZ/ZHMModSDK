@@ -648,7 +648,7 @@ std::string Assets::ConvertDynamicObjectValueToString(const ZDynamicObject& p_Dy
     return s_Result;
 }
 
-DEFINE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_RepositoryResource = {};
     m_RepositoryProps.clear();
 

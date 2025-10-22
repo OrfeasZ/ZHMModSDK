@@ -1605,7 +1605,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(
-    ModSDK, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData
+    ModSDK, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters
 ) {
     if (m_DirectXTKRenderer) {
         m_DirectXTKRenderer->ClearDsvIndex();
@@ -1614,7 +1614,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
     return {HookAction::Continue()};
 }
 
-DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     if (m_DirectXTKRenderer) {
         m_DirectXTKRenderer->ClearDsvIndex();
     }

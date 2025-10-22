@@ -1206,11 +1206,11 @@ std::string DebugMod::BehaviorToString(ECompiledBehaviorType p_Type) {
     }
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&) {
+DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
     return HookResult<void>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_RenderActorBoxes = false;
     m_RenderActorNames = false;
     m_RenderActorRepoIds = false;

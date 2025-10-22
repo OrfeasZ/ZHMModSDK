@@ -465,8 +465,8 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
-                if (s_SelectedEntity.IsAnyParent(s_Brick.entityRef)) {
-                    Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
+                if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
+                    Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
                     m_SelectedBrickIndex = i;
                     break;
                 }
@@ -831,14 +831,14 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
     return s_Matrix;
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData) {
+DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     static bool s_BypassedOnce = false;
 
-    if ((p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
-        p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
+    if ((p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+        p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
         //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
         s_BypassedOnce = true;
-        p_SceneData.m_sceneName =
+        p_Parameters.m_SceneResource =
                 "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
         //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";*/
     }
@@ -876,11 +876,11 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
 
     std::vector<std::string> s_Bricks;
 
-    for (auto& s_Brick : p_SceneData.m_sceneBricks) {
+    for (auto& s_Brick : p_Parameters.m_aAdditionalBrickResources) {
         s_Bricks.push_back(s_Brick.c_str());
     }
 
-    m_Server.OnSceneLoading(p_SceneData.m_sceneName.c_str(), s_Bricks);
+    m_Server.OnSceneLoading(p_Parameters.m_SceneResource.c_str(), s_Bricks);
 
     if (m_TrackCamActive) {
         DisableTrackCam();
@@ -902,7 +902,7 @@ DEFINE_PLUGIN_DETOUR(
     return {HookAction::Continue()};
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_SelectedBrickIndex = 0;
     m_SelectedEntity = {};
     m_ShouldScrollToEntity = false;
@@ -924,7 +924,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
 
     m_NavpAreas.clear();
 
-    m_Server.OnSceneClearing(forReload);
+    m_Server.OnSceneClearing(p_FullyUnloadScene);
 
     if (m_TrackCamActive) {
         DisableTrackCam();

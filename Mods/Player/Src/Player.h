@@ -22,7 +22,7 @@ private:
 
     void EnableInfiniteAmmo();
 
-    DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
+    DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     bool m_PlayerMenuActive = false;
 

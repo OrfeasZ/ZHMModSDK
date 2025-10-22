@@ -1241,8 +1241,8 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
     for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
         const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
-        if (s_SelectedEntity.IsAnyParent(s_Brick.entityRef)) {
-            Logger::Debug("Found gizmo entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
+        if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
+            Logger::Debug("Found gizmo entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
             m_SelectedBrickIndex = i;
             break;
         }

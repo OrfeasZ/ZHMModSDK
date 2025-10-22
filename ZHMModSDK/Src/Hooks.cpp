@@ -19,14 +19,14 @@ PATTERN_HOOK(
     "\x48\x8B\xC4\x48\x89\x48\x08\x41\x54\x41\x56\x41\x57",
     "xxxxxxxxxxxxx",
     ZEntitySceneContext_LoadScene,
-    void(ZEntitySceneContext* th, ZSceneData& sceneData)
+    void(ZEntitySceneContext* th, SSceneInitParameters& parameters)
 );
 
 PATTERN_HOOK(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\x05",
     "xxxxxxxxxxxxxxxxxxxx?xx",
     ZEntitySceneContext_ClearScene,
-    void(ZEntitySceneContext*, bool forReload)
+    void(ZEntitySceneContext*, bool bFullyUnloadScene)
 );
 
 PATTERN_HOOK(

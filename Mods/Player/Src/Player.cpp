@@ -470,7 +470,7 @@ void Player::EnableInfiniteAmmo()
     s_HM5CrippleBox->Activate(0);
 }
 
-DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
+DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene)
 {
     if (m_HM5CrippleBoxEntity.m_pEntity)
     {
