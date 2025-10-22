@@ -4,9 +4,7 @@
 #include "TArray.h"
 #include "Reflection.h"
 #include "ZObject.h"
-#include "Hooks.h"
 #include "Globals.h"
-#include "Functions.h"
 
 class IEntityBlueprintFactory;
 class ZEntityBlueprintFactoryBase;
@@ -237,13 +235,7 @@ public:
         };
     }
 
-    void SetLogicalParent(ZEntityRef entityRef) {
-        const auto s_Entity = GetEntity();
-        ZEntityType* s_EntityType = Functions::ZEntityImpl_EnsureUniqueType->Call(s_Entity, 0);
-
-        s_EntityType->m_nLogicalParentEntityOffset = reinterpret_cast<uintptr_t>(entityRef.m_pEntity) - reinterpret_cast
-                <uintptr_t>(m_pEntity);
-    }
+    ZHMSDK_API void SetLogicalParent(ZEntityRef entityRef);
 
     bool IsAnyParent(const ZEntityRef& p_Other) const {
         if (!p_Other)
@@ -432,9 +424,7 @@ public:
         return GetProperty<T>(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()));
     }
 
-    bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true) {
-        return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);
-    }
+    bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true);
 
     bool SetProperty(const ZString& p_PropertyName, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true) {
         return SetProperty(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers);
@@ -442,7 +432,7 @@ public:
 
     template <class T>
     bool SetProperty(uint32_t p_PropertyId, const T& p_Value, bool p_InvokeChangeHandlers = true) {
-        return Hooks::SetPropertyValue->Call(*this, p_PropertyId, ZVariant<T>(p_Value), p_InvokeChangeHandlers);
+        return SetProperty(p_PropertyId, ZVariant<T>(p_Value), p_InvokeChangeHandlers);
     }
 
     template <class T>
@@ -454,7 +444,7 @@ public:
 
     template <class T>
     bool SetProperty(uint32_t p_PropertyId, const ZVariant<T>& p_Value, bool p_InvokeChangeHandlers = true) {
-        return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);
+        return SetProperty(p_PropertyId, p_Value, p_InvokeChangeHandlers);
     }
 
     template <class T>
@@ -466,7 +456,7 @@ public:
 
     template <class T>
     bool SetProperty(uint32_t p_PropertyId, const ZVariantRef<T>& p_Value, bool p_InvokeChangeHandlers = true) {
-        return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);
+        return SetProperty(p_PropertyId, p_Value, p_InvokeChangeHandlers);
     }
 
     template <class T>
@@ -480,17 +470,13 @@ public:
         SignalInputPin(Hash::Crc32(p_PinName.c_str(), p_PinName.size()), p_Data);
     }
 
-    void SignalInputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const {
-        Hooks::SignalInputPin->Call(*this, p_PinId, p_Data);
-    }
+    ZHMSDK_API void SignalInputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const;
 
     void SignalOutputPin(const ZString& p_PinName, const ZObjectRef& p_Data = ZObjectRef()) const {
         SignalOutputPin(Hash::Crc32(p_PinName.c_str(), p_PinName.size()), p_Data);
     }
 
-    void SignalOutputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const {
-        Hooks::SignalOutputPin->Call(*this, p_PinId, p_Data);
-    }
+    ZHMSDK_API void SignalOutputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const;
 
     struct hasher {
         size_t operator()(const ZEntityRef& p_Ref) const noexcept {
