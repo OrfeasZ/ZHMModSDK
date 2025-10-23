@@ -8,7 +8,9 @@
 #include "Glacier/ZPrimitives.h"
 #include "Glacier/ZResource.h"
 #include "Glacier/Reflection.h"
+#include "Glacier/ZDelegate.h"
 #include "Glacier/ZInventory.h"
+#include "Glacier/EDynamicEntityType.h"
 
 class ZHitman5;
 class ZActor;
@@ -44,6 +46,9 @@ class ZResourcePending;
 class ZEntityType;
 class ZEntityImpl;
 class ZUIText;
+class ZActorInventoryHandler;
+class ZWorldInventory;
+class IItemBase;
 
 class ZHMSDK_API Functions {
 public:
@@ -159,4 +164,36 @@ public:
     static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
 
     static EngineFunction<ZString::ZImpl*(const char* buf, size_t size)>* ZStringCollection_Allocate;
+
+    static EngineFunction<bool(
+        ZActorInventoryHandler* th, const ZRepositoryID& id
+    )>* ZActorInventoryHandler_RequestItem;
+    static EngineFunction<bool(ZActorInventoryHandler* th, const TEntityRef<IItem>& rItem
+    )>* ZActorInventoryHandler_ItemAddToInventory;
+    static EngineFunction<bool(
+        ZActorInventoryHandler* th,
+        const TEntityRef<IItem>& rItem,
+        EAttachLocation eLocation,
+        EGameTension eMaxTension,
+        bool bLeftHand,
+        bool bMainWeapon,
+        bool bGiveItem
+    )>* ZActorInventoryHandler_ItemPickup;
+
+    static EngineFunction<uint64_t(
+        ZEntityManager* th, ZEntityRef& entityRef, EDynamicEntityType dynamicEntityType, uint8 flags
+    )>* ZEntityManager_GenerateDynamicObjectID;
+    static EngineFunction<uint64_t(
+        ZEntityManager* th, uint64_t baseID, EDynamicEntityType dynamicEntityType
+    )>* ZEntityManager_GenerateDynamicObjectID2;
+
+    static EngineFunction<uint32(
+        ZWorldInventory* th,
+        const ZRepositoryID& repId,
+        ZDelegate<void(unsigned int, TEntityRef<IItemBase>)> callback,
+        uint64_t entityID,
+        bool bLoading,
+        const ZEntityRef& rParentSpatial,
+        const ZEntityRef& rCreator
+    )>* ZWorldInventory_RequestNewItem;
 };
