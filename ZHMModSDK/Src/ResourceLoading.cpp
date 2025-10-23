@@ -110,6 +110,17 @@ void ModSDK::MountChunk(uint32_t p_ChunkIndex) {
     Logger::Debug("All requested chunks have been mounted.");
 }
 
+const TArray<uint32_t>& ModSDK::GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) {
+    if (m_ResourceIdToChunkMap.empty()) {
+        LoadResourceChunkMap();
+    }
+
+    static const TArray<uint32_t> s_Empty;
+    auto s_Iterator = m_ResourceIdToChunkMap.find(id);
+
+    return s_Iterator != m_ResourceIdToChunkMap.end() ? s_Iterator->second : s_Empty;
+}
+
 std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
     ResourceMem* p_ResourceMem, std::string_view p_MetaJson, std::function<void(ZResourcePending*)> p_Install
 ) {

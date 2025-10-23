@@ -3,6 +3,8 @@
 #include "ModSDKVersion.h"
 #include "Glacier/ZPrimitives.h"
 #include "Glacier/ZEntity.h"
+#include "Glacier/ZResource.h"
+#include "Glacier/EntityFactory.h"
 #include "Common.h"
 #include "imgui.h"
 
@@ -265,6 +267,13 @@ public:
      * @param p_ChunkIndex The index of the chunk to mount.
      */
     virtual void MountChunk(uint32_t p_ChunkIndex) = 0;
+
+    /**
+     * Get the list of indices of chunks that contain the resource with the specified runtime resource ID.
+     * @param id The runtime resource ID to look up.
+     * @return A constant reference to an array of chunk indices. If no chunks are found, an empty array is returned.
+     */
+    virtual const TArray<uint32_t>& GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) = 0;
 };
 
 /**
