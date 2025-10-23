@@ -67,7 +67,7 @@ public:
     static EngineFunction<ZHM5InputControl*(ZHM5InputManager* th)>* ZHM5InputManager_GetInputControlForLocalPlayer;
     static EngineFunction<void(ZResourceManager* th, int index)>* ZResourceManager_UninstallResource;
 
-    static EngineFunction<void(
+    static EngineFunction<ZEntityRef*(
         ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
         const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId
     )>* ZEntityManager_NewEntity;

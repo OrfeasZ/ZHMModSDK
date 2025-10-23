@@ -114,7 +114,7 @@ PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x49\x89\x5B\x08\x49\x89\x6B\x10\x4D\x89\x43\x18",
     "xxxxxxxxxxxxxxx",
     ZEntityManager_NewEntity,
-    void(ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
+    ZEntityRef*(ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
         const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId)
 );
 
