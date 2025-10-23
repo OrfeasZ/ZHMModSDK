@@ -175,8 +175,8 @@ public:
     virtual void ZResourceManager_unk5() = 0;
     virtual void ZResourceManager_unk6() = 0;
     virtual void ZResourceManager_unk7() = 0;
-    virtual void GetResourcePtr(ZResourcePtr& result, const ZRuntimeResourceID& ridResource, int nPriority) = 0;
-    virtual void LoadResource(ZResourcePtr& result, const ZRuntimeResourceID& ridResource) = 0;
+    virtual ZResourcePtr* GetResourcePtr(ZResourcePtr& result, const ZRuntimeResourceID& ridResource, int nPriority) = 0;
+    virtual ZResourcePtr* LoadResource(ZResourcePtr& result, const ZRuntimeResourceID& ridResource) = 0;
     virtual void ZResourceManager_unk10() = 0;
     virtual void ZResourceManager_unk11() = 0;
     virtual void ZResourceManager_unk12() = 0;
