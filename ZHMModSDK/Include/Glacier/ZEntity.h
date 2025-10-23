@@ -424,7 +424,7 @@ public:
         return GetProperty<T>(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()));
     }
 
-    bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true);
+    ZHMSDK_API bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true);
 
     bool SetProperty(const ZString& p_PropertyName, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true) {
         return SetProperty(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers);
@@ -444,25 +444,29 @@ public:
 
     template <class T>
     bool SetProperty(uint32_t p_PropertyId, const ZVariant<T>& p_Value, bool p_InvokeChangeHandlers = true) {
-        return SetProperty(p_PropertyId, p_Value, p_InvokeChangeHandlers);
+        return SetProperty(p_PropertyId, static_cast<const ZObjectRef&>(p_Value), p_InvokeChangeHandlers);
     }
 
     template <class T>
     bool SetProperty(const ZString& p_PropertyName, const ZVariant<T>& p_Value, bool p_InvokeChangeHandlers = true) {
         return SetProperty<T>(
-            Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers
+            Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()),
+            static_cast<const ZObjectRef&>(p_Value),
+            p_InvokeChangeHandlers
         );
     }
 
     template <class T>
     bool SetProperty(uint32_t p_PropertyId, const ZVariantRef<T>& p_Value, bool p_InvokeChangeHandlers = true) {
-        return SetProperty(p_PropertyId, p_Value, p_InvokeChangeHandlers);
+        return SetProperty(p_PropertyId, static_cast<const ZObjectRef&>(p_Value), p_InvokeChangeHandlers);
     }
 
     template <class T>
     bool SetProperty(const ZString& p_PropertyName, const ZVariantRef<T>& p_Value, bool p_InvokeChangeHandlers = true) {
         return SetProperty<T>(
-            Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers
+            Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()),
+            static_cast<const ZObjectRef&>(p_Value),
+            p_InvokeChangeHandlers
         );
     }
 
