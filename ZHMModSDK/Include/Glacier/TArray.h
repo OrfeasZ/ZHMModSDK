@@ -2,6 +2,7 @@
 
 #include "ZPrimitives.h"
 #include "Glacier/ZMemory.h"
+#include "TAlignedType.h"
 #include "Globals.h"
 
 #include <vector>
@@ -302,51 +303,193 @@ public:
     };
 };
 
-template <typename T>
-class TFixedArray {
+template <typename TElement, size_t TCapacity>
+class ZFixedArrayData {
 public:
-    inline size_t size() const {
-        return (reinterpret_cast<uintptr_t>(m_pEnd) - reinterpret_cast<uintptr_t>(m_pBegin)) / sizeof(T);
-    }
+    TElement m_pStart[TCapacity];
+};
 
-    inline size_t capacity() const {
-        return (reinterpret_cast<uintptr_t>(m_pEnd) - reinterpret_cast<uintptr_t>(m_pBegin)) / sizeof(T);
-    }
+template <typename TElement>
+class ZArrayRefData {
+public:
+    TElement* m_pStart;
+    TElement* m_pEnd;
+};
 
-    inline T& operator[](size_t p_Index) const {
-        return m_pBegin[p_Index];
-    }
+template <typename TElement, int TCapacity>
+class ZMaxArrayData {
+public:
+    union {
+        unsigned char m_data[TCapacity * sizeof(TElement)];
+        TAlignedType<alignof(TElement)> alignDummy;
+    };
+};
 
-    inline T* begin() {
-        return m_pBegin;
-    }
-
-    inline T* end() {
-        return m_pEnd;
-    }
-
-    inline T* begin() const {
-        return m_pBegin;
-    }
-
-    inline T* end() const {
-        return m_pEnd;
-    }
-
-    inline T* find(const T& p_Value) const {
-        T* s_Current = m_pBegin;
-
-        while (s_Current != m_pEnd) {
-            if (*s_Current == p_Value)
-                return s_Current;
-
-            ++s_Current;
+template <typename TElement, typename TStorage>
+class TFixedArrayBase : public TStorage
+{
+public:
+    size_t size() const {
+        if constexpr (std::is_base_of_v<ZArrayRefData<TElement>, TStorage>) {
+            return static_cast<size_t>(this->m_pEnd - this->m_pStart);
         }
 
-        return m_pEnd;
+        return sizeof(this->m_pStart) / sizeof(TElement);
     }
 
+    bool empty() const {
+        if constexpr (std::is_base_of_v<ZArrayRefData<TElement>, TStorage>) {
+            return this->m_pStart == this->m_pEnd;
+        }
+
+        return size() == 0;
+    }
+
+    TElement& operator[](size_t index) {
+        return this->m_pStart[index];
+    }
+
+    const TElement& operator[](size_t index) const {
+        return this->m_pStart[index];
+    }
+
+    TElement* begin() {
+        return this->m_pStart;
+    }
+
+    const TElement* begin() const {
+        return this->m_pStart;
+    }
+
+    TElement* end() {
+        if constexpr (std::is_base_of_v<ZArrayRefData<TElement>, TStorage>) {
+            return this->m_pEnd;
+        }
+
+        return this->m_pStart + size();
+    }
+
+    const TElement* end() const {
+        if constexpr (std::is_base_of_v<ZArrayRefData<TElement>, TStorage>) {
+            return this->m_pEnd;
+        }
+        
+        return this->m_pStart + size();
+    }
+
+    TElement* find(const TElement& p_Value) {
+        for (auto it = begin(); it != end(); ++it) {
+            if (*it == p_Value) {
+                return it;
+            }
+        }
+
+        return nullptr;
+    }
+
+    const TElement* find(const TElement& p_Value) const {
+        for (auto it = begin(); it != end(); ++it) {
+            if (*it == p_Value) {
+                return it;
+            }
+        }
+
+        return nullptr;
+    }
+};
+
+template <typename TElement, size_t TCapacity>
+class TFixedArray : public TFixedArrayBase<TElement, ZFixedArrayData<TElement, TCapacity>> {
+};
+
+template <typename TElement>
+class TArrayRef : public TFixedArrayBase<TElement, ZArrayRefData<TElement>> {
 public:
-    T* m_pBegin;
-    T* m_pEnd;
+    TArrayRef() = default;
+
+    TArrayRef(TElement* p_Start, TElement* p_End) {
+        this->m_pStart = p_Start;
+        this->m_pEnd = p_End;
+    }
+
+    TArrayRef(TElement* p_Start, size_t p_Count) {
+        this->m_pStart = p_Start;
+        this->m_pEnd = p_Start + p_Count;
+    }
+};
+
+template <typename TElement, typename TStorage>
+class TMaxArrayBase : public TStorage {
+public:
+    size_t size() const {
+        return static_cast<size_t>(m_nSize);
+    }
+
+    constexpr size_t capacity() const {
+        return sizeof(this->m_data) / sizeof(TElement);
+    }
+
+    bool empty() const {
+        return m_nSize == 0;
+    }
+
+    TElement& operator[](size_t index) {
+        return reinterpret_cast<TElement*>(this->m_data)[index];
+    }
+
+    const TElement& operator[](size_t index) const {
+        return reinterpret_cast<const TElement*>(this->m_data)[index];
+    }
+
+    TElement* data()
+    {
+        return reinterpret_cast<TElement*>(this->m_data);
+    }
+
+    const TElement* data() const
+    {
+        return reinterpret_cast<const TElement*>(this->m_data);
+    }
+
+    TElement* begin() {
+        return data();
+    }
+
+    const TElement* begin() const {
+        return data();
+    }
+
+    TElement* end() {
+        return data() + m_nSize;
+    }
+
+    const TElement* end() const {
+        return data() + m_nSize;
+    }
+
+    TElement* find(const TElement& p_Value) {
+        for (TElement* it = begin(); it != end(); ++it) {
+            if (*it == p_Value) {
+                return it;
+            }
+        }
+
+        return nullptr;
+    }
+
+    const TElement* find(const TElement& p_Value) const {
+        for (const TElement* it = begin(); it != end(); ++it) {
+            if (*it == p_Value) {
+                return it;
+            }
+        }
+
+        return nullptr;
+    }
+
+    uint32_t m_nSize;
+};
+
+template <typename TElement, int TCapacity>
+class TMaxArray : public TMaxArrayBase<TElement, ZMaxArrayData<TElement, TCapacity>> {
 };
