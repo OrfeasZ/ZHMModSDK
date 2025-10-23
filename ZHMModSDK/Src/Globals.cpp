@@ -295,3 +295,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZUIText*, UIText
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x0D\x00\x00\x00\x00\x48\x89\x75\x77",
+    "xxx????xxxx",
+    3,
+    ZWorldInventory*, WorldInventory
+);
