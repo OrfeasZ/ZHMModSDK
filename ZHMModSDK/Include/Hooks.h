@@ -131,8 +131,8 @@ public:
     static Hook<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
 
     static Hook<void(
-        ZEntityManager* th, const TFixedArray<ZEntityRef>& entities,
-        THashMap<ZRuntimeResourceID, ZEntityRef>& references
+        ZEntityManager* th, TArrayRef<ZEntityRef> aEntities, const SExternalReferences& externalRefs,
+        bool bPrintTimings
     )>* ZEntityManager_DeleteEntities;
 
     static Hook<void(ZEntityManager* th, ZEntityRef* entity, void* a3)>* ZEntityManager_ActivateEntity;

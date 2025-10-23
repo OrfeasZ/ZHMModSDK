@@ -204,8 +204,8 @@ PATTERN_HOOK(
     "\x40\x56\x41\x54\x41\x57\x48\x83\xEC\x00\x80\x79\x48",
     "xxxxxxxxx?xxx",
     ZEntityManager_DeleteEntities,
-    void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>&
-        references)
+    void(ZEntityManager* th, TArrayRef<ZEntityRef> aEntities, const SExternalReferences& externalRefs,
+        bool bPrintTimings)
 );
 
 PATTERN_HOOK(
