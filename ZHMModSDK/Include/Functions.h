@@ -8,6 +8,7 @@
 #include "Glacier/ZPrimitives.h"
 #include "Glacier/ZResource.h"
 #include "Glacier/Reflection.h"
+#include "Glacier/ZInventory.h"
 
 class ZHitman5;
 class ZActor;
@@ -26,7 +27,6 @@ class IEntityFactory;
 struct SMatrix;
 class ZGlobalOutfitKit;
 class ZItemSpawner;
-class ZCharacterSubcontrollerInventory;
 class ZResourceContainer;
 class ZResourceIndex;
 class ZHM5Animator;
@@ -89,10 +89,13 @@ public:
 
     static EngineFunction<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
 
-    static EngineFunction<unsigned long long(
-        ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId,
-        void* unknown, unsigned int unknown2
-    )>* ZCharacterSubcontrollerInventory_AddDynamicItemToInventory;
+    static EngineFunction<ZCharacterSubcontrollerInventory::SCreateItem*(
+        ZCharacterSubcontrollerInventory* th,
+        const ZRepositoryID& repId,
+        const ZString& sOnlineInstanceId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        ZCharacterSubcontrollerInventory::ECreateItemType createItemType
+    )>* ZCharacterSubcontrollerInventory_CreateItem;
 
     static EngineFunction<void(
         ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags
