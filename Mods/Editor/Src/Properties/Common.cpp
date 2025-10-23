@@ -36,7 +36,7 @@ void Editor::ZEntityRefProperty(
     ImVec4 linkColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f); // Light blue, like a link
 
     ImGui::PushStyleColor(ImGuiCol_Text, linkColor);
-    ImGui::Text("%s", "link");
+    ImGui::Text("%s", fmt::format("{:016x}", p_Entity->GetType()->m_nEntityId).c_str());
     ImGui::PopStyleColor();
 
     if (ImGui::IsItemHovered()) {
@@ -48,6 +48,16 @@ void Editor::ZEntityRefProperty(
             ImVec2(max.x, max.y),
             ImGui::GetColorU32(linkColor)
         );
+
+        auto s_EntityTreeNode = Editor::m_CachedEntityTreeMap.find(p_Entity);
+        if (s_EntityTreeNode != Editor::m_CachedEntityTreeMap.end() && s_EntityTreeNode->second) {
+            ImGui::SetTooltip("%s", s_EntityTreeNode->second->Name.c_str());
+        }
+        else
+        {
+            ImGui::SetTooltip("%s", "Entity tree not loaded, rebuild the entity tree");
+        };
+
     }
 
     if (ImGui::IsItemClicked()) {
@@ -58,11 +68,11 @@ void Editor::ZEntityRefProperty(
 void Editor::TEntityRefProperty(
     const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data
 ) {
-    if (auto EntityRef = reinterpret_cast<TEntityRef<void*>*>(p_Data)) {
+    if (auto EntityRef = reinterpret_cast<TEntityRef<void*>*>(p_Data); EntityRef->m_ref) {
         ImVec4 linkColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f); // Light blue, like a link
 
         ImGui::PushStyleColor(ImGuiCol_Text, linkColor);
-        ImGui::Text("%s", "link");
+        ImGui::Text("%s", fmt::format("{:016x}", EntityRef->m_ref->GetType()->m_nEntityId).c_str());
         ImGui::PopStyleColor();
 
         if (ImGui::IsItemHovered()) {
@@ -74,6 +84,15 @@ void Editor::TEntityRefProperty(
                 ImVec2(max.x, max.y),
                 ImGui::GetColorU32(linkColor)
             );
+
+            auto s_EntityTreeNode = Editor::m_CachedEntityTreeMap.find(EntityRef->m_ref);
+            if (s_EntityTreeNode != Editor::m_CachedEntityTreeMap.end() && s_EntityTreeNode->second) {
+                ImGui::SetTooltip("%s", s_EntityTreeNode->second->Name.c_str());
+            }
+            else
+            {
+                ImGui::SetTooltip("%s", "Entity tree not loaded, rebuild the entity tree");
+            };
         }
 
         if (ImGui::IsItemClicked()) {
