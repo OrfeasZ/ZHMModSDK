@@ -31,7 +31,6 @@ public:
      */
     virtual void ReleaseUIFocus() = 0;
 
-
     virtual ImGuiContext* GetImGuiContext() = 0;
     virtual ImGuiMemAllocFunc GetImGuiAlloc() = 0;
     virtual ImGuiMemFreeFunc GetImGuiFree() = 0;
