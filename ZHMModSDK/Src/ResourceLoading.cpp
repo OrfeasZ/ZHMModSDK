@@ -158,7 +158,7 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
             continue;
         }
 
-        const auto& s_ChunkIndex = m_ResourceIdToChunkMap[s_RefId].front();
+        const auto s_ChunkIndex = m_ResourceIdToChunkMap[s_RefId][0];
 
         if (!IsChunkMounted(s_ChunkIndex)) {
             Logger::Debug("Reference {} is in chunk {}. Mounting...", s_RefId, s_ChunkIndex);

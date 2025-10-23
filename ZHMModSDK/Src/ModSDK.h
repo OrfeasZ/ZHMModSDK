@@ -253,7 +253,7 @@ private:
     bool m_DisableUpdateCheck = false;
     float m_LoadedModsUIScrollOffset = 0;
 
-    std::unordered_map<ZRuntimeResourceID, std::vector<uint32_t>> m_ResourceIdToChunkMap;
+    std::unordered_map<ZRuntimeResourceID, TArray<uint32_t>> m_ResourceIdToChunkMap;
 
     std::shared_ptr<ModLoader> m_ModLoader {};
 
