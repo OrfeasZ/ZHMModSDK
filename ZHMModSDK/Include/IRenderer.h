@@ -1,5 +1,7 @@
 #pragma once
 
+#include "imgui.h"
+
 #include "Glacier/ZMath.h"
 #include "Glacier/ZString.h"
 
@@ -38,6 +40,12 @@ struct Triangle {
 struct AABB {
     SVector3 min;
     SVector3 max;
+};
+
+struct ImGuiTexture {
+    ImTextureID id = 0;
+    UINT width = 0;
+    UINT height = 0;
 };
 
 class IRenderer {

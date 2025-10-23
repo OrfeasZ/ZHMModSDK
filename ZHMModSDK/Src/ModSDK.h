@@ -177,6 +177,32 @@ public:
 
     TEntityRef<ZHitman5> GetLocalPlayer() override;
 
+    bool CreateDDSTextureFromMemory(
+        const void* p_Data,
+        size_t p_DataSize,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) override;
+
+    bool CreateDDSTextureFromFile(
+        const std::string& p_Path,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) override;
+
+    bool CreateWICTextureFromMemory(
+        const void* p_Data,
+        size_t p_DataSize,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) override;
+
+    bool CreateWICTextureFromFile(
+        const std::string& p_Path,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) override;
+
     #pragma endregion
 
     void AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size);

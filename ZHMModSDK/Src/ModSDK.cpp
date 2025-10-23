@@ -1499,6 +1499,40 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
     return TEntityRef<ZHitman5>(s_PlayerData->m_Controller.m_HitmanEntity);
 }
 
+bool ModSDK::CreateDDSTextureFromMemory(
+    const void* p_Data,
+    size_t p_DataSize,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return m_ImguiRenderer->CreateDDSTextureFromMemory(p_Data, p_DataSize, p_OutTexture, p_OutImGuiTexture);
+}
+
+bool ModSDK::CreateDDSTextureFromFile(
+    const std::string& p_FilePath,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return m_ImguiRenderer->CreateDDSTextureFromFile(p_FilePath, p_OutTexture, p_OutImGuiTexture);
+}
+
+bool ModSDK::CreateWICTextureFromMemory(
+    const void* p_Data,
+    size_t p_DataSize,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return m_ImguiRenderer->CreateWICTextureFromMemory(p_Data, p_DataSize, p_OutTexture, p_OutImGuiTexture);
+}
+
+bool ModSDK::CreateWICTextureFromFile(
+    const std::string& p_FilePath,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return m_ImguiRenderer->CreateWICTextureFromFile(p_FilePath, p_OutTexture, p_OutImGuiTexture);
+}
+
 void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size) {
     if (Globals::Hitman5Module->IsEngineInitialized()) {
         // If engine is initialized, allocate the normal way.
