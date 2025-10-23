@@ -74,6 +74,7 @@ class ZPFObstacleHandle;
 enum EPFObstacleClient;
 class ZPFObstacleEntity;
 class ZOnlineVersionConfig;
+struct SExternalReferences;
 
 class ZHMSDK_API Hooks {
 public:
