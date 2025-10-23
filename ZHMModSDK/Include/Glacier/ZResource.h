@@ -241,6 +241,7 @@ public:
 typedef TSharedPointer<ZResourceDataBuffer> ZResourceDataPtr;
 
 class ZResourceReader : public ZSharedPointerTarget {
+public:
     ZResourceIndex m_ResourceIndex;
     ZResourceDataPtr m_pResourceData;
     uint32 m_nResourceDataSize = 0;
