@@ -76,8 +76,8 @@ public:
         return m_pCurrent != other.m_pCurrent;
     }
 
-    inline T* operator*() const {
-        return m_pCurrent;
+    inline T& operator*() const {
+        return *m_pCurrent;
     }
 
     inline T* operator->() const {
