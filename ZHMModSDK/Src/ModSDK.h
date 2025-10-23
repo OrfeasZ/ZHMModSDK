@@ -202,6 +202,9 @@ private:
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     );
 
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage);
+
     #pragma endregion
 
     bool PatchCodeInternal(
@@ -231,6 +234,10 @@ private:
     void LoadResourceChunkMap();
 
     #pragma endregion
+
+private:
+    static const char* GameStateToString(ZLevelManager::EGameState p_GameState);
+    static const char* SceneLoadingStageToString(ESceneLoadingStage p_SceneLoadingStage);
 
 private:
     bool m_UiEnabled = true;

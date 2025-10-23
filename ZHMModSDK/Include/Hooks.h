@@ -12,6 +12,7 @@
 #include <Glacier/THashMap.h>
 #include <Glacier/ZDelegate.h>
 #include <Glacier/ZMath.h>
+#include <Glacier/ZLevelManager.h>
 
 class ZRenderDepthStencilView;
 class ZRuntimeResourceID;
@@ -75,6 +76,9 @@ enum EPFObstacleClient;
 class ZPFObstacleEntity;
 class ZOnlineVersionConfig;
 struct SExternalReferences;
+class ZLevelManager;
+enum class ESceneLoadingStage;
+class ZSecuritySystemCamera;
 
 class ZHMSDK_API Hooks {
 public:
@@ -205,4 +209,8 @@ public:
     ZPFObstacleEntity_UpdateObstacle;
 
     static Hook<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int32_t& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
+
+    static Hook<void(ZLevelManager* th, ZLevelManager::EGameState state)>* ZLevelManager_SetGameState;
+
+    static Hook<void(ZEntitySceneContext* th, ESceneLoadingStage stage)>* ZEntitySceneContext_SetLoadingStage;
 };

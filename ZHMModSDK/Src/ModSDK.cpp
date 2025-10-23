@@ -699,6 +699,9 @@ bool ModSDK::Startup() {
         this, &ModSDK::ZUserChannelContractsProxyBase_GetForPlay2
     );
 
+    Hooks::ZLevelManager_SetGameState->AddDetour(this, &ModSDK::ZLevelManager_SetGameState);
+    Hooks::ZEntitySceneContext_SetLoadingStage->AddDetour(this, &ModSDK::ZEntitySceneContext_SetLoadingStage);
+
     m_D3D12Hooks->Startup();
 
     // Patch mutex creation to allow multiple instances.
@@ -1592,6 +1595,39 @@ void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Call
     s_File.generate(s_Ini, true);
 }
 
+const char* ModSDK::GameStateToString(ZLevelManager::EGameState p_GameState) {
+    switch (p_GameState) {
+        case ZLevelManager::EGameState::EGS_Disabled: return "Disabled";
+        case ZLevelManager::EGameState::EGS_PreloadAssets: return "Preload Assets";
+        case ZLevelManager::EGameState::EGS_WaitingForLoadVideo: return "Waiting For Load Video";
+        case ZLevelManager::EGameState::EGS_Precaching: return "Precaching";
+        case ZLevelManager::EGameState::EGS_Preparing: return "Preparing";
+        case ZLevelManager::EGameState::EGS_WaitingForPrecache: return "Waiting For Precache";
+        case ZLevelManager::EGameState::EGS_LoadSaveGame: return "Load Save Game";
+        case ZLevelManager::EGameState::EGS_Activating: return "Activating";
+        case ZLevelManager::EGameState::EGS_ActivatedStart: return "Activated Start";
+        case ZLevelManager::EGameState::EGS_Activated: return "Activated";
+        case ZLevelManager::EGameState::EGS_Playing: return "Playing";
+        case ZLevelManager::EGameState::EGS_Deactivating: return "Deactivating";
+        default: return "Unknown";
+    }
+}
+
+const char* ModSDK::SceneLoadingStageToString(ESceneLoadingStage p_SceneLoadingStage) {
+    switch (p_SceneLoadingStage) {
+        case ESceneLoadingStage::eLoading_Start: return "Start";
+        case ESceneLoadingStage::eLoading_SceneStopped: return "Scene Stopped";
+        case ESceneLoadingStage::eLoading_SceneDeleted: return "Scene Deleted";
+        case ESceneLoadingStage::eLoading_AssetsLoaded: return "Assets Loaded";
+        case ESceneLoadingStage::eLoading_SceneAllocated: return "Scene Allocated";
+        case ESceneLoadingStage::eLoading_SceneStarted: return "Scene Started";
+        case ESceneLoadingStage::eLoading_ScenePrecaching: return "Scene Precaching";
+        case ESceneLoadingStage::eLoading_SceneActivated: return "Scene Activated";
+        case ESceneLoadingStage::eLoading_ScenePlaying: return "Scene Playing";
+        default: return "Unknown";
+    }
+}
+
 DEFINE_DETOUR_WITH_CONTEXT(
     ModSDK, void, DrawScaleform, ZRenderContext* ctx, ZRenderTargetView** rtv, uint32_t a3,
     ZRenderDepthStencilView** dsv,
@@ -1647,6 +1683,23 @@ DEFINE_DETOUR_WITH_CONTEXT(
     );*/
 
     p_Hook->CallOriginal(id, locationId, extraGameChangedIds, difficulty, onOk, onError, ctx, behavior);
+
+    return HookResult<void>(HookAction::Return());
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state) {
+    p_Hook->CallOriginal(th, state);
+
+    Logger::Debug("Game State: {}", GameStateToString(state));
+
+    return HookResult<void>(HookAction::Return());
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage) {
+    p_Hook->CallOriginal(th, stage);
+
+    Logger::Debug("Scene Loading Stage: {}", SceneLoadingStageToString(stage));
+    Logger::Debug("Scene Loading Progress: {}%", th->GetLoadingProgress() * 100);
 
     return HookResult<void>(HookAction::Return());
 }

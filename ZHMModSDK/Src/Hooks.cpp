@@ -401,3 +401,18 @@ PATTERN_HOOK(
     ZUIText_TryGetTextFromNameHash,
     bool(ZUIText* th, int32 nNameHash, ZString& sResult, int32_t& outMarkupResult)
 );
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xD9\x8B\xFA\x48\x8D\x4C\x24\x50",
+    "xxxxxxxxx?xxxxxxxxxx",
+    ZLevelManager_SetGameState,
+    void(ZLevelManager* th, ZLevelManager::EGameState state)
+);
+
+PATTERN_HOOK(
+    "\x89\x91\x78\x01\x00\x00\x83\xFA",
+    "xxxxxxxx",
+    ZEntitySceneContext_SetLoadingStage,
+    void(ZEntitySceneContext* th, ESceneLoadingStage stage)
+);
+);
