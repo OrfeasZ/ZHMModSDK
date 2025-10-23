@@ -137,14 +137,15 @@ PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x55\x56\x41\x54\x41\x56\x41\x57\x48\x83\xEC",
     "xxxxxxxxxxxxxx",
     ZHitman5_SetOutfit,
-    void(ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation, bool unk0, bool unk2)
+    void(ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation,
+        bool bEnableOutfitModifiers, bool bIgnoreOutifChange)
 );
 
 PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x55\x41\x56\x41\x57\x48\x8B\xEC\x48\x83\xEC\x00\x41\x8B\xF9",
     "xxxxxxxxxxxxxxxxxxxxxxxxxx?xxx",
     ZActor_SetOutfit,
-    void(ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int m_nOutfitCharset, int m_nOutfitVariation, bool bNude)
+    void(ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfit, int charset, int variation, bool bNude)
 );
 
 PATTERN_FUNCTION(

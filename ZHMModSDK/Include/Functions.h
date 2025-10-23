@@ -79,11 +79,12 @@ public:
     )>* ZEntityManager_DeleteEntity;
 
     static EngineFunction<void(
-        ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation, bool unk0, bool unk2
+        ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int32_t nCharset, int32_t nVariation,
+        bool bEnableOutfitModifiers, bool bIgnoreOutifChange
     )>* ZHitman5_SetOutfit;
 
     static EngineFunction<void(
-        ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int m_nOutfitCharset, int m_nOutfitVariation, bool bNude
+        ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfit, int32_t charset, int32_t variation, bool bNude
     )>* ZActor_SetOutfit;
 
     static EngineFunction<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
