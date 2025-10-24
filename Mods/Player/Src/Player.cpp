@@ -43,19 +43,19 @@ void Player::OnDrawUI(const bool p_HasFocus)
 
     if (s_Showing)
     {
-        if (s_LocalHitman)
+        if (ImGui::Checkbox("Is Invincible", &m_IsInvincible))
         {
-            static bool s_IsInvincible = s_LocalHitman.m_ref.GetProperty<bool>("m_bIsInvincible").Get();
+            ToggleInvincibility();
+        }
 
-            if (ImGui::Checkbox("Is Invincible", &s_IsInvincible))
-            {
-                s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", s_IsInvincible);
-            }
+        if (ImGui::Checkbox("Is Invisible", &m_IsInvisible))
+        {
+            ToggleInvisibility();
+        }
 
-            if (ImGui::Button("Enable Infinite Ammo"))
-            {
-                EnableInfiniteAmmo();
-            }
+        if (ImGui::Button("Enable Infinite Ammo"))
+        {
+            EnableInfiniteAmmo();
         }
 
         static char s_OutfitName[2048]{ "" };
@@ -420,6 +420,42 @@ void Player::EquipOutfit(
     }
 }
 
+void Player::ToggleInvincibility()
+{
+    bool s_IsAICrippleEntityCreated = m_AICrippleEntity;
+
+    if (!s_IsAICrippleEntityCreated)
+    {
+        s_IsAICrippleEntityCreated = CreateAICrippleEntity();
+    }
+
+    if (s_IsAICrippleEntityCreated)
+    {
+
+        const std::string s_PinName = m_IsInvincible ? "SetHeroInvincible" : "SetHeroVulnerable";
+
+        m_AICrippleEntity.SignalInputPin(s_PinName);
+    }
+}
+
+void Player::ToggleInvisibility()
+{
+    bool s_IsAICrippleEntityCreated = m_AICrippleEntity;
+
+    if (!s_IsAICrippleEntityCreated)
+    {
+        s_IsAICrippleEntityCreated = CreateAICrippleEntity();
+    }
+
+    if (s_IsAICrippleEntityCreated)
+    {
+
+        const std::string s_PinName = m_IsInvisible ? "SetHeroHidden" : "SetHeroVisible";
+
+        m_AICrippleEntity.SignalInputPin(s_PinName);
+    }
+}
+
 void Player::EnableInfiniteAmmo()
 {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
@@ -468,6 +504,45 @@ void Player::EnableInfiniteAmmo()
     s_HM5CrippleBox->m_bLimitedAmmo = false;
 
     s_HM5CrippleBox->Activate(0);
+}
+
+bool Player::CreateAICrippleEntity()
+{
+    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+    if (!s_Scene)
+    {
+        Logger::Error("Scene not loaded!");
+
+        return false;
+    }
+
+    constexpr auto s_AICrippleEntityFactoryId = ResId<"[modules:/zaicrippleentity.class].pc_entitytype">;
+
+    TResourcePtr<ZTemplateEntityFactory> s_AICrippleEntityFactory;
+    Globals::ResourceManager->GetResourcePtr(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId, 0);
+
+    if (!s_AICrippleEntityFactory)
+    {
+        Logger::Error("Resource is not loaded!");
+        
+        return false;
+    }
+
+    SExternalReferences s_ExternalRefs;
+
+    Functions::ZEntityManager_NewEntity->Call(
+        Globals::EntityManager, m_AICrippleEntity, "", s_AICrippleEntityFactory, s_Scene.m_ref, s_ExternalRefs, -1
+    );
+
+    if (!m_AICrippleEntity)
+    {
+        Logger::Error("Failed to spawn AI Cripple Entity entity!");
+
+        return false;
+    }
+
+    return true;
 }
 
 DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene)
