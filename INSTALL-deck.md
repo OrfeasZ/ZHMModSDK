@@ -5,6 +5,9 @@ Extract mod contents to the games install directory, the `Retail` directory as i
 ```
 /steamapps/common/HITMAN 3/Retail
 ```
+As of 2025-02-19, that's all you need to do with proton experimental!
+
+If you use an older proton version, you can either set your launch parameters to `WINEDLLOVERRIDES='dinput8.dll=n,b;zhmmodsdk.dll=n,b' %command%`, or follow the steps bellow:
 
 With use of an application called [Protontricks](https://github.com/Matoking/protontricks) you will be able to modify your wineprefix for the game.
 
