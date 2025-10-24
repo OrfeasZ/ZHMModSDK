@@ -53,9 +53,9 @@ void Player::OnDrawUI(const bool p_HasFocus)
             ToggleInvisibility();
         }
 
-        if (ImGui::Button("Enable Infinite Ammo"))
+        if (ImGui::Checkbox("Infinite Ammo", &m_IsInfiniteAmmoEnabled))
         {
-            EnableInfiniteAmmo();
+            ToggleInfiniteAmmo();
         }
 
         static char s_OutfitName[2048]{ "" };
@@ -454,54 +454,46 @@ void Player::ToggleInvisibility()
     }
 }
 
-void Player::EnableInfiniteAmmo()
+void Player::ToggleInfiniteAmmo()
 {
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
-
-    if (!s_Scene)
+    if (m_IsInfiniteAmmoEnabled)
     {
-        Logger::Debug("Scene not loaded.");
-        return;
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+        if (!s_LocalHitman)
+        {
+            Logger::Debug("Local player is not alive.");
+
+            return;
+        }
+
+        bool s_IsHM5CrippleBoxEntityCreated = m_HM5CrippleBoxEntity;
+
+        if (!s_IsHM5CrippleBoxEntityCreated)
+        {
+            s_IsHM5CrippleBoxEntityCreated = CreateHM5CrippleBoxEntity();
+        }
+
+        if (s_IsHM5CrippleBoxEntityCreated)
+        {
+            ZHM5CrippleBox* s_HM5CrippleBox = m_HM5CrippleBoxEntity.QueryInterface<ZHM5CrippleBox>();
+
+            s_HM5CrippleBox->m_bActivateOnStart = true;
+            s_HM5CrippleBox->m_rHitmanCharacter = s_LocalHitman;
+            s_HM5CrippleBox->m_bLimitedAmmo = false;
+
+            s_HM5CrippleBox->Activate(0);
+        }
     }
-
-    constexpr auto s_CrippleBoxFactoryId = ResId<"[modules:/zhm5cripplebox.class].pc_entitytype">;
-
-    TResourcePtr<ZTemplateEntityFactory> s_CrippleBoxFactory;
-    Globals::ResourceManager->GetResourcePtr(s_CrippleBoxFactory, s_CrippleBoxFactoryId, 0);
-
-    if (!s_CrippleBoxFactory)
+    else
     {
-        Logger::Debug("Resource is not loaded.");
-        return;
+        if (m_HM5CrippleBoxEntity.m_pEntity)
+        {
+            Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
+
+            m_HM5CrippleBoxEntity = {};
+        }
     }
-
-    SExternalReferences s_ExternalRefs;
-
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, m_HM5CrippleBoxEntity, "", s_CrippleBoxFactory, s_Scene.m_ref, s_ExternalRefs, -1
-    );
-
-    if (!m_HM5CrippleBoxEntity)
-    {
-        Logger::Debug("Failed to spawn entity.");
-        return;
-    }
-
-    auto s_LocalHitman = SDK()->GetLocalPlayer();
-
-    if (!s_LocalHitman)
-    {
-        Logger::Debug("Local player is not alive.");
-        return;
-    }
-
-    ZHM5CrippleBox* s_HM5CrippleBox = m_HM5CrippleBoxEntity.QueryInterface<ZHM5CrippleBox>();
-
-    s_HM5CrippleBox->m_bActivateOnStart = true;
-    s_HM5CrippleBox->m_rHitmanCharacter = s_LocalHitman;
-    s_HM5CrippleBox->m_bLimitedAmmo = false;
-
-    s_HM5CrippleBox->Activate(0);
 }
 
 bool Player::CreateAICrippleEntity()
@@ -537,6 +529,45 @@ bool Player::CreateAICrippleEntity()
     {
         Logger::Error("Failed to spawn AI Cripple Entity entity!");
 
+        return false;
+    }
+
+    return true;
+}
+
+bool Player::CreateHM5CrippleBoxEntity()
+{
+    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+    if (!s_Scene)
+    {
+        Logger::Debug("Scene not loaded.");
+        
+        return false;
+    }
+
+    constexpr auto s_CrippleBoxFactoryId = ResId<"[modules:/zhm5cripplebox.class].pc_entitytype">;
+
+    TResourcePtr<ZTemplateEntityFactory> s_CrippleBoxFactory;
+    Globals::ResourceManager->GetResourcePtr(s_CrippleBoxFactory, s_CrippleBoxFactoryId, 0);
+
+    if (!s_CrippleBoxFactory)
+    {
+        Logger::Debug("Resource is not loaded.");
+        
+        return false;
+    }
+
+    SExternalReferences s_ExternalRefs;
+
+    Functions::ZEntityManager_NewEntity->Call(
+        Globals::EntityManager, m_HM5CrippleBoxEntity, "", s_CrippleBoxFactory, s_Scene.m_ref, s_ExternalRefs, -1
+    );
+
+    if (!m_HM5CrippleBoxEntity)
+    {
+        Logger::Debug("Failed to spawn entity.");
+        
         return false;
     }
 

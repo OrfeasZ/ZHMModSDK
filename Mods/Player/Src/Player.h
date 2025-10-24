@@ -22,14 +22,16 @@ private:
 
     void ToggleInvincibility();
     void ToggleInvisibility();
-    void EnableInfiniteAmmo();
+    void ToggleInfiniteAmmo();
     bool CreateAICrippleEntity();
+    bool CreateHM5CrippleBoxEntity();
 
     DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     bool m_PlayerMenuActive = false;
     bool m_IsInvincible = false;
     bool m_IsInvisible = false;
+    bool m_IsInfiniteAmmoEnabled = false;
 
     const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
 
