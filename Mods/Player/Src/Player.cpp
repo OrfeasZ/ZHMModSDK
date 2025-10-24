@@ -576,6 +576,13 @@ bool Player::CreateHM5CrippleBoxEntity()
 
 DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene)
 {
+    if (m_AICrippleEntity.m_pEntity)
+    {
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_AICrippleEntity, {});
+
+        m_AICrippleEntity = {};
+    }
+
     if (m_HM5CrippleBoxEntity.m_pEntity)
     {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
