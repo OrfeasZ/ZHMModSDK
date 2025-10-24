@@ -291,9 +291,12 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
         const auto s_Controllers = &s_Character->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
         const auto s_Inventory = static_cast<ZCharacterSubcontrollerInventory*>((*s_Controllers)[6].m_pInterfaceRef);
 
-        TArray<ZRepositoryID> s_ModifierIds;
-        Functions::ZCharacterSubcontrollerInventory_AddDynamicItemToInventory->Call(
-            s_Inventory, p_RepositoryId, "", &s_ModifierIds, 2
+        Functions::ZCharacterSubcontrollerInventory_CreateItem->Call(
+            s_Inventory,
+            p_RepositoryId,
+            "",
+            {},
+            ZCharacterSubcontrollerInventory::ECreateItemType::ECIT_ContractItem
         );
 
         return;
