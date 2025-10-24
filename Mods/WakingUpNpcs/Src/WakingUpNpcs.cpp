@@ -10,7 +10,6 @@
 #include <Glacier/ZKnowledge.h>
 #include <Glacier/SGameUpdateEvent.h>
 #include <Glacier/ZObject.h>
-#include <Glacier/ZScene.h>
 
 #include "Glacier/ZGameLoopManager.h"
 
@@ -71,8 +70,8 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     }
 }
 
-DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData) {
-    Logger::Debug("Loading scene: {}", sceneData.m_sceneName);
+DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
+    Logger::Debug("Loading scene: {}", p_Parameters.m_SceneResource);
 
     m_PacifiedTimes.clear();
 

@@ -313,25 +313,25 @@ bool Clumsy::GetEntities() {
     m_MusicEmitter = {};
 
     for (auto& s_Brick : Globals::Hitman5Module->m_pEntitySceneContext->m_aLoadedBricks) {
-        if (s_Brick.runtimeResourceID != ResId<"[assembly:/_sdk/get_up.brick].pc_entitytype">)
+        if (s_Brick.m_RuntimeResourceID != ResId<"[assembly:/_sdk/get_up.brick].pc_entitytype">)
             continue;
 
         Logger::Debug("Found get_up brick.");
 
-        const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.
+        const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.m_EntityRef.
             GetBlueprintFactory());
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeedf42ba555b602); s_Index != -1)
-            m_GetUpAnimation = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
+            m_GetUpAnimation = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pEntity, s_Index);
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeed8cfffcae85dd); s_Index != -1)
-            m_ShakeEntity = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
+            m_ShakeEntity = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pEntity, s_Index);
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeed6ea2fc060cbd); s_Index != -1)
-            m_MusicEntity = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
+            m_MusicEntity = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pEntity, s_Index);
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeed9c1aab9f3d1e); s_Index != -1)
-            m_MusicEmitter = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
+            m_MusicEmitter = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pEntity, s_Index);
 
         break;
     }
@@ -339,7 +339,7 @@ bool Clumsy::GetEntities() {
     return m_GetUpAnimation && m_ShakeEntity;
 }
 
-DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_PLUGIN_DETOUR(Clumsy, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     if (m_MusicLoop)
         m_MusicLoop->Stop(true);
 

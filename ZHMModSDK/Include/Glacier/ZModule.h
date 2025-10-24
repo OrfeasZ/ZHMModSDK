@@ -37,6 +37,6 @@ public:
         if (!m_pEntitySceneContext)
             return false;
 
-        return m_pEntitySceneContext->m_sceneData.m_sceneName.size() != 0;
+        return m_pEntitySceneContext->m_SceneInitParameters.m_SceneResource.size() != 0;
     }
 };

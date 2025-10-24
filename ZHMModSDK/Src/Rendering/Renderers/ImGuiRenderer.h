@@ -8,6 +8,8 @@
 #include "Hooks.h"
 #include "Glacier/ZInput.h"
 #include "D3DUtils.h"
+#include "IRenderer.h"
+#include "ResourceUploadBatch.h"
 
 struct ImFont;
 
@@ -41,6 +43,33 @@ namespace Rendering::Renderers {
 
         void SetFocus(bool p_Focused) { m_ImguiHasFocus = p_Focused; }
 
+    public:
+        bool CreateDDSTextureFromMemory(
+            const void* p_Data,
+            size_t p_DataSize,
+            ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+            ImGuiTexture& p_OutImGuiTexture
+        );
+
+        bool CreateDDSTextureFromFile(
+            const std::string& p_FilePath,
+            ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+            ImGuiTexture& p_OutImGuiTexture
+        );
+
+        bool CreateWICTextureFromMemory(
+            const void* p_Data,
+            size_t p_DataSize,
+            ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+            ImGuiTexture& p_OutImGuiTexture
+        );
+
+        bool CreateWICTextureFromFile(
+            const std::string& p_FilePath,
+            ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+            ImGuiTexture& p_OutImGuiTexture
+        );
+
     private:
         bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
         void Draw();
@@ -57,6 +86,12 @@ namespace Rendering::Renderers {
         void UpdateMouseData(ImGuiIO& p_ImGuiIO);
         void ProcessKeyEventsWorkarounds(ImGuiIO& io);
 
+        bool CreateTexture(
+            std::function<HRESULT(ScopedD3DRef<ID3D12Device>&, DirectX::ResourceUploadBatch&, ID3D12Resource**)> p_Loader,
+            ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+            ImGuiTexture& p_OutImGuiTexture
+        );
+
     private:
         DECLARE_DETOUR_WITH_CONTEXT(
             ImGuiRenderer, LRESULT, WndProc, ZApplicationEngineWin32*, HWND, UINT, WPARAM, LPARAM
@@ -71,9 +106,16 @@ namespace Rendering::Renderers {
         ScopedD3DRef<ID3D12CommandQueue> m_CommandQueue;
         HWND m_Hwnd = nullptr;
 
+        /**
+         * Maximum number of SRV (Shader Resource View) descriptors that can be allocated
+         * in the global CBV/SRV/UAV descriptor heap.
+         * Each GPU resource (such as a texture) bound to shaders uses one SRV slot.
+         */
+        inline constexpr static size_t MaxSRVDescriptors = 1024;
         uint32_t m_RtvDescriptorSize = 0;
         ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
         ScopedD3DRef<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
+        UINT m_NextSRVIndex = 1;
 
         /** The maximum number of frames that can be buffered for render. */
         inline constexpr static size_t MaxRenderedFrames = 4;

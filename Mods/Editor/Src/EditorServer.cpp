@@ -605,7 +605,7 @@ void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<
     );
 }
 
-void EditorServer::OnSceneClearing(bool p_ForReload) {
+void EditorServer::OnSceneClearing(bool p_FullyUnloadScene) {
     if (!m_Enabled) {
         Logger::Info("EditorServer disabled. Skipping OnSceneClearing.");
         return;
@@ -615,7 +615,7 @@ void EditorServer::OnSceneClearing(bool p_ForReload) {
     }
 
     m_Loop->defer(
-        [this, p_ForReload]() {
+        [this, p_FullyUnloadScene]() {
             if (!m_App) {
                 return;
             }
@@ -625,7 +625,7 @@ void EditorServer::OnSceneClearing(bool p_ForReload) {
             s_Event << "{";
 
             s_Event << write_json("type") << ":" << write_json("sceneClearing") << ",";
-            s_Event << write_json("forReload") << ":" << write_json(p_ForReload);
+            s_Event << write_json("p_FullyUnloadScene") << ":" << write_json(p_FullyUnloadScene);
 
             s_Event << "}";
 

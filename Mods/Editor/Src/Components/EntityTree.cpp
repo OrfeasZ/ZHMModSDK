@@ -166,7 +166,7 @@ void Editor::UpdateEntities() {
 
     // Add all the brick nodes to the queue.
     for (const auto& s_Brick : s_SceneCtx->m_aLoadedBricks) {
-        auto s_BrickEnt = s_Brick.entityRef;
+        auto s_BrickEnt = s_Brick.m_EntityRef;
 
         if (!s_BrickEnt) {
             continue;

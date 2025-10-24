@@ -11,6 +11,16 @@ class ZCharacterSubcontroller : public ZEntityImpl //Size: 0x38
 class ZCharacterSubcontrollerInventory : public ZCharacterSubcontroller //Size: 0x310
 {
 public:
+    struct SCreateItem;
+
+    enum class ECreateItemType {
+        ECIT_SupportItem = 0,
+        ECIT_DebugItem = 1,
+        ECIT_ContractItem = 2,
+        ECIT_CarriedItem = 3,
+        ECIT_ContainerItem = 4
+    };
+
     PAD(0x140);
     uint32 m_nMaxGunAmmo; // 0x158
     uint32 m_nMaxRevolverAmmo; // 0x15C

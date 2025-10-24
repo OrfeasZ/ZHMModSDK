@@ -19,14 +19,14 @@ PATTERN_HOOK(
     "\x48\x8B\xC4\x48\x89\x48\x08\x41\x54\x41\x56\x41\x57",
     "xxxxxxxxxxxxx",
     ZEntitySceneContext_LoadScene,
-    void(ZEntitySceneContext* th, ZSceneData& sceneData)
+    void(ZEntitySceneContext* th, SSceneInitParameters& parameters)
 );
 
 PATTERN_HOOK(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\x05",
     "xxxxxxxxxxxxxxxxxxxx?xx",
     ZEntitySceneContext_ClearScene,
-    void(ZEntitySceneContext*, bool forReload)
+    void(ZEntitySceneContext*, bool bFullyUnloadScene)
 );
 
 PATTERN_HOOK(
@@ -204,8 +204,8 @@ PATTERN_HOOK(
     "\x40\x56\x41\x54\x41\x57\x48\x83\xEC\x00\x80\x79\x48",
     "xxxxxxxxx?xxx",
     ZEntityManager_DeleteEntities,
-    void(ZEntityManager* th, const TFixedArray<ZEntityRef>& entities, THashMap<ZRuntimeResourceID, ZEntityRef>&
-        references)
+    void(ZEntityManager* th, TArrayRef<ZEntityRef> aEntities, const SExternalReferences& externalRefs,
+        bool bPrintTimings)
 );
 
 PATTERN_HOOK(
@@ -399,5 +399,40 @@ PATTERN_HOOK(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x00\x48\x8D\x59\x28",
     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx?xxxx",
     ZUIText_TryGetTextFromNameHash,
-    bool(ZUIText* th, int32 nNameHash, ZString& sResult, int& outMarkupResult)
+    bool(ZUIText* th, int32 nNameHash, ZString& sResult, int32_t& outMarkupResult)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xD9\x8B\xFA\x48\x8D\x4C\x24\x50",
+    "xxxxxxxxx?xxxxxxxxxx",
+    ZLevelManager_SetGameState,
+    void(ZLevelManager* th, ZLevelManager::EGameState state)
+);
+
+PATTERN_HOOK(
+    "\x89\x91\x78\x01\x00\x00\x83\xFA",
+    "xxxxxxxx",
+    ZEntitySceneContext_SetLoadingStage,
+    void(ZEntitySceneContext* th, ESceneLoadingStage stage)
+);
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x88\x50\x10\x53",
+    "xxxxxxx",
+    ZSecuritySystemCameraManager_UpdateCameraState,
+    void(ZSecuritySystemCameraManager* th, bool bReactionSituations)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x4C\x24\x08\x55\x41\x56\x48\x8D\xAC\x24\x58\xEE\xFF\xFF",
+    "xxxxxxxxxxxxxxxx",
+    ZSecuritySystemCameraManager_OnFrameUpdate,
+    void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)
+);
+
+PATTERN_HOOK(
+    "\x40\x55\x41\x56\x48\x8D\x6C\x24\x88",
+    "xxxxxxxxx",
+    ZSecuritySystemCamera_FrameUpdate,
+    void(ZSecuritySystemCamera* th, const SGameUpdateEvent* const a2)
 );

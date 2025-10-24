@@ -12,6 +12,7 @@
 #include <Glacier/THashMap.h>
 #include <Glacier/ZDelegate.h>
 #include <Glacier/ZMath.h>
+#include <Glacier/ZLevelManager.h>
 
 class ZRenderDepthStencilView;
 class ZRuntimeResourceID;
@@ -25,7 +26,7 @@ class ZApplicationEngineWin32;
 class ZEntityImpl;
 class ZObjectRef;
 class ZEntitySceneContext;
-class ZSceneData;
+struct SSceneInitParameters;
 class ZString;
 class ZEntityRef;
 class ZRenderDevice;
@@ -74,12 +75,17 @@ class ZPFObstacleHandle;
 enum EPFObstacleClient;
 class ZPFObstacleEntity;
 class ZOnlineVersionConfig;
+struct SExternalReferences;
+class ZLevelManager;
+enum class ESceneLoadingStage;
+class ZSecuritySystemCameraManager;
+class ZSecuritySystemCamera;
 
 class ZHMSDK_API Hooks {
 public:
     static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
-    static Hook<void(ZEntitySceneContext*, ZSceneData&)>* ZEntitySceneContext_LoadScene;
-    static Hook<void(ZEntitySceneContext*, bool forReload)>* ZEntitySceneContext_ClearScene;
+    static Hook<void(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
+    static Hook<void(ZEntitySceneContext*, bool bFullyUnloadScene)>* ZEntitySceneContext_ClearScene;
 
     static Hook<void(
         ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode
@@ -131,8 +137,8 @@ public:
     static Hook<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
 
     static Hook<void(
-        ZEntityManager* th, const TFixedArray<ZEntityRef>& entities,
-        THashMap<ZRuntimeResourceID, ZEntityRef>& references
+        ZEntityManager* th, TArrayRef<ZEntityRef> aEntities, const SExternalReferences& externalRefs,
+        bool bPrintTimings
     )>* ZEntityManager_DeleteEntities;
 
     static Hook<void(ZEntityManager* th, ZEntityRef* entity, void* a3)>* ZEntityManager_ActivateEntity;
@@ -203,5 +209,13 @@ public:
     static Hook<void(ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate)>*
     ZPFObstacleEntity_UpdateObstacle;
 
-    static Hook<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
+    static Hook<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int32_t& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
+
+    static Hook<void(ZLevelManager* th, ZLevelManager::EGameState state)>* ZLevelManager_SetGameState;
+
+    static Hook<void(ZEntitySceneContext* th, ESceneLoadingStage stage)>* ZEntitySceneContext_SetLoadingStage;
+
+    static Hook<void(ZSecuritySystemCameraManager* th, bool bReactionSituations)>* ZSecuritySystemCameraManager_UpdateCameraState;
+    static Hook<void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)>* ZSecuritySystemCameraManager_OnFrameUpdate;
+    static Hook<void(ZSecuritySystemCamera* th, const SGameUpdateEvent* const a2)>* ZSecuritySystemCamera_FrameUpdate;
 };

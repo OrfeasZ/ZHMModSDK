@@ -190,26 +190,26 @@ std::string DiscordRichPresence::FindLocationForScene(ZString p_Scene) const {
     return "ERR_UNKNOWN_LOCATION";
 }
 
-DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& sceneData) {
+DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     if (!m_DiscordCore)
         return HookResult<void>(HookAction::Continue());
 
-    Logger::Trace("Scene: {}", sceneData.m_sceneName);
-    Logger::Trace("Codename: {}", sceneData.m_codeNameHint);
-    Logger::Trace("Type: {}", sceneData.m_type);
+    Logger::Trace("Scene: {}", p_Parameters.m_SceneResource);
+    Logger::Trace("Codename: {}", p_Parameters.m_CodeNameHint);
+    Logger::Trace("Type: {}", p_Parameters.m_Type);
 
     std::string s_Action = "";
     std::string s_Details = "";
     std::string s_Location = "";
     std::string s_ImageKey = "logo";
 
-    s_Location = FindLocationForScene(sceneData.m_sceneName);
+    s_Location = FindLocationForScene(p_Parameters.m_SceneResource);
 
     if (s_Location == "In Startup Screen" || s_Location == "In Menu") {
         s_Action = s_Location;
     }
     else {
-        auto s_GameModeIt = m_GameModes.find(sceneData.m_type.ToStringView());
+        auto s_GameModeIt = m_GameModes.find(p_Parameters.m_Type.ToStringView());
         std::string s_GameMode = s_GameModeIt == m_GameModes.end() ? "ERR_UNKNOWN_GAMEMODE" : s_GameModeIt->second;
 
         s_Details = "Playing " + s_GameMode + " in " + s_Location;
@@ -222,7 +222,7 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContext
         s_ImageKey = "location-" + s_LocationKey;
 
         if (s_GameMode == "Mission" || s_GameMode == "Sniper Assassin") {
-            auto s_MissionIt = m_CodenameHints.find(sceneData.m_codeNameHint.ToStringView());
+            auto s_MissionIt = m_CodenameHints.find(p_Parameters.m_CodeNameHint.ToStringView());
             s_Action = s_MissionIt == m_CodenameHints.end() ? "ERR_UNKNOWN_MISSION" : s_MissionIt->second;
             std::string s_MissionName = s_Action;
 

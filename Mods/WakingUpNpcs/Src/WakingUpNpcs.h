@@ -3,6 +3,8 @@
 #include <random>
 #include <unordered_map>
 
+#include <Glacier/ZScene.h>
+
 #include "IPluginInterface.h"
 
 class WakingUpNpcs : public IPluginInterface {
@@ -17,7 +19,7 @@ private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
 private:
-    DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext*, bool);
 
 private:

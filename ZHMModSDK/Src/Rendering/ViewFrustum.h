@@ -48,5 +48,5 @@ private:
     float m_FovYDeg = 0.f;
     float m_AspectWByH = 0.f;
     float m_NearZ = 0.f;
-    float m_CurrentFarZ = -1.f;
+    float m_FarZ = -1.f;
 };

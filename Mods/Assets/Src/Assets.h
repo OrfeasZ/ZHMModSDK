@@ -14,7 +14,7 @@ public:
     void OnDrawUI(bool p_HasFocus) override;
 
 private:
-    DECLARE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
+    DECLARE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool p_AddToWorld);
     static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);

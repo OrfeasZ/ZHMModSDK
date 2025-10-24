@@ -3,8 +3,12 @@
 #include "ModSDKVersion.h"
 #include "Glacier/ZPrimitives.h"
 #include "Glacier/ZEntity.h"
+#include "Glacier/ZResource.h"
+#include "Glacier/EntityFactory.h"
 #include "Common.h"
 #include "imgui.h"
+#include "D3DUtils.h"
+#include "directx/d3d12.h"
 
 class IPluginInterface;
 class ZRenderDestination;
@@ -15,6 +19,8 @@ template <typename T>
 class TEntityRef;
 
 class ZHitman5;
+
+struct ImGuiTexture;
 
 class IModSDK {
 public:
@@ -30,7 +36,6 @@ public:
      * This will allow the user to interact with the game again.
      */
     virtual void ReleaseUIFocus() = 0;
-
 
     virtual ImGuiContext* GetImGuiContext() = 0;
     virtual ImGuiMemAllocFunc GetImGuiAlloc() = 0;
@@ -266,6 +271,71 @@ public:
      * @param p_ChunkIndex The index of the chunk to mount.
      */
     virtual void MountChunk(uint32_t p_ChunkIndex) = 0;
+
+    /**
+     * Get the list of indices of chunks that contain the resource with the specified runtime resource ID.
+     * @param id The runtime resource ID to look up.
+     * @return A constant reference to an array of chunk indices. If no chunks are found, an empty array is returned.
+     */
+    virtual const TArray<uint32_t>& GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) = 0;
+
+    /**
+     * Create a DirectX 12 texture from DDS data in memory and initialize an ImGui texture descriptor.
+     * @param p_Data Pointer to DDS data in memory.
+     * @param p_DataSize Size of the DDS data buffer.
+     * @param p_OutTexture Output DirectX 12 texture resource.
+     * @param p_OutImGuiTexture Output ImGui texture descriptor.
+     * @return True if the texture was successfully created, false otherwise.
+     */
+    virtual bool CreateDDSTextureFromMemory(
+        const void* p_Data,
+        size_t p_DataSize,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) = 0;
+
+    /**
+     * Create a DirectX 12 texture from a DDS file and initialize an ImGui texture descriptor.
+     * @param p_FilePath Path to the DDS file.
+     * @param p_OutTexture Output DirectX 12 texture resource.
+     * @param p_OutImGuiTexture Output ImGui texture descriptor.
+     * @return True if the texture was successfully created, false otherwise.
+     */
+    virtual bool CreateDDSTextureFromFile(
+        const std::string& p_FilePath,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) = 0;
+
+    /**
+     * Create a DirectX 12 texture from WIC-compatible image data in memory (PNG, JPEG, etc.)
+     * and initialize an ImGui texture descriptor.
+     * @param p_Data Pointer to image data in memory.
+     * @param p_DataSize Size of the image data buffer.
+     * @param p_OutTexture Output DirectX 12 texture resource.
+     * @param p_OutImGuiTexture Output ImGui texture descriptor.
+     * @return True if the texture was successfully created, false otherwise.
+     */
+    virtual bool CreateWICTextureFromMemory(
+        const void* p_Data,
+        size_t p_DataSize,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) = 0;
+
+    /**
+     * Create a DirectX 12 texture from a WIC-compatible image file (PNG, JPEG, etc.)
+     * and initialize an ImGui texture descriptor.
+     * @param p_FilePath Path to the image file.
+     * @param p_OutTexture Output DirectX 12 texture resource.
+     * @param p_OutImGuiTexture Output ImGui texture descriptor.
+     * @return True if the texture was successfully created, false otherwise.
+     */
+    virtual bool CreateWICTextureFromFile(
+        const std::string& p_FilePath,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) = 0;
 };
 
 /**

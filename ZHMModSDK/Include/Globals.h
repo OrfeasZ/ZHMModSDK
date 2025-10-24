@@ -45,6 +45,7 @@ class ZPathfinder;
 class ZInputDeviceManager;
 class ZPackageManagerBase;
 class ZUIText;
+class ZWorldInventory;
 
 namespace bfx {
     class SystemInstance;
@@ -96,4 +97,5 @@ public:
     static ZObjectPool* ZVariantPool2;
     static ZPackageManagerBase** PackageManager;
     static ZUIText* UIText;
+    static ZWorldInventory* WorldInventory;
 };

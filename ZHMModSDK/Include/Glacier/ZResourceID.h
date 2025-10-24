@@ -56,6 +56,10 @@ public:
         return GetID() == rhs.GetID();
     }
 
+    bool operator<(const ZRuntimeResourceID& rhs) const noexcept {
+        return GetID() < rhs.GetID();
+    }
+
     unsigned long long GetID() const {
         return (static_cast<unsigned long long>(m_IDHigh) << 32) | m_IDLow;
     }
