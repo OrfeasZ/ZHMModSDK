@@ -78,6 +78,7 @@ class ZOnlineVersionConfig;
 struct SExternalReferences;
 class ZLevelManager;
 enum class ESceneLoadingStage;
+class ZSecuritySystemCameraManager;
 class ZSecuritySystemCamera;
 
 class ZHMSDK_API Hooks {
@@ -213,4 +214,8 @@ public:
     static Hook<void(ZLevelManager* th, ZLevelManager::EGameState state)>* ZLevelManager_SetGameState;
 
     static Hook<void(ZEntitySceneContext* th, ESceneLoadingStage stage)>* ZEntitySceneContext_SetLoadingStage;
+
+    static Hook<void(ZSecuritySystemCameraManager* th, bool bReactionSituations)>* ZSecuritySystemCameraManager_UpdateCameraState;
+    static Hook<void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)>* ZSecuritySystemCameraManager_OnFrameUpdate;
+    static Hook<void(ZSecuritySystemCamera* th, const SGameUpdateEvent* const a2)>* ZSecuritySystemCamera_FrameUpdate;
 };

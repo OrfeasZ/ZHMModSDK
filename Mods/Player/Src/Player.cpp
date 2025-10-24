@@ -16,6 +16,9 @@
 void Player::Init()
 {
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Player::OnClearScene);
+
+    Hooks::ZSecuritySystemCameraManager_OnFrameUpdate->AddDetour(this, &Player::ZSecuritySystemCameraManager_OnFrameUpdate);
+    Hooks::ZSecuritySystemCamera_FrameUpdate->AddDetour(this, &Player::ZSecuritySystemCamera_FrameUpdate);
 }
 
 void Player::OnDrawMenu()
@@ -591,6 +594,26 @@ DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p
     }
 
     m_GlobalOutfitKit = nullptr;
+
+    return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_PLUGIN_DETOUR(Player, void, ZSecuritySystemCameraManager_OnFrameUpdate, ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)
+{
+    if (m_IsInvisible)
+    {
+        return HookResult<void>(HookAction::Return());
+    }
+
+    return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_PLUGIN_DETOUR(Player, void, ZSecuritySystemCamera_FrameUpdate, ZSecuritySystemCamera* th, const SGameUpdateEvent* const updateEvent)
+{
+    if (m_IsInvisible)
+    {
+        return HookResult<void>(HookAction::Return());
+    }
 
     return HookResult<void>(HookAction::Continue());
 }
