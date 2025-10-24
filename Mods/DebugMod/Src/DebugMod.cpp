@@ -277,7 +277,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                             s_Text += "\n\n";
                         }
 
-                        s_Text += BehaviorToString(s_CompiledBehaviorType);
+                        s_Text += CompiledBehaviorTypeToString(s_CompiledBehaviorType);
                     }
                 }
 
@@ -999,7 +999,7 @@ void DebugMod::VertexTriangluation(const std::vector<SVector3>& vertices, std::v
     }
 }
 
-std::string DebugMod::BehaviorToString(ECompiledBehaviorType p_Type) {
+const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type) {
     switch (p_Type) {
         case ECompiledBehaviorType::BT_ConditionScope: return "BT_ConditionScope";
         case ECompiledBehaviorType::BT_Random: return "BT_Random";
