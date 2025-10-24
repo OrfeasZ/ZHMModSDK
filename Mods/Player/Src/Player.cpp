@@ -431,7 +431,6 @@ void Player::ToggleInvincibility()
 
     if (s_IsAICrippleEntityCreated)
     {
-
         const std::string s_PinName = m_IsInvincible ? "SetHeroInvincible" : "SetHeroVulnerable";
 
         m_AICrippleEntity.SignalInputPin(s_PinName);
@@ -449,7 +448,6 @@ void Player::ToggleInvisibility()
 
     if (s_IsAICrippleEntityCreated)
     {
-
         const std::string s_PinName = m_IsInvisible ? "SetHeroHidden" : "SetHeroVisible";
 
         m_AICrippleEntity.SignalInputPin(s_PinName);
