@@ -20,10 +20,10 @@ public:
     virtual void ZTypeRegistry_unk3() = 0;
     virtual ~ZTypeRegistry() = 0;
 
-    STypeID* GetTypeID(const ZString& p_TypeName) {
+    STypeID* GetTypeID(const ZString& p_TypeName) const {
         const auto s_HashMapIterator = m_types.find(p_TypeName);
 
-        if (s_HashMapIterator != (*Globals::TypeRegistry)->m_types.end()) {
+        if (s_HashMapIterator != m_types.end()) {
             return s_HashMapIterator->second;
         }
 
