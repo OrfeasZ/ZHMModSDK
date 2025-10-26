@@ -47,12 +47,12 @@ struct TDefaultHashMapPolicy<ZRuntimeResourceID> {
 template <class T>
 class THashMapIterator : public TIterator<THashMapNode<T>> {
 protected:
-    THashMapIterator(SHashMapInfo<T>* p_MapInfo, uint32_t p_Bucket, THashMapNode<T>* p_Current) :
+    THashMapIterator(const SHashMapInfo<T>* p_MapInfo, uint32_t p_Bucket, THashMapNode<T>* p_Current) :
         TIterator<THashMapNode<T>>(p_Current),
         m_pMapInfo(p_MapInfo),
         m_nBucket(p_Bucket) {}
 
-    THashMapIterator(SHashMapInfo<T>* p_MapInfo) :
+    THashMapIterator(const SHashMapInfo<T>* p_MapInfo) :
         TIterator<THashMapNode<T>>(nullptr),
         m_pMapInfo(p_MapInfo),
         m_nBucket(UINT32_MAX) {}
@@ -111,8 +111,12 @@ public:
                 p_Other.m_pMapInfo == m_pMapInfo;
     }
 
+    bool operator!=(const THashMapIterator<T>& p_Other) const {
+        return !(*this == p_Other);
+    }
+
 public:
-    SHashMapInfo<T>* m_pMapInfo = nullptr;
+    const SHashMapInfo<T>* m_pMapInfo = nullptr;
     uint32_t m_nBucket = 0;
 
     template <class K, class V, class H>
@@ -127,7 +131,8 @@ public:
     using reference = value_type&;
     using const_reference = const value_type&;
     using iterator = THashMapIterator<value_type>;
-    using const_iterator = const THashMapIterator<value_type>;
+    using const_iterator = THashMapIterator<const value_type>;
+    using const_map_info_type = const SHashMapInfo<const value_type>*;
 
 public:
     THashMap() {
@@ -250,18 +255,22 @@ public:
 
     const_iterator begin() const {
         if (m_Info.m_nBucketCount == 0) {
-            return const_iterator(&m_Info);
+            return const_iterator(reinterpret_cast<const_map_info_type>(&m_Info));
         }
 
         for (uint32_t i = 0; i < m_Info.m_nBucketCount; ++i) {
             const uint32_t s_NodeIndex = m_Info.m_pBuckets[i];
 
             if (s_NodeIndex != UINT32_MAX) {
-                return const_iterator(&m_Info, i, &m_Info.m_pNodes[s_NodeIndex]);
+                return const_iterator(
+                    reinterpret_cast<const_map_info_type>(&m_Info),
+                    i,
+                    reinterpret_cast<THashMapNode<const value_type>*>(&m_Info.m_pNodes[s_NodeIndex])
+                );
             }
         }
 
-        return const_iterator(&m_Info);
+        return const_iterator(reinterpret_cast<const_map_info_type>(&m_Info));
     }
 
     iterator begin() {
@@ -281,7 +290,7 @@ public:
     }
 
     const_iterator end() const {
-        return const_iterator(&m_Info);
+        return const_iterator(reinterpret_cast<const_map_info_type>(&m_Info));
     }
 
     iterator end() {
@@ -294,6 +303,16 @@ public:
 
     bool empty() const {
         return m_nSize == 0;
+    }
+
+    const TValueType& at(const TKeyType& p_Key) const {
+        const_iterator s_Iterator = find(p_Key);
+
+        if (s_Iterator != end()) {
+            return s_Iterator->second;
+        }
+
+        throw std::out_of_range("Key not found in the hash map!");
     }
 
     TValueType& operator[](const TKeyType& p_Key) {
@@ -312,15 +331,11 @@ public:
 
     const_iterator find(const TKeyType& p_Key) const {
         if (auto* s_Node = findNode(p_Key)) {
-            return const_iterator(&m_Info, THashingPolicy()(p_Key) % m_Info.m_nBucketCount, s_Node);
-        }
-
-        return end();
-    }
-
-    iterator find(const TKeyType& p_Key) {
-        if (auto* s_Node = findNode(p_Key)) {
-            return iterator(&m_Info, THashingPolicy()(p_Key) % m_Info.m_nBucketCount, s_Node);
+            return const_iterator(
+                reinterpret_cast<const_map_info_type>(&m_Info),
+                THashingPolicy()(p_Key) % m_Info.m_nBucketCount,
+                reinterpret_cast<THashMapNode<const value_type>*>(s_Node)
+            );
         }
 
         return end();
@@ -506,7 +521,7 @@ public:
         const uint64_t s_Hash = THashingPolicy()(s_Key);
         const uint32_t s_BucketIndex = static_cast<uint32_t>(s_Hash % m_Info.m_nBucketCount);
 
-        eraseNode(s_BucketIndex, p_Where.m_pNode);
+        eraseNode(s_BucketIndex, p_Where.m_pCurrent);
 
         return s_Next;
     }
@@ -540,6 +555,18 @@ public:
     }
 
 private:
+    iterator find(const TKeyType& p_Key) {
+        if (auto* s_Node = findNode(p_Key)) {
+            return iterator(
+                reinterpret_cast<const_map_info_type>(&m_Info),
+                THashingPolicy()(p_Key) % m_Info.m_nBucketCount,
+                s_Node
+            );
+        }
+
+        return end();
+    }
+
     node_type* findNode(const TKeyType& p_Key) const {
         if (!m_Info.m_pBuckets) {
             return nullptr;
