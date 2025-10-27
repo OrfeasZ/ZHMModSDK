@@ -317,6 +317,16 @@ public:
         throw std::out_of_range("Key not found in the hash map!");
     }
 
+    TValueType& at(const TKeyType& p_Key) {
+        iterator s_Iterator = find(p_Key);
+
+        if (s_Iterator != end()) {
+            return s_Iterator->second;
+        }
+
+        throw std::out_of_range("Key not found in the hash map!");
+    }
+
     TValueType& operator[](const TKeyType& p_Key) {
         iterator s_Iterator = find(p_Key);
 
