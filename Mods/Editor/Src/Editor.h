@@ -110,7 +110,12 @@ private:
     void UpdateEntities();
     void UpdateEntityTree(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
-        const std::vector<ZEntityRef>& p_Entities
+        const std::vector<ZEntityRef>& p_Entities,
+        const bool p_AreEntitiesDynamic
+    );
+    void AddDynamicEntitiesToEntityTree(
+        const std::shared_ptr<EntityTreeNode>& p_SceneNode,
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
 
     void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
@@ -240,6 +245,17 @@ private:
     );
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
+
+    DECLARE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
+        ZEntityManager* th,
+        ZEntityRef& result,
+        const ZString& sDebugName,
+        IEntityFactory* pEntityFactory,
+        const ZEntityRef& logicalParent,
+        uint64_t entityID,
+        const SExternalReferences& externalRefs,
+        bool unk0
+    );
 
 private:
     enum class EntityHighlightMode {
@@ -378,6 +394,10 @@ private:
 
     std::mutex m_EntityDestructionMutex;
     std::vector<std::tuple<ZEntityRef, std::optional<std::string>>> m_EntitiesToDestroy;
+
+    std::mutex m_NewEntityQueueMutex;
+    std::vector<ZEntityRef> m_PendingDynamicEntities;
+    std::atomic_bool m_IsBuildingEntityTree = false;
 
     EditorServer m_Server;
 

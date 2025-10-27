@@ -218,4 +218,15 @@ public:
     static Hook<void(ZSecuritySystemCameraManager* th, bool bReactionSituations)>* ZSecuritySystemCameraManager_UpdateCameraState;
     static Hook<void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)>* ZSecuritySystemCameraManager_OnFrameUpdate;
     static Hook<void(ZSecuritySystemCamera* th, const SGameUpdateEvent* const a2)>* ZSecuritySystemCamera_FrameUpdate;
+
+    static Hook<ZEntityRef*(
+        ZEntityManager* th,
+        ZEntityRef& result,
+        const ZString& sDebugName,
+        IEntityFactory* pEntityFactory,
+        const ZEntityRef& logicalParent,
+        uint64_t entityID,
+        const SExternalReferences& externalRefs,
+        bool unk0
+    )>* ZEntityManager_NewUninitializedEntity;
 };

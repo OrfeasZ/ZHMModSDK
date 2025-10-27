@@ -8,6 +8,7 @@
 #include <Glacier/ZFreeCamera.h>
 #include <Glacier/ZComponentCreateInfo.h>
 #include <Glacier/SExternalReferences.h>
+#include <Glacier/ZEntityManager.h>
 
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
@@ -20,8 +21,13 @@
 
 void Editor::UpdateEntityTree(
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
-    const std::vector<ZEntityRef>& p_Entities
+    const std::vector<ZEntityRef>& p_Entities,
+    const bool p_AreEntitiesDynamic
 ) {
+    if (m_IsBuildingEntityTree.exchange(true)) {
+        return;
+    }
+
     // Go through a first pass by creating all the nodes of the tree using a BFS
     // approach. We'll also opportunistically assign children nodes to parents we've
     // seen before. Then, as a second pass we'll go through and assign the remaining
@@ -42,6 +48,20 @@ void Editor::UpdateEntityTree(
         }
 
         s_NodeQueue.emplace(s_BpFactory, s_Entity);
+    }
+
+    std::shared_ptr<EntityTreeNode> s_SceneNode;
+    std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode;
+
+    if (p_AreEntitiesDynamic) {
+        const auto s_SceneEntity = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene.m_ref;
+        s_SceneNode = p_NodeMap[s_SceneEntity];
+
+        auto it = s_SceneNode->Children.find("Dynamic Entities");
+
+        if (it != s_SceneNode->Children.end()) {
+            s_DynamicEntitiesNode = it->second;
+        }
     }
 
     while (!s_NodeQueue.empty()) {
@@ -113,7 +133,12 @@ void Editor::UpdateEntityTree(
 
                 if (s_ParentNode != p_NodeMap.end()) {
                     // If we have already seen the logical parent of this sub-entity, add it to the parent's children.
-                    s_ParentNode->second->Children.insert({s_EntityHumanName, s_SubEntityNode});
+                    if (p_AreEntitiesDynamic && s_ParentNode->second == s_SceneNode) {
+                        s_DynamicEntitiesNode->Children.insert({ s_EntityHumanName, s_SubEntityNode });
+                    }
+                    else {
+                        s_ParentNode->second->Children.insert({ s_EntityHumanName, s_SubEntityNode });
+                    }
                 }
                 else {
                     // Otherwise, add it to the parentless nodes queue.
@@ -146,14 +171,27 @@ void Editor::UpdateEntityTree(
             auto s_ParentNode = p_NodeMap.find(s_LogicalParent);
 
             if (s_ParentNode != p_NodeMap.end()) {
-                s_ParentNode->second->Children.insert({s_Node->Name, s_Node});
+                if (p_AreEntitiesDynamic && s_ParentNode->second == s_SceneNode) {
+                    s_DynamicEntitiesNode->Children.insert({ s_Node->Name, s_Node });
+                }
+                else {
+                    s_ParentNode->second->Children.insert({ s_Node->Name, s_Node });
+                }
+
                 continue;
             }
         }
 
-        // Otherwise, add it to the root node.
-        p_NodeMap[ZEntityRef()] = s_Node;
+        if (p_AreEntitiesDynamic) {
+            s_DynamicEntitiesNode->Children.insert({ s_Node->Name, s_Node });
+        }
+        else {
+            // Otherwise, add it to the root node.
+            p_NodeMap[ZEntityRef()] = s_Node;
+        }
     }
+
+    m_IsBuildingEntityTree = false;
 }
 
 void Editor::UpdateEntities() {
@@ -205,7 +243,9 @@ void Editor::UpdateEntities() {
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
     s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
     s_NodeMap.emplace(ZEntityRef(), s_SceneNode);
-    UpdateEntityTree(s_NodeMap, s_EntsToProcess);
+    UpdateEntityTree(s_NodeMap, s_EntsToProcess, false);
+
+    AddDynamicEntitiesToEntityTree(s_SceneNode, s_NodeMap);
 
     // Update the cached tree.
     m_CachedEntityTreeMutex.lock();
@@ -214,6 +254,41 @@ void Editor::UpdateEntities() {
     m_CachedEntityTreeMutex.unlock();
 
     m_Server.OnEntityTreeRebuilt();
+}
+
+void Editor::AddDynamicEntitiesToEntityTree(
+    const std::shared_ptr<EntityTreeNode>& p_SceneNode,
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
+) {
+    auto s_DynamicEntitiesNode = std::make_shared<EntityTreeNode>(
+        "Dynamic Entities",
+        "",
+        -1,
+        -1,
+        ZEntityRef{}
+    );
+
+    p_SceneNode->Children.insert(std::make_pair(s_DynamicEntitiesNode->Name, s_DynamicEntitiesNode));
+
+    std::vector<ZEntityRef> s_DynamicEntities;
+
+    s_DynamicEntities.reserve(Globals::EntityManager->m_Entities.size());
+
+    for (const auto& s_Pair : Globals::EntityManager->m_Entities) {
+        const ZEntityRef& s_DynamicEntity = s_Pair.second;
+
+        if (!s_DynamicEntity) {
+            continue;
+        }
+
+        const uint64_t s_BaseKey = s_Pair.first & 0xFFFFFFFFFFFC000F;
+
+        if (Globals::EntityManager->m_DynamicEntityIdToCount.contains(s_BaseKey)) {
+            s_DynamicEntities.push_back(s_DynamicEntity);
+        }
+    }
+
+    UpdateEntityTree(p_NodeMap, s_DynamicEntities, true);
 }
 
 void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
@@ -599,4 +674,25 @@ void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, 
     m_CachedEntityTreeMutex.unlock();
 
     m_Server.OnEntityNameChanged(p_Entity, std::move(p_ClientId));
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
+    ZEntityManager* th,
+    ZEntityRef& result,
+    const ZString& sDebugName,
+    IEntityFactory* pEntityFactory,
+    const ZEntityRef& logicalParent,
+    uint64_t entityID,
+    const SExternalReferences& externalRefs,
+    bool unk0
+) {
+    ZEntityRef* s_EntityRef = p_Hook->CallOriginal(th, result, sDebugName, pEntityFactory, logicalParent, entityID, externalRefs, unk0);
+
+    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
+        std::scoped_lock s_ScopedLock(m_NewEntityQueueMutex);
+
+        m_PendingDynamicEntities.push_back(result);
+    }
+
+    return HookResult<ZEntityRef*>(HookAction::Return(), s_EntityRef);
 }

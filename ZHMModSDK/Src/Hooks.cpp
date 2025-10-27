@@ -436,3 +436,18 @@ PATTERN_HOOK(
     ZSecuritySystemCamera_FrameUpdate,
     void(ZSecuritySystemCamera* th, const SGameUpdateEvent* const a2)
 );
+
+PATTERN_HOOK(
+    "\x4C\x89\x44\x24\x18\x53\x55\x56\x57\x41\x54\x41\x56\x48\x83\xEC\x00\x49\x8B\x01",
+    "xxxxxxxxxxxxxxxx?xxx",
+    ZEntityManager_NewUninitializedEntity,
+    ZEntityRef* (
+        ZEntityManager* th,
+        ZEntityRef& result,
+        const ZString& sDebugName,
+        IEntityFactory* pEntityFactory,
+        const ZEntityRef& logicalParent,
+        uint64_t entityID,
+        const SExternalReferences& externalRefs,
+        bool unk0)
+);

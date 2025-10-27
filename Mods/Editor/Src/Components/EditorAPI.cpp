@@ -517,7 +517,7 @@ void Editor::SpawnQnEntity(
     m_SpawnedEntities[p_EntityId] = s_SpawnedEnt;
 
     if (m_CachedEntityTree && m_CachedEntityTreeMap.size() > 0) {
-        UpdateEntityTree(m_CachedEntityTreeMap, {s_SpawnedEnt});
+        UpdateEntityTree(m_CachedEntityTreeMap, {s_SpawnedEnt}, true);
     }
 
     m_CachedEntityTreeMutex.unlock();

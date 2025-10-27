@@ -104,6 +104,8 @@ void Editor::Init() {
     Hooks::SignalInputPin->AddDetour(this, &Editor::OnInputPin);
     Hooks::SignalOutputPin->AddDetour(this, &Editor::OnOutputPin);
 
+    Hooks::ZEntityManager_NewUninitializedEntity->AddDetour(this, &Editor::ZEntityManager_NewUninitializedEntity);
+
     m_UseSnap = GetSettingBool("general", "snap", true);
     m_SnapValue = GetSettingDouble("general", "snap_value", 1.0);
     m_UseAngleSnap = GetSettingBool("general", "angle_snap", true);
@@ -403,6 +405,24 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     }
 
     m_EntityDestructionMutex.unlock();
+
+    if (!m_IsBuildingEntityTree.load()) {
+        std::vector<ZEntityRef> s_EntitiesToAdd;
+
+        {
+            std::scoped_lock s_ScopedLock(m_NewEntityQueueMutex);
+
+            if (!m_PendingDynamicEntities.empty()) {
+                s_EntitiesToAdd.swap(m_PendingDynamicEntities);
+            }
+        }
+
+        if (!s_EntitiesToAdd.empty()) {
+            std::scoped_lock s_ScopedLock(m_CachedEntityTreeMutex);
+
+            UpdateEntityTree(m_CachedEntityTreeMap, s_EntitiesToAdd, true);
+        }
+    }
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
