@@ -112,9 +112,10 @@ void Editor::UpdateEntityTree(
             const auto s_EntityTypeName = (*s_SubEntity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->
                 m_pTypeName;
             const auto s_EntityHumanName = fmt::format(
-                "{} ({:08x})",
+                "{} ({:08x}){}",
                 s_EntityName,
-                s_SubEntityId
+                s_SubEntityId,
+                p_AreEntitiesDynamic ? " *" : ""
             );
 
             // Add the node to the map.
