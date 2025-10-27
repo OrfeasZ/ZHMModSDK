@@ -1,10 +1,10 @@
 #pragma once
 
+#include <type_traits>
+
 #include "Hash.h"
-#include "ZString.h"
 #include "TPair.h"
 #include "TIterator.h"
-#include "ZResourceID.h"
 #include "ZMemory.h"
 #include "Globals.h"
 
@@ -22,27 +22,36 @@ struct SHashMapInfo {
     THashMapNode<T>* m_pNodes = nullptr;
 };
 
-template <class T>
-struct TDefaultHashMapPolicy;
-
-template <>
-struct TDefaultHashMapPolicy<ZString> {
-    uint64_t operator()(const ZString& p_Value) const {
-        return Hash::Fnv1a64(p_Value.c_str(), p_Value.size());
+template <typename T>
+class TDefaultHashMapPolicy {
+public:
+    static uint64_t GetHashCode(const T& p_Key) {
+        if constexpr (requires { p_Key.GetHashCode(); }) {
+            return static_cast<uint64_t>(p_Key.GetHashCode());
+        }
+        else {
+            return Hash::Fnv1a(reinterpret_cast<const char*>(&p_Key), sizeof(T));
+        }
     }
 };
 
-template <>
-struct TDefaultHashMapPolicy<ZRepositoryID> {
-    uint64_t operator()(const ZRepositoryID& p_Value) const {
-        return p_Value.GetHashCode();
+inline uint64_t GetPointerHashCode(const void* p) {
+    if (!p) {
+        return 0;
     }
-};
 
-template <>
-struct TDefaultHashMapPolicy<ZRuntimeResourceID> {
-    uint64_t operator()(const ZRuntimeResourceID& p_Value) const {
-        return p_Value.GetHashCode();
+    const uint64_t s_Address = reinterpret_cast<uint64_t>(p);
+    const uint32_t s_Low = static_cast<uint32_t>(s_Address);
+    const uint32_t s_High = static_cast<uint32_t>(s_Address >> 32);
+
+    return static_cast<uint64_t>(s_Low * 0x13285CD7 - s_High * 0x61C88647);
+}
+
+template <typename T>
+class TDefaultHashMapPolicy<T*> {
+public:
+    static uint64_t GetHashCode(const T* p_Key) {
+        return GetPointerHashCode(p_Key);
     }
 };
 
@@ -349,7 +358,7 @@ public:
         if (auto* s_Node = findNode(p_Key)) {
             return const_iterator(
                 reinterpret_cast<const_map_info_type>(&m_Info),
-                THashingPolicy()(p_Key) % m_Info.m_nBucketCount,
+                THashingPolicy::GetHashCode(p_Key) % m_Info.m_nBucketCount,
                 reinterpret_cast<THashMapNode<const value_type>*>(s_Node)
             );
         }
@@ -376,7 +385,7 @@ public:
 
         ensureCapacity(m_nSize + 1);
 
-        const uint64_t s_Hash = THashingPolicy()(p_Key);
+        const uint64_t s_Hash = THashingPolicy::GetHashCode(p_Key);
         const uint32_t s_BucketIndex = static_cast<uint32_t>(s_Hash % m_Info.m_nBucketCount);
         uint32_t s_NodeIndex = m_Info.m_pBuckets[s_BucketIndex];
 
@@ -416,7 +425,7 @@ public:
 
         ensureCapacity(m_nSize + 1);
 
-        const uint64_t s_Hash = THashingPolicy()(p_Key);
+        const uint64_t s_Hash = THashingPolicy::GetHashCode(p_Key);
         const uint32_t s_BucketIndex = static_cast<uint32_t>(s_Hash % m_Info.m_nBucketCount);
         uint32_t s_NodeIndex = m_Info.m_pBuckets[s_BucketIndex];
 
@@ -473,7 +482,7 @@ public:
 
                 while (s_NodeIndex != UINT32_MAX) {
                     node_type& s_OldNode = m_Info.m_pNodes[s_NodeIndex];
-                    const uint64_t s_Hash = THashingPolicy()(s_OldNode.m_value.first);
+                    const uint64_t s_Hash = THashingPolicy::GetHashCode(s_OldNode.m_value.first);
                     const uint32_t s_NewBucketIndex = static_cast<uint32_t>(s_Hash % p_NewBucketCount);
 
                     node_type& s_NewNode = s_NewNodes[s_NewSize];
@@ -519,7 +528,7 @@ public:
             return false;
         }
 
-        const uint64_t s_Hash = THashingPolicy()(p_Key);
+        const uint64_t s_Hash = THashingPolicy::GetHashCode(p_Key);
         const uint32_t s_BucketIndex = static_cast<uint32_t>(s_Hash % m_Info.m_nBucketCount);
         uint32_t s_NodeIndex = m_Info.m_pBuckets[s_BucketIndex];
 
@@ -546,7 +555,7 @@ public:
         ++s_Next;
 
         const TKeyType& s_Key = p_Where->first;
-        const uint64_t s_Hash = THashingPolicy()(s_Key);
+        const uint64_t s_Hash = THashingPolicy::GetHashCode(s_Key);
         const uint32_t s_BucketIndex = static_cast<uint32_t>(s_Hash % m_Info.m_nBucketCount);
 
         eraseNode(s_BucketIndex, p_Where.m_pCurrent);
@@ -588,7 +597,7 @@ private:
             return nullptr;
         }
 
-        const uint64_t s_Hash = THashingPolicy()(p_Key);
+        const uint64_t s_Hash = THashingPolicy::GetHashCode(p_Key);
         const uint32_t s_BucketIndex = static_cast<uint32_t>(s_Hash % m_Info.m_nBucketCount);
         uint32_t s_NodeIndex = m_Info.m_pBuckets[s_BucketIndex];
 

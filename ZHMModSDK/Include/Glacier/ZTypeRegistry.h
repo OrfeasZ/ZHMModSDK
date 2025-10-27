@@ -3,12 +3,12 @@
 #include "Reflection.h"
 #include "THashMap.h"
 #include "ZString.h"
-#include "Reflection.h"
 #include "TArray.h"
 
-struct TypeMapHashingPolicy {
-    uint64_t operator()(const ZString& p_Value) {
-        return Hash::Fnv1a64_Lower(p_Value.c_str(), p_Value.size());
+class TypeMapHashingPolicy {
+public:
+    static uint64_t GetHashCode(const ZString& p_Key) {
+        return Hash::Fnv1a64_Lower(p_Key.c_str(), p_Key.size());
     }
 };
 
