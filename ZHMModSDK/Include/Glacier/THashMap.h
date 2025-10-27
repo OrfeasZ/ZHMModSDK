@@ -343,6 +343,18 @@ public:
         return end();
     }
 
+    iterator find(const TKeyType& p_Key) {
+        if (auto* s_Node = findNode(p_Key)) {
+            return iterator(
+                &m_Info,
+                THashingPolicy::GetHashCode(p_Key) % m_Info.m_nBucketCount,
+                s_Node
+            );
+        }
+
+        return end();
+    }
+
     iterator insert(const TKeyType& p_Key, const TValueType& p_Value) {
         if (!m_Info.m_pBuckets) {
             return iterator(&m_Info);
@@ -557,18 +569,6 @@ public:
     }
 
 private:
-    iterator find(const TKeyType& p_Key) {
-        if (auto* s_Node = findNode(p_Key)) {
-            return iterator(
-                reinterpret_cast<const_map_info_type>(&m_Info),
-                THashingPolicy()(p_Key) % m_Info.m_nBucketCount,
-                s_Node
-            );
-        }
-
-        return end();
-    }
-
     node_type* findNode(const TKeyType& p_Key) const {
         if (!m_Info.m_pBuckets) {
             return nullptr;
