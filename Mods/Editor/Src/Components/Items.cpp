@@ -60,13 +60,13 @@ void Editor::DrawItems(bool p_HasFocus) {
         const ZHM5Action* s_Action = s_Actions[s_Selected];
         const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
 
-        if (s_Item->m_rSpawner) {
+        if (s_Item) {
             if (ImGui::Button("Select In Entity Tree")) {
                 if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                     UpdateEntities();
                 }
 
-                OnSelectEntity(s_Item->m_rSpawner, std::nullopt);
+                OnSelectEntity(s_Action->m_Object, std::nullopt);
             }
         }
 
