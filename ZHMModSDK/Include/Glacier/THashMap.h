@@ -3,8 +3,10 @@
 #include "Hash.h"
 #include "ZString.h"
 #include "TPair.h"
-#include "TArray.h"
+#include "TIterator.h"
 #include "ZResourceID.h"
+#include "ZMemory.h"
+#include "Globals.h"
 
 template <class T>
 class THashMapNode {

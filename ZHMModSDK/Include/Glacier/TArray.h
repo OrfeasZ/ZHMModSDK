@@ -8,16 +8,6 @@
 #include <vector>
 
 template <class T>
-class TIterator {
-protected:
-    TIterator(T* p_Current) :
-        m_pCurrent(p_Current) {}
-
-public:
-    T* m_pCurrent;
-};
-
-template <class T>
 class TArray {
 public:
     TArray() :
