@@ -331,6 +331,10 @@ public:
         return find(p_Key) != end();
     }
 
+    bool contains(const TKeyType& p_Key) {
+        return find(p_Key) != end();
+    }
+
     const_iterator find(const TKeyType& p_Key) const {
         if (auto* s_Node = findNode(p_Key)) {
             return const_iterator(
