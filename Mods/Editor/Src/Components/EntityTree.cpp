@@ -63,6 +63,12 @@ void Editor::UpdateEntityTree(
 
             // Skip the root entity of the referenced factory
             if (p_NodeMap.contains(s_SubEntity)) {
+                /**
+                 * Enqueue sub-entities of the referenced factory to ensure they are processed
+                 * even when the root entity is skipped
+                 */
+                s_NodeQueue.emplace(s_SubEntityFactory, s_SubEntity);
+
                 continue;
             }
 
