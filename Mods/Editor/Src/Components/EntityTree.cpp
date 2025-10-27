@@ -83,8 +83,8 @@ void Editor::UpdateEntityTree(
             }
 
             // Format a human-readable name for the entity.
-            const auto s_EntityTypeName = s_SubEntity->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->
-                                                       m_pTypeName;
+            const auto s_EntityTypeName = (*s_SubEntity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->
+                m_pTypeName;
             const auto s_EntityHumanName = fmt::format(
                 "{} ({:08x})",
                 s_EntityName,
@@ -190,7 +190,7 @@ void Editor::UpdateEntities() {
     // Create the root scene node.
     auto s_SceneNode = std::make_shared<EntityTreeNode>(
         "Scene Root",
-        s_SceneEnt->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->m_pTypeName,
+        (*s_SceneEnt->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName,
         s_SceneEnt->GetType()->m_nEntityId,
         s_SceneFactory->m_ridResource,
         s_SceneEnt
