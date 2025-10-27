@@ -300,7 +300,7 @@ void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> 
     }
 
     ZEntityRef s_Ref;
-    s_CurrentCamera->GetID(&s_Ref);
+    s_CurrentCamera->GetID(s_Ref);
 
     std::ostringstream s_Event;
 

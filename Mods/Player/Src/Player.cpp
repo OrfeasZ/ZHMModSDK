@@ -276,7 +276,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                 ZActor* actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
                 ZEntityRef s_Ref;
 
-                actor->GetID(&s_Ref);
+                actor->GetID(s_Ref);
 
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
@@ -346,7 +346,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                 ZActor* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
                 ZEntityRef s_Ref;
 
-                s_Actor->GetID(&s_Ref);
+                s_Actor->GetID(s_Ref);
 
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 

@@ -275,7 +275,7 @@ void Editor::DrawEntityProperties() {
         if (const auto s_CameraEntity = s_SelectedEntity.QueryInterface<ZCameraEntity>()) {
             if (ImGui::Button(ICON_MD_CAMERA "Toggle Camera")) {
                 ZEntityRef s_EntRef;
-                auto s_Camera = s_CameraEntity->GetID(&s_EntRef);
+                auto s_Camera = s_CameraEntity->GetID(s_EntRef);
 
                 if (m_CameraActive) {
                     m_CameraActive = false;

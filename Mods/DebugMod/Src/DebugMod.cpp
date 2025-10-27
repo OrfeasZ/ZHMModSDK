@@ -214,7 +214,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
             auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 
             ZEntityRef s_Ref;
-            s_Actor->GetID(&s_Ref);
+            s_Actor->GetID(s_Ref);
 
             auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
             auto s_ActorTransform = s_SpatialEntity->GetWorldMatrix();

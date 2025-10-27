@@ -280,14 +280,14 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Get Nearest Actor's Outfit")) {
             ZEntityRef s_Ref;
 
-            m_CurrentlySelectedActor->GetID(&s_Ref);
+            m_CurrentlySelectedActor->GetID(s_Ref);
 
             ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
             for (int i = 0; i < *Globals::NextActorId; ++i) {
                 ZActor* s_Actor2 = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 
-                s_Actor2->GetID(&s_Ref);
+                s_Actor2->GetID(s_Ref);
 
                 const ZSpatialEntity* s_ActorSpatialEntity2 = s_Ref.QueryInterface<ZSpatialEntity>();
 
@@ -329,7 +329,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Select In Entity Tree")) {
             ZEntityRef s_Ref;
 
-            m_CurrentlySelectedActor->GetID(&s_Ref);
+            m_CurrentlySelectedActor->GetID(s_Ref);
 
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                 UpdateEntities();
@@ -341,7 +341,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Teleport Actor To Player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZEntityRef s_Ref;
-                m_CurrentlySelectedActor->GetID(&s_Ref);
+                m_CurrentlySelectedActor->GetID(s_Ref);
 
                 ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
@@ -353,7 +353,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Teleport Player To Actor")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZEntityRef s_Ref;
-                m_CurrentlySelectedActor->GetID(&s_Ref);
+                m_CurrentlySelectedActor->GetID(s_Ref);
 
                 ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
@@ -477,7 +477,7 @@ void Editor::EnableTrackCam() {
 void Editor::UpdateTrackCam() const {
     ZEntityRef s_Ref;
 
-    m_ActorTracked->GetID(&s_Ref);
+    m_ActorTracked->GetID(s_Ref);
 
     SMatrix s_ActorWorldMatrix = s_Ref.QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
     SMatrix s_TrackCamWorldMatrix = m_TrackCam.m_pInterfaceRef->GetWorldMatrix();
