@@ -61,7 +61,7 @@ void Editor::UpdateEntityTree(
                 continue;
             }
 
-            // If this sub-entity has already been added to the tree, skip it.
+            // Skip the root entity of the referenced factory
             if (p_NodeMap.contains(s_SubEntity)) {
                 continue;
             }
