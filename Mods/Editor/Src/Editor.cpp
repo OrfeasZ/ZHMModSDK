@@ -336,39 +336,6 @@ void Editor::OnDrawUI(bool p_HasFocus) {
 
         ImGui::End();
     }
-
-    /*ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Expanded = ImGui::Begin("Behaviors");
-    ImGui::PushFont(SDK()->GetImGuiRegularFont());
-
-    if (s_Expanded)
-    {
-        for (int i = 0; i < *Globals::NextActorId; ++i)
-        {
-            const auto& s_Actor = Globals::ActorManager->m_aActiveActors[i];
-
-            const auto s_ActorSpatial = s_Actor.m_ref.QueryInterface<ZSpatialEntity>();
-
-            if (!s_ActorSpatial)
-                continue;
-
-            std::string s_BehaviorName = "<none>";
-
-            if (s_Actor.m_pInterfaceRef->m_nCurrentBehaviorIndex >= 0)
-            {
-                auto& s_BehaviorData = Globals::BehaviorService->m_aKnowledgeData[s_Actor.m_pInterfaceRef->m_nCurrentBehaviorIndex];
-
-                if (s_BehaviorData.m_pCurrentBehavior)
-                    s_BehaviorName = BehaviorToString(static_cast<ECompiledBehaviorType>(s_BehaviorData.m_pCurrentBehavior->m_Type));
-            }
-
-            ImGui::Text(fmt::format("{} => {}", s_Actor.m_pInterfaceRef->m_sActorName, s_BehaviorName).c_str());
-        }
-    }
-
-    ImGui::PopFont();
-    ImGui::End();
-    ImGui::PopFont();*/
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
