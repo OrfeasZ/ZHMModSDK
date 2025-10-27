@@ -14,10 +14,10 @@ struct TypeMapHashingPolicy {
 
 class ZTypeRegistry {
 public:
-    virtual int addRef() = 0;
-    virtual int release() = 0;
-    virtual void ZTypeRegistry_unk2() = 0;
-    virtual void ZTypeRegistry_unk3() = 0;
+    virtual int AddRef() = 0;
+    virtual int Release() = 0;
+    virtual ZObjectRef* GetVariantRef(ZObjectRef& result) = 0;
+    virtual void* QueryInterface(STypeID* iid) = 0;
     virtual ~ZTypeRegistry() = 0;
 
     STypeID* GetTypeID(const ZString& p_TypeName) const {
