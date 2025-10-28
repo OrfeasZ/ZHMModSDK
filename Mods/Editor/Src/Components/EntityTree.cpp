@@ -300,6 +300,8 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         return;
     }
 
+    ImGui::PushID(p_Node.get());
+
     const auto s_Entity = p_Node->Entity;
     const auto s_EntityType = p_Node->EntityType;
     const auto s_EntityName = p_Node->Name;
@@ -351,6 +353,8 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
             ImGui::TreePop();
         }
     }
+
+    ImGui::PopID();
 }
 
 void Editor::FilterEntityTree() {
