@@ -303,6 +303,8 @@ void Editor::OnDrawUI(bool p_HasFocus) {
             if (ImGui::RadioButton("Lines and Rectangles", s_EntityHighlightMode == 1)) {
                 m_EntityHighlightMode = EntityHighlightMode::LinesAndTriangles;
             }
+
+            ImGui::Checkbox("Raycast logging", &m_raycastLogging);
         }
 
         ImGui::PopFont();

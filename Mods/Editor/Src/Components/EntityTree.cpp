@@ -435,8 +435,6 @@ void Editor::DrawEntityTree() {
     ImGui::SetNextWindowSize({615, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_CATEGORY " Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
-    ImGui::Checkbox("Raycast logging", &m_raycastLogging);
-
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
 
     if (s_SceneCtx && s_SceneCtx->m_pScene && s_SceneCtx->m_aLoadedBricks.size() > 0) {
