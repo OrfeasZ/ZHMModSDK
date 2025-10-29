@@ -86,6 +86,7 @@ public:
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
     static void* ZTemplateEntityBlueprintFactory_vtbl;
+    static void* ZAspectEntityBlueprintFactory_vtbl;
     static ZInputDeviceManager* InputDeviceManager;
     static ZInputActionManager* InputActionManager;
     static int* InputActionManager_BindMem;
