@@ -109,6 +109,19 @@ public:
 
 static_assert(offsetof(ZTemplateEntityBlueprintFactory, m_pTemplateEntityBlueprint) == 0x1A0);
 
+class ZAspectEntityBlueprintFactory : public ZCompositeEntityBlueprintFactoryBase {
+public:
+    struct SAspectedSubentityEntry {
+        uint32 m_nAspectIdx;
+        uint32 m_nSubentityIdx;
+    };
+
+    PAD(0x30); // 0x60
+    ZEntityType* m_pFactoryEntityType; // 0x90
+    TArray<SAspectedSubentityEntry> m_aSubEntitiesLookUp; // 0x98
+    THashMap<uint64, int32, TDefaultHashMapPolicy<uint64>> m_aSubEntityIndexMap; // 0xB0
+};
+
 class ZTemplateEntityFactory : public IEntityFactory {
 public:
     PAD(0x30);
