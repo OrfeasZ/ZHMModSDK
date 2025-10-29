@@ -684,6 +684,61 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
     Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, p_Entity, {});
 }
 
+void Editor::DestroyEntityNodeInternal(
+    const std::shared_ptr<EntityTreeNode>& p_NodeToRemove,
+    std::optional<std::string> p_ClientId
+) {
+    if (!p_NodeToRemove) {
+        return;
+    }
+
+    const uint64_t s_EntityId = p_NodeToRemove->EntityId;
+
+    std::scoped_lock lock(m_CachedEntityTreeMutex);
+
+    if (p_NodeToRemove->Entity) {
+        m_EntityNames.erase(p_NodeToRemove->Entity);
+        if (const auto p_Type = p_NodeToRemove->Entity->GetType()) {
+            m_SpawnedEntities.erase(p_Type->m_nEntityId);
+        }
+
+        if (m_SelectedEntity == p_NodeToRemove->Entity) {
+            m_SelectedEntity = {};
+        }
+    }
+
+    for (auto it = m_CachedEntityTreeMap.begin(); it != m_CachedEntityTreeMap.end();) {
+        if (it->second == p_NodeToRemove) {
+            it = m_CachedEntityTreeMap.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
+    if (m_CachedEntityTree) {
+        std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
+        s_NodeQueue.push(m_CachedEntityTree);
+
+        while (!s_NodeQueue.empty()) {
+            auto s_CurrentNode = s_NodeQueue.front();
+            s_NodeQueue.pop();
+
+            for (auto it = s_CurrentNode->Children.begin(); it != s_CurrentNode->Children.end();) {
+                if (it->second == p_NodeToRemove) {
+                    it = s_CurrentNode->Children.erase(it);
+                }
+                else {
+                    s_NodeQueue.push(it->second);
+                    ++it;
+                }
+            }
+        }
+    }
+
+    m_Server.OnEntityDestroying(s_EntityId, std::move(p_ClientId));
+}
+
 void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId) {
     m_CachedEntityTreeMutex.lock();
     m_EntityNames[p_Entity] = p_Name;
@@ -711,4 +766,24 @@ DEFINE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
     }
 
     return HookResult<ZEntityRef*>(HookAction::Return(), s_EntityRef);
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity, ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs) {
+    if (m_SelectedEntity == entityRef) {
+        m_SelectedEntity = nullptr;
+    }
+    
+    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
+        auto it = m_CachedEntityTreeMap.find(entityRef);
+
+        if (it != m_CachedEntityTreeMap.end()) {
+            std::scoped_lock s_ScopedLock(m_PendingNodeDeletionsMutex);
+
+            m_PendingNodeDeletions.push_back(it->second);
+        }
+    }
+
+    p_Hook->CallOriginal(th, entityRef, externalRefs);
+
+    return HookResult<void>(HookAction::Return());
 }

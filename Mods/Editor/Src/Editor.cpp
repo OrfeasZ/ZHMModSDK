@@ -105,6 +105,7 @@ void Editor::Init() {
     Hooks::SignalOutputPin->AddDetour(this, &Editor::OnOutputPin);
 
     Hooks::ZEntityManager_NewUninitializedEntity->AddDetour(this, &Editor::ZEntityManager_NewUninitializedEntity);
+    Hooks::ZEntityManager_DeleteEntity->AddDetour(this, &Editor::ZEntityManager_DeleteEntity);
 
     m_UseSnap = GetSettingBool("general", "snap", true);
     m_SnapValue = GetSettingDouble("general", "snap_value", 1.0);
@@ -390,6 +391,20 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             std::scoped_lock s_ScopedLock(m_CachedEntityTreeMutex);
 
             UpdateEntityTree(m_CachedEntityTreeMap, s_EntitiesToAdd, true);
+        }
+
+        std::vector<std::weak_ptr<EntityTreeNode>> s_NodesToRemove;
+
+        {
+            std::scoped_lock lock(m_PendingNodeDeletionsMutex);
+
+            s_NodesToRemove.swap(m_PendingNodeDeletions);
+        }
+
+        for (auto& s_NodeToRemove : s_NodesToRemove) {
+            if (auto s_Node = s_NodeToRemove.lock()) {
+                DestroyEntityNodeInternal(s_Node);
+            }
         }
     }
 }

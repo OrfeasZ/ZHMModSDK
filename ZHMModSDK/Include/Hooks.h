@@ -229,4 +229,8 @@ public:
         const SExternalReferences& externalRefs,
         bool unk0
     )>* ZEntityManager_NewUninitializedEntity;
+
+    static Hook<void(
+        ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs
+    )>* ZEntityManager_DeleteEntity;
 };

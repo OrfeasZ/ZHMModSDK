@@ -121,6 +121,7 @@ private:
     void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
+    void DestroyEntityNodeInternal(const std::shared_ptr<EntityTreeNode>& p_NodeToRemove, std::optional<std::string> p_ClientId);
     void OnEntityTransformChange(
         ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
     );
@@ -256,6 +257,7 @@ private:
         const SExternalReferences& externalRefs,
         bool unk0
     );
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity, ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs);
 
 private:
     enum class EntityHighlightMode {
@@ -395,9 +397,11 @@ private:
     std::mutex m_EntityDestructionMutex;
     std::vector<std::tuple<ZEntityRef, std::optional<std::string>>> m_EntitiesToDestroy;
 
+    std::atomic_bool m_IsBuildingEntityTree = false;
     std::mutex m_NewEntityQueueMutex;
     std::vector<ZEntityRef> m_PendingDynamicEntities;
-    std::atomic_bool m_IsBuildingEntityTree = false;
+    std::mutex m_PendingNodeDeletionsMutex;
+    std::vector<std::weak_ptr<EntityTreeNode>> m_PendingNodeDeletions;
 
     EditorServer m_Server;
 
