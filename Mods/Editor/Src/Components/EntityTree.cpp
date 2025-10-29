@@ -339,6 +339,11 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         ImGui::SetNextItemOpen(true);
     }
 
+    if (p_Node->IsPendingDeletion) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+        ImGui::BeginDisabled();
+    }
+
     auto s_Open = ImGui::TreeNodeEx(
         s_EntityName.c_str(),
         s_Flags
@@ -348,13 +353,15 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         ImGui::SetTooltip("%s", s_EntityType.c_str());
     }
 
-    if (ImGui::IsItemFocused() && !s_IsSelected) {
-        if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Space))
-            OnSelectEntity(s_Entity, std::nullopt);
-    }
+    if (!p_Node->IsPendingDeletion) {
+        if (ImGui::IsItemFocused() && !s_IsSelected) {
+            if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Space))
+                OnSelectEntity(s_Entity, std::nullopt);
+        }
 
-    if (ImGui::IsItemClicked()) {
-        OnSelectEntity(s_Entity, std::nullopt);
+        if (ImGui::IsItemClicked()) {
+            OnSelectEntity(s_Entity, std::nullopt);
+        }
     }
 
     if (s_Open) {
@@ -365,6 +372,11 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         if (!(s_Flags & ImGuiTreeNodeFlags_NoTreePushOnOpen)) {
             ImGui::TreePop();
         }
+    }
+
+    if (p_Node->IsPendingDeletion) {
+        ImGui::EndDisabled();
+        ImGui::PopStyleColor();
     }
 
     ImGui::PopID();
@@ -777,6 +789,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity, ZEntityManager* 
         auto it = m_CachedEntityTreeMap.find(entityRef);
 
         if (it != m_CachedEntityTreeMap.end()) {
+            it->second->IsPendingDeletion = true;
+
             std::scoped_lock s_ScopedLock(m_PendingNodeDeletionsMutex);
 
             m_PendingNodeDeletions.push_back(it->second);
