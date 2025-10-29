@@ -71,6 +71,7 @@ void Editor::UpdateEntityTree(
 
         const auto s_SubEntityCount = s_CurrentFactory->GetSubEntitiesCount();
         const bool s_IsTemplateFactory = s_CurrentFactory->IsTemplateEntityBlueprintFactory();
+        const bool s_IsAspectEntityBlueprintFactory = s_CurrentFactory->IsAspectEntityBlueprintFactory();
 
         // Go through each of its sub-entities and create nodes for them.
         for (int i = 0; i < s_SubEntityCount; ++i) {
@@ -101,6 +102,18 @@ void Editor::UpdateEntityTree(
 
                 if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
                     s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[i].entityName;
+                }
+            }
+            else if (s_IsAspectEntityBlueprintFactory) {
+                const auto s_AspectEntityBlueprintFactory = reinterpret_cast<ZAspectEntityBlueprintFactory*>(s_CurrentFactory);
+                const uint32_t s_AspectIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].m_nAspectIdx;
+                const uint32_t s_SubEntityIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].m_nSubentityIdx;
+                const auto s_TemplateBpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(
+                    s_AspectEntityBlueprintFactory->m_aBlueprintFactories[s_AspectIndex]
+                );
+
+                if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
+                    s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[s_SubEntityIndex].entityName;
                 }
             }
 
