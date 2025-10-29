@@ -66,7 +66,7 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
 
     ImGui::SetWindowSize(ImVec2(369.f, 773.f));
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive, ImGuiWindowFlags_NoResize);
+    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {

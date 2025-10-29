@@ -336,7 +336,10 @@ void Editor::DrawSettings(const bool p_HasFocus) {
     if (!m_SettingsVisible || !p_HasFocus) {
         return;
     }
-    if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " EDITOR", &m_SettingsVisible, ImGuiWindowFlags_NoResize)) {
+
+    ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " EDITOR", &m_SettingsVisible)) {
+        ImGui::PushFont(SDK()->GetImGuiRegularFont());
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y), ImGuiCond_FirstUseEver);
         if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS " SHOW EDITOR WINDOWS", &m_EditorWindowsVisible)) {
             SetSettingBool("general", "editor_windows_visible", m_EditorWindowsVisible);
@@ -361,7 +364,9 @@ void Editor::DrawSettings(const bool p_HasFocus) {
             m_EntityHighlightMode = EntityHighlightMode::LinesAndTriangles;
         }
     }
+    ImGui::PopFont();
     ImGui::End();
+    ImGui::PopFont();
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
