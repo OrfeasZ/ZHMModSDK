@@ -64,19 +64,20 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
         return;
     }
 
+    ImGui::SetWindowSize(ImVec2(369.f, 773.f));
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
+    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive, ImGuiWindowFlags_NoResize);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
-        if (ImGui::CollapsingHeader("Actors")) {
+        if (ImGui::CollapsingHeader("Actors", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Checkbox("Render Actor position boxes", &m_RenderActorBoxes);
             ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
             ImGui::Checkbox("Render Actor repository IDs", &m_RenderActorRepoIds);
             ImGui::Checkbox("Render Actor behaviors", &m_RenderActorBehaviors);
         }
 
-        if (ImGui::CollapsingHeader("Reasoning Grid")) {
+        if (ImGui::CollapsingHeader("Reasoning Grid", ImGuiTreeNodeFlags_DefaultOpen)) {
             if (ImGui::Checkbox("Draw Reasoning Grid", &m_DrawReasoningGrid)) {
                 if (m_Triangles.size() == 0) {
                     GenerateReasoningGridVertices();
@@ -88,7 +89,7 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
             ImGui::Checkbox("Show Indices", &m_ShowIndices);
         }
 
-        if (ImGui::CollapsingHeader("Guide Path Finder")) {
+        if (ImGui::CollapsingHeader("Guide Path Finder", ImGuiTreeNodeFlags_DefaultOpen)) {
             if (ImGui::Checkbox("Draw Nav Mesh", &m_DrawNavMesh)) {
                 if (m_NavMesh.m_areas.size() == 0) {
                     static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
