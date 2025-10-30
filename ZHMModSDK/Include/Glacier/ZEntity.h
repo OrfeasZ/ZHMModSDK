@@ -241,7 +241,8 @@ public:
         const auto s_Entity = GetEntity();
         ZEntityType* s_EntityType = Functions::ZEntityImpl_EnsureUniqueType->Call(s_Entity, 0);
 
-        s_EntityType->m_nLogicalParentEntityOffset = reinterpret_cast<uintptr_t>(entityRef.m_pEntity) - reinterpret_cast<uintptr_t>(m_pEntity);
+        s_EntityType->m_nLogicalParentEntityOffset = reinterpret_cast<uintptr_t>(entityRef.m_pEntity) - reinterpret_cast
+                <uintptr_t>(m_pEntity);
     }
 
     bool IsAnyParent(const ZEntityRef& p_Other) const {
@@ -310,13 +311,29 @@ public:
         if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
             return nullptr;
 
-        const auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+        const auto s_TypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
 
-        if (it == (*Globals::TypeRegistry)->m_types.end())
+        if (!s_TypeID)
             return nullptr;
 
         for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == it->second) {
+            if (s_Interface.m_pTypeId == s_TypeID) {
+                return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Interface.m_nOffset);
+            }
+        }
+
+        return nullptr;
+    }
+
+    template <class T>
+    T* QueryInterface(STypeID* p_TypeID) const {
+        const auto s_Entity = GetEntity();
+
+        if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
+            return nullptr;
+
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
+            if (s_Interface.m_pTypeId == p_TypeID) {
                 return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Interface.m_nOffset);
             }
         }
@@ -331,13 +348,13 @@ public:
         if (!s_Entity || !*Globals::TypeRegistry)
             return false;
 
-        const auto it = (*Globals::TypeRegistry)->m_types.find(ZHMTypeName<T>);
+        const auto s_TypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
 
-        if (it == (*Globals::TypeRegistry)->m_types.end())
+        if (!s_TypeID)
             return false;
 
         for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == it->second) {
+            if (s_Interface.m_pTypeId == s_TypeID) {
                 return true;
             }
         }
@@ -345,19 +362,19 @@ public:
         return false;
     }
 
-    bool HasInterface(const std::string& p_TypeName) const {
+    bool HasInterface(const ZString& p_TypeName) const {
         const auto s_Entity = GetEntity();
 
         if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
             return false;
 
-        const auto it = (*Globals::TypeRegistry)->m_types.find(p_TypeName.c_str());
+        const auto s_TypeID = (*Globals::TypeRegistry)->GetTypeID(p_TypeName);
 
-        if (it == (*Globals::TypeRegistry)->m_types.end())
+        if (!s_TypeID)
             return false;
 
         for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == it->second) {
+            if (s_Interface.m_pTypeId == s_TypeID) {
                 return true;
             }
         }

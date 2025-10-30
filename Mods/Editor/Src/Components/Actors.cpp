@@ -56,23 +56,23 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
             std::string s_ButtonId = std::format("{}###{}", s_ActorName, i);
 
-            if (!s_CurrentlySelectedActor) {
+            if (!m_CurrentlySelectedActor) {
                 s_SelectedID = -1;
             }
 
-            if (ImGui::Selectable(s_ButtonId.c_str(), s_SelectedID == i) || s_CurrentlySelectedActor == s_Actor) {
+            if (ImGui::Selectable(s_ButtonId.c_str(), s_SelectedID == i) || m_CurrentlySelectedActor == s_Actor) {
                 if (s_SelectedID != i) {
-                    s_CurrentlySelectedActor = s_Actor;
+                    m_CurrentlySelectedActor = s_Actor;
                     s_SelectedID = i;
 
-                    Logger::Info("Selected actor (by list): {}", s_CurrentlySelectedActor->m_sActorName);
+                    Logger::Info("Selected actor (by list): {}", m_CurrentlySelectedActor->m_sActorName);
                 }
             }
         }
 
         ImGui::EndChild();
 
-        if (!s_CurrentlySelectedActor) {
+        if (!m_CurrentlySelectedActor) {
             ImGui::PopFont();
             ImGui::End();
             ImGui::PopFont();
@@ -88,7 +88,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         static char s_OutfitName[2048] {""};
 
         if (s_OutfitName[0] == '\0') {
-            const char* s_OutfitName2 = s_CurrentlySelectedActor->m_rOutfit.m_pInterfaceRef->m_sCommonName.c_str();
+            const char* s_OutfitName2 = m_CurrentlySelectedActor->m_rOutfit.m_pInterfaceRef->m_sCommonName.c_str();
 
             strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
 
@@ -117,9 +117,9 @@ void Editor::DrawActors(const bool p_HasFocus) {
         static uint8_t s_CurrentOutfitVariationIndex = 0;
 
         if (!s_GlobalOutfitKit) {
-            s_GlobalOutfitKit = &s_CurrentlySelectedActor->m_rOutfit;
-            s_CurrentCharacterSetIndex = s_CurrentlySelectedActor->m_nOutfitCharset;
-            s_CurrentOutfitVariationIndex = s_CurrentlySelectedActor->m_nOutfitVariation;
+            s_GlobalOutfitKit = &m_CurrentlySelectedActor->m_rOutfit;
+            s_CurrentCharacterSetIndex = m_CurrentlySelectedActor->m_nOutfitCharset;
+            s_CurrentOutfitVariationIndex = m_CurrentlySelectedActor->m_nOutfitVariation;
         }
 
         if (ImGui::BeginPopup(
@@ -144,8 +144,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     s_CurrentOutfitVariationIndex = 0;
 
                     EquipOutfit(
-                        it->second, s_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType,
-                        s_CurrentOutfitVariationIndex, s_CurrentlySelectedActor
+                        it->second,
+                        s_CurrentCharacterSetIndex,
+                        s_CurrentcharSetCharacterType,
+                        s_CurrentOutfitVariationIndex,
+                        m_CurrentlySelectedActor
                     );
 
                     s_GlobalOutfitKit = s_GlobalOutfitKit2;
@@ -173,8 +176,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
                         if (s_GlobalOutfitKit) {
                             EquipOutfit(
-                                *s_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType,
-                                s_CurrentOutfitVariationIndex, s_CurrentlySelectedActor
+                                *s_GlobalOutfitKit,
+                                s_CurrentCharacterSetIndex,
+                                s_CurrentcharSetCharacterType,
+                                s_CurrentOutfitVariationIndex,
+                                m_CurrentlySelectedActor
                             );
                         }
                     }
@@ -197,8 +203,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
                         if (s_GlobalOutfitKit) {
                             EquipOutfit(
-                                *s_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType,
-                                s_CurrentOutfitVariationIndex, s_CurrentlySelectedActor
+                                *s_GlobalOutfitKit,
+                                s_CurrentCharacterSetIndex,
+                                s_CurrentcharSetCharacterType,
+                                s_CurrentOutfitVariationIndex,
+                                m_CurrentlySelectedActor
                             );
                         }
                     }
@@ -227,8 +236,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
                         if (s_GlobalOutfitKit) {
                             EquipOutfit(
-                                *s_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentcharSetCharacterType,
-                                s_CurrentOutfitVariationIndex, s_CurrentlySelectedActor
+                                *s_GlobalOutfitKit,
+                                s_CurrentCharacterSetIndex,
+                                s_CurrentcharSetCharacterType,
+                                s_CurrentOutfitVariationIndex,
+                                m_CurrentlySelectedActor
                             );
                         }
                     }
@@ -256,8 +268,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Get Actor Outfit")) {
             if (const ZActor* s_Actor2 = Globals::ActorManager->GetActorByName(s_ActorName2)) {
                 EquipOutfit(
-                    s_Actor2->m_rOutfit, s_Actor2->m_nOutfitCharset, s_CurrentcharSetCharacterType2,
-                    s_Actor2->m_nOutfitVariation, s_CurrentlySelectedActor
+                    s_Actor2->m_rOutfit,
+                    s_Actor2->m_nOutfitCharset,
+                    s_CurrentcharSetCharacterType2,
+                    s_Actor2->m_nOutfitVariation,
+                    m_CurrentlySelectedActor
                 );
             }
         }
@@ -265,7 +280,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Get Nearest Actor's Outfit")) {
             ZEntityRef s_Ref;
 
-            s_CurrentlySelectedActor->GetID(&s_Ref);
+            m_CurrentlySelectedActor->GetID(&s_Ref);
 
             ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
@@ -282,8 +297,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
                 if (s_Distance <= 3.0f) {
                     EquipOutfit(
-                        s_Actor2->m_rOutfit, s_Actor2->m_nOutfitCharset, s_CurrentcharSetCharacterType2,
-                        s_Actor2->m_nOutfitVariation, s_CurrentlySelectedActor
+                        s_Actor2->m_rOutfit,
+                        s_Actor2->m_nOutfitCharset,
+                        s_CurrentcharSetCharacterType2,
+                        s_Actor2->m_nOutfitVariation,
+                        m_CurrentlySelectedActor
                     );
 
                     break;
@@ -311,7 +329,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Select In Entity Tree")) {
             ZEntityRef s_Ref;
 
-            s_CurrentlySelectedActor->GetID(&s_Ref);
+            m_CurrentlySelectedActor->GetID(&s_Ref);
 
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                 UpdateEntities();
@@ -323,7 +341,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Teleport Actor To Player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZEntityRef s_Ref;
-                s_CurrentlySelectedActor->GetID(&s_Ref);
+                m_CurrentlySelectedActor->GetID(&s_Ref);
 
                 ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
@@ -335,7 +353,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Teleport Player To Actor")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZEntityRef s_Ref;
-                s_CurrentlySelectedActor->GetID(&s_Ref);
+                m_CurrentlySelectedActor->GetID(&s_Ref);
 
                 ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
@@ -349,7 +367,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             TEntityRef<ZSetpieceEntity> s_SetPieceEntity;
 
             Functions::ZActor_KillActor->Call(
-                s_CurrentlySelectedActor, s_Item, s_SetPieceEntity, EDamageEvent::eDE_UNDEFINED,
+                m_CurrentlySelectedActor, s_Item, s_SetPieceEntity, EDamageEvent::eDE_UNDEFINED,
                 EDeathBehavior::eDB_IMPACT_ANIM
             );
         }
@@ -357,17 +375,29 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::Separator();
 
         if (ImGui::Button(std::format("Track This Actor##{}", s_ActorName_Substring).c_str())) {
-            if (m_RenderDest.m_ref == nullptr) GetRenderDest();
-            if (m_TrackCam.m_ref == nullptr) GetTrackCam();
-            if (m_PlayerCam == nullptr) GetPlayerCam();
-            m_ActorTracked = s_CurrentlySelectedActor;
+
+            if (m_RenderDest.m_ref == nullptr) {
+                GetRenderDest();
+            }
+
+            if (m_TrackCam.m_ref == nullptr) {
+                GetTrackCam();
+            }
+
+            if (m_PlayerCam == nullptr) {
+                GetPlayerCam();
+            }
+
+            m_ActorTracked = m_CurrentlySelectedActor;
             m_TrackCamActive = true;
+
             EnableTrackCam();
         }
         ImGui::SameLine();
         if (ImGui::Button("Stop Tracking")) {
             m_TrackCamActive = false;
             m_ActorTracked = nullptr;
+
             DisableTrackCam();
         }
 
@@ -382,9 +412,9 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
 void Editor::EquipOutfit(
     const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
-    uint8_t n_CurrentCharSetIndex,
-    const std::string& s_CurrentCharSetCharacterType,
-    uint8_t n_CurrentOutfitVariationIndex,
+    uint8_t p_CharSetIndex,
+    const std::string& p_CharSetCharacterType,
+    uint8_t p_OutfitVariationIndex,
     ZActor* p_Actor
 ) {
     if (!p_Actor) {
@@ -393,18 +423,18 @@ void Editor::EquipOutfit(
     }
 
     std::vector<ZRuntimeResourceID> s_ActorOutfitVariations;
-    if (s_CurrentCharSetCharacterType != "HeroA") {
+    if (p_CharSetCharacterType != "HeroA") {
         const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-            n_CurrentCharSetIndex].m_pInterfaceRef;
+            p_CharSetIndex].m_pInterfaceRef;
 
         const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType2 = &s_OutfitVariationCollection->m_aCharacters[
             0];
         const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = nullptr;
 
-        if (s_CurrentCharSetCharacterType == "Nude") {
+        if (p_CharSetCharacterType == "Nude") {
             s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[1];
         }
-        else if (s_CurrentCharSetCharacterType == "HeroA") {
+        else if (p_CharSetCharacterType == "HeroA") {
             s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[2];
         }
 
@@ -423,12 +453,12 @@ void Editor::EquipOutfit(
     }
 
     Functions::ZActor_SetOutfit->Call(
-        p_Actor, p_GlobalOutfitKit, n_CurrentCharSetIndex, n_CurrentOutfitVariationIndex, false
+        p_Actor, p_GlobalOutfitKit, p_CharSetIndex, p_OutfitVariationIndex, false
     );
 
-    if (s_CurrentCharSetCharacterType != "Actor") {
+    if (p_CharSetCharacterType != "Actor") {
         const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-            n_CurrentCharSetIndex].m_pInterfaceRef;
+            p_CharSetIndex].m_pInterfaceRef;
         const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[
             0];
 
@@ -446,7 +476,9 @@ void Editor::EnableTrackCam() {
 
 void Editor::UpdateTrackCam() const {
     ZEntityRef s_Ref;
+
     m_ActorTracked->GetID(&s_Ref);
+
     SMatrix s_ActorWorldMatrix = s_Ref.QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
     SMatrix s_TrackCamWorldMatrix = m_TrackCam.m_pInterfaceRef->GetWorldMatrix();
     s_TrackCamWorldMatrix.Trans = s_ActorWorldMatrix.Trans + float4(0.f, 0.f, 2.f, 0.f);
@@ -473,8 +505,10 @@ void Editor::GetRenderDest() {
 
 void Editor::SetPlayerControlActive(bool s_Active) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
+
     if (s_LocalHitman) {
         auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(Globals::InputManager);
+
         if (s_InputControl) {
             s_InputControl->m_bActive = s_Active;
         }

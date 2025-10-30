@@ -18,7 +18,7 @@ namespace UI {
 
     public:
         void Draw(bool p_HasFocus);
-        void AddLogLine(spdlog::level::level_enum p_Level, const ZString& p_Text);
+        void AddLogLine(spdlog::level::level_enum p_Level, const std::string& p_Text);
 
     private:
         std::vector<LogLine> m_LogLines {};

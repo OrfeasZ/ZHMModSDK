@@ -1,24 +1,38 @@
 {
-	"name": "zhmmodsdk",
-	"version": "1.0.0",
-	"dependencies": [
-		"directxtk12",
-		"7zip",
-		"spdlog",
-		"minhook",
-		"lz4",
-		"directx-headers",
-		"protobuf",
-		"openssl",
-		"zlib",
-		"libuv",
-		{
-			"name": "usockets",
-			"default-features": false,
-			"features": []
-		},
-		"uwebsockets",
-		"simdjson",
-		"neargye-semver"
-	]
+    "name": "zhmmodsdk",
+    "version": "1.0.0",
+    "dependencies": [
+        "directxtk12",
+        "7zip",
+        "spdlog",
+        "minhook",
+        "lz4",
+        "directx-headers",
+        "protobuf",
+        "openssl",
+        "zlib",
+        "libuv",
+        {
+            "name": "usockets",
+            "default-features": false,
+            "features": []
+        },
+        "uwebsockets",
+        "simdjson",
+        "neargye-semver",
+        "sentry-native",
+        {
+            "name": "imgui",
+            "features": [
+                "dx12-binding"
+            ]
+        },
+        "imguizmo",
+        "imgui-node-editor"
+    ],
+    "vcpkg-configuration": {
+        "overlay-ports": [
+            "./cmake/vcpkg-ports"
+        ]
+    }
 }

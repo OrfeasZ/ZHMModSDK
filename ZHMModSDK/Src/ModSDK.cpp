@@ -46,6 +46,9 @@
 #include <semver.hpp>
 #include <limits.h>
 
+#include <sentry.h>
+
+#include "zhmmodsdk_rs.h"
 #include "Glacier/ZPlayerRegistry.h"
 #include "Glacier/ZServerProxyRoute.h"
 
@@ -87,12 +90,12 @@ void ModSDK::DestroyInstance() {
 
     // We request to pause the game as that increases our chances of succeeding at unloading
     // all our hooks, since less of them will be called.
-    if (Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef)
-        Hooks::ZGameUIManagerEntity_TryOpenMenu->Call(
-            Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef,
-            EGameUIMenu::eUIMenu_PauseMenu,
-            true
-        );
+    //if (Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef)
+    //    Hooks::ZGameUIManagerEntity_TryOpenMenu->Call(
+    //        Globals::GameUIManager->m_pGameUIManagerEntity.m_pInterfaceRef,
+    //        EGameUIMenu::eUIMenu_PauseMenu,
+    //        true
+    //    );
 
     // We do this in a different thread so the game has time to pause.
     auto* s_ExitThread = CreateThread(
@@ -154,6 +157,10 @@ ModSDK::~ModSDK() {
 
     m_DebugConsole.reset();
     #endif
+
+    if (m_EnableSentry.value_or(false)) {
+        sentry_close();
+    }
 }
 
 bool ModSDK::PatchCode(
@@ -277,6 +284,11 @@ void ModSDK::LoadConfiguration() {
 
         if (s_Mod.second.has("force_load")) {
             m_ForceLoad = true;
+        }
+
+        if (s_Mod.second.has("crash_reporting")) {
+            const auto s_Value = s_Mod.second.get("crash_reporting");
+            m_EnableSentry = s_Value == "true" || s_Value == "1";
         }
     }
 }
@@ -676,7 +688,7 @@ bool ModSDK::Startup() {
 
     m_ModLoader->Startup();
 
-    // Notify all loaded mods that the engine has intialized once it has.
+    // Notify all loaded mods that the engine has initialized once it has.
     Hooks::Engine_Init->AddDetour(this, &ModSDK::Engine_Init);
     Hooks::EOS_Platform_Create->AddDetour(this, &ModSDK::EOS_Platform_Create);
     Hooks::DrawScaleform->AddDetour(this, &ModSDK::DrawScaleform);
@@ -700,6 +712,24 @@ bool ModSDK::Startup() {
         );
     }
 
+    // Patch call to SetUnhandledExceptionFilter to nop it out.
+    if (!PatchCode(
+        "\xFF\x15\x00\x00\x00\x00\x48\x8D\x8D\xD0\x01\x00\x00", "xx????xxxxxxx", s_NopBytes, 6, 0
+    )) {
+        Logger::Warn("Could not patch SetUnhandledExceptionFilter. Crash reporting will not work.");
+    }
+
+    // Patch local mounted package count variable from int8_t to uint8_t.
+    // This allows us to mount up to 256 chunks at a time (up from 128).
+    // Patch `movsx r14d, byte ptr [rbp+0x88]` to `movzx r14d, byte ptr [rbp+0x88]`.
+    // TODO: There's more int8 places to patch... ain't no way
+    /*uint8_t s_SecondMovBytes[8] = {0x44, 0x0F, 0xB6, 0xB5, 0x88, 0x00, 0x00, 0x00};
+    if (!PatchCode("\x44\x0F\xBE\xB5\x88\x00\x00\x00", "xxxxxxxx", s_SecondMovBytes, 8, 0)) {
+        Logger::Warn(
+            "Could not patch local mounted package count #2. You will not be able to mount more than 128 chunks."
+        );
+    }*/
+
     // Setup custom multiplayer code.
     //Multiplayer::Lobby::Setup();
 
@@ -719,7 +749,26 @@ bool ModSDK::Startup() {
     return true;
 }
 
-void ModSDK::ThreadedStartup() const {
+void ModSDK::ThreadedStartup() {
+    if (m_EnableSentry.value_or(false)) {
+        sentry_options_t* options = sentry_options_new();
+
+        sentry_options_set_dsn(
+            options, "https://10110a45be28f09d9727f423ac6abc07@o4510104306909184.ingest.de.sentry.io/4510104308154448"
+        );
+
+        // Set db path to %LocalAppData%/ZHMModSDK/
+        PWSTR s_LocalAppDataPath;
+        if (SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &s_LocalAppDataPath) == S_OK) {
+            const std::wstring s_DbPath = std::wstring(s_LocalAppDataPath) + L"\\ZHMModSDK";
+            sentry_options_set_database_pathw(options, s_DbPath.c_str());
+        }
+
+        sentry_options_set_release(options, "ZHMModSDK@" ZHMMODSDK_VER);
+        sentry_options_set_debug(options, 0);
+        sentry_init(options);
+    }
+
     // If the engine is already initialized, inform the mods.
     if (Globals::Hitman5Module->IsEngineInitialized())
         OnEngineInit();
@@ -735,10 +784,77 @@ void ModSDK::OnDrawMenu() const {
     m_ModLoader->UnlockRead();
 }
 
-void ModSDK::OnDrawUI(bool p_HasFocus) const {
+void ModSDK::OnDrawUI(bool p_HasFocus) {
     m_UIConsole->Draw(p_HasFocus);
     m_UIMainMenu->Draw(p_HasFocus);
     m_UIModSelector->Draw(p_HasFocus);
+
+    // If crash reporting is not configured, ask the user if they want to enable it.
+    if (!m_EnableSentry.has_value()) {
+        if (!p_HasFocus) {
+            SDK()->RequestUIFocus();
+        }
+
+        // Show window in the middle of the screen.
+        ImGui::SetNextWindowPos(
+            ImVec2(
+                ImGui::GetIO().DisplaySize.x * 0.5f,
+                ImGui::GetIO().DisplaySize.y * 0.5f
+            ),
+            ImGuiCond_Always,
+            ImVec2(0.5f, 0.5f)
+        );
+
+        ImGui::PushFont(SDK()->GetImGuiBlackFont());
+        ImGui::Begin(
+            "Enable Crash Reporting?", nullptr,
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoCollapse
+        );
+        ImGui::PushFont(SDK()->GetImGuiRegularFont());
+
+        ImGui::Text(
+            "Do you want to send crash information to the developers, which can be used to debug and fix issues?"
+        );
+
+        ImGui::Text(
+            "Crash reports will be kept for 30 days and may include sensitive information, such as your Windows username."
+        );
+
+        ImGui::Text("You can always change this setting later by modifying the 'crash_reporting' setting in mods.ini.");
+
+        ImGui::NewLine();
+
+        auto& s_Style = ImGui::GetStyle();
+
+        ImVec2 s_ButtonSize(100.f, 0.f);
+        float s_WidthNeeded = s_ButtonSize.x + s_Style.ItemSpacing.x + s_ButtonSize.x;
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - s_WidthNeeded);
+
+        if (ImGui::Button("Disable", s_ButtonSize)) {
+            m_EnableSentry = false;
+            UpdateSdkIni(
+                [&](auto& s_SdkMap) {
+                    s_SdkMap.set("crash_reporting", "false");
+                }
+            );
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Enable", s_ButtonSize)) {
+            m_EnableSentry = true;
+            UpdateSdkIni(
+                [&](auto& s_SdkMap) {
+                    s_SdkMap.set("crash_reporting", "true");
+                }
+            );
+        }
+
+        ImGui::PopFont();
+        ImGui::End();
+        ImGui::PopFont();
+    }
 
     m_ModLoader->LockRead();
 
@@ -751,8 +867,17 @@ void ModSDK::OnDrawUI(bool p_HasFocus) const {
 void ModSDK::OnDraw3D() const {
     m_ModLoader->LockRead();
 
-    for (auto& s_Mod : m_ModLoader->GetLoadedMods())
+    const bool s_IsFrustumCullingEnabled = m_DirectXTKRenderer->IsFrustumCullingEnabled();
+    const bool s_IsDistanceCullingEnabled = m_DirectXTKRenderer->IsDistanceCullingEnabled();
+    const float s_MaxDrawDistance = m_DirectXTKRenderer->GetMaxDrawDistance();
+
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods()) {
         s_Mod->OnDraw3D(m_DirectXTKRenderer.get());
+
+        m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsFrustumCullingEnabled);
+        m_DirectXTKRenderer->SetDistanceCullingEnabled(s_IsDistanceCullingEnabled);
+        m_DirectXTKRenderer->SetMaxDrawDistance(s_MaxDrawDistance);
+    }
 
     m_ModLoader->UnlockRead();
 }
@@ -760,8 +885,17 @@ void ModSDK::OnDraw3D() const {
 void ModSDK::OnDepthDraw3D() const {
     m_ModLoader->LockRead();
 
-    for (auto& s_Mod : m_ModLoader->GetLoadedMods())
+    const bool s_IsFrustumCullingEnabled = m_DirectXTKRenderer->IsFrustumCullingEnabled();
+    const bool s_IsDistanceCullingEnabled = m_DirectXTKRenderer->IsDistanceCullingEnabled();
+    const float s_MaxDrawDistance = m_DirectXTKRenderer->GetMaxDrawDistance();
+
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods()) {
         s_Mod->OnDepthDraw3D(m_DirectXTKRenderer.get());
+
+        m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsFrustumCullingEnabled);
+        m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsDistanceCullingEnabled);
+        m_DirectXTKRenderer->SetMaxDrawDistance(s_MaxDrawDistance);
+    }
 
     m_ModLoader->UnlockRead();
 }
@@ -778,8 +912,13 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
 
 void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 
-void ModSDK::OnEngineInit() const {
+void ModSDK::OnEngineInit() {
     Logger::Debug("Engine was initialized.");
+
+    if (m_EnableSentry.value_or(false)) {
+        // Re-install here to overwrite any exception handlers the game might have set.
+        sentry_reinstall_backend();
+    }
 
     if (m_UiEnabled) {
         m_DirectXTKRenderer->OnEngineInit();
@@ -1046,7 +1185,13 @@ ImFont* ModSDK::GetImGuiBlackFont() {
 }
 
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name) {
-    return TryGetPinName(p_PinId, p_Name);
+    std::string s_Name;
+    if (TryGetPinName(p_PinId, s_Name)) {
+        p_Name = s_Name;
+        return true;
+    }
+
+    return false;
 }
 
 bool ModSDK::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) {
@@ -1058,7 +1203,7 @@ bool ModSDK::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut,
 }
 
 void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size) {
-    if (!p_RT)
+    if (!p_RT || !Globals::RenderManager->m_pDevice || !Globals::RenderManager->m_pDevice->m_pDevice)
         return;
 
     auto s_Size = p_Size;
@@ -1077,7 +1222,7 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
             (p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
 
     ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_SetGameDescriptorHeap, nullptr);
-    ImGui::Image(reinterpret_cast<ImTextureID>(s_Handle.ptr), s_Size);
+    ImGui::Image(s_Handle.ptr, s_Size);
     ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_ResetDescriptorHeap, nullptr);
 }
 
@@ -1349,6 +1494,23 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
     }
 
     return TEntityRef<ZHitman5>(s_PlayerData->m_Controller.m_HitmanEntity);
+}
+
+void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size) {
+    if (Globals::Hitman5Module->IsEngineInitialized()) {
+        // If engine is initialized, allocate the normal way.
+        p_Target->m_nLength = p_Size;
+        p_Target->m_pChars = Functions::ZStringCollection_Allocate->Call(p_Str, p_Size)->m_pDataStart;
+    }
+    else {
+        // Otherwise, allocate ourselves and make the game think it's a static allocation.
+        // This will leak memory, but best we can do for now before the engine is initialized.
+        auto* s_String = new char[p_Size + 1] {};
+        memcpy(s_String, p_Str, p_Size);
+        s_String[p_Size] = '\0';
+
+        *p_Target = ZString(std::string_view(s_String, p_Size));
+    }
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {

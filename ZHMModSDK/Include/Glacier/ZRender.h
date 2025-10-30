@@ -139,26 +139,31 @@ public:
 public:
     PAD(0x400); // 0x08
     slConstants m_Constants; // 0x408
-    PAD(0x10448); // 0x5C8
-    ZRenderSwapChain* m_pSwapChain; // 0x10A10, look for ZRenderSwapChain constructor
+    PAD(0x104E0); // 0x5C8
+    ZRenderSwapChain* m_pSwapChain; // 0x10AA8, look for ZRenderSwapChain constructor
     PAD(0x08); // 0x10A18
     ID3D12Device* m_pDevice; // 0x10A20
     PAD(0x30E9D88); // 0x10A28
+
     ID3D12CommandQueue* m_pCommandQueue;
-    // 0x30FA7B0, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
-    PAD(0x180FC8); // 0x30FA7B8
-    ID3D12DescriptorHeap* m_pFrameHeapCBVSRVUAV;
-    // 0x327B780, look for "m_pFrameHeapCBVSRVUAV" string, argument to the left of it
-    PAD(0x18); // 0x327B788
+    // 0x30FA848, look for "m_pFrameHeapCBVSRVUAV" string, first vtable call with + 128
+
+    PAD(0x180f50); // 0x30FA850
+
     ID3D12DescriptorHeap* m_pDescriptorHeapDSV;
     // 0x327B7A0, look for "m_pDescriptorHeapDSV" string, argument to the left of it
+
+    PAD(0x70); // 0x327B7A8
+
+    ID3D12DescriptorHeap* m_pFrameHeapCBVSRVUAV;
+    // 0x327B818, look for "m_pFrameHeapCBVSRVUAV" string, argument to the left of it
 };
 
 static_assert(offsetof(ZRenderDevice, m_Constants) == 0x408);
-static_assert(offsetof(ZRenderDevice, m_pSwapChain) == 0x10A10);
-static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA7B0);
-static_assert(offsetof(ZRenderDevice, m_pFrameHeapCBVSRVUAV) == 0x327B780);
+static_assert(offsetof(ZRenderDevice, m_pSwapChain) == 0x10AA8);
+static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA848);
 static_assert(offsetof(ZRenderDevice, m_pDescriptorHeapDSV) == 0x327B7A0);
+static_assert(offsetof(ZRenderDevice, m_pFrameHeapCBVSRVUAV) == 0x327B818);
 
 class ZRenderContext {
 public:

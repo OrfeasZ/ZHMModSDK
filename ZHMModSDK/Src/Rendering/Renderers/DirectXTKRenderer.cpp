@@ -168,8 +168,8 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     m_ProjectionViewInverse = (m_Projection * m_View).Invert();
 
     m_ViewFrustum.UpdateClipPlanes(
-        s_CameraView, Globals::RenderManager->m_pDevice->m_Constants.
-                                              cameraViewToClip
+        s_CameraView,
+        Globals::RenderManager->m_pDevice->m_Constants.cameraViewToClip
     );
 
     if (m_RendererSetup) {
@@ -849,35 +849,6 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
     return true;
 }
 
-void DirectXTKRenderer::DrawLine3D(
-    const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor
-) {
-    if (!m_RendererSetup)
-        return;
-
-    DirectX::VertexPositionColor s_From(
-        DirectX::SimpleMath::Vector3(p_From.x, p_From.y, p_From.z),
-        DirectX::SimpleMath::Vector4(p_FromColor.x, p_FromColor.y, p_FromColor.z, p_FromColor.w)
-    );
-
-    DirectX::VertexPositionColor s_To(
-        DirectX::SimpleMath::Vector3(p_To.x, p_To.y, p_To.z),
-        DirectX::SimpleMath::Vector4(p_ToColor.x, p_ToColor.y, p_ToColor.z, p_ToColor.w)
-    );
-
-    m_LineBatch->DrawLine(s_From, s_To);
-}
-
-void DirectXTKRenderer::DrawText2D(
-    const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color, float p_Rotation/* = 0.f*/,
-    float p_Scale/* = 1.f*/, TextAlignment p_Alignment /* = TextAlignment::Center*/
-) {
-    if (!m_RendererSetup)
-        return;
-
-    m_Text2DBuffer.push_back(Text2D {p_Text.c_str(), p_Pos, p_Color, p_Rotation, p_Scale, p_Alignment});
-}
-
 bool DirectXTKRenderer::WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) {
     if (!m_RendererSetup)
         return false;
@@ -933,7 +904,33 @@ bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_W
     return true;
 }
 
+void DirectXTKRenderer::DrawLine3D(
+    const SVector3& p_From, const SVector3& p_To, const SVector4& p_FromColor, const SVector4& p_ToColor
+) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsPointInsideViewFrustum(p_From) &&
+        !IsPointInsideViewFrustum(p_To)) {
+        return;
+    }
+
+    DirectX::VertexPositionColor s_From(
+        DirectX::SimpleMath::Vector3(p_From.x, p_From.y, p_From.z),
+        DirectX::SimpleMath::Vector4(p_FromColor.x, p_FromColor.y, p_FromColor.z, p_FromColor.w)
+    );
+
+    DirectX::VertexPositionColor s_To(
+        DirectX::SimpleMath::Vector3(p_To.x, p_To.y, p_To.z),
+        DirectX::SimpleMath::Vector4(p_ToColor.x, p_ToColor.y, p_ToColor.z, p_ToColor.w)
+    );
+
+    m_LineBatch->DrawLine(s_From, s_To);
+}
+
 void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) {
+    if (m_IsFrustumCullingEnabled && !IsAABBInsideViewFrustum(p_Min, p_Max, SMatrix())) {
+        return;
+    }
+
     SVector3 s_Corners[] = {
         SVector3(p_Min.x, p_Min.y, p_Min.z),
         SVector3(p_Min.x, p_Max.y, p_Min.z),
@@ -962,13 +959,89 @@ void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, 
     DrawLine3D(s_Corners[3], s_Corners[7], p_Color, p_Color);
 }
 
-inline SVector3 XMVecToSVec3(const DirectX::XMVECTOR& p_Vec) {
-    return SVector3(DirectX::XMVectorGetX(p_Vec), DirectX::XMVectorGetY(p_Vec), DirectX::XMVectorGetZ(p_Vec));
+void DirectXTKRenderer::DrawBox3D(
+    const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
+) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsOBBInsideViewFrustum(p_Center, p_HalfSize, p_Transform)) {
+        return;
+    }
+
+    const SVector3 s_Right = p_Transform.Right * p_HalfSize.x;
+    const SVector3 s_Forward = -(p_Transform.Backward * p_HalfSize.y);
+    const SVector3 s_Up = p_Transform.ZAxis * p_HalfSize.z;
+
+    const SVector3 s_Corners[8] = {
+        p_Center - s_Right - s_Up - s_Forward,
+        p_Center - s_Right + s_Up - s_Forward,
+        p_Center + s_Right + s_Up - s_Forward,
+        p_Center + s_Right - s_Up - s_Forward,
+        p_Center + s_Right + s_Up + s_Forward,
+        p_Center - s_Right + s_Up + s_Forward,
+        p_Center - s_Right - s_Up + s_Forward,
+        p_Center + s_Right - s_Up + s_Forward,
+    };
+
+    static constexpr int s_Edges[12][2] = {
+        {0, 1}, {1, 2}, {2, 3}, {3, 0}, // bottom face
+        {4, 5}, {5, 6}, {6, 7}, {7, 4}, // top face
+        {0, 6}, {1, 5}, {2, 4}, {3, 7} // vertical edges
+    };
+
+    for (const auto& s_Edge : s_Edges) {
+        DrawLine3D(s_Corners[s_Edge[0]], s_Corners[s_Edge[1]], p_Color, p_Color);
+    }
+}
+
+void DirectXTKRenderer::DrawBoxWire3D(
+    const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
+) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsOBBInsideViewFrustum(p_Center, p_HalfSize, p_Transform)) {
+        return;
+    }
+
+    const SVector3 s_Right = p_Transform.Right * p_HalfSize.x;
+    const SVector3 s_Forward = -(p_Transform.Backward * p_HalfSize.y);
+    const SVector3 s_Up = p_Transform.ZAxis * p_HalfSize.z;
+
+    const SVector3 s_Corners[8] = {
+        p_Center - s_Right - s_Up - s_Forward,
+        p_Center - s_Right + s_Up - s_Forward,
+        p_Center + s_Right + s_Up - s_Forward,
+        p_Center + s_Right - s_Up - s_Forward,
+        p_Center - s_Right - s_Up + s_Forward,
+        p_Center - s_Right + s_Up + s_Forward,
+        p_Center + s_Right + s_Up + s_Forward,
+        p_Center + s_Right - s_Up + s_Forward,
+    };
+
+    static constexpr int s_Faces[12][3] = {
+        {0, 1, 2}, {0, 2, 3}, // bottom
+        {4, 6, 5}, {4, 7, 6}, // top
+        {0, 3, 7}, {0, 7, 4}, // front
+        {1, 5, 6}, {1, 6, 2}, // back
+        {0, 4, 5}, {0, 5, 1}, // left
+        {3, 2, 6}, {3, 6, 7} // right
+    };
+
+    for (const auto& s_Face : s_Faces) {
+        DrawTriangle3D(
+            s_Corners[s_Face[0]], p_Color,
+            s_Corners[s_Face[1]], p_Color,
+            s_Corners[s_Face[2]], p_Color
+        );
+    }
 }
 
 void DirectXTKRenderer::DrawOBB3D(
     const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color
 ) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsAABBInsideViewFrustum(p_Min, p_Max, p_Transform)) {
+        return;
+    }
+
     const auto s_Transform = *reinterpret_cast<DirectX::FXMMATRIX*>(&p_Transform);
 
     DirectX::XMVECTOR s_Corners[] = {
@@ -982,26 +1055,31 @@ void DirectXTKRenderer::DrawOBB3D(
         DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Min.y, p_Max.z), s_Transform),
     };
 
-    DrawLine3D(XMVecToSVec3(s_Corners[0]), XMVecToSVec3(s_Corners[1]), p_Color, p_Color);
-    DrawLine3D(XMVecToSVec3(s_Corners[1]), XMVecToSVec3(s_Corners[2]), p_Color, p_Color);
-    DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[3]), p_Color, p_Color);
-    DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[0]), p_Color, p_Color);
+    DrawLine3D(s_Corners[0], s_Corners[1], p_Color, p_Color);
+    DrawLine3D(s_Corners[1], s_Corners[2], p_Color, p_Color);
+    DrawLine3D(s_Corners[2], s_Corners[3], p_Color, p_Color);
+    DrawLine3D(s_Corners[3], s_Corners[0], p_Color, p_Color);
 
-    DrawLine3D(XMVecToSVec3(s_Corners[4]), XMVecToSVec3(s_Corners[5]), p_Color, p_Color);
-    DrawLine3D(XMVecToSVec3(s_Corners[5]), XMVecToSVec3(s_Corners[6]), p_Color, p_Color);
-    DrawLine3D(XMVecToSVec3(s_Corners[6]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
-    DrawLine3D(XMVecToSVec3(s_Corners[7]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
+    DrawLine3D(s_Corners[4], s_Corners[5], p_Color, p_Color);
+    DrawLine3D(s_Corners[5], s_Corners[6], p_Color, p_Color);
+    DrawLine3D(s_Corners[6], s_Corners[7], p_Color, p_Color);
+    DrawLine3D(s_Corners[7], s_Corners[4], p_Color, p_Color);
 
-    DrawLine3D(XMVecToSVec3(s_Corners[1]), XMVecToSVec3(s_Corners[5]), p_Color, p_Color);
-    DrawLine3D(XMVecToSVec3(s_Corners[0]), XMVecToSVec3(s_Corners[6]), p_Color, p_Color);
+    DrawLine3D(s_Corners[1], s_Corners[5], p_Color, p_Color);
+    DrawLine3D(s_Corners[0], s_Corners[6], p_Color, p_Color);
 
-    DrawLine3D(XMVecToSVec3(s_Corners[2]), XMVecToSVec3(s_Corners[4]), p_Color, p_Color);
-    DrawLine3D(XMVecToSVec3(s_Corners[3]), XMVecToSVec3(s_Corners[7]), p_Color, p_Color);
+    DrawLine3D(s_Corners[2], s_Corners[4], p_Color, p_Color);
+    DrawLine3D(s_Corners[3], s_Corners[7], p_Color, p_Color);
 }
 
-void DirectXTKRenderer::DrawBoundingQuads(
+void DirectXTKRenderer::DrawBoundingQuads3D(
     const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform, const SVector4& p_Color
 ) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsAABBInsideViewFrustum(p_Min, p_Max, p_Transform)) {
+        return;
+    }
+
     const auto s_Transform = *reinterpret_cast<DirectX::FXMMATRIX*>(&p_Transform);
 
     DirectX::XMVECTOR s_Corners[] = {
@@ -1038,6 +1116,13 @@ void DirectXTKRenderer::DrawTriangle3D(
     const SVector3& p_V2, const SVector4& p_Color2,
     const SVector3& p_V3, const SVector4& p_Color3
 ) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsPointInsideViewFrustum(p_V1) &&
+        !IsPointInsideViewFrustum(p_V2) &&
+        !IsPointInsideViewFrustum(p_V3)) {
+        return;
+    }
+
     m_TriangleBatch->DrawTriangle(
         DirectX::VertexPositionColor(
             DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z),
@@ -1059,6 +1144,13 @@ void DirectXTKRenderer::DrawTriangle3D(
     const SVector3& p_V2, const SVector4& p_Color2, const SVector2& p_TextureCoordinates2,
     const SVector3& p_V3, const SVector4& p_Color3, const SVector2& p_TextureCoordinates3
 ) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsPointInsideViewFrustum(p_V1) &&
+        !IsPointInsideViewFrustum(p_V2) &&
+        !IsPointInsideViewFrustum(p_V3)) {
+        return;
+    }
+
     m_TextBatch->DrawTriangle(
         DirectX::VertexPositionColorTexture(
             DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z),
@@ -1088,6 +1180,14 @@ void DirectXTKRenderer::DrawQuad3D(
     const SVector3& p_V4,
     const SVector4& p_Color4
 ) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsPointInsideViewFrustum(p_V1) &&
+        !IsPointInsideViewFrustum(p_V2) &&
+        !IsPointInsideViewFrustum(p_V3) &&
+        !IsPointInsideViewFrustum(p_V4)) {
+        return;
+    }
+
     m_TriangleBatch->DrawQuad(
         DirectX::VertexPositionColor(
             DirectX::SimpleMath::Vector3(p_V1.x, p_V1.y, p_V1.z),
@@ -1108,21 +1208,66 @@ void DirectXTKRenderer::DrawQuad3D(
     );
 }
 
-void DirectXTKRenderer::DrawText3D(
-    const std::string& p_Text, const SMatrix& p_World,
-    const SVector4& p_Color, float p_Scale,
-    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment,
-    const bool p_IsCameraTransform
+void DirectXTKRenderer::DrawText2D(
+    const ZString& p_Text, const SVector2& p_Pos, const SVector4& p_Color,
+    const float p_Rotation, const float p_Scale,
+    const TextAlignment p_HorizontalAlignment,
+    const TextAlignment p_VerticalAlignment
 ) {
-    DrawText3D(p_Text.c_str(), p_World, p_Color, p_Scale, p_HorizontalAlignment, p_VerticalAlignment, p_IsCameraTransform);
+    m_Text2DBuffer.push_back(
+        Text2D {
+            p_Text.c_str(),
+            p_Pos, p_Color,
+            p_Rotation,
+            p_Scale,
+            p_HorizontalAlignment,
+            p_VerticalAlignment
+        }
+    );
+}
+
+void DirectXTKRenderer::DrawText2D(const Text2D& p_Text2D) {
+    const std::string s_Text(p_Text2D.m_Text.c_str(), p_Text2D.m_Text.size());
+    const DirectX::SimpleMath::Vector2 s_StringSize = m_Font->MeasureString(s_Text.c_str());
+
+    DirectX::SimpleMath::Vector2 s_Origin(0.f, 0.f);
+
+    if (p_Text2D.m_HorizontalAlignment == TextAlignment::Center) {
+        s_Origin.x = s_StringSize.x / 2.f;
+    }
+    else if (p_Text2D.m_HorizontalAlignment == TextAlignment::Right) {
+        s_Origin.x = s_StringSize.x;
+    }
+
+    if (p_Text2D.m_VerticalAlignment == TextAlignment::Middle) {
+        s_Origin.y = s_StringSize.y / 2.f;
+    }
+    else if (p_Text2D.m_VerticalAlignment == TextAlignment::Bottom) {
+        s_Origin.y = s_StringSize.y;
+    }
+
+    m_Font->DrawString(
+        m_SpriteBatch.get(),
+        s_Text.c_str(),
+        DirectX::SimpleMath::Vector2(p_Text2D.m_Position.x, p_Text2D.m_Position.y),
+        DirectX::SimpleMath::Vector4(p_Text2D.m_Color.x, p_Text2D.m_Color.y, p_Text2D.m_Color.z, p_Text2D.m_Color.w),
+        p_Text2D.m_Rotation,
+        s_Origin,
+        p_Text2D.m_Scale
+    );
 }
 
 void DirectXTKRenderer::DrawText3D(
-    const char* p_Text, const SMatrix& p_World,
-    const SVector4& p_Color, float p_Scale,
-    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment,
+    const char* p_Text, const SMatrix& p_Transform,
+    const SVector4& p_Color, const float p_Scale,
+    const TextAlignment p_HorizontalAlignment, const TextAlignment p_VerticalAlignment,
     const bool p_IsCameraTransform
 ) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsPointInsideViewFrustum(p_Transform.Trans)) {
+        return;
+    }
+
     int s_TextLength = -1;
 
     do {
@@ -1161,13 +1306,13 @@ void DirectXTKRenderer::DrawText3D(
     const float4 s_Scale2 = float4(p_Scale, p_Scale, p_Scale, 1.f);
     const SMatrix s_OffsetMatrix = SMatrix::ScaleTranslate(s_Scale2, s_Translate);
 
-    SMatrix s_World = p_World;
+    SMatrix s_Transform = p_Transform;
 
     if (p_IsCameraTransform) {
-        std::swap(s_World.YAxis, s_World.ZAxis);
+        std::swap(s_Transform.YAxis, s_Transform.ZAxis);
     }
 
-    const SMatrix s_WorldMatrix = s_World.AffineMultiply(s_OffsetMatrix);
+    const SMatrix s_Transform2 = s_Transform.AffineMultiply(s_OffsetMatrix);
 
     const unsigned int s_VertexCount = 2 * s_PrintableCharacterCount;
     std::vector<Triangle> s_Triangles;
@@ -1175,8 +1320,8 @@ void DirectXTKRenderer::DrawText3D(
     s_Triangles.reserve(s_VertexCount);
 
     static const float s_LineHeight =
-        (MDF_FONT::ComputeLineHeightFromMetrics() /
-            static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
+    (MDF_FONT::ComputeLineHeightFromMetrics() /
+        static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
 
     std::string s_Text(p_Text);
     std::string s_Line;
@@ -1232,21 +1377,21 @@ void DirectXTKRenderer::DrawText3D(
             float4 s_TopRight = float4(s_Vertices[4], 0.f, s_Vertices[5], 1.f);
             float4 s_TopLeft = float4(s_Vertices[6], 0.f, s_Vertices[7], 1.f);
 
-            s_BottomLeft = s_WorldMatrix.WVectorTransform(s_BottomLeft);
-            s_BottomRight = s_WorldMatrix.WVectorTransform(s_BottomRight);
-            s_TopRight = s_WorldMatrix.WVectorTransform(s_TopRight);
-            s_TopLeft = s_WorldMatrix.WVectorTransform(s_TopLeft);
+            s_BottomLeft = s_Transform2.WVectorTransform(s_BottomLeft);
+            s_BottomRight = s_Transform2.WVectorTransform(s_BottomRight);
+            s_TopRight = s_Transform2.WVectorTransform(s_TopRight);
+            s_TopLeft = s_Transform2.WVectorTransform(s_TopLeft);
 
             Triangle& s_Triangle1 = s_Triangles.emplace_back();
             Triangle& s_Triangle2 = s_Triangles.emplace_back();
 
-            s_Triangle1.vertexPosition1 = SVector3{ s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z };
-            s_Triangle1.vertexPosition2 = SVector3{ s_BottomRight.x, s_BottomRight.y, s_BottomRight.z };
-            s_Triangle1.vertexPosition3 = SVector3{ s_TopLeft.x, s_TopLeft.y, s_TopLeft.z };
+            s_Triangle1.vertexPosition1 = SVector3 {s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z};
+            s_Triangle1.vertexPosition2 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle1.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
-            s_Triangle2.vertexPosition1 = SVector3{ s_BottomRight.x, s_BottomRight.y, s_BottomRight.z };
-            s_Triangle2.vertexPosition2 = SVector3{ s_TopRight.x, s_TopRight.y, s_TopRight.z };
-            s_Triangle2.vertexPosition3 = SVector3{ s_TopLeft.x, s_TopLeft.y, s_TopLeft.z };
+            s_Triangle2.vertexPosition1 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle2.vertexPosition2 = SVector3 {s_TopRight.x, s_TopRight.y, s_TopRight.z};
+            s_Triangle2.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
             s_Triangle1.vertexColor1 = p_Color;
             s_Triangle1.vertexColor2 = p_Color;
@@ -1256,13 +1401,13 @@ void DirectXTKRenderer::DrawText3D(
             s_Triangle2.vertexColor2 = p_Color;
             s_Triangle2.vertexColor3 = p_Color;
 
-            s_Triangle1.textureCoordinates1 = SVector2{ s_TextureCoordinates[0], s_TextureCoordinates[1] };
-            s_Triangle1.textureCoordinates2 = SVector2{ s_TextureCoordinates[2], s_TextureCoordinates[3] };
-            s_Triangle1.textureCoordinates3 = SVector2{ s_TextureCoordinates[6], s_TextureCoordinates[7] };
+            s_Triangle1.textureCoordinates1 = SVector2 {s_TextureCoordinates[0], s_TextureCoordinates[1]};
+            s_Triangle1.textureCoordinates2 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
+            s_Triangle1.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
 
-            s_Triangle2.textureCoordinates1 = SVector2{ s_TextureCoordinates[2], s_TextureCoordinates[3] };
-            s_Triangle2.textureCoordinates2 = SVector2{ s_TextureCoordinates[4], s_TextureCoordinates[5] };
-            s_Triangle2.textureCoordinates3 = SVector2{ s_TextureCoordinates[6], s_TextureCoordinates[7] };
+            s_Triangle2.textureCoordinates1 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
+            s_Triangle2.textureCoordinates2 = SVector2 {s_TextureCoordinates[4], s_TextureCoordinates[5]};
+            s_Triangle2.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
         }
 
         ++s_LineIndex;
@@ -1280,6 +1425,29 @@ void DirectXTKRenderer::DrawText3D(
 void DirectXTKRenderer::DrawMesh(
     const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices, const SVector4& p_VertexColor
 ) {
+    if (p_Vertices.empty() || p_Indices.empty()) {
+        return;
+    }
+
+    if (m_IsFrustumCullingEnabled) {
+        SVector3 s_Min = p_Vertices[0];
+        SVector3 s_Max = p_Vertices[0];
+
+        for (const auto& p_Vertex : p_Vertices) {
+            s_Min.x = std::min(s_Min.x, p_Vertex.x);
+            s_Min.y = std::min(s_Min.y, p_Vertex.y);
+            s_Min.z = std::min(s_Min.z, p_Vertex.z);
+
+            s_Max.x = std::max(s_Max.x, p_Vertex.x);
+            s_Max.y = std::max(s_Max.y, p_Vertex.y);
+            s_Max.z = std::max(s_Max.z, p_Vertex.z);
+        }
+
+        if (!IsAABBInsideViewFrustum(s_Min, s_Max, SMatrix())) {
+            return;
+        }
+    }
+
     std::vector<DirectX::VertexPositionColor> s_Vertices2;
 
     s_Vertices2.reserve(p_Vertices.size());
@@ -1301,11 +1469,20 @@ void DirectXTKRenderer::DrawMesh(
 }
 
 void DirectXTKRenderer::DrawMesh(
+    ZRenderPrimitiveResource* s_pRenderPrimitiveResource,
     ZRenderVertexBuffer** p_VertexBuffers, const uint32_t p_VertexBufferCount, ZRenderIndexBuffer* p_IndexBuffer,
-    const SMatrix& p_World, const float4& p_PositionScale, const float4& p_PositionBias,
+    const SMatrix& p_Transform, const float4& p_PositionScale, const float4& p_PositionBias,
     const float4& p_TextureScaleBias,
     const SVector4& p_MaterialColor
 ) {
+    const SVector3 s_Center = (s_pRenderPrimitiveResource->m_vMin + s_pRenderPrimitiveResource->m_vMax) * 0.5f;
+    const SVector3 s_Extents = (s_pRenderPrimitiveResource->m_vMax - s_pRenderPrimitiveResource->m_vMin) * 0.5f;
+
+    if (m_IsFrustumCullingEnabled &&
+        !IsOBBInsideViewFrustum(float4(s_Center, 1.f), float4(s_Extents, 1.f), p_Transform)) {
+        return;
+    }
+
     ScopedD3DRef<ID3D12Device> s_Device;
 
     if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK) {
@@ -1328,7 +1505,7 @@ void DirectXTKRenderer::DrawMesh(
 
     const uint32_t s_IndexCount = p_IndexBuffer->m_nSize / p_IndexBuffer->m_nStride;
 
-    m_DebugEffect->SetWorld(*reinterpret_cast<const DirectX::XMFLOAT4X4*>(&p_World));
+    m_DebugEffect->SetWorld(*reinterpret_cast<const DirectX::XMFLOAT4X4*>(&p_Transform));
     m_DebugEffect->SetPositionScale(*reinterpret_cast<const DirectX::XMFLOAT4*>(&p_PositionScale));
     m_DebugEffect->SetPositionBias(*reinterpret_cast<const DirectX::XMFLOAT4*>(&p_PositionBias));
     m_DebugEffect->SetTextureScaleBias(*reinterpret_cast<const DirectX::XMFLOAT4*>(&p_TextureScaleBias));
@@ -1341,33 +1518,11 @@ void DirectXTKRenderer::DrawMesh(
     m_CommandList->DrawIndexedInstanced(s_IndexCount, 1, 0, 0, 0);
 }
 
-void DirectXTKRenderer::DrawText2D(const Text2D& text2D) {
-    const std::string s_Text(text2D.m_Text.c_str(), text2D.m_Text.size());
-    const DirectX::SimpleMath::Vector2 s_StringSize = m_Font->MeasureString(s_Text.c_str());
-
-    DirectX::SimpleMath::Vector2 s_Origin(0.f, 0.f);
-
-    if (text2D.m_Alignment == TextAlignment::Center)
-        s_Origin.x = s_StringSize.x / 2.f;
-    else if (text2D.m_Alignment == TextAlignment::Right)
-        s_Origin.x = s_StringSize.x;
-
-    m_Font->DrawString(
-        m_SpriteBatch.get(),
-        s_Text.c_str(),
-        DirectX::SimpleMath::Vector2(text2D.m_Position.x, text2D.m_Position.y),
-        DirectX::SimpleMath::Vector4(text2D.m_Color.x, text2D.m_Color.y, text2D.m_Color.z, text2D.m_Color.w),
-        text2D.m_Rotation,
-        s_Origin,
-        text2D.m_Scale
-    );
-}
-
-bool DirectXTKRenderer::IsInsideViewFrustum(const SVector3& p_Point) const {
+bool DirectXTKRenderer::IsPointInsideViewFrustum(const SVector3& p_Point) const {
     return m_ViewFrustum.ContainsPoint(p_Point);
 }
 
-bool DirectXTKRenderer::IsInsideViewFrustum(
+bool DirectXTKRenderer::IsAABBInsideViewFrustum(
     const SVector3& p_Min, const SVector3& p_Max, const SMatrix& p_Transform
 ) const {
     const DirectX::SimpleMath::Matrix s_World = *reinterpret_cast<const DirectX::SimpleMath::Matrix*>(&p_Transform);
@@ -1381,10 +1536,52 @@ bool DirectXTKRenderer::IsInsideViewFrustum(
     return m_ViewFrustum.ContainsAABB(s_TransformedAABB);
 }
 
-bool DirectXTKRenderer::IsInsideViewFrustum(
-    const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize
+bool DirectXTKRenderer::IsOBBInsideViewFrustum(
+    const float4& p_Center, const float4& p_HalfSize, const SMatrix& p_Transform
 ) const {
     return m_ViewFrustum.ContainsOBB(p_Transform, p_Center, p_HalfSize);
+}
+
+void DirectXTKRenderer::SetFrustumCullingEnabled(const bool p_Enabled) {
+    m_IsFrustumCullingEnabled = p_Enabled;
+}
+
+bool DirectXTKRenderer::IsFrustumCullingEnabled() const {
+    return m_IsFrustumCullingEnabled;
+}
+
+void DirectXTKRenderer::SetDistanceCullingEnabled(const bool p_Enabled) {
+    if (m_ViewFrustum.IsDistanceCullingEnabled() == p_Enabled) {
+        return;
+    }
+
+    m_ViewFrustum.SetDistanceCullingEnabled(p_Enabled);
+
+    m_ViewFrustum.UpdateClipPlanes(
+        *reinterpret_cast<SMatrix*>(&m_View),
+        Globals::RenderManager->m_pDevice->m_Constants.cameraViewToClip
+    );
+}
+
+bool DirectXTKRenderer::IsDistanceCullingEnabled() const {
+    return m_ViewFrustum.IsDistanceCullingEnabled();
+}
+
+void DirectXTKRenderer::SetMaxDrawDistance(const float p_MaxDrawDistance) {
+    if (m_ViewFrustum.GetMaxDrawDistance() == p_MaxDrawDistance) {
+        return;
+    }
+
+    m_ViewFrustum.SetMaxDrawDistance(p_MaxDrawDistance);
+
+    m_ViewFrustum.UpdateClipPlanes(
+        *reinterpret_cast<SMatrix*>(&m_View),
+        Globals::RenderManager->m_pDevice->m_Constants.cameraViewToClip
+    );
+}
+
+float DirectXTKRenderer::GetMaxDrawDistance() const {
+    return m_ViewFrustum.GetMaxDrawDistance();
 }
 
 AABB DirectXTKRenderer::TransformAABB(const DirectX::SimpleMath::Matrix& p_Transform, const AABB& p_AABB) {

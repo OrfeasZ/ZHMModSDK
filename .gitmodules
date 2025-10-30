@@ -1,6 +1,3 @@
-[submodule "External/imgui/source"]
-	path = External/imgui/source
-	url = https://github.com/ocornut/imgui.git
 [submodule "External/mINI"]
 	path = External/mINI
 	url = https://github.com/pulzed/mINI.git

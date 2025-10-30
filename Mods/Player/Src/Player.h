@@ -16,11 +16,11 @@ public:
 
 private:
     static void EquipOutfit(
-        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CurrentCharSetIndex,
-        const std::string& s_CurrentCharSetCharacterType, uint8_t n_CurrentOutfitVariationIndex, ZHitman5* p_LocalHitman
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CharSetIndex,
+        const std::string& s_CharSetCharacterType, uint8_t n_OutfitVariationIndex, ZHitman5* p_Hitman
     );
 
-    static void EnableInfiniteAmmo();
+    void EnableInfiniteAmmo();
 
     DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
 
@@ -28,9 +28,9 @@ private:
 
     const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
 
-    ZHM5CrippleBox* m_Hm5CrippleBox = nullptr;
-
     TEntityRef<ZGlobalOutfitKit>* m_GlobalOutfitKit = nullptr;
+
+    ZEntityRef m_HM5CrippleBoxEntity;
 };
 
 DECLARE_ZHM_PLUGIN(Player)

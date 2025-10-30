@@ -5,12 +5,16 @@
 #include <Glacier/EntityFactory.h>
 #include <Glacier/ZSpatialEntity.h>
 #include <Glacier/ZPhysics.h>
+#include <Glacier/ZModule.h>
+#include <Glacier/ZResource.h>
+#include <Glacier/SExternalReferences.h>
 
 #include <ResourceLib_HM3.h>
 
 #include <queue>
 #include <utility>
 #include <numbers>
+
 
 ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
@@ -134,7 +138,7 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
                     const auto* s_Resource = static_cast<ZResourcePtr*>(s_Data);
                     std::string s_ResourceName = "null";
 
-                    if (s_Resource && s_Resource->m_nResourceIndex >= 0) {
+                    if (s_Resource && s_Resource->m_nResourceIndex.val >= 0) {
                         s_ResourceName = fmt::format(
                             "{:08X}{:08X}", s_Resource->GetResourceInfo().rid.m_IDHigh,
                             s_Resource->GetResourceInfo().rid.m_IDLow
@@ -269,7 +273,7 @@ void Editor::FindAlocForZGeomEntityNode(
             }
         }
         const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->
-                m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex];
+                m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex.val];
         const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
         std::string s_PrimHashString {std::format("{:016X}", s_PrimHash)};
         if (std::string s_collision_ioi_string = GetCollisionHash(p_Node->Entity);
@@ -470,11 +474,74 @@ void Editor::SetEntityTransform(
     }
 }
 
-void Editor::SpawnEntity(
-    ZRuntimeResourceID p_Template, uint64_t p_EntityId, std::string p_Name, std::optional<std::string> p_ClientId
-) {}
+void Editor::SpawnQnEntity(
+    const std::string& p_QnJson, uint64_t p_EntityId, std::string p_Name, std::optional<std::string> p_ClientId
+) {
+    auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
-void Editor::DestroyEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId) {}
+    if (!s_Scene) {
+        throw std::runtime_error("Scene is not yet loaded. Cannot spawn entities.");
+    }
+
+    // If entity is already spawned, destroy it first.
+    const auto s_SpawnedEntity = m_SpawnedEntities.find(p_EntityId);
+
+    if (s_SpawnedEntity != m_SpawnedEntities.end()) {
+        OnDestroyEntity(s_SpawnedEntity->second, p_ClientId);
+    }
+
+    TResourcePtr<ZTemplateEntityBlueprintFactory> s_BpFactory;
+    TResourcePtr<ZTemplateEntityFactory> s_Factory;
+
+    if (!SDK()->LoadQnEntity(p_QnJson, s_BpFactory, s_Factory)) {
+        throw std::runtime_error("Failed to load entity from QN JSON.");
+    }
+
+    ZEntityRef s_SpawnedEnt;
+    Functions::ZEntityManager_NewEntity->Call(
+        Globals::EntityManager, s_SpawnedEnt, p_Name, s_Factory, s_Scene.m_ref, {}, p_EntityId
+    );
+
+    if (!s_SpawnedEnt) {
+        throw std::runtime_error("Could not spawn entity.");
+    }
+
+    Logger::Info(
+        "Spawned entity from rid {} with id {}!", s_Factory.GetResourceInfo().rid,
+        s_SpawnedEnt->GetType()->m_nEntityId
+    );
+
+    m_CachedEntityTreeMutex.lock();
+
+    m_EntityNames[s_SpawnedEnt] = p_Name;
+    m_SpawnedEntities[p_EntityId] = s_SpawnedEnt;
+
+    if (m_CachedEntityTree && m_CachedEntityTreeMap.size() > 0) {
+        UpdateEntityTree(m_CachedEntityTreeMap, {s_SpawnedEnt});
+    }
+
+    m_CachedEntityTreeMutex.unlock();
+
+    m_Server.OnEntitySpawned(s_SpawnedEnt, std::move(p_ClientId));
+}
+
+void Editor::CreateEntityResources(const std::string& p_QnJson, std::optional<std::string> p_ClientId) {
+    TResourcePtr<ZTemplateEntityBlueprintFactory> s_BpFactory;
+    TResourcePtr<ZTemplateEntityFactory> s_Factory;
+
+    if (!SDK()->LoadQnEntity(p_QnJson, s_BpFactory, s_Factory)) {
+        throw std::runtime_error("Failed to load entity from QN JSON.");
+    }
+}
+
+void Editor::DestroyEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId) {
+    if (const auto s_Entity = FindEntity(p_Selector)) {
+        OnDestroyEntity(s_Entity, std::move(p_ClientId));
+    }
+    else {
+        throw std::runtime_error("Could not find entity for the given selector.");
+    }
+}
 
 void Editor::SetEntityName(EntitySelector p_Selector, std::string p_Name, std::optional<std::string> p_ClientId) {
     if (const auto s_Entity = FindEntity(p_Selector)) {
@@ -508,7 +575,7 @@ void Editor::SetEntityProperty(
 
         if (s_PropertyInfo->m_pType->typeInfo()->isEntity()) {
             if (p_JsonValue == "null") {
-                auto s_EntityRefObj = ZObjectRef::From<TEntityRef<ZEntityImpl>>({});
+                auto s_EntityRefObj = ZObjectRef::From<ZEntityRef>({});
                 s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_pType);
 
                 OnSetPropertyValue(

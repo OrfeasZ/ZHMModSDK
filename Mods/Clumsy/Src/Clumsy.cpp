@@ -285,15 +285,15 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         //Functions::ZHM5BaseCharacter_ActivatePoweredRagdoll->Call(s_LocalHitman.m_pInterfaceRef, 0, false, true, 0.6f, false);
         Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(
             s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {},
-            s_HitmanTransform.Up + s_HitmanTransform.Left + s_HitmanTransform.Backward * -1, 128, false
+            s_HitmanTransform.Up + s_HitmanTransform.Right + s_HitmanTransform.Backward * -1, 128, false
         );
         Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(
             s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {},
-            s_HitmanTransform.Up * 0.5 + s_HitmanTransform.Left * 0.4 + s_HitmanTransform.Backward * -1, 157, false
+            s_HitmanTransform.Up * 0.5 + s_HitmanTransform.Right * 0.4 + s_HitmanTransform.Backward * -1, 157, false
         );
         Functions::ZRagdollHandler_ApplyImpulseOnRagdoll->Call(
             s_LocalHitman.m_pInterfaceRef->m_pRagdollHandler, {},
-            s_HitmanTransform.Up + s_HitmanTransform.Left * -0.8 + s_HitmanTransform.Backward * -1.5, 11, false
+            s_HitmanTransform.Up + s_HitmanTransform.Right * -0.8 + s_HitmanTransform.Backward * -1.5, 11, false
         );
     }
 }

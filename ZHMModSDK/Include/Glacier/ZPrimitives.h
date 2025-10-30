@@ -39,7 +39,7 @@ public:
     }
 
     void operator=(const char* p_Data) {
-        FromString(p_Data, GuidFormat::Dashes);
+        FromString(ZString::AllocateFromCStr(p_Data), GuidFormat::Dashes);
     }
 
     bool operator<(const ZGuid& rhs) const {
@@ -171,9 +171,9 @@ public:
         }
 
         if (s_Ret == -1)
-            return "";
+            return {};
 
-        return ZString::CopyFrom(s_GUID);
+        return ZString::AllocateFromCStr(s_GUID);
     }
 
     unsigned int GetHashCode() const {
@@ -210,7 +210,7 @@ public:
     }
 
     void operator=(const char* p_Data) {
-        FromString(p_Data, GuidFormat::Dashes);
+        FromString(ZString::AllocateFromCStr(p_Data), GuidFormat::Dashes);
     }
 };
 

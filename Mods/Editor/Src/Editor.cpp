@@ -17,13 +17,17 @@
 #include "Glacier/ZApplicationEngineWin32.h"
 #include <ranges>
 
-#include "backends/imgui_impl_dx12.h"
+#include <imgui_impl_dx12.h>
 #include "Glacier/SGameUpdateEvent.h"
 #include "Glacier/ZCollision.h"
 #include "Glacier/ZActor.h"
 #include "Glacier/ZGameLoopManager.h"
 #include "Glacier/ZKnowledge.h"
 #include "Glacier/SExternalReferences.h"
+
+#include <ResourceLib_HM3.h>
+
+#include "Util/StringUtils.h"
 
 Editor::Editor() {
     // Disable ZTemplateEntityBlueprintFactory freeing its associated data.
@@ -170,16 +174,16 @@ void Editor::OnDrawMenu() {
         }
     }*/
 
-    if (ImGui::Button(ICON_MD_TUNE " ASSETS MENU")) {
-        m_AssetsMenuActive = !m_AssetsMenuActive;
-    }
-
     if (ImGui::Button(ICON_MD_TUNE " ITEMS MENU")) {
         m_ItemsMenuActive = !m_ItemsMenuActive;
     }
 
     if (ImGui::Button(ICON_MD_PEOPLE " ACTORS MENU")) {
         m_ActorsMenuActive = !m_ActorsMenuActive;
+    }
+
+    if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS MENU")) {
+        m_DebugChannelsMenuActive = !m_DebugChannelsMenuActive;
     }
 }
 
@@ -238,6 +242,10 @@ void Editor::OnDraw3D(IRenderer* p_Renderer) {
     //p_Renderer->DrawLine3D({ -27.71298, -24.866821, 0.4925564 }, { -26.691515, -38.064953, 0.4925564 }, s_LineColor, s_LineColor);
     //p_Renderer->DrawLine3D({ -26.691515, -38.064953, 0.4925564 }, { -41.43283, -33.25945, 0.49255627 }, s_LineColor, s_LineColor);
     //p_Renderer->DrawLine3D({ -41.43283, -33.25945, 0.49255627 }, { -35.352013, -23.58427, 0.4925564 }, s_LineColor, s_LineColor);
+}
+
+void Editor::OnDepthDraw3D(IRenderer* p_Renderer) {
+    DrawDebugEntities(p_Renderer);
 }
 
 void Editor::OnEngineInitialized() {
@@ -306,19 +314,20 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracer();
 
-        DrawAssets(p_HasFocus);
         DrawItems(p_HasFocus);
         DrawActors(p_HasFocus);
+        DrawDebugChannels(p_HasFocus);
+        //DrawLibrary();
     }
 
-    if (m_CameraRT && m_Camera) {
+    if (m_EditorCameraRT && m_EditorCamera) {
         ImGui::Begin("RT Texture");
 
-        const auto s_CameraRTEntity = m_CameraRT.QueryInterface<ZRenderDestinationTextureEntity>();
-        const auto s_RT = reinterpret_cast<ZRenderDestination*>(s_CameraRTEntity->GetRenderDestination());
+        const auto s_RT = reinterpret_cast<ZRenderDestination*>(m_EditorCameraRT.m_pInterfaceRef->
+            GetRenderDestination());
 
-        m_CameraRT.SetProperty("m_bVisible", true);
-        m_Camera.SetProperty("m_bVisible", true);
+        m_EditorCameraRT.m_ref.SetProperty("m_bVisible", true);
+        m_EditorCamera.m_ref.SetProperty("m_bVisible", true);
 
         if (s_RT)
             SDK()->ImGuiGameRenderTarget(s_RT);
@@ -367,7 +376,9 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
         if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
             Logger::Debug("Creating free camera.");
-            Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
+            Functions::ZEngineAppCommon_CreateFreeCamera->Call(
+                &(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon
+            );
         }
 
         (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(
@@ -376,12 +387,32 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
         UpdateTrackCam();
     }
+
+    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+    if (!m_EditorData && (*Globals::ApplicationEngineWin32)->m_bSceneLoaded && s_Scene) {
+        //SpawnCameras();
+    }
+
+    m_EntityDestructionMutex.lock();
+
+    while (!m_EntitiesToDestroy.empty()) {
+        auto [s_Entity, s_ClientId] = m_EntitiesToDestroy.back();
+        DestroyEntityInternal(s_Entity, s_ClientId);
+        m_EntitiesToDestroy.pop_back();
+    }
+
+    m_EntityDestructionMutex.unlock();
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     SVector3 s_World;
     SVector3 s_Direction;
     SDK()->ScreenToWorld(p_Pos, s_World, s_Direction);
+
+    if (m_DrawGizmos && RayCastGizmos(s_World, s_Direction)) {
+        return;
+    }
 
     float4 s_DirectionVec(s_Direction.x, s_Direction.y, s_Direction.z, 1.f);
 
@@ -421,15 +452,15 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     m_Normal = s_RayOutput.m_vNormal;
 
     if (p_FirstClick) {
-        if (s_RayOutput.m_BlockingEntity) {
-            const auto& s_Interfaces = *s_RayOutput.m_BlockingEntity->GetType()->m_pInterfaces;
+        if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
+            const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaces;
             Logger::Trace(
                 "Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
-                s_RayOutput.m_BlockingEntity->GetType()->m_nEntityId
+                s_RayOutput.m_pBlockingSpatialEntity.m_ref->GetType()->m_nEntityId
             );
 
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-            ZEntityRef s_SelectedEntity = s_RayOutput.m_BlockingEntity;
+            ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_ref;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
@@ -447,77 +478,214 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
 }
 
 void Editor::SpawnCameras() {
-    auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+    static const std::string s_EditorDataJson =
+            R"(
+{
+    "tempHash": "00644fe9eb9feff5",
+    "tbluHash": "005474211f99b411",
+    "rootEntity": "fffffffffffffffe",
+    "entities": {
+        "fffffffffffffffe": {
+            "parent": null,
+            "name": "editor_data",
+            "factory": "[modules:/zspatialentity.class].pc_entitytype",
+            "blueprint": "[modules:/zspatialentity.class].pc_entityblueprint"
+        },
+        "feed678791f1b3e1": {
+            "parent": "fffffffffffffffe",
+            "name": "Tablet_A",
+            "factory": "[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entitytype",
+            "blueprint": "[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entityblueprint",
+            "properties": {
+                "m_mTransform": {
+                    "type": "SMatrix43",
+                    "value": {
+                        "rotation": {
+                            "x": -87.4014365441793,
+                            "y": 0.0000017075472925031877,
+                            "z": 91.0032070293913
+                        },
+                        "position": {
+                            "x": -40.105434,
+                            "y": -29.001667,
+                            "z": -999.3575625
+                        }
+                    }
+                },
+                "Texture2D_04_dest": {
+                    "type": "SEntityTemplateReference",
+                    "value": "feedbf5a41eb9c48"
+                },
+                "m_eRoomBehaviour": {
+                    "type": "ZSpatialEntity.ERoomBehaviour",
+                    "value": "ROOM_DYNAMIC"
+                },
+                "m_eidParent": {
+                    "type": "SEntityTemplateReference",
+                    "value": "fffffffffffffffe",
+                    "postInit": true
+                }
+            }
+        },
+        "feedbf5a41eb9c48": {
+            "parent": "fffffffffffffffe",
+            "name": "RenderDestinationTexture",
+            "factory": "[modules:/zrenderdestinationtextureentity.class].pc_entitytype",
+            "blueprint": "[modules:/zrenderdestinationtextureentity.class].pc_entityblueprint",
+            "properties": {
+                "m_aMultiSource": {
+                    "type": "TArray<SEntityTemplateReference>",
+                    "value": [
+                        "feedb6fc4f5626ea"
+                    ]
+                },
+                "m_nWidth": {
+                    "type": "uint32",
+                    "value": 1280
+                },
+                "m_nHeight": {
+                    "type": "uint32",
+                    "value": 720
+                },
+                "m_bUseBGRA": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_bIsPIP": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_bDrawGates": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_nGateTraversalDepth": {
+                    "type": "int32",
+                    "value": 10000
+                },
+                "m_bForceVisible": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_eRoomBehaviour": {
+                    "type": "ZSpatialEntity.ERoomBehaviour",
+                    "value": "ROOM_DYNAMIC"
+                }
+            }
+        },
+        "feedb6fc4f5626ea": {
+            "parent": "fffffffffffffffe",
+            "name": "Camera",
+            "factory": "[modules:/zcameraentity.class].pc_entitytype",
+            "blueprint": "[modules:/zcameraentity.class].pc_entityblueprint",
+            "properties": {
+                "m_bAllowAutoCameraCuts": {
+                    "type": "bool",
+                    "value": false
+                },
+                "m_fNearZ": {
+                    "type": "float32",
+                    "value": 0.5
+                },
+                "m_fAspectWByH": {
+                    "type": "float32",
+                    "value": 1
+                },
+                "m_fFovYDeg": {
+                    "type": "float32",
+                    "value": 35
+                },
+                "m_fFarZ": {
+                    "type": "float32",
+                    "value": 250
+                },
+                "m_bIsUICamera": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_mTransform": {
+                    "type": "SMatrix43",
+                    "value": {
+                        "rotation": {
+                            "x": -73.77378164046733,
+                            "y": 1.7075472925031877e-06,
+                            "z": 90.61792971868923
+                        },
+                        "position": {
+                            "x": -43.491676,
+                            "y": -28.87086,
+                            "z": 3.2203503
+                        }
+                    }
+                },
+                "m_bForceVisible": {
+                    "type": "bool",
+                    "value": true
+                },
+                "m_nPIPPriority": {
+                    "type": "uint32",
+                    "value": 0
+                },
+                "m_eRoomBehaviour": {
+                    "type": "ZSpatialEntity.ERoomBehaviour",
+                    "value": "ROOM_DYNAMIC"
+                }
+            }
+        }
+    },
+    "propertyOverrides": [],
+    "overrideDeletes": [],
+    "pinConnectionOverrides": [],
+    "pinConnectionOverrideDeletes": [],
+    "externalScenes": [],
+    "subType": "brick",
+    "quickEntityVersion": 3.1,
+    "extraFactoryDependencies": [],
+    "extraBlueprintDependencies": [],
+    "comments": []
+}
+)";
 
-    if (!s_Scene) {
-        Logger::Error("Scene is not yet loaded. Cannot spawn editor cameras.");
+    Logger::Debug("Spawning editor data entity.");
+
+    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+    TResourcePtr<ZTemplateEntityFactory> s_CameraRTFactory;
+    TResourcePtr<ZTemplateEntityBlueprintFactory> s_CameraRTBpFactory;
+
+    if (!SDK()->LoadQnEntity(s_EditorDataJson, s_CameraRTBpFactory, s_CameraRTFactory)) {
+        Logger::Error("Failed to load editor data entity.");
         return;
     }
 
-    {
-        TResourcePtr<ZTemplateEntityFactory> s_CameraResource;
-        Globals::ResourceManager->GetResourcePtr(
-            s_CameraResource, ResId<"[assembly:/_sdk/editor/editor_camera.brick].pc_entitytype">, 0
-        );
+    SExternalReferences s_ExternalRefs;
+    Functions::ZEntityManager_NewEntity->Call(
+        Globals::EntityManager, m_EditorData, "SDKCam", s_CameraRTFactory, s_Scene.m_ref, s_ExternalRefs, -1
+    );
 
-        if (!s_CameraResource) {
-            Logger::Error("Could not get editor camera resource. Is the editor brick loaded?");
-            return;
-        }
+    Logger::Debug("Spawned editor data entity!");
 
-        SExternalReferences s_ExternalRefs;
-
-        Functions::ZEntityManager_NewEntity->Call(
-            Globals::EntityManager, m_Camera, "SDKCam", s_CameraResource, s_Scene.m_ref, s_ExternalRefs, -1
-        );
-
-        if (!m_Camera) {
-            Logger::Error("Could not spawn editor camera entity.");
-            return;
+    if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedb6fc4f5626ea); idx != -1) {
+        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pEntity, idx)) {
+            m_EditorCamera = TEntityRef<ZCameraEntity>(s_Ent);
         }
     }
 
-    {
-        TResourcePtr<ZTemplateEntityFactory> s_RTResource;
-        Globals::ResourceManager->GetResourcePtr(
-            s_RTResource, ResId<"[assembly:/_sdk/editor/camera_texture.brick].pc_entitytype">, 0
-        );
-
-        if (!s_RTResource) {
-            Logger::Error("Could not get editor camera texture resource. Is the editor brick loaded?");
-            return;
-        }
-
-        SExternalReferences s_ExternalRefs;
-
-        Functions::ZEntityManager_NewEntity->Call(
-            Globals::EntityManager, m_CameraRT, "SDKCamRT", s_RTResource, s_Scene.m_ref, s_ExternalRefs, -1
-        );
-
-        if (!m_CameraRT) {
-            Logger::Error("Could not spawn editor camera texture entity.");
-            return;
+    if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedbf5a41eb9c48); idx != -1) {
+        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pEntity, idx)) {
+            m_EditorCameraRT = TEntityRef<ZRenderDestinationTextureEntity>(s_Ent);
         }
     }
 
-    const auto s_Camera = m_Camera.QueryInterface<ZCameraEntity>();
-    Logger::Debug("Spawned camera = {}", fmt::ptr(s_Camera));
+    if (!m_EditorCamera || !m_EditorCameraRT) {
+        Logger::Error("Failed to get editor camera or render destination texture entity.");
+        return;
+    }
 
-    const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
-    s_Camera->SetWorldMatrix(s_CurrentCamera->GetWorldMatrix());
-
-    const auto s_CameraRT = m_CameraRT.QueryInterface<ZRenderDestinationTextureEntity>();
-    Logger::Debug(
-        "Spawned rt = {} sources = {} source = {}", fmt::ptr(s_CameraRT), s_CameraRT->m_aMultiSource.size(),
-        s_CameraRT->m_nSelectedSource
-    );
-
-    s_CameraRT->SetSource(&m_Camera);
-
-    Logger::Debug(
-        "Added source to rt = {} sources = {} source = {}", fmt::ptr(s_CameraRT), s_CameraRT->m_aMultiSource.size(),
-        s_CameraRT->m_nSelectedSource
-    );
+    // If we have a current camera, move the editor camera to its position.
+    if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call()) {
+        m_EditorCamera.m_pInterfaceRef->SetWorldMatrix(s_CurrentCamera->GetWorldMatrix());
+    }
 }
 
 void Editor::ActivateCamera(ZEntityRef* m_CameraEntity) {
@@ -664,25 +832,47 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData) {
-    /*if (p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
-        p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
-    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
-        p_SceneData.m_sceneName = "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
-    //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";*/
+    static bool s_BypassedOnce = false;
 
+    if ((p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+        p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
+        //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
+        s_BypassedOnce = true;
+        p_SceneData.m_sceneName =
+                "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
+        //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";*/
+    }
 
     if (m_SelectionForFreeCameraEditorStyleEntity) {
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
     }
 
+    m_EntityDestructionMutex.lock();
+    m_EntitiesToDestroy.clear();
+    m_EntityDestructionMutex.unlock();
+
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
+
+    for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
+    }
+
+    m_SpawnedEntities.clear();
+    m_EntityNames.clear();
     m_CachedEntityTreeMutex.unlock();
 
     m_FilteredEntityTreeNodes.clear();
     m_DirectEntityTreeNodeMatches.clear();
 
     m_NavpAreas.clear();
+
+    if (m_EditorData) {
+        m_EditorCamera = {};
+        m_EditorCameraRT = {};
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
+        m_EditorData = {};
+    }
 
     std::vector<std::string> s_Bricks;
 
@@ -698,34 +888,43 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
         m_TrackCamActive = false;
     }
 
-    return HookResult<void>(HookAction::Continue());
+    return {HookAction::Continue()};
 }
 
 DEFINE_PLUGIN_DETOUR(
-    Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor, ZTemplateEntityBlueprintFactory* th,
+    Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor,
+    ZTemplateEntityBlueprintFactory* th,
     STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending
 ) {
     //Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
-    return HookResult<ZTemplateEntityBlueprintFactory*>(HookAction::Continue());
+    //auto s_Result = p_Hook->CallOriginal(th, pTemplateEntityBlueprint, ResourcePending);
+    //return HookResult(HookAction::Return(), s_Result);
+    return {HookAction::Continue()};
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
     m_SelectedBrickIndex = 0;
     m_SelectedEntity = {};
-    m_Camera = {};
-    m_CameraRT = {};
     m_ShouldScrollToEntity = false;
+
+    m_EntityDestructionMutex.lock();
+    m_EntitiesToDestroy.clear();
+    m_EntityDestructionMutex.unlock();
 
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
+
+    for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
+    }
+
+    m_SpawnedEntities.clear();
+    m_EntityNames.clear();
     m_CachedEntityTreeMutex.unlock();
 
     m_NavpAreas.clear();
 
     m_Server.OnSceneClearing(forReload);
-
-    m_RepositoryResource = {};
-    m_RepositoryProps.clear();
 
     if (m_TrackCamActive) {
         DisableTrackCam();
@@ -733,9 +932,20 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
         m_TrackCamActive = false;
     }
 
-    s_CurrentlySelectedActor = nullptr;
+    m_CurrentlySelectedActor = nullptr;
 
-    return HookResult<void>(HookAction::Continue());
+    m_SelectedGizmoEntity = nullptr;
+
+    m_DebugEntities.clear();
+
+    if (m_EditorData) {
+        m_EditorCamera = {};
+        m_EditorCameraRT = {};
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
+        m_EditorData = {};
+    }
+
+    return {HookAction::Continue()};
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data) {

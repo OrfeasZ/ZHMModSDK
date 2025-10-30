@@ -39,12 +39,15 @@ public:
     virtual void ZSpatialEntity_unk41() = 0;
 
 public:
-    SMatrix GetWorldMatrix() {
-        // This is probably something like "is this transform dirty and needs to be updated?".
+    SMatrix GetWorldMatrix() const {
         if ((m_nUnknownFlags & 0x80000) != 0)
-            Functions::ZSpatialEntity_UnknownTransformUpdate->Call(this);
+            Functions::ZSpatialEntity_UpdateCachedWorldMat->Call(this);
 
         return m_mTransform;
+    }
+
+    float4 GetWorldDirection(const float4& p_LocalDirection) const {
+        return GetWorldMatrix().WVectorRotate(p_LocalDirection);
     }
 
 public:

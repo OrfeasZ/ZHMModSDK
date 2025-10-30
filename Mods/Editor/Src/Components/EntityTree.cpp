@@ -7,6 +7,7 @@
 #include <Glacier/ZEntity.h>
 #include <Glacier/ZFreeCamera.h>
 #include <Glacier/ZComponentCreateInfo.h>
+#include <Glacier/SExternalReferences.h>
 
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
@@ -17,62 +18,31 @@
 #include <map>
 #include <utility>
 
-void Editor::UpdateEntities() {
-    const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-
-    if (!s_SceneCtx
-        || !s_SceneCtx->m_pScene
-        || !s_SceneCtx->m_pScene.m_ref
-        || s_SceneCtx->m_aLoadedBricks.size() == 0) {
-        return;
-    }
-
-    const auto s_SceneEnt = s_SceneCtx->m_pScene.m_ref;
-
+void Editor::UpdateEntityTree(
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+    const std::vector<ZEntityRef>& p_Entities
+) {
     // Go through a first pass by creating all the nodes of the tree using a BFS
     // approach. We'll also opportunistically assign children nodes to parents we've
     // seen before. Then, as a second pass we'll go through and assign the remaining
     // children nodes to their parents.
 
-    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
     std::queue<std::pair<ZEntityBlueprintFactoryBase*, ZEntityRef>> s_NodeQueue;
     std::queue<std::shared_ptr<EntityTreeNode>> s_ParentlessNodes;
 
-    // Add all the brick nodes to the queue.
-    for (const auto& s_Brick : s_SceneCtx->m_aLoadedBricks) {
-        auto s_BrickEnt = s_Brick.entityRef;
-
-        if (!s_BrickEnt) {
+    for (const auto& s_Entity : p_Entities) {
+        if (!s_Entity) {
             continue;
         }
 
-        const auto s_BpFactory = s_BrickEnt.GetBlueprintFactory();
+        auto s_BpFactory = s_Entity.GetBlueprintFactory();
 
         if (!s_BpFactory) {
             continue;
         }
 
-        s_NodeQueue.emplace(s_BpFactory, s_BrickEnt);
+        s_NodeQueue.emplace(s_BpFactory, s_Entity);
     }
-
-    auto s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetBlueprintFactory());
-
-    if (s_SceneEnt.GetOwningEntity()) {
-        s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetOwningEntity().
-            GetBlueprintFactory());
-    }
-
-    // Create the root scene node.
-    auto s_SceneNode = std::make_shared<EntityTreeNode>(
-        "Scene Root",
-        s_SceneEnt->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->m_pTypeName,
-        s_SceneEnt->GetType()->m_nEntityId,
-        s_SceneFactory->m_ridResource,
-        s_SceneEnt
-    );
-
-    s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
-    s_NodeMap.emplace(ZEntityRef(), s_SceneNode);
 
     while (!s_NodeQueue.empty()) {
         // Pop the next factory and its root entity off the queue.
@@ -92,7 +62,7 @@ void Editor::UpdateEntities() {
             }
 
             // If this sub-entity has already been added to the tree, skip it.
-            if (s_NodeMap.contains(s_SubEntity)) {
+            if (p_NodeMap.contains(s_SubEntity)) {
                 continue;
             }
 
@@ -106,6 +76,10 @@ void Editor::UpdateEntities() {
                 if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
                     s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[i].entityName;
                 }
+            }
+
+            if (const auto s_Name = m_EntityNames.find(s_SubEntity); s_Name != m_EntityNames.end()) {
+                s_EntityName = s_Name->second;
             }
 
             // Format a human-readable name for the entity.
@@ -129,9 +103,9 @@ void Editor::UpdateEntities() {
             const auto s_LogicalParent = s_SubEntity.GetLogicalParent();
 
             if (s_LogicalParent) {
-                auto s_ParentNode = s_NodeMap.find(s_LogicalParent);
+                auto s_ParentNode = p_NodeMap.find(s_LogicalParent);
 
-                if (s_ParentNode != s_NodeMap.end()) {
+                if (s_ParentNode != p_NodeMap.end()) {
                     // If we have already seen the logical parent of this sub-entity, add it to the parent's children.
                     s_ParentNode->second->Children.insert({s_EntityHumanName, s_SubEntityNode});
                 }
@@ -150,7 +124,7 @@ void Editor::UpdateEntities() {
                 s_NodeQueue.emplace(s_SubEntityFactory, s_SubEntity);
             }
 
-            s_NodeMap[s_SubEntity] = s_SubEntityNode;
+            p_NodeMap[s_SubEntity] = s_SubEntityNode;
         }
     }
 
@@ -163,21 +137,74 @@ void Editor::UpdateEntities() {
 
         // If it has a logical parent and that parent is in the map, add it to the parent's children.
         if (s_LogicalParent) {
-            auto s_ParentNode = s_NodeMap.find(s_LogicalParent);
+            auto s_ParentNode = p_NodeMap.find(s_LogicalParent);
 
-            if (s_ParentNode != s_NodeMap.end()) {
+            if (s_ParentNode != p_NodeMap.end()) {
                 s_ParentNode->second->Children.insert({s_Node->Name, s_Node});
                 continue;
             }
         }
 
         // Otherwise, add it to the root node.
-        s_NodeMap[ZEntityRef()] = s_Node;
+        p_NodeMap[ZEntityRef()] = s_Node;
     }
+}
+
+void Editor::UpdateEntities() {
+    const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
+
+    if (!s_SceneCtx
+        || !s_SceneCtx->m_pScene
+        || !s_SceneCtx->m_pScene.m_ref
+        || s_SceneCtx->m_aLoadedBricks.size() == 0) {
+        return;
+    }
+
+    const auto s_SceneEnt = s_SceneCtx->m_pScene.m_ref;
+
+    std::vector<ZEntityRef> s_EntsToProcess;
+
+    // Add all the brick nodes to the queue.
+    for (const auto& s_Brick : s_SceneCtx->m_aLoadedBricks) {
+        auto s_BrickEnt = s_Brick.entityRef;
+
+        if (!s_BrickEnt) {
+            continue;
+        }
+
+        s_EntsToProcess.push_back(s_BrickEnt);
+    }
+
+    // Add all custom entities to the queue.
+    for (const auto& s_Entity : m_SpawnedEntities | std::views::values) {
+        s_EntsToProcess.push_back(s_Entity);
+    }
+
+    auto s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetBlueprintFactory());
+
+    if (s_SceneEnt.GetOwningEntity()) {
+        s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetOwningEntity().
+            GetBlueprintFactory());
+    }
+
+    // Create the root scene node.
+    auto s_SceneNode = std::make_shared<EntityTreeNode>(
+        "Scene Root",
+        s_SceneEnt->GetType()->m_pInterfaces->operator[](0).m_pTypeId->typeInfo()->m_pTypeName,
+        s_SceneEnt->GetType()->m_nEntityId,
+        s_SceneFactory->m_ridResource,
+        s_SceneEnt
+    );
+
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
+    s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
+    s_NodeMap.emplace(ZEntityRef(), s_SceneNode);
+    UpdateEntityTree(s_NodeMap, s_EntsToProcess);
 
     // Update the cached tree.
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree = std::move(s_SceneNode);
+    m_CachedEntityTreeMap = std::move(s_NodeMap);
     m_CachedEntityTreeMutex.unlock();
 
     m_Server.OnEntityTreeRebuilt();
@@ -319,7 +346,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
 
 void Editor::DrawEntityTree() {
     ImGui::SetNextWindowPos({0, 110}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({700, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({615, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_CATEGORY " Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     ImGui::Checkbox("Raycast logging", &m_raycastLogging);
@@ -502,6 +529,62 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, const std::optional<std::string
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.push_back(p_Entity);
     }
+}
+
+void Editor::OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
+    m_EntityDestructionMutex.lock();
+    m_EntitiesToDestroy.push_back({p_Entity, std::move(p_ClientId)});
+    m_EntityDestructionMutex.unlock();
+}
+
+
+void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
+    m_CachedEntityTreeMutex.lock();
+
+    m_EntityNames.erase(p_Entity);
+    m_SpawnedEntities.erase(p_Entity->GetType()->m_nEntityId);
+
+    if (m_SelectedEntity == p_Entity) {
+        m_SelectedEntity = {};
+    }
+
+    // Remove from the tree.
+    const auto s_EntityIter = m_CachedEntityTreeMap.find(p_Entity);
+
+    if (s_EntityIter != m_CachedEntityTreeMap.end()) {
+        const auto s_NodeToRemove = s_EntityIter->second;
+        m_CachedEntityTreeMap.erase(s_EntityIter);
+
+        // Walk the tree and remove any references to this entity non-recursively.
+        if (m_CachedEntityTree) {
+            // Use a queue to traverse the tree non-recursively (BFS).
+            std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
+            s_NodeQueue.push(m_CachedEntityTree);
+
+            while (!s_NodeQueue.empty()) {
+                auto s_CurrentNode = s_NodeQueue.front();
+                s_NodeQueue.pop();
+
+                // Check if any of this node's children is the node we want to remove.
+                for (auto it = s_CurrentNode->Children.begin(); it != s_CurrentNode->Children.end();) {
+                    if (it->second == s_NodeToRemove) {
+                        // Remove this child from the parent's children.
+                        it = s_CurrentNode->Children.erase(it);
+                    }
+                    else {
+                        // Add this child to the queue for further processing.
+                        s_NodeQueue.push(it->second);
+                        ++it;
+                    }
+                }
+            }
+        }
+    }
+
+    m_CachedEntityTreeMutex.unlock();
+
+    m_Server.OnEntityDestroying(p_Entity->GetType()->m_nEntityId, std::move(p_ClientId));
+    Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, p_Entity, {});
 }
 
 void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId) {

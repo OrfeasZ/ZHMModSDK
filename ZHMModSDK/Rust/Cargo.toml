@@ -1,0 +1,17 @@
+[package]
+name = "zhmmodsdk_rs"
+version = "1.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+quickentity-rs = { git = "https://github.com/atampy25/quickentity-rs.git", rev = "fc6d5fddc2baf45c2058819b6f1e6bd39d11a760" }
+serde_path_to_error = "0.1.20"
+serde_json = { version = "1.0.145", features = ["preserve_order"] }
+rpkg-rs = "1.3.1"
+safer-ffi = { version = "0.1.13", features = ["headers"] }
+
+[features]
+c-headers = ["safer-ffi/headers"]

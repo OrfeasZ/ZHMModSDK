@@ -144,11 +144,17 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
             p_Socket->getUserData()->ClientId
         );
     }
-    else if (s_Type == "spawnEntity") {
-        Plugin()->SpawnEntity(
-            ReadResourceId(s_JsonMsg["templateId"]),
+    else if (s_Type == "spawnQnEntity") {
+        Plugin()->SpawnQnEntity(
+            std::string(std::string_view(s_JsonMsg["qnJson"])),
             ReadEntityId(s_JsonMsg["entityId"]),
             std::string(std::string_view(s_JsonMsg["name"])),
+            p_Socket->getUserData()->ClientId
+        );
+    }
+    else if (s_Type == "createEntityResources") {
+        Plugin()->CreateEntityResources(
+            std::string(std::string_view(s_JsonMsg["qnJson"])),
             p_Socket->getUserData()->ClientId
         );
     }
@@ -492,6 +498,65 @@ void EditorServer::OnEntityPropertySet(
             s_Event << "}";
 
             PublishEvent(s_Event.str(), p_ByClient);
+        }
+    );
+}
+
+void EditorServer::OnEntitySpawned(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
+    if (!m_Enabled) {
+        Logger::Info("EditorServer disabled. Skipping OnEntitySpawned.");
+        return;
+    }
+    if (!m_Loop) {
+        return;
+    }
+
+    m_Loop->defer(
+        [this, p_Entity, p_ByClient]() {
+            if (!m_App) {
+                return;
+            }
+
+            std::ostringstream s_Event;
+
+            s_Event << "{";
+
+            s_Event << write_json("type") << ":" << write_json("entitySpawned") << ",";
+            s_Event << write_json("entity") << ":";
+            WriteEntityDetails(s_Event, p_Entity);
+
+            s_Event << "}";
+
+            PublishEvent(s_Event.str(), std::nullopt);
+        }
+    );
+}
+
+void EditorServer::OnEntityDestroying(uint64_t p_EntityId, std::optional<std::string> p_ByClient) {
+    if (!m_Enabled) {
+        Logger::Info("EditorServer disabled. Skipping OnEntityDestroying.");
+        return;
+    }
+    if (!m_Loop) {
+        return;
+    }
+
+    m_Loop->defer(
+        [this, p_EntityId, p_ByClient]() {
+            if (!m_App) {
+                return;
+            }
+
+            std::ostringstream s_Event;
+
+            s_Event << "{";
+
+            s_Event << write_json("type") << ":" << write_json("entityDestroying") << ",";
+            s_Event << write_json("entityId") << ":" << write_json(std::format("{:016x}", p_EntityId));
+
+            s_Event << "}";
+
+            PublishEvent(s_Event.str(), std::nullopt);
         }
     );
 }

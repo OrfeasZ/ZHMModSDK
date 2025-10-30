@@ -1,13 +1,8 @@
 #pragma once
 
-// The current version of the SDK.
-#define ZHMMODSDK_VER "4.0.0"
-
-// The current version of the SDK ABI.
-// Any change to this is a breaking change.
-#define ZHMMODSDK_ABI_VER "4"
-
+#include "ModSDKVersion.h"
 #include "Glacier/ZPrimitives.h"
+#include "Glacier/ZEntity.h"
 #include "Common.h"
 #include "imgui.h"
 
@@ -244,6 +239,33 @@ public:
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
         void* p_OriginalCode
     ) = 0;
+
+    /**
+     * Load entity resources from QuickEntity JSON. This makes them available
+     * to the engine for spawning.
+     * @param p_Json The QuickEntity JSON string.
+     * @param p_BlueprintFactoryOut The resulting blueprint factory resource.
+     * @param p_FactoryOut The resulting factory resource.
+     * @return True if the resources were loaded successfully, false otherwise.
+     */
+    virtual bool LoadQnEntity(
+        const ZString& p_Json,
+        TResourcePtr<ZTemplateEntityBlueprintFactory>& p_BlueprintFactoryOut,
+        TResourcePtr<ZTemplateEntityFactory>& p_FactoryOut
+    ) = 0;
+
+    /**
+     * Check if a chunk is mounted.
+     * @param p_ChunkIndex The index of the chunk to check.
+     * @return True if the chunk is mounted, false otherwise.
+     */
+    virtual bool IsChunkMounted(uint32_t p_ChunkIndex) = 0;
+
+    /**
+     * Mount a chunk.
+     * @param p_ChunkIndex The index of the chunk to mount.
+     */
+    virtual void MountChunk(uint32_t p_ChunkIndex) = 0;
 };
 
 /**

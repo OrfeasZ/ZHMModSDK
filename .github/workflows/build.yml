@@ -1,140 +1,168 @@
 name: Build
 
 on:
-  push:
-    branches:
-      - master
-  release:
-    types: [ created ]
-  pull_request:
-    types: [ opened, synchronize, reopened ]
+    push:
+        branches:
+            - master
+    release:
+        types: [ created ]
+    pull_request:
+        types: [ opened, synchronize, reopened ]
 
 jobs:
-  build:
-    name: Build
-    runs-on: ptlm-runner
+    build:
+        name: Build
+        runs-on: ptlm-runner
 
-    steps:
-    - name: Get latest CMake and ninja
-      uses: lukka/get-cmake@latest
+        steps:
+            -   name: Get latest CMake and ninja
+                uses: lukka/get-cmake@latest
 
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    submodules: recursive
 
-    - name: Setup VS environment
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
+            -   name: Setup VS environment
+                uses: ilammy/msvc-dev-cmd@v1
+                with:
+                    arch: x64
 
-    - name: Build and install debug
-      run: |
-        cmake --preset x64-Debug .
-        cmake --build _build/x64-Debug -j12
-        cmake --install _build/x64-Debug
+            -   name: Build and install debug
+                run: |
+                    cmake --preset x64-Debug .
+                    cmake --build _build/x64-Debug -j12
+                    cmake --install _build/x64-Debug
 
-    - name: Build and install release
-      run: |
-        cmake --preset x64-Release .
-        cmake --build _build/x64-Release -j12
-        cmake --install _build/x64-Release
+            -   name: Build and install release
+                run: |
+                    cmake --preset x64-Release .
+                    cmake --build _build/x64-Release -j12
+                    cmake --install _build/x64-Release
 
-    - name: Copy debug artifacts
-      run: |
-        mkdir _dist-debug
-        Copy-Item _install/x64-Debug/bin/* -Destination _dist-debug/ -Recurse
-        Copy-Item _install/x64-Debug/licenses -Destination _dist-debug/ -Recurse
-        Copy-Item LICENSE -Destination _dist-debug/LICENSE
+            -   name: Copy debug artifacts
+                run: |
+                    mkdir _dist-debug
+                    Copy-Item _install/x64-Debug/bin/* -Destination _dist-debug/ -Recurse
+                    Copy-Item _install/x64-Debug/licenses -Destination _dist-debug/ -Recurse
+                    Copy-Item LICENSE -Destination _dist-debug/LICENSE
 
-    - name: Copy release artifacts
-      run: |
-        mkdir _dist-release
-        Copy-Item _install/x64-Release/bin/* -Destination _dist-release/ -Recurse
-        Copy-Item _install/x64-Release/licenses -Destination _dist-release/ -Recurse
-        Copy-Item LICENSE -Destination _dist-release/LICENSE
+            -   name: Copy release artifacts
+                run: |
+                    mkdir _dist-release
+                    Copy-Item _install/x64-Release/bin/* -Destination _dist-release/ -Recurse
+                    Copy-Item _install/x64-Release/licenses -Destination _dist-release/ -Recurse
+                    Copy-Item LICENSE -Destination _dist-release/LICENSE
 
-    - name: Copy SDK dev artifacts
-      run: |
-        mkdir _sdk
-        Copy-Item cmake/sdk-dist.cmake -Destination _sdk/CMakeLists.txt
-        Copy-Item _install/x64-Release/include -Destination _sdk/ -Recurse
-        
-        mkdir _sdk/release
-        Copy-Item _install/x64-Release/lib -Destination _sdk/release/ -Recurse
-        Copy-Item _install/x64-Release/bin -Destination _sdk/release/ -Recurse
-        Remove-Item _sdk/release/bin/mods -Recurse
-        Remove-Item _sdk/release/bin/dinput8.dll
-        Remove-Item _sdk/release/bin/ResourceLib_HM3.dll
-        
-        mkdir _sdk/debug
-        Copy-Item _install/x64-Debug/lib -Destination _sdk/debug/ -Recurse
-        Copy-Item _install/x64-Debug/bin -Destination _sdk/debug/ -Recurse
-        Remove-Item _sdk/debug/bin/mods -Recurse
-        Remove-Item _sdk/debug/bin/dinput8.dll
-        Remove-Item _sdk/debug/bin/ResourceLib_HM3.dll
-        
-        mkdir _sdk/cmake
-        Copy-Item cmake/zhm-mod.cmake -Destination _sdk/cmake/zhm-mod.cmake
-        
-        Copy-Item _install/x64-Release/licenses -Destination _sdk/ -Recurse
-        Copy-Item LICENSE -Destination _sdk/LICENSE
+            -   name: Copy SDK dev artifacts
+                run: |
+                    mkdir _sdk
+                    Copy-Item cmake/sdk-dist.cmake -Destination _sdk/CMakeLists.txt
+                    Copy-Item _install/x64-Release/include -Destination _sdk/ -Recurse
+                    
+                    mkdir _sdk/release
+                    Copy-Item _install/x64-Release/lib -Destination _sdk/release/ -Recurse
+                    Copy-Item _install/x64-Release/bin -Destination _sdk/release/ -Recurse
+                    Remove-Item _sdk/release/bin/mods -Recurse
+                    Remove-Item _sdk/release/bin/dinput8.dll
+                    Remove-Item _sdk/release/bin/dinput8.pdb
+                    Remove-Item _sdk/release/bin/ResourceLib_HM3.dll
+                    Remove-Item _sdk/release/bin/ResourceLib_HM3.pdb
+                    Remove-Item _sdk/release/bin/crashpad_handler.exe
+                    
+                    mkdir _sdk/debug
+                    Copy-Item _install/x64-Debug/lib -Destination _sdk/debug/ -Recurse
+                    Copy-Item _install/x64-Debug/bin -Destination _sdk/debug/ -Recurse
+                    Remove-Item _sdk/debug/bin/mods -Recurse
+                    Remove-Item _sdk/debug/bin/dinput8.dll
+                    Remove-Item _sdk/debug/bin/dinput8.pdb
+                    Remove-Item _sdk/debug/bin/ResourceLib_HM3.dll
+                    Remove-Item _sdk/debug/bin/ResourceLib_HM3.pdb
+                    Remove-Item _sdk/debug/bin/crashpad_handler.exe
+                    
+                    mkdir _sdk/cmake
+                    Copy-Item cmake/zhm-mod.cmake -Destination _sdk/cmake/zhm-mod.cmake
+                    
+                    Copy-Item _install/x64-Release/licenses -Destination _sdk/ -Recurse
+                    Copy-Item LICENSE -Destination _sdk/LICENSE
 
-    - name: Archive debug SDK and mods
-      uses: actions/upload-artifact@v4
-      with:
-        name: ZHMModSDK-Debug
-        path: _dist-debug/*
+            -   name: Upload symbols to sentry
+                env:
+                    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+                    SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+                    SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+                run: |
+                    npx @sentry/cli debug-files upload _dist-debug/
+                    npx @sentry/cli debug-files upload _dist-release/
 
-    - name: Archive release SDK and mods
-      uses: actions/upload-artifact@v4
-      with:
-        name: ZHMModSDK-Release
-        path: _dist-release/*
+            -   name: Archive debug SDK and mods
+                uses: actions/upload-artifact@v4
+                with:
+                    name: ZHMModSDK-Debug
+                    path: _dist-debug/*
 
-    - name: Archive SDK dev package
-      uses: actions/upload-artifact@v4
-      with:
-        name: DevPkg-ZHMModSDK
-        path: _sdk/*
+            -   name: Move release PDBs recursively into a separate folder
+                shell: powershell
+                run: |
+                    mkdir _dist-release-pdbs
+                    Get-ChildItem -Path _dist-release\* -Include *.pdb -Recurse | Move-Item -Destination _dist-release-pdbs
 
-  upload_release:
-    name: Upload release artifacts
-    needs: build
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
+            -   name: Archive release SDK and mods
+                uses: actions/upload-artifact@v4
+                with:
+                    name: ZHMModSDK-Release
+                    path: _dist-release/*
 
-    strategy:
-      matrix:
-        artifact:
-        - ZHMModSDK-Release
-        - ZHMModSDK-Debug
-        - DevPkg-ZHMModSDK
+            -   name: Archive release PDBs
+                uses: actions/upload-artifact@v4
+                with:
+                    name: ZHMModSDK-Release-PDBs
+                    path: _dist-release-pdbs/*
 
-    steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ matrix.artifact }}
-        path: ${{ matrix.artifact }}
+            -   name: Archive SDK dev package
+                uses: actions/upload-artifact@v4
+                with:
+                    name: DevPkg-ZHMModSDK
+                    path: _sdk/*
 
-    - name: Archive artifact files
-      run: |
-        cd ${{ matrix.artifact }}
-        zip -r ${{ matrix.artifact }}.zip *
-        
-    - name: Get release
-      id: get_release
-      uses: bruceadams/get-release@v1.2.2
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+    upload_release:
+        name: Upload release artifacts
+        needs: build
+        if: github.event_name == 'release'
+        runs-on: ubuntu-latest
 
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.get_release.outputs.upload_url }}
-        asset_path: ${{ matrix.artifact }}/${{ matrix.artifact }}.zip
-        asset_name: ${{ matrix.artifact }}.zip
-        asset_content_type: application/zip
+        strategy:
+            matrix:
+                artifact:
+                    - ZHMModSDK-Release
+                    - ZHMModSDK-Release-PDBs
+                    - ZHMModSDK-Debug
+                    - DevPkg-ZHMModSDK
+
+        steps:
+            -   name: Download artifact
+                uses: actions/download-artifact@v4
+                with:
+                    name: ${{ matrix.artifact }}
+                    path: ${{ matrix.artifact }}
+
+            -   name: Archive artifact files
+                run: |
+                    cd ${{ matrix.artifact }}
+                    zip -r ${{ matrix.artifact }}.zip *
+
+            -   name: Get release
+                id: get_release
+                uses: bruceadams/get-release@v1.2.2
+                env:
+                    GITHUB_TOKEN: ${{ github.token }}
+
+            -   name: Upload release assets
+                uses: actions/upload-release-asset@v1
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                with:
+                    upload_url: ${{ steps.get_release.outputs.upload_url }}
+                    asset_path: ${{ matrix.artifact }}/${{ matrix.artifact }}.zip
+                    asset_name: ${{ matrix.artifact }}.zip
+                    asset_content_type: application/zip

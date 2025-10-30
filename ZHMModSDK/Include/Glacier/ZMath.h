@@ -25,6 +25,14 @@ public:
     SVector2(float p_X, float p_Y) :
         x(p_X), y(p_Y) {}
 
+    SVector2 operator*(const float p_Value) const {
+        return SVector2(x * p_Value, y * p_Value);
+    }
+
+    SVector2 operator-() const {
+        return SVector2(-x, -y);
+    }
+
 public:
     float32 x; // 0x0
     float32 y; // 0x4
@@ -34,6 +42,8 @@ inline std::ostream& operator<<(std::ostream& p_Stream, const SVector2& p_Value)
     return p_Stream << "(" << p_Value.x << ", " << p_Value.y << ")";
 }
 
+struct float4;
+
 class SVector3 {
 public:
     SVector3() :
@@ -42,7 +52,12 @@ public:
     SVector3(float p_X, float p_Y, float p_Z) :
         x(p_X), y(p_Y), z(p_Z) {}
 
-    SVector3(DirectX::XMVECTOR p_Vector) {
+    SVector3(const SVector2& p_Vec) :
+        x(p_Vec.x), y(p_Vec.y), z(0.f) {}
+
+    ZHMSDK_API SVector3(const float4& p_Vec);
+
+    SVector3(const DirectX::XMVECTOR p_Vector) {
         DirectX::XMStoreFloat3(reinterpret_cast<DirectX::XMFLOAT3*>(this), p_Vector);
     }
 
@@ -52,6 +67,10 @@ public:
 
     SVector3 operator-(const SVector3& p_Other) const {
         return SVector3(x - p_Other.x, y - p_Other.y, z - p_Other.z);
+    }
+
+    SVector3 operator-() const {
+        return SVector3(-x, -y, -z);
     }
 
     const bool operator==(const SVector3& p_Other) const {
@@ -108,16 +127,15 @@ public:
         if (s_LengthSq > 1e-12f) {
             const float s_InvLength = 1.0f / std::sqrt(s_LengthSq);
 
-            return SVector3(x * s_InvLength, y * s_InvLength, z * s_InvLength);
+            return *this * s_InvLength;
         }
 
-        return SVector3(0.f, 0.f, 0.f);
+        return SVector3();
     }
 
     inline void Normalize() {
         *this = Normalized();
     }
-
 
     SVector3 GetUnitVec() const {
         const float s_Length = Length();
@@ -128,7 +146,11 @@ public:
 
         const float s_InverseLength = 1.f / s_Length;
 
-        return SVector3(this->x * s_InverseLength, this->y * s_InverseLength, this->z * s_InverseLength);
+        return *this * s_InverseLength;
+    }
+
+    SVector3 SetLength(float p_Length) const {
+        return Normalized() * p_Length;
     }
 
 public:
@@ -208,6 +230,12 @@ struct alignas(16) float4 {
     float4(float p_Val) :
         x(p_Val), y(p_Val), z(p_Val), w(p_Val) {}
 
+    float4(const SVector2& p_Vec)
+        : x(p_Vec.x), y(p_Vec.y), z(0.f), w(0.f) {}
+
+    float4(const SVector3& p_Vec, float p_W = 0.f)
+        : x(p_Vec.x), y(p_Vec.y), z(p_Vec.z), w(p_W) {}
+
     float4 operator-(const float4& p_Vec) const {
         return _mm_sub_ps(m, p_Vec.m);
     }
@@ -222,6 +250,11 @@ struct alignas(16) float4 {
 
     float4 operator*(float p_Value) const {
         return _mm_mul_ps(m, _mm_load1_ps(&p_Value));
+    }
+
+    float4& operator*=(float p_Value) {
+        m = _mm_mul_ps(m, _mm_set1_ps(p_Value));
+        return *this;
     }
 
     float4 operator/(const float4& p_Vec) const {
@@ -276,7 +309,7 @@ struct alignas(16) float4 {
     }
 
     inline static float Norm(const float4& p_Vec) {
-        return (float) sqrt(DotProduct(p_Vec, p_Vec));
+        return sqrt(DotProduct(p_Vec, p_Vec));
     }
 
     inline static float Distance(const float4& p_From, const float4& p_To) {
@@ -488,35 +521,22 @@ struct alignas(16) SMatrix {
         };
     }
 
-    void ScaleTransform(const SVector3& scale) {
-        XAxis.x *= scale.x;
-        XAxis.y *= scale.x;
-        XAxis.z *= scale.x;
-        YAxis.x *= scale.y;
-        YAxis.y *= scale.y;
-        YAxis.z *= scale.y;
-        ZAxis.x *= scale.z;
-        ZAxis.y *= scale.z;
-        ZAxis.z *= scale.z;
+    void ScaleTransform(const SVector3& p_Scale) {
+        XAxis *= p_Scale.x;
+        YAxis *= p_Scale.y;
+        ZAxis *= p_Scale.z;
     }
 
-    SMatrix ScaleTransform(SMatrix& transform, const SVector3& scale) {
-        SMatrix result;
-
-        result.XAxis.x = transform.XAxis.x * scale.x;
-        result.XAxis.y = transform.XAxis.y * scale.x;
-        result.XAxis.z = transform.XAxis.z * scale.x;
-        result.YAxis.x = transform.YAxis.x * scale.y;
-        result.YAxis.y = transform.YAxis.y * scale.y;
-        result.YAxis.z = transform.YAxis.z * scale.y;
-        result.ZAxis.x = transform.ZAxis.x * scale.z;
-        result.ZAxis.y = transform.ZAxis.y * scale.z;
-        result.ZAxis.z = transform.ZAxis.z * scale.z;
-
-        return result;
+    static SMatrix ScaleTransform(const SVector3& p_Scale, SMatrix& p_Transform) {
+        return SMatrix(
+            p_Transform.XAxis * p_Scale.x,
+            p_Transform.YAxis * p_Scale.y,
+            p_Transform.ZAxis * p_Scale.z,
+            p_Transform.Trans
+        );
     }
 
-    SVector3 GetScale() {
+    SVector3 GetScale() const {
         return SVector3(XAxis.Length(), YAxis.Length(), ZAxis.Length());
     }
 
@@ -529,32 +549,72 @@ struct alignas(16) SMatrix {
         return s_Matrix;
     }
 
-    static SMatrix ScaleTranslate(const float4& vScale, const float4& vTranslate) {
+    static SMatrix ScaleTranslate(const float4& p_Scale, const float4& p_Translate) {
         return SMatrix(
-            {vScale.x, 0.f, 0.f, 0.f},
-            {0.f, vScale.y, 0.f, 0.f},
-            {0.f, 0.f, vScale.z, 0.f},
-            {vTranslate.x, vTranslate.y, vTranslate.z, 1.f}
+            { p_Scale.x, 0.f, 0.f, 0.f},
+            {0.f, p_Scale.y, 0.f, 0.f},
+            {0.f, 0.f, p_Scale.z, 0.f},
+            { p_Translate.x, p_Translate.y, p_Translate.z, 1.f}
         );
     }
 
-    SMatrix AffineMultiply(const SMatrix& other) const {
+    SMatrix AffineMultiply(const SMatrix& p_Other) const {
         SMatrix s_Matrix;
 
-        s_Matrix.mat[0] = mat[0] * other.mat[0].x + mat[1] * other.mat[0].y + mat[2] * other.mat[0].z;
-        s_Matrix.mat[1] = mat[0] * other.mat[1].x + mat[1] * other.mat[1].y + mat[2] * other.mat[1].z;
-        s_Matrix.mat[2] = mat[0] * other.mat[2].x + mat[1] * other.mat[2].y + mat[2] * other.mat[2].z;
-        s_Matrix.mat[3] = mat[0] * other.mat[3].x + mat[1] * other.mat[3].y + mat[2] * other.mat[3].z + mat[3];
+        s_Matrix.XAxis = XAxis * p_Other.XAxis.x + YAxis * p_Other.XAxis.y + ZAxis * p_Other.XAxis.z;
+        s_Matrix.YAxis = XAxis * p_Other.YAxis.x + YAxis * p_Other.YAxis.y + ZAxis * p_Other.YAxis.z;
+        s_Matrix.ZAxis = XAxis * p_Other.ZAxis.x + YAxis * p_Other.ZAxis.y + ZAxis * p_Other.ZAxis.z;
+        s_Matrix.Trans = XAxis * p_Other.Trans.x + YAxis * p_Other.Trans.y + ZAxis * p_Other.Trans.z + Trans;
 
         return s_Matrix;
     }
 
-    float4 WVectorTransform(const float4& vOper) const {
-        return mat[0] * vOper.x + mat[1] * vOper.y + mat[2] * vOper.z + mat[3];
+    float4 WVectorTransform(const float4& p_Vector) const {
+        return XAxis * p_Vector.x + YAxis * p_Vector.y + ZAxis * p_Vector.z + Trans;
     }
 
-    float4 WVectorTransformH(const float4& vOper) const {
-        return mat[0] * vOper.x + mat[1] * vOper.y + mat[2] * vOper.z + mat[3] * vOper.w;
+    float4 WVectorTransformH(const float4& p_Vector) const {
+        return XAxis * p_Vector.x + YAxis * p_Vector.y + ZAxis * p_Vector.z + Trans * p_Vector.w;
+    }
+
+    float4 WVectorRotate(const float4& p_Vector) const {
+        return XAxis * p_Vector.x + YAxis * p_Vector.y + ZAxis * p_Vector.z;
+    }
+
+    static SMatrix RotationAxisAngle(const float4& p_Axis, const float p_Angle) {
+        const float x = p_Axis.x;
+        const float y = p_Axis.y;
+        const float z = p_Axis.z;
+
+        const float c = cosf(p_Angle);
+        const float s = sinf(p_Angle);
+
+        SMatrix s_Result;
+
+        s_Result.XAxis = float4(
+            c + (1.f - c) * x * x,
+            (1.f - c) * y * x - s * z,
+            (1.f - c) * z * x + s * y,
+            0.f
+        );
+
+        s_Result.YAxis = float4(
+            (1.f - c) * x * y + s * z,
+            c + (1.f - c) * y * y,
+            (1.f - c) * z * y - s * x,
+            0.f
+        );
+
+        s_Result.ZAxis = float4(
+            (1.f - c) * x * z - s * y,
+            (1.f - c) * y * z + s * x,
+            c + (1.f - c) * z * z,
+            0.f
+        );
+
+        s_Result.Trans = float4(0.f, 0.f, 0.f, 1.f);
+
+        return s_Result;
     }
 
     union {
@@ -569,10 +629,17 @@ struct alignas(16) SMatrix {
         };
 
         struct {
-            float4 Left;
+            float4 Right;
             float4 Backward;
             float4 Up;
             float4 Pos;
+        };
+
+        struct {
+            float4 CameraRight;
+            float4 CameraUp;
+            float4 CameraBackward;
+            float4 CameraPosition;
         };
     };
 };

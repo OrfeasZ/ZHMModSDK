@@ -3,6 +3,7 @@
 #include <vector>
 #include <directx/d3d12.h>
 #include <dxgi1_4.h>
+#include <imgui.h>
 
 #include "Hooks.h"
 #include "Glacier/ZInput.h"
@@ -45,6 +46,16 @@ namespace Rendering::Renderers {
         void Draw();
         void SetupStyles();
         void WaitForCurrentFrameToFinish() const;
+        static ImGuiMouseSource GetMouseSourceFromMessageExtraInfo();
+        static bool IsVkDown(int p_Vk);
+        static void UpdateKeyModifiers(ImGuiIO& p_ImGuiIO);
+        void UpdateKeyboardCodePage();
+        ImGuiKey KeyEventToImGuiKey(WPARAM p_Wparam, LPARAM p_Lparam);
+        void AddKeyEvent(
+            ImGuiIO& p_ImGuiIO, ImGuiKey p_Key, bool p_Down, int p_NativeKeycode, int p_NativeScancode = -1
+        );
+        void UpdateMouseData(ImGuiIO& p_ImGuiIO);
+        void ProcessKeyEventsWorkarounds(ImGuiIO& io);
 
     private:
         DECLARE_DETOUR_WITH_CONTEXT(
@@ -90,5 +101,10 @@ namespace Rendering::Renderers {
         volatile bool m_ImguiHasFocus = false;
         volatile bool m_ImguiVisible = true;
         bool m_ShowingUiToggleWarning = false;
+
+        HWND m_MouseHwnd;
+        int m_MouseTrackedArea; // 0: not tracked, 1: client area, 2: non-client area
+        int m_MouseButtonsDown;
+        UINT32 m_KeyboardCodePage;
     };
 }
