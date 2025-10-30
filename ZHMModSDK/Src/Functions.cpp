@@ -23,8 +23,8 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-    "\x48\x8B\xC4\x44\x88\x48\x20\x53\x56\x48\x83\xEC\x68\x48\x89\x68\x08\x48\x8B\xF1\x48\x89\x78\x10\x4C\x89\x60\x18\x4C\x8B\xE2\x4C",
-    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "\x44\x88\x44\x24\x18\x48\x89\x4C\x24\x08\x55\x53",
+    "xxxxxxxxxxxx",
     ZJsonDeserializer_Deserialize,
     ZDynamicObject*(ZDynamicObject* result, const uint8_t* pData, uint64_t nLength)
 );
@@ -201,8 +201,8 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-    "\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x48\x8B\xFA\x41\xBB",
-    "xxxxxxxxxxxxxx?xxxxx",
+    "\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x41\xBB",
+    "xxxxxxxxxxxxxx?xx",
     ZInputTokenStream_ParseToken,
     ZInputTokenStream::ZTokenData*(ZInputTokenStream* th, ZInputTokenStream::ZTokenData* result)
 );
