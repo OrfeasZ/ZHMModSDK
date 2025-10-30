@@ -13,6 +13,7 @@
 #include <Glacier/ZDelegate.h>
 #include <Glacier/ZMath.h>
 #include <Glacier/ZLevelManager.h>
+#include <Glacier/ZResource.h>
 
 class ZRenderDepthStencilView;
 class ZRuntimeResourceID;
@@ -33,7 +34,6 @@ class ZRenderDevice;
 class ZRenderSwapChain;
 class ZKeyboardWindows;
 class ZRenderGraphNodeCamera;
-class ZPackageManagerPackage;
 class ZGameUIManagerEntity;
 class ZGameStatsManager;
 class ZRenderContext;
@@ -119,8 +119,8 @@ public:
 
     static Hook<void(ZKeyboardWindows* th, bool a2)>* ZKeyboardWindows_Update;
 
-    static Hook<void*(ZPackageManagerPackage* th, void* a2, const ZString& a3, int a4, int patchLevel)>*
-    ZPackageManagerPackage_ZPackageManagerPackage;
+    static Hook<void*(IPackageManager::SPartitionInfo* th, void* a2, const ZString& a3, int a4, int patchLevel)>*
+    IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo;
 
     static Hook<void(ZGameLoopManager* th, const ZString& a2)>* ZGameLoopManager_ReleasePause;
     static Hook<bool(ZGameUIManagerEntity* th, EGameUIMenu menu, bool force)>* ZGameUIManagerEntity_TryOpenMenu;

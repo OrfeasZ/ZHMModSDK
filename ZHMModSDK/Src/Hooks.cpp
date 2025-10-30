@@ -138,8 +138,8 @@ PATTERN_HOOK(
 PATTERN_HOOK(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x89\x11",
     "xxxxxxxxxxxxxxxxxxx?xx",
-    ZPackageManagerPackage_ZPackageManagerPackage,
-    void*(ZPackageManagerPackage* th, void* a2, const ZString& a3, int a4, int patchLevel)
+    IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo,
+    void*(IPackageManager::SPartitionInfo* th, void* a2, const ZString& a3, int a4, int patchLevel)
 );
 
 PATTERN_HOOK(
