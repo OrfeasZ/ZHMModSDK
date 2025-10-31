@@ -561,6 +561,20 @@ void Editor::DrawEntityTree() {
             UpdateEntities();
         }
 
+        if (!m_EntityIdSearchInput.empty() ||
+            !m_EntityTypeSearchInput.empty() ||
+            !m_EntityNameSearchInput.empty()) {
+
+            if (!m_FilteredEntityTreeNodes.empty() &&
+                m_FilteredEntityTreeNodes.size() == 1 &&
+                *m_FilteredEntityTreeNodes.begin() == m_CachedEntityTree.get()) {
+                ImGui::TextColored(ImVec4(1.f, 69.f / 255.f, 69.f / 255.f, 1.f), "No results found.");
+                ImGui::End();
+
+                return;
+            }
+        }
+
         m_CachedEntityTreeMutex.lock_shared();
 
         if (m_CachedEntityTree) {
