@@ -365,6 +365,8 @@ void Editor::DrawEntityProperties() {
                 // Render the name of the property.
                 ImGui::PushFont(SDK()->GetImGuiBoldFont());
 
+                ImGui::AlignTextToFramePadding();
+
                 if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->
                     m_nPropertyId) {
                     // Some properties don't have a name for some reason. Try to find using RL.
