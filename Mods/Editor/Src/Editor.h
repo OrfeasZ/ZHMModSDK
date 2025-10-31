@@ -220,7 +220,7 @@ private:
         const ZEntityRef p_EntityRef,
         const std::string& p_TypeName,
         const EDebugChannel p_DebugChannel,
-        const uint64_t p_RuntimeResourceID,
+        const ZRuntimeResourceID p_RuntimeResourceID,
         const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
         const SMatrix& p_Transform = SMatrix()
     );
