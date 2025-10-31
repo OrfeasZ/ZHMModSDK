@@ -340,6 +340,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     }
 
     if (p_Node->IsPendingDeletion) {
+        ImGui::SetNextItemOpen(false);
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
         ImGui::BeginDisabled();
     }
