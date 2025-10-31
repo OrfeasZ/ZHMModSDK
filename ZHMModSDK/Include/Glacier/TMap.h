@@ -6,10 +6,10 @@
 template <typename T, typename Z>
 class TMap {
 public:
-    typedef TPair<T, Z> value_type;
+    using value_type = TPair<T, Z>;
 
-    typedef TBinaryTreeIterator<value_type> iterator;
-    typedef const TBinaryTreeIterator<value_type> const_iterator;
+    using iterator = TBinaryTreeIterator<value_type>;
+    using const_iterator = const TBinaryTreeIterator<value_type>;
 
 public:
     inline iterator end() {

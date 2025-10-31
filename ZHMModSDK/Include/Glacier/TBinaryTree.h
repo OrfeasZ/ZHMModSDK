@@ -97,8 +97,8 @@ public:
         TBinaryTreeNode<T>* m_pLeftRoot; // 0x18
     };
 
-    typedef TBinaryTreeIterator<T> iterator;
-    typedef const TBinaryTreeIterator<T> const_iterator;
+    using iterator = TBinaryTreeIterator<T>;
+    using const_iterator = const TBinaryTreeIterator<T>;
 
 public:
     iterator end() {
