@@ -50,18 +50,13 @@ void Editor::UpdateEntityTree(
         s_NodeQueue.emplace(s_BpFactory, s_Entity);
     }
 
-    std::shared_ptr<EntityTreeNode> s_SceneNode;
+    const auto s_SceneEntity = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene.m_ref;
+    const std::shared_ptr<EntityTreeNode> s_SceneNode = p_NodeMap[s_SceneEntity];
+    const std::shared_ptr<EntityTreeNode> s_UnparentedEntitiesNode = s_SceneNode->Children.find("Unparented Entities")->second;
     std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode;
 
     if (p_AreEntitiesDynamic) {
-        const auto s_SceneEntity = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene.m_ref;
-        s_SceneNode = p_NodeMap[s_SceneEntity];
-
-        auto it = s_SceneNode->Children.find("Dynamic Entities");
-
-        if (it != s_SceneNode->Children.end()) {
-            s_DynamicEntitiesNode = it->second;
-        }
+        s_DynamicEntitiesNode = s_SceneNode->Children.find("Dynamic Entities")->second;
     }
 
     while (!s_NodeQueue.empty()) {
@@ -200,8 +195,8 @@ void Editor::UpdateEntityTree(
             s_DynamicEntitiesNode->Children.insert({ s_Node->Name, s_Node });
         }
         else {
-            // Otherwise, add it to the root node.
-            p_NodeMap[ZEntityRef()] = s_Node;
+            // Otherwise, add it to the "Unparented Entities" node.
+            s_UnparentedEntitiesNode->Children.insert({ s_Node->Name, s_Node });
         }
     }
 
@@ -254,9 +249,18 @@ void Editor::UpdateEntities() {
         s_SceneEnt
     );
 
+    auto s_UnparentedEntitiesNode = std::make_shared<EntityTreeNode>(
+        "Unparented Entities",
+        "",
+        -1,
+        -1,
+        ZEntityRef{}
+    );
+
+    s_SceneNode->Children.insert(std::make_pair(s_UnparentedEntitiesNode->Name, s_UnparentedEntitiesNode));
+
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
     s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
-    s_NodeMap.emplace(ZEntityRef(), s_SceneNode);
     UpdateEntityTree(s_NodeMap, s_EntsToProcess, false);
 
     AddDynamicEntitiesToEntityTree(s_SceneNode, s_NodeMap);
