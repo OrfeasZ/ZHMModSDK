@@ -172,6 +172,14 @@ void Editor::UpdateEntityTree(
     while (!s_ParentlessNodes.empty()) {
         const auto s_Node = s_ParentlessNodes.front();
         s_ParentlessNodes.pop();
+        
+        // Skip entities from second and later factories referenced by aspect factories
+        if (s_Node->Entity &&
+            *s_Node->Entity.m_pEntity &&
+            reinterpret_cast<intptr_t>(*s_Node->Entity.m_pEntity) & 1
+        ) {
+            continue;
+        }
 
         const auto s_LogicalParent = s_Node->Entity.GetLogicalParent();
 
