@@ -818,9 +818,9 @@ DEFINE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity, ZEntityManager* 
         if (it != m_CachedEntityTreeMap.end()) {
             it->second->IsPendingDeletion = true;
 
-            std::scoped_lock s_ScopedLock(m_PendingNodeDeletionsMutex);
+            //std::scoped_lock s_ScopedLock(m_PendingNodeDeletionsMutex);
 
-            m_PendingNodeDeletions.push_back(it->second);
+            //m_PendingNodeDeletions.push_back(it->second);
         }
     }
 

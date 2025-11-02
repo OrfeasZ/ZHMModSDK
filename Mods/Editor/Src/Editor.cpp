@@ -79,7 +79,7 @@ Editor::Editor() {
 
     m_raycastLogging = false;
 
-    m_NodeDeletionThread = std::jthread([this] {
+    /*m_NodeDeletionThread = std::jthread([this] {
         while (true) {
             std::vector<std::weak_ptr<EntityTreeNode>> s_NodesToRemove;
 
@@ -103,7 +103,7 @@ Editor::Editor() {
 
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
-    });
+    });*/
 }
 
 Editor::~Editor() {
