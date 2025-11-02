@@ -342,6 +342,10 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
         }
         else {
             if (ImGui::Button("Get Debug Entities")) {
+                if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+                    UpdateEntities();
+                }
+
                 GetDebugEntities(m_CachedEntityTree);
             }
         }
