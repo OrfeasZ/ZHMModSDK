@@ -341,7 +341,7 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
             }
         }
         else {
-            if (ImGui::Button("Get Gizmos")) {
+            if (ImGui::Button("Get Debug Entities")) {
                 GetDebugEntities(m_CachedEntityTree);
             }
         }
