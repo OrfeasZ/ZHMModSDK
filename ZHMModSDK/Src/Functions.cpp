@@ -200,9 +200,9 @@ PATTERN_FUNCTION(
     void(ZRagdollHandler* th, const float4& position, const float4& impulse, uint32_t boneIndex, bool randomize)
 );
 
-PATTERN_FUNCTION(
-    "\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x41\xBB",
-    "xxxxxxxxxxxxxx?xx",
+PATTERN_RELATIVE_FUNCTION(
+    "\xE8\x00\x00\x00\x00\x48\x8D\x95\x00\x03\x00\x00",
+    "x????xxxxxxx",
     ZInputTokenStream_ParseToken,
     ZInputTokenStream::ZTokenData*(ZInputTokenStream* th, ZInputTokenStream::ZTokenData* result)
 );

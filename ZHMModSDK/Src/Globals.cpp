@@ -101,8 +101,8 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
-    "\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x48\x8B\x8D\xF8\x02\x00\x00",
-    "xxx????x????xxxxxxx",
+    "\x48\x8D\x15\x00\x00\x00\x00\x4C\x89\x7C\x24\x50",
+    "xxx????xxxxx",
     3,
     ZPlayerRegistry*, PlayerRegistry
 );

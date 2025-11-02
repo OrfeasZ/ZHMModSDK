@@ -135,9 +135,9 @@ PATTERN_HOOK(
     void(ZKeyboardWindows* th, bool a2)
 );
 
-PATTERN_HOOK(
-    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x89\x11\x41\x8B\xF1",
-    "xxxxxxxxxxxxxx?xxxxx",
+PATTERN_RELATIVE_CALL_HOOK(
+    "\xE8\x00\x00\x00\x00\x48\x8B\x8C\x24\xC0\x01\x00\x00",
+    "x????xxxxxxxx",
     IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo,
     void*(IPackageManager::SPartitionInfo* th, void* a2, const ZString& a3, int a4, int patchLevel)
 );
