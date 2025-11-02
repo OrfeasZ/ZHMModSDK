@@ -593,6 +593,9 @@ DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_HM5CrippleBoxEntity = {};
     }
 
+    m_IsInvincible = false;
+    m_IsInvisible = false;
+    m_IsInfiniteAmmoEnabled = false;
     m_GlobalOutfitKit = nullptr;
 
     return HookResult<void>(HookAction::Continue());
