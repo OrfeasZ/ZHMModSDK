@@ -938,6 +938,9 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_EntityNames.clear();
     m_CachedEntityTreeMutex.unlock();
 
+    m_PendingDynamicEntities.clear();
+    m_DynamicEntities.clear();
+
     m_NavpAreas.clear();
 
     m_Server.OnSceneClearing(p_FullyUnloadScene);
