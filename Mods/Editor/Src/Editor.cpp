@@ -406,7 +406,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         std::vector<ZEntityRef> s_EntitiesToAdd;
 
         {
-            std::scoped_lock s_ScopedLock(m_NewEntityQueueMutex);
+            std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
 
             if (!m_PendingDynamicEntities.empty()) {
                 s_EntitiesToAdd.swap(m_PendingDynamicEntities);

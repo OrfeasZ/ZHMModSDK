@@ -398,7 +398,7 @@ private:
     std::vector<std::tuple<ZEntityRef, std::optional<std::string>>> m_EntitiesToDestroy;
 
     std::atomic_bool m_IsBuildingEntityTree = false;
-    std::mutex m_NewEntityQueueMutex;
+    std::mutex m_PendingDynamicEntitiesMutex;
     std::vector<ZEntityRef> m_PendingDynamicEntities;
     std::mutex m_PendingNodeDeletionsMutex;
     std::vector<std::weak_ptr<EntityTreeNode>> m_PendingNodeDeletions;

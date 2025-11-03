@@ -799,7 +799,7 @@ DEFINE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
     ZEntityRef* s_EntityRef = p_Hook->CallOriginal(th, result, sDebugName, pEntityFactory, logicalParent, entityID, externalRefs, unk0);
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
-        std::scoped_lock s_ScopedLock(m_NewEntityQueueMutex);
+        std::scoped_lock s_ScopedLock(m_DynamicEntitiesMutex);
 
         m_PendingDynamicEntities.push_back(result);
     }
