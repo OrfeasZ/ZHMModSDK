@@ -62,7 +62,7 @@ PATTERN_FUNCTION(
 PATTERN_FUNCTION(
     "\x40\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\xF8\xFC\xFF\xFF",
     "xxxxxxxxxxxxxxxxxxxxx",
-    ZEngineAppCommon_CreateFreeCamera,
+    ZEngineAppCommon_CreateFreeCameraAndControl,
     void(ZEngineAppCommon* th)
 );
 

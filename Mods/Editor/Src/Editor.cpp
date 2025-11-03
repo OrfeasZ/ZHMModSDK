@@ -374,7 +374,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
         if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
             Logger::Debug("Creating free camera.");
-            Functions::ZEngineAppCommon_CreateFreeCamera->Call(
+            Functions::ZEngineAppCommon_CreateFreeCameraAndControl->Call(
                 &(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon
             );
         }
