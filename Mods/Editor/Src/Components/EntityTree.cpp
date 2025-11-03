@@ -119,6 +119,9 @@ void Editor::UpdateEntityTree(
                 s_EntityName = s_Name->second;
             }
 
+            const uint64_t s_BaseKey = s_SubEntityId & 0xFFFFFFFFFFFC000F;
+            const bool s_IsEntityIDGenerated = p_AreEntitiesDynamic && Globals::EntityManager->m_DynamicEntityIdToCount.contains(s_BaseKey);
+
             // Format a human-readable name for the entity.
             const auto s_EntityTypeName = (*s_SubEntity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->
                 m_pTypeName;
@@ -126,7 +129,7 @@ void Editor::UpdateEntityTree(
                 "{} ({:08x}){}",
                 s_EntityName,
                 s_SubEntityId,
-                p_AreEntitiesDynamic ? " *" : ""
+                p_AreEntitiesDynamic ? (s_IsEntityIDGenerated ? " **" : " *") : ""
             );
 
             // Add the node to the map.
