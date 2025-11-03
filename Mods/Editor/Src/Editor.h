@@ -398,6 +398,8 @@ private:
     std::vector<std::tuple<ZEntityRef, std::optional<std::string>>> m_EntitiesToDestroy;
 
     std::atomic_bool m_IsBuildingEntityTree = false;
+    std::mutex m_DynamicEntitiesMutex;
+    std::unordered_set<ZEntityRef> m_DynamicEntities;
     std::mutex m_PendingDynamicEntitiesMutex;
     std::vector<ZEntityRef> m_PendingDynamicEntities;
     std::mutex m_PendingNodeDeletionsMutex;

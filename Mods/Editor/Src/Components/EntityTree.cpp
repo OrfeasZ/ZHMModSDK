@@ -298,23 +298,23 @@ void Editor::AddDynamicEntitiesToEntityTree(
 
     std::vector<ZEntityRef> s_DynamicEntities;
 
-    s_DynamicEntities.reserve(Globals::EntityManager->m_Entities.size());
+    {
+        std::scoped_lock s_ScopedLock(m_DynamicEntitiesMutex);
 
-    for (const auto& s_Pair : Globals::EntityManager->m_Entities) {
-        const ZEntityRef& s_DynamicEntity = s_Pair.second;
+        s_DynamicEntities.reserve(m_PendingDynamicEntities.size());
 
-        if (!s_DynamicEntity) {
-            continue;
+        for (const auto& ref : m_PendingDynamicEntities) {
+            if (m_DynamicEntities.contains(ref)) {
+                s_DynamicEntities.push_back(ref);
+            }
         }
 
-        const uint64_t s_BaseKey = s_Pair.first & 0xFFFFFFFFFFFC000F;
-
-        if (Globals::EntityManager->m_DynamicEntityIdToCount.contains(s_BaseKey)) {
-            s_DynamicEntities.push_back(s_DynamicEntity);
-        }
+        m_PendingDynamicEntities.clear();
     }
 
-    UpdateEntityTree(p_NodeMap, s_DynamicEntities, true);
+    if (!s_DynamicEntities.empty()) {
+        UpdateEntityTree(p_NodeMap, s_DynamicEntities, true);
+    }
 }
 
 void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
@@ -822,6 +822,12 @@ DEFINE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity, ZEntityManager* 
 
             //m_PendingNodeDeletions.push_back(it->second);
         }
+    }
+
+    {
+        std::scoped_lock lock(m_DynamicEntitiesMutex);
+
+        m_DynamicEntities.erase(entityRef);
     }
 
     p_Hook->CallOriginal(th, entityRef, externalRefs);
