@@ -402,7 +402,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
     m_EntityDestructionMutex.unlock();
 
-    if (!m_IsBuildingEntityTree.load()) {
+    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         std::vector<ZEntityRef> s_EntitiesToAdd;
 
         {
