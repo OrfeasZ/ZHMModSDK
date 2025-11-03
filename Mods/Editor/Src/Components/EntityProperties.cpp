@@ -116,13 +116,15 @@ void Editor::DrawEntityProperties() {
             // This is also probably wrong.
             auto s_Index = s_Factory->GetSubEntityIndex(s_SelectedEntity->GetType()->m_nEntityId);
 
-            if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint)
-                ImGui::TextUnformatted(
-                    fmt::format(
-                        "Entity Name: {}",
-                        s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName
-                    ).c_str()
-                );
+            if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
+                const auto& s_EntityName = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
+
+                ImGui::TextUnformatted(fmt::format("Entity Name: {}", s_EntityName).c_str());
+
+                if (ImGuiCopyWidget("EntName")) {
+                    CopyToClipboard(s_EntityName.c_str());
+                }
+            }
         }
 
         ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", s_SelectedEntity->GetType()->m_nEntityId).c_str());
