@@ -19,6 +19,9 @@
 #include <map>
 #include <utility>
 
+class ZClothCharacterEntity;
+class ZLinkedProxyEntity;
+
 void Editor::UpdateEntityTree(
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
     const std::vector<ZEntityRef>& p_Entities,
@@ -273,6 +276,10 @@ void Editor::UpdateEntities() {
 
     AddDynamicEntitiesToEntityTree(s_SceneNode, s_NodeMap);
 
+    if (m_ReparentDynamicOutfitEntities) {
+        ReparentDynamicOutfitEntities(s_NodeMap);
+    }
+
     // Update the cached tree.
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree = std::move(s_SceneNode);
@@ -314,6 +321,49 @@ void Editor::AddDynamicEntitiesToEntityTree(
 
     if (!s_DynamicEntities.empty()) {
         UpdateEntityTree(p_NodeMap, s_DynamicEntities, true);
+    }
+}
+
+void Editor::ReparentDynamicOutfitEntities(
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
+) {
+    const auto s_SceneEntity = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene.m_ref;
+    const std::shared_ptr<EntityTreeNode> s_SceneNode = p_NodeMap[s_SceneEntity];
+    const std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode = s_SceneNode->Children.find("Dynamic Entities")->second;
+
+    std::vector<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodesToReparent;
+
+    static STypeID* s_ClothCharacterEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZClothCharacterEntity");
+    static STypeID* s_LinkedProxyEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZLinkedProxyEntity");
+
+    for (const auto& [_, s_Node] : s_DynamicEntitiesNode->Children) {
+        if (!s_Node->IsPendingDeletion &&
+            s_Node->Entity && (
+                s_Node->Entity.QueryInterface<ZClothCharacterEntity>(s_ClothCharacterEntityTypeID) ||
+                s_Node->Entity && s_Node->Entity.QueryInterface<ZLinkedProxyEntity>(s_LinkedProxyEntityTypeID)
+                )) {
+            ZEntityRef s_ParentRef = s_Node->Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref;
+
+            if (!s_ParentRef) {
+                continue;
+            }
+
+            auto s_ParentNodeIt = p_NodeMap.find(s_ParentRef);
+
+            if (s_ParentNodeIt != p_NodeMap.end()) {
+                s_NodesToReparent.emplace_back(s_ParentNodeIt->second, s_Node);
+            }
+        }
+    }
+
+    for (auto& [s_ParentNode, s_Node] : s_NodesToReparent) {
+        s_DynamicEntitiesNode->Children.erase(s_Node->Name);
+
+        s_ParentNode->Children.insert({ s_Node->Name, s_Node });
+
+        s_Node->Entity.SetLogicalParent(
+            s_Node->Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref
+        );
     }
 }
 

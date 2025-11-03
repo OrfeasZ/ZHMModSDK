@@ -417,6 +417,10 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             std::scoped_lock s_ScopedLock(m_CachedEntityTreeMutex);
 
             UpdateEntityTree(m_CachedEntityTreeMap, s_EntitiesToAdd, true);
+
+            if (m_ReparentDynamicOutfitEntities) {
+                ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
+            }
         }
     }
 }

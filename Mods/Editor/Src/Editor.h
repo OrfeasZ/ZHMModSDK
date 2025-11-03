@@ -117,6 +117,9 @@ private:
         const std::shared_ptr<EntityTreeNode>& p_SceneNode,
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
+    void ReparentDynamicOutfitEntities(
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
+    );
 
     void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
@@ -444,6 +447,8 @@ private:
     ZEntityRef m_EditorData {};
     TEntityRef<ZCameraEntity> m_EditorCamera {};
     TEntityRef<ZRenderDestinationTextureEntity> m_EditorCameraRT {};
+
+    bool m_ReparentDynamicOutfitEntities = true;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)
