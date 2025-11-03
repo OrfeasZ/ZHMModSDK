@@ -18,6 +18,8 @@
 #include <ranges>
 
 #include <imgui_impl_dx12.h>
+#include <imgui_internal.h>
+
 #include "Glacier/SGameUpdateEvent.h"
 #include "Glacier/ZCollision.h"
 #include "Glacier/ZActor.h"
@@ -288,7 +290,11 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
     ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.5, 0.5});
     ImGui::SetWindowFontScale(0.6);
 
-    const auto s_Result = ImGui::Button((std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(), {20, 20});
+    const auto s_Result = ImGui::ButtonEx(
+        (std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(),
+        {20, 20},
+        ImGuiButtonFlags_AlignTextBaseLine
+    );
 
     ImGui::SetWindowFontScale(1.0);
     ImGui::PopStyleVar(2);
