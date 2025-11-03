@@ -40,7 +40,6 @@ void Editor::DrawEntityProperties() {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select Owning Entity (Brick)");
 
-
         ImGui::SameLine(0, 5);
 
         if (ImGui::Button(ICON_MD_DESELECT))
