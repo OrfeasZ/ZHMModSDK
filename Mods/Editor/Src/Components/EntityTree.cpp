@@ -400,8 +400,26 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
             m_ShouldScrollToEntity = false;
         }
     }
-    else if (m_ShouldScrollToEntity && m_SelectedEntity && m_SelectedEntity.IsAnyParent(s_Entity)) {
-        ImGui::SetNextItemOpen(true);
+    else if (m_ShouldScrollToEntity && m_SelectedEntity) {
+        bool s_ShouldExpandNode = false;
+
+        if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
+            s_ShouldExpandNode = true;
+        }
+        else if (!s_Entity && (p_Node->Name == "Dynamic Entities" || p_Node->Name == "Unparented Entities")) {
+            for (const auto& [_, s_Child] : p_Node->Children) {
+                if (s_Child->Entity == m_SelectedEntity ||
+                    (s_Child->Entity && m_SelectedEntity.IsAnyParent(s_Child->Entity)))
+                {
+                    s_ShouldExpandNode = true;
+                    break;
+                }
+            }
+        }
+
+        if (s_ShouldExpandNode) {
+            ImGui::SetNextItemOpen(true);
+        }
     }
 
     if (p_Node->IsPendingDeletion) {
