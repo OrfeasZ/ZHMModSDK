@@ -196,8 +196,8 @@ private:
     void DrawDebugChannels(bool p_HasFocus);
 
     static void EquipOutfit(
-        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t P_CharSetIndex,
-        const std::string& P_CharSetCharacterType, uint8_t P_OutfitVariationindex, ZActor* p_Actor
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharSetIndex,
+        const std::string& p_CharSetCharacterType, uint8_t p_OutfitVariationindex, ZActor* p_Actor
     );
 
     void EnableTrackCam();
