@@ -100,6 +100,15 @@ private:
     void DrawEntityAABB(IRenderer* p_Renderer);
 
     void DrawEntityProperties();
+    void DrawEntityPropertyValue(
+        const std::string& p_Id,
+        const std::string& p_PropertyName,
+        const std::string& p_TypeName,
+        const STypeID* p_TypeID,
+        ZEntityRef p_Entity,
+        ZEntityProperty* p_Property,
+        void* p_Data
+    );
 
     void DrawLibrary();
 
@@ -188,6 +197,9 @@ private:
     void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
+    void TArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+        const std::string& s_PropertyName, const std::string& s_TypeName, const STypeID* p_TypeID);
 
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 

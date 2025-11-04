@@ -368,104 +368,52 @@ void Editor::DrawEntityProperties() {
 
                 ImGui::AlignTextToFramePadding();
 
-                if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->
-                    m_nPropertyId) {
-                    // Some properties don't have a name for some reason. Try to find using RL.
-                    const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+                std::string s_PropertyName;
 
-                    if (s_PropertyName.Size > 0) {
-                        ImGui::Text("%s", std::string(s_PropertyName.Data, s_PropertyName.Size).c_str());
+                if (s_PropertyInfo->m_pType->typeInfo()->isResource() ||
+                    s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId
+                ) {
+                    // Some properties don't have a name for some reason. Try to find using RL.
+                    const auto s_PropertyNameData = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+                    if (s_PropertyNameData.Size > 0) {
+                        s_PropertyName.assign(s_PropertyNameData.Data, s_PropertyNameData.Size);
                     }
                     else {
-                        ImGui::Text("~%08x", s_Property->m_nPropertyId);
+                        s_PropertyName = fmt::format("~{:08x}", s_Property->m_nPropertyId);
                     }
                 }
                 else {
-                    ImGui::Text("%s", s_PropertyInfo->m_pName);
+                    s_PropertyName = s_PropertyInfo->m_pName;
+                }
+
+                if (!s_PropertyInfo->m_pType->typeInfo()->isArray()) {
+                    ImGui::Text("%s", s_PropertyName.c_str());
                 }
 
                 if (ImGui::IsItemHovered()) {
                     ImGui::SetTooltip("%s", s_PropertyInfo->m_pType->typeInfo()->m_pTypeName);
                 }
-                ImGui::PopFont();
-                ImGui::SameLine();
 
-                // Make the next item fill the rest of the width.
-                ImGui::PushItemWidth(-1);
+                ImGui::PopFont();
+
+                if (!s_PropertyInfo->m_pType->typeInfo()->isArray()) {
+                    ImGui::SameLine();
+
+                    // Make the next item fill the rest of the width.
+                    ImGui::PushItemWidth(-1);
+                }
 
                 // Render the value of the property.
-                if (s_TypeName == "ZString") {
-                    StringProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "bool") {
-                    BoolProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "uint8") {
-                    Uint8Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "int8") {
-                    Int8Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "uint16") {
-                    Uint16Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "int16") {
-                    Int16Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "uint32") {
-                    Uint32Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "int32") {
-                    Int32Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "uint64") {
-                    Uint64Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "int64") {
-                    Int64Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "float32") {
-                    Float32Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "float64") {
-                    Float64Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SVector2") {
-                    SVector2Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SVector3") {
-                    SVector3Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SVector4") {
-                    SVector4Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SMatrix43") {
-                    SMatrix43Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SColorRGB") {
-                    SColorRGBProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SColorRGBA") {
-                    SColorRGBAProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_PropertyInfo->m_pType->typeInfo()->isEnum()) {
-                    EnumProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_PropertyInfo->m_pType->typeInfo()->isResource()) {
-                    ResourceProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName.starts_with("ZEntityRef")) {
-                    ZEntityRefProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName.starts_with("TEntityRef<")) {
-                    TEntityRefProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "ZRepositoryID") {
-                    ZRepositoryIDProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else {
-                    UnsupportedProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
+                DrawEntityPropertyValue(
+                    s_InputId,
+                    s_PropertyName,
+                    s_TypeName,
+                    s_PropertyInfo->m_pType,
+                    s_SelectedEntity,
+                    s_Property,
+                    s_Data
+                );
 
                 ImGui::Separator();
 
@@ -476,4 +424,90 @@ void Editor::DrawEntityProperties() {
     }
 
     ImGui::End();
+}
+
+void Editor::DrawEntityPropertyValue(
+    const std::string& p_Id,
+    const std::string& p_PropertyName,
+    const std::string& p_TypeName,
+    const STypeID* p_TypeID,
+    ZEntityRef p_Entity,
+    ZEntityProperty* p_Property,
+    void* p_Data
+) {
+    if (p_TypeName == "ZString") {
+        StringProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "bool") {
+        BoolProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "uint8") {
+        Uint8Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "int8") {
+        Int8Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "uint16") {
+        Uint16Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "int16") {
+        Int16Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "uint32") {
+        Uint32Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "int32") {
+        Int32Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "uint64") {
+        Uint64Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "int64") {
+        Int64Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "float32") {
+        Float32Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "float64") {
+        Float64Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SVector2") {
+        SVector2Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SVector3") {
+        SVector3Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SVector4") {
+        SVector4Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SMatrix43") {
+        SMatrix43Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SColorRGB") {
+        SColorRGBProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SColorRGBA") {
+        SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeID->typeInfo()->isEnum()) {
+        EnumProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeID->typeInfo()->isResource()) {
+        ResourceProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName.starts_with("ZEntityRef")) {
+        ZEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName.starts_with("TEntityRef")) {
+        TEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "ZRepositoryID") {
+        ZRepositoryIDProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeID->typeInfo()->isArray()) {
+        TArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeName, p_TypeID);
+    }
+    else {
+        UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
 }
