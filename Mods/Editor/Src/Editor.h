@@ -268,6 +268,12 @@ private:
         LinesAndTriangles
     };
 
+    enum EntityViewMode {
+        All,
+        ScenesAndBricks,
+        DynamicEntities
+    };
+
     enum DebugEntityTypeName {
         CoverPlane,
         GuideLadder,
@@ -363,6 +369,10 @@ private:
     bool m_ShouldScrollToEntity = false;
 
     EntityHighlightMode m_EntityHighlightMode = EntityHighlightMode::Lines;
+
+    EntityViewMode m_EntityViewMode = EntityViewMode::All;
+    EntityViewMode m_LastEntityViewMode = EntityViewMode::All;
+    const std::vector<std::string> m_EntityViewModes = { "All", "Scenes/Bricks", "Dynamic Entities" };
 
     std::string m_EntityIdSearchInput;
     std::string m_EntityTypeSearchInput;

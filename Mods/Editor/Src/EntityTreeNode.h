@@ -12,11 +12,12 @@ struct EntityTreeNode {
     ZRuntimeResourceID TBLU;
     ZEntityRef Entity;
     std::multimap<std::string, std::shared_ptr<EntityTreeNode>> Children;
+    bool IsDynamicEntity;
     std::atomic<bool> IsPendingDeletion = false;
 
     EntityTreeNode(
         const std::string& p_Name, const std::string& p_type, uint64_t p_EntityId, ZRuntimeResourceID p_TBLU,
-        ZEntityRef p_Ref
+        ZEntityRef p_Ref, bool p_IsDynamicEntity = false
     )
-        : Name(p_Name), EntityType(p_type), EntityId(p_EntityId), TBLU(p_TBLU), Entity(p_Ref) {}
+        : Name(p_Name), EntityType(p_type), EntityId(p_EntityId), TBLU(p_TBLU), Entity(p_Ref), IsDynamicEntity(p_IsDynamicEntity) {}
 };

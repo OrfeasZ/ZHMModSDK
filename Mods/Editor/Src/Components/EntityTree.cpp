@@ -138,7 +138,8 @@ void Editor::UpdateEntityTree(
                 s_EntityTypeName,
                 s_SubEntityId,
                 s_CurrentFactory->m_ridResource,
-                s_SubEntity
+                s_SubEntity,
+                p_AreEntitiesDynamic
             );
 
             const auto s_LogicalParent = s_SubEntity.GetLogicalParent();
@@ -344,7 +345,7 @@ void Editor::ReparentDynamicOutfitEntities(
             s_Node->Entity && (
                 s_Node->Entity.QueryInterface<ZClothCharacterEntity>(s_ClothCharacterEntityTypeID) ||
                 s_Node->Entity && s_Node->Entity.QueryInterface<ZLinkedProxyEntity>(s_LinkedProxyEntityTypeID)
-                )) {
+        )) {
             ZEntityRef s_ParentRef = s_Node->Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref;
 
             if (!s_ParentRef) {
@@ -373,8 +374,13 @@ void Editor::ReparentDynamicOutfitEntities(
 void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     if (!p_Node) return;
 
-    if ((!m_EntityIdSearchInput.empty() || !m_EntityTypeSearchInput.empty() || !m_EntityNameSearchInput.empty()) &&
-        !m_FilteredEntityTreeNodes.contains(p_Node.get())) {
+    if (
+        (!m_EntityIdSearchInput.empty() ||
+        !m_EntityTypeSearchInput.empty() ||
+        !m_EntityNameSearchInput.empty() ||
+        m_EntityViewMode != EntityViewMode::All) &&
+        !m_FilteredEntityTreeNodes.contains(p_Node.get())
+    ) {
         return;
     }
 
@@ -476,7 +482,9 @@ void Editor::FilterEntityTree() {
 
     if (m_EntityIdSearchInput.empty() &&
         m_EntityTypeSearchInput.empty() &&
-        m_EntityNameSearchInput.empty()) {
+        m_EntityNameSearchInput.empty() &&
+        m_EntityViewMode == EntityViewMode::All &&
+        m_LastEntityViewMode == EntityViewMode::All) {
         return;
     }
 
@@ -491,6 +499,8 @@ void Editor::FilterEntityTree() {
 
         OnSelectEntity(s_EntityTreeNode->Entity, std::nullopt);
     }
+
+    m_LastEntityViewMode = m_EntityViewMode;
 }
 
 bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
@@ -498,22 +508,37 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
         return false;
     }
 
-    bool s_MatchesId = true;
-    bool s_MatchesType = true;
-    bool s_MatchesName = true;
-
-    if (!m_EntityIdSearchInput.empty()) {
-        const uint64_t id = std::strtoull(m_EntityIdSearchInput.c_str(), nullptr, 16);
-
-        s_MatchesId = p_Node->EntityId == id;
+    if (m_EntityViewMode == EntityViewMode::ScenesAndBricks &&
+        (p_Node->IsDynamicEntity || !p_Node->Entity && p_Node->Name == "Dynamic Entities")
+    ) {
+        return false;
     }
+    
+    bool s_Matches = false;
 
-    if (!m_EntityTypeSearchInput.empty()) {
-        s_MatchesType = p_Node->Entity.HasInterface(m_EntityTypeSearchInput);
-    }
+    if (m_EntityViewMode == EntityViewMode::All ||
+        m_EntityViewMode == EntityViewMode::ScenesAndBricks ||
+        m_EntityViewMode == EntityViewMode::DynamicEntities && p_Node->IsDynamicEntity
+    ) {
+        bool s_MatchesId = true;
+        bool s_MatchesType = true;
+        bool s_MatchesName = true;
 
-    if (!m_EntityNameSearchInput.empty()) {
-        s_MatchesName = Util::StringUtils::FindSubstring(p_Node->Name.c_str(), m_EntityNameSearchInput);
+        if (!m_EntityIdSearchInput.empty()) {
+            const uint64_t id = std::strtoull(m_EntityIdSearchInput.c_str(), nullptr, 16);
+
+            s_MatchesId = p_Node->EntityId == id;
+        }
+
+        if (!m_EntityTypeSearchInput.empty()) {
+            s_MatchesType = p_Node->Entity.HasInterface(m_EntityTypeSearchInput);
+        }
+
+        if (!m_EntityNameSearchInput.empty()) {
+            s_MatchesName = Util::StringUtils::FindSubstring(p_Node->Name.c_str(), m_EntityNameSearchInput);
+        }
+
+        s_Matches = s_MatchesId && s_MatchesType && s_MatchesName;
     }
 
     bool s_ChildMatches = false;
@@ -523,8 +548,6 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
             s_ChildMatches = true;
         }
     }
-
-    const bool s_Matches = s_MatchesId && s_MatchesType && s_MatchesName;
 
     if (s_Matches) {
         m_DirectEntityTreeNodeMatches.push_back(p_Node);
@@ -627,6 +650,24 @@ void Editor::DrawEntityTree() {
             FilterEntityTree();
         }
 
+        if (ImGui::BeginCombo("Entity View Mode", m_EntityViewModes[m_EntityViewMode].c_str())) {
+            for (int i = 0; i < m_EntityViewModes.size(); ++i) {
+                const bool s_IsSelected = m_EntityViewMode == static_cast<EntityViewMode>(i);
+
+                if (ImGui::Selectable(m_EntityViewModes[i].c_str(), s_IsSelected)) {
+                    m_EntityViewMode = static_cast<EntityViewMode>(i);
+
+                    FilterEntityTree();
+                }
+
+                if (s_IsSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
         if (ImGui::Button(ICON_MD_CLEAR " Clear Filters")) {
             m_EntityIdSearchInput.clear();
             m_EntityTypeSearchInput.clear();
@@ -635,6 +676,9 @@ void Editor::DrawEntityTree() {
             memset(s_EntitySearchInput, 0, sizeof(s_EntitySearchInput));
             memset(s_EntityTypeSearchInput, 0, sizeof(s_EntityTypeSearchInput));
             memset(s_EntityNameSearchInput, 0, sizeof(s_EntityNameSearchInput));
+
+            m_EntityViewMode = EntityViewMode::All;
+            m_LastEntityViewMode = EntityViewMode::All;
 
             m_FilteredEntityTreeNodes.clear();
             m_DirectEntityTreeNodeMatches.clear();
