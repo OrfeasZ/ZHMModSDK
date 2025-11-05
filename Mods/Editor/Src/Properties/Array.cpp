@@ -44,7 +44,12 @@ void Editor::TArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
     ImGui::AlignTextToFramePadding();
 
     const bool s_IsTreeNodeOpen = ImGui::TreeNodeEx(
-        fmt::format("{} ({} elements)##{}", s_PropertyName, s_ArraySize, p_Id).c_str()
+        fmt::format("{} ({} {})##{}",
+            s_PropertyName,
+            s_ArraySize,
+            s_ArraySize == 1 ? "element" : "elements",
+            p_Id
+        ).c_str()
     );
 
     ImGui::PopFont();
