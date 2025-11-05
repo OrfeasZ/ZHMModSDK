@@ -312,12 +312,10 @@ void Editor::AddDynamicEntitiesToEntityTree(
     {
         std::scoped_lock s_ScopedLock(m_DynamicEntitiesMutex);
 
-        s_DynamicEntities.reserve(m_PendingDynamicEntities.size());
+        s_DynamicEntities.reserve(m_DynamicEntities.size());
 
-        for (const auto& ref : m_PendingDynamicEntities) {
-            if (m_DynamicEntities.contains(ref)) {
-                s_DynamicEntities.push_back(ref);
-            }
+        for (const auto& ref : m_DynamicEntities) {
+            s_DynamicEntities.push_back(ref);
         }
 
         m_PendingDynamicEntities.clear();
