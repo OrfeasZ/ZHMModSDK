@@ -926,7 +926,7 @@ DEFINE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
         m_DynamicEntities.insert(result);
     }
 
-    {
+    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         std::scoped_lock lock(m_PendingDynamicEntitiesMutex);
 
         m_PendingDynamicEntities.push_back(result);
