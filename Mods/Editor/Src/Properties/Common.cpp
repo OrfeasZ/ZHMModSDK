@@ -33,25 +33,31 @@ void Editor::UnsupportedProperty(
 void Editor::ZEntityRefProperty(
     const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data
 ) {
-    ImVec4 linkColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f); // Light blue, like a link
+    if (auto s_EntityRef = reinterpret_cast<ZEntityRef*>(p_Data)) {
+        ImVec4 linkColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f); // Light blue, like a link
 
-    ImGui::PushStyleColor(ImGuiCol_Text, linkColor);
-    ImGui::Text("%s", "link");
-    ImGui::PopStyleColor();
+        ImGui::PushStyleColor(ImGuiCol_Text, linkColor);
+        ImGui::Text("%s", "link");
+        ImGui::PopStyleColor();
 
-    if (ImGui::IsItemHovered()) {
-        // Underline on hover
-        ImVec2 min = ImGui::GetItemRectMin();
-        ImVec2 max = ImGui::GetItemRectMax();
-        ImGui::GetWindowDrawList()->AddLine(
-            ImVec2(min.x, max.y),
-            ImVec2(max.x, max.y),
-            ImGui::GetColorU32(linkColor)
-        );
+        if (ImGui::IsItemHovered()) {
+            // Underline on hover
+            ImVec2 min = ImGui::GetItemRectMin();
+            ImVec2 max = ImGui::GetItemRectMax();
+            ImGui::GetWindowDrawList()->AddLine(
+                ImVec2(min.x, max.y),
+                ImVec2(max.x, max.y),
+                ImGui::GetColorU32(linkColor)
+            );
+        }
+
+        if (ImGui::IsItemClicked()) {
+            OnSelectEntity(*s_EntityRef, std::nullopt);
+        }
     }
-
-    if (ImGui::IsItemClicked()) {
-        OnSelectEntity(p_Entity, std::nullopt);
+    else {
+        constexpr auto textColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
+        ImGui::TextColored(textColor, "(%s)", "null");
     }
 }
 
