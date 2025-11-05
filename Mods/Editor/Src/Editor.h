@@ -474,6 +474,9 @@ private:
     TEntityRef<ZRenderDestinationTextureEntity> m_EditorCameraRT {};
 
     bool m_ReparentDynamicOutfitEntities = true;
+
+    inline static ZEntityRef m_DynamicEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x1));
+    inline static ZEntityRef m_UnparentedEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x2));
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

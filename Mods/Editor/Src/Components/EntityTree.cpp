@@ -269,7 +269,7 @@ void Editor::UpdateEntities() {
         "",
         -1,
         -1,
-        ZEntityRef{}
+        m_UnparentedEntitiesNodeEntityRef
     );
 
     s_SceneNode->Children.insert(std::make_pair(s_UnparentedEntitiesNode->Name, s_UnparentedEntitiesNode));
@@ -302,7 +302,7 @@ void Editor::AddDynamicEntitiesToEntityTree(
         "",
         -1,
         -1,
-        ZEntityRef{}
+        m_DynamicEntitiesNodeEntityRef
     );
 
     p_SceneNode->Children.insert(std::make_pair(s_DynamicEntitiesNode->Name, s_DynamicEntitiesNode));
@@ -758,7 +758,12 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, co
     m_ScrollToEntity = p_ShouldScrollToEntity && p_Entity.GetEntity() != nullptr;
 
     if (s_DifferentEntity) {
-        m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
+        if (p_Entity != m_DynamicEntitiesNodeEntityRef &&
+            p_Entity != m_UnparentedEntitiesNodeEntityRef
+            ) {
+            m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
+        }
+
         m_SelectedEntity = p_Entity;
     }
     else {
@@ -777,8 +782,12 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, co
     }
 
     if (m_SelectionForFreeCameraEditorStyleEntity) {
-        m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
-        m_SelectionForFreeCameraEditorStyleEntity->m_selection.push_back(p_Entity);
+        if (p_Entity != m_DynamicEntitiesNodeEntityRef &&
+            p_Entity != m_UnparentedEntitiesNodeEntityRef
+        ) {
+            m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
+            m_SelectionForFreeCameraEditorStyleEntity->m_selection.push_back(p_Entity);
+        }
     }
 }
 

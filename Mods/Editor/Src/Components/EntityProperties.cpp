@@ -18,6 +18,14 @@ void Editor::DrawEntityProperties() {
     ImGui::SetNextWindowSize({500, s_ImgGuiIO.DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_TUNE " Entity Properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
+    if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
+        m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
+    ) {
+        ImGui::End();
+
+        return;
+    }
+
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
 
     const auto s_SelectedEntity = m_SelectedEntity;

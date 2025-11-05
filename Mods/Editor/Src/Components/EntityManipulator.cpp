@@ -6,6 +6,12 @@
 #include "Glacier/ZCameraEntity.h"
 
 void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
+    if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
+        m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
+    ) {
+        return;
+    }
+
     if (const auto s_SelectedEntity = m_SelectedEntity) {
         if (auto* s_SpatialEntity = s_SelectedEntity.QueryInterface<ZSpatialEntity>()) {
             auto s_Transform = s_SpatialEntity->GetWorldMatrix();
@@ -59,6 +65,12 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
     }
 
     ImGuizmo::Enable(p_HasFocus);
+
+    if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
+        m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
+    ) {
+        return;
+    }
 
     if (const auto s_SelectedEntity = m_SelectedEntity) {
         if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call()) {
