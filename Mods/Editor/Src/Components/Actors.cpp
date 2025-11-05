@@ -335,7 +335,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 UpdateEntities();
             }
 
-            OnSelectEntity(s_Ref, std::nullopt);
+            OnSelectEntity(s_Ref, true, std::nullopt);
         }
 
         if (ImGui::Button("Teleport Actor To Player")) {
