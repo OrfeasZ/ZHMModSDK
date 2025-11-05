@@ -53,7 +53,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
             }
 
             if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-                OnSelectEntity({}, std::nullopt);
+                OnSelectEntity({}, false, std::nullopt);
             }
         }
     }

@@ -80,7 +80,7 @@ void Editor::EntityRefProperty(ZEntityRef p_Entity)
     }
 
     if (ImGui::IsItemClicked()) {
-        OnSelectEntity(p_Entity, std::nullopt);
+        OnSelectEntity(p_Entity, true, std::nullopt);
     }
 }
 

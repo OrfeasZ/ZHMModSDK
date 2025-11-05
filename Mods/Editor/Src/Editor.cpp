@@ -498,7 +498,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
                 }
             }
 
-            OnSelectEntity(s_SelectedEntity, std::nullopt);
+            OnSelectEntity(s_SelectedEntity, true, std::nullopt);
         }
     }
 }
@@ -931,7 +931,7 @@ DEFINE_PLUGIN_DETOUR(
 DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_SelectedBrickIndex = 0;
     m_SelectedEntity = {};
-    m_ShouldScrollToEntity = false;
+    m_ScrollToEntity = false;
 
     m_EntityDestructionMutex.lock();
     m_EntitiesToDestroy.clear();

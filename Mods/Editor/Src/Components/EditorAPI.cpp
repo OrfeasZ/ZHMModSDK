@@ -456,7 +456,7 @@ void Editor::SelectEntity(EntitySelector p_Selector, std::optional<std::string> 
     auto s_Entity = FindEntity(p_Selector);
 
     if (s_Entity) {
-        OnSelectEntity(s_Entity, std::move(p_ClientId));
+        OnSelectEntity(s_Entity, true, std::move(p_ClientId));
     }
     else {
         throw std::runtime_error("Could not find entity for the given selector.");

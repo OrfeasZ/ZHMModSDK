@@ -401,12 +401,12 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     if (s_IsSelected) {
         s_Flags |= ImGuiTreeNodeFlags_Selected;
 
-        if (m_ShouldScrollToEntity) {
+        if (m_ScrollToEntity) {
             ImGui::SetScrollHereY();
-            m_ShouldScrollToEntity = false;
+            m_ScrollToEntity = false;
         }
     }
-    else if (m_ShouldScrollToEntity && m_SelectedEntity) {
+    else if (m_ScrollToEntity && m_SelectedEntity) {
         bool s_ShouldExpandNode = false;
 
         if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
@@ -446,11 +446,11 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     if (!p_Node->IsPendingDeletion) {
         if (ImGui::IsItemFocused() && !s_IsSelected) {
             if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Space))
-                OnSelectEntity(s_Entity, std::nullopt);
+                OnSelectEntity(s_Entity, false, std::nullopt);
         }
 
         if (ImGui::IsItemClicked()) {
-            OnSelectEntity(s_Entity, std::nullopt);
+            OnSelectEntity(s_Entity, false, std::nullopt);
         }
     }
 
@@ -497,7 +497,7 @@ void Editor::FilterEntityTree() {
     if (m_DirectEntityTreeNodeMatches.size() == 1) {
         const EntityTreeNode* s_EntityTreeNode = *m_DirectEntityTreeNodeMatches.begin();
 
-        OnSelectEntity(s_EntityTreeNode->Entity, std::nullopt);
+        OnSelectEntity(s_EntityTreeNode->Entity, true, std::nullopt);
     }
 
     m_LastEntityViewMode = m_EntityViewMode;
@@ -747,15 +747,15 @@ void Editor::DrawEntityTree() {
 
     ImGui::End();
 
-    if (m_ShouldScrollToEntity) {
-        m_ShouldScrollToEntity = false;
+    if (m_ScrollToEntity) {
+        m_ScrollToEntity = false;
     }
 }
 
-void Editor::OnSelectEntity(ZEntityRef p_Entity, const std::optional<std::string> p_ClientId) {
+void Editor::OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, const std::optional<std::string> p_ClientId) {
     const bool s_DifferentEntity = m_SelectedEntity.m_pEntity != p_Entity.m_pEntity;
 
-    m_ShouldScrollToEntity = p_Entity.GetEntity() != nullptr;
+    m_ScrollToEntity = p_ShouldScrollToEntity && p_Entity.GetEntity() != nullptr;
 
     if (s_DifferentEntity) {
         m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));

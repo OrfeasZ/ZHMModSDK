@@ -24,7 +24,7 @@ void Editor::DrawEntityProperties() {
 
     if (s_SceneCtx && s_SceneCtx->m_pScene && s_SelectedEntity) {
         if (ImGui::Button(ICON_MD_SUPERVISOR_ACCOUNT)) {
-            OnSelectEntity(s_SelectedEntity.GetLogicalParent(), std::nullopt);
+            OnSelectEntity(s_SelectedEntity.GetLogicalParent(), true, std::nullopt);
         }
 
         if (ImGui::IsItemHovered())
@@ -34,7 +34,7 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         if (ImGui::Button(ICON_MD_BRANDING_WATERMARK)) {
-            OnSelectEntity(s_SelectedEntity.GetOwningEntity(), std::nullopt);
+            OnSelectEntity(s_SelectedEntity.GetOwningEntity(), true, std::nullopt);
         }
 
         if (ImGui::IsItemHovered())
@@ -43,7 +43,7 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         if (ImGui::Button(ICON_MD_DESELECT))
-            OnSelectEntity({}, std::nullopt);
+            OnSelectEntity({}, false, std::nullopt);
 
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Deselect");

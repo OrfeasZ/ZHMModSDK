@@ -66,7 +66,7 @@ void Editor::DrawItems(bool p_HasFocus) {
                     UpdateEntities();
                 }
 
-                OnSelectEntity(s_Action->m_Object, std::nullopt);
+                OnSelectEntity(s_Action->m_Object, true, std::nullopt);
             }
         }
 

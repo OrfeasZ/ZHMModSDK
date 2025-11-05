@@ -130,7 +130,7 @@ private:
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
 
-    void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
+    void OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, std::optional<std::string> p_ClientId);
     void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void DestroyEntityNodeInternal(const std::shared_ptr<EntityTreeNode>& p_NodeToRemove, std::optional<std::string> p_ClientId);
@@ -381,7 +381,7 @@ private:
 
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
-    bool m_ShouldScrollToEntity = false;
+    bool m_ScrollToEntity = false;
 
     EntityHighlightMode m_EntityHighlightMode = EntityHighlightMode::Lines;
 

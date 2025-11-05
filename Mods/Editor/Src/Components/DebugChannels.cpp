@@ -1430,7 +1430,7 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
         );
     }
 
-    OnSelectEntity(m_SelectedGizmoEntity->m_EntityRef, std::nullopt);
+    OnSelectEntity(m_SelectedGizmoEntity->m_EntityRef, true, std::nullopt);
 
     return true;
 }
