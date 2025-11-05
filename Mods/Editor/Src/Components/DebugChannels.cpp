@@ -1283,7 +1283,7 @@ void Editor::AddGizmoEntity(
     else {
         const uint64_t s_EntityId = p_EntityRef.GetEntity()->GetType()->m_nEntityId;
 
-        Logger::Error("Hash of gizmo is missing for entity with {:08x} id and {} type!", s_EntityId, p_TypeName);
+        Logger::Error("Hash of gizmo is missing for entity with {:016x} id and {} type!", s_EntityId, p_TypeName);
     }
 }
 

@@ -126,7 +126,7 @@ void Editor::UpdateEntityTree(
             const auto s_EntityTypeName = (*s_SubEntity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->
                 m_pTypeName;
             const auto s_EntityHumanName = fmt::format(
-                "{} ({:08x}){}",
+                "{} ({:016x}){}",
                 s_EntityName,
                 s_SubEntityId,
                 p_AreEntitiesDynamic ? (s_IsEntityIDGenerated ? " **" : " *") : ""
