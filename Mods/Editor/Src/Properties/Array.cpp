@@ -65,7 +65,8 @@ void Editor::TArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
             const std::string s_ElementId = std::format("{}[{}]", p_Id, i);
 
             DrawEntityPropertyValue(
-                s_ElementId, "",
+                s_ElementId,
+                "",
                 s_ElementTypeName,
                 s_ElementTypeID,
                 p_Entity,
