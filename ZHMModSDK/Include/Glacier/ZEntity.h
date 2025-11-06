@@ -54,9 +54,11 @@ public:
     virtual void IEntityBlueprintFactory_unk31() = 0;
     virtual void IEntityBlueprintFactory_unk32() = 0;
 
-        return Globals::ZTemplateEntityBlueprintFactory_vtbl == *(void**) this;
+    bool IsTemplateEntityBlueprintFactory() const {
+        return Globals::ZTemplateEntityBlueprintFactory_vtbl == *(void**)this;
     }
 
+    bool IsAspectEntityBlueprintFactory() const {
         return Globals::ZAspectEntityBlueprintFactory_vtbl == *(void**)this;
     }
 };
