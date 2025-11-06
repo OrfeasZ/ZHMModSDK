@@ -410,7 +410,9 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
             s_ShouldExpandNode = true;
         }
-        else if (!s_Entity && (p_Node->Name == "Dynamic Entities" || p_Node->Name == "Unparented Entities")) {
+        else if (s_Entity == m_DynamicEntitiesNodeEntityRef ||
+            s_Entity == m_UnparentedEntitiesNodeEntityRef
+        ) {
             for (const auto& [_, s_Child] : p_Node->Children) {
                 if (s_Child->Entity == m_SelectedEntity ||
                     (s_Child->Entity && m_SelectedEntity.IsAnyParent(s_Child->Entity)))
