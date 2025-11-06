@@ -524,14 +524,18 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
         bool s_MatchesType = true;
         bool s_MatchesName = true;
 
-        if (!m_EntityIdSearchInput.empty()) {
-            const uint64_t id = std::strtoull(m_EntityIdSearchInput.c_str(), nullptr, 16);
+        if (p_Node->Entity != m_DynamicEntitiesNodeEntityRef &&
+            p_Node->Entity != m_UnparentedEntitiesNodeEntityRef
+        ) {
+            if (!m_EntityIdSearchInput.empty()) {
+                const uint64_t id = std::strtoull(m_EntityIdSearchInput.c_str(), nullptr, 16);
 
-            s_MatchesId = p_Node->EntityId == id;
-        }
+                s_MatchesId = p_Node->EntityId == id;
+            }
 
-        if (!m_EntityTypeSearchInput.empty()) {
-            s_MatchesType = p_Node->Entity.HasInterface(m_EntityTypeSearchInput);
+            if (!m_EntityTypeSearchInput.empty()) {
+                s_MatchesType = p_Node->Entity.HasInterface(m_EntityTypeSearchInput);
+            }
         }
 
         if (!m_EntityNameSearchInput.empty()) {
