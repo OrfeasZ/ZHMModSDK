@@ -758,7 +758,7 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, co
     if (s_DifferentEntity) {
         if (p_Entity != m_DynamicEntitiesNodeEntityRef &&
             p_Entity != m_UnparentedEntitiesNodeEntityRef
-            ) {
+        ) {
             m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
         }
 
