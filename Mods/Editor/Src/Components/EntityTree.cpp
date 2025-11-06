@@ -509,7 +509,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
     }
 
     if (m_EntityViewMode == EntityViewMode::ScenesAndBricks &&
-        (p_Node->IsDynamicEntity || !p_Node->Entity && p_Node->Name == "Dynamic Entities")
+        (p_Node->IsDynamicEntity || p_Node->Entity == m_DynamicEntitiesNodeEntityRef)
     ) {
         return false;
     }
