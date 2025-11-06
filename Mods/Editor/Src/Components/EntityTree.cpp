@@ -68,7 +68,7 @@ void Editor::UpdateEntityTree(
         s_NodeQueue.pop();
 
         const auto s_SubEntityCount = s_CurrentFactory->GetSubEntitiesCount();
-        const bool s_IsTemplateFactory = s_CurrentFactory->IsTemplateEntityBlueprintFactory();
+        const bool s_IsTemplateEntityBlueprintFactory = s_CurrentFactory->IsTemplateEntityBlueprintFactory();
         const bool s_IsAspectEntityBlueprintFactory = s_CurrentFactory->IsAspectEntityBlueprintFactory();
 
         // Go through each of its sub-entities and create nodes for them.
@@ -95,7 +95,7 @@ void Editor::UpdateEntityTree(
             std::string s_EntityName = "<noname>";
 
             // If our current factory is a template factory, we can get the name of the entity from it.
-            if (s_IsTemplateFactory) {
+            if (s_IsTemplateEntityBlueprintFactory) {
                 const auto s_TemplateBpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_CurrentFactory);
 
                 if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
