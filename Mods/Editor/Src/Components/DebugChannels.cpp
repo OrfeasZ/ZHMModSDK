@@ -488,6 +488,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         return;
     }
 
+    if (p_EntityTreeNode->Entity == m_DynamicEntitiesNodeEntityRef ||
+        p_EntityTreeNode->Entity == m_UnparentedEntitiesNodeEntityRef
+    ) {
+        return;
+    }
+
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
     
     static STypeID* s_CompositeEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZCompositeEntity");
