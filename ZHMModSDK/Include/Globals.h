@@ -87,6 +87,13 @@ public:
     static IEngineMode** EngineMode;
     static void* ZTemplateEntityBlueprintFactory_vtbl;
     static void* ZAspectEntityBlueprintFactory_vtbl;
+    static void* ZCppEntityBlueprintFactory_vtbl;
+    static void* ZExtendedCppEntityBlueprintFactory_vtbl;
+    static void* ZUIControlBlueprintFactory_vtbl;
+    static void* ZRenderMaterialEntityBlueprintFactory_vtbl;
+    static void* ZBehaviorTreeEntityBlueprintFactory_vtbl;
+    static void* ZAudioSwitchBlueprintFactory_vtbl;
+    static void* ZAudioStateBlueprintFactory_vtbl;
     static ZInputDeviceManager* InputDeviceManager;
     static ZInputActionManager* InputActionManager;
     static int* InputActionManager_BindMem;
