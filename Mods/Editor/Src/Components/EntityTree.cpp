@@ -132,12 +132,52 @@ void Editor::UpdateEntityTree(
                 p_AreEntitiesDynamic ? (s_IsEntityIDGenerated ? " **" : " *") : ""
             );
 
+            std::string s_ReferencedFactoryType;
+
+            if (s_SubEntityFactory->IsTemplateEntityBlueprintFactory()) {
+                s_ReferencedFactoryType = "TBLU";
+            }
+
+            if (s_SubEntityFactory->IsAspectEntityBlueprintFactory()) {
+                s_ReferencedFactoryType = "ASEB";
+            }
+
+            if (s_SubEntityFactory->IsCppEntityBlueprintFactory()) {
+                s_ReferencedFactoryType = "CBLU";
+            }
+
+            if (s_SubEntityFactory->IsExtendedCppEntityBlueprintFactory()) {
+                s_ReferencedFactoryType = "ECPB";
+            }
+
+            if (s_SubEntityFactory->IsUIControlBlueprintFactory()) {
+                s_ReferencedFactoryType = "UICB";
+            }
+
+            if (s_SubEntityFactory->IsRenderMaterialEntityBlueprintFactory()) {
+                s_ReferencedFactoryType = "MATB";
+            }
+
+            if (s_SubEntityFactory->IsBehaviorTreeEntityBlueprintFactory()) {
+                s_ReferencedFactoryType = "AIBB";
+            }
+
+            if (s_SubEntityFactory->IsAudioSwitchBlueprintFactory()) {
+                s_ReferencedFactoryType = "WSWB";
+            }
+
+            if (s_SubEntityFactory->IsAudioStateBlueprintFactory()) {
+                s_ReferencedFactoryType = "WSGB";
+            }
+
             // Add the node to the map.
             const auto s_SubEntityNode = std::make_shared<EntityTreeNode>(
                 s_EntityHumanName,
                 s_EntityTypeName,
                 s_SubEntityId,
                 s_CurrentFactory->m_ridResource,
+                s_SubEntityFactory->m_ridResource,
+                s_ReferencedFactoryType,
                 s_SubEntity,
                 p_AreEntitiesDynamic
             );
