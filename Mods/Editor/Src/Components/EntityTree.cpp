@@ -281,10 +281,14 @@ void Editor::UpdateEntities() {
         s_EntsToProcess.push_back(s_Entity);
     }
 
-    m_EntityRefToFactoryRuntimeResourceIDs[s_SceneEnt] = {
-        ResId<"	[modules:/zsceneentity.class].pc_entitytype">,
-        s_SceneCtx->m_SceneConfig.m_ridSceneFactory
-    };
+    {
+        std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
+
+        m_EntityRefToFactoryRuntimeResourceIDs[s_SceneEnt] = {
+            ResId<"	[modules:/zsceneentity.class].pc_entitytype">,
+            s_SceneCtx->m_SceneConfig.m_ridSceneFactory
+        };
+    }
 
     auto s_SceneBlueprintFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneCtx->m_SceneConfig.m_sceneBlueprint.GetResourceData());
 
