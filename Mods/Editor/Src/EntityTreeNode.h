@@ -10,8 +10,8 @@ struct EntityTreeNode {
     std::string EntityType;
     uint64_t EntityId;
     ZRuntimeResourceID TBLU;
-    ZRuntimeResourceID ReferencedFactory;
-    std::string ReferencedFactoryType;
+    ZRuntimeResourceID ReferencedBlueprintFactory;
+    std::string ReferencedBlueprintFactoryType;
     ZEntityRef Entity;
     std::multimap<std::string, std::shared_ptr<EntityTreeNode>> Children;
     bool IsDynamicEntity;
@@ -22,8 +22,8 @@ struct EntityTreeNode {
         const std::string& p_type,
         uint64_t p_EntityId,
         ZRuntimeResourceID p_TBLU,
-        ZRuntimeResourceID p_ReferencedFactory,
-        const std::string& p_ReferencedFactoryType,
+        ZRuntimeResourceID p_ReferencedBlueprintFactory,
+        const std::string& p_ReferencedBlueprintFactoryType,
         ZEntityRef p_Ref,
         bool p_IsDynamicEntity = false
     ) : 
@@ -31,8 +31,8 @@ struct EntityTreeNode {
         EntityType(p_type),
         EntityId(p_EntityId),
         TBLU(p_TBLU),
-        ReferencedFactory(p_ReferencedFactory),
-        ReferencedFactoryType(p_ReferencedFactoryType),
+        ReferencedBlueprintFactory(p_ReferencedBlueprintFactory),
+        ReferencedBlueprintFactoryType(p_ReferencedBlueprintFactoryType),
         Entity(p_Ref),
         IsDynamicEntity(p_IsDynamicEntity) {}
 };
