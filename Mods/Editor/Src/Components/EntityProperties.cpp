@@ -197,10 +197,10 @@ void Editor::DrawEntityProperties() {
                             CopyToClipboard(fmt::format("{:016X}", s_ParentTemplateFactoryRuntimeResourceID.GetID()));
                         }
 
-                        ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_EntityTreeNode->TBLU.GetID()).c_str());
+                        ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_EntityTreeNode->BlueprintFactory.GetID()).c_str());
 
                         if (ImGuiCopyWidget("ParentBlueprintFactory")) {
-                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->TBLU.GetID()));
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->BlueprintFactory.GetID()));
                         }
                     }
                     else {
@@ -212,10 +212,10 @@ void Editor::DrawEntityProperties() {
                             CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
                         }
 
-                        ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_EntityTreeNode->TBLU.GetID()).c_str());
+                        ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_EntityTreeNode->BlueprintFactory.GetID()).c_str());
 
                         if (ImGuiCopyWidget("ParentBlueprintFactory")) {
-                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->TBLU.GetID()));
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->BlueprintFactory.GetID()));
                         }
                     }
                 }

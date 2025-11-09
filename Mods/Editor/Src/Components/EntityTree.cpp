@@ -168,6 +168,7 @@ void Editor::UpdateEntityTree(
                 s_EntityTypeName,
                 s_SubEntityId,
                 s_CurrentFactory->m_ridResource,
+                s_IsTemplateEntityBlueprintFactory ? "TBLU" : "ASEB",
                 s_SubEntityFactory->m_ridResource,
                 s_ReferencedBlueprintFactoryType,
                 s_SubEntity,
@@ -293,6 +294,7 @@ void Editor::UpdateEntities() {
         (*s_SceneEnt->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName,
         s_SceneEnt->GetType()->m_nEntityId,
         s_SceneBlueprintFactory->m_ridResource,
+        "TBLU",
         ResId<"[modules:/zsceneentity.class].pc_entityblueprint">,
         "CBLU",
         s_SceneEnt
@@ -303,6 +305,7 @@ void Editor::UpdateEntities() {
         "",
         -1,
         -1,
+        "",
         -1,
         "",
         m_UnparentedEntitiesNodeEntityRef
@@ -338,6 +341,7 @@ void Editor::AddDynamicEntitiesToEntityTree(
         "",
         -1,
         -1,
+        "",
         -1,
         "",
         m_DynamicEntitiesNodeEntityRef

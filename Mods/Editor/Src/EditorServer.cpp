@@ -776,7 +776,7 @@ void EditorServer::SendEntityList(
         s_EventStream << "{";
         s_EventStream << write_json("id") << ":" << write_json(std::format("{:016x}", s_Node->EntityId)) << ",";
         s_EventStream << write_json("source") << ":" << write_json("game") << ",";
-        s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->TBLU.GetID())) << ",";
+        s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->BlueprintFactory.GetID())) << ",";
         s_EventStream << write_json("type") << ":" << write_json(
             (*s_Node->Entity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName
         );

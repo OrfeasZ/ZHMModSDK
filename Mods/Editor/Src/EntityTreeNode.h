@@ -9,7 +9,8 @@ struct EntityTreeNode {
     std::string Name;
     std::string EntityType;
     uint64_t EntityId;
-    ZRuntimeResourceID TBLU;
+    ZRuntimeResourceID BlueprintFactory;
+    std::string BlueprintFactoryType;
     ZRuntimeResourceID ReferencedBlueprintFactory;
     std::string ReferencedBlueprintFactoryType;
     ZEntityRef Entity;
@@ -21,7 +22,8 @@ struct EntityTreeNode {
         const std::string& p_Name,
         const std::string& p_type,
         uint64_t p_EntityId,
-        ZRuntimeResourceID p_TBLU,
+        ZRuntimeResourceID p_BlueprintFactory,
+        const std::string& p_BlueprintFactoryType,
         ZRuntimeResourceID p_ReferencedBlueprintFactory,
         const std::string& p_ReferencedBlueprintFactoryType,
         ZEntityRef p_Ref,
@@ -30,7 +32,8 @@ struct EntityTreeNode {
         Name(p_Name),
         EntityType(p_type),
         EntityId(p_EntityId),
-        TBLU(p_TBLU),
+        BlueprintFactory(p_BlueprintFactory),
+        BlueprintFactoryType(p_BlueprintFactoryType),
         ReferencedBlueprintFactory(p_ReferencedBlueprintFactory),
         ReferencedBlueprintFactoryType(p_ReferencedBlueprintFactoryType),
         Entity(p_Ref),
