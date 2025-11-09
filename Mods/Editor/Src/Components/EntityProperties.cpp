@@ -113,45 +113,113 @@ void Editor::DrawEntityProperties() {
 
         ImGui::Separator();
 
-        // The way to get the factory here is probably wrong.
-        auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SelectedEntity.GetBlueprintFactory());
+        {
+            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
 
-        if (s_SelectedEntity.GetOwningEntity())
-            s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SelectedEntity.GetOwningEntity().
-                GetBlueprintFactory());
+            auto s_Iterator = m_CachedEntityTreeMap.find(s_SelectedEntity);
 
-        if (s_Factory) {
-            // This is also probably wrong.
-            auto s_Index = s_Factory->GetSubEntityIndex(s_SelectedEntity->GetType()->m_nEntityId);
-
-            if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
-                const auto& s_EntityName = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
+            if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                const std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
+                const std::string s_EntityName = s_EntityTreeNode->Name.substr(
+                    0,
+                    s_EntityTreeNode->Name.find_last_of(" (")
+                );
 
                 ImGui::TextUnformatted(fmt::format("Entity Name: {}", s_EntityName).c_str());
 
-                if (ImGuiCopyWidget("EntName")) {
+                if (ImGuiCopyWidget("EntityName")) {
                     CopyToClipboard(s_EntityName.c_str());
                 }
-            }
-        }
 
-        ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", s_SelectedEntity->GetType()->m_nEntityId).c_str());
+                ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", s_EntityTreeNode->EntityId).c_str());
 
-        if (ImGuiCopyWidget("EntId")) {
-            CopyToClipboard(fmt::format("{:016x}", s_SelectedEntity->GetType()->m_nEntityId));
-        }
+                if (ImGuiCopyWidget("EntityID")) {
+                    CopyToClipboard(fmt::format("{:016x}", s_EntityTreeNode->EntityId));
+                }
 
-        const auto& s_Interfaces = *s_SelectedEntity->GetType()->m_pInterfaces;
-        ImGui::TextUnformatted(
-            fmt::format("Entity Type: {}", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName).c_str()
-        );
+                ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_EntityTreeNode->EntityType).c_str());
 
-        if (s_Factory) {
-            ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_Factory->m_ridResource.GetID()).c_str());
+                {
+                    std::shared_lock s_FactoryLock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
+                    auto s_Iterator2 = m_EntityRefToFactoryRuntimeResourceIDs.find(s_SelectedEntity);
 
-            if (ImGuiCopyWidget("EntTblu")) {
-                CopyToClipboard(fmt::format("{:016X}", s_Factory->m_ridResource.GetID()));
-            }
+                    if (s_Iterator2 != m_EntityRefToFactoryRuntimeResourceIDs.end()) {
+                        const auto [s_TemplateFactoryRuntimeResourceID, s_ParentTemplateFactoryRuntimeResourceID] = s_Iterator2->second;
+                        std::string s_ReferencedTemplateFactoryType;
+
+                        if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "TBLU") {
+                            s_ReferencedTemplateFactoryType = "TEMP";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "ASEB") {
+                            s_ReferencedTemplateFactoryType = "ASET";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "CBLU") {
+                            s_ReferencedTemplateFactoryType = "CPPT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "ECPB") {
+                            s_ReferencedTemplateFactoryType = "ECPT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "UICB") {
+                            s_ReferencedTemplateFactoryType = "UICT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "MATB") {
+                            s_ReferencedTemplateFactoryType = "MATT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "AIBB") {
+                            s_ReferencedTemplateFactoryType = "AIBX";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "WSWB") {
+                            s_ReferencedTemplateFactoryType = "WSWT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "WSGB") {
+                            s_ReferencedTemplateFactoryType = "WSGT";
+                        }
+
+                        ImGui::TextUnformatted(
+                            fmt::format("{}: {:016X}", s_ReferencedTemplateFactoryType, s_TemplateFactoryRuntimeResourceID.GetID()
+                            ).c_str());
+
+                        if (ImGuiCopyWidget("ReferencedTemplateFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_TemplateFactoryRuntimeResourceID.GetID()));
+                        }
+
+                        ImGui::TextUnformatted(
+                            fmt::format("{}: {:016X}", s_EntityTreeNode->ReferencedBlueprintFactoryType, s_EntityTreeNode->ReferencedBlueprintFactory.GetID()
+                            ).c_str());
+
+                        if (ImGuiCopyWidget("ReferencedBlueprintFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
+                        }
+
+                        ImGui::TextUnformatted(fmt::format("Contained TEMP: {:016X}", s_ParentTemplateFactoryRuntimeResourceID.GetID()).c_str());
+
+                        if (ImGuiCopyWidget("ParentTemplateFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_ParentTemplateFactoryRuntimeResourceID.GetID()));
+                        }
+
+                        ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_EntityTreeNode->TBLU.GetID()).c_str());
+
+                        if (ImGuiCopyWidget("ParentBlueprintFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->TBLU.GetID()));
+                        }
+                    }
+                    else {
+                        ImGui::TextUnformatted(
+                            fmt::format("{}: {:016X}", s_EntityTreeNode->ReferencedBlueprintFactoryType, s_EntityTreeNode->ReferencedBlueprintFactory.GetID()
+                            ).c_str());
+
+                        if (ImGuiCopyWidget("ReferencedBlueprintFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
+                        }
+
+                        ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_EntityTreeNode->TBLU.GetID()).c_str());
+
+                        if (ImGuiCopyWidget("ParentBlueprintFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->TBLU.GetID()));
+                        }
+                    }
+                }
+            };
         }
 
         if (const ZGeomEntity* s_GeomEntity = s_SelectedEntity.QueryInterface<ZGeomEntity>()) {
