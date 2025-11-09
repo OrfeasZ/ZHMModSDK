@@ -275,7 +275,11 @@ private:
         const SExternalReferences& externalRefs,
         bool unk0
     );
-    DECLARE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity, ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs);
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity,
+        ZEntityManager* th,
+        const ZEntityRef& entityRef,
+        const SExternalReferences& externalRefs
+    );
 
 private:
     enum class EntityHighlightMode {

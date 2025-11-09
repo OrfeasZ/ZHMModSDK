@@ -998,7 +998,11 @@ DEFINE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
     return HookResult<ZEntityRef*>(HookAction::Return(), s_EntityRef);
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity, ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs) {
+DEFINE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity,
+    ZEntityManager* th,
+    const ZEntityRef& entityRef,
+    const SExternalReferences& externalRefs
+) {
     if (m_SelectedEntity == entityRef) {
         m_SelectedEntity = nullptr;
     }
