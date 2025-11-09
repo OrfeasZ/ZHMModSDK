@@ -124,8 +124,70 @@ public:
 
 class ZTemplateEntityFactory : public IEntityFactory {
 public:
-    PAD(0x30);
+    PAD(0xC);
+    int32 m_rootEntityIndex; // 0x14
+    TArray<IEntityFactory*> m_pFactories; // 0x18
+    ZRuntimeResourceID m_ridResource; // 0x30
     TResourcePtr<ZTemplateEntityBlueprintFactory> m_blueprintResource; // 0x38
 };
 
 static_assert(offsetof(ZTemplateEntityFactory, m_blueprintResource) == 0x38);
+
+class ZAspectEntityFactory : public IEntityFactory {
+public:
+    TArray<TResourcePtr<IEntityFactory>> m_factoryResources; // 0x8
+    TResourcePtr<ZAspectEntityBlueprintFactory> m_blueprintResource; // 0x20
+    ZRuntimeResourceID m_ridResource; // 0x28
+};
+
+class ZCppEntityBlueprintFactory;
+
+class ZCppEntityFactory : public IEntityFactory {
+public:
+    PAD(0x48);
+    TResourcePtr<ZCppEntityBlueprintFactory> m_blueprintResource; // 0x50
+    ZRuntimeResourceID m_ridResource; // 0x58
+};
+
+class ZExtendedCppEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pCppEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_pBlueprintFactory; // 0x10
+};
+
+class ZUIControlEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pCppEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_pBlueprintFactory; // 0x10
+    ZRuntimeResourceID m_ridResource; // 0x18
+};
+
+class ZRenderMaterialEntityFactory : public IEntityFactory {
+public:
+    PAD(0xA8);
+    TResourcePtr<IEntityFactory> m_pMaterialEntityFactory; // 0xB0
+    TResourcePtr<IEntityBlueprintFactory> m_blueprintResource; // 0xB8
+    ZRuntimeResourceID m_ridResource; // 0xC0
+    ZRuntimeResourceID m_ridMaterialInstance; // 0xC8
+};
+
+class ZBehaviorTreeEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pParentEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_blueprintResource; // 0x10
+    ZRuntimeResourceID m_ridResource; // 0x18
+};
+
+class ZAudioSwitchEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pParentEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_pBlueprintResource; // 0x10
+    ZRuntimeResourceID m_ridResource; // 0x18
+};
+
+class ZAudioStateEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pParentEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_pBlueprintResource; // 0x10
+    ZRuntimeResourceID m_ridResource; // 0x18
+};
