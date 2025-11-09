@@ -45,14 +45,10 @@ class ZInputAction;
 class ZEntityManager;
 class ZHttpResultDynamicObject;
 class ZTemplateEntityFactory;
-class ZCppEntityFactory;
-class ZBehaviorTreeEntityFactory;
-class ZAudioSwitchEntityFactory;
-class ZAudioStateEntityFactory;
 class ZAspectEntityFactory;
+class ZCppEntityFactory;
 class ZUIControlEntityFactory;
 class ZRenderMaterialEntityFactory;
-class ZExtendedCppEntityFactory;
 class ZUIControlBlueprintFactory;
 class ZCppEntityBlueprintFactory;
 class IEntityFactory;
@@ -168,12 +164,23 @@ public:
     static Hook<ZString*(ZOnlineVersionConfig* th, ZString* out)>* ZOnlineVersionConfig_GetConfigHost;
     static Hook<ZString*(ZOnlineVersionConfig* th, ZString* out)>* ZOnlineVersionConfig_GetConfigUrl;
     static Hook<EOS_PlatformHandle*(EOS_Platform_Options* Options)>* EOS_Platform_Create;
-    //static Hook<void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZTemplateEntityFactory_ConfigureEntity;
-    //static Hook<void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZCppEntityFactory_ConfigureEntity;
-    //static Hook<void(ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZBehaviorTreeEntityFactory_ConfigureEntity;
-    //static Hook<void(ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZAudioSwitchEntityFactory_ConfigureEntity;
-    //static Hook<void(ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZAspectEntityFactory_ConfigureEntity;
-    //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4)>* ZRenderMaterialEntityFactory_ConfigureEntity;
+
+    static Hook<void(
+        IEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0
+    )>* IEntityFactory_ConfigureEntity;
+    static Hook<void(
+        ZTemplateEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0
+    )>* ZTemplateEntityFactory_ConfigureEntity;
+    static Hook<void(
+        ZAspectEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0
+    )>* ZAspectEntityFactory_ConfigureEntity;
+    static Hook<void(
+        ZCppEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0
+    )>* ZCppEntityFactory_ConfigureEntity;
+    static Hook<void(
+        ZRenderMaterialEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0
+    )>* ZRenderMaterialEntityFactory_ConfigureEntity;
+    
     //static Hook<void(ZUIControlBlueprintFactory* th, ZEntityRef entity, void* a3)>* ZUIControlBlueprintFactory_DestroyEntity;
     //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3)>* ZTemplateEntityBlueprintFactory_DestroyEntity;
     //static Hook<void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3)>* ZRenderMaterialEntityBlueprintFactory_DestroyEntity;

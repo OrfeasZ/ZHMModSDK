@@ -231,56 +231,46 @@ PATTERN_HOOK(
     void(ZHttpResultDynamicObject* th)
 );
 
-/*// Vtable index 6
+PATTERN_HOOK(
+    "\x8B\x41\x08\x4C\x8B\xD2\x85\xC0\x78\x00\x8B\xD0\x48\x8B\x05\x00\x00\x00\x00\x48\xC1\xE2\x00\x48\x8B\x48\x08\x83\x7C\x0A\x20\x00\x75\x00\x48\x8B\x4C\x0A\x08\x49\x8B\xD2\x48\x8B\x01\x48\xFF\x60\x30",
+    "xxxxxxxxx?xxxxx????xxx?xxxxxxxx?x?xxxxxxxxxxxxxxx",
+    IEntityFactory_ConfigureEntity,
+    void(IEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0)
+);
+
 PATTERN_VTABLE_HOOK(
-    "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x4D\x8B\xE8",
-    "xxx????xxxxxx",
+    "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x33\xDB\x48\x89\x59\x18",
+    "xxx????xxxxxxxxx",
     6,
     ZTemplateEntityFactory_ConfigureEntity,
-    void(ZTemplateEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+    void(ZTemplateEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0)
 );
 
 PATTERN_VTABLE_HOOK(
-    "\x48\x8D\x05\x00\x00\x00\x00\x49\x89\x07\x48\xB8",
-    "xxx????xxxxx",
-    6,
-    ZCppEntityFactory_ConfigureEntity,
-    void(ZCppEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
-);
-
-PATTERN_HOOK(
-    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x8B\x41\x08\x45\x33\xD2\x48\x8B\x1D\x00\x00\x00\x00\x85\xC0\x78\x00\x8B\xC8\x48\x8B\x43\x08\x48\xC1\xE1\x00\x83\x7C\x01\x20\x00\x75\x00\x48\x8B\x4C\x01\x08\xEB\x00\x49\x8B\xCA\x48\x8B\x01\x48\x8D\x3D\x00\x00\x00\x00\x4C\x8B\x58\x30",
-    "xxxxxxxxx?xxxxxxxxx????xxx?xxxxxxxxx?xxxx?x?xxxxxx?xxxxxxxxx????xxxx",
-    ZBehaviorTreeEntityFactory_ConfigureEntity,
-    void(ZBehaviorTreeEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
-);
-
-// This is also used by ZAudioStateEntityFactory, ZUIControlEntityFactory, and ZExtendedCppEntityFactory.
-PATTERN_VTABLE_HOOK(
-    "\x48\x8D\x15\x00\x00\x00\x00\x4C\x8B\x48\x48",
-    "xxx????xxxx",
-    6,
-    ZAudioSwitchEntityFactory_ConfigureEntity,
-    void(ZAudioSwitchEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
-);
-
-PATTERN_VTABLE_HOOK(
-    "\x48\x8D\x05\x00\x00\x00\x00\x41\xBE\x00\x00\x00\x00\x48\x89\x01",
-    "xxx????xx????xxx",
+    "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x49\xC7\xC6",
+    "xxx????xxxxxx",
     6,
     ZAspectEntityFactory_ConfigureEntity,
-    void(ZAspectEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+    void(ZAspectEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0)
 );
 
 PATTERN_VTABLE_HOOK(
-    "\x48\x8D\x0D\x00\x00\x00\x00\x89\x5C\x24\x34",
-    "xxx????xxxx",
+    "\x48\x8D\x05\x00\x00\x00\x00\x49\x89\x04\x24\x48\xB8",
+    "xxx????xxxxxx",
+    6,
+    ZCppEntityFactory_ConfigureEntity,
+    void(ZCppEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0)
+);
+
+PATTERN_VTABLE_HOOK(
+    "\x48\x8D\x05\x00\x00\x00\x00\x49\x89\x06\x48\xB8\x00\x00\x00\x00\x00\x00\x00\x00\x49\x89\x46\x18",
+    "xxx????xxxxx????????xxxx",
     6,
     ZRenderMaterialEntityFactory_ConfigureEntity,
-    void(ZRenderMaterialEntityFactory* th, ZEntityRef entity, void* a3, void* a4)
+    void(ZRenderMaterialEntityFactory* th, ZEntityType** pEntity, const SExternalReferences& externalRefs, uint8_t* unk0)
 );
 
-PATTERN_VTABLE_HOOK(
+/*PATTERN_VTABLE_HOOK(
     "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x79\x10",
     "xxx????xxxxxx????xxxx",
     7,
