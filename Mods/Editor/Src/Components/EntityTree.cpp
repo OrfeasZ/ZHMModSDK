@@ -132,42 +132,34 @@ void Editor::UpdateEntityTree(
                 p_AreEntitiesDynamic ? (s_IsEntityIDGenerated ? " **" : " *") : ""
             );
 
-            std::string s_ReferencedFactoryType;
+            std::string s_ReferencedBlueprintFactoryType;
 
             if (s_SubEntityFactory->IsTemplateEntityBlueprintFactory()) {
-                s_ReferencedFactoryType = "TBLU";
+                s_ReferencedBlueprintFactoryType = "TBLU";
             }
-
-            if (s_SubEntityFactory->IsAspectEntityBlueprintFactory()) {
-                s_ReferencedFactoryType = "ASEB";
+            else if (s_SubEntityFactory->IsAspectEntityBlueprintFactory()) {
+                s_ReferencedBlueprintFactoryType = "ASEB";
             }
-
-            if (s_SubEntityFactory->IsCppEntityBlueprintFactory()) {
-                s_ReferencedFactoryType = "CBLU";
+            else if (s_SubEntityFactory->IsCppEntityBlueprintFactory()) {
+                s_ReferencedBlueprintFactoryType = "CBLU";
             }
-
-            if (s_SubEntityFactory->IsExtendedCppEntityBlueprintFactory()) {
-                s_ReferencedFactoryType = "ECPB";
+            else if (s_SubEntityFactory->IsExtendedCppEntityBlueprintFactory()) {
+                s_ReferencedBlueprintFactoryType = "ECPB";
             }
-
-            if (s_SubEntityFactory->IsUIControlBlueprintFactory()) {
-                s_ReferencedFactoryType = "UICB";
+            else if (s_SubEntityFactory->IsUIControlBlueprintFactory()) {
+                s_ReferencedBlueprintFactoryType = "UICB";
             }
-
-            if (s_SubEntityFactory->IsRenderMaterialEntityBlueprintFactory()) {
-                s_ReferencedFactoryType = "MATB";
+            else if (s_SubEntityFactory->IsRenderMaterialEntityBlueprintFactory()) {
+                s_ReferencedBlueprintFactoryType = "MATB";
             }
-
-            if (s_SubEntityFactory->IsBehaviorTreeEntityBlueprintFactory()) {
-                s_ReferencedFactoryType = "AIBB";
+            else if (s_SubEntityFactory->IsBehaviorTreeEntityBlueprintFactory()) {
+                s_ReferencedBlueprintFactoryType = "AIBB";
             }
-
-            if (s_SubEntityFactory->IsAudioSwitchBlueprintFactory()) {
-                s_ReferencedFactoryType = "WSWB";
+            else if (s_SubEntityFactory->IsAudioSwitchBlueprintFactory()) {
+                s_ReferencedBlueprintFactoryType = "WSWB";
             }
-
-            if (s_SubEntityFactory->IsAudioStateBlueprintFactory()) {
-                s_ReferencedFactoryType = "WSGB";
+            else if (s_SubEntityFactory->IsAudioStateBlueprintFactory()) {
+                s_ReferencedBlueprintFactoryType = "WSGB";
             }
 
             // Add the node to the map.
@@ -177,7 +169,7 @@ void Editor::UpdateEntityTree(
                 s_SubEntityId,
                 s_CurrentFactory->m_ridResource,
                 s_SubEntityFactory->m_ridResource,
-                s_ReferencedFactoryType,
+                s_ReferencedBlueprintFactoryType,
                 s_SubEntity,
                 p_AreEntitiesDynamic
             );
