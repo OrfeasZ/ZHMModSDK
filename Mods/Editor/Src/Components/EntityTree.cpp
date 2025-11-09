@@ -600,7 +600,18 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
     }
 
     if (s_Matches) {
-        m_DirectEntityTreeNodeMatches.push_back(p_Node);
+        if (p_Node->Entity == m_DynamicEntitiesNodeEntityRef ||
+            p_Node->Entity == m_UnparentedEntitiesNodeEntityRef
+        ) {
+            if (!m_EntityNameSearchInput.empty() &&
+                Util::StringUtils::FindSubstring(p_Node->Name.c_str(), m_EntityNameSearchInput)
+            ) {
+                m_DirectEntityTreeNodeMatches.push_back(p_Node);
+            }
+        }
+        else {
+            m_DirectEntityTreeNodeMatches.push_back(p_Node);
+        }
     }
 
     if (s_Matches || s_ChildMatches) {
