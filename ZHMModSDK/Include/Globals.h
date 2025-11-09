@@ -85,6 +85,15 @@ public:
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
+    static void* ZTemplateEntityFactory_vtbl;
+    static void* ZAspectEntityFactory_vtbl;
+    static void* ZCppEntityFactory_vtbl;
+    static void* ZExtendedCppEntityFactory_vtbl;
+    static void* ZUIControlEntityFactory_vtbl;
+    static void* ZRenderMaterialEntityFactory_vtbl;
+    static void* ZBehaviorTreeEntityFactory_vtbl;
+    static void* ZAudioSwitchEntityFactory_vtbl;
+    static void* ZAudioStateEntityFactory_vtbl;
     static void* ZTemplateEntityBlueprintFactory_vtbl;
     static void* ZAspectEntityBlueprintFactory_vtbl;
     static void* ZCppEntityBlueprintFactory_vtbl;

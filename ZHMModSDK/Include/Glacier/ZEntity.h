@@ -21,6 +21,42 @@ public:
     virtual ZEntityBlueprintFactoryBase* GetBlueprint() = 0;
     virtual void IEntityFactory_unk9() = 0;
     virtual void IEntityFactory_unk10() = 0;
+
+    bool IsTemplateEntityFactory() const {
+        return Globals::ZTemplateEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAspectEntityFactory() const {
+        return Globals::ZAspectEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsCppEntityFactory() const {
+        return Globals::ZCppEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsExtendedCppEntityFactory() const {
+        return Globals::ZExtendedCppEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsUIControlEntityFactory() const {
+        return Globals::ZUIControlEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsRenderMaterialEntityFactory() const {
+        return Globals::ZRenderMaterialEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsBehaviorTreeEntityFactory() const {
+        return Globals::ZBehaviorTreeEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAudioSwitchEntityFactory() const {
+        return Globals::ZAudioSwitchEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAudioStateEntityFactory() const {
+        return Globals::ZAudioStateEntityFactory_vtbl == *(void**)this;
+    }
 };
 
 class IEntityBlueprintFactory : public IComponentInterface {
