@@ -280,21 +280,16 @@ void Editor::UpdateEntities() {
         s_EntsToProcess.push_back(s_Entity);
     }
 
-    auto s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetBlueprintFactory());
-
-    if (s_SceneEnt.GetOwningEntity()) {
-        s_SceneFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneEnt.GetOwningEntity().
-            GetBlueprintFactory());
-    }
+    auto s_SceneBlueprintFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneCtx->m_SceneConfig.m_sceneBlueprint.GetResourceData());
 
     // Create the root scene node.
     auto s_SceneNode = std::make_shared<EntityTreeNode>(
         "Scene Root",
         (*s_SceneEnt->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName,
         s_SceneEnt->GetType()->m_nEntityId,
-        s_SceneFactory->m_ridResource,
-        -1,
-        "",
+        s_SceneBlueprintFactory->m_ridResource,
+        ResId<"[modules:/zsceneentity.class].pc_entityblueprint">,
+        "CBLU",
         s_SceneEnt
     );
 
