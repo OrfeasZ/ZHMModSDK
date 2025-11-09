@@ -191,13 +191,21 @@ void Editor::DrawEntityProperties() {
                             CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
                         }
 
-                        ImGui::TextUnformatted(fmt::format("Contained TEMP: {:016X}", s_ParentTemplateFactoryRuntimeResourceID.GetID()).c_str());
+                        ImGui::TextUnformatted(fmt::format(
+                            "Contained {}: {:016X}",
+                            s_EntityTreeNode->BlueprintFactoryType == "TBLU" ? "TEMP" : "ASET",
+                            s_ParentTemplateFactoryRuntimeResourceID.GetID()
+                        ).c_str());
 
                         if (ImGuiCopyWidget("ParentTemplateFactory")) {
                             CopyToClipboard(fmt::format("{:016X}", s_ParentTemplateFactoryRuntimeResourceID.GetID()));
                         }
 
-                        ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_EntityTreeNode->BlueprintFactory.GetID()).c_str());
+                        ImGui::TextUnformatted(fmt::format(
+                            "Contained {}: {:016X}",
+                            s_EntityTreeNode->BlueprintFactoryType,
+                            s_EntityTreeNode->BlueprintFactory.GetID()
+                        ).c_str());
 
                         if (ImGuiCopyWidget("ParentBlueprintFactory")) {
                             CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->BlueprintFactory.GetID()));
@@ -212,7 +220,11 @@ void Editor::DrawEntityProperties() {
                             CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
                         }
 
-                        ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_EntityTreeNode->BlueprintFactory.GetID()).c_str());
+                        ImGui::TextUnformatted(fmt::format(
+                            "Contained {}: {:016X}",
+                            s_EntityTreeNode->BlueprintFactoryType,
+                            s_EntityTreeNode->BlueprintFactory.GetID()
+                        ).c_str());
 
                         if (ImGuiCopyWidget("ParentBlueprintFactory")) {
                             CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->BlueprintFactory.GetID()));
