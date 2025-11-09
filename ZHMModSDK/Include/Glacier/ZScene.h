@@ -57,20 +57,20 @@ class ZEntitySceneContext :
 public:
     virtual ~ZEntitySceneContext() = 0;
     virtual void ZEntitySceneContext_unk5() = 0;
-    virtual void ZEntitySceneContext_unk6() = 0;
-    virtual void ZEntitySceneContext_unk7() = 0;
+    virtual void ClearScene(bool) = 0;
+    virtual void CreateScene(bool bFullyUnloadScene) = 0;
     virtual void ZEntitySceneContext_unk8() = 0;
     virtual void ZEntitySceneContext_unk9() = 0;
     virtual void ZEntitySceneContext_unk10() = 0;
     virtual void ZEntitySceneContext_unk11() = 0;
-    virtual void ZEntitySceneContext_unk12() = 0;
-    virtual void ZEntitySceneContext_unk13() = 0;
+    virtual void CreateTransformParentScene() = 0;
+    virtual ZEntityRef* GetTransformParentScene(ZEntityRef& result) = 0;
     virtual void ZEntitySceneContext_unk14() = 0;
     virtual void ZEntitySceneContext_unk15() = 0;
+    virtual void ZEntitySceneContext_unk16() = 0;
     virtual void LoadScene(const SSceneInitParameters& parameters) = 0;
-    virtual void ZEntitySceneContext_unk17() = 0;
-    virtual void ZEntitySceneContext_unk18() = 0;
-    virtual void ZEntitySceneContext_unk19() = 0;
+    virtual const TArray<SBrickAllocationInfo>& GetLoadedBricks() = 0;
+    virtual const SSceneInitParameters& GetSceneInitParameters() = 0;
     virtual void ZEntitySceneContext_unk20() = 0;
     virtual void ZEntitySceneContext_unk21() = 0;
     virtual void ZEntitySceneContext_unk22() = 0;
