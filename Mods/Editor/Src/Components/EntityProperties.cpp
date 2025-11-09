@@ -192,7 +192,7 @@ void Editor::DrawEntityProperties() {
                         }
 
                         ImGui::TextUnformatted(fmt::format(
-                            "Contained {}: {:016X}",
+                            "Contained in {}: {:016X}",
                             s_EntityTreeNode->BlueprintFactoryType == "TBLU" ? "TEMP" : "ASET",
                             s_ParentTemplateFactoryRuntimeResourceID.GetID()
                         ).c_str());
@@ -202,7 +202,7 @@ void Editor::DrawEntityProperties() {
                         }
 
                         ImGui::TextUnformatted(fmt::format(
-                            "Contained {}: {:016X}",
+                            "Contained in {}: {:016X}",
                             s_EntityTreeNode->BlueprintFactoryType,
                             s_EntityTreeNode->BlueprintFactory.GetID()
                         ).c_str());
@@ -221,7 +221,7 @@ void Editor::DrawEntityProperties() {
                         }
 
                         ImGui::TextUnformatted(fmt::format(
-                            "Contained {}: {:016X}",
+                            "Contained in {}: {:016X}",
                             s_EntityTreeNode->BlueprintFactoryType,
                             s_EntityTreeNode->BlueprintFactory.GetID()
                         ).c_str());
