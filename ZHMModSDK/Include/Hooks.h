@@ -76,6 +76,7 @@ class ZLevelManager;
 enum class ESceneLoadingStage;
 class ZSecuritySystemCameraManager;
 class ZSecuritySystemCamera;
+class ZExtendedCppEntityTypeInstaller;
 
 class ZHMSDK_API Hooks {
 public:
@@ -240,4 +241,10 @@ public:
     static Hook<void(
         ZEntityManager* th, const ZEntityRef& entityRef, const SExternalReferences& externalRefs
     )>* ZEntityManager_DeleteEntity;
+
+    static Hook<bool(
+        ZExtendedCppEntityTypeInstaller* th, ZResourcePending& ResourcePending
+    )>* ZExtendedCppEntityTypeInstaller_Install;
+
+    static Hook<void(ZResourceManager* th, ZResourceIndex index)>* ZResourceManager_UninstallResource;
 };

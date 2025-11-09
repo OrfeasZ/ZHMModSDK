@@ -281,6 +281,22 @@ private:
         const SExternalReferences& externalRefs
     );
 
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZTemplateEntityFactory_ConfigureEntity,
+        ZTemplateEntityFactory* th,
+        ZEntityType** pEntity,
+        const SExternalReferences& externalRefs,
+        uint8_t* unk0
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, bool, ZExtendedCppEntityTypeInstaller_Install,
+        ZExtendedCppEntityTypeInstaller* th,
+        ZResourcePending& ResourcePending
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZResourceManager_UninstallResource,
+        ZResourceManager* th, ZResourceIndex index
+    );
+
 private:
     enum class EntityHighlightMode {
         Lines,
@@ -481,6 +497,12 @@ private:
 
     inline static ZEntityRef m_DynamicEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x1));
     inline static ZEntityRef m_UnparentedEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x2));
+
+    std::unordered_map<ZEntityRef, std::pair<ZRuntimeResourceID, ZRuntimeResourceID>> m_EntityRefToFactoryRuntimeResourceIDs;
+    std::unordered_map<ZExtendedCppEntityFactory*, ZRuntimeResourceID> m_ExtendedCppEntityFactoryToRuntimeResourceID;
+    std::unordered_map<ZRuntimeResourceID, ZExtendedCppEntityFactory*> m_RuntimeResourceIDToExtendedCppEntityFactory;
+    std::shared_mutex m_EntityRefToFactoryRuntimeResourceIDsMutex;
+    std::mutex m_ExtendedCppEntityFactoryResourceMapsMutex;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

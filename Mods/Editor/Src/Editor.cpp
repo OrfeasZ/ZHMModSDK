@@ -135,6 +135,12 @@ void Editor::Init() {
     Hooks::ZEntityManager_NewUninitializedEntity->AddDetour(this, &Editor::ZEntityManager_NewUninitializedEntity);
     Hooks::ZEntityManager_DeleteEntity->AddDetour(this, &Editor::ZEntityManager_DeleteEntity);
 
+    Hooks::ZTemplateEntityFactory_ConfigureEntity->AddDetour(this, &Editor::ZTemplateEntityFactory_ConfigureEntity);
+
+    Hooks::ZExtendedCppEntityTypeInstaller_Install->AddDetour(this, &Editor::ZExtendedCppEntityTypeInstaller_Install);
+
+    Hooks::ZResourceManager_UninstallResource->AddDetour(this, &Editor::ZResourceManager_UninstallResource);
+
     m_UseSnap = GetSettingBool("general", "snap", true);
     m_SnapValue = GetSettingDouble("general", "snap_value", 1.0);
     m_UseAngleSnap = GetSettingBool("general", "angle_snap", true);
@@ -974,6 +980,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_EditorData = {};
     }
 
+    m_EntityRefToFactoryRuntimeResourceIDs.clear();
+
     return {HookAction::Continue()};
 }
 
@@ -997,6 +1005,111 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinI
     }
 
     return {HookAction::Continue()};
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, void, ZTemplateEntityFactory_ConfigureEntity,
+    ZTemplateEntityFactory* th,
+    ZEntityType** pEntity,
+    const SExternalReferences& externalRefs,
+    uint8_t* unk0
+) {
+    IEntityBlueprintFactory* s_EntityBlueprintFactory = static_cast<IEntityBlueprintFactory*>(th->m_blueprintResource.GetResourceData());
+
+    for (size_t i = 0; i < s_EntityBlueprintFactory->GetSubEntitiesCount(); ++i) {
+        const ZEntityRef s_SubEntity = s_EntityBlueprintFactory->GetSubEntity(pEntity, i);
+        IEntityFactory* s_SubEntityFactory = th->m_pFactories[i];
+        ZRuntimeResourceID s_SubEntityFactoryRuntimeResourceID;
+
+        if (s_SubEntityFactory->IsTemplateEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZTemplateEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAspectEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAspectEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsCppEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZCppEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsExtendedCppEntityFactory()) {
+            ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory = static_cast<ZExtendedCppEntityFactory*>(s_SubEntityFactory);
+
+            std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
+            auto s_Iterator = m_ExtendedCppEntityFactoryToRuntimeResourceID.find(s_ExtendedCppEntityFactory);
+
+            if (s_Iterator != m_ExtendedCppEntityFactoryToRuntimeResourceID.end()) {
+                s_SubEntityFactoryRuntimeResourceID = s_Iterator->second;
+            }
+        }
+        else if (s_SubEntityFactory->IsUIControlEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZUIControlEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsRenderMaterialEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZRenderMaterialEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsBehaviorTreeEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZBehaviorTreeEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAudioSwitchEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioSwitchEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAudioStateEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioStateEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+
+        {
+            std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
+
+            m_EntityRefToFactoryRuntimeResourceIDs[s_SubEntity] = { s_SubEntityFactoryRuntimeResourceID, th->m_ridResource };
+        }
+    }
+
+    p_Hook->CallOriginal(th, pEntity, externalRefs, unk0);
+
+    return HookResult<void>(HookAction::Return());
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, bool, ZExtendedCppEntityTypeInstaller_Install,
+    ZExtendedCppEntityTypeInstaller* th,
+    ZResourcePending& ResourcePending
+) {
+    bool s_Result = p_Hook->CallOriginal(th, ResourcePending);
+
+    ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory =
+        static_cast<ZExtendedCppEntityFactory*>(ResourcePending.m_pResource.GetResourceData());
+    const ZRuntimeResourceID s_RuntimeResourceID = ResourcePending.m_pResource.GetResourceInfo().rid;
+
+    {
+        std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
+
+        m_ExtendedCppEntityFactoryToRuntimeResourceID[s_ExtendedCppEntityFactory] = s_RuntimeResourceID;
+        m_RuntimeResourceIDToExtendedCppEntityFactory[s_RuntimeResourceID] = s_ExtendedCppEntityFactory;
+    }
+
+    return HookResult<bool>(HookAction::Return(), s_Result);
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, void, ZResourceManager_UninstallResource,
+    ZResourceManager* th, ZResourceIndex index
+) {
+    if (m_RuntimeResourceIDToExtendedCppEntityFactory.empty()) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
+    const auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[index.val];
+    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid;
+
+    {
+        std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
+        auto s_Iterator = m_RuntimeResourceIDToExtendedCppEntityFactory.find(s_RuntimeResourceID);
+
+        if (s_Iterator != m_RuntimeResourceIDToExtendedCppEntityFactory.end()) {
+            ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory = s_Iterator->second;
+
+            m_ExtendedCppEntityFactoryToRuntimeResourceID.erase(s_ExtendedCppEntityFactory);
+            m_RuntimeResourceIDToExtendedCppEntityFactory.erase(s_Iterator);
+        }
+    }
+
+    return HookResult<void>(HookAction::Continue());
 }
 
 DEFINE_ZHM_PLUGIN(Editor);
