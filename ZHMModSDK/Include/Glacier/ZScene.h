@@ -33,8 +33,7 @@ public:
     TArray<TResourcePtr<IEntityBlueprintFactory>> m_aAdditionalBrickBlueprints; //0x48
 };
 
-class ZBrickData {
-public:
+struct SBrickAllocationInfo {
     ZEntityRef m_EntityRef;
     ZRuntimeResourceID m_RuntimeResourceID;
     PAD(0x18);
@@ -86,7 +85,7 @@ public:
     PAD(0x08);
     SSceneInitParameters m_SceneInitParameters; //0x10
     ZSceneConfiguration m_SceneConfig; //0x60
-    TArray<ZBrickData> m_aLoadedBricks; //0xC0
+    TArray<SBrickAllocationInfo> m_aLoadedBricks; //0xC0
     TEntityRef<ISceneEntity> m_pScene; //0xD8
     ZEntityScope* m_pEntityScope; //0xE8
     PAD(0x88);
