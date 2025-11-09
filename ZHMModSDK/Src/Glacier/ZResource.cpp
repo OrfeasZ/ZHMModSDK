@@ -9,5 +9,5 @@ ZResourcePtr::~ZResourcePtr() {
     auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
 
     if (InterlockedDecrement(&s_ResourceInfo.refCount) == 0 && s_ResourceInfo.resourceData)
-        Functions::ZResourceManager_UninstallResource->Call(Globals::ResourceManager, m_nResourceIndex.val);
+        Functions::ZResourceManager_UninstallResource->Call(Globals::ResourceManager, m_nResourceIndex);
 }

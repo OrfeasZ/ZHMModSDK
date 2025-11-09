@@ -70,7 +70,7 @@ public:
     static EngineFunction<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
     //static EngineFunction<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
     static EngineFunction<ZHM5InputControl*(ZHM5InputManager* th)>* ZHM5InputManager_GetInputControlForLocalPlayer;
-    static EngineFunction<void(ZResourceManager* th, int index)>* ZResourceManager_UninstallResource;
+    static EngineFunction<void(ZResourceManager* th, ZResourceIndex index)>* ZResourceManager_UninstallResource;
 
     static EngineFunction<ZEntityRef*(
         ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
