@@ -1774,14 +1774,11 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
 
     std::string s_Message(msg);
 
-    while (!s_Message.empty() && (s_Message.back() == '\n' || s_Message.back() == '\r'))
+    while (!s_Message.empty() && (s_Message.back() == '\n' || s_Message.back() == '\r')) {
         s_Message.pop_back();
+    }
 
     switch (type) {
-    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Message:
-        Logger::Info("[Scaleform] {}", s_Message);
-        break;
-
     case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Error:
         Logger::Error("[Scaleform] {}", s_Message);
         break;
@@ -1790,9 +1787,10 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
         Logger::Warn("[Scaleform] {}", s_Message);
         break;
 
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Message:
     case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Action:
     default:
-        Logger::Debug("[Scaleform] {}", s_Message);
+        Logger::Info("[Scaleform] {}", s_Message);
         break;
     }
 
