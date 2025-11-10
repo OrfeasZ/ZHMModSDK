@@ -300,6 +300,11 @@ void ModSDK::LoadConfiguration() {
             const auto s_Value = s_Mod.second.get("scene_loading_logging");
             m_IsSceneLoadingLoggingEnabled = s_Value == "true" || s_Value == "1";
         }
+
+        if (s_Mod.second.has("scaleform_logging")) {
+            const auto s_Value = s_Mod.second.get("scaleform_logging");
+            m_IsScaleformLoggingEnabled = s_Value == "true" || s_Value == "1";
+        }
     }
 }
 
@@ -711,6 +716,8 @@ bool ModSDK::Startup() {
 
     Hooks::ZLevelManager_SetGameState->AddDetour(this, &ModSDK::ZLevelManager_SetGameState);
     Hooks::ZEntitySceneContext_SetLoadingStage->AddDetour(this, &ModSDK::ZEntitySceneContext_SetLoadingStage);
+
+    Hooks::Scaleform_GFx_AS3_MovieRoot_Output->AddDetour(this, &ModSDK::Scaleform_GFx_AS3_MovieRoot_Output);
 
     m_D3D12Hooks->Startup();
 
@@ -1750,4 +1757,44 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZE
     }
 
     return HookResult<void>(HookAction::Return());
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
+    Scaleform::GFx::AS3::MovieRoot* th,
+    Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
+    const char* msg
+) {
+    if (!m_IsScaleformLoggingEnabled) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
+    if (!msg) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
+    std::string s_Message(msg);
+
+    while (!s_Message.empty() && (s_Message.back() == '\n' || s_Message.back() == '\r'))
+        s_Message.pop_back();
+
+    switch (type) {
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Message:
+        Logger::Info("[Scaleform] {}", s_Message);
+        break;
+
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Error:
+        Logger::Error("[Scaleform] {}", s_Message);
+        break;
+
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Warning:
+        Logger::Warn("[Scaleform] {}", s_Message);
+        break;
+
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Action:
+    default:
+        Logger::Debug("[Scaleform] {}", s_Message);
+        break;
+    }
+
+    return HookResult<void>(HookAction::Continue());
 }

@@ -231,6 +231,12 @@ private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage);
 
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
+        Scaleform::GFx::AS3::MovieRoot* th,
+        Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
+        const char* msg
+    );
+
     #pragma endregion
 
     bool PatchCodeInternal(
@@ -281,6 +287,7 @@ private:
     float m_LoadedModsUIScrollOffset = 0;
     bool m_IsGameStateLoggingEnabled = false;
     bool m_IsSceneLoadingLoggingEnabled = false;
+    bool m_IsScaleformLoggingEnabled = false;
 
     std::unordered_map<ZRuntimeResourceID, TArray<uint32_t>> m_ResourceIdToChunkMap;
 
