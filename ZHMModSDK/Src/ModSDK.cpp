@@ -1724,7 +1724,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state) {
     p_Hook->CallOriginal(th, state);
 
-    Logger::Debug("Game State: {}", GameStateToString(state));
+    Logger::Info("Game State: {}", GameStateToString(state));
 
     return HookResult<void>(HookAction::Return());
 }
