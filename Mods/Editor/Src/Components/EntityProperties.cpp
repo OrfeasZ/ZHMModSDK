@@ -128,7 +128,7 @@ void Editor::DrawEntityProperties() {
                 ImGui::TextUnformatted(fmt::format("Entity Name: {}", s_EntityName).c_str());
 
                 if (ImGuiCopyWidget("EntityName")) {
-                    CopyToClipboard(s_EntityName.c_str());
+                    CopyToClipboard(s_EntityName);
                 }
 
                 ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", s_EntityTreeNode->EntityId).c_str());
