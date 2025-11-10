@@ -122,7 +122,7 @@ void Editor::DrawEntityProperties() {
                 const std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
                 const std::string s_EntityName = s_EntityTreeNode->Name.substr(
                     0,
-                    s_EntityTreeNode->Name.find_last_of(" (")
+                    s_EntityTreeNode->Name.find_last_of(" (") - 1
                 );
 
                 ImGui::TextUnformatted(fmt::format("Entity Name: {}", s_EntityName).c_str());
