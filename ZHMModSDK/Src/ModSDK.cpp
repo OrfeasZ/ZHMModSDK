@@ -290,6 +290,16 @@ void ModSDK::LoadConfiguration() {
             const auto s_Value = s_Mod.second.get("crash_reporting");
             m_EnableSentry = s_Value == "true" || s_Value == "1";
         }
+
+        if (s_Mod.second.has("game_state_logging")) {
+            const auto s_Value = s_Mod.second.get("game_state_logging");
+            m_IsGameStateLoggingEnabled = s_Value == "true" || s_Value == "1";
+        }
+
+        if (s_Mod.second.has("scene_loading_logging")) {
+            const auto s_Value = s_Mod.second.get("scene_loading_logging");
+            m_IsSceneLoadingLoggingEnabled = s_Value == "true" || s_Value == "1";
+        }
     }
 }
 
@@ -1724,7 +1734,9 @@ DEFINE_DETOUR_WITH_CONTEXT(
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state) {
     p_Hook->CallOriginal(th, state);
 
-    Logger::Info("Game State: {}", GameStateToString(state));
+    if (m_IsGameStateLoggingEnabled) {
+        Logger::Info("Game State: {}", GameStateToString(state));
+    }
 
     return HookResult<void>(HookAction::Return());
 }
@@ -1732,8 +1744,10 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManag
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage) {
     p_Hook->CallOriginal(th, stage);
 
-    Logger::Info("Scene Loading Stage: {}", SceneLoadingStageToString(stage));
-    Logger::Info("Scene Loading Progress: {}%", th->GetLoadingProgress() * 100);
+    if (m_IsSceneLoadingLoggingEnabled) {
+        Logger::Info("Scene Loading Stage: {}", SceneLoadingStageToString(stage));
+        Logger::Info("Scene Loading Progress: {}%", th->GetLoadingProgress() * 100);
+    }
 
     return HookResult<void>(HookAction::Return());
 }

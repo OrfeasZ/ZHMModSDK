@@ -279,6 +279,8 @@ private:
     std::string m_IgnoredVersion;
     bool m_DisableUpdateCheck = false;
     float m_LoadedModsUIScrollOffset = 0;
+    bool m_IsGameStateLoggingEnabled = false;
+    bool m_IsSceneLoadingLoggingEnabled = false;
 
     std::unordered_map<ZRuntimeResourceID, TArray<uint32_t>> m_ResourceIdToChunkMap;
 
