@@ -116,6 +116,24 @@ For example, to change it to `F2`, write the following:
 ui_toggle_key = 0x3C
 ```
 
+## Game Logging
+
+**Options**
+
+- `game_state_logging` – Logs when the game changes states
+- `scene_loading_logging` – Logs scene loading stages and loading progress percentage.  
+- `scaleform_logging` – Logs messages, warnings, and errors sent by the Scaleform UI system.
+
+Logging can be enabled by editing the `mods.ini` file in your game's `Retail` folder.
+
+To enable a logging option, open the `mods.ini` file and add the desired key to the `[sdk]` section.  
+For example, to enable Scaleform logging:
+
+```ini
+[sdk]
+scaleform_logging = true
+```
+
 ## Usage (for developers)
 
 To find out how to create your own mods or how to extend the SDK, check out
