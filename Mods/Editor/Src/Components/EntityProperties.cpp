@@ -139,6 +139,10 @@ void Editor::DrawEntityProperties() {
 
                 ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_EntityTreeNode->EntityType).c_str());
 
+                if (ImGuiCopyWidget("EntityType")) {
+                    CopyToClipboard(s_EntityTreeNode->EntityType);
+                }
+
                 {
                     std::shared_lock s_FactoryLock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
                     auto s_Iterator2 = m_EntityRefToFactoryRuntimeResourceIDs.find(s_SelectedEntity);
