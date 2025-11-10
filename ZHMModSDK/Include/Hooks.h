@@ -15,6 +15,8 @@
 #include <Glacier/ZLevelManager.h>
 #include <Glacier/ZResource.h>
 
+#include "Scaleform.h"
+
 class ZRenderDepthStencilView;
 class ZRuntimeResourceID;
 class ZActor;
@@ -247,4 +249,10 @@ public:
     )>* ZExtendedCppEntityTypeInstaller_Install;
 
     static Hook<void(ZResourceManager* th, ZResourceIndex index)>* ZResourceManager_UninstallResource;
+
+    static Hook<void(
+        Scaleform::GFx::AS3::MovieRoot* th,
+        Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
+        const char* msg
+    )>* Scaleform_GFx_AS3_MovieRoot_Output;
 };

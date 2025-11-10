@@ -463,3 +463,10 @@ PATTERN_HOOK(
     ZResourceManager_UninstallResource,
     void(ZResourceManager* th, ZResourceIndex index)
 );
+
+PATTERN_HOOK(
+    "\x40\x53\x55\x48\x83\xEC\x00\x48\x89\x7C\x24\x20",
+    "xxxxxx?xxxxx",
+    Scaleform_GFx_AS3_MovieRoot_Output,
+    void(Scaleform::GFx::AS3::MovieRoot* th, Scaleform::GFx::AS3::FlashUI::OutputMessageType type, const char* msg)
+);
