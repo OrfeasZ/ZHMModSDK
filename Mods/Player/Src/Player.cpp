@@ -13,6 +13,8 @@
 #include <Glacier/ZItem.h>
 #include <Glacier/SExternalReferences.h>
 
+#include <Util/ImGuiUtils.h>
+
 void Player::Init()
 {
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Player::OnClearScene);
@@ -62,6 +64,10 @@ void Player::OnDrawUI(const bool p_HasFocus)
         }
 
         static char s_OutfitName[2048]{ "" };
+        static uint8_t s_CurrentCharacterSetIndex = 0;
+        static std::string s_CurrentCharSetCharacterType = "HeroA";
+        static std::string s_CurrentCharSetCharacterType2 = "HeroA";
+        static uint8_t s_CurrentOutfitVariationIndex = 1;
 
         if (s_OutfitName[0] == '\0')
         {
@@ -72,78 +78,44 @@ void Player::OnDrawUI(const bool p_HasFocus)
             s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
         }
 
-        ImGui::Text("Outfit");
-        ImGui::SameLine();
-
-        const bool s_IsInputTextEnterPressed = ImGui::InputText(
-            "##OutfitName", s_OutfitName, sizeof(s_OutfitName), ImGuiInputTextFlags_EnterReturnsTrue
-        );
-        const bool s_IsInputTextActive = ImGui::IsItemActive();
-
-        if (ImGui::IsItemActivated())
-        {
-            ImGui::OpenPopup("##popup");
-        }
-
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
-        ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
-
-        static uint8_t s_CurrentCharacterSetIndex = 0;
-        static std::string s_CurrentCharSetCharacterType = "HeroA";
-        static std::string s_CurrentCharSetCharacterType2 = "HeroA";
-        static uint8_t s_CurrentOutfitVariationIndex = 1;
-
         if (!m_GlobalOutfitKit)
         {
-            m_GlobalOutfitKit = &s_LocalHitman.m_pInterfaceRef->m_rOutfitKit;
+            m_GlobalOutfitKit = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit;
             s_CurrentCharacterSetIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitCharset;
             s_CurrentOutfitVariationIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitVariation;
         }
 
-        if (ImGui::BeginPopup(
-            "##popup",
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_ChildWindow
-        ))
-        {
-            for (auto it = s_ContentKitManager->m_repositoryGlobalOutfitKits.begin(); it != s_ContentKitManager->
-                m_repositoryGlobalOutfitKits.end(); ++it)
-            {
-                TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit = &it->second;
-                const char* s_OutfitName2 = s_GlobalOutfitKit->m_pInterfaceRef->m_sCommonName.c_str();
+        ImGui::Text("Outfit");
+        ImGui::SameLine();
 
-                if (!strstr(s_OutfitName2, s_OutfitName))
-                {
-                    continue;
-                }
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "##OutfitsPopup",
+            s_OutfitName,
+            sizeof(s_OutfitName),
+            s_ContentKitManager->m_repositoryGlobalOutfitKits,
+            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> std::string {
+                return std::string(
+                    p_Pair.second.m_pInterfaceRef->m_sCommonName.c_str(),
+                    p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
+                );
+            },
+            [&](const ZRepositoryID&, const std::string& p_Name, const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
+                s_CurrentCharacterSetIndex = 0;
+                s_CurrentOutfitVariationIndex = 0;
 
-                if (ImGui::Selectable(s_OutfitName2))
-                {
-                    ImGui::ClearActiveID();
-                    strcpy_s(s_OutfitName, s_OutfitName2);
+                EquipOutfit(
+                    p_GlobalOutfitKit,
+                    s_CurrentCharacterSetIndex,
+                    s_CurrentCharSetCharacterType.data(),
+                    s_CurrentOutfitVariationIndex,
+                    s_LocalHitman.m_pInterfaceRef
+                );
 
-                    s_CurrentCharacterSetIndex = 0;
-                    s_CurrentOutfitVariationIndex = 0;
-
-                    EquipOutfit(
-                        it->second,
-                        s_CurrentCharacterSetIndex,
-                        s_CurrentCharSetCharacterType.data(),
-                        s_CurrentOutfitVariationIndex,
-                        s_LocalHitman.m_pInterfaceRef
-                    );
-
-                    m_GlobalOutfitKit = s_GlobalOutfitKit;
-                }
-            }
-
-            if (s_IsInputTextEnterPressed || (!s_IsInputTextActive && !ImGui::IsWindowFocused()))
-            {
-                ImGui::CloseCurrentPopup();
-            }
-
-            ImGui::EndPopup();
-        }
+                m_GlobalOutfitKit = p_GlobalOutfitKit;
+            },
+            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>&{ return p_Pair.second; }
+        );
 
         ImGui::Text("Character Set Index");
         ImGui::SameLine();
@@ -152,7 +124,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
         {
             if (m_GlobalOutfitKit)
             {
-                for (size_t i = 0; i < m_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i)
+                for (size_t i = 0; i < m_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets.size(); ++i)
                 {
                     const bool s_IsSelected = s_CurrentCharacterSetIndex == i;
 
@@ -163,7 +135,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                         if (m_GlobalOutfitKit)
                         {
                             EquipOutfit(
-                                *m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
+                                m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
                                 s_CurrentOutfitVariationIndex, s_LocalHitman.m_pInterfaceRef
                             );
                         }
@@ -192,7 +164,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                         if (m_GlobalOutfitKit)
                         {
                             EquipOutfit(
-                                *m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
+                                m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
                                 s_CurrentOutfitVariationIndex, s_LocalHitman.m_pInterfaceRef
                             );
                         }
@@ -211,7 +183,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
             if (m_GlobalOutfitKit)
             {
                 const auto s_CurrentCharacterSetIndex2 = s_CurrentCharacterSetIndex;
-                const size_t s_VariationCount = m_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets[
+                const size_t s_VariationCount = m_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
                     s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->
                         m_aVariations.
                         size();
@@ -227,7 +199,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                             if (m_GlobalOutfitKit)
                             {
                                 EquipOutfit(
-                                    *m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
+                                    m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
                                     s_CurrentOutfitVariationIndex, s_LocalHitman.m_pInterfaceRef
                                 );
                             }
@@ -240,8 +212,8 @@ void Player::OnDrawUI(const bool p_HasFocus)
 
         if (m_GlobalOutfitKit)
         {
-            ImGui::Checkbox("Weapons Allowed", &m_GlobalOutfitKit->m_pInterfaceRef->m_bWeaponsAllowed);
-            ImGui::Checkbox("Authority Figure", &m_GlobalOutfitKit->m_pInterfaceRef->m_bAuthorityFigure);
+            ImGui::Checkbox("Weapons Allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
+            ImGui::Checkbox("Authority Figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
         }
 
         ImGui::Separator();
@@ -596,7 +568,7 @@ DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_IsInvincible = false;
     m_IsInvisible = false;
     m_IsInfiniteAmmoEnabled = false;
-    m_GlobalOutfitKit = nullptr;
+    m_GlobalOutfitKit = {};
 
     return HookResult<void>(HookAction::Continue());
 }

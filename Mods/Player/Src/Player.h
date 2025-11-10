@@ -38,7 +38,7 @@ private:
 
     const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
 
-    TEntityRef<ZGlobalOutfitKit>* m_GlobalOutfitKit = nullptr;
+    TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
 
     ZEntityRef m_AICrippleEntity;
     ZEntityRef m_HM5CrippleBoxEntity;

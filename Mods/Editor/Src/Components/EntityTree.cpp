@@ -13,6 +13,7 @@
 #include "IconsMaterialDesign.h"
 #include "Logging.h"
 #include "Util/StringUtils.h"
+#include "Util/ImGuiUtils.h"
 
 #include <shared_mutex>
 #include <queue>
@@ -645,58 +646,37 @@ void Editor::DrawEntityTree() {
         }
 
         static char s_EntityTypeSearchInput[2048] = {};
-        const bool s_IsInputTextEnterPressed = ImGui::InputText(
-            ICON_MD_SEARCH " Search by type", s_EntityTypeSearchInput, sizeof(s_EntityTypeSearchInput),
-            ImGuiInputTextFlags_EnterReturnsTrue
-        );
-        const bool s_IsInputTextActive = ImGui::IsItemActive();
+        static std::vector<std::string> s_TypeNames;
 
-        if (ImGui::IsItemActivated()) {
-            ImGui::OpenPopup("##popup");
-        }
-
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
-        ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
-
-        if (ImGui::BeginPopup(
-            "##popup",
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_ChildWindow
-        )) {
+        if (s_TypeNames.empty()) {
             ZTypeRegistry* typeRegistry = *Globals::TypeRegistry;
-            std::vector<std::string> typeNames;
 
-            typeNames.reserve(typeRegistry->m_types.size());
+            s_TypeNames.reserve(typeRegistry->m_types.size());
 
             for (auto& pair : typeRegistry->m_types) {
-                if (!pair.second->typeInfo()->isClass())
+                if (!pair.second->typeInfo()->isClass()) {
                     continue;
-
-                if (!Util::StringUtils::FindSubstring(pair.first.c_str(), s_EntityTypeSearchInput))
-                    continue;
-
-                typeNames.push_back(pair.first.c_str());
-            }
-
-            std::sort(typeNames.begin(), typeNames.end());
-
-            for (auto& typeName : typeNames) {
-                if (ImGui::Selectable(typeName.c_str())) {
-                    ImGui::ClearActiveID();
-                    strcpy_s(s_EntityTypeSearchInput, typeName.c_str());
-
-                    m_EntityTypeSearchInput = s_EntityTypeSearchInput;
-
-                    FilterEntityTree();
                 }
+
+                s_TypeNames.push_back(pair.first.c_str());
             }
 
-            if (s_IsInputTextEnterPressed || (!s_IsInputTextActive && !ImGui::IsWindowFocused())) {
-                ImGui::CloseCurrentPopup();
-            }
-
-            ImGui::EndPopup();
+            std::sort(s_TypeNames.begin(), s_TypeNames.end());
         }
+
+        Util::ImGuiUtils::InputWithAutocomplete(
+            ICON_MD_SEARCH " Search by type##EntityTypesPopup",
+            s_EntityTypeSearchInput,
+            sizeof(s_EntityTypeSearchInput),
+            s_TypeNames,
+            [](auto& s_TypeName) -> const std::string& { return s_TypeName; },
+            [](auto& s_TypeName) -> const std::string& { return s_TypeName; },
+            [&](const std::string& s_TypeName, const std::string&, const auto&) {
+                m_EntityTypeSearchInput = s_EntityTypeSearchInput;
+
+                FilterEntityTree();
+            }
+        );
 
         static char s_EntityNameSearchInput[2048] = {};
 

@@ -20,7 +20,7 @@ private:
     static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
     static void SpawnActor(
         const std::string& p_ActorName, const ZRepositoryID& p_RepositoryID,
-        const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8_t p_CharacterSetIndex,
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharacterSetIndex,
         const std::string& p_CharSetCharacterType, uint8_t p_OutfitVariationIndex
     );
 
