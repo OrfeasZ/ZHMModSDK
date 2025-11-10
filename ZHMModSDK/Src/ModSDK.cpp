@@ -1732,8 +1732,8 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManag
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage) {
     p_Hook->CallOriginal(th, stage);
 
-    Logger::Debug("Scene Loading Stage: {}", SceneLoadingStageToString(stage));
-    Logger::Debug("Scene Loading Progress: {}%", th->GetLoadingProgress() * 100);
+    Logger::Info("Scene Loading Stage: {}", SceneLoadingStageToString(stage));
+    Logger::Info("Scene Loading Progress: {}%", th->GetLoadingProgress() * 100);
 
     return HookResult<void>(HookAction::Return());
 }
