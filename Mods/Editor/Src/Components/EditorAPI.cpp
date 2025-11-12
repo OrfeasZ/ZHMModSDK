@@ -653,28 +653,3 @@ void Editor::SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p
 void Editor::RebuildEntityTree() {
     UpdateEntities();
 }
-
-void Editor::LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex) {
-    Logger::Info("Loading Navp areas");
-
-    if (p_ChunkIndex == 0) {
-        m_NavpAreas.clear();
-    }
-    for (simdjson::ondemand::array s_NavpArea : p_NavpAreas) {
-        std::vector<SVector3> s_Area;
-        for (simdjson::ondemand::array s_NavpPoint : s_NavpArea) {
-            std::vector<double> s_Point;
-            for (double coord : s_NavpPoint) {
-                s_Point.push_back(coord);
-            }
-            SVector3 point {
-                static_cast<float>(s_Point[0]),
-                static_cast<float>(s_Point[1]),
-                static_cast<float>(s_Point[2])
-            };
-
-            s_Area.push_back(point);
-        }
-        m_NavpAreas.push_back(s_Area);
-    }
-}

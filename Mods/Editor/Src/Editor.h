@@ -72,7 +72,6 @@ public:
         const std::string& p_EntityType, const std::string& p_Hash
     );
     void RebuildEntityTree();
-    void LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex);
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
 private:
@@ -348,8 +347,6 @@ private:
     std::string m_EntityNameSearchInput;
     std::unordered_set<EntityTreeNode*> m_FilteredEntityTreeNodes;
     std::vector<EntityTreeNode*> m_DirectEntityTreeNodeMatches;
-
-    std::vector<std::vector<SVector3>> m_NavpAreas;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;

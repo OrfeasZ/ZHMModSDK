@@ -209,15 +209,6 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
         SendAlocPfBoxesAndSeedPointEntityList(p_Socket);
     }
-    else if (s_Type == "loadNavp") {
-        const uint64_t s_ChunkIndex = s_JsonMsg["chunk"];
-        const uint64_t s_ChunkCount = s_JsonMsg["chunkCount"];
-        const simdjson::ondemand::array s_Areas = s_JsonMsg["areas"];
-        Plugin()->LoadNavpAreas(s_Areas, s_ChunkIndex);
-        if (s_ChunkIndex == s_ChunkCount - 1) {
-            SendDoneLoadingNavpMessage(p_Socket);
-        }
-    }
     else if (s_Type == "getEntityDetails") {
         const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
         const auto s_Entity = Plugin()->FindEntity(s_Selector);
@@ -829,10 +820,6 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
     s_Event << "}";
 
     p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
-}
-
-void EditorServer::SendDoneLoadingNavpMessage(WebSocket* p_Socket) {
-    p_Socket->send("Done loading Navp.", uWS::OpCode::TEXT);
 }
 
 bool EditorServer::IsPropertyValueTrue(const ZEntityProperty* s_Property, const ZEntityRef& p_Entity) {
