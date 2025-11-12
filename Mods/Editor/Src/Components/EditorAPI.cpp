@@ -414,7 +414,7 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
     }
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
 
-    Logger::Info("Getting {} Entities:", p_EntityType);
+    Logger::Info("Getting {} Entities.", p_EntityType);
     // Create a queue and add the root to it.
     std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
     s_NodeQueue.push(m_CachedEntityTree);

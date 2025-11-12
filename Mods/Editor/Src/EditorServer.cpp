@@ -682,6 +682,7 @@ void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket) {
     const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
     const bool p_IsLastAlocBatch
 ) -> void {
+            Logger::Info("Sending ALOC, Pathfinding Box, and Seed Point Entities...");
             bool s_SentAlocThisBatch = false;
             if (!p_Entities.empty()) {
                 bool s_CurrentBatchWillSend = false;
@@ -706,7 +707,7 @@ void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket) {
                 p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
 
                 const auto s_PfBoxEntities =
-                        Plugin()->FindEntitiesByType("ZPFBoxEntity", "00280B8C4462FAC8");
+                        Plugin()->FindEntitiesByType("ZPFBoxEntity", "00724CDE424AFE76");
                 SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
                 p_Socket->send("],\"pfSeedPoints\":[", uWS::OpCode::TEXT);
@@ -717,6 +718,7 @@ void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket) {
                 p_Socket->send("]}", uWS::OpCode::TEXT);
 
                 p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
+                Logger::Info("Done sending Entities.");
             }
         },
         [p_Socket]() -> void {
@@ -926,12 +928,13 @@ bool EditorServer::SendEntitiesDetails(
     bool s_IsFirstItemActuallySentInThisCall = true;
     bool s_DidSendAnything = false;
 
-    for (const auto& [s_AlocHashes, s_Quat, s_Entity] : p_Entities) {
-        if (IsExcludedFromNavMeshExport(s_Entity)) {
+    for (const auto& [s_Hashes, s_Quat, s_Entity] : p_Entities) {
+        if (strcmp(s_Hashes.front().c_str(), "00724CDE424AFE76") != 0 && strcmp(s_Hashes.front().c_str(), "00280B8C4462FAC8") != 0
+            && IsExcludedFromNavMeshExport(s_Entity)) {
             continue;
         }
 
-        for (const auto& s_Hash : s_AlocHashes) {
+        for (const auto& s_Hash : s_Hashes) {
             if (!s_IsFirstItemActuallySentInThisCall) {
                 p_Socket->send(",", uWS::OpCode::TEXT);
             }
