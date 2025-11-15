@@ -89,7 +89,7 @@ public:
     PAD(0x10);
     int32_t m_rootEntityIndex; // 0x20
     PAD(0x0C); // 0x24
-    TArray<IEntityBlueprintFactory*> m_ExternalSceneBlueprints; // 0x30
+    TArray<IEntityBlueprintFactory*> m_aBlueprintFactories; // 0x30
 };
 
 static_assert(offsetof(ZEntityBlueprintFactoryBase, m_rootEntityIndex) == 0x20);
@@ -109,10 +109,85 @@ public:
 
 static_assert(offsetof(ZTemplateEntityBlueprintFactory, m_pTemplateEntityBlueprint) == 0x1A0);
 
+class ZAspectEntityBlueprintFactory : public ZCompositeEntityBlueprintFactoryBase {
+public:
+    struct SAspectedSubentityEntry {
+        uint32 m_nAspectIdx;
+        uint32 m_nSubentityIdx;
+    };
+
+    PAD(0x30); // 0x60
+    ZEntityType* m_pFactoryEntityType; // 0x90
+    TArray<SAspectedSubentityEntry> m_aSubEntitiesLookUp; // 0x98
+    THashMap<uint64, int32, TDefaultHashMapPolicy<uint64>> m_aSubEntityIndexMap; // 0xB0
+};
+
 class ZTemplateEntityFactory : public IEntityFactory {
 public:
-    PAD(0x30);
+    PAD(0xC);
+    int32 m_rootEntityIndex; // 0x14
+    TArray<IEntityFactory*> m_pFactories; // 0x18
+    ZRuntimeResourceID m_ridResource; // 0x30
     TResourcePtr<ZTemplateEntityBlueprintFactory> m_blueprintResource; // 0x38
 };
 
 static_assert(offsetof(ZTemplateEntityFactory, m_blueprintResource) == 0x38);
+
+class ZAspectEntityFactory : public IEntityFactory {
+public:
+    TArray<TResourcePtr<IEntityFactory>> m_factoryResources; // 0x8
+    TResourcePtr<ZAspectEntityBlueprintFactory> m_blueprintResource; // 0x20
+    ZRuntimeResourceID m_ridResource; // 0x28
+};
+
+class ZCppEntityBlueprintFactory;
+
+class ZCppEntityFactory : public IEntityFactory {
+public:
+    PAD(0x48);
+    TResourcePtr<ZCppEntityBlueprintFactory> m_blueprintResource; // 0x50
+    ZRuntimeResourceID m_ridResource; // 0x58
+};
+
+class ZExtendedCppEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pCppEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_pBlueprintFactory; // 0x10
+};
+
+class ZUIControlEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pCppEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_pBlueprintFactory; // 0x10
+    ZRuntimeResourceID m_ridResource; // 0x18
+};
+
+class ZRenderMaterialEntityFactory : public IEntityFactory {
+public:
+    PAD(0xA8);
+    TResourcePtr<IEntityFactory> m_pMaterialEntityFactory; // 0xB0
+    TResourcePtr<IEntityBlueprintFactory> m_blueprintResource; // 0xB8
+    ZRuntimeResourceID m_ridResource; // 0xC0
+    ZRuntimeResourceID m_ridMaterialInstance; // 0xC8
+};
+
+class ZBehaviorTreeEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pParentEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_blueprintResource; // 0x10
+    ZRuntimeResourceID m_ridResource; // 0x18
+};
+
+class ZAudioSwitchEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pParentEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_pBlueprintResource; // 0x10
+    ZRuntimeResourceID m_ridResource; // 0x18
+};
+
+class ZAudioStateEntityFactory : public IEntityFactory {
+public:
+    TResourcePtr<IEntityFactory> m_pParentEntityFactory; // 0x8
+    TResourcePtr<IEntityBlueprintFactory> m_pBlueprintResource; // 0x10
+    ZRuntimeResourceID m_ridResource; // 0x18
+};

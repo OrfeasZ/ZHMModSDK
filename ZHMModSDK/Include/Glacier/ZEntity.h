@@ -4,9 +4,7 @@
 #include "TArray.h"
 #include "Reflection.h"
 #include "ZObject.h"
-#include "Hooks.h"
 #include "Globals.h"
-#include "Functions.h"
 
 class IEntityBlueprintFactory;
 class ZEntityBlueprintFactoryBase;
@@ -23,6 +21,42 @@ public:
     virtual ZEntityBlueprintFactoryBase* GetBlueprint() = 0;
     virtual void IEntityFactory_unk9() = 0;
     virtual void IEntityFactory_unk10() = 0;
+
+    bool IsTemplateEntityFactory() const {
+        return Globals::ZTemplateEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAspectEntityFactory() const {
+        return Globals::ZAspectEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsCppEntityFactory() const {
+        return Globals::ZCppEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsExtendedCppEntityFactory() const {
+        return Globals::ZExtendedCppEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsUIControlEntityFactory() const {
+        return Globals::ZUIControlEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsRenderMaterialEntityFactory() const {
+        return Globals::ZRenderMaterialEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsBehaviorTreeEntityFactory() const {
+        return Globals::ZBehaviorTreeEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAudioSwitchEntityFactory() const {
+        return Globals::ZAudioSwitchEntityFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAudioStateEntityFactory() const {
+        return Globals::ZAudioStateEntityFactory_vtbl == *(void**)this;
+    }
 };
 
 class IEntityBlueprintFactory : public IComponentInterface {
@@ -56,8 +90,40 @@ public:
     virtual void IEntityBlueprintFactory_unk31() = 0;
     virtual void IEntityBlueprintFactory_unk32() = 0;
 
-    inline bool IsTemplateEntityBlueprintFactory() const {
-        return Globals::ZTemplateEntityBlueprintFactory_vtbl == *(void**) this;
+    bool IsTemplateEntityBlueprintFactory() const {
+        return Globals::ZTemplateEntityBlueprintFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAspectEntityBlueprintFactory() const {
+        return Globals::ZAspectEntityBlueprintFactory_vtbl == *(void**)this;
+    }
+
+    bool IsCppEntityBlueprintFactory() const {
+        return Globals::ZCppEntityBlueprintFactory_vtbl == *(void**)this;
+    }
+
+    bool IsExtendedCppEntityBlueprintFactory() const {
+        return Globals::ZExtendedCppEntityBlueprintFactory_vtbl == *(void**)this;
+    }
+
+    bool IsUIControlBlueprintFactory() const {
+        return Globals::ZUIControlBlueprintFactory_vtbl == *(void**)this;
+    }
+
+    bool IsRenderMaterialEntityBlueprintFactory() const {
+        return Globals::ZRenderMaterialEntityBlueprintFactory_vtbl == *(void**)this;
+    }
+
+    bool IsBehaviorTreeEntityBlueprintFactory() const {
+        return Globals::ZBehaviorTreeEntityBlueprintFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAudioSwitchBlueprintFactory() const {
+        return Globals::ZAudioSwitchBlueprintFactory_vtbl == *(void**)this;
+    }
+
+    bool IsAudioStateBlueprintFactory() const {
+        return Globals::ZAudioStateBlueprintFactory_vtbl == *(void**)this;
     }
 };
 
@@ -164,7 +230,7 @@ public:
     };
 
     virtual ~ZEntityImpl() {}
-    virtual ZEntityRef* GetID(ZEntityRef* result) = 0;
+    virtual ZEntityRef* GetID(ZEntityRef& result) = 0;
     virtual void Activate(int) = 0;
     virtual void Deactivate(int) = 0;
     virtual void ZEntityImpl_unk8() = 0;
@@ -237,13 +303,7 @@ public:
         };
     }
 
-    void SetLogicalParent(ZEntityRef entityRef) {
-        const auto s_Entity = GetEntity();
-        ZEntityType* s_EntityType = Functions::ZEntityImpl_EnsureUniqueType->Call(s_Entity, 0);
-
-        s_EntityType->m_nLogicalParentEntityOffset = reinterpret_cast<uintptr_t>(entityRef.m_pEntity) - reinterpret_cast
-                <uintptr_t>(m_pEntity);
-    }
+    ZHMSDK_API void SetLogicalParent(ZEntityRef entityRef);
 
     bool IsAnyParent(const ZEntityRef& p_Other) const {
         if (!p_Other)
@@ -432,9 +492,7 @@ public:
         return GetProperty<T>(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()));
     }
 
-    bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true) {
-        return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);
-    }
+    ZHMSDK_API bool SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true);
 
     bool SetProperty(const ZString& p_PropertyName, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers = true) {
         return SetProperty(Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers);
@@ -442,7 +500,7 @@ public:
 
     template <class T>
     bool SetProperty(uint32_t p_PropertyId, const T& p_Value, bool p_InvokeChangeHandlers = true) {
-        return Hooks::SetPropertyValue->Call(*this, p_PropertyId, ZVariant<T>(p_Value), p_InvokeChangeHandlers);
+        return SetProperty(p_PropertyId, ZVariant<T>(p_Value), p_InvokeChangeHandlers);
     }
 
     template <class T>
@@ -454,25 +512,29 @@ public:
 
     template <class T>
     bool SetProperty(uint32_t p_PropertyId, const ZVariant<T>& p_Value, bool p_InvokeChangeHandlers = true) {
-        return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);
+        return SetProperty(p_PropertyId, static_cast<const ZObjectRef&>(p_Value), p_InvokeChangeHandlers);
     }
 
     template <class T>
     bool SetProperty(const ZString& p_PropertyName, const ZVariant<T>& p_Value, bool p_InvokeChangeHandlers = true) {
         return SetProperty<T>(
-            Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers
+            Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()),
+            static_cast<const ZObjectRef&>(p_Value),
+            p_InvokeChangeHandlers
         );
     }
 
     template <class T>
     bool SetProperty(uint32_t p_PropertyId, const ZVariantRef<T>& p_Value, bool p_InvokeChangeHandlers = true) {
-        return Hooks::SetPropertyValue->Call(*this, p_PropertyId, p_Value, p_InvokeChangeHandlers);
+        return SetProperty(p_PropertyId, static_cast<const ZObjectRef&>(p_Value), p_InvokeChangeHandlers);
     }
 
     template <class T>
     bool SetProperty(const ZString& p_PropertyName, const ZVariantRef<T>& p_Value, bool p_InvokeChangeHandlers = true) {
         return SetProperty<T>(
-            Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()), p_Value, p_InvokeChangeHandlers
+            Hash::Crc32(p_PropertyName.c_str(), p_PropertyName.size()),
+            static_cast<const ZObjectRef&>(p_Value),
+            p_InvokeChangeHandlers
         );
     }
 
@@ -480,17 +542,13 @@ public:
         SignalInputPin(Hash::Crc32(p_PinName.c_str(), p_PinName.size()), p_Data);
     }
 
-    void SignalInputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const {
-        Hooks::SignalInputPin->Call(*this, p_PinId, p_Data);
-    }
+    ZHMSDK_API void SignalInputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const;
 
     void SignalOutputPin(const ZString& p_PinName, const ZObjectRef& p_Data = ZObjectRef()) const {
         SignalOutputPin(Hash::Crc32(p_PinName.c_str(), p_PinName.size()), p_Data);
     }
 
-    void SignalOutputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const {
-        Hooks::SignalOutputPin->Call(*this, p_PinId, p_Data);
-    }
+    ZHMSDK_API void SignalOutputPin(uint32_t p_PinId, const ZObjectRef& p_Data = ZObjectRef()) const;
 
     struct hasher {
         size_t operator()(const ZEntityRef& p_Ref) const noexcept {

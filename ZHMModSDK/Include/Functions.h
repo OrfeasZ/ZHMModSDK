@@ -8,6 +8,9 @@
 #include "Glacier/ZPrimitives.h"
 #include "Glacier/ZResource.h"
 #include "Glacier/Reflection.h"
+#include "Glacier/ZDelegate.h"
+#include "Glacier/ZInventory.h"
+#include "Glacier/EDynamicEntityType.h"
 
 class ZHitman5;
 class ZActor;
@@ -26,7 +29,6 @@ class IEntityFactory;
 struct SMatrix;
 class ZGlobalOutfitKit;
 class ZItemSpawner;
-class ZCharacterSubcontrollerInventory;
 class ZResourceContainer;
 class ZResourceIndex;
 class ZHM5Animator;
@@ -44,18 +46,21 @@ class ZResourcePending;
 class ZEntityType;
 class ZEntityImpl;
 class ZUIText;
+class ZActorInventoryHandler;
+class ZWorldInventory;
+class IItemBase;
 
 class ZHMSDK_API Functions {
 public:
     static EngineFunction<void(ZActor* th)>* ZActor_OnOutfitChanged;
     static EngineFunction<void(ZActor* th)>* ZActor_ReviveActor;
     static EngineFunction<void(ZDynamicObject* th, ZString* a2)>* ZDynamicObject_ToString;
-    static EngineFunction<ZDynamicObject*(ZDynamicObject* th, char* jsonStr, int strLen)>* ZDynamicObject_ParseString;
+    static EngineFunction<ZDynamicObject*(ZDynamicObject& result, const uint8_t* pData, uint64_t nLength)>* ZJsonDeserializer_Deserialize;
     static EngineFunction<void(ZHM5BaseCharacter* th, bool inMotion)>* ZHM5BaseCharacter_ActivateRagdoll;
     static EngineFunction<void(ZHM5BaseCharacter* th)>* ZHM5BaseCharacter_DeactivateRagdoll;
     static EngineFunction<ZCameraEntity*()>* GetCurrentCamera;
     //static EngineFunction<void(ZSpatialEntity* th, SMatrix* out)>* ZSpatialEntity_WorldTransform;
-    static EngineFunction<void(ZEngineAppCommon* th)>* ZEngineAppCommon_CreateFreeCamera;
+    static EngineFunction<void(ZEngineAppCommon* th)>* ZEngineAppCommon_CreateFreeCameraAndControl;
 
     static EngineFunction<TEntityRef<IRenderDestinationEntity>*(
         ZCameraManager* th, TEntityRef<IRenderDestinationEntity>* result
@@ -65,9 +70,9 @@ public:
     static EngineFunction<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
     //static EngineFunction<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
     static EngineFunction<ZHM5InputControl*(ZHM5InputManager* th)>* ZHM5InputManager_GetInputControlForLocalPlayer;
-    static EngineFunction<void(ZResourceManager* th, int index)>* ZResourceManager_UninstallResource;
+    static EngineFunction<void(ZResourceManager* th, ZResourceIndex index)>* ZResourceManager_UninstallResource;
 
-    static EngineFunction<void(
+    static EngineFunction<ZEntityRef*(
         ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
         const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId
     )>* ZEntityManager_NewEntity;
@@ -79,19 +84,23 @@ public:
     )>* ZEntityManager_DeleteEntity;
 
     static EngineFunction<void(
-        ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation, bool unk0, bool unk2
+        ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int32_t nCharset, int32_t nVariation,
+        bool bEnableOutfitModifiers, bool bIgnoreOutifChange
     )>* ZHitman5_SetOutfit;
 
     static EngineFunction<void(
-        ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int m_nOutfitCharset, int m_nOutfitVariation, bool bNude
+        ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfit, int32_t charset, int32_t variation, bool bNude
     )>* ZActor_SetOutfit;
 
     static EngineFunction<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
 
-    static EngineFunction<unsigned long long(
-        ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId,
-        void* unknown, unsigned int unknown2
-    )>* ZCharacterSubcontrollerInventory_AddDynamicItemToInventory;
+    static EngineFunction<ZCharacterSubcontrollerInventory::SCreateItem*(
+        ZCharacterSubcontrollerInventory* th,
+        const ZRepositoryID& repId,
+        const ZString& sOnlineInstanceId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        ZCharacterSubcontrollerInventory::ECreateItemType createItemType
+    )>* ZCharacterSubcontrollerInventory_CreateItem;
 
     static EngineFunction<void(
         ZResourceContainer* th, ZResourceIndex index, TArray<ZResourceIndex>& indices, TArray<unsigned char>& flags
@@ -155,4 +164,36 @@ public:
     static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
 
     static EngineFunction<ZString::ZImpl*(const char* buf, size_t size)>* ZStringCollection_Allocate;
+
+    static EngineFunction<bool(
+        ZActorInventoryHandler* th, const ZRepositoryID& id
+    )>* ZActorInventoryHandler_RequestItem;
+    static EngineFunction<bool(ZActorInventoryHandler* th, const TEntityRef<IItem>& rItem
+    )>* ZActorInventoryHandler_ItemAddToInventory;
+    static EngineFunction<bool(
+        ZActorInventoryHandler* th,
+        const TEntityRef<IItem>& rItem,
+        EAttachLocation eLocation,
+        EGameTension eMaxTension,
+        bool bLeftHand,
+        bool bMainWeapon,
+        bool bGiveItem
+    )>* ZActorInventoryHandler_ItemPickup;
+
+    static EngineFunction<uint64_t(
+        ZEntityManager* th, ZEntityRef& entityRef, EDynamicEntityType dynamicEntityType, uint8 flags
+    )>* ZEntityManager_GenerateDynamicObjectID;
+    static EngineFunction<uint64_t(
+        ZEntityManager* th, uint64_t baseID, EDynamicEntityType dynamicEntityType
+    )>* ZEntityManager_GenerateDynamicObjectID2;
+
+    static EngineFunction<uint32(
+        ZWorldInventory* th,
+        const ZRepositoryID& repId,
+        ZDelegate<void(unsigned int, TEntityRef<IItemBase>)> callback,
+        uint64_t entityID,
+        bool bLoading,
+        const ZEntityRef& rParentSpatial,
+        const ZEntityRef& rCreator
+    )>* ZWorldInventory_RequestNewItem;
 };

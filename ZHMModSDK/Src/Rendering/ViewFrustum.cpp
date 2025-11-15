@@ -20,17 +20,18 @@ void ViewFrustum::UpdateClipPlanes(const SMatrix& p_View, const SMatrix& p_Proje
 
         if (s_FovYDeg != m_FovYDeg ||
             s_AspectWByH != m_AspectWByH ||
-            s_NearZ != m_NearZ) {
+            s_NearZ != m_NearZ ||
+            m_FarZ != m_MaxDrawDistance) {
             m_FovYDeg = s_FovYDeg;
             m_AspectWByH = s_AspectWByH;
             m_NearZ = s_NearZ;
-            m_CurrentFarZ = m_MaxDrawDistance;
+            m_FarZ = m_MaxDrawDistance;
 
             m_ClipPlaneProjectionMatrix = MatrixPerspectiveFovRH(m_FovYDeg, m_AspectWByH, m_NearZ, m_MaxDrawDistance);
         }
     }
     else {
-        m_CurrentFarZ = -1.f;
+        m_FarZ = -1.f;
         m_ClipPlaneProjectionMatrix = p_Projection;
     }
 
