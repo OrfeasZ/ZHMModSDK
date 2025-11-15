@@ -49,7 +49,7 @@ void DebugMod::OnDrawMenu() {
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
-    if (ImGui::Button(ICON_MD_PLACE " POSITIONS MENU")) {
+    if (ImGui::Button(ICON_MD_PLACE " POSITIONS")) {
         m_PositionsMenuActive = !m_PositionsMenuActive;
     }
 }

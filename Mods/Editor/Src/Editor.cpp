@@ -127,7 +127,8 @@ void Editor::Init() {
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &Editor::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Editor::OnClearScene);
     Hooks::ZTemplateEntityBlueprintFactory_ZTemplateEntityBlueprintFactory->AddDetour(
-        this, &Editor::ZTemplateEntityBlueprintFactory_ctor
+        this,
+        &Editor::ZTemplateEntityBlueprintFactory_ctor
     );
     Hooks::SignalInputPin->AddDetour(this, &Editor::OnInputPin);
     Hooks::SignalOutputPin->AddDetour(this, &Editor::OnOutputPin);
@@ -211,15 +212,15 @@ void Editor::OnDrawMenu() {
         }
     }*/
 
-    if (ImGui::Button(ICON_MD_TUNE " ITEMS MENU")) {
+    if (ImGui::Button(ICON_MD_TUNE " ITEMS")) {
         m_ItemsMenuActive = !m_ItemsMenuActive;
     }
 
-    if (ImGui::Button(ICON_MD_PEOPLE " ACTORS MENU")) {
+    if (ImGui::Button(ICON_MD_PEOPLE " ACTORS")) {
         m_ActorsMenuActive = !m_ActorsMenuActive;
     }
 
-    if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS MENU")) {
+    if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS")) {
         m_DebugChannelsMenuActive = !m_DebugChannelsMenuActive;
     }
 }
@@ -292,13 +293,13 @@ void Editor::OnEngineInitialized() {
 
 bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
     ImGui::SameLine(0, 10.f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0, 0});
-    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.5, 0.5});
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 });
+    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, { 0.5, 0.5 });
     ImGui::SetWindowFontScale(0.6);
 
     const auto s_Result = ImGui::ButtonEx(
         (std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(),
-        {20, 20},
+        { 20, 20 },
         ImGuiButtonFlags_AlignTextBaseLine
     );
 
@@ -349,7 +350,7 @@ void Editor::DrawSettings(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
     if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " EDITOR", &m_SettingsVisible)) {
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y), ImGuiCond_FirstUseEver);
-        
+
         if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS "  SHOW EDITOR WINDOWS", &m_EditorWindowsVisible)) {
             SetSettingBool("general", "editor_windows_visible", m_EditorWindowsVisible);
         }
@@ -416,9 +417,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     m_EntityDestructionMutex.unlock();
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
-        std::vector<ZEntityRef> s_EntitiesToAdd;
-
-        {
+        std::vector<ZEntityRef> s_EntitiesToAdd; {
             std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
 
             if (!m_PendingDynamicEntities.empty()) {
@@ -488,7 +487,8 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
         if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
             const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaces;
             Logger::Trace(
-                "Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
+                "Hit entity of type '{}' with id '{:x}'.",
+                s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
                 s_RayOutput.m_pBlockingSpatialEntity.m_ref->GetType()->m_nEntityId
             );
 
@@ -693,7 +693,13 @@ void Editor::SpawnCameras() {
 
     SExternalReferences s_ExternalRefs;
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, m_EditorData, "SDKCam", s_CameraRTFactory, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager,
+        m_EditorData,
+        "SDKCam",
+        s_CameraRTFactory,
+        s_Scene.m_ref,
+        s_ExternalRefs,
+        -1
     );
 
     Logger::Debug("Spawned editor data entity!");
@@ -762,13 +768,13 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
 
     const auto det =
             n41 * (n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34
-                - n12 * n23 * n34) + n42
+                   - n12 * n23 * n34) + n42
             * (n11 * n23 * n34 - n11 * n24 * n33 + n14 * n21 * n33 - n13 * n21 * n34 + n13 * n24 * n31
-                - n14 * n23 * n31) + n43
+               - n14 * n23 * n31) + n43
             * (n11 * n24 * n32 - n11 * n22 * n34 - n14 * n21 * n32 + n12 * n21 * n34 + n14 * n22 * n31
-                - n12 * n24 * n31) + n44
+               - n12 * n24 * n31) + n44
             * (-n13 * n22 * n31 - n11 * n23 * n32 + n11 * n22 * n33 + n13 * n21 * n32 - n12 * n21 * n33
-                + n12 * n23 * n31);
+               + n12 * n23 * n31);
 
     auto sx = n11 * n11 + n21 * n21 + n31 * n31;
     const auto sy = n12 * n12 + n22 * n22 + n32 * n32;
@@ -803,9 +809,9 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
                             : 0.f;
 
     return QneTransform {
-        .Position = {n41, n42, n43},
-        .Rotation = {s_RotationX, s_RotationY, s_RotationZ},
-        .Scale = {sx, sy, sz},
+        .Position = { n41, n42, n43 },
+        .Rotation = { s_RotationX, s_RotationY, s_RotationZ },
+        .Scale = { sx, sy, sz },
     };
 }
 
@@ -876,7 +882,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneI
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
 
-    for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
+    for (auto& s_Entity: m_SpawnedEntities | std::views::values) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
     }
 
@@ -896,7 +902,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneI
 
     std::vector<std::string> s_Bricks;
 
-    for (auto& s_Brick : p_Parameters.m_aAdditionalBrickResources) {
+    for (auto& s_Brick: p_Parameters.m_aAdditionalBrickResources) {
         s_Bricks.push_back(s_Brick.c_str());
     }
 
@@ -908,18 +914,21 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneI
         m_TrackCamActive = false;
     }
 
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(
-    Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor,
+    Editor,
+    ZTemplateEntityBlueprintFactory*,
+    ZTemplateEntityBlueprintFactory_ctor,
     ZTemplateEntityBlueprintFactory* th,
-    STemplateEntityBlueprint* pTemplateEntityBlueprint, ZResourcePending& ResourcePending
+    STemplateEntityBlueprint* pTemplateEntityBlueprint,
+    ZResourcePending& ResourcePending
 ) {
     //Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
     //auto s_Result = p_Hook->CallOriginal(th, pTemplateEntityBlueprint, ResourcePending);
     //return HookResult(HookAction::Return(), s_Result);
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
@@ -934,7 +943,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
 
-    for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
+    for (auto& s_Entity: m_SpawnedEntities | std::views::values) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
     }
 
@@ -968,7 +977,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_EntityRefToFactoryRuntimeResourceIDs.clear();
 
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data) {
@@ -979,7 +988,7 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId
         };
     }
 
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data) {
@@ -990,16 +999,20 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinI
         };
     }
 
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, ZTemplateEntityFactory_ConfigureEntity,
+DEFINE_PLUGIN_DETOUR(
+    Editor,
+    void,
+    ZTemplateEntityFactory_ConfigureEntity,
     ZTemplateEntityFactory* th,
     ZEntityType** pEntity,
     const SExternalReferences& externalRefs,
     uint8_t* unk0
 ) {
-    IEntityBlueprintFactory* s_EntityBlueprintFactory = static_cast<IEntityBlueprintFactory*>(th->m_blueprintResource.GetResourceData());
+    IEntityBlueprintFactory* s_EntityBlueprintFactory = static_cast<IEntityBlueprintFactory*>(th->m_blueprintResource.
+        GetResourceData());
 
     for (size_t i = 0; i < s_EntityBlueprintFactory->GetSubEntitiesCount(); ++i) {
         const ZEntityRef s_SubEntity = s_EntityBlueprintFactory->GetSubEntity(pEntity, i);
@@ -1007,16 +1020,15 @@ DEFINE_PLUGIN_DETOUR(Editor, void, ZTemplateEntityFactory_ConfigureEntity,
         ZRuntimeResourceID s_SubEntityFactoryRuntimeResourceID;
 
         if (s_SubEntityFactory->IsTemplateEntityFactory()) {
-            s_SubEntityFactoryRuntimeResourceID = static_cast<ZTemplateEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        }
-        else if (s_SubEntityFactory->IsAspectEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZTemplateEntityFactory*>(s_SubEntityFactory)->
+                    m_ridResource;
+        } else if (s_SubEntityFactory->IsAspectEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZAspectEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        }
-        else if (s_SubEntityFactory->IsCppEntityFactory()) {
+        } else if (s_SubEntityFactory->IsCppEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZCppEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        }
-        else if (s_SubEntityFactory->IsExtendedCppEntityFactory()) {
-            ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory = static_cast<ZExtendedCppEntityFactory*>(s_SubEntityFactory);
+        } else if (s_SubEntityFactory->IsExtendedCppEntityFactory()) {
+            ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory = static_cast<ZExtendedCppEntityFactory*>(
+                s_SubEntityFactory);
 
             std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
             auto s_Iterator = m_ExtendedCppEntityFactoryToRuntimeResourceID.find(s_ExtendedCppEntityFactory);
@@ -1024,27 +1036,27 @@ DEFINE_PLUGIN_DETOUR(Editor, void, ZTemplateEntityFactory_ConfigureEntity,
             if (s_Iterator != m_ExtendedCppEntityFactoryToRuntimeResourceID.end()) {
                 s_SubEntityFactoryRuntimeResourceID = s_Iterator->second;
             }
-        }
-        else if (s_SubEntityFactory->IsUIControlEntityFactory()) {
-            s_SubEntityFactoryRuntimeResourceID = static_cast<ZUIControlEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        }
-        else if (s_SubEntityFactory->IsRenderMaterialEntityFactory()) {
-            s_SubEntityFactoryRuntimeResourceID = static_cast<ZRenderMaterialEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        }
-        else if (s_SubEntityFactory->IsBehaviorTreeEntityFactory()) {
-            s_SubEntityFactoryRuntimeResourceID = static_cast<ZBehaviorTreeEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        }
-        else if (s_SubEntityFactory->IsAudioSwitchEntityFactory()) {
-            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioSwitchEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        }
-        else if (s_SubEntityFactory->IsAudioStateEntityFactory()) {
-            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioStateEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        }
-
-        {
+        } else if (s_SubEntityFactory->IsUIControlEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZUIControlEntityFactory*>(s_SubEntityFactory)->
+                    m_ridResource;
+        } else if (s_SubEntityFactory->IsRenderMaterialEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZRenderMaterialEntityFactory*>(s_SubEntityFactory)->
+                    m_ridResource;
+        } else if (s_SubEntityFactory->IsBehaviorTreeEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZBehaviorTreeEntityFactory*>(s_SubEntityFactory)->
+                    m_ridResource;
+        } else if (s_SubEntityFactory->IsAudioSwitchEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioSwitchEntityFactory*>(s_SubEntityFactory)->
+                    m_ridResource;
+        } else if (s_SubEntityFactory->IsAudioStateEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioStateEntityFactory*>(s_SubEntityFactory)->
+                    m_ridResource;
+        } {
             std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
 
-            m_EntityRefToFactoryRuntimeResourceIDs[s_SubEntity] = { s_SubEntityFactoryRuntimeResourceID, th->m_ridResource };
+            m_EntityRefToFactoryRuntimeResourceIDs[s_SubEntity] = {
+                s_SubEntityFactoryRuntimeResourceID, th->m_ridResource
+            };
         }
     }
 
@@ -1053,17 +1065,18 @@ DEFINE_PLUGIN_DETOUR(Editor, void, ZTemplateEntityFactory_ConfigureEntity,
     return HookResult<void>(HookAction::Return());
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, bool, ZExtendedCppEntityTypeInstaller_Install,
+DEFINE_PLUGIN_DETOUR(
+    Editor,
+    bool,
+    ZExtendedCppEntityTypeInstaller_Install,
     ZExtendedCppEntityTypeInstaller* th,
     ZResourcePending& ResourcePending
 ) {
     bool s_Result = p_Hook->CallOriginal(th, ResourcePending);
 
     ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory =
-        static_cast<ZExtendedCppEntityFactory*>(ResourcePending.m_pResource.GetResourceData());
-    const ZRuntimeResourceID s_RuntimeResourceID = ResourcePending.m_pResource.GetResourceInfo().rid;
-
-    {
+            static_cast<ZExtendedCppEntityFactory*>(ResourcePending.m_pResource.GetResourceData());
+    const ZRuntimeResourceID s_RuntimeResourceID = ResourcePending.m_pResource.GetResourceInfo().rid; {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
 
         m_ExtendedCppEntityFactoryToRuntimeResourceID[s_ExtendedCppEntityFactory] = s_RuntimeResourceID;
@@ -1073,17 +1086,19 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, ZExtendedCppEntityTypeInstaller_Install,
     return HookResult<bool>(HookAction::Return(), s_Result);
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, ZResourceManager_UninstallResource,
-    ZResourceManager* th, ZResourceIndex index
+DEFINE_PLUGIN_DETOUR(
+    Editor,
+    void,
+    ZResourceManager_UninstallResource,
+    ZResourceManager* th,
+    ZResourceIndex index
 ) {
     if (m_RuntimeResourceIDToExtendedCppEntityFactory.empty()) {
         return HookResult<void>(HookAction::Continue());
     }
 
     const auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[index.val];
-    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid;
-
-    {
+    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid; {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
         auto s_Iterator = m_RuntimeResourceIDToExtendedCppEntityFactory.find(s_RuntimeResourceID);
 
