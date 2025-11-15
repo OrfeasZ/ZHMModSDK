@@ -23,10 +23,10 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-    "\x48\x8B\xC4\x44\x88\x48\x20\x53\x56\x48\x83\xEC\x68\x48\x89\x68\x08\x48\x8B\xF1\x48\x89\x78\x10\x4C\x89\x60\x18\x4C\x8B\xE2\x4C",
-    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    ZDynamicObject_ParseString,
-    ZDynamicObject*(ZDynamicObject*, char*, int)
+    "\x44\x88\x44\x24\x18\x48\x89\x4C\x24\x08\x55\x53",
+    "xxxxxxxxxxxx",
+    ZJsonDeserializer_Deserialize,
+    ZDynamicObject*(ZDynamicObject& result, const uint8_t* pData, uint64_t nLength)
 );
 
 PATTERN_FUNCTION(
@@ -62,7 +62,7 @@ PATTERN_FUNCTION(
 PATTERN_FUNCTION(
     "\x40\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\xF8\xFC\xFF\xFF",
     "xxxxxxxxxxxxxxxxxxxxx",
-    ZEngineAppCommon_CreateFreeCamera,
+    ZEngineAppCommon_CreateFreeCameraAndControl,
     void(ZEngineAppCommon* th)
 );
 
@@ -107,14 +107,14 @@ PATTERN_FUNCTION(
     "\x89\x54\x24\x10\x57\x48\x83\xEC\x00\x48\x89\x5C\x24\x60",
     "xxxxxxxx?xxxxx",
     ZResourceManager_UninstallResource,
-    void(ZResourceManager* th, int index)
+    void(ZResourceManager* th, ZResourceIndex index)
 );
 
 PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x49\x89\x5B\x08\x49\x89\x6B\x10\x4D\x89\x43\x18",
     "xxxxxxxxxxxxxxx",
     ZEntityManager_NewEntity,
-    void(ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
+    ZEntityRef*(ZEntityManager* th, ZEntityRef& result, const ZString& sDebugName, IEntityFactory* pEntityFactory,
         const ZEntityRef& transformParent, const SExternalReferences& externalRefs, uint64_t entityId)
 );
 
@@ -137,14 +137,15 @@ PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x55\x56\x41\x54\x41\x56\x41\x57\x48\x83\xEC",
     "xxxxxxxxxxxxxx",
     ZHitman5_SetOutfit,
-    void(ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation, bool unk0, bool unk2)
+    void(ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation,
+        bool bEnableOutfitModifiers, bool bIgnoreOutifChange)
 );
 
 PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x55\x41\x56\x41\x57\x48\x8B\xEC\x48\x83\xEC\x00\x41\x8B\xF9",
     "xxxxxxxxxxxxxxxxxxxxxxxxxx?xxx",
     ZActor_SetOutfit,
-    void(ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int m_nOutfitCharset, int m_nOutfitVariation, bool bNude)
+    void(ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfit, int charset, int variation, bool bNude)
 );
 
 PATTERN_FUNCTION(
@@ -157,9 +158,11 @@ PATTERN_FUNCTION(
 PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x55\x57\x41\x54\x41\x56\x41\x57\x48\x8D\x6C\x24\xD1",
     "xxxxxxxxxxxxxxxxxxxxxxx",
-    ZCharacterSubcontrollerInventory_AddDynamicItemToInventory,
-    unsigned long long(ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString&
-        sOnlineInstanceId, void* unknown, unsigned int unknown2)
+    ZCharacterSubcontrollerInventory_CreateItem,
+    ZCharacterSubcontrollerInventory::SCreateItem* (
+        ZCharacterSubcontrollerInventory* th, const ZRepositoryID& repId, const ZString& sOnlineInstanceId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        ZCharacterSubcontrollerInventory::ECreateItemType createItemType)
 );
 
 PATTERN_FUNCTION(
@@ -197,9 +200,9 @@ PATTERN_FUNCTION(
     void(ZRagdollHandler* th, const float4& position, const float4& impulse, uint32_t boneIndex, bool randomize)
 );
 
-PATTERN_FUNCTION(
-    "\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x48\x8B\xFA\x41\xBB",
-    "xxxxxxxxxxxxxx?xxxxx",
+PATTERN_RELATIVE_FUNCTION(
+    "\xE8\x00\x00\x00\x00\x48\x8D\x95\x00\x03\x00\x00",
+    "x????xxxxxxx",
     ZInputTokenStream_ParseToken,
     ZInputTokenStream::ZTokenData*(ZInputTokenStream* th, ZInputTokenStream::ZTokenData* result)
 );
@@ -317,4 +320,48 @@ PATTERN_FUNCTION(
     "xxxxxxxxxxxxxxxxxxxxxxx?xx",
     ZStringCollection_Allocate,
     ZString::ZImpl* (const char* buf, size_t size)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x55\x56\x57\x48\x8D\x6C\x24\xB9\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x41\x20",
+    "xxxxxxxxxxxxxxxx????xxxx",
+    ZActorInventoryHandler_RequestItem,
+    bool(ZActorInventoryHandler* th, const ZRepositoryID& id)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x18\x48\x89\x6C\x24\x20\x56\x48\x83\xEC\x00\x4C\x8B\x49\x60",
+    "xxxxxxxxxxxxxx?xxxx",
+    ZActorInventoryHandler_ItemAddToInventory,
+    bool(ZActorInventoryHandler* th, const TEntityRef<IItem>& rItem)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x18\x56\x57\x41\x57\x48\x83\xEC\x00\x80\x7C\x24\x78",
+    "xxxxxxxxxxxx?xxxx",
+    ZActorInventoryHandler_ItemPickup,
+    bool(ZActorInventoryHandler* th, const TEntityRef<IItem>& rItem, EAttachLocation eLocation, EGameTension eMaxTension,
+        bool bLeftHand, bool bMainWeapon, bool bGiveItem)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x48\x8B\x02\x4C\x8B\xD1",
+    "xxxxxxxxxxxxxx?xxxxxx",
+    ZEntityManager_GenerateDynamicObjectID,
+    uint64_t(ZEntityManager* th, ZEntityRef& entityRef, EDynamicEntityType dynamicEntityType, uint8 flags)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x57\x48\x83\xEC\x00\x49\x63\xC0",
+    "xxxxxxxxx?xxx",
+    ZEntityManager_GenerateDynamicObjectID2,
+    uint64_t(ZEntityManager* th, uint64_t baseID, EDynamicEntityType dynamicEntityType)
+);
+
+PATTERN_FUNCTION(
+    "\x4C\x8B\xDC\x49\x89\x6B\x08",
+    "xxxxxxx",
+    ZWorldInventory_RequestNewItem,
+    uint32(ZWorldInventory* th, const ZRepositoryID& repId, ZDelegate<void(unsigned int, TEntityRef<IItemBase>)> callback,
+        uint64_t entityID, bool bLoading, const ZEntityRef& rParentSpatial, const ZEntityRef& rCreator)
 );

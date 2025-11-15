@@ -137,7 +137,7 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
     if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
         Logger::Debug("Creating free camera.");
-        Functions::ZEngineAppCommon_CreateFreeCamera->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
+        Functions::ZEngineAppCommon_CreateFreeCameraAndControl->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
 
         // If freecam was active we need to toggle.
         // This can happen after level restarts / changes.
@@ -437,7 +437,7 @@ DEFINE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int 
     return HookResult<bool>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&) {
+DEFINE_PLUGIN_DETOUR(FreeCam, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
     if (m_FreeCamActive)
         DisableFreecam();
 

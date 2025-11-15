@@ -290,6 +290,26 @@ void ModSDK::LoadConfiguration() {
             const auto s_Value = s_Mod.second.get("crash_reporting");
             m_EnableSentry = s_Value == "true" || s_Value == "1";
         }
+
+        if (s_Mod.second.has("auto_load_scene")) {
+            const auto s_Value = s_Mod.second.get("auto_load_scene");
+            m_AutoLoadScene = s_Value;
+        }
+
+        if (s_Mod.second.has("game_state_logging")) {
+            const auto s_Value = s_Mod.second.get("game_state_logging");
+            m_IsGameStateLoggingEnabled = s_Value == "true" || s_Value == "1";
+        }
+
+        if (s_Mod.second.has("scene_loading_logging")) {
+            const auto s_Value = s_Mod.second.get("scene_loading_logging");
+            m_IsSceneLoadingLoggingEnabled = s_Value == "true" || s_Value == "1";
+        }
+
+        if (s_Mod.second.has("scaleform_logging")) {
+            const auto s_Value = s_Mod.second.get("scaleform_logging");
+            m_IsScaleformLoggingEnabled = s_Value == "true" || s_Value == "1";
+        }
     }
 }
 
@@ -699,6 +719,11 @@ bool ModSDK::Startup() {
         this, &ModSDK::ZUserChannelContractsProxyBase_GetForPlay2
     );
 
+    Hooks::ZLevelManager_SetGameState->AddDetour(this, &ModSDK::ZLevelManager_SetGameState);
+    Hooks::ZEntitySceneContext_SetLoadingStage->AddDetour(this, &ModSDK::ZEntitySceneContext_SetLoadingStage);
+
+    Hooks::Scaleform_GFx_AS3_MovieRoot_Output->AddDetour(this, &ModSDK::Scaleform_GFx_AS3_MovieRoot_Output);
+
     m_D3D12Hooks->Startup();
 
     // Patch mutex creation to allow multiple instances.
@@ -893,7 +918,7 @@ void ModSDK::OnDepthDraw3D() const {
         s_Mod->OnDepthDraw3D(m_DirectXTKRenderer.get());
 
         m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsFrustumCullingEnabled);
-        m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsDistanceCullingEnabled);
+        m_DirectXTKRenderer->SetDistanceCullingEnabled(s_IsDistanceCullingEnabled);
         m_DirectXTKRenderer->SetMaxDrawDistance(s_MaxDrawDistance);
     }
 
@@ -1496,6 +1521,40 @@ TEntityRef<ZHitman5> ModSDK::GetLocalPlayer() {
     return TEntityRef<ZHitman5>(s_PlayerData->m_Controller.m_HitmanEntity);
 }
 
+bool ModSDK::CreateDDSTextureFromMemory(
+    const void* p_Data,
+    size_t p_DataSize,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return m_ImguiRenderer->CreateDDSTextureFromMemory(p_Data, p_DataSize, p_OutTexture, p_OutImGuiTexture);
+}
+
+bool ModSDK::CreateDDSTextureFromFile(
+    const std::string& p_FilePath,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return m_ImguiRenderer->CreateDDSTextureFromFile(p_FilePath, p_OutTexture, p_OutImGuiTexture);
+}
+
+bool ModSDK::CreateWICTextureFromMemory(
+    const void* p_Data,
+    size_t p_DataSize,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return m_ImguiRenderer->CreateWICTextureFromMemory(p_Data, p_DataSize, p_OutTexture, p_OutImGuiTexture);
+}
+
+bool ModSDK::CreateWICTextureFromFile(
+    const std::string& p_FilePath,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return m_ImguiRenderer->CreateWICTextureFromFile(p_FilePath, p_OutTexture, p_OutImGuiTexture);
+}
+
 void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size) {
     if (Globals::Hitman5Module->IsEngineInitialized()) {
         // If engine is initialized, allocate the normal way.
@@ -1592,6 +1651,39 @@ void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Call
     s_File.generate(s_Ini, true);
 }
 
+const char* ModSDK::GameStateToString(ZLevelManager::EGameState p_GameState) {
+    switch (p_GameState) {
+        case ZLevelManager::EGameState::EGS_Disabled: return "Disabled";
+        case ZLevelManager::EGameState::EGS_PreloadAssets: return "Preload Assets";
+        case ZLevelManager::EGameState::EGS_WaitingForLoadVideo: return "Waiting For Load Video";
+        case ZLevelManager::EGameState::EGS_Precaching: return "Precaching";
+        case ZLevelManager::EGameState::EGS_Preparing: return "Preparing";
+        case ZLevelManager::EGameState::EGS_WaitingForPrecache: return "Waiting For Precache";
+        case ZLevelManager::EGameState::EGS_LoadSaveGame: return "Load Save Game";
+        case ZLevelManager::EGameState::EGS_Activating: return "Activating";
+        case ZLevelManager::EGameState::EGS_ActivatedStart: return "Activated Start";
+        case ZLevelManager::EGameState::EGS_Activated: return "Activated";
+        case ZLevelManager::EGameState::EGS_Playing: return "Playing";
+        case ZLevelManager::EGameState::EGS_Deactivating: return "Deactivating";
+        default: return "Unknown";
+    }
+}
+
+const char* ModSDK::SceneLoadingStageToString(ESceneLoadingStage p_SceneLoadingStage) {
+    switch (p_SceneLoadingStage) {
+        case ESceneLoadingStage::eLoading_Start: return "Start";
+        case ESceneLoadingStage::eLoading_SceneStopped: return "Scene Stopped";
+        case ESceneLoadingStage::eLoading_SceneDeleted: return "Scene Deleted";
+        case ESceneLoadingStage::eLoading_AssetsLoaded: return "Assets Loaded";
+        case ESceneLoadingStage::eLoading_SceneAllocated: return "Scene Allocated";
+        case ESceneLoadingStage::eLoading_SceneStarted: return "Scene Started";
+        case ESceneLoadingStage::eLoading_ScenePrecaching: return "Scene Precaching";
+        case ESceneLoadingStage::eLoading_SceneActivated: return "Scene Activated";
+        case ESceneLoadingStage::eLoading_ScenePlaying: return "Scene Playing";
+        default: return "Unknown";
+    }
+}
+
 DEFINE_DETOUR_WITH_CONTEXT(
     ModSDK, void, DrawScaleform, ZRenderContext* ctx, ZRenderTargetView** rtv, uint32_t a3,
     ZRenderDepthStencilView** dsv,
@@ -1605,16 +1697,26 @@ DEFINE_DETOUR_WITH_CONTEXT(
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(
-    ModSDK, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData
+    ModSDK, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters
 ) {
     if (m_DirectXTKRenderer) {
         m_DirectXTKRenderer->ClearDsvIndex();
     }
 
+    static bool s_BypassedOnce = false;
+
+    if ((p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+        p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
+
+        s_BypassedOnce = true;
+        if (!m_AutoLoadScene.empty()) {
+            p_SceneData.m_sceneName = m_AutoLoadScene;
+        }
+    }
     return {HookAction::Continue()};
 }
 
-DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     if (m_DirectXTKRenderer) {
         m_DirectXTKRenderer->ClearDsvIndex();
     }
@@ -1649,4 +1751,63 @@ DEFINE_DETOUR_WITH_CONTEXT(
     p_Hook->CallOriginal(id, locationId, extraGameChangedIds, difficulty, onOk, onError, ctx, behavior);
 
     return HookResult<void>(HookAction::Return());
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state) {
+    p_Hook->CallOriginal(th, state);
+
+    if (m_IsGameStateLoggingEnabled) {
+        Logger::Info("Game State: {}", GameStateToString(state));
+    }
+
+    return HookResult<void>(HookAction::Return());
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage) {
+    p_Hook->CallOriginal(th, stage);
+
+    if (m_IsSceneLoadingLoggingEnabled) {
+        Logger::Info("Scene Loading Stage: {}", SceneLoadingStageToString(stage));
+        Logger::Info("Scene Loading Progress: {}%", th->GetLoadingProgress() * 100);
+    }
+
+    return HookResult<void>(HookAction::Return());
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
+    Scaleform::GFx::AS3::MovieRoot* th,
+    Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
+    const char* msg
+) {
+    if (!m_IsScaleformLoggingEnabled) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
+    if (!msg) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
+    std::string s_Message(msg);
+
+    while (!s_Message.empty() && (s_Message.back() == '\n' || s_Message.back() == '\r')) {
+        s_Message.pop_back();
+    }
+
+    switch (type) {
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Error:
+        Logger::Error("[Scaleform] {}", s_Message);
+        break;
+
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Warning:
+        Logger::Warn("[Scaleform] {}", s_Message);
+        break;
+
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Message:
+    case Scaleform::GFx::AS3::FlashUI::OutputMessageType::Output_Action:
+    default:
+        Logger::Info("[Scaleform] {}", s_Message);
+        break;
+    }
+
+    return HookResult<void>(HookAction::Continue());
 }
