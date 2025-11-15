@@ -177,6 +177,32 @@ public:
 
     TEntityRef<ZHitman5> GetLocalPlayer() override;
 
+    bool CreateDDSTextureFromMemory(
+        const void* p_Data,
+        size_t p_DataSize,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) override;
+
+    bool CreateDDSTextureFromFile(
+        const std::string& p_Path,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) override;
+
+    bool CreateWICTextureFromMemory(
+        const void* p_Data,
+        size_t p_DataSize,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) override;
+
+    bool CreateWICTextureFromFile(
+        const std::string& p_Path,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    ) override;
+
     #pragma endregion
 
     void AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size);
@@ -187,8 +213,8 @@ private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
 
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData);
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     DECLARE_DETOUR_WITH_CONTEXT(
         ModSDK, void, DrawScaleform, ZRenderContext* ctx, ZRenderTargetView** rtv, uint32_t a3,
@@ -200,6 +226,15 @@ private:
         const ZDynamicObject& extraGameChangedIds, int difficulty,
         const std::function<void(const ZDynamicObject&)>& onOk, const std::function<void(int)>& onError,
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
+    );
+
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage);
+
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
+        Scaleform::GFx::AS3::MovieRoot* th,
+        Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
+        const char* msg
     );
 
     #pragma endregion
@@ -222,6 +257,7 @@ public:
 
     bool IsChunkMounted(uint32_t p_ChunkIndex) override;
     void MountChunk(uint32_t p_ChunkIndex) override;
+    const TArray<uint32_t>& GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) override;
 
 private:
     std::tuple<ZResourceIndex, ZRuntimeResourceID> LoadResourceFromBIN1(
@@ -231,6 +267,10 @@ private:
     void LoadResourceChunkMap();
 
     #pragma endregion
+
+private:
+    static const char* GameStateToString(ZLevelManager::EGameState p_GameState);
+    static const char* SceneLoadingStageToString(ESceneLoadingStage p_SceneLoadingStage);
 
 private:
     bool m_UiEnabled = true;
@@ -245,8 +285,11 @@ private:
     std::string m_IgnoredVersion;
     bool m_DisableUpdateCheck = false;
     float m_LoadedModsUIScrollOffset = 0;
+    bool m_IsGameStateLoggingEnabled = false;
+    bool m_IsSceneLoadingLoggingEnabled = false;
+    bool m_IsScaleformLoggingEnabled = false;
 
-    std::unordered_map<ZRuntimeResourceID, std::vector<uint32_t>> m_ResourceIdToChunkMap;
+    std::unordered_map<ZRuntimeResourceID, TArray<uint32_t>> m_ResourceIdToChunkMap;
 
     std::shared_ptr<ModLoader> m_ModLoader {};
 

@@ -100,6 +100,15 @@ private:
     void DrawEntityAABB(IRenderer* p_Renderer);
 
     void DrawEntityProperties();
+    void DrawEntityPropertyValue(
+        const std::string& p_Id,
+        const std::string& p_PropertyName,
+        const std::string& p_TypeName,
+        const STypeID* p_TypeID,
+        ZEntityRef p_Entity,
+        ZEntityProperty* p_Property,
+        void* p_Data
+    );
 
     void DrawLibrary();
 
@@ -110,12 +119,21 @@ private:
     void UpdateEntities();
     void UpdateEntityTree(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
-        const std::vector<ZEntityRef>& p_Entities
+        const std::vector<ZEntityRef>& p_Entities,
+        const bool p_AreEntitiesDynamic
+    );
+    void AddDynamicEntitiesToEntityTree(
+        const std::shared_ptr<EntityTreeNode>& p_SceneNode,
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
+    );
+    void ReparentDynamicOutfitEntities(
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
 
-    void OnSelectEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
+    void OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, std::optional<std::string> p_ClientId);
     void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
     void DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
+    void DestroyEntityNodeInternal(const std::shared_ptr<EntityTreeNode>& p_NodeToRemove, std::optional<std::string> p_ClientId);
     void OnEntityTransformChange(
         ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
     );
@@ -144,8 +162,11 @@ private:
 
     // Properties
     void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
     void ZEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void EntityRefProperty(ZEntityRef p_Entity);
+
     void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     // Primitive properties.
@@ -180,6 +201,9 @@ private:
 
     void ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
+    void TArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+        const std::string& s_PropertyName, const std::string& s_TypeName, const STypeID* p_TypeID);
+
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
     void DrawItems(bool p_HasFocus);
@@ -187,8 +211,8 @@ private:
     void DrawDebugChannels(bool p_HasFocus);
 
     static void EquipOutfit(
-        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t P_CharSetIndex,
-        const std::string& P_CharSetCharacterType, uint8_t P_OutfitVariationindex, ZActor* p_Actor
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharSetIndex,
+        const std::string& p_CharSetCharacterType, uint8_t p_OutfitVariationindex, ZActor* p_Actor
     );
 
     void EnableTrackCam();
@@ -214,7 +238,7 @@ private:
         const ZEntityRef p_EntityRef,
         const std::string& p_TypeName,
         const EDebugChannel p_DebugChannel,
-        const uint64_t p_RuntimeResourceID,
+        const ZRuntimeResourceID p_RuntimeResourceID,
         const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
         const SMatrix& p_Transform = SMatrix()
     );
@@ -231,8 +255,8 @@ private:
     bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
 
 private:
-    DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
-    DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
+    DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
+    DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
     DECLARE_PLUGIN_DETOUR(
         Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor,
         ZTemplateEntityBlueprintFactory* th, STemplateEntityBlueprint* pTemplateEntityBlueprint,
@@ -241,10 +265,48 @@ private:
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
 
+    DECLARE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
+        ZEntityManager* th,
+        ZEntityRef& result,
+        const ZString& sDebugName,
+        IEntityFactory* pEntityFactory,
+        const ZEntityRef& logicalParent,
+        uint64_t entityID,
+        const SExternalReferences& externalRefs,
+        bool unk0
+    );
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity,
+        ZEntityManager* th,
+        const ZEntityRef& entityRef,
+        const SExternalReferences& externalRefs
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZTemplateEntityFactory_ConfigureEntity,
+        ZTemplateEntityFactory* th,
+        ZEntityType** pEntity,
+        const SExternalReferences& externalRefs,
+        uint8_t* unk0
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, bool, ZExtendedCppEntityTypeInstaller_Install,
+        ZExtendedCppEntityTypeInstaller* th,
+        ZResourcePending& ResourcePending
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZResourceManager_UninstallResource,
+        ZResourceManager* th, ZResourceIndex index
+    );
+
 private:
     enum class EntityHighlightMode {
         Lines,
         LinesAndTriangles
+    };
+
+    enum EntityViewMode {
+        All,
+        ScenesAndBricks,
+        DynamicEntities
     };
 
     enum DebugEntityTypeName {
@@ -339,9 +401,13 @@ private:
 
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
-    bool m_ShouldScrollToEntity = false;
+    bool m_ScrollToEntity = false;
 
     EntityHighlightMode m_EntityHighlightMode = EntityHighlightMode::Lines;
+
+    EntityViewMode m_EntityViewMode = EntityViewMode::All;
+    EntityViewMode m_LastEntityViewMode = EntityViewMode::All;
+    const std::vector<std::string> m_EntityViewModes = { "All", "Scenes/Bricks", "Dynamic Entities" };
 
     std::string m_EntityIdSearchInput;
     std::string m_EntityTypeSearchInput;
@@ -378,6 +444,15 @@ private:
 
     std::mutex m_EntityDestructionMutex;
     std::vector<std::tuple<ZEntityRef, std::optional<std::string>>> m_EntitiesToDestroy;
+
+    std::atomic_bool m_IsBuildingEntityTree = false;
+    std::mutex m_DynamicEntitiesMutex;
+    std::unordered_set<ZEntityRef> m_DynamicEntities;
+    std::mutex m_PendingDynamicEntitiesMutex;
+    std::vector<ZEntityRef> m_PendingDynamicEntities;
+    std::mutex m_PendingNodeDeletionsMutex;
+    std::vector<std::weak_ptr<EntityTreeNode>> m_PendingNodeDeletions;
+    std::jthread m_NodeDeletionThread;
 
     EditorServer m_Server;
 
@@ -417,6 +492,17 @@ private:
     ZEntityRef m_EditorData {};
     TEntityRef<ZCameraEntity> m_EditorCamera {};
     TEntityRef<ZRenderDestinationTextureEntity> m_EditorCameraRT {};
+
+    bool m_ReparentDynamicOutfitEntities = true;
+
+    inline static ZEntityRef m_DynamicEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x1));
+    inline static ZEntityRef m_UnparentedEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x2));
+
+    std::unordered_map<ZEntityRef, std::pair<ZRuntimeResourceID, ZRuntimeResourceID>> m_EntityRefToFactoryRuntimeResourceIDs;
+    std::unordered_map<ZExtendedCppEntityFactory*, ZRuntimeResourceID> m_ExtendedCppEntityFactoryToRuntimeResourceID;
+    std::unordered_map<ZRuntimeResourceID, ZExtendedCppEntityFactory*> m_RuntimeResourceIDToExtendedCppEntityFactory;
+    std::shared_mutex m_EntityRefToFactoryRuntimeResourceIDsMutex;
+    std::mutex m_ExtendedCppEntityFactoryResourceMapsMutex;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

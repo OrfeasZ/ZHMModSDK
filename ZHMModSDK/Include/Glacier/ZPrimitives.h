@@ -176,8 +176,11 @@ public:
         return ZString::AllocateFromCStr(s_GUID);
     }
 
-    unsigned int GetHashCode() const {
-        return this->data1 ^ (this->data3 | (this->data2 << 16)) ^ (this->data4[7] | (this->data4[2] << 24));
+    uint32_t GetHashCode() const {
+        return data1 ^
+            (data3 | (static_cast<uint32_t>(data2) << 16)) ^
+            (data4[7] | (static_cast<uint32_t>(data4[2]) << 24)
+        );
     }
 
 public:

@@ -6,13 +6,13 @@
 #include <Glacier/ZScene.h>
 
 void MaxPatchLevel::Init() {
-    Hooks::ZPackageManagerPackage_ZPackageManagerPackage->AddDetour(
-        this, &MaxPatchLevel::ZPackageManagerPackage_ZPackageManagerPackage
+    Hooks::IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo->AddDetour(
+        this, &MaxPatchLevel::IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo
     );
 }
 
 DEFINE_PLUGIN_DETOUR(
-    MaxPatchLevel, void*, ZPackageManagerPackage_ZPackageManagerPackage, ZPackageManagerPackage* th, void* a2,
+    MaxPatchLevel, void*, IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo, IPackageManager::SPartitionInfo* th, void* a2,
     const ZString& a3, int a4, int patchLevel
 ) {
     // 1000 should be enough. Higher numbers just make the game freeze up when going into mission planning.

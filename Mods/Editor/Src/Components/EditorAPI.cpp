@@ -51,7 +51,7 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
         s_NodeQueue.pop();
 
         if (s_Node->EntityId == p_Selector.EntityId) {
-            bool s_Matches = s_Node->TBLU == s_TBLU;
+            bool s_Matches = s_Node->BlueprintFactory == s_TBLU;
 
             // If the TBLU doesn't match, then check the owner entity.
             if (!s_Matches) {
@@ -247,7 +247,7 @@ void Editor::FindAlocForZGeomEntityNode(
     const ZGeomEntity* s_GeomEntity = p_Node->Entity.QueryInterface<ZGeomEntity>();
     std::string s_Id = std::format("{:016x}", p_Node->Entity->GetType()->m_nEntityId);
     std::string s_HashString =
-            std::format("<{:08X}{:08X}>", p_Node->TBLU.m_IDHigh, p_Node->TBLU.m_IDLow);
+            std::format("<{:08X}{:08X}>", p_Node->BlueprintFactory.m_IDHigh, p_Node->BlueprintFactory.m_IDLow);
 
     if (ZResourceIndex s_ResourceIndex(s_GeomEntity->m_ResourceID.m_nResourceIndex);
         s_ResourceIndex.val != -1) {
@@ -317,7 +317,7 @@ void Editor::FindAlocForZPrimitiveProxyEntityNode(
 ) {
     std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
     std::string s_HashString =
-            std::format("<{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
+            std::format("<{:08X}{:08X}>", s_Node->BlueprintFactory.m_IDHigh, s_Node->BlueprintFactory.m_IDLow);
 
     if (std::string s_collision_ioi_string = GetCollisionHash(s_Node->Entity);
         !s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
@@ -456,7 +456,7 @@ void Editor::SelectEntity(EntitySelector p_Selector, std::optional<std::string> 
     auto s_Entity = FindEntity(p_Selector);
 
     if (s_Entity) {
-        OnSelectEntity(s_Entity, std::move(p_ClientId));
+        OnSelectEntity(s_Entity, true, std::move(p_ClientId));
     }
     else {
         throw std::runtime_error("Could not find entity for the given selector.");
@@ -517,7 +517,7 @@ void Editor::SpawnQnEntity(
     m_SpawnedEntities[p_EntityId] = s_SpawnedEnt;
 
     if (m_CachedEntityTree && m_CachedEntityTreeMap.size() > 0) {
-        UpdateEntityTree(m_CachedEntityTreeMap, {s_SpawnedEnt});
+        UpdateEntityTree(m_CachedEntityTreeMap, {s_SpawnedEnt}, true);
     }
 
     m_CachedEntityTreeMutex.unlock();

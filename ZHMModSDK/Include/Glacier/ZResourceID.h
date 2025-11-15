@@ -56,11 +56,15 @@ public:
         return GetID() == rhs.GetID();
     }
 
-    unsigned long long GetID() const {
-        return (static_cast<unsigned long long>(m_IDHigh) << 32) | m_IDLow;
+    bool operator<(const ZRuntimeResourceID& rhs) const {
+        return GetID() < rhs.GetID();
     }
 
-    unsigned int GetHashCode() const {
+    uint64_t GetID() const {
+        return (static_cast<uint64_t>(m_IDHigh) << 32) | m_IDLow;
+    }
+
+    uint32_t GetHashCode() const {
         return m_IDHigh ^ m_IDLow;
     }
 

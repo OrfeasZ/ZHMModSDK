@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ZPrimitives.h"
+#include "ZEntity.h"
+#include "THashMap.h"
 
 class ZEntitySceneContext;
 
@@ -9,5 +11,9 @@ public:
     virtual ~ZEntityManager() {}
 
 public:
-    ZEntitySceneContext* m_pContext;
+    ZEntitySceneContext* m_pContext; // 0x8
+    PAD(0x18); // 0x10
+    THashMap<uint64_t, ZEntityRef> m_Entities; // 0x28
+    PAD(0xC0); // 0x48
+    THashMap<uint64_t, uint64_t> m_DynamicEntityIdToCount; // 0x108
 };

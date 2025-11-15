@@ -18,6 +18,8 @@
 #include <ranges>
 
 #include <imgui_impl_dx12.h>
+#include <imgui_internal.h>
+
 #include "Glacier/SGameUpdateEvent.h"
 #include "Glacier/ZCollision.h"
 #include "Glacier/ZActor.h"
@@ -78,6 +80,32 @@ Editor::Editor() {
     m_QneAddress.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
 
     m_raycastLogging = false;
+
+    /*m_NodeDeletionThread = std::jthread([this] {
+        while (true) {
+            std::vector<std::weak_ptr<EntityTreeNode>> s_NodesToRemove;
+
+            {
+                std::scoped_lock lock(m_PendingNodeDeletionsMutex);
+
+                if (m_PendingNodeDeletions.empty()) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+                    continue;
+                }
+
+                s_NodesToRemove.swap(m_PendingNodeDeletions);
+            }
+
+            for (auto& s_NodeToRemove : s_NodesToRemove) {
+                if (auto s_Node = s_NodeToRemove.lock()) {
+                    DestroyEntityNodeInternal(s_Node, std::nullopt);
+                }
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    });*/
 }
 
 Editor::~Editor() {
@@ -103,6 +131,15 @@ void Editor::Init() {
     );
     Hooks::SignalInputPin->AddDetour(this, &Editor::OnInputPin);
     Hooks::SignalOutputPin->AddDetour(this, &Editor::OnOutputPin);
+
+    Hooks::ZEntityManager_NewUninitializedEntity->AddDetour(this, &Editor::ZEntityManager_NewUninitializedEntity);
+    Hooks::ZEntityManager_DeleteEntity->AddDetour(this, &Editor::ZEntityManager_DeleteEntity);
+
+    Hooks::ZTemplateEntityFactory_ConfigureEntity->AddDetour(this, &Editor::ZTemplateEntityFactory_ConfigureEntity);
+
+    Hooks::ZExtendedCppEntityTypeInstaller_Install->AddDetour(this, &Editor::ZExtendedCppEntityTypeInstaller_Install);
+
+    Hooks::ZResourceManager_UninstallResource->AddDetour(this, &Editor::ZResourceManager_UninstallResource);
 
     m_UseSnap = GetSettingBool("general", "snap", true);
     m_SnapValue = GetSettingDouble("general", "snap_value", 1.0);
@@ -259,7 +296,11 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
     ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.5, 0.5});
     ImGui::SetWindowFontScale(0.6);
 
-    const auto s_Result = ImGui::Button((std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(), {20, 20});
+    const auto s_Result = ImGui::ButtonEx(
+        (std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(),
+        {20, 20},
+        ImGuiButtonFlags_AlignTextBaseLine
+    );
 
     ImGui::SetWindowFontScale(1.0);
     ImGui::PopStyleVar(2);
@@ -301,6 +342,8 @@ void Editor::OnDrawUI(bool p_HasFocus) {
             if (ImGui::RadioButton("Lines and Rectangles", s_EntityHighlightMode == 1)) {
                 m_EntityHighlightMode = EntityHighlightMode::LinesAndTriangles;
             }
+
+            ImGui::Checkbox("Raycast logging", &m_raycastLogging);
         }
 
         ImGui::PopFont();
@@ -334,39 +377,6 @@ void Editor::OnDrawUI(bool p_HasFocus) {
 
         ImGui::End();
     }
-
-    /*ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Expanded = ImGui::Begin("Behaviors");
-    ImGui::PushFont(SDK()->GetImGuiRegularFont());
-
-    if (s_Expanded)
-    {
-        for (int i = 0; i < *Globals::NextActorId; ++i)
-        {
-            const auto& s_Actor = Globals::ActorManager->m_aActiveActors[i];
-
-            const auto s_ActorSpatial = s_Actor.m_ref.QueryInterface<ZSpatialEntity>();
-
-            if (!s_ActorSpatial)
-                continue;
-
-            std::string s_BehaviorName = "<none>";
-
-            if (s_Actor.m_pInterfaceRef->m_nCurrentBehaviorIndex >= 0)
-            {
-                auto& s_BehaviorData = Globals::BehaviorService->m_aKnowledgeData[s_Actor.m_pInterfaceRef->m_nCurrentBehaviorIndex];
-
-                if (s_BehaviorData.m_pCurrentBehavior)
-                    s_BehaviorName = BehaviorToString(static_cast<ECompiledBehaviorType>(s_BehaviorData.m_pCurrentBehavior->m_Type));
-            }
-
-            ImGui::Text(fmt::format("{} => {}", s_Actor.m_pInterfaceRef->m_sActorName, s_BehaviorName).c_str());
-        }
-    }
-
-    ImGui::PopFont();
-    ImGui::End();
-    ImGui::PopFont();*/
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
@@ -376,7 +386,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
         if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
             Logger::Debug("Creating free camera.");
-            Functions::ZEngineAppCommon_CreateFreeCamera->Call(
+            Functions::ZEngineAppCommon_CreateFreeCameraAndControl->Call(
                 &(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon
             );
         }
@@ -403,6 +413,28 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     }
 
     m_EntityDestructionMutex.unlock();
+
+    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
+        std::vector<ZEntityRef> s_EntitiesToAdd;
+
+        {
+            std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
+
+            if (!m_PendingDynamicEntities.empty()) {
+                s_EntitiesToAdd.swap(m_PendingDynamicEntities);
+            }
+        }
+
+        if (!s_EntitiesToAdd.empty()) {
+            std::scoped_lock s_ScopedLock(m_CachedEntityTreeMutex);
+
+            UpdateEntityTree(m_CachedEntityTreeMap, s_EntitiesToAdd, true);
+
+            if (m_ReparentDynamicOutfitEntities) {
+                ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
+            }
+        }
+    }
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
@@ -465,14 +497,14 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
-                if (s_SelectedEntity.IsAnyParent(s_Brick.entityRef)) {
-                    Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
+                if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
+                    Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
                     m_SelectedBrickIndex = i;
                     break;
                 }
             }
 
-            OnSelectEntity(s_SelectedEntity, std::nullopt);
+            OnSelectEntity(s_SelectedEntity, true, std::nullopt);
         }
     }
 }
@@ -831,14 +863,14 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
     return s_Matrix;
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData& p_SceneData) {
+DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     static bool s_BypassedOnce = false;
 
-    if ((p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
-        p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
+    if ((p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+        p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
         //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
         s_BypassedOnce = true;
-        p_SceneData.m_sceneName =
+        p_Parameters.m_SceneResource =
                 "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
         //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";*/
     }
@@ -876,11 +908,11 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, ZSceneD
 
     std::vector<std::string> s_Bricks;
 
-    for (auto& s_Brick : p_SceneData.m_sceneBricks) {
+    for (auto& s_Brick : p_Parameters.m_aAdditionalBrickResources) {
         s_Bricks.push_back(s_Brick.c_str());
     }
 
-    m_Server.OnSceneLoading(p_SceneData.m_sceneName.c_str(), s_Bricks);
+    m_Server.OnSceneLoading(p_Parameters.m_SceneResource.c_str(), s_Bricks);
 
     if (m_TrackCamActive) {
         DisableTrackCam();
@@ -902,10 +934,10 @@ DEFINE_PLUGIN_DETOUR(
     return {HookAction::Continue()};
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_SelectedBrickIndex = 0;
     m_SelectedEntity = {};
-    m_ShouldScrollToEntity = false;
+    m_ScrollToEntity = false;
 
     m_EntityDestructionMutex.lock();
     m_EntitiesToDestroy.clear();
@@ -922,9 +954,12 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
     m_EntityNames.clear();
     m_CachedEntityTreeMutex.unlock();
 
+    m_PendingDynamicEntities.clear();
+    m_DynamicEntities.clear();
+
     m_NavpAreas.clear();
 
-    m_Server.OnSceneClearing(forReload);
+    m_Server.OnSceneClearing(p_FullyUnloadScene);
 
     if (m_TrackCamActive) {
         DisableTrackCam();
@@ -944,6 +979,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool f
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
         m_EditorData = {};
     }
+
+    m_EntityRefToFactoryRuntimeResourceIDs.clear();
 
     return {HookAction::Continue()};
 }
@@ -968,6 +1005,111 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinI
     }
 
     return {HookAction::Continue()};
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, void, ZTemplateEntityFactory_ConfigureEntity,
+    ZTemplateEntityFactory* th,
+    ZEntityType** pEntity,
+    const SExternalReferences& externalRefs,
+    uint8_t* unk0
+) {
+    IEntityBlueprintFactory* s_EntityBlueprintFactory = static_cast<IEntityBlueprintFactory*>(th->m_blueprintResource.GetResourceData());
+
+    for (size_t i = 0; i < s_EntityBlueprintFactory->GetSubEntitiesCount(); ++i) {
+        const ZEntityRef s_SubEntity = s_EntityBlueprintFactory->GetSubEntity(pEntity, i);
+        IEntityFactory* s_SubEntityFactory = th->m_pFactories[i];
+        ZRuntimeResourceID s_SubEntityFactoryRuntimeResourceID;
+
+        if (s_SubEntityFactory->IsTemplateEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZTemplateEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAspectEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAspectEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsCppEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZCppEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsExtendedCppEntityFactory()) {
+            ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory = static_cast<ZExtendedCppEntityFactory*>(s_SubEntityFactory);
+
+            std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
+            auto s_Iterator = m_ExtendedCppEntityFactoryToRuntimeResourceID.find(s_ExtendedCppEntityFactory);
+
+            if (s_Iterator != m_ExtendedCppEntityFactoryToRuntimeResourceID.end()) {
+                s_SubEntityFactoryRuntimeResourceID = s_Iterator->second;
+            }
+        }
+        else if (s_SubEntityFactory->IsUIControlEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZUIControlEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsRenderMaterialEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZRenderMaterialEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsBehaviorTreeEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZBehaviorTreeEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAudioSwitchEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioSwitchEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAudioStateEntityFactory()) {
+            s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioStateEntityFactory*>(s_SubEntityFactory)->m_ridResource;
+        }
+
+        {
+            std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
+
+            m_EntityRefToFactoryRuntimeResourceIDs[s_SubEntity] = { s_SubEntityFactoryRuntimeResourceID, th->m_ridResource };
+        }
+    }
+
+    p_Hook->CallOriginal(th, pEntity, externalRefs, unk0);
+
+    return HookResult<void>(HookAction::Return());
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, bool, ZExtendedCppEntityTypeInstaller_Install,
+    ZExtendedCppEntityTypeInstaller* th,
+    ZResourcePending& ResourcePending
+) {
+    bool s_Result = p_Hook->CallOriginal(th, ResourcePending);
+
+    ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory =
+        static_cast<ZExtendedCppEntityFactory*>(ResourcePending.m_pResource.GetResourceData());
+    const ZRuntimeResourceID s_RuntimeResourceID = ResourcePending.m_pResource.GetResourceInfo().rid;
+
+    {
+        std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
+
+        m_ExtendedCppEntityFactoryToRuntimeResourceID[s_ExtendedCppEntityFactory] = s_RuntimeResourceID;
+        m_RuntimeResourceIDToExtendedCppEntityFactory[s_RuntimeResourceID] = s_ExtendedCppEntityFactory;
+    }
+
+    return HookResult<bool>(HookAction::Return(), s_Result);
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, void, ZResourceManager_UninstallResource,
+    ZResourceManager* th, ZResourceIndex index
+) {
+    if (m_RuntimeResourceIDToExtendedCppEntityFactory.empty()) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
+    const auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[index.val];
+    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid;
+
+    {
+        std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
+        auto s_Iterator = m_RuntimeResourceIDToExtendedCppEntityFactory.find(s_RuntimeResourceID);
+
+        if (s_Iterator != m_RuntimeResourceIDToExtendedCppEntityFactory.end()) {
+            ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory = s_Iterator->second;
+
+            m_ExtendedCppEntityFactoryToRuntimeResourceID.erase(s_ExtendedCppEntityFactory);
+            m_RuntimeResourceIDToExtendedCppEntityFactory.erase(s_Iterator);
+        }
+    }
+
+    return HookResult<void>(HookAction::Continue());
 }
 
 DEFINE_ZHM_PLUGIN(Editor);

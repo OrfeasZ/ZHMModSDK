@@ -11,10 +11,10 @@ class ZObjectRef;
 class IComponentInterface {
 public:
     virtual ~IComponentInterface() = 0;
-    virtual ZObjectRef* getAsObjectRef(ZObjectRef* result) = 0;
-    virtual int addRef() = 0;
-    virtual int release() = 0;
-    virtual void* getSubclassStart(STypeID* type) = 0;
+    virtual ZObjectRef* GetVariantRef(ZObjectRef& result) = 0;
+    virtual int AddRef() = 0;
+    virtual int Release() = 0;
+    virtual void* QueryInterface(STypeID* iid) = 0;
 };
 
 enum ETypeInfoFlags : uint16_t {
@@ -92,11 +92,28 @@ public:
     uint32_t (*toString)(void*, IType*, char*, uint32_t, const ZString&);
 };
 
+class ZGenericMemberFunctionTarget;
+
+struct TGenericMemberFunctionPtr {
+    void (*__pfn)(ZGenericMemberFunctionTarget*);
+    int64 __delta;
+};
+
+class ZPinFunctor {
+public:
+    void (*pfInvoke)(TGenericMemberFunctionPtr, ZGenericMemberFunctionTarget*, const ZObjectRef*, uint32);
+    TGenericMemberFunctionPtr func;
+};
+
+struct SPinInfo {
+    ZPinFunctor m_functor;
+    uint32 m_nExtraData;
+};
+
 class SInputPinEntry {
 public:
-    const char* m_pName;
-    unsigned int m_nPinID;
-    PAD(32);
+    uint32 m_nPinID;
+    SPinInfo m_InputPinInfo;
 };
 
 enum EPropertyInfoFlags {

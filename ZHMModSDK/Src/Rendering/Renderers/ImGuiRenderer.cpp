@@ -7,6 +7,7 @@
 
 #include "ImGuiImpl.h"
 #include <DDSTextureLoader.h>
+#include <WICTextureLoader.h>
 #include <ResourceUploadBatch.h>
 #include <DirectXHelpers.h>
 #include <windowsx.h>
@@ -391,8 +392,7 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     {
         D3D12_DESCRIPTOR_HEAP_DESC s_Desc = {};
         s_Desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        s_Desc.NumDescriptors = s_BufferCount;
-        // TODO: This looks like "total texture / shared resource view count" so we should increase based on number of textures we want to render.
+        s_Desc.NumDescriptors = MaxSRVDescriptors;
         s_Desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         s_Desc.NodeMask = 0;
 
@@ -805,6 +805,143 @@ void ImGuiRenderer::ProcessKeyEventsWorkarounds(ImGuiIO& io) {
     if (ImGui::IsKeyDown(ImGuiKey_RightSuper) && !IsVkDown(VK_RWIN)) {
         AddKeyEvent(io, ImGuiKey_RightSuper, false, VK_RWIN);
     }
+}
+
+bool ImGuiRenderer::CreateDDSTextureFromMemory(
+    const void* p_Data,
+    size_t p_DataSize,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return CreateTexture(
+        [p_Data, p_DataSize](ScopedD3DRef<ID3D12Device>& device,
+            DirectX::ResourceUploadBatch& batch,
+            ID3D12Resource** texture) {
+                return DirectX::CreateDDSTextureFromMemory(
+                    device,
+                    batch,
+                    reinterpret_cast<const uint8_t*>(p_Data),
+                    p_DataSize,
+                    texture
+                );
+        },
+        p_OutTexture,
+        p_OutImGuiTexture
+    );
+}
+
+bool ImGuiRenderer::CreateDDSTextureFromFile(
+    const std::string& p_FilePath,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return CreateTexture(
+        [p_FilePath](ScopedD3DRef<ID3D12Device>& device,
+            DirectX::ResourceUploadBatch& batch,
+            ID3D12Resource** texture) {
+                const std::wstring s_FilePath2(p_FilePath.begin(), p_FilePath.end());
+
+                return DirectX::CreateDDSTextureFromFile(device, batch, s_FilePath2.c_str(), texture);
+        },
+        p_OutTexture,
+        p_OutImGuiTexture
+    );
+}
+
+bool ImGuiRenderer::CreateWICTextureFromMemory(
+    const void* p_Data,
+    size_t p_DataSize,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return CreateTexture(
+        [p_Data, p_DataSize](ScopedD3DRef<ID3D12Device>& device,
+            DirectX::ResourceUploadBatch& batch,
+            ID3D12Resource** texture) {
+                return DirectX::CreateWICTextureFromMemory(device, batch, reinterpret_cast<const uint8_t*>(p_Data), p_DataSize, texture);
+        },
+        p_OutTexture,
+        p_OutImGuiTexture
+    );
+}
+
+bool ImGuiRenderer::CreateWICTextureFromFile(
+    const std::string& p_FilePath,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    return CreateTexture(
+        [p_FilePath](ScopedD3DRef<ID3D12Device>& device,
+            DirectX::ResourceUploadBatch& batch,
+            ID3D12Resource** texture) {
+                const std::wstring s_FilePath2(p_FilePath.begin(), p_FilePath.end());
+
+                return DirectX::CreateWICTextureFromFile(device, batch, s_FilePath2.c_str(), texture);
+        },
+        p_OutTexture,
+        p_OutImGuiTexture
+    );
+}
+
+bool ImGuiRenderer::CreateTexture(
+    std::function<HRESULT(ScopedD3DRef<ID3D12Device>&, DirectX::ResourceUploadBatch&, ID3D12Resource**)> p_Loader,
+    ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+    ImGuiTexture& p_OutImGuiTexture
+) {
+    if (!m_RendererSetup) {
+        Logger::Error("Failed to create texture - ImGui renderer is not set up!");
+
+        return false;
+    }
+
+    ScopedD3DRef<ID3D12Device> s_Device;
+
+    if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK) {
+        Logger::Error("Failed to retrieve D3D12 device from swap chain in CreateTexture!");
+
+        return false;
+    }
+
+    DirectX::ResourceUploadBatch s_UploadBatch(s_Device);
+
+    s_UploadBatch.Begin();
+
+    ScopedD3DRef<ID3D12Resource> s_Texture;
+
+    HRESULT s_Result = p_Loader(s_Device, s_UploadBatch, &s_Texture.Ref);
+
+    if (FAILED(s_Result)) {
+        Logger::Error("Failed to create texture via loader function!");
+
+        return false;
+    }
+
+    auto s_Finish = s_UploadBatch.End(m_CommandQueue);
+
+    s_Finish.wait();
+
+    p_OutTexture = std::move(s_Texture);
+
+    auto s_TextureDescription = p_OutTexture->GetDesc();
+    p_OutImGuiTexture.width = static_cast<UINT>(s_TextureDescription.Width);
+    p_OutImGuiTexture.height = static_cast<UINT>(s_TextureDescription.Height);
+
+    UINT s_SRVIndex = m_NextSRVIndex++;
+    UINT s_DescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    D3D12_CPU_DESCRIPTOR_HANDLE s_CPUHandle = m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    s_CPUHandle.ptr += s_SRVIndex * s_DescriptorSize;
+
+    D3D12_GPU_DESCRIPTOR_HANDLE s_GPUHandle = m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    s_GPUHandle.ptr += s_SRVIndex * s_DescriptorSize;
+
+    DirectX::CreateShaderResourceView(s_Device, p_OutTexture, s_CPUHandle);
+
+    p_OutImGuiTexture.id = s_GPUHandle.ptr;
+
+    Logger::Info("Created texture ({}x{}) in SRV slot {}.", s_TextureDescription.Width, s_TextureDescription.Height, m_NextSRVIndex);
+
+    return true;
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(
