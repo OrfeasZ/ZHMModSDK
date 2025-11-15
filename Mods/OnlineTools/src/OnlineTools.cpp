@@ -220,8 +220,6 @@ void OnlineTools::OnDrawMenu() {
 }
 
 void OnlineTools::SettingsMenu() {
-    const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
-    ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.23f, viewportSize.y * 0.35f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(ICON_MD_PUBLIC " OnlineTools", &m_ShowSettings)) {
 
         // Online Settings

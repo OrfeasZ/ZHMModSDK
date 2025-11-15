@@ -64,8 +64,6 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
         return;
     }
 
-    const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
-    ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.13f, viewportSize.y * 0.55f), ImGuiCond_FirstUseEver);
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
     const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());

@@ -337,9 +337,7 @@ void Editor::DrawSettings(const bool p_HasFocus) {
         return;
     }
 
-    const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.15f, viewportSize.y * 0.15f), ImGuiCond_FirstUseEver);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
     if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " EDITOR", &m_SettingsVisible)) {
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y), ImGuiCond_FirstUseEver);
