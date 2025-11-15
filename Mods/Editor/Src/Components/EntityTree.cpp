@@ -852,6 +852,26 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
         const auto s_NodeToRemove = s_EntityIter->second;
         m_CachedEntityTreeMap.erase(s_EntityIter);
 
+        // If a child of this node is selected, deselect it (non-recursive).
+        std::queue<std::shared_ptr<EntityTreeNode>> s_ChildrenQueue;
+
+        for (auto& s_Child: s_NodeToRemove->Children) {
+            s_ChildrenQueue.push(s_Child.second);
+        }
+
+        while (!s_ChildrenQueue.empty()) {
+            if (m_SelectedEntity == s_ChildrenQueue.front()->Entity) {
+                m_SelectedEntity = {};
+                break;
+            }
+
+            for (auto& s_Child: s_ChildrenQueue.front()->Children) {
+                s_ChildrenQueue.push(s_Child.second);
+            }
+
+            s_ChildrenQueue.pop();
+        }
+
         // Remove it from the children of all its parents.
         for (auto& s_Parent: s_NodeToRemove->Parents) {
             for (auto it = s_Parent->Children.begin(); it != s_Parent->Children.end();) {
@@ -893,6 +913,26 @@ void Editor::DestroyEntityNodeInternal(
         if (m_SelectedEntity == p_NodeToRemove->Entity) {
             m_SelectedEntity = {};
         }
+    }
+
+    // If a child of this node is selected, deselect it (non-recursive).
+    std::queue<std::shared_ptr<EntityTreeNode>> s_ChildrenQueue;
+
+    for (auto& s_Child: p_NodeToRemove->Children) {
+        s_ChildrenQueue.push(s_Child.second);
+    }
+
+    while (!s_ChildrenQueue.empty()) {
+        if (m_SelectedEntity == s_ChildrenQueue.front()->Entity) {
+            m_SelectedEntity = {};
+            break;
+        }
+
+        for (auto& s_Child: s_ChildrenQueue.front()->Children) {
+            s_ChildrenQueue.push(s_Child.second);
+        }
+
+        s_ChildrenQueue.pop();
     }
 
     for (auto& s_Parent: p_NodeToRemove->Parents) {
