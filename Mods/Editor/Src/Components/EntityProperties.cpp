@@ -18,13 +18,21 @@ void Editor::DrawEntityProperties() {
     ImGui::SetNextWindowSize({500, s_ImgGuiIO.DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_TUNE " Entity Properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
+    if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
+        m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
+    ) {
+        ImGui::End();
+
+        return;
+    }
+
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
 
     const auto s_SelectedEntity = m_SelectedEntity;
 
     if (s_SceneCtx && s_SceneCtx->m_pScene && s_SelectedEntity) {
         if (ImGui::Button(ICON_MD_SUPERVISOR_ACCOUNT)) {
-            OnSelectEntity(s_SelectedEntity.GetLogicalParent(), std::nullopt);
+            OnSelectEntity(s_SelectedEntity.GetLogicalParent(), true, std::nullopt);
         }
 
         if (ImGui::IsItemHovered())
@@ -34,17 +42,16 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         if (ImGui::Button(ICON_MD_BRANDING_WATERMARK)) {
-            OnSelectEntity(s_SelectedEntity.GetOwningEntity(), std::nullopt);
+            OnSelectEntity(s_SelectedEntity.GetOwningEntity(), true, std::nullopt);
         }
 
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select Owning Entity (Brick)");
 
-
         ImGui::SameLine(0, 5);
 
         if (ImGui::Button(ICON_MD_DESELECT))
-            OnSelectEntity({}, std::nullopt);
+            OnSelectEntity({}, false, std::nullopt);
 
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Deselect");
@@ -106,43 +113,129 @@ void Editor::DrawEntityProperties() {
 
         ImGui::Separator();
 
-        // The way to get the factory here is probably wrong.
-        auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SelectedEntity.GetBlueprintFactory());
+        {
+            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
 
-        if (s_SelectedEntity.GetOwningEntity())
-            s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SelectedEntity.GetOwningEntity().
-                GetBlueprintFactory());
+            auto s_Iterator = m_CachedEntityTreeMap.find(s_SelectedEntity);
 
-        if (s_Factory) {
-            // This is also probably wrong.
-            auto s_Index = s_Factory->GetSubEntityIndex(s_SelectedEntity->GetType()->m_nEntityId);
-
-            if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint)
-                ImGui::TextUnformatted(
-                    fmt::format(
-                        "Entity Name: {}",
-                        s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName
-                    ).c_str()
+            if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                const std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
+                const std::string s_EntityName = s_EntityTreeNode->Name.substr(
+                    0,
+                    s_EntityTreeNode->Name.find_last_of(" (") - 1
                 );
-        }
 
-        ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", s_SelectedEntity->GetType()->m_nEntityId).c_str());
+                ImGui::TextUnformatted(fmt::format("Entity Name: {}", s_EntityName).c_str());
 
-        if (ImGuiCopyWidget("EntId")) {
-            CopyToClipboard(fmt::format("{:016x}", s_SelectedEntity->GetType()->m_nEntityId));
-        }
+                if (ImGuiCopyWidget("EntityName")) {
+                    CopyToClipboard(s_EntityName);
+                }
 
-        const auto& s_Interfaces = *s_SelectedEntity->GetType()->m_pInterfaces;
-        ImGui::TextUnformatted(
-            fmt::format("Entity Type: {}", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName).c_str()
-        );
+                ImGui::TextUnformatted(fmt::format("Entity ID: {:016x}", s_EntityTreeNode->EntityId).c_str());
 
-        if (s_Factory) {
-            ImGui::TextUnformatted(fmt::format("Contained TBLU: {:016X}", s_Factory->m_ridResource.GetID()).c_str());
+                if (ImGuiCopyWidget("EntityID")) {
+                    CopyToClipboard(fmt::format("{:016x}", s_EntityTreeNode->EntityId));
+                }
 
-            if (ImGuiCopyWidget("EntTblu")) {
-                CopyToClipboard(fmt::format("{:016X}", s_Factory->m_ridResource.GetID()));
-            }
+                ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_EntityTreeNode->EntityType).c_str());
+
+                if (ImGuiCopyWidget("EntityType")) {
+                    CopyToClipboard(s_EntityTreeNode->EntityType);
+                }
+
+                {
+                    std::shared_lock s_FactoryLock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
+                    auto s_Iterator2 = m_EntityRefToFactoryRuntimeResourceIDs.find(s_SelectedEntity);
+
+                    if (s_Iterator2 != m_EntityRefToFactoryRuntimeResourceIDs.end()) {
+                        const auto [s_TemplateFactoryRuntimeResourceID, s_ParentTemplateFactoryRuntimeResourceID] = s_Iterator2->second;
+                        std::string s_ReferencedTemplateFactoryType;
+
+                        if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "TBLU") {
+                            s_ReferencedTemplateFactoryType = "TEMP";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "ASEB") {
+                            s_ReferencedTemplateFactoryType = "ASET";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "CBLU") {
+                            s_ReferencedTemplateFactoryType = "CPPT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "ECPB") {
+                            s_ReferencedTemplateFactoryType = "ECPT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "UICB") {
+                            s_ReferencedTemplateFactoryType = "UICT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "MATB") {
+                            s_ReferencedTemplateFactoryType = "MATT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "AIBB") {
+                            s_ReferencedTemplateFactoryType = "AIBX";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "WSWB") {
+                            s_ReferencedTemplateFactoryType = "WSWT";
+                        }
+                        else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "WSGB") {
+                            s_ReferencedTemplateFactoryType = "WSGT";
+                        }
+
+                        ImGui::TextUnformatted(
+                            fmt::format("{}: {:016X}", s_ReferencedTemplateFactoryType, s_TemplateFactoryRuntimeResourceID.GetID()
+                            ).c_str());
+
+                        if (ImGuiCopyWidget("ReferencedTemplateFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_TemplateFactoryRuntimeResourceID.GetID()));
+                        }
+
+                        ImGui::TextUnformatted(
+                            fmt::format("{}: {:016X}", s_EntityTreeNode->ReferencedBlueprintFactoryType, s_EntityTreeNode->ReferencedBlueprintFactory.GetID()
+                            ).c_str());
+
+                        if (ImGuiCopyWidget("ReferencedBlueprintFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
+                        }
+
+                        ImGui::TextUnformatted(fmt::format(
+                            "Contained in {}: {:016X}",
+                            s_EntityTreeNode->BlueprintFactoryType == "TBLU" ? "TEMP" : "ASET",
+                            s_ParentTemplateFactoryRuntimeResourceID.GetID()
+                        ).c_str());
+
+                        if (ImGuiCopyWidget("ParentTemplateFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_ParentTemplateFactoryRuntimeResourceID.GetID()));
+                        }
+
+                        ImGui::TextUnformatted(fmt::format(
+                            "Contained in {}: {:016X}",
+                            s_EntityTreeNode->BlueprintFactoryType,
+                            s_EntityTreeNode->BlueprintFactory.GetID()
+                        ).c_str());
+
+                        if (ImGuiCopyWidget("ParentBlueprintFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->BlueprintFactory.GetID()));
+                        }
+                    }
+                    else {
+                        ImGui::TextUnformatted(
+                            fmt::format("{}: {:016X}", s_EntityTreeNode->ReferencedBlueprintFactoryType, s_EntityTreeNode->ReferencedBlueprintFactory.GetID()
+                            ).c_str());
+
+                        if (ImGuiCopyWidget("ReferencedBlueprintFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
+                        }
+
+                        ImGui::TextUnformatted(fmt::format(
+                            "Contained in {}: {:016X}",
+                            s_EntityTreeNode->BlueprintFactoryType,
+                            s_EntityTreeNode->BlueprintFactory.GetID()
+                        ).c_str());
+
+                        if (ImGuiCopyWidget("ParentBlueprintFactory")) {
+                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->BlueprintFactory.GetID()));
+                        }
+                    }
+                }
+            };
         }
 
         if (const ZGeomEntity* s_GeomEntity = s_SelectedEntity.QueryInterface<ZGeomEntity>()) {
@@ -275,7 +368,7 @@ void Editor::DrawEntityProperties() {
         if (const auto s_CameraEntity = s_SelectedEntity.QueryInterface<ZCameraEntity>()) {
             if (ImGui::Button(ICON_MD_CAMERA "Toggle Camera")) {
                 ZEntityRef s_EntRef;
-                auto s_Camera = s_CameraEntity->GetID(&s_EntRef);
+                auto s_Camera = s_CameraEntity->GetID(s_EntRef);
 
                 if (m_CameraActive) {
                     m_CameraActive = false;
@@ -365,104 +458,54 @@ void Editor::DrawEntityProperties() {
                 // Render the name of the property.
                 ImGui::PushFont(SDK()->GetImGuiBoldFont());
 
-                if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->
-                    m_nPropertyId) {
-                    // Some properties don't have a name for some reason. Try to find using RL.
-                    const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+                ImGui::AlignTextToFramePadding();
 
-                    if (s_PropertyName.Size > 0) {
-                        ImGui::Text("%s", std::string(s_PropertyName.Data, s_PropertyName.Size).c_str());
+                std::string s_PropertyName;
+
+                if (s_PropertyInfo->m_pType->typeInfo()->isResource() ||
+                    s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId
+                ) {
+                    // Some properties don't have a name for some reason. Try to find using RL.
+                    const auto s_PropertyNameData = HM3_GetPropertyName(s_Property->m_nPropertyId);
+
+                    if (s_PropertyNameData.Size > 0) {
+                        s_PropertyName.assign(s_PropertyNameData.Data, s_PropertyNameData.Size);
                     }
                     else {
-                        ImGui::Text("~%08x", s_Property->m_nPropertyId);
+                        s_PropertyName = fmt::format("~{:08x}", s_Property->m_nPropertyId);
                     }
                 }
                 else {
-                    ImGui::Text("%s", s_PropertyInfo->m_pName);
+                    s_PropertyName = s_PropertyInfo->m_pName;
+                }
+
+                if (!s_PropertyInfo->m_pType->typeInfo()->isArray()) {
+                    ImGui::Text("%s", s_PropertyName.c_str());
                 }
 
                 if (ImGui::IsItemHovered()) {
                     ImGui::SetTooltip("%s", s_PropertyInfo->m_pType->typeInfo()->m_pTypeName);
                 }
-                ImGui::PopFont();
-                ImGui::SameLine();
 
-                // Make the next item fill the rest of the width.
-                ImGui::PushItemWidth(-1);
+                ImGui::PopFont();
+
+                if (!s_PropertyInfo->m_pType->typeInfo()->isArray()) {
+                    ImGui::SameLine();
+
+                    // Make the next item fill the rest of the width.
+                    ImGui::PushItemWidth(-1);
+                }
 
                 // Render the value of the property.
-                if (s_TypeName == "ZString") {
-                    StringProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "bool") {
-                    BoolProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "uint8") {
-                    Uint8Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "int8") {
-                    Int8Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "uint16") {
-                    Uint16Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "int16") {
-                    Int16Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "uint32") {
-                    Uint32Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "int32") {
-                    Int32Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "uint64") {
-                    Uint64Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "int64") {
-                    Int64Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "float32") {
-                    Float32Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "float64") {
-                    Float64Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SVector2") {
-                    SVector2Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SVector3") {
-                    SVector3Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SVector4") {
-                    SVector4Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SMatrix43") {
-                    SMatrix43Property(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SColorRGB") {
-                    SColorRGBProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "SColorRGBA") {
-                    SColorRGBAProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_PropertyInfo->m_pType->typeInfo()->isEnum()) {
-                    EnumProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_PropertyInfo->m_pType->typeInfo()->isResource()) {
-                    ResourceProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName.starts_with("ZEntityRef")) {
-                    ZEntityRefProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName.starts_with("TEntityRef<")) {
-                    TEntityRefProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else if (s_TypeName == "ZRepositoryID") {
-                    ZRepositoryIDProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
-                else {
-                    UnsupportedProperty(s_InputId, s_SelectedEntity, s_Property, s_Data);
-                }
+                DrawEntityPropertyValue(
+                    s_InputId,
+                    s_PropertyName,
+                    s_TypeName,
+                    s_PropertyInfo->m_pType,
+                    s_SelectedEntity,
+                    s_Property,
+                    s_Data
+                );
 
                 ImGui::Separator();
 
@@ -473,4 +516,90 @@ void Editor::DrawEntityProperties() {
     }
 
     ImGui::End();
+}
+
+void Editor::DrawEntityPropertyValue(
+    const std::string& p_Id,
+    const std::string& p_PropertyName,
+    const std::string& p_TypeName,
+    const STypeID* p_TypeID,
+    ZEntityRef p_Entity,
+    ZEntityProperty* p_Property,
+    void* p_Data
+) {
+    if (p_TypeName == "ZString") {
+        StringProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "bool") {
+        BoolProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "uint8") {
+        Uint8Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "int8") {
+        Int8Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "uint16") {
+        Uint16Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "int16") {
+        Int16Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "uint32") {
+        Uint32Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "int32") {
+        Int32Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "uint64") {
+        Uint64Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "int64") {
+        Int64Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "float32") {
+        Float32Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "float64") {
+        Float64Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SVector2") {
+        SVector2Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SVector3") {
+        SVector3Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SVector4") {
+        SVector4Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SMatrix43") {
+        SMatrix43Property(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SColorRGB") {
+        SColorRGBProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "SColorRGBA") {
+        SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeID->typeInfo()->isEnum()) {
+        EnumProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeID->typeInfo()->isResource()) {
+        ResourceProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName.starts_with("ZEntityRef")) {
+        ZEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName.starts_with("TEntityRef")) {
+        TEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "ZRepositoryID") {
+        ZRepositoryIDProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeID->typeInfo()->isArray()) {
+        TArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeName, p_TypeID);
+    }
+    else {
+        UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
 }

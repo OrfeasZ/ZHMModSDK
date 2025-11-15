@@ -442,29 +442,29 @@ public:
     ZGuid m_CharacterId; // 0x7B8
     PAD(0x38); // 0x7C8
     ZCharacterInputProcessor* m_pCharacterInputProcessor; // 0x800
-    PAD(0x110); // 0x808
-    TEntityRef<ZBodyPartEntity> m_pVRHeadReplacement; // 0x918
-    TEntityRef<ZBodyPartEntity> m_pVROldHeadReplacement; // 0x928
-    PAD(0x20); // 0x938
-    ZRuntimeResourceID m_SeasonOneHead1; // 0x958
-    ZRuntimeResourceID m_SeasonOneHead2; // 0x960
-    ZRuntimeResourceID m_SeasonOneHead3; // 0x968
-    ZRuntimeResourceID m_SeasonOneHead4; // 0x970
-    ZRuntimeResourceID m_SeasonOneHead5; // 0x978
-    PAD(0x4F0); // 0x980
-    bool m_bIsInvincible; // 0xE70
-    PAD(0x7); // 0xE71
-    TEntityRef<ZHeroGuideController> m_pGuideController; // 0xE78
-    TEntityRef<ZHeroIKController> m_pIKController; // 0xE88
-    TEntityRef<ZCheatController> m_pCheatController; // 0xE98
-    TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xEA8
-    TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xEB8
-    TEntityRef<ZCharacter> m_pCharacter; // 0xEC8
-    PAD(0xB0); // 0xED8
-    TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0xF88
-    int32 m_nOutfitCharset; // 0xF98
-    int32 m_nOutfitVariation; // 0xF9C
-    PAD(0x368); // 0xFA0
-    TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1308
+    PAD(0x138); // 0x808
+    TEntityRef<ZBodyPartEntity> m_pVRHeadReplacement; // 0x940
+    TEntityRef<ZBodyPartEntity> m_pVROldHeadReplacement; // 0x950
+    PAD(0x20); // 0x960
+    ZRuntimeResourceID m_SeasonOneHead1; // 0x980
+    ZRuntimeResourceID m_SeasonOneHead2; // 0x988
+    ZRuntimeResourceID m_SeasonOneHead3; // 0x990
+    ZRuntimeResourceID m_SeasonOneHead4; // 0x998
+    ZRuntimeResourceID m_SeasonOneHead5; // 0x9A0
+    PAD(0x4F0); // 0x9A8
+    bool m_bIsInvincible; // 0xE98
+    PAD(0x7); // 0xE99
+    TEntityRef<ZHeroGuideController> m_pGuideController; // 0xEA0
+    TEntityRef<ZHeroIKController> m_pIKController; // 0xEB0
+    TEntityRef<ZCheatController> m_pCheatController; // 0xEC0
+    TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xED0
+    TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xEE0
+    TEntityRef<ZCharacter> m_pCharacter; // 0xEF0
+    PAD(0xB0); // 0xF00
+    TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0xFB0
+    int32 m_nOutfitCharset; // 0xFC0
+    int32 m_nOutfitVariation; // 0xFC4
+    PAD(0x370); // 0xFC8
+    TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1338
     PAD(0xA8); // 0x1318
 };

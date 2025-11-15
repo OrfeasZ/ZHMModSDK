@@ -38,7 +38,7 @@ public:
     void OnEntitySpawned(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
     void OnEntityDestroying(uint64_t p_EntityId, std::optional<std::string> p_ByClient);
     void OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks);
-    void OnSceneClearing(bool p_ForReload);
+    void OnSceneClearing(bool p_FullyUnloadScene);
     void OnEntityTreeRebuilt();
     static void SetEnabled(bool p_Enabled);
     static bool GetEnabled();

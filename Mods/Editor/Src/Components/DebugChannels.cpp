@@ -341,7 +341,11 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
             }
         }
         else {
-            if (ImGui::Button("Get Gizmos")) {
+            if (ImGui::Button("Get Debug Entities")) {
+                if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+                    UpdateEntities();
+                }
+
                 GetDebugEntities(m_CachedEntityTree);
             }
         }
@@ -388,17 +392,23 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
         p_GizmoEntity.m_TypeName == "ZGateEntity") {
         const bool s_IsOpen = p_GizmoEntity.m_EntityRef.GetProperty<bool>("m_bIsOpen").Get();
 
-        if (s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() != 0x00F5AD65222D9F83) {
+        if (s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() !=
+            ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">
+        ) {
             return;
         }
 
-        if (!s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() == 0x00F5AD65222D9F83) {
+        if (!s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() ==
+            ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">
+        ) {
             return;
         }
     }
     else if (p_GizmoEntity.m_DebugChannel == EDebugChannel::DEBUGCHANNEL_DEFAULT &&
         p_GizmoEntity.m_TypeName == "ZPureWaveModifierEntity" &&
-        p_GizmoEntity.m_RuntimeResourceID.GetID() == 0x002C1B7EDC55A3C5) {
+        p_GizmoEntity.m_RuntimeResourceID.GetID() ==
+        ResId<"[assembly:/geometry/g2/gizmos.wl2?/unit_circle.prim].pc_prim">
+    ) {
         const float s_Radius = p_GizmoEntity.m_EntityRef.GetProperty<float>("m_fRadius").Get();
 
         if (p_GizmoEntity.m_Transform.XAxis.x != s_Radius) {
@@ -478,6 +488,20 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         return;
     }
 
+    if (p_EntityTreeNode->Entity == m_DynamicEntitiesNodeEntityRef ||
+        p_EntityTreeNode->Entity == m_UnparentedEntitiesNodeEntityRef
+    ) {
+        return;
+    }
+
+    if (p_EntityTreeNode->IsPendingDeletion) {
+        return;
+    }
+
+    if (p_EntityTreeNode->IsDynamicEntity) {
+        return;
+    }
+
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
     
     static STypeID* s_CompositeEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZCompositeEntity");
@@ -554,8 +578,23 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
             const float4 s_RadiusGizmoTranslate(0.f, 0.f, 0.f, 0.f);
             const SMatrix s_RadiusGizmoTransform = SMatrix::ScaleTranslate(s_RadiusGizmoScale, s_RadiusGizmoTranslate);
 
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZPureWaveModifierEntity", DEBUGCHANNEL_DEFAULT, 0x00A23C37C3C51350, s_Color, s_DirectionGizmoTransform);
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZPureWaveModifierEntity", DEBUGCHANNEL_DEFAULT, 0x002C1B7EDC55A3C5, s_Color, s_RadiusGizmoTransform);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZPureWaveModifierEntity",
+                DEBUGCHANNEL_DEFAULT,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_arrow_01.prim].pc_prim">,
+                s_Color,
+                s_DirectionGizmoTransform
+            );
+
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZPureWaveModifierEntity",
+                DEBUGCHANNEL_DEFAULT,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/unit_circle.prim].pc_prim">,
+                s_Color,
+                s_RadiusGizmoTransform
+            );
         }
     }
     else if (s_LightEntity || s_DarkLightEntity) {
@@ -577,17 +616,37 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
                 case ILightEntity_ELightType::LT_DIRECTIONAL:
                 case ILightEntity_ELightType::LT_ENVIRONMENT:
                 case ILightEntity_ELightType::LT_AREA_QUAD:
-                    AddGizmoEntity(p_EntityTreeNode->Entity, s_TypeName, DEBUGCHANNEL_LIGHT, 0x00344002CB4B8408);
+                    AddGizmoEntity(
+                        p_EntityTreeNode->Entity,
+                        s_TypeName,
+                        DEBUGCHANNEL_LIGHT,
+                        ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_light_directional_01.prim].pc_prim">
+                    );
                     break;
                 case ILightEntity_ELightType::LT_OMNI:
-                    AddGizmoEntity(p_EntityTreeNode->Entity, s_TypeName, DEBUGCHANNEL_LIGHT, 0x004B55A800AF4955);
+                    AddGizmoEntity(
+                        p_EntityTreeNode->Entity,
+                        s_TypeName,
+                        DEBUGCHANNEL_LIGHT,
+                        ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_light_01.prim].pc_prim">
+                    );
                     break;
                 case ILightEntity_ELightType::LT_SPOT:
                 case ILightEntity_ELightType::LT_SQUARESPOT:
-                    AddGizmoEntity(p_EntityTreeNode->Entity, s_TypeName, DEBUGCHANNEL_LIGHT, 0x00968C323AECD399);
+                    AddGizmoEntity(
+                        p_EntityTreeNode->Entity,
+                        s_TypeName,
+                        DEBUGCHANNEL_LIGHT,
+                        ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_light_spot_01.prim].pc_prim">
+                    );
                     break;
                 case ILightEntity_ELightType::LT_CAPSULE:
-                    AddGizmoEntity(p_EntityTreeNode->Entity, s_TypeName, DEBUGCHANNEL_LIGHT, 0x0097C792F0CADB89);
+                    AddGizmoEntity(
+                        p_EntityTreeNode->Entity,
+                        s_TypeName,
+                        DEBUGCHANNEL_LIGHT,
+                        ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_light_capsule_01.prim].pc_prim">
+                    );
                     break;
             }
         }
@@ -596,7 +655,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::BoxReflectionEntity]
     )) {
         if (EntityIDMatches(s_BoxReflectionEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZBoxReflectionEntity", DEBUGCHANNEL_LIGHT, 0x00EE6B9C45CC038F);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZBoxReflectionEntity",
+                DEBUGCHANNEL_LIGHT,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_cubemap_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_CubemapProbeEntity = p_EntityTreeNode->Entity.QueryInterface<ZCubemapProbeEntity>(
@@ -617,28 +681,48 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::ParticleEmitterBoxEntity]
     )) {
         if (EntityIDMatches(s_ParticleEmitterBoxEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZParticleEmitterBoxEntity", DEBUGCHANNEL_PARTICLES, 0x00C965D44B7A3D42);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZParticleEmitterBoxEntity",
+                DEBUGCHANNEL_PARTICLES,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_particles_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_ParticleEmitterEmitterEntity = p_EntityTreeNode->Entity.QueryInterface<ZParticleEmitterEmitterEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::ParticleEmitterEmitterEntity]
     )) {
         if (EntityIDMatches(s_ParticleEmitterEmitterEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZParticleEmitterEmitterEntity", DEBUGCHANNEL_PARTICLES, 0x00C965D44B7A3D42);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZParticleEmitterEmitterEntity",
+                DEBUGCHANNEL_PARTICLES,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_particles_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_ParticleEmitterMeshEntity = p_EntityTreeNode->Entity.QueryInterface<ZParticleEmitterMeshEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::ParticleEmitterMeshEntity]
     )) {
         if (EntityIDMatches(s_ParticleEmitterMeshEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZParticleEmitterMeshEntity", DEBUGCHANNEL_PARTICLES, 0x00C965D44B7A3D42);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZParticleEmitterMeshEntity",
+                DEBUGCHANNEL_PARTICLES,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_particles_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_ParticleEmitterPointEntity = p_EntityTreeNode->Entity.QueryInterface<ZParticleEmitterPointEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::ParticleEmitterPointEntity]
     )) {
         if (EntityIDMatches(s_ParticleEmitterPointEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZParticleEmitterPointEntity", DEBUGCHANNEL_PARTICLES, 0x00C965D44B7A3D42);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZParticleEmitterPointEntity",
+                DEBUGCHANNEL_PARTICLES,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_particles_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_ParticleGlobalAttractorEntity = p_EntityTreeNode->Entity.QueryInterface<ZParticleGlobalAttractorEntity>(
@@ -681,7 +765,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::StaticDecalEntity]
     )) {
         if (EntityIDMatches(s_StaticDecalEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZStaticDecalEntity", DEBUGCHANNEL_DECALS, 0x00B65096E669A47C);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZStaticDecalEntity",
+                DEBUGCHANNEL_DECALS,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_decal_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_LiquidTrailEntity = p_EntityTreeNode->Entity.QueryInterface<ZLiquidTrailEntity>(
@@ -732,7 +821,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
 
         if (!isComposite) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZBoxShapeAspect", DEBUGCHANNEL_PHYSICS, 0x00AEE498BB9079EA);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZBoxShapeAspect",
+                DEBUGCHANNEL_PHYSICS,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_colibox.prim].pc_prim">
+            );
         }
     }
     else if (p_EntityTreeNode->Entity.QueryInterface<ZCapsuleShapeAspect>(
@@ -741,7 +835,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
 
         if (!isComposite) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZCapsuleShapeAspect", DEBUGCHANNEL_PHYSICS, 0x006EFA9F55A0588D);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZCapsuleShapeAspect",
+                DEBUGCHANNEL_PHYSICS,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_colicapsule.prim].pc_prim">
+            );
         }
     }
     else if (p_EntityTreeNode->Entity.QueryInterface<ZSphereShapeAspect>(
@@ -750,7 +849,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
 
         if (!isComposite) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZSphereShapeAspect", DEBUGCHANNEL_PHYSICS, 0x00AA6F15BA4A3673);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZSphereShapeAspect",
+                DEBUGCHANNEL_PHYSICS,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_colisphere.prim].pc_prim">
+            );
         }
     }
     else if (auto s_WindEntity = p_EntityTreeNode->Entity.QueryInterface<ZWindEntity>(
@@ -764,28 +868,48 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::AISoundConnector]
     )) {
         if (EntityIDMatches(s_AISoundConnector, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZAISoundConnector", DEBUGCHANNEL_AI, 0x007B75331480E5AE);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZAISoundConnector",
+                DEBUGCHANNEL_AI,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_annotation_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_AISoundConnectorTarget = p_EntityTreeNode->Entity.QueryInterface<ZAISoundConnectorTarget>(
         m_DebugEntityTypeIds[DebugEntityTypeName::AISoundConnectorTarget]
     )) {
         if (EntityIDMatches(s_AISoundConnectorTarget, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZAISoundConnectorTarget", DEBUGCHANNEL_AI, 0x007B75331480E5AE);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZAISoundConnectorTarget",
+                DEBUGCHANNEL_AI,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_annotation_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_AISoundModifierVolume = p_EntityTreeNode->Entity.QueryInterface<ZAISoundModifierVolume>(
         m_DebugEntityTypeIds[DebugEntityTypeName::AISoundModifierVolume]
     )) {
         if (EntityIDMatches(s_AISoundModifierVolume, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZAISoundModifierVolume", DEBUGCHANNEL_AI, 0x007B75331480E5AE);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZAISoundModifierVolume",
+                DEBUGCHANNEL_AI,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_annotation_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_AIVisionBlockerPlane = p_EntityTreeNode->Entity.QueryInterface<ZAIVisionBlockerPlane>(
         m_DebugEntityTypeIds[DebugEntityTypeName::AIVisionBlockerPlane]
     )) {
         if (EntityIDMatches(s_AIVisionBlockerPlane, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZAIVisionBlockerPlane", DEBUGCHANNEL_AI, 0x007B75331480E5AE);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZAIVisionBlockerPlane",
+                DEBUGCHANNEL_AI,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_annotation_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_AgitatedGuardPointEntity = p_EntityTreeNode->Entity.QueryInterface<ZAgitatedGuardPointEntity>(
@@ -795,7 +919,14 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
             float4 s_Axis = float4(0.f, 0.f, 1.f, 0.f);
             SMatrix s_Rotation = SMatrix::RotationAxisAngle(s_Axis, DirectX::XM_PI);
 
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZAgitatedGuardPointEntity", DEBUGCHANNEL_AI, 0x00A23C37C3C51350, s_Color, s_Rotation);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZAgitatedGuardPointEntity",
+                DEBUGCHANNEL_AI,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_arrow_01.prim].pc_prim">,
+                s_Color,
+                s_Rotation
+            );
         }
     }
     else if (auto s_AgitatedWaypointEntity = p_EntityTreeNode->Entity.QueryInterface<ZAgitatedWaypointEntity>(
@@ -823,7 +954,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::OutfitProviderEntity]
     )) {
         if (EntityIDMatches(s_OutfitProviderEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZOutfitProviderEntity", DEBUGCHANNEL_AI, 0x0013B99AD73FB293);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZOutfitProviderEntity",
+                DEBUGCHANNEL_AI,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_actor_01.prim].pc_prim">
+            );
         }
     }
     else if (auto s_PointOfInterestEntity = p_EntityTreeNode->Entity.QueryInterface<ZPointOfInterestEntity>(
@@ -849,7 +985,14 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
 
                     s_Transform.Trans = float4(0.f, 0.f, 0.681f, 1.f);
 
-                    AddGizmoEntity(p_EntityTreeNode->Entity, "ZActBehaviorEntity", DEBUGCHANNEL_AI, 0x00854966400D6926, s_Color, s_Transform);
+                    AddGizmoEntity(
+                        p_EntityTreeNode->Entity,
+                        "ZActBehaviorEntity",
+                        DEBUGCHANNEL_AI,
+                        ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_cut_board_01.prim].pc_prim">,
+                        s_Color,
+                        s_Transform
+                    );
                 }
 
                 const ZActBehaviorEntity_ERotationAlignment s_AlignRotation =
@@ -859,16 +1002,32 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
                     const SColorRGB s_Color = p_EntityTreeNode->Entity.GetProperty<SColorRGB>("m_Color").Get();
                     const SVector4 s_Color2 = SVector4(s_Color.r, s_Color.g, s_Color.b, 1.f);
 
-                    AddGizmoEntity(p_EntityTreeNode->Entity, "ZActBehaviorEntity", DEBUGCHANNEL_AI, 0x0082A2962E30E594, s_Color2);
+                    AddGizmoEntity(
+                        p_EntityTreeNode->Entity,
+                        "ZActBehaviorEntity",
+                        DEBUGCHANNEL_AI,
+                        ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_arrow_act.prim].pc_prim">,
+                        s_Color2
+                    );
                 }
 
                 const bool s_AlignPosition = p_EntityTreeNode->Entity.GetProperty<bool>("m_bAlignPosition").Get();
 
                 if (s_AlignPosition) {
-                    AddGizmoEntity(p_EntityTreeNode->Entity, "ZActBehaviorEntity", DEBUGCHANNEL_AI, 0x007A8194C1B28434);
+                    AddGizmoEntity(
+                        p_EntityTreeNode->Entity,
+                        "ZActBehaviorEntity",
+                        DEBUGCHANNEL_AI,
+                        ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_point_01.prim].pc_prim">
+                    );
                 }
                 else {
-                    AddGizmoEntity(p_EntityTreeNode->Entity, "ZActBehaviorEntity", DEBUGCHANNEL_AI, 0x0047B89F17F2943F);
+                    AddGizmoEntity(
+                        p_EntityTreeNode->Entity,
+                        "ZActBehaviorEntity",
+                        DEBUGCHANNEL_AI,
+                        ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_goto_green.prim].pc_prim">
+                    );
                 }
             }
         }
@@ -900,23 +1059,45 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
 
                 s_Transform.Trans = float4(0.f, 0.f, 0.681f, 1.f);
 
-                AddGizmoEntity(p_EntityTreeNode->Entity, "ZWaypointEntity", DEBUGCHANNEL_AI, 0x00854966400D6926, s_Color, s_Transform);
+                AddGizmoEntity(
+                    p_EntityTreeNode->Entity,
+                    "ZWaypointEntity",
+                    DEBUGCHANNEL_AI,
+                    ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_cut_board_01.prim].pc_prim">,
+                    s_Color,
+                    s_Transform
+                );
             }
 
             const EWaypointRotationAlignment s_AlignRotation =
                 p_EntityTreeNode->Entity.GetProperty<EWaypointRotationAlignment>("m_AlignRotation").Get();
 
             if (s_AlignRotation != EWaypointRotationAlignment::RA_NONE) {
-                AddGizmoEntity(p_EntityTreeNode->Entity, "ZWaypointEntity", DEBUGCHANNEL_AI, 0x00A23C37C3C51350);
+                AddGizmoEntity(
+                    p_EntityTreeNode->Entity,
+                    "ZWaypointEntity",
+                    DEBUGCHANNEL_AI,
+                    ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_arrow_01.prim].pc_prim">
+                );
             }
 
             const bool s_AlignPosition = p_EntityTreeNode->Entity.GetProperty<bool>("m_bAlignPosition").Get();
 
             if (s_AlignPosition) {
-                AddGizmoEntity(p_EntityTreeNode->Entity, "ZWaypointEntity", DEBUGCHANNEL_AI, 0x007A8194C1B28434);
+                AddGizmoEntity(
+                    p_EntityTreeNode->Entity,
+                    "ZWaypointEntity",
+                    DEBUGCHANNEL_AI,
+                    ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_point_01.prim].pc_prim">
+                );
             }
             else {
-                AddGizmoEntity(p_EntityTreeNode->Entity, "ZWaypointEntity", DEBUGCHANNEL_AI, 0x0047B89F17F2943F);
+                AddGizmoEntity(
+                    p_EntityTreeNode->Entity,
+                    "ZWaypointEntity",
+                    DEBUGCHANNEL_AI,
+                    ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_goto_green.prim].pc_prim">
+                );
             }
         }
     }
@@ -1004,7 +1185,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
 
         if (!isComposite) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZAudioEmitterSpatialAspect", DEBUGCHANNEL_SOUND, 0x00F7CB5DE7C747C5);
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZAudioEmitterSpatialAspect",
+                DEBUGCHANNEL_SOUND,
+                ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_sound_01.prim].pc_prim">
+            );
         }
     }
     else if (p_EntityTreeNode->Entity.QueryInterface<ZAudioEmitterVolumetricAspect>(
@@ -1053,7 +1239,7 @@ void Editor::AddGizmoEntity(
     const ZEntityRef p_EntityRef,
     const std::string& p_TypeName,
     const EDebugChannel p_DebugChannel,
-    const uint64_t p_RuntimeResourceID,
+    const ZRuntimeResourceID p_RuntimeResourceID,
     const SVector4& p_Color,
     const SMatrix& p_Transform
 ) {
@@ -1111,7 +1297,7 @@ void Editor::AddGizmoEntity(
     else {
         const uint64_t s_EntityId = p_EntityRef.GetEntity()->GetType()->m_nEntityId;
 
-        Logger::Error("Hash of gizmo is missing for entity with {:08x} id and {} type!", s_EntityId, p_TypeName);
+        Logger::Error("Hash of gizmo is missing for entity with {:016x} id and {} type!", s_EntityId, p_TypeName);
     }
 }
 
@@ -1241,8 +1427,8 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
     for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
         const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
-        if (s_SelectedEntity.IsAnyParent(s_Brick.entityRef)) {
-            Logger::Debug("Found gizmo entity in brick {} (idx = {}).", s_Brick.runtimeResourceID, i);
+        if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
+            Logger::Debug("Found gizmo entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
             m_SelectedBrickIndex = i;
             break;
         }
@@ -1258,7 +1444,7 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
         );
     }
 
-    OnSelectEntity(m_SelectedGizmoEntity->m_EntityRef, std::nullopt);
+    OnSelectEntity(m_SelectedGizmoEntity->m_EntityRef, true, std::nullopt);
 
     return true;
 }

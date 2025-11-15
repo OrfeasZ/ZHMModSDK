@@ -13,9 +13,14 @@
 #include <Glacier/ZItem.h>
 #include <Glacier/SExternalReferences.h>
 
+#include <Util/ImGuiUtils.h>
+
 void Player::Init()
 {
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Player::OnClearScene);
+
+    Hooks::ZSecuritySystemCameraManager_OnFrameUpdate->AddDetour(this, &Player::ZSecuritySystemCameraManager_OnFrameUpdate);
+    Hooks::ZSecuritySystemCamera_FrameUpdate->AddDetour(this, &Player::ZSecuritySystemCamera_FrameUpdate);
 }
 
 void Player::OnDrawMenu()
@@ -43,22 +48,26 @@ void Player::OnDrawUI(const bool p_HasFocus)
 
     if (s_Showing)
     {
-        if (s_LocalHitman)
+        if (ImGui::Checkbox("Is Invincible", &m_IsInvincible))
         {
-            static bool s_IsInvincible = s_LocalHitman.m_ref.GetProperty<bool>("m_bIsInvincible").Get();
+            ToggleInvincibility();
+        }
 
-            if (ImGui::Checkbox("Is Invincible", &s_IsInvincible))
-            {
-                s_LocalHitman.m_ref.SetProperty("m_bIsInvincible", s_IsInvincible);
-            }
+        if (ImGui::Checkbox("Is Invisible", &m_IsInvisible))
+        {
+            ToggleInvisibility();
+        }
 
-            if (ImGui::Button("Enable Infinite Ammo"))
-            {
-                EnableInfiniteAmmo();
-            }
+        if (ImGui::Checkbox("Infinite Ammo", &m_IsInfiniteAmmoEnabled))
+        {
+            ToggleInfiniteAmmo();
         }
 
         static char s_OutfitName[2048]{ "" };
+        static uint8_t s_CurrentCharacterSetIndex = 0;
+        static std::string s_CurrentCharSetCharacterType = "HeroA";
+        static std::string s_CurrentCharSetCharacterType2 = "HeroA";
+        static uint8_t s_CurrentOutfitVariationIndex = 1;
 
         if (s_OutfitName[0] == '\0')
         {
@@ -69,78 +78,44 @@ void Player::OnDrawUI(const bool p_HasFocus)
             s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
         }
 
-        ImGui::Text("Outfit");
-        ImGui::SameLine();
-
-        const bool s_IsInputTextEnterPressed = ImGui::InputText(
-            "##OutfitName", s_OutfitName, sizeof(s_OutfitName), ImGuiInputTextFlags_EnterReturnsTrue
-        );
-        const bool s_IsInputTextActive = ImGui::IsItemActive();
-
-        if (ImGui::IsItemActivated())
-        {
-            ImGui::OpenPopup("##popup");
-        }
-
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
-        ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
-
-        static uint8_t s_CurrentCharacterSetIndex = 0;
-        static std::string s_CurrentCharSetCharacterType = "HeroA";
-        static std::string s_CurrentCharSetCharacterType2 = "HeroA";
-        static uint8_t s_CurrentOutfitVariationIndex = 1;
-
         if (!m_GlobalOutfitKit)
         {
-            m_GlobalOutfitKit = &s_LocalHitman.m_pInterfaceRef->m_rOutfitKit;
+            m_GlobalOutfitKit = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit;
             s_CurrentCharacterSetIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitCharset;
             s_CurrentOutfitVariationIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitVariation;
         }
 
-        if (ImGui::BeginPopup(
-            "##popup",
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_ChildWindow
-        ))
-        {
-            for (auto it = s_ContentKitManager->m_repositoryGlobalOutfitKits.begin(); it != s_ContentKitManager->
-                m_repositoryGlobalOutfitKits.end(); ++it)
-            {
-                TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit = &it->second;
-                const char* s_OutfitName2 = s_GlobalOutfitKit->m_pInterfaceRef->m_sCommonName.c_str();
+        ImGui::Text("Outfit");
+        ImGui::SameLine();
 
-                if (!strstr(s_OutfitName2, s_OutfitName))
-                {
-                    continue;
-                }
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "##OutfitsPopup",
+            s_OutfitName,
+            sizeof(s_OutfitName),
+            s_ContentKitManager->m_repositoryGlobalOutfitKits,
+            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> std::string {
+                return std::string(
+                    p_Pair.second.m_pInterfaceRef->m_sCommonName.c_str(),
+                    p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
+                );
+            },
+            [&](const ZRepositoryID&, const std::string& p_Name, const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
+                s_CurrentCharacterSetIndex = 0;
+                s_CurrentOutfitVariationIndex = 0;
 
-                if (ImGui::Selectable(s_OutfitName2))
-                {
-                    ImGui::ClearActiveID();
-                    strcpy_s(s_OutfitName, s_OutfitName2);
+                EquipOutfit(
+                    p_GlobalOutfitKit,
+                    s_CurrentCharacterSetIndex,
+                    s_CurrentCharSetCharacterType.data(),
+                    s_CurrentOutfitVariationIndex,
+                    s_LocalHitman.m_pInterfaceRef
+                );
 
-                    s_CurrentCharacterSetIndex = 0;
-                    s_CurrentOutfitVariationIndex = 0;
-
-                    EquipOutfit(
-                        it->second,
-                        s_CurrentCharacterSetIndex,
-                        s_CurrentCharSetCharacterType.data(),
-                        s_CurrentOutfitVariationIndex,
-                        s_LocalHitman.m_pInterfaceRef
-                    );
-
-                    m_GlobalOutfitKit = s_GlobalOutfitKit;
-                }
-            }
-
-            if (s_IsInputTextEnterPressed || (!s_IsInputTextActive && !ImGui::IsWindowFocused()))
-            {
-                ImGui::CloseCurrentPopup();
-            }
-
-            ImGui::EndPopup();
-        }
+                m_GlobalOutfitKit = p_GlobalOutfitKit;
+            },
+            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>&{ return p_Pair.second; }
+        );
 
         ImGui::Text("Character Set Index");
         ImGui::SameLine();
@@ -149,7 +124,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
         {
             if (m_GlobalOutfitKit)
             {
-                for (size_t i = 0; i < m_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i)
+                for (size_t i = 0; i < m_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets.size(); ++i)
                 {
                     const bool s_IsSelected = s_CurrentCharacterSetIndex == i;
 
@@ -160,7 +135,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                         if (m_GlobalOutfitKit)
                         {
                             EquipOutfit(
-                                *m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
+                                m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
                                 s_CurrentOutfitVariationIndex, s_LocalHitman.m_pInterfaceRef
                             );
                         }
@@ -189,7 +164,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                         if (m_GlobalOutfitKit)
                         {
                             EquipOutfit(
-                                *m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
+                                m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
                                 s_CurrentOutfitVariationIndex, s_LocalHitman.m_pInterfaceRef
                             );
                         }
@@ -208,7 +183,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
             if (m_GlobalOutfitKit)
             {
                 const auto s_CurrentCharacterSetIndex2 = s_CurrentCharacterSetIndex;
-                const size_t s_VariationCount = m_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets[
+                const size_t s_VariationCount = m_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
                     s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->
                         m_aVariations.
                         size();
@@ -224,7 +199,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                             if (m_GlobalOutfitKit)
                             {
                                 EquipOutfit(
-                                    *m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
+                                    m_GlobalOutfitKit, s_CurrentCharacterSetIndex, s_CurrentCharSetCharacterType.data(),
                                     s_CurrentOutfitVariationIndex, s_LocalHitman.m_pInterfaceRef
                                 );
                             }
@@ -237,8 +212,8 @@ void Player::OnDrawUI(const bool p_HasFocus)
 
         if (m_GlobalOutfitKit)
         {
-            ImGui::Checkbox("Weapons Allowed", &m_GlobalOutfitKit->m_pInterfaceRef->m_bWeaponsAllowed);
-            ImGui::Checkbox("Authority Figure", &m_GlobalOutfitKit->m_pInterfaceRef->m_bAuthorityFigure);
+            ImGui::Checkbox("Weapons Allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
+            ImGui::Checkbox("Authority Figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
         }
 
         ImGui::Separator();
@@ -273,7 +248,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                 ZActor* actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
                 ZEntityRef s_Ref;
 
-                actor->GetID(&s_Ref);
+                actor->GetID(s_Ref);
 
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
@@ -343,7 +318,7 @@ void Player::OnDrawUI(const bool p_HasFocus)
                 ZActor* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
                 ZEntityRef s_Ref;
 
-                s_Actor->GetID(&s_Ref);
+                s_Actor->GetID(s_Ref);
 
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
@@ -420,14 +395,130 @@ void Player::EquipOutfit(
     }
 }
 
-void Player::EnableInfiniteAmmo()
+void Player::ToggleInvincibility()
+{
+    bool s_IsAICrippleEntityCreated = m_AICrippleEntity;
+
+    if (!s_IsAICrippleEntityCreated)
+    {
+        s_IsAICrippleEntityCreated = CreateAICrippleEntity();
+    }
+
+    if (s_IsAICrippleEntityCreated)
+    {
+        const std::string s_PinName = m_IsInvincible ? "SetHeroInvincible" : "SetHeroVulnerable";
+
+        m_AICrippleEntity.SignalInputPin(s_PinName);
+    }
+}
+
+void Player::ToggleInvisibility()
+{
+    bool s_IsAICrippleEntityCreated = m_AICrippleEntity;
+
+    if (!s_IsAICrippleEntityCreated)
+    {
+        s_IsAICrippleEntityCreated = CreateAICrippleEntity();
+    }
+
+    if (s_IsAICrippleEntityCreated)
+    {
+        const std::string s_PinName = m_IsInvisible ? "SetHeroHidden" : "SetHeroVisible";
+
+        m_AICrippleEntity.SignalInputPin(s_PinName);
+    }
+}
+
+void Player::ToggleInfiniteAmmo()
+{
+    if (m_IsInfiniteAmmoEnabled)
+    {
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+        if (!s_LocalHitman)
+        {
+            Logger::Debug("Local player is not alive.");
+
+            return;
+        }
+
+        bool s_IsHM5CrippleBoxEntityCreated = m_HM5CrippleBoxEntity;
+
+        if (!s_IsHM5CrippleBoxEntityCreated)
+        {
+            s_IsHM5CrippleBoxEntityCreated = CreateHM5CrippleBoxEntity();
+        }
+
+        if (s_IsHM5CrippleBoxEntityCreated)
+        {
+            ZHM5CrippleBox* s_HM5CrippleBox = m_HM5CrippleBoxEntity.QueryInterface<ZHM5CrippleBox>();
+
+            s_HM5CrippleBox->m_bActivateOnStart = true;
+            s_HM5CrippleBox->m_rHitmanCharacter = s_LocalHitman;
+            s_HM5CrippleBox->m_bLimitedAmmo = false;
+
+            s_HM5CrippleBox->Activate(0);
+        }
+    }
+    else
+    {
+        if (m_HM5CrippleBoxEntity.m_pEntity)
+        {
+            Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
+
+            m_HM5CrippleBoxEntity = {};
+        }
+    }
+}
+
+bool Player::CreateAICrippleEntity()
+{
+    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+    if (!s_Scene)
+    {
+        Logger::Error("Scene not loaded!");
+
+        return false;
+    }
+
+    constexpr auto s_AICrippleEntityFactoryId = ResId<"[modules:/zaicrippleentity.class].pc_entitytype">;
+
+    TResourcePtr<ZTemplateEntityFactory> s_AICrippleEntityFactory;
+    Globals::ResourceManager->GetResourcePtr(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId, 0);
+
+    if (!s_AICrippleEntityFactory)
+    {
+        Logger::Error("Resource is not loaded!");
+        
+        return false;
+    }
+
+    SExternalReferences s_ExternalRefs;
+
+    Functions::ZEntityManager_NewEntity->Call(
+        Globals::EntityManager, m_AICrippleEntity, "", s_AICrippleEntityFactory, s_Scene.m_ref, s_ExternalRefs, -1
+    );
+
+    if (!m_AICrippleEntity)
+    {
+        Logger::Error("Failed to spawn AI Cripple Entity entity!");
+
+        return false;
+    }
+
+    return true;
+}
+
+bool Player::CreateHM5CrippleBoxEntity()
 {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene)
     {
         Logger::Debug("Scene not loaded.");
-        return;
+        
+        return false;
     }
 
     constexpr auto s_CrippleBoxFactoryId = ResId<"[modules:/zhm5cripplebox.class].pc_entitytype">;
@@ -438,7 +529,8 @@ void Player::EnableInfiniteAmmo()
     if (!s_CrippleBoxFactory)
     {
         Logger::Debug("Resource is not loaded.");
-        return;
+        
+        return false;
     }
 
     SExternalReferences s_ExternalRefs;
@@ -450,28 +542,22 @@ void Player::EnableInfiniteAmmo()
     if (!m_HM5CrippleBoxEntity)
     {
         Logger::Debug("Failed to spawn entity.");
-        return;
+        
+        return false;
     }
 
-    auto s_LocalHitman = SDK()->GetLocalPlayer();
-
-    if (!s_LocalHitman)
-    {
-        Logger::Debug("Local player is not alive.");
-        return;
-    }
-
-    ZHM5CrippleBox* s_HM5CrippleBox = m_HM5CrippleBoxEntity.QueryInterface<ZHM5CrippleBox>();
-
-    s_HM5CrippleBox->m_bActivateOnStart = true;
-    s_HM5CrippleBox->m_rHitmanCharacter = s_LocalHitman;
-    s_HM5CrippleBox->m_bLimitedAmmo = false;
-
-    s_HM5CrippleBox->Activate(0);
+    return true;
 }
 
-DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool forReload)
+DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene)
 {
+    if (m_AICrippleEntity.m_pEntity)
+    {
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_AICrippleEntity, {});
+
+        m_AICrippleEntity = {};
+    }
+
     if (m_HM5CrippleBoxEntity.m_pEntity)
     {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
@@ -479,7 +565,30 @@ DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool f
         m_HM5CrippleBoxEntity = {};
     }
 
-    m_GlobalOutfitKit = nullptr;
+    m_IsInvincible = false;
+    m_IsInvisible = false;
+    m_IsInfiniteAmmoEnabled = false;
+    m_GlobalOutfitKit = {};
+
+    return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_PLUGIN_DETOUR(Player, void, ZSecuritySystemCameraManager_OnFrameUpdate, ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)
+{
+    if (m_IsInvisible)
+    {
+        return HookResult<void>(HookAction::Return());
+    }
+
+    return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_PLUGIN_DETOUR(Player, void, ZSecuritySystemCamera_FrameUpdate, ZSecuritySystemCamera* th, const SGameUpdateEvent* const updateEvent)
+{
+    if (m_IsInvisible)
+    {
+        return HookResult<void>(HookAction::Return());
+    }
 
     return HookResult<void>(HookAction::Continue());
 }

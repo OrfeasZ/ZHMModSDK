@@ -11,7 +11,7 @@ public:
 
 private:
     DECLARE_PLUGIN_DETOUR(
-        MaxPatchLevel, void*, ZPackageManagerPackage_ZPackageManagerPackage, ZPackageManagerPackage* th, void* a2,
+        MaxPatchLevel, void*, IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo, IPackageManager::SPartitionInfo* th, void* a2,
         const ZString& a3, int a4, int patchLevel
     );
 };

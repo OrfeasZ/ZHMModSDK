@@ -45,6 +45,7 @@ class ZPathfinder;
 class ZInputDeviceManager;
 class ZPackageManagerBase;
 class ZUIText;
+class ZWorldInventory;
 
 namespace bfx {
     class SystemInstance;
@@ -84,7 +85,24 @@ public:
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
+    static void* ZTemplateEntityFactory_vtbl;
+    static void* ZAspectEntityFactory_vtbl;
+    static void* ZCppEntityFactory_vtbl;
+    static void* ZExtendedCppEntityFactory_vtbl;
+    static void* ZUIControlEntityFactory_vtbl;
+    static void* ZRenderMaterialEntityFactory_vtbl;
+    static void* ZBehaviorTreeEntityFactory_vtbl;
+    static void* ZAudioSwitchEntityFactory_vtbl;
+    static void* ZAudioStateEntityFactory_vtbl;
     static void* ZTemplateEntityBlueprintFactory_vtbl;
+    static void* ZAspectEntityBlueprintFactory_vtbl;
+    static void* ZCppEntityBlueprintFactory_vtbl;
+    static void* ZExtendedCppEntityBlueprintFactory_vtbl;
+    static void* ZUIControlBlueprintFactory_vtbl;
+    static void* ZRenderMaterialEntityBlueprintFactory_vtbl;
+    static void* ZBehaviorTreeEntityBlueprintFactory_vtbl;
+    static void* ZAudioSwitchBlueprintFactory_vtbl;
+    static void* ZAudioStateBlueprintFactory_vtbl;
     static ZInputDeviceManager* InputDeviceManager;
     static ZInputActionManager* InputActionManager;
     static int* InputActionManager_BindMem;
@@ -96,4 +114,5 @@ public:
     static ZObjectPool* ZVariantPool2;
     static ZPackageManagerBase** PackageManager;
     static ZUIText* UIText;
+    static ZWorldInventory* WorldInventory;
 };

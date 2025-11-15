@@ -300,7 +300,7 @@ void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> 
     }
 
     ZEntityRef s_Ref;
-    s_CurrentCamera->GetID(&s_Ref);
+    s_CurrentCamera->GetID(s_Ref);
 
     std::ostringstream s_Event;
 
@@ -605,7 +605,7 @@ void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<
     );
 }
 
-void EditorServer::OnSceneClearing(bool p_ForReload) {
+void EditorServer::OnSceneClearing(bool p_FullyUnloadScene) {
     if (!m_Enabled) {
         Logger::Info("EditorServer disabled. Skipping OnSceneClearing.");
         return;
@@ -615,7 +615,7 @@ void EditorServer::OnSceneClearing(bool p_ForReload) {
     }
 
     m_Loop->defer(
-        [this, p_ForReload]() {
+        [this, p_FullyUnloadScene]() {
             if (!m_App) {
                 return;
             }
@@ -625,7 +625,7 @@ void EditorServer::OnSceneClearing(bool p_ForReload) {
             s_Event << "{";
 
             s_Event << write_json("type") << ":" << write_json("sceneClearing") << ",";
-            s_Event << write_json("forReload") << ":" << write_json(p_ForReload);
+            s_Event << write_json("p_FullyUnloadScene") << ":" << write_json(p_FullyUnloadScene);
 
             s_Event << "}";
 
@@ -776,7 +776,7 @@ void EditorServer::SendEntityList(
         s_EventStream << "{";
         s_EventStream << write_json("id") << ":" << write_json(std::format("{:016x}", s_Node->EntityId)) << ",";
         s_EventStream << write_json("source") << ":" << write_json("game") << ",";
-        s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->TBLU.GetID())) << ",";
+        s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->BlueprintFactory.GetID())) << ",";
         s_EventStream << write_json("type") << ":" << write_json(
             (*s_Node->Entity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName
         );

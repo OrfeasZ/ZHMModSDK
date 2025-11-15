@@ -1,10 +1,13 @@
 #pragma once
 
-#include "ZPrimitives.h"
+#include <type_traits>
 
-template <typename T, typename Z>
+template <typename TKey, typename TValue>
 class TPair {
 public:
-    T first;
-    Z second;
+    TPair(const TKey& key, const TValue& value) :
+        first(key), second(value) {}
+
+    TKey first;
+    TValue second;
 };
