@@ -451,7 +451,6 @@ private:
     std::vector<ZEntityRef> m_PendingDynamicEntities;
     std::mutex m_PendingNodeDeletionsMutex;
     std::vector<std::weak_ptr<EntityTreeNode>> m_PendingNodeDeletions;
-    std::jthread m_NodeDeletionThread;
 
     EditorServer m_Server;
 

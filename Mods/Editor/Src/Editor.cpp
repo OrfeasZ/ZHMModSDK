@@ -80,32 +80,6 @@ Editor::Editor() {
     m_QneAddress.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
 
     m_raycastLogging = false;
-
-    /*m_NodeDeletionThread = std::jthread([this] {
-        while (true) {
-            std::vector<std::weak_ptr<EntityTreeNode>> s_NodesToRemove;
-
-            {
-                std::scoped_lock lock(m_PendingNodeDeletionsMutex);
-
-                if (m_PendingNodeDeletions.empty()) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-                    continue;
-                }
-
-                s_NodesToRemove.swap(m_PendingNodeDeletions);
-            }
-
-            for (auto& s_NodeToRemove : s_NodesToRemove) {
-                if (auto s_Node = s_NodeToRemove.lock()) {
-                    DestroyEntityNodeInternal(s_Node, std::nullopt);
-                }
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-    });*/
 }
 
 Editor::~Editor() {

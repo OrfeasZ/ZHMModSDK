@@ -40,7 +40,7 @@ void Editor::UpdateEntityTree(
     std::queue<std::pair<ZEntityBlueprintFactoryBase*, ZEntityRef>> s_NodeQueue;
     std::queue<std::shared_ptr<EntityTreeNode>> s_ParentlessNodes;
 
-    for (const auto& s_Entity : p_Entities) {
+    for (const auto& s_Entity: p_Entities) {
         if (!s_Entity) {
             continue;
         }
@@ -56,7 +56,8 @@ void Editor::UpdateEntityTree(
 
     const auto s_SceneEntity = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene.m_ref;
     const std::shared_ptr<EntityTreeNode> s_SceneNode = p_NodeMap[s_SceneEntity];
-    const std::shared_ptr<EntityTreeNode> s_UnparentedEntitiesNode = s_SceneNode->Children.find("Unparented Entities")->second;
+    const std::shared_ptr<EntityTreeNode> s_UnparentedEntitiesNode = s_SceneNode->Children.find("Unparented Entities")->
+            second;
     std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode;
 
     if (p_AreEntitiesDynamic) {
@@ -102,17 +103,19 @@ void Editor::UpdateEntityTree(
                 if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
                     s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[i].entityName;
                 }
-            }
-            else if (s_IsAspectEntityBlueprintFactory) {
-                const auto s_AspectEntityBlueprintFactory = reinterpret_cast<ZAspectEntityBlueprintFactory*>(s_CurrentFactory);
+            } else if (s_IsAspectEntityBlueprintFactory) {
+                const auto s_AspectEntityBlueprintFactory = reinterpret_cast<ZAspectEntityBlueprintFactory*>(
+                    s_CurrentFactory);
                 const uint32_t s_AspectIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].m_nAspectIdx;
-                const uint32_t s_SubEntityIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].m_nSubentityIdx;
+                const uint32_t s_SubEntityIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].
+                        m_nSubentityIdx;
                 const auto s_TemplateBpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(
                     s_AspectEntityBlueprintFactory->m_aBlueprintFactories[s_AspectIndex]
                 );
 
                 if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
-                    s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[s_SubEntityIndex].entityName;
+                    s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[s_SubEntityIndex].
+                            entityName;
                 }
             }
 
@@ -121,11 +124,12 @@ void Editor::UpdateEntityTree(
             }
 
             const uint64_t s_BaseKey = s_SubEntityId & 0xFFFFFFFFFFFC000F;
-            const bool s_IsEntityIDGenerated = p_AreEntitiesDynamic && Globals::EntityManager->m_DynamicEntityIdToCount.contains(s_BaseKey);
+            const bool s_IsEntityIDGenerated = p_AreEntitiesDynamic && Globals::EntityManager->m_DynamicEntityIdToCount.
+                                               contains(s_BaseKey);
 
             // Format a human-readable name for the entity.
             const auto s_EntityTypeName = (*s_SubEntity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->
-                m_pTypeName;
+                    m_pTypeName;
             const auto s_EntityHumanName = fmt::format(
                 "{} ({:016x}){}",
                 s_EntityName,
@@ -137,29 +141,21 @@ void Editor::UpdateEntityTree(
 
             if (s_SubEntityFactory->IsTemplateEntityBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "TBLU";
-            }
-            else if (s_SubEntityFactory->IsAspectEntityBlueprintFactory()) {
+            } else if (s_SubEntityFactory->IsAspectEntityBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "ASEB";
-            }
-            else if (s_SubEntityFactory->IsCppEntityBlueprintFactory()) {
+            } else if (s_SubEntityFactory->IsCppEntityBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "CBLU";
-            }
-            else if (s_SubEntityFactory->IsExtendedCppEntityBlueprintFactory()) {
+            } else if (s_SubEntityFactory->IsExtendedCppEntityBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "ECPB";
-            }
-            else if (s_SubEntityFactory->IsUIControlBlueprintFactory()) {
+            } else if (s_SubEntityFactory->IsUIControlBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "UICB";
-            }
-            else if (s_SubEntityFactory->IsRenderMaterialEntityBlueprintFactory()) {
+            } else if (s_SubEntityFactory->IsRenderMaterialEntityBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "MATB";
-            }
-            else if (s_SubEntityFactory->IsBehaviorTreeEntityBlueprintFactory()) {
+            } else if (s_SubEntityFactory->IsBehaviorTreeEntityBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "AIBB";
-            }
-            else if (s_SubEntityFactory->IsAudioSwitchBlueprintFactory()) {
+            } else if (s_SubEntityFactory->IsAudioSwitchBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "WSWB";
-            }
-            else if (s_SubEntityFactory->IsAudioStateBlueprintFactory()) {
+            } else if (s_SubEntityFactory->IsAudioStateBlueprintFactory()) {
                 s_ReferencedBlueprintFactoryType = "WSGB";
             }
 
@@ -185,17 +181,16 @@ void Editor::UpdateEntityTree(
                     // If we have already seen the logical parent of this sub-entity, add it to the parent's children.
                     if (p_AreEntitiesDynamic && s_ParentNode->second == s_SceneNode) {
                         s_DynamicEntitiesNode->Children.insert({ s_EntityHumanName, s_SubEntityNode });
-                    }
-                    else {
+                        s_SubEntityNode->Parents.push_back(s_DynamicEntitiesNode);
+                    } else {
                         s_ParentNode->second->Children.insert({ s_EntityHumanName, s_SubEntityNode });
+                        s_SubEntityNode->Parents.push_back(s_ParentNode->second);
                     }
-                }
-                else {
+                } else {
                     // Otherwise, add it to the parentless nodes queue.
                     s_ParentlessNodes.push(s_SubEntityNode);
                 }
-            }
-            else {
+            } else {
                 // If it has no logical parent, add it to the parentless nodes queue.
                 s_ParentlessNodes.push(s_SubEntityNode);
             }
@@ -213,7 +208,7 @@ void Editor::UpdateEntityTree(
     while (!s_ParentlessNodes.empty()) {
         const auto s_Node = s_ParentlessNodes.front();
         s_ParentlessNodes.pop();
-        
+
         // Skip entities from second and later factories referenced by aspect factories
         if (s_Node->Entity &&
             *s_Node->Entity.m_pEntity &&
@@ -231,9 +226,10 @@ void Editor::UpdateEntityTree(
             if (s_ParentNode != p_NodeMap.end()) {
                 if (p_AreEntitiesDynamic && s_ParentNode->second == s_SceneNode) {
                     s_DynamicEntitiesNode->Children.insert({ s_Node->Name, s_Node });
-                }
-                else {
+                    s_Node->Parents.push_back(s_DynamicEntitiesNode);
+                } else {
                     s_ParentNode->second->Children.insert({ s_Node->Name, s_Node });
+                    s_Node->Parents.push_back(s_ParentNode->second);
                 }
 
                 continue;
@@ -242,10 +238,11 @@ void Editor::UpdateEntityTree(
 
         if (p_AreEntitiesDynamic) {
             s_DynamicEntitiesNode->Children.insert({ s_Node->Name, s_Node });
-        }
-        else {
+            s_Node->Parents.push_back(s_DynamicEntitiesNode);
+        } else {
             // Otherwise, add it to the "Unparented Entities" node.
             s_UnparentedEntitiesNode->Children.insert({ s_Node->Name, s_Node });
+            s_Node->Parents.push_back(s_UnparentedEntitiesNode);
         }
     }
 
@@ -267,7 +264,7 @@ void Editor::UpdateEntities() {
     std::vector<ZEntityRef> s_EntsToProcess;
 
     // Add all the brick nodes to the queue.
-    for (const auto& s_Brick : s_SceneCtx->m_aLoadedBricks) {
+    for (const auto& s_Brick: s_SceneCtx->m_aLoadedBricks) {
         auto s_BrickEnt = s_Brick.m_EntityRef;
 
         if (!s_BrickEnt) {
@@ -278,11 +275,9 @@ void Editor::UpdateEntities() {
     }
 
     // Add all custom entities to the queue.
-    for (const auto& s_Entity : m_SpawnedEntities | std::views::values) {
+    for (const auto& s_Entity: m_SpawnedEntities | std::views::values) {
         s_EntsToProcess.push_back(s_Entity);
-    }
-
-    {
+    } {
         std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
 
         m_EntityRefToFactoryRuntimeResourceIDs[s_SceneEnt] = {
@@ -291,7 +286,8 @@ void Editor::UpdateEntities() {
         };
     }
 
-    auto s_SceneBlueprintFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneCtx->m_SceneConfig.m_sceneBlueprint.GetResourceData());
+    auto s_SceneBlueprintFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_SceneCtx->m_SceneConfig.
+        m_sceneBlueprint.GetResourceData());
 
     // Create the root scene node.
     auto s_SceneNode = std::make_shared<EntityTreeNode>(
@@ -317,6 +313,7 @@ void Editor::UpdateEntities() {
     );
 
     s_SceneNode->Children.insert(std::make_pair(s_UnparentedEntitiesNode->Name, s_UnparentedEntitiesNode));
+    s_UnparentedEntitiesNode->Parents.push_back(s_SceneNode);
 
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
     s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
@@ -353,15 +350,14 @@ void Editor::AddDynamicEntitiesToEntityTree(
     );
 
     p_SceneNode->Children.insert(std::make_pair(s_DynamicEntitiesNode->Name, s_DynamicEntitiesNode));
+    s_DynamicEntitiesNode->Parents.push_back(p_SceneNode);
 
-    std::vector<ZEntityRef> s_DynamicEntities;
-
-    {
+    std::vector<ZEntityRef> s_DynamicEntities; {
         std::scoped_lock s_ScopedLock(m_DynamicEntitiesMutex);
 
         s_DynamicEntities.reserve(m_DynamicEntities.size());
 
-        for (const auto& ref : m_DynamicEntities) {
+        for (const auto& ref: m_DynamicEntities) {
             s_DynamicEntities.push_back(ref);
         }
 
@@ -378,19 +374,20 @@ void Editor::ReparentDynamicOutfitEntities(
 ) {
     const auto s_SceneEntity = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene.m_ref;
     const std::shared_ptr<EntityTreeNode> s_SceneNode = p_NodeMap[s_SceneEntity];
-    const std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode = s_SceneNode->Children.find("Dynamic Entities")->second;
+    const std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode = s_SceneNode->Children.find("Dynamic Entities")->
+            second;
 
     std::vector<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodesToReparent;
 
     static STypeID* s_ClothCharacterEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZClothCharacterEntity");
     static STypeID* s_LinkedProxyEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZLinkedProxyEntity");
 
-    for (const auto& [_, s_Node] : s_DynamicEntitiesNode->Children) {
+    for (const auto& [_, s_Node]: s_DynamicEntitiesNode->Children) {
         if (!s_Node->IsPendingDeletion &&
             s_Node->Entity && (
                 s_Node->Entity.QueryInterface<ZClothCharacterEntity>(s_ClothCharacterEntityTypeID) ||
                 s_Node->Entity && s_Node->Entity.QueryInterface<ZLinkedProxyEntity>(s_LinkedProxyEntityTypeID)
-        )) {
+            )) {
             ZEntityRef s_ParentRef = s_Node->Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref;
 
             if (!s_ParentRef) {
@@ -405,10 +402,12 @@ void Editor::ReparentDynamicOutfitEntities(
         }
     }
 
-    for (auto& [s_ParentNode, s_Node] : s_NodesToReparent) {
+    for (auto& [s_ParentNode, s_Node]: s_NodesToReparent) {
+        std::erase(s_Node->Parents, s_DynamicEntitiesNode);
         s_DynamicEntitiesNode->Children.erase(s_Node->Name);
 
         s_ParentNode->Children.insert({ s_Node->Name, s_Node });
+        s_Node->Parents.push_back(s_ParentNode);
 
         s_Node->Entity.SetLogicalParent(
             s_Node->Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref
@@ -421,9 +420,9 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
 
     if (
         (!m_EntityIdSearchInput.empty() ||
-        !m_EntityTypeSearchInput.empty() ||
-        !m_EntityNameSearchInput.empty() ||
-        m_EntityViewMode != EntityViewMode::All) &&
+         !m_EntityTypeSearchInput.empty() ||
+         !m_EntityNameSearchInput.empty() ||
+         m_EntityViewMode != EntityViewMode::All) &&
         !m_FilteredEntityTreeNodes.contains(p_Node.get())
     ) {
         return;
@@ -437,7 +436,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     const auto s_IsSelected = s_Entity == m_SelectedEntity;
 
     ImGuiTreeNodeFlags s_Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
-            ImGuiTreeNodeFlags_SpanAvailWidth;
+                                 ImGuiTreeNodeFlags_SpanAvailWidth;
 
     if (p_Node->Children.empty()) {
         s_Flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
@@ -450,20 +449,17 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
             ImGui::SetScrollHereY();
             m_ScrollToEntity = false;
         }
-    }
-    else if (m_ScrollToEntity && m_SelectedEntity) {
+    } else if (m_ScrollToEntity && m_SelectedEntity) {
         bool s_ShouldExpandNode = false;
 
         if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
             s_ShouldExpandNode = true;
-        }
-        else if (s_Entity == m_DynamicEntitiesNodeEntityRef ||
-            s_Entity == m_UnparentedEntitiesNodeEntityRef
+        } else if (s_Entity == m_DynamicEntitiesNodeEntityRef ||
+                   s_Entity == m_UnparentedEntitiesNodeEntityRef
         ) {
-            for (const auto& [_, s_Child] : p_Node->Children) {
+            for (const auto& [_, s_Child]: p_Node->Children) {
                 if (s_Child->Entity == m_SelectedEntity ||
-                    (s_Child->Entity && m_SelectedEntity.IsAnyParent(s_Child->Entity)))
-                {
+                    (s_Child->Entity && m_SelectedEntity.IsAnyParent(s_Child->Entity))) {
                     s_ShouldExpandNode = true;
                     break;
                 }
@@ -502,7 +498,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     }
 
     if (s_Open) {
-        for (const auto& s_Child : p_Node->Children) {
+        for (const auto& s_Child: p_Node->Children) {
             RenderEntity(s_Child.second);
         }
 
@@ -560,7 +556,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
     ) {
         return false;
     }
-    
+
     bool s_Matches = false;
 
     if (m_EntityViewMode == EntityViewMode::All ||
@@ -594,7 +590,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
 
     bool s_ChildMatches = false;
 
-    for (auto& child : p_Node->Children) {
+    for (auto& child: p_Node->Children) {
         if (FilterEntityTree(child.second.get())) {
             s_ChildMatches = true;
         }
@@ -609,8 +605,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
             ) {
                 m_DirectEntityTreeNodeMatches.push_back(p_Node);
             }
-        }
-        else {
+        } else {
             m_DirectEntityTreeNodeMatches.push_back(p_Node);
         }
     }
@@ -625,8 +620,8 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
 }
 
 void Editor::DrawEntityTree() {
-    ImGui::SetNextWindowPos({0, 110}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({615, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos({ 0, 110 }, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ 615, ImGui::GetIO().DisplaySize.y - 110 }, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_CATEGORY " Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
@@ -653,7 +648,7 @@ void Editor::DrawEntityTree() {
 
             s_TypeNames.reserve(typeRegistry->m_types.size());
 
-            for (auto& pair : typeRegistry->m_types) {
+            for (auto& pair: typeRegistry->m_types) {
                 if (!pair.second->typeInfo()->isClass()) {
                     continue;
                 }
@@ -732,7 +727,6 @@ void Editor::DrawEntityTree() {
         if (!m_EntityIdSearchInput.empty() ||
             !m_EntityTypeSearchInput.empty() ||
             !m_EntityNameSearchInput.empty()) {
-
             if (!m_FilteredEntityTreeNodes.empty() &&
                 m_FilteredEntityTreeNodes.size() == 1 &&
                 *m_FilteredEntityTreeNodes.begin() == m_CachedEntityTree.get()) {
@@ -747,8 +741,7 @@ void Editor::DrawEntityTree() {
 
         if (m_CachedEntityTree) {
             RenderEntity(m_CachedEntityTree);
-        }
-        else {
+        } else {
             ImGui::Text("No entities loaded. You may want to press the 'Rebuild entity tree' button.");
         }
 
@@ -781,8 +774,7 @@ void Editor::DrawEntityTree() {
                 m_SelectedEntity
             );
         }*/
-    }
-    else {
+    } else {
         ImGui::Text("No scene loaded.");
     }
 
@@ -793,7 +785,11 @@ void Editor::DrawEntityTree() {
     }
 }
 
-void Editor::OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, const std::optional<std::string> p_ClientId) {
+void Editor::OnSelectEntity(
+    ZEntityRef p_Entity,
+    bool p_ShouldScrollToEntity,
+    const std::optional<std::string> p_ClientId
+) {
     const bool s_DifferentEntity = m_SelectedEntity.m_pEntity != p_Entity.m_pEntity;
 
     m_ScrollToEntity = p_ShouldScrollToEntity && p_Entity.GetEntity() != nullptr;
@@ -806,14 +802,14 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, co
         }
 
         m_SelectedEntity = p_Entity;
-    }
-    else {
+    } else {
         m_SelectedEntity = nullptr; //Unselect it
     }
 
     if (!m_SelectionForFreeCameraEditorStyleEntity) {
         m_SelectionForFreeCameraEditorStyleEntity = reinterpret_cast<ZSelectionForFreeCameraEditorStyleEntity*>(calloc(
-            1, sizeof(ZSelectionForFreeCameraEditorStyleEntity)
+            1,
+            sizeof(ZSelectionForFreeCameraEditorStyleEntity)
         ));
 
         TEntityRef<ZSelectionForFreeCameraEditorStyleEntity> s_EntityRef;
@@ -834,7 +830,7 @@ void Editor::OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, co
 
 void Editor::OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
     m_EntityDestructionMutex.lock();
-    m_EntitiesToDestroy.push_back({p_Entity, std::move(p_ClientId)});
+    m_EntitiesToDestroy.push_back({ p_Entity, std::move(p_ClientId) });
     m_EntityDestructionMutex.unlock();
 }
 
@@ -856,27 +852,13 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
         const auto s_NodeToRemove = s_EntityIter->second;
         m_CachedEntityTreeMap.erase(s_EntityIter);
 
-        // Walk the tree and remove any references to this entity non-recursively.
-        if (m_CachedEntityTree) {
-            // Use a queue to traverse the tree non-recursively (BFS).
-            std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
-            s_NodeQueue.push(m_CachedEntityTree);
-
-            while (!s_NodeQueue.empty()) {
-                auto s_CurrentNode = s_NodeQueue.front();
-                s_NodeQueue.pop();
-
-                // Check if any of this node's children is the node we want to remove.
-                for (auto it = s_CurrentNode->Children.begin(); it != s_CurrentNode->Children.end();) {
-                    if (it->second == s_NodeToRemove) {
-                        // Remove this child from the parent's children.
-                        it = s_CurrentNode->Children.erase(it);
-                    }
-                    else {
-                        // Add this child to the queue for further processing.
-                        s_NodeQueue.push(it->second);
-                        ++it;
-                    }
+        // Remove it from the children of all its parents.
+        for (auto& s_Parent: s_NodeToRemove->Parents) {
+            for (auto it = s_Parent->Children.begin(); it != s_Parent->Children.end();) {
+                if (it->second == s_NodeToRemove) {
+                    it = s_Parent->Children.erase(it);
+                } else {
+                    ++it;
                 }
             }
         }
@@ -901,7 +883,9 @@ void Editor::DestroyEntityNodeInternal(
     std::scoped_lock lock(m_CachedEntityTreeMutex);
 
     if (p_NodeToRemove->Entity) {
+        m_CachedEntityTreeMap.erase(p_NodeToRemove->Entity);
         m_EntityNames.erase(p_NodeToRemove->Entity);
+
         if (const auto p_Type = p_NodeToRemove->Entity->GetType()) {
             m_SpawnedEntities.erase(p_Type->m_nEntityId);
         }
@@ -911,31 +895,12 @@ void Editor::DestroyEntityNodeInternal(
         }
     }
 
-    for (auto it = m_CachedEntityTreeMap.begin(); it != m_CachedEntityTreeMap.end();) {
-        if (it->second == p_NodeToRemove) {
-            it = m_CachedEntityTreeMap.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
-
-    if (m_CachedEntityTree) {
-        std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
-        s_NodeQueue.push(m_CachedEntityTree);
-
-        while (!s_NodeQueue.empty()) {
-            auto s_CurrentNode = s_NodeQueue.front();
-            s_NodeQueue.pop();
-
-            for (auto it = s_CurrentNode->Children.begin(); it != s_CurrentNode->Children.end();) {
-                if (it->second == p_NodeToRemove) {
-                    it = s_CurrentNode->Children.erase(it);
-                }
-                else {
-                    s_NodeQueue.push(it->second);
-                    ++it;
-                }
+    for (auto& s_Parent: p_NodeToRemove->Parents) {
+        for (auto it = s_Parent->Children.begin(); it != s_Parent->Children.end();) {
+            if (it->second == p_NodeToRemove) {
+                it = s_Parent->Children.erase(it);
+            } else {
+                ++it;
             }
         }
     }
@@ -951,7 +916,10 @@ void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, 
     m_Server.OnEntityNameChanged(p_Entity, std::move(p_ClientId));
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
+DEFINE_PLUGIN_DETOUR(
+    Editor,
+    ZEntityRef*,
+    ZEntityManager_NewUninitializedEntity,
     ZEntityManager* th,
     ZEntityRef& result,
     const ZString& sDebugName,
@@ -961,9 +929,16 @@ DEFINE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
     const SExternalReferences& externalRefs,
     bool unk0
 ) {
-    ZEntityRef* s_EntityRef = p_Hook->CallOriginal(th, result, sDebugName, pEntityFactory, logicalParent, entityID, externalRefs, unk0);
-
-    {
+    ZEntityRef* s_EntityRef = p_Hook->CallOriginal(
+        th,
+        result,
+        sDebugName,
+        pEntityFactory,
+        logicalParent,
+        entityID,
+        externalRefs,
+        unk0
+    ); {
         std::scoped_lock lock(m_DynamicEntitiesMutex);
 
         m_DynamicEntities.insert(result);
@@ -978,7 +953,10 @@ DEFINE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
     return HookResult<ZEntityRef*>(HookAction::Return(), s_EntityRef);
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity,
+DEFINE_PLUGIN_DETOUR(
+    Editor,
+    void,
+    ZEntityManager_DeleteEntity,
     ZEntityManager* th,
     const ZEntityRef& entityRef,
     const SExternalReferences& externalRefs
@@ -986,22 +964,29 @@ DEFINE_PLUGIN_DETOUR(Editor, void, ZEntityManager_DeleteEntity,
     if (m_SelectedEntity == entityRef) {
         m_SelectedEntity = nullptr;
     }
-    
+
+    m_CachedEntityTreeMutex.lock_shared();
+    std::shared_ptr<EntityTreeNode> s_NodeToRemove;
+
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         auto it = m_CachedEntityTreeMap.find(entityRef);
 
         if (it != m_CachedEntityTreeMap.end()) {
-            it->second->IsPendingDeletion = true;
-
-            //std::scoped_lock s_ScopedLock(m_PendingNodeDeletionsMutex);
-
-            //m_PendingNodeDeletions.push_back(it->second);
+            s_NodeToRemove = it->second;
         }
     }
 
+    m_CachedEntityTreeMutex.unlock_shared();
+
+    if (s_NodeToRemove) {
+        s_NodeToRemove->IsPendingDeletion = true;
+        DestroyEntityNodeInternal(s_NodeToRemove, std::nullopt);
+    }
+
+    //
+
     {
         std::scoped_lock lock(m_DynamicEntitiesMutex);
-
         m_DynamicEntities.erase(entityRef);
     }
 
