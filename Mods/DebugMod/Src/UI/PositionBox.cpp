@@ -9,7 +9,8 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
         return;
     }
 
-    ImGui::SetWindowSize(ImVec2(588.f, 605.f));
+    const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
+    ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.30f, viewportSize.y * 0.55f), ImGuiCond_FirstUseEver);
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
     const auto s_Showing = ImGui::Begin("POSITIONS", &m_PositionsMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());

@@ -220,8 +220,9 @@ void OnlineTools::OnDrawMenu() {
 }
 
 void OnlineTools::SettingsMenu() {
+    const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
+    ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.23f, viewportSize.y * 0.35f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(ICON_MD_PUBLIC " OnlineTools", &m_ShowSettings)) {
-        ImGui::SetWindowSize(ImVec2(588.f, 605.f));
 
         // Online Settings
         ImGui::SeparatorText("Settings");
@@ -354,9 +355,9 @@ void OnlineTools::SettingsMenu() {
 }
 
 void OnlineTools::HelpMenu() {
+    const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
+    ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.2f, viewportSize.y * 0.24f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(ICON_MD_PUBLIC " OnlineTools - Help", &m_ShowHelp)) {
-        ImGui::SetWindowSize(ImVec2(400.f, 446.f));
-
         ImGui::SeparatorText("Quick Start");
 
         ImGui::TextWrapped(
