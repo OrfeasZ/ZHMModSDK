@@ -887,8 +887,6 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneI
     m_FilteredEntityTreeNodes.clear();
     m_DirectEntityTreeNodeMatches.clear();
 
-    m_NavpAreas.clear();
-
     if (m_EditorData) {
         m_EditorCamera = {};
         m_EditorCameraRT = {};
@@ -946,8 +944,6 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_PendingDynamicEntities.clear();
     m_DynamicEntities.clear();
-
-    m_NavpAreas.clear();
 
     m_Server.OnSceneClearing(p_FullyUnloadScene);
 

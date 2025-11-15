@@ -58,7 +58,6 @@ private:
     static bool SendEntitiesDetails(
         WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities
     );
-    static void SendDoneLoadingNavpMessage(WebSocket* p_Socket);
     static void WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity);
     static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);
     static void WriteVector3(std::ostream& p_Stream, double p_X, double p_Y, double p_Z);
