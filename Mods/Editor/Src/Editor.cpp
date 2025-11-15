@@ -153,7 +153,7 @@ void Editor::Init() {
 
 void Editor::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR")) {
-        m_MenuVisible = !m_MenuVisible;
+        m_SettingsVisible = !m_SettingsVisible;
     }
 
     /*if (ImGui::Button(ICON_MD_VIDEO_SETTINGS "  EDITOR"))
@@ -225,7 +225,7 @@ void Editor::OnDrawMenu() {
 }
 
 void Editor::ToggleEditorServerEnabled() {
-    m_Server.SetEnabled(!m_Server.GetEnabled());
+    EditorServer::SetEnabled(!EditorServer::GetEnabled());
 }
 
 void Editor::CopyToClipboard(const std::string& p_String) const {
@@ -310,46 +310,7 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
 
 void Editor::OnDrawUI(bool p_HasFocus) {
     auto s_ImgGuiIO = ImGui::GetIO();
-
-    if (m_MenuVisible) {
-        const auto s_Center = ImGui::GetMainViewport()->GetCenter();
-        ImGui::SetNextWindowPos(s_Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-        ImGui::PushFont(SDK()->GetImGuiBlackFont());
-        const auto s_MenuExpanded = ImGui::Begin(ICON_MD_VIDEO_SETTINGS "  Editor", &m_MenuVisible);
-        ImGui::PushFont(SDK()->GetImGuiRegularFont());
-
-        if (s_MenuExpanded) {
-            if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS "  SHOW EDITOR WINDOWS", &m_EditorWindowsVisible)) {
-                SetSettingBool("general", "editor_windows_visible", m_EditorWindowsVisible);
-            }
-            bool s_ServerEnabled = m_Server.GetEnabled();
-            if (ImGui::Checkbox(ICON_MD_TERMINAL "  ENABLE EDITOR SERVER", &s_ServerEnabled)) {
-                ToggleEditorServerEnabled();
-            }
-
-            ImGui::Spacing();
-            ImGui::Text("Entity Highlight Mode");
-
-            const int s_EntityHighlightMode = static_cast<int>(m_EntityHighlightMode);
-
-            if (ImGui::RadioButton("Lines", s_EntityHighlightMode == 0)) {
-                m_EntityHighlightMode = EntityHighlightMode::Lines;
-            }
-
-            ImGui::SameLine();
-
-            if (ImGui::RadioButton("Lines and Rectangles", s_EntityHighlightMode == 1)) {
-                m_EntityHighlightMode = EntityHighlightMode::LinesAndTriangles;
-            }
-
-            ImGui::Checkbox("Raycast logging", &m_raycastLogging);
-        }
-
-        ImGui::PopFont();
-        ImGui::End();
-        ImGui::PopFont();
-    }
+    DrawSettings(p_HasFocus);
 
     if (m_EditorWindowsVisible) {
         DrawEntityTree();
@@ -377,6 +338,46 @@ void Editor::OnDrawUI(bool p_HasFocus) {
 
         ImGui::End();
     }
+}
+
+void Editor::DrawSettings(const bool p_HasFocus) {
+    if (!m_SettingsVisible || !p_HasFocus) {
+        return;
+    }
+
+    ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    ImGui::PushFont(SDK()->GetImGuiRegularFont());
+    if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " EDITOR", &m_SettingsVisible)) {
+        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y), ImGuiCond_FirstUseEver);
+        
+        if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS "  SHOW EDITOR WINDOWS", &m_EditorWindowsVisible)) {
+            SetSettingBool("general", "editor_windows_visible", m_EditorWindowsVisible);
+        }
+        bool s_ServerEnabled = m_Server.GetEnabled();
+        if (ImGui::Checkbox(ICON_MD_TERMINAL "  ENABLE EDITOR SERVER", &s_ServerEnabled)) {
+            ToggleEditorServerEnabled();
+        }
+
+        ImGui::Spacing();
+        ImGui::Text("Entity Highlight Mode");
+
+        const int s_EntityHighlightMode = static_cast<int>(m_EntityHighlightMode);
+
+        if (ImGui::RadioButton("Lines", s_EntityHighlightMode == 0)) {
+            m_EntityHighlightMode = EntityHighlightMode::Lines;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::RadioButton("Lines and Rectangles", s_EntityHighlightMode == 1)) {
+            m_EntityHighlightMode = EntityHighlightMode::LinesAndTriangles;
+        }
+
+        ImGui::Checkbox("Raycast logging", &m_raycastLogging);
+    }
+    ImGui::PopFont();
+    ImGui::End();
+    ImGui::PopFont();
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
@@ -864,17 +865,6 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
-    static bool s_BypassedOnce = false;
-
-    if ((p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
-        p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
-        //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/users/notex/test.entity";
-        s_BypassedOnce = true;
-        p_Parameters.m_SceneResource =
-                "assembly:/_PRO/Scenes/Missions/TheFacility/_Scene_Mission_Polarbear_Module_002_B.entity";
-        //    p_SceneData.m_sceneName = "assembly:/_pro/scenes/missions/golden/mission_gecko/scene_gecko_basic.entity";*/
-    }
-
     if (m_SelectionForFreeCameraEditorStyleEntity) {
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
     }

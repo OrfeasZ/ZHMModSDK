@@ -291,6 +291,11 @@ void ModSDK::LoadConfiguration() {
             m_EnableSentry = s_Value == "true" || s_Value == "1";
         }
 
+        if (s_Mod.second.has("auto_load_scene")) {
+            const auto s_Value = s_Mod.second.get("auto_load_scene");
+            m_AutoLoadScene = s_Value;
+        }
+
         if (s_Mod.second.has("game_state_logging")) {
             const auto s_Value = s_Mod.second.get("game_state_logging");
             m_IsGameStateLoggingEnabled = s_Value == "true" || s_Value == "1";
@@ -1698,6 +1703,16 @@ DEFINE_DETOUR_WITH_CONTEXT(
         m_DirectXTKRenderer->ClearDsvIndex();
     }
 
+    static bool s_BypassedOnce = false;
+
+    if ((p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
+        p_SceneData.m_sceneName == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
+
+        s_BypassedOnce = true;
+        if (!m_AutoLoadScene.empty()) {
+            p_SceneData.m_sceneName = m_AutoLoadScene;
+        }
+    }
     return {HookAction::Continue()};
 }
 

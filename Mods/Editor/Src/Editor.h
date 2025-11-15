@@ -112,6 +112,8 @@ private:
 
     void DrawLibrary();
 
+    void DrawSettings(bool p_HasFocus);
+
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
     void FilterEntityTree();
@@ -150,7 +152,7 @@ private:
 
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
-    void ToggleEditorServerEnabled();
+    static void ToggleEditorServerEnabled();
     static void FindAlocForZGeomEntityNode(
         std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
         const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType
@@ -391,7 +393,7 @@ private:
     double m_AngleSnapValue = 90.0;
     double m_ScaleSnapValue = 1.0;
 
-    bool m_MenuVisible = false;
+    bool m_SettingsVisible = false;
     bool m_EditorWindowsVisible = true;
 
     float4 m_From;
