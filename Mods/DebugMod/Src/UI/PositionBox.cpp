@@ -192,9 +192,8 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
                 );
             }
         }
-
-        ImGui::PopFont();
-        ImGui::End();
-        ImGui::PopFont();
     }
+    ImGui::PopFont();
+    ImGui::End();
+    ImGui::PopFont();
 }
