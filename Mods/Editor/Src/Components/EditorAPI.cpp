@@ -397,6 +397,12 @@ void Editor::FindAlocs(
 
         // Add children to the queue.
         for (auto& node : s_Node->Children | std::views::values) {
+            if (node->Entity == m_DynamicEntitiesNodeEntityRef ||
+                node->Entity == m_UnparentedEntitiesNodeEntityRef ||
+                node->IsDynamicEntity ||
+                node->IsPendingDeletion) {
+                continue;
+            }
             std::string s_ChildId = std::format("{:016x}", node->Entity->GetType()->m_nEntityId);
             s_NodeQueue.push(std::pair {s_Node, node});
         }
@@ -424,6 +430,12 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
         // Access the first node in the queue
         auto s_Node = s_NodeQueue.front();
         s_NodeQueue.pop();
+        if (s_Node->Entity == m_DynamicEntitiesNodeEntityRef ||
+           s_Node->Entity == m_UnparentedEntitiesNodeEntityRef ||
+           s_Node->IsDynamicEntity ||
+           s_Node->IsPendingDeletion) {
+            continue;
+        }
         const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
 
         if (char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
