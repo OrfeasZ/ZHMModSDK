@@ -38,7 +38,7 @@ public:
     void OnEntitySpawned(ZEntityRef p_Entity, std::optional<std::string> p_ByClient);
     void OnEntityDestroying(uint64_t p_EntityId, std::optional<std::string> p_ByClient);
     void OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks);
-    void OnSceneClearing(bool p_ForReload);
+    void OnSceneClearing(bool p_FullyUnloadScene);
     void OnEntityTreeRebuilt();
     static void SetEnabled(bool p_Enabled);
     static bool GetEnabled();
@@ -58,7 +58,6 @@ private:
     static bool SendEntitiesDetails(
         WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities
     );
-    static void SendDoneLoadingNavpMessage(WebSocket* p_Socket);
     static void WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity);
     static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);
     static void WriteVector3(std::ostream& p_Stream, double p_X, double p_Y, double p_Z);

@@ -8,6 +8,8 @@
 
 #include <spdlog/fmt/ostr.h>
 
+#include "Hash.h"
+
 class ZString {
 public:
     class ZImpl {
@@ -151,6 +153,10 @@ public:
 
     operator std::string_view() const {
         return ToStringView();
+    }
+
+    uint32_t GetHashCode() const {
+        return Hash::Fnv1a(c_str(), size());
     }
 
 public:

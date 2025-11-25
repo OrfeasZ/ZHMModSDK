@@ -11,14 +11,14 @@
 #include <Glacier/ZItem.h>
 #include <Glacier/SExternalReferences.h>
 
-#include <Util/StringUtils.h>
+#include <Util/ImGuiUtils.h>
 
 void Assets::Init() {
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Assets::OnClearScene);
 }
 
 void Assets::OnDrawMenu() {
-    if (ImGui::Button(ICON_MD_TUNE " ASSETS MENU")) {
+    if (ImGui::Button(ICON_MD_TUNE " ASSETS")) {
         m_AssetsMenuActive = !m_AssetsMenuActive;
     }
 }
@@ -39,62 +39,34 @@ void Assets::OnDrawUI(bool p_HasFocus) {
 
         ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
 
-        static char s_PropTitle[2048]{ "" };
-        static char s_PropAssemblyPath[2048]{ "" };
+        static char s_PropTitle[2048] { "" };
+        static char s_PropAssemblyPath[2048] { "" };
 
         static int s_RepositoryPropSpawnCount = 1;
         static int s_NonRepositoryPropSpawnCount = 1;
         static int s_ActorSpawnCount = 1;
 
         static int s_WorldInventoryButton = 1;
-        static char s_ActorName[2048]{};
+        static char s_ActorName[2048] {};
 
         ImGui::Text("Repository Props");
         ImGui::Text("");
         ImGui::Text("Prop Title");
         ImGui::SameLine();
 
-        const bool s_IsInputTextEnterPressed = ImGui::InputText(
-            "##PropRepositoryID", s_PropTitle, sizeof(s_PropTitle),
-            ImGuiInputTextFlags_EnterReturnsTrue
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "##RepositoryProps",
+            s_PropTitle,
+            sizeof(s_PropTitle),
+            m_RepositoryProps,
+            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
+            [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+                for (size_t i = 0; i < s_RepositoryPropSpawnCount; ++i) {
+                    SpawnRepositoryProp(p_Id, s_WorldInventoryButton == 1);
+                }
+            }
         );
-        const bool s_IsInputTextActive = ImGui::IsItemActive();
-
-        if (ImGui::IsItemActivated()) {
-            ImGui::OpenPopup("##popup");
-        }
-
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
-        ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
-
-        if (ImGui::BeginPopup(
-            "##popup",
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_ChildWindow
-        )) {
-            for (auto& [s_Id, s_Name] : m_RepositoryProps) {
-                if (!Util::StringUtils::FindSubstring(s_Name, s_PropTitle)) {
-                    continue;
-                }
-
-                std::string s_ButtonId = std::format("{}###{}", s_Name, s_Id.ToString().c_str());
-
-                if (ImGui::Selectable(s_ButtonId.c_str())) {
-                    ImGui::ClearActiveID();
-                    strcpy_s(s_PropTitle, s_Name.c_str());
-
-                    for (size_t i = 0; i < s_RepositoryPropSpawnCount; ++i) {
-                        SpawnRepositoryProp(s_Id, s_WorldInventoryButton == 1);
-                    }
-                }
-            }
-
-            if (s_IsInputTextEnterPressed || (!s_IsInputTextActive && !ImGui::IsWindowFocused())) {
-                ImGui::CloseCurrentPopup();
-            }
-
-            ImGui::EndPopup();
-        }
 
         if (ImGui::RadioButton("Add To World", s_WorldInventoryButton == 1)) {
             s_WorldInventoryButton = 1;
@@ -139,69 +111,46 @@ void Assets::OnDrawUI(bool p_HasFocus) {
 
         ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
 
-        static char s_OutfitName[2048]{ "" };
+        static char s_OutfitName[2048] { "" };
 
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
-        const bool s_IsInputTextEnterPressed2 = ImGui::InputText(
-            "##OutfitName", s_OutfitName, sizeof(s_OutfitName), ImGuiInputTextFlags_EnterReturnsTrue
-        );
-        const bool s_IsInputTextActive2 = ImGui::IsItemActive();
-
-        if (ImGui::IsItemActivated()) {
-            ImGui::OpenPopup("##popup2");
-        }
-
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
-        ImGui::SetNextWindowSize(ImVec2(ImGui::GetItemRectSize().x, 300));
-
         static ZRepositoryID s_RepositoryId = ZRepositoryID("");
-        static TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit = nullptr;
+        static TEntityRef<ZGlobalOutfitKit> s_GlobalOutfitKit = {};
         static uint8_t s_CurrentCharacterSetIndex = 0;
         static std::string s_CurrentCharSetCharacterType = "HeroA";
         static uint8_t s_CurrentOutfitVariationIndex = 0;
 
-        if (ImGui::BeginPopup(
-            "##popup2",
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_ChildWindow
-        )) {
-            for (auto it = s_ContentKitManager->m_repositoryGlobalOutfitKits.begin(); it != s_ContentKitManager->
-                m_repositoryGlobalOutfitKits.end(); ++it) {
-                TEntityRef<ZGlobalOutfitKit>* s_GlobalOutfitKit2 = &it->second;
-                const std::string s_OutfitName2 = s_GlobalOutfitKit2->m_pInterfaceRef->m_sCommonName.c_str();
-
-                if (s_OutfitName2.empty()) {
-                    continue;
-                }
-
-                if (!Util::StringUtils::FindSubstring(s_OutfitName2, s_OutfitName)) {
-                    continue;
-                }
-
-                if (ImGui::Selectable(s_OutfitName2.c_str())) {
-                    ImGui::ClearActiveID();
-                    strcpy_s(s_OutfitName, s_OutfitName2.c_str());
-
-                    s_RepositoryId = it->first;
-                    s_GlobalOutfitKit = s_GlobalOutfitKit2;
-                }
-            }
-
-            if (s_IsInputTextEnterPressed2 || (!s_IsInputTextActive2 && !ImGui::IsWindowFocused())) {
-                ImGui::CloseCurrentPopup();
-            }
-
-            ImGui::EndPopup();
-        }
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "##OutfitsPopup",
+            s_OutfitName,
+            sizeof(s_OutfitName),
+            s_ContentKitManager->m_repositoryGlobalOutfitKits,
+            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> std::string {
+                return std::string(
+                    p_Pair.second.m_pInterfaceRef->m_sCommonName.c_str(),
+                    p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
+                );
+            },
+            [&](
+        const ZRepositoryID& p_RepoId,
+        const std::string& p_Name,
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit
+    ) {
+                s_RepositoryId = p_RepoId;
+                s_GlobalOutfitKit = p_GlobalOutfitKit;
+            },
+            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
+        );
 
         ImGui::Text("Character Set Index");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(s_CurrentCharacterSetIndex).data())) {
             if (s_GlobalOutfitKit) {
-                for (size_t i = 0; i < s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets.size(); ++i) {
+                for (size_t i = 0; i < s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets.size(); ++i) {
                     const bool s_IsSelected = s_CurrentCharacterSetIndex == i;
 
                     if (ImGui::Selectable(std::to_string(s_CurrentCharacterSetIndex).data(), s_IsSelected)) {
@@ -218,7 +167,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
 
         if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
             if (s_GlobalOutfitKit) {
-                for (const auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
+                for (const auto& m_CharSetCharacterType: m_CharSetCharacterTypes) {
                     const bool s_IsSelected = s_CurrentCharSetCharacterType == m_CharSetCharacterType;
 
                     if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
@@ -234,12 +183,12 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
-            if (s_GlobalOutfitKit)
-            {
+            if (s_GlobalOutfitKit) {
                 const uint8_t s_CurrentCharacterSetIndex2 = s_CurrentCharacterSetIndex;
                 const TEntityRef<ZOutfitVariationCollection>& s_OutfitVariationCollection =
-                    s_GlobalOutfitKit->m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex2];
-                const ZCharsetCharacterType* s_CharsetCharacterType = s_OutfitVariationCollection.m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef;
+                        s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex2];
+                const ZCharsetCharacterType* s_CharsetCharacterType = s_OutfitVariationCollection.m_pInterfaceRef->
+                        m_aCharacters[0].m_pInterfaceRef;
                 const size_t s_VariationCount = s_CharsetCharacterType->m_aVariations.size();
 
                 for (size_t i = 0; i < s_VariationCount; ++i) {
@@ -291,9 +240,12 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
         const auto s_Controllers = &s_Character->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
         const auto s_Inventory = static_cast<ZCharacterSubcontrollerInventory*>((*s_Controllers)[6].m_pInterfaceRef);
 
-        TArray<ZRepositoryID> s_ModifierIds;
-        Functions::ZCharacterSubcontrollerInventory_AddDynamicItemToInventory->Call(
-            s_Inventory, p_RepositoryId, "", &s_ModifierIds, 2
+        Functions::ZCharacterSubcontrollerInventory_CreateItem->Call(
+            s_Inventory,
+            p_RepositoryId,
+            "",
+            {},
+            ZCharacterSubcontrollerInventory::ECreateItemType::ECIT_ContractItem
         );
 
         return;
@@ -325,11 +277,23 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     SExternalReferences s_ExternalRefs;
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager,
+        s_NewEntity,
+        "",
+        s_Resource,
+        s_Scene.m_ref,
+        s_ExternalRefs,
+        -1
     );
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity2, "", s_Resource2, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager,
+        s_NewEntity2,
+        "",
+        s_Resource2,
+        s_Scene.m_ref,
+        s_ExternalRefs,
+        -1
     );
 
     if (!s_NewEntity) {
@@ -366,13 +330,13 @@ void Assets::SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath) {
     const Hash::MD5Hash s_Hash = Hash::MD5(std::string_view(p_PropAssemblyPath));
 
     const uint32_t s_IdHigh = ((s_Hash.A >> 24) & 0x000000FF)
-        | ((s_Hash.A >> 8) & 0x0000FF00)
-        | ((s_Hash.A << 8) & 0x00FF0000);
+                              | ((s_Hash.A >> 8) & 0x0000FF00)
+                              | ((s_Hash.A << 8) & 0x00FF0000);
 
     const uint32_t s_IdLow = ((s_Hash.B >> 24) & 0x000000FF)
-        | ((s_Hash.B >> 8) & 0x0000FF00)
-        | ((s_Hash.B << 8) & 0x00FF0000)
-        | ((s_Hash.B << 24) & 0xFF000000);
+                             | ((s_Hash.B >> 8) & 0x0000FF00)
+                             | ((s_Hash.B << 8) & 0x00FF0000)
+                             | ((s_Hash.B << 24) & 0xFF000000);
 
     const auto s_RuntimeResourceID = ZRuntimeResourceID(s_IdHigh, s_IdLow);
 
@@ -388,7 +352,13 @@ void Assets::SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath) {
     SExternalReferences s_ExternalRefs;
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager,
+        s_NewEntity,
+        "",
+        s_Resource,
+        s_Scene.m_ref,
+        s_ExternalRefs,
+        -1
     );
 
     if (!s_NewEntity) {
@@ -414,7 +384,7 @@ void Assets::SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath) {
 void Assets::SpawnActor(
     const std::string& p_ActorName,
     const ZRepositoryID& p_RepositoryID,
-    const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit,
+    const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
     uint8_t p_CharacterSetIndex,
     const std::string& p_CharSetCharacterType,
     uint8_t p_OutfitVariationIndex
@@ -441,7 +411,13 @@ void Assets::SpawnActor(
     SExternalReferences s_ExternalRefs;
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_NewEntity, "", s_Resource, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager,
+        s_NewEntity,
+        "",
+        s_Resource,
+        s_Scene.m_ref,
+        s_ExternalRefs,
+        -1
     );
 
     if (!s_NewEntity) {
@@ -474,7 +450,7 @@ void Assets::SpawnActor(
 
     if (p_GlobalOutfitKit) {
         EquipOutfit(
-            *p_GlobalOutfitKit,
+            p_GlobalOutfitKit,
             p_CharacterSetIndex,
             p_CharSetCharacterType,
             p_OutfitVariationIndex,
@@ -507,8 +483,7 @@ void Assets::EquipOutfit(
 
         if (p_CharSetCharacterType == "Nude") {
             s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[1];
-        }
-        else if (p_CharSetCharacterType == "HeroA") {
+        } else if (p_CharSetCharacterType == "HeroA") {
             s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[2];
         }
 
@@ -521,13 +496,17 @@ void Assets::EquipOutfit(
         if (s_CharsetCharacterType) {
             for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
                 s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
-                    s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit;
+                        s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit;
             }
         }
     }
 
     Functions::ZActor_SetOutfit->Call(
-        p_Actor, p_GlobalOutfitKit, p_CharSetIndex, p_OutfitVariationIndex, false
+        p_Actor,
+        p_GlobalOutfitKit,
+        p_CharSetIndex,
+        p_OutfitVariationIndex,
+        false
     );
 
     if (p_CharSetCharacterType != "Actor") {
@@ -538,7 +517,7 @@ void Assets::EquipOutfit(
 
         for (size_t i = 0; i < s_ActorOutfitVariations.size(); ++i) {
             s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
-                s_ActorOutfitVariations[i];
+                    s_ActorOutfitVariations[i];
         }
     }
 }
@@ -555,31 +534,27 @@ void Assets::LoadRepositoryProps() {
     if (m_RepositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID) {
         const auto s_RepositoryData = static_cast<THashMap<
             ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
-                GetResourceData());
+            GetResourceData());
 
-        for (const auto& [s_RepositoryID, s_DynamicObject] : *s_RepositoryData) {
+        for (const auto& [s_RepositoryID, s_DynamicObject]: *s_RepositoryData) {
             const TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
                 SDynamicObjectKeyValuePair>>();
 
             std::string s_Id, s_Title, s_CommonName, s_Name, s_FinalName;
             bool s_IsItem = false;
 
-            for (const auto& s_Entry : *s_Entries) {
+            for (const auto& s_Entry: *s_Entries) {
                 const std::string s_Key = std::string(s_Entry.sKey.c_str(), s_Entry.sKey.size());
 
                 if (s_Key == "ID_") {
                     s_Id = ConvertDynamicObjectValueToString(s_Entry.value);
-                }
-                else if (s_Key == "Title") {
+                } else if (s_Key == "Title") {
                     s_Title = ConvertDynamicObjectValueToString(s_Entry.value);
-                }
-                else if (s_Key == "CommonName") {
+                } else if (s_Key == "CommonName") {
                     s_CommonName = ConvertDynamicObjectValueToString(s_Entry.value);
-                }
-                else if (s_Key == "Name") {
+                } else if (s_Key == "Name") {
                     s_Name = ConvertDynamicObjectValueToString(s_Entry.value);
-                }
-                else if (!s_IsItem) {
+                } else if (!s_IsItem) {
                     s_IsItem = s_Key == "ItemType";
                 }
             }
@@ -590,14 +565,11 @@ void Assets::LoadRepositoryProps() {
 
             if (s_Title.empty() && s_CommonName.empty() && s_Name.empty()) {
                 s_FinalName = "<unnamed> [" + s_Id + "]";
-            }
-            else if (!s_Title.empty()) {
+            } else if (!s_Title.empty()) {
                 s_FinalName = s_Title + " [" + s_Id + "]";
-            }
-            else if (!s_CommonName.empty()) {
+            } else if (!s_CommonName.empty()) {
                 s_FinalName = s_CommonName + " [" + s_Id + "]";
-            }
-            else if (!s_Name.empty()) {
+            } else if (!s_Name.empty()) {
                 s_FinalName = s_Name + " [" + s_Id + "]";
             }
 
@@ -608,7 +580,8 @@ void Assets::LoadRepositoryProps() {
     }
 
     std::ranges::sort(
-        m_RepositoryProps, [](const auto& a, const auto& b) {
+        m_RepositoryProps,
+        [](const auto& a, const auto& b) {
             auto [_1, s_LowerA] = a;
             auto [_2, s_LowerB] = b;
 
@@ -627,28 +600,24 @@ std::string Assets::ConvertDynamicObjectValueToString(const ZDynamicObject& p_Dy
     if (strcmp(s_Type->m_pTypeName, "ZString") == 0) {
         const auto s_Value = p_DynamicObject.As<ZString>();
         s_Result = s_Value->c_str();
-    }
-    else if (strcmp(s_Type->m_pTypeName, "bool") == 0) {
+    } else if (strcmp(s_Type->m_pTypeName, "bool") == 0) {
         if (*p_DynamicObject.As<bool>()) {
             s_Result = "true";
-        }
-        else {
+        } else {
             s_Result = "false";
         }
-    }
-    else if (strcmp(s_Type->m_pTypeName, "float64") == 0) {
+    } else if (strcmp(s_Type->m_pTypeName, "float64") == 0) {
         double value = *p_DynamicObject.As<double>();
 
         s_Result = std::to_string(value).c_str();
-    }
-    else {
+    } else {
         s_Result = s_Type->m_pTypeName;
     }
 
     return s_Result;
 }
 
-DEFINE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_RepositoryResource = {};
     m_RepositoryProps.clear();
 

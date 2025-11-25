@@ -14,13 +14,13 @@ public:
     void OnDrawUI(bool p_HasFocus) override;
 
 private:
-    DECLARE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool forReload);
+    DECLARE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool p_AddToWorld);
     static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
     static void SpawnActor(
         const std::string& p_ActorName, const ZRepositoryID& p_RepositoryID,
-        const TEntityRef<ZGlobalOutfitKit>* p_GlobalOutfitKit, uint8_t p_CharacterSetIndex,
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharacterSetIndex,
         const std::string& p_CharSetCharacterType, uint8_t p_OutfitVariationIndex
     );
 

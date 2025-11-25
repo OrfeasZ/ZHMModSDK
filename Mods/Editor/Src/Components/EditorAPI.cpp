@@ -51,7 +51,7 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
         s_NodeQueue.pop();
 
         if (s_Node->EntityId == p_Selector.EntityId) {
-            bool s_Matches = s_Node->TBLU == s_TBLU;
+            bool s_Matches = s_Node->BlueprintFactory == s_TBLU;
 
             // If the TBLU doesn't match, then check the owner entity.
             if (!s_Matches) {
@@ -247,7 +247,7 @@ void Editor::FindAlocForZGeomEntityNode(
     const ZGeomEntity* s_GeomEntity = p_Node->Entity.QueryInterface<ZGeomEntity>();
     std::string s_Id = std::format("{:016x}", p_Node->Entity->GetType()->m_nEntityId);
     std::string s_HashString =
-            std::format("<{:08X}{:08X}>", p_Node->TBLU.m_IDHigh, p_Node->TBLU.m_IDLow);
+            std::format("<{:08X}{:08X}>", p_Node->BlueprintFactory.m_IDHigh, p_Node->BlueprintFactory.m_IDLow);
 
     if (ZResourceIndex s_ResourceIndex(s_GeomEntity->m_ResourceID.m_nResourceIndex);
         s_ResourceIndex.val != -1) {
@@ -317,7 +317,7 @@ void Editor::FindAlocForZPrimitiveProxyEntityNode(
 ) {
     std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
     std::string s_HashString =
-            std::format("<{:08X}{:08X}>", s_Node->TBLU.m_IDHigh, s_Node->TBLU.m_IDLow);
+            std::format("<{:08X}{:08X}>", s_Node->BlueprintFactory.m_IDHigh, s_Node->BlueprintFactory.m_IDLow);
 
     if (std::string s_collision_ioi_string = GetCollisionHash(s_Node->Entity);
         !s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
@@ -397,6 +397,12 @@ void Editor::FindAlocs(
 
         // Add children to the queue.
         for (auto& node : s_Node->Children | std::views::values) {
+            if (node->Entity == m_DynamicEntitiesNodeEntityRef ||
+                node->Entity == m_UnparentedEntitiesNodeEntityRef ||
+                node->IsDynamicEntity ||
+                node->IsPendingDeletion) {
+                continue;
+            }
             std::string s_ChildId = std::format("{:016x}", node->Entity->GetType()->m_nEntityId);
             s_NodeQueue.push(std::pair {s_Node, node});
         }
@@ -414,7 +420,7 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
     }
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
 
-    Logger::Info("Getting {} Entities:", p_EntityType);
+    Logger::Info("Getting {} Entities.", p_EntityType);
     // Create a queue and add the root to it.
     std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
     s_NodeQueue.push(m_CachedEntityTree);
@@ -424,6 +430,12 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
         // Access the first node in the queue
         auto s_Node = s_NodeQueue.front();
         s_NodeQueue.pop();
+        if (s_Node->Entity == m_DynamicEntitiesNodeEntityRef ||
+           s_Node->Entity == m_UnparentedEntitiesNodeEntityRef ||
+           s_Node->IsDynamicEntity ||
+           s_Node->IsPendingDeletion) {
+            continue;
+        }
         const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
 
         if (char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
@@ -456,7 +468,7 @@ void Editor::SelectEntity(EntitySelector p_Selector, std::optional<std::string> 
     auto s_Entity = FindEntity(p_Selector);
 
     if (s_Entity) {
-        OnSelectEntity(s_Entity, std::move(p_ClientId));
+        OnSelectEntity(s_Entity, true, std::move(p_ClientId));
     }
     else {
         throw std::runtime_error("Could not find entity for the given selector.");
@@ -517,7 +529,7 @@ void Editor::SpawnQnEntity(
     m_SpawnedEntities[p_EntityId] = s_SpawnedEnt;
 
     if (m_CachedEntityTree && m_CachedEntityTreeMap.size() > 0) {
-        UpdateEntityTree(m_CachedEntityTreeMap, {s_SpawnedEnt});
+        UpdateEntityTree(m_CachedEntityTreeMap, {s_SpawnedEnt}, true);
     }
 
     m_CachedEntityTreeMutex.unlock();
@@ -652,29 +664,4 @@ void Editor::SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p
 
 void Editor::RebuildEntityTree() {
     UpdateEntities();
-}
-
-void Editor::LoadNavpAreas(simdjson::ondemand::array p_NavpAreas, int p_ChunkIndex) {
-    Logger::Info("Loading Navp areas");
-
-    if (p_ChunkIndex == 0) {
-        m_NavpAreas.clear();
-    }
-    for (simdjson::ondemand::array s_NavpArea : p_NavpAreas) {
-        std::vector<SVector3> s_Area;
-        for (simdjson::ondemand::array s_NavpPoint : s_NavpArea) {
-            std::vector<double> s_Point;
-            for (double coord : s_NavpPoint) {
-                s_Point.push_back(coord);
-            }
-            SVector3 point {
-                static_cast<float>(s_Point[0]),
-                static_cast<float>(s_Point[1]),
-                static_cast<float>(s_Point[2])
-            };
-
-            s_Area.push_back(point);
-        }
-        m_NavpAreas.push_back(s_Area);
-    }
 }

@@ -49,7 +49,7 @@ void DebugMod::OnDrawMenu() {
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
-    if (ImGui::Button(ICON_MD_PLACE " POSITIONS MENU")) {
+    if (ImGui::Button(ICON_MD_PLACE " POSITIONS")) {
         m_PositionsMenuActive = !m_PositionsMenuActive;
     }
 }
@@ -69,14 +69,14 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
-        if (ImGui::CollapsingHeader("Actors")) {
+        if (ImGui::CollapsingHeader("Actors", ImGuiTreeNodeFlags_DefaultOpen)) {
             ImGui::Checkbox("Render Actor position boxes", &m_RenderActorBoxes);
             ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
             ImGui::Checkbox("Render Actor repository IDs", &m_RenderActorRepoIds);
             ImGui::Checkbox("Render Actor behaviors", &m_RenderActorBehaviors);
         }
 
-        if (ImGui::CollapsingHeader("Reasoning Grid")) {
+        if (ImGui::CollapsingHeader("Reasoning Grid", ImGuiTreeNodeFlags_DefaultOpen)) {
             if (ImGui::Checkbox("Draw Reasoning Grid", &m_DrawReasoningGrid)) {
                 if (m_Triangles.size() == 0) {
                     GenerateReasoningGridVertices();
@@ -88,7 +88,7 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
             ImGui::Checkbox("Show Indices", &m_ShowIndices);
         }
 
-        if (ImGui::CollapsingHeader("Guide Path Finder")) {
+        if (ImGui::CollapsingHeader("Guide Path Finder", ImGuiTreeNodeFlags_DefaultOpen)) {
             if (ImGui::Checkbox("Draw Nav Mesh", &m_DrawNavMesh)) {
                 if (m_NavMesh.m_areas.size() == 0) {
                     static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
@@ -214,7 +214,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
             auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
 
             ZEntityRef s_Ref;
-            s_Actor->GetID(&s_Ref);
+            s_Actor->GetID(s_Ref);
 
             auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
             auto s_ActorTransform = s_SpatialEntity->GetWorldMatrix();
@@ -277,7 +277,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                             s_Text += "\n\n";
                         }
 
-                        s_Text += BehaviorToString(s_CompiledBehaviorType);
+                        s_Text += CompiledBehaviorTypeToString(s_CompiledBehaviorType);
                     }
                 }
 
@@ -373,10 +373,10 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
             return;
         }
 
+        p_Renderer->SetDistanceCullingEnabled(true);
+
         SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
         const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
-
-        std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
         static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
         static const float s_Scale = 0.2f;
@@ -391,6 +391,8 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
 
             p_Renderer->DrawText3D(s_Text.c_str(), s_WorldMatrix, s_Color, s_Scale);
         }
+
+        p_Renderer->SetDistanceCullingEnabled(false);
     }
 }
 
@@ -435,8 +437,6 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
         }
 
         SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
-
-        std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
 
         static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
         static const float s_Scale = 0.2f;
@@ -503,8 +503,6 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
 
     SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
 
-    std::swap(s_WorldMatrix.YAxis, s_WorldMatrix.ZAxis);
-
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
     static const float s_Scale = 0.3f;
 
@@ -520,7 +518,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         s_WorldMatrix.Trans = s_TopCenter;
 
         const std::string s_Text = fmt::format(
-            "Entity ID: {:08x}\nObstacle Flags: {:04x}\nPenalty: {}",
+            "Entity ID: {:016x}\nObstacle Flags: {:04x}\nPenalty: {}",
             m_ObstaclesToEntityIDs[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
             s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
             s_PFObstacleInternalDep->m_obstacleDef.m_penalty
@@ -1001,7 +999,7 @@ void DebugMod::VertexTriangluation(const std::vector<SVector3>& vertices, std::v
     }
 }
 
-std::string DebugMod::BehaviorToString(ECompiledBehaviorType p_Type) {
+const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type) {
     switch (p_Type) {
         case ECompiledBehaviorType::BT_ConditionScope: return "BT_ConditionScope";
         case ECompiledBehaviorType::BT_Random: return "BT_Random";
@@ -1208,11 +1206,11 @@ std::string DebugMod::BehaviorToString(ECompiledBehaviorType p_Type) {
     }
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, ZSceneData&) {
+DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
     return HookResult<void>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool forReload) {
+DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_RenderActorBoxes = false;
     m_RenderActorNames = false;
     m_RenderActorRepoIds = false;

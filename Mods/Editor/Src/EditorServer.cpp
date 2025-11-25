@@ -209,15 +209,6 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
         SendAlocPfBoxesAndSeedPointEntityList(p_Socket);
     }
-    else if (s_Type == "loadNavp") {
-        const uint64_t s_ChunkIndex = s_JsonMsg["chunk"];
-        const uint64_t s_ChunkCount = s_JsonMsg["chunkCount"];
-        const simdjson::ondemand::array s_Areas = s_JsonMsg["areas"];
-        Plugin()->LoadNavpAreas(s_Areas, s_ChunkIndex);
-        if (s_ChunkIndex == s_ChunkCount - 1) {
-            SendDoneLoadingNavpMessage(p_Socket);
-        }
-    }
     else if (s_Type == "getEntityDetails") {
         const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
         const auto s_Entity = Plugin()->FindEntity(s_Selector);
@@ -300,7 +291,7 @@ void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> 
     }
 
     ZEntityRef s_Ref;
-    s_CurrentCamera->GetID(&s_Ref);
+    s_CurrentCamera->GetID(s_Ref);
 
     std::ostringstream s_Event;
 
@@ -605,7 +596,7 @@ void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<
     );
 }
 
-void EditorServer::OnSceneClearing(bool p_ForReload) {
+void EditorServer::OnSceneClearing(bool p_FullyUnloadScene) {
     if (!m_Enabled) {
         Logger::Info("EditorServer disabled. Skipping OnSceneClearing.");
         return;
@@ -615,7 +606,7 @@ void EditorServer::OnSceneClearing(bool p_ForReload) {
     }
 
     m_Loop->defer(
-        [this, p_ForReload]() {
+        [this, p_FullyUnloadScene]() {
             if (!m_App) {
                 return;
             }
@@ -625,7 +616,7 @@ void EditorServer::OnSceneClearing(bool p_ForReload) {
             s_Event << "{";
 
             s_Event << write_json("type") << ":" << write_json("sceneClearing") << ",";
-            s_Event << write_json("forReload") << ":" << write_json(p_ForReload);
+            s_Event << write_json("p_FullyUnloadScene") << ":" << write_json(p_FullyUnloadScene);
 
             s_Event << "}";
 
@@ -677,11 +668,12 @@ bool EditorServer::GetEnabled() {
 void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket) {
     p_Socket->send("{\"alocs\":[", uWS::OpCode::TEXT);
     auto s_AnyAlocSentOverall = std::make_shared<bool>(false);
+    Logger::Info("Sending ALOCs...");
     Plugin()->FindAlocs(
         [p_Socket, s_AnyAlocSentOverall](
-    const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
-    const bool p_IsLastAlocBatch
-) -> void {
+            const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
+            const bool p_IsLastAlocBatch
+    ) -> void {
             bool s_SentAlocThisBatch = false;
             if (!p_Entities.empty()) {
                 bool s_CurrentBatchWillSend = false;
@@ -706,17 +698,20 @@ void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket) {
                 p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
 
                 const auto s_PfBoxEntities =
-                        Plugin()->FindEntitiesByType("ZPFBoxEntity", "00280B8C4462FAC8");
+                        Plugin()->FindEntitiesByType("ZPFBoxEntity", "00724CDE424AFE76");
+                Logger::Info("Sending PfBoxes...");
                 SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
                 p_Socket->send("],\"pfSeedPoints\":[", uWS::OpCode::TEXT);
                 const auto s_PfSeedPointEntities =
                         Plugin()->FindEntitiesByType("ZPFSeedPoint", "00280B8C4462FAC8");
+                Logger::Info("Sending PF Seed Points...");
                 SendEntitiesDetails(p_Socket, s_PfSeedPointEntities);
 
                 p_Socket->send("]}", uWS::OpCode::TEXT);
 
                 p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
+                Logger::Info("Done sending Entities.");
             }
         },
         [p_Socket]() -> void {
@@ -776,7 +771,7 @@ void EditorServer::SendEntityList(
         s_EventStream << "{";
         s_EventStream << write_json("id") << ":" << write_json(std::format("{:016x}", s_Node->EntityId)) << ",";
         s_EventStream << write_json("source") << ":" << write_json("game") << ",";
-        s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->TBLU.GetID())) << ",";
+        s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->BlueprintFactory.GetID())) << ",";
         s_EventStream << write_json("type") << ":" << write_json(
             (*s_Node->Entity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName
         );
@@ -829,10 +824,6 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
     s_Event << "}";
 
     p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
-}
-
-void EditorServer::SendDoneLoadingNavpMessage(WebSocket* p_Socket) {
-    p_Socket->send("Done loading Navp.", uWS::OpCode::TEXT);
 }
 
 bool EditorServer::IsPropertyValueTrue(const ZEntityProperty* s_Property, const ZEntityRef& p_Entity) {
@@ -926,12 +917,13 @@ bool EditorServer::SendEntitiesDetails(
     bool s_IsFirstItemActuallySentInThisCall = true;
     bool s_DidSendAnything = false;
 
-    for (const auto& [s_AlocHashes, s_Quat, s_Entity] : p_Entities) {
-        if (IsExcludedFromNavMeshExport(s_Entity)) {
+    for (const auto& [s_Hashes, s_Quat, s_Entity] : p_Entities) {
+        if (strcmp(s_Hashes.front().c_str(), "00724CDE424AFE76") != 0 && strcmp(s_Hashes.front().c_str(), "00280B8C4462FAC8") != 0
+            && IsExcludedFromNavMeshExport(s_Entity)) {
             continue;
         }
 
-        for (const auto& s_Hash : s_AlocHashes) {
+        for (const auto& s_Hash : s_Hashes) {
             if (!s_IsFirstItemActuallySentInThisCall) {
                 p_Socket->send(",", uWS::OpCode::TEXT);
             }
@@ -1059,7 +1051,7 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
         p_Stream << "null";
         return;
     }
-    Logger::Info("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
+    Logger::Debug("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
 
     p_Stream << "{";
 
