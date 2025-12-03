@@ -74,6 +74,7 @@ public:
     void RebuildEntityTree();
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
+    void QueueTask(std::function<void()> p_Task);
 private:
     struct DebugEntity {
         std::string m_TypeName;
@@ -255,6 +256,7 @@ private:
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
     bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
 
+    void ProcessTasks();
 private:
     DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
@@ -501,6 +503,9 @@ private:
     std::unordered_map<ZRuntimeResourceID, ZExtendedCppEntityFactory*> m_RuntimeResourceIDToExtendedCppEntityFactory;
     std::shared_mutex m_EntityRefToFactoryRuntimeResourceIDsMutex;
     std::mutex m_ExtendedCppEntityFactoryResourceMapsMutex;
+
+    std::mutex m_TaskMutex;
+    std::vector<std::function<void()>> m_TaskQueue;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

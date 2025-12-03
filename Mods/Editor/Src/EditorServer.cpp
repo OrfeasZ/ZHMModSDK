@@ -32,7 +32,7 @@ EditorServer::EditorServer() {
                 "/*", {
                     .compression = uWS::DISABLED,
                     .maxPayloadLength = 100 * 1024 * 1024,
-                    .open = [this](WebSocket* p_Socket) {
+                    .open = [this, s_Loop](WebSocket* p_Socket) {
                         Logger::Debug("New editor connection established.");
 
                         const auto s_ClientId = m_LastClientId++;
@@ -46,7 +46,7 @@ EditorServer::EditorServer() {
 
                         try {
                             if (m_Enabled) {
-                                OnMessage(p_Socket, p_Message);
+                                OnMessage(p_Socket, p_Message, s_Loop);
                             }
                             else {
                                 Logger::Info("EditorServer disabled, ignoring message.");
@@ -111,9 +111,9 @@ EditorServer::~EditorServer() {
     }
 }
 
-bool EditorServer::m_Enabled = true;
+std::atomic<bool> EditorServer::m_Enabled = true;
 
-void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false) {
+void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uWS::Loop* p_Loop) noexcept(false) {
     simdjson::ondemand::parser s_Parser;
     const auto s_Json = simdjson::padded_string(p_Message);
     simdjson::ondemand::document s_JsonMsg = s_Parser.iterate(s_Json);
@@ -207,7 +207,9 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) no
         SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
     }
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
-        SendAlocPfBoxesAndSeedPointEntityList(p_Socket);
+        Plugin()->QueueTask([p_Socket, p_Loop]() {
+            SendAlocPfBoxesAndSeedPointEntityList(p_Socket, p_Loop);
+        });
     }
     else if (s_Type == "getEntityDetails") {
         const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
@@ -665,57 +667,90 @@ bool EditorServer::GetEnabled() {
     return m_Enabled;
 }
 
-void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket) {
-    p_Socket->send("{\"alocs\":[", uWS::OpCode::TEXT);
+void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket, uWS::Loop* p_Loop) {
+    p_Loop->defer(
+        [p_Socket]() {
+            p_Socket->send("{\"alocs\":[", uWS::OpCode::TEXT);
+        }
+    );
     auto s_AnyAlocSentOverall = std::make_shared<bool>(false);
+    auto s_TotalAlocsSent = std::make_shared<int>(0);
+    auto s_LastLoggedMilestone = std::make_shared<int>(0);
     Logger::Info("Sending ALOCs...");
     Plugin()->FindAlocs(
-        [p_Socket, s_AnyAlocSentOverall](
+        [p_Socket, p_Loop, s_AnyAlocSentOverall, s_TotalAlocsSent, s_LastLoggedMilestone](
             const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
             const bool p_IsLastAlocBatch
-    ) -> void {
-            bool s_SentAlocThisBatch = false;
+        ) -> void {
+            std::ostringstream s_BatchJson;
+            bool s_DidPrepareDataThisBatch = false;
             if (!p_Entities.empty()) {
+                bool s_IsFirstItemInBatch = true;
+                *s_TotalAlocsSent += p_Entities.size();
+                const int currentMilestone = *s_TotalAlocsSent / 1000;
+                if (currentMilestone > *s_LastLoggedMilestone) {
+                    Logger::Info("ALOCs sent: {}", *s_TotalAlocsSent);
+                    *s_LastLoggedMilestone = currentMilestone;
+                }
                 bool s_CurrentBatchWillSend = false;
                 for (auto& [s_Hashes, s_Quat, s_Entity] : p_Entities) {
                     if (IsExcludedFromNavMeshExport(s_Entity)) continue;
-                    if (!s_Hashes.empty()) {
-                        s_CurrentBatchWillSend = true;
-                        break;
+                    if (s_Hashes.empty()) {
+                        continue;
                     }
-                }
-                if (s_CurrentBatchWillSend) {
-                    if (*s_AnyAlocSentOverall) {
-                        p_Socket->send(",", uWS::OpCode::TEXT);
+                    for (const auto& s_Hash : s_Hashes) {
+                        if (!s_IsFirstItemInBatch) {
+                            s_BatchJson << ",";
+                        }
+                        s_IsFirstItemInBatch = false;
+                        s_DidPrepareDataThisBatch = true;
+
+                        s_BatchJson << "{" << write_json("hash") << ":" << write_json(s_Hash) << ",";
+                        s_BatchJson << write_json("entity") << ":";
+                        WriteEntityTransforms(s_BatchJson, s_Quat, s_Entity);
+                        s_BatchJson << "}";
                     }
-                    s_SentAlocThisBatch = SendEntitiesDetails(p_Socket, p_Entities);
                 }
             }
-            if (s_SentAlocThisBatch) {
-                *s_AnyAlocSentOverall = true;
+            if (s_DidPrepareDataThisBatch) {
+                std::string data_to_send = s_BatchJson.str();
+                p_Loop->defer(
+                    [p_Socket, data_to_send, s_AnyAlocSentOverall]() {
+                        if (*s_AnyAlocSentOverall) {
+                            p_Socket->send(",", uWS::OpCode::TEXT);
+                        }
+                        p_Socket->send(data_to_send, uWS::OpCode::TEXT);
+                        *s_AnyAlocSentOverall = true;
+                    }
+                );
             }
             if (p_IsLastAlocBatch) {
-                p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
+                const auto s_PfBoxEntities = Plugin()->FindEntitiesByType("ZPFBoxEntity", "00724CDE424AFE76");
+                const auto s_PfSeedPointEntities = Plugin()->FindEntitiesByType(
+                    "ZPFSeedPoint", "00280B8C4462FAC8"
+                );
 
-                const auto s_PfBoxEntities =
-                        Plugin()->FindEntitiesByType("ZPFBoxEntity", "00724CDE424AFE76");
-                Logger::Info("Sending PfBoxes...");
-                SendEntitiesDetails(p_Socket, s_PfBoxEntities);
+                p_Loop->defer(
+                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities]() {
+                        p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
-                p_Socket->send("],\"pfSeedPoints\":[", uWS::OpCode::TEXT);
-                const auto s_PfSeedPointEntities =
-                        Plugin()->FindEntitiesByType("ZPFSeedPoint", "00280B8C4462FAC8");
-                Logger::Info("Sending PF Seed Points...");
-                SendEntitiesDetails(p_Socket, s_PfSeedPointEntities);
+                        p_Socket->send("],\"pfSeedPoints\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_PfSeedPointEntities);
 
-                p_Socket->send("]}", uWS::OpCode::TEXT);
-
-                p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
-                Logger::Info("Done sending Entities.");
+                        p_Socket->send("]}", uWS::OpCode::TEXT);
+                        p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
+                        Logger::Info("Done sending Entities.");
+                    }
+                );
             }
         },
-        [p_Socket]() -> void {
-            p_Socket->send("Rebuilding tree.", uWS::OpCode::TEXT);
+        [p_Socket, p_Loop]() -> void {
+            p_Loop->defer(
+                [p_Socket]() {
+                    p_Socket->send("Rebuilding tree.", uWS::OpCode::TEXT);
+                }
+            );
         }
     );
 }
