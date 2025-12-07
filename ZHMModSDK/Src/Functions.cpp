@@ -19,7 +19,7 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xF1\x0F\x57\xC0\x48\xB8\x00\x00\x00\x00\x00\x00\x00\x00\xB9",
     "xxxxxxxxxxxxxx?xxxxxxxx????????x",
     ZDynamicObject_ToString,
-    void(ZDynamicObject*, ZString*)
+    void(ZDynamicObject*, ZString&)
 );
 
 PATTERN_FUNCTION(
