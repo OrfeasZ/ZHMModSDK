@@ -230,7 +230,7 @@ public:
     };
 
     virtual ~ZEntityImpl() {}
-    virtual ZEntityRef* GetID(ZEntityRef& result) = 0;
+    virtual ZEntityRef* GetID(ZEntityRef& result) const = 0;
     virtual void Activate(int) = 0;
     virtual void Deactivate(int) = 0;
     virtual void ZEntityImpl_unk8() = 0;
