@@ -641,35 +641,26 @@ void Editor::DrawEntityTree() {
         }
 
         static char s_EntityTypeSearchInput[2048] = {};
-        static std::vector<std::string> s_TypeNames;
-
-        if (s_TypeNames.empty()) {
-            ZTypeRegistry* typeRegistry = *Globals::TypeRegistry;
-
-            s_TypeNames.reserve(typeRegistry->m_types.size());
-
-            for (auto& pair: typeRegistry->m_types) {
-                if (!pair.second->typeInfo()->isClass()) {
-                    continue;
-                }
-
-                s_TypeNames.push_back(pair.first.c_str());
-            }
-
-            std::sort(s_TypeNames.begin(), s_TypeNames.end());
-        }
 
         Util::ImGuiUtils::InputWithAutocomplete(
             ICON_MD_SEARCH " Search by type##EntityTypesPopup",
             s_EntityTypeSearchInput,
             sizeof(s_EntityTypeSearchInput),
-            s_TypeNames,
-            [](auto& s_TypeName) -> const std::string& { return s_TypeName; },
-            [](auto& s_TypeName) -> const std::string& { return s_TypeName; },
-            [&](const std::string& s_TypeName, const std::string&, const auto&) {
+            (*Globals::TypeRegistry)->m_types,
+            [](auto& p_Pair) -> std::string {
+                return std::string(p_Pair.first.c_str(), p_Pair.first.size());
+            },
+            [](auto& p_Pair) -> std::string {
+                return std::string(p_Pair.first.c_str(), p_Pair.first.size());
+            },
+            [&](const std::string& typeName, const std::string&, const auto&) {
                 m_EntityTypeSearchInput = s_EntityTypeSearchInput;
 
                 FilterEntityTree();
+            },
+            nullptr,
+            [](auto& p_Pair) {
+                return p_Pair.second->typeInfo() && p_Pair.second->typeInfo()->isClass();
             }
         );
 
