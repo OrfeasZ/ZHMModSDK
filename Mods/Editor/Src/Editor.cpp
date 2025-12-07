@@ -292,12 +292,12 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawEntityProperties();
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracer();
-
-        DrawItems(p_HasFocus);
-        DrawActors(p_HasFocus);
-        DrawDebugChannels(p_HasFocus);
         //DrawLibrary();
     }
+
+    DrawItems(p_HasFocus);
+    DrawActors(p_HasFocus);
+    DrawDebugChannels(p_HasFocus);
 
     if (m_EditorCameraRT && m_EditorCamera) {
         ImGui::Begin("RT Texture");
