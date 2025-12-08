@@ -122,19 +122,21 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
                 );
             },
-            [&](const ZRepositoryID&, const std::string& p_Name, const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
-                s_CurrentCharacterSetIndex = 0;
-                s_CurrentOutfitVariationIndex = 0;
+            [&](const ZRepositoryID&,
+                const std::string& p_Name,
+                const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
+                    s_CurrentCharacterSetIndex = 0;
+                    s_CurrentOutfitVariationIndex = 0;
 
-                EquipOutfit(
-                    p_GlobalOutfitKit,
-                    s_CurrentCharacterSetIndex,
-                    s_CurrentcharSetCharacterType,
-                    s_CurrentOutfitVariationIndex,
-                    m_CurrentlySelectedActor
-                );
+                    EquipOutfit(
+                        p_GlobalOutfitKit,
+                        s_CurrentCharacterSetIndex,
+                        s_CurrentcharSetCharacterType,
+                        s_CurrentOutfitVariationIndex,
+                        m_CurrentlySelectedActor
+                    );
 
-                s_GlobalOutfitKit = p_GlobalOutfitKit;
+                    s_GlobalOutfitKit = p_GlobalOutfitKit;
             },
             [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
         );
