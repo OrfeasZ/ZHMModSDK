@@ -30,7 +30,6 @@ private:
     );
 
     void LoadRepositoryProps();
-    std::string ConvertDynamicObjectValueToString(const ZDynamicObject& p_DynamicObject);
 
     bool m_AssetsMenuActive = false;
 

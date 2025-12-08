@@ -535,43 +535,49 @@ void Assets::LoadRepositoryProps() {
     if (m_RepositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID) {
         const auto s_RepositoryData = static_cast<THashMap<
             ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
-            GetResourceData());
+                GetResourceData());
 
-        for (const auto& [s_RepositoryID, s_DynamicObject]: *s_RepositoryData) {
-            const TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
+        for (const auto& [s_RepositoryID, s_DynamicObject] : *s_RepositoryData) {
+            TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
                 SDynamicObjectKeyValuePair>>();
 
-            std::string s_Id, s_Title, s_CommonName, s_Name, s_FinalName;
+            ZString s_Id, s_Title, s_CommonName, s_Name;
+            std::string s_FinalName;
             bool s_IsItem = false;
 
-            for (const auto& s_Entry: *s_Entries) {
-                const std::string s_Key = std::string(s_Entry.sKey.c_str(), s_Entry.sKey.size());
-
-                if (s_Key == "ID_") {
-                    s_Id = ConvertDynamicObjectValueToString(s_Entry.value);
-                } else if (s_Key == "Title") {
-                    s_Title = ConvertDynamicObjectValueToString(s_Entry.value);
-                } else if (s_Key == "CommonName") {
-                    s_CommonName = ConvertDynamicObjectValueToString(s_Entry.value);
-                } else if (s_Key == "Name") {
-                    s_Name = ConvertDynamicObjectValueToString(s_Entry.value);
-                } else if (!s_IsItem) {
-                    s_IsItem = s_Key == "ItemType";
+            for (auto& s_Entry : *s_Entries) {
+                if (s_Entry.sKey == "ID_") {
+                    s_Id = *s_Entry.value.As<ZString>();
+                }
+                else if (s_Entry.sKey == "Title") {
+                    s_Title = *s_Entry.value.As<ZString>();
+                }
+                else if (s_Entry.sKey == "CommonName") {
+                    s_CommonName = *s_Entry.value.As<ZString>();
+                }
+                else if (s_Entry.sKey == "Name") {
+                    s_Name = *s_Entry.value.As<ZString>();
+                }
+                else if (!s_IsItem) {
+                    s_IsItem = s_Entry.sKey == "ItemType";
                 }
             }
 
-            if (s_Id.empty() || !s_IsItem) {
+            if (s_Id.IsEmpty() || !s_IsItem) {
                 continue;
             }
 
-            if (s_Title.empty() && s_CommonName.empty() && s_Name.empty()) {
-                s_FinalName = "<unnamed> [" + s_Id + "]";
-            } else if (!s_Title.empty()) {
-                s_FinalName = s_Title + " [" + s_Id + "]";
-            } else if (!s_CommonName.empty()) {
-                s_FinalName = s_CommonName + " [" + s_Id + "]";
-            } else if (!s_Name.empty()) {
-                s_FinalName = s_Name + " [" + s_Id + "]";
+            if (s_Title.IsEmpty() && s_CommonName.IsEmpty() && s_Name.IsEmpty()) {
+                s_FinalName = std::format("<unnamed> [{}]", s_Id.c_str());
+            }
+            else if (!s_Title.IsEmpty()) {
+                s_FinalName = std::format("{} [{}]", s_Title.c_str(), s_Id.c_str());
+            }
+            else if (!s_CommonName.IsEmpty()) {
+                s_FinalName = std::format("{} [{}]", s_CommonName.c_str(), s_Id.c_str());
+            }
+            else if (!s_Name.IsEmpty()) {
+                s_FinalName = std::format("{} [{}]", s_Name.c_str(), s_Id.c_str());
             }
 
             const auto s_RepoId = ZRepositoryID(s_Id);
@@ -592,30 +598,6 @@ void Assets::LoadRepositoryProps() {
             return s_LowerA < s_LowerB;
         }
     );
-}
-
-std::string Assets::ConvertDynamicObjectValueToString(const ZDynamicObject& p_DynamicObject) {
-    std::string s_Result;
-    const IType* s_Type = p_DynamicObject.GetTypeID()->typeInfo();
-
-    if (strcmp(s_Type->m_pTypeName, "ZString") == 0) {
-        const auto s_Value = p_DynamicObject.As<ZString>();
-        s_Result = s_Value->c_str();
-    } else if (strcmp(s_Type->m_pTypeName, "bool") == 0) {
-        if (*p_DynamicObject.As<bool>()) {
-            s_Result = "true";
-        } else {
-            s_Result = "false";
-        }
-    } else if (strcmp(s_Type->m_pTypeName, "float64") == 0) {
-        double value = *p_DynamicObject.As<double>();
-
-        s_Result = std::to_string(value).c_str();
-    } else {
-        s_Result = s_Type->m_pTypeName;
-    }
-
-    return s_Result;
 }
 
 DEFINE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
