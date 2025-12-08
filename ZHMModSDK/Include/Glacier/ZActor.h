@@ -5,6 +5,8 @@
 #include "ZPrimitives.h"
 #include "ZHM5BaseCharacter.h"
 #include "ZResource.h"
+#include "ZHM5GridManager.h"
+#include "TSet.h"
 
 #include <Logging.h>
 
@@ -222,56 +224,186 @@ static_assert(offsetof(ZActor, m_sActorName) == 0x488);
 static_assert(offsetof(ZActor, m_DomainConfig) == 0x4D0);
 static_assert(offsetof(ZActor, m_nCurrentBehaviorIndex) == 0x117C);
 
+class ZAIStateChangeService;
+class ZAIModifierService;
+class ZAIModifierService;
+class ZDynamicEnforcerService;
+class ZCombatService;
+class ZVIPService;
+class ZCollisionService;
+class ZCrowdService;
+class ZPerceptibleCrowdService;
+class ZAnimationService;
+class ZGetHelpService;
+class ZManhuntService;
+class ZIslandService;
+class ZAILegalService;
+class ZSocialNetworkService;
+class ZTargetTrackingService;
+class ZAISoundEventService;
+class ZSniperChallengeService;
+class ZAIService;
+class ZSharedVisibilitySensor2;
+class ZSharedSoundSensor;
+class ZSharedHitmanSensor;
+class ZSharedDeadBodySensor;
+class ZCollisionSensor;
+class ZSocialSensor;
+class ZDangerSensor;
+class ZDisguiseSensor;
+class ZShootTargetSensor;
+class ZSentrySensor;
+class ZPrivacySensor;
+class ZInferenceSensor;
+class ZSuspiciousMovementSensor;
+class ZLockdownManager;
+class ZGameStatsManager;
 class ZActorSavableHandler;
+class ZPointOfInterestEntity;
+class ZItemStashEntity;
+class ZOutfitProviderEntity;
+class ZImpactConfigEntity;
+class IAsyncRayHandle;
+class ZActorEventEmitter;
+
+struct SActorEventEmitterState {
+};
+
+class ZCombatManager {
+public:
+    PAD(0x80);
+};
+
+class ZSituationManager {
+public:
+    PAD(0x75890);
+};
+
+class ZActorDialogManager {
+public:
+    PAD(0x11A0);
+};
+
+class ZCombatDialogManager {
+public:
+    PAD(0x8);
+};
+
+class ZDialogGesturesManager {
+public:
+    PAD(0x20);
+};
 
 class ZActorManager :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ZActorManager() {}
 
+    ZActor* GetActorByName(const ZString& p_Name) const {
+        for (const auto& s_Entry : m_activatedActors) {
+            ZActor* s_Actor = s_Entry.m_pInterfaceRef;
 
-    /**
-    * Get an actor by their name
-    *
-    * Author: Andrew Pratt
-    * Param p_Name: Actor's name
-    * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
-    */
-    ZActor* GetActorByName(const ZString& p_Name) {
-        for (int i = 0; i < *Globals::NextActorId; ++i) {
-            auto* s_Actor = m_aActiveActors[i].m_pInterfaceRef;
-
-            if (s_Actor->m_sActorName == p_Name)
+            if (s_Actor && s_Actor->m_sActorName == p_Name) {
                 return s_Actor;
+            }
         }
 
         return nullptr;
     }
 
-    /**
-    * Get an actor by their entity id
-    *
-    * Author: Andrew Pratt
-    * Param p_Id: Actor's entity id
-    * Returns: Pointer to actor, or nullptr if no actor with a matching name was found
-    */
-    ZActor* GetActorById(uint64_t p_Id) {
-        for (int i = 0; i < *Globals::NextActorId; ++i) {
-            auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+    ZActor* GetActorById(uint64_t p_Id) const {
+        for (const auto& s_Entry : Globals::ActorManager->m_activatedActors) {
+            ZActor* s_Actor = s_Entry.m_pInterfaceRef;
 
-            ZEntityRef s_EntRef;
-            s_Actor->GetID(s_EntRef);
+            if (!s_Actor) {
+                continue;
+            }
 
-            if (s_EntRef->GetType()->m_nEntityId == p_Id)
+            ZEntityRef entRef;
+
+            s_Actor->GetID(entRef);
+
+            if (entRef->GetType()->m_nEntityId == p_Id) {
                 return s_Actor;
+            }
         }
 
         return nullptr;
     }
 
 public:
-    PAD(0x1F60);
-    TEntityRef<ZActor> m_aActiveActors[1000]; // 0x1F68, ZActorManager destructor, last if
-    /*PAD(0xAA20); // 0x5DE8
-    ZActorSavableHandler* m_pSavableHandler; // 0x10808*/
+    TEntityRef<ZActor> m_aActors[500]; // 0x8
+    TArray<int> m_aFreeActorRuntimeIds; // 0x1F48
+    bool m_bLockActorLists; // 0x1F60
+    TMaxArray<TEntityRef<ZActor>, 500> m_activatedActors; // 0x1F68
+    TMaxArray<int, 500> m_aActivatedActorIds; // 0x3EB0
+    TMaxArray<TEntityRef<ZActor>, 500> m_enabledActors; // 0x4688
+    TMaxArray<TEntityRef<ZActor>, 500> m_disabledActors; // 0x65D0
+    TArray<TEntityRef<ZActor>> m_aOutgoingEnabledActors; // 0x8518
+    TMaxArray<int, 500> m_aEnabledActorIds; // 0x8530
+    bool m_bLockEnabledActorId; // 0x8D04
+    TMaxArray<TEntityRef<ZActor>, 400> m_aliveActors; // 0x8D08
+    TMaxArray<int, 500> m_aAliveActorIds; // 0xA610
+    TMaxArray<ZGridNodeRef, 500> m_aAliveActorGridNodes; // 0xADE8
+    TMaxArray<TEntityRef<ZActor>, 400> m_aliveHm5Characters; // 0xCD30
+    TMaxArray<int, 400> m_aliveHm5CharacterIds; // 0xE638
+    PAD(0x88); // 0xEC80
+    bool m_bDisableAIBehavior; // 0xED08
+    bool m_bDisableAIBehaviorLast; // 0xED09
+    TArray<TEntityRef<ZActor>> m_Unk0; // 0xED10
+    TMaxArray<TEntityRef<ZActor>, 400> m_aliveActorsByDistanceToHM; // 0xED28
+    TArray<TEntityRef<ZActor>> m_SpawnedActors; // 0x10630
+    TArray<TEntityRef<ZActor>> m_aActiveLookAtActors;// 0x10648
+    ZAIStateChangeService* m_pStateChangeService; // 0x10660
+    ZAIModifierService* m_pAIModifierService; // 0x10668
+    ZDynamicEnforcerService* m_pDynamicEnforcerService; // 0x10670
+    ZCombatService* m_pCombatService; // 0x10678
+    ZVIPService* m_pVIPService; // 0x10680
+    ZCollisionService* m_pCollisionService; // 0x10688
+    ZCrowdService* m_pCrowdService; // 0x10690
+    ZPerceptibleCrowdService* m_pPerceptibleCrowdService; // 0x10698
+    ZAnimationService* m_pAnimationService; // 0x106A0
+    ZGetHelpService* m_pGetHelpService; // 0x106A8
+    ZManhuntService* m_pManhuntService; // 0x106B0
+    ZIslandService* m_pIslandService; // 0x106B8
+    ZAILegalService* m_pAILegalService; // 0x106C0
+    ZSocialNetworkService* m_pSocialNetworkService; // 0x106C8
+    ZTargetTrackingService* m_pTargetTrackingService; // 0x106D0
+    ZAISoundEventService* m_pAISoundEventService;  // 0x106D8
+    ZSniperChallengeService* m_pSniperChallengeService; // 0x106E0
+    TArray<ZAIService*> m_aServices; // 0x106E8
+    ZSharedVisibilitySensor2* m_pVisibilitySensor; // 0x10700
+    ZSharedSoundSensor* m_pSoundSensor; // 0x10708
+    ZSharedHitmanSensor* m_pHitmanSensor; // 0x10710
+    ZSharedDeadBodySensor* m_pDeadBodySensor; // 0x10718
+    ZCollisionSensor* m_pCollisionSensor; // 0x10720
+    ZSocialSensor* m_pSocialSensor; // 0x10728
+    ZDangerSensor* m_pDangerSensor; // 0x10730
+    ZDisguiseSensor* m_pDisguiseSensor; // 0x10738
+    ZShootTargetSensor* m_pShootTargetSensor; // 0x10740
+    ZSentrySensor* m_pSentrySensor; // 0x10748
+    ZPrivacySensor* m_pPrivacySensor; // 0x10750
+    ZInferenceSensor* m_pInferenceSensor; // 0x10758
+    ZSuspiciousMovementSensor* m_pSuspiciousMovementSensor; // 0x10760
+    ZLockdownManager* m_pLockdownManager; // 0x10768
+    ZCombatManager m_CombatManager; // 0x10770
+    ZGameStatsManager* m_pGameStats; // 0x107F0
+    PAD(0x10);
+    ZActorSavableHandler* m_pSavableHandler; // 0x10808
+    ZSituationManager m_situationManager; // 0x10810
+    ZActorDialogManager m_actorDialogManager; // 0x860A0
+    ZCombatDialogManager m_combatDialogManager; // 0x87240
+    ZDialogGesturesManager m_dialogGesturesManager; // 0x87248
+    TArray<SActorEventEmitterState> m_actorEventEmitters; // 0x87268
+    TMaxArray<TEntityRef<ZPointOfInterestEntity>, 64> m_RegisteredPOI; // 0x87280
+    TSet<TEntityRef<ZActor>> m_GuardsSneakedBy; // 0x87688
+    TArray<ZEntityRef> m_RegisteredLinkedItems; // 0x876B0
+    PAD(0xC0); // 0x876C8
+    TSet<TEntityRef<ZActor>> m_CurrentDyingActors; // 0x87788
+    TArray<TEntityRef<ZActor>> m_aTargetList; // 0x877B0
+    TArray<TEntityRef<ZActor>> m_aCollateralTargetList; // 0x877C8
+    TArray<TEntityRef<ZCharacterTemplateAspect>> m_aFakeTargetList; // 0x877E0
+    TArray<TEntityRef<ZItemStashEntity>> m_aItemStashList; // 0x877F8
+    TArray<TEntityRef<ZOutfitProviderEntity>> m_aOutfitProviderList; // 0x87810
+    TEntityRef<ZImpactConfigEntity> m_rImpactConfig; // 0x87828
 };

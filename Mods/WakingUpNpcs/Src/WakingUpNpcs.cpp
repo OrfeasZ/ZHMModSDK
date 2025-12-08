@@ -33,7 +33,7 @@ void WakingUpNpcs::OnEngineInitialized() {
 
 void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     for (int i = 0; i < *Globals::NextActorId; ++i) {
-        auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+        auto* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
 
         // Process NPCs that are pacified (knocked out) and are not hidden (or being hidden) in a container.
         if (s_Actor->IsPacified() && !s_Actor->m_bBodyHidden && !s_Actor->m_bIsBeingDumped) {

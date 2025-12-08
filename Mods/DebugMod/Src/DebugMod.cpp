@@ -211,7 +211,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
     if (m_RenderActorBoxes || m_RenderActorNames || m_RenderActorRepoIds || m_RenderActorBehaviors) {
         for (size_t i = 0; i < *Globals::NextActorId; ++i) {
-            auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+            auto* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
 
             ZEntityRef s_Ref;
             s_Actor->GetID(s_Ref);
