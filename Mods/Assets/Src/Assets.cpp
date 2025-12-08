@@ -140,7 +140,10 @@ void Assets::OnDrawUI(bool p_HasFocus) {
                     s_RepositoryId = p_RepoId;
                     s_GlobalOutfitKit = p_GlobalOutfitKit;
             },
-            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
+            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; },
+            [](auto& p_Pair) -> bool {
+                return p_Pair.second && !p_Pair.second.m_pInterfaceRef->m_bIsHitmanSuit;
+            }
         );
 
         ImGui::Text("Character Set Index");
