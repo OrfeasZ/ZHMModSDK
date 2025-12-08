@@ -36,13 +36,13 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-        static char s_ActorName_Substring[2048] {""};
+        static char s_ActorName[2048] {""};
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Actor Name");
         ImGui::SameLine();
 
-        ImGui::InputText("##ActorName", s_ActorName_Substring, sizeof(s_ActorName_Substring));
+        ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
 
         for (int i = 0; i < *Globals::NextActorId; ++i) {
             ZActor* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
@@ -51,19 +51,19 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 continue;
             }
 
-            std::string s_ActorName = s_Actor->GetActorName().c_str();
+            std::string s_ActorName2 = s_Actor->GetActorName().c_str();
 
-            if (!Util::StringUtils::FindSubstringUTF8(s_ActorName, s_ActorName_Substring)) {
+            if (!Util::StringUtils::FindSubstringUTF8(s_ActorName2, s_ActorName)) {
                 continue;
             }
 
-            std::string s_ButtonId = std::format("{}###{}", s_ActorName, i);
+            std::string s_ActorSelectableId = std::format("{}###{}", s_ActorName2, i);
 
             if (!m_CurrentlySelectedActor) {
                 s_SelectedID = -1;
             }
 
-            if (ImGui::Selectable(s_ButtonId.c_str(), s_SelectedID == i) || m_CurrentlySelectedActor == s_Actor) {
+            if (ImGui::Selectable(s_ActorSelectableId.c_str(), s_SelectedID == i) || m_CurrentlySelectedActor == s_Actor) {
                 if (s_SelectedID != i) {
                     m_CurrentlySelectedActor = s_Actor;
                     s_SelectedID = i;
@@ -365,7 +365,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::Separator();
 
-        if (ImGui::Button(std::format("Track This Actor##{}", s_ActorName_Substring).c_str())) {
+        if (ImGui::Button(std::format("Track This Actor##{}", s_ActorName).c_str())) {
 
             if (m_RenderDest.m_ref == nullptr) {
                 GetRenderDest();
