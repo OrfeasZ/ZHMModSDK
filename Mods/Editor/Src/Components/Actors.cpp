@@ -13,6 +13,8 @@
 
 #include <Util/ImGuiUtils.h>
 
+#undef min
+
 void Editor::DrawActors(const bool p_HasFocus) {
     static size_t s_SelectedID = -1;
 
@@ -400,36 +402,62 @@ void Editor::EquipOutfit(
     ZActor* p_Actor
 ) {
     if (!p_Actor) {
-        Logger::Error("Could not equip outfit - no actor selected");
+        Logger::Error("Couldn't equip outfit - actor is null!");
         return;
     }
 
-    std::vector<ZRuntimeResourceID> s_ActorOutfitVariations;
-    if (p_CharSetCharacterType != "HeroA") {
-        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-            p_CharSetIndex].m_pInterfaceRef;
+    ZGlobalOutfitKit* s_GlobalOutfitKit = p_GlobalOutfitKit.m_pInterfaceRef;
 
-        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType2 = &s_OutfitVariationCollection->m_aCharacters[
-            0];
-        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = nullptr;
+    if (!s_GlobalOutfitKit) {
+        Logger::Error("Couldn't equip outfit - global outfit kit is null!");
+        return;
+    }
 
-        if (p_CharSetCharacterType == "Nude") {
-            s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[1];
+    if (p_CharSetIndex >= s_GlobalOutfitKit->m_aCharSets.size()) {
+        Logger::Error("Couldn't equip outfit - charset index isn't valid!");
+        return;
+    }
+
+    ZOutfitVariationCollection* s_Collection = s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef;
+
+    if (!s_Collection) {
+        Logger::Error("Couldn't equip outfit - outvit variation collection is null!");
+        return;
+    }
+
+    std::vector<ZRuntimeResourceID> s_OriginalActorVariations;
+
+    if (p_CharSetCharacterType != "Actor") {
+        auto* s_ActorType = &s_Collection->m_aCharacters[0];
+
+        if (!s_ActorType->m_pInterfaceRef) {
+            Logger::Error("Couldn't equip outfit - actor character type is null!");
+            return;
         }
-        else if (p_CharSetCharacterType == "HeroA") {
-            s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[2];
+
+        TEntityRef<ZCharsetCharacterType>* s_TargetType = nullptr;
+
+        if (p_CharSetCharacterType == "HeroA") {
+            s_TargetType = &s_Collection->m_aCharacters[2];
+        }
+        else if (p_CharSetCharacterType == "Nude") {
+            s_TargetType = &s_Collection->m_aCharacters[1];
         }
 
-        for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
-            s_ActorOutfitVariations.push_back(
-                s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit
-            );
+        const auto& s_ActorVariations = s_ActorType->m_pInterfaceRef->m_aVariations;
+
+        s_OriginalActorVariations.reserve(s_ActorVariations.size());
+
+        for (const auto& s_ActorVariation : s_ActorVariations) {
+            s_OriginalActorVariations.push_back(s_ActorVariation.m_pInterfaceRef->m_Outfit);
         }
 
-        if (s_CharsetCharacterType) {
-            for (size_t i = 0; i < s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations.size(); ++i) {
-                s_CharsetCharacterType2->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
-                        s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit;
+        if (s_TargetType && s_TargetType->m_pInterfaceRef) {
+            const auto& s_TargetVariations = s_TargetType->m_pInterfaceRef->m_aVariations;
+            const size_t s_Count = std::min(s_ActorVariations.size(), s_TargetVariations.size());
+
+            for (size_t i = 0; i < s_Count; ++i) {
+                s_ActorVariations[i].m_pInterfaceRef->m_Outfit = s_TargetVariations[i].m_pInterfaceRef->m_Outfit;
             }
         }
     }
@@ -438,15 +466,16 @@ void Editor::EquipOutfit(
         p_Actor, p_GlobalOutfitKit, p_CharSetIndex, p_OutfitVariationIndex, false
     );
 
-    if (p_CharSetCharacterType != "Actor") {
-        const ZOutfitVariationCollection* s_OutfitVariationCollection = p_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-            p_CharSetIndex].m_pInterfaceRef;
-        const TEntityRef<ZCharsetCharacterType>* s_CharsetCharacterType = &s_OutfitVariationCollection->m_aCharacters[
-            0];
+    if (p_CharSetCharacterType != "Actor" && !s_OriginalActorVariations.empty()) {
+        auto* s_ActorType = &s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef->m_aCharacters[0];
 
-        for (size_t i = 0; i < s_ActorOutfitVariations.size(); ++i) {
-            s_CharsetCharacterType->m_pInterfaceRef->m_aVariations[i].m_pInterfaceRef->m_Outfit =
-                    s_ActorOutfitVariations[i];
+        if (s_ActorType->m_pInterfaceRef) {
+            auto& s_ActorVariations = s_ActorType->m_pInterfaceRef->m_aVariations;
+            const size_t s_Count = std::min(s_ActorVariations.size(), s_OriginalActorVariations.size());
+
+            for (size_t i = 0; i < s_Count; ++i) {
+                s_ActorVariations[i].m_pInterfaceRef->m_Outfit = s_OriginalActorVariations[i];
+            }
         }
     }
 }
