@@ -31,7 +31,6 @@ void Editor::DrawActors(const bool p_HasFocus) {
             return;
         }
 
-        ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
         ZEntityRef ref;
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
@@ -118,7 +117,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             "##OutfitsPopup",
             s_OutfitName,
             sizeof(s_OutfitName),
-            s_ContentKitManager->m_repositoryGlobalOutfitKits,
+            Globals::ContentKitManager->m_repositoryGlobalOutfitKits,
             [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
             [](auto& p_Pair) -> std::string {
                 return std::string(
