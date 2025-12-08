@@ -255,6 +255,8 @@ private:
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
     bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
 
+    static bool IsActorTarget(ZActor* p_Actor);
+
 private:
     DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
@@ -460,6 +462,8 @@ private:
 
     ZActor* m_CurrentlySelectedActor = nullptr;
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
+    bool m_ShowOnlyAliveActors = false;
+    bool m_ShowOnlyTargets = false;
 
     ZActor* m_ActorTracked = nullptr;
     bool m_TrackCamActive = false;

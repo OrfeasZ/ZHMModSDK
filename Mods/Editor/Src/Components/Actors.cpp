@@ -8,6 +8,7 @@
 #include <Glacier/ZCameraEntity.h>
 #include <Glacier/ZHM5InputManager.h>
 #include <Glacier/ZFreeCamera.h>
+#include <Glacier/ZTargetManager.h>
 
 #include "imgui_internal.h"
 
@@ -31,10 +32,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             return;
         }
 
-
-        ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
-
-        static char s_ActorName[2048] {""};
+        static char s_ActorName[2048]{ "" };
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Actor Name");
@@ -42,10 +40,34 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
 
-        for (int i = 0; i < *Globals::NextActorId; ++i) {
-            ZActor* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+        ImGui::Checkbox("Show only alive actors", &m_ShowOnlyAliveActors);
+        ImGui::Checkbox("Show only targets", &m_ShowOnlyTargets);
+
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+        TEntityRef<ZActor>* s_ActorArray;
+        size_t s_ActorCount;
+
+        if (m_ShowOnlyAliveActors) {
+            s_ActorArray = Globals::ActorManager->m_aliveActors.data();
+            s_ActorCount = Globals::ActorManager->m_aliveActors.size();
+        }
+        else {
+            s_ActorArray = Globals::ActorManager->m_activatedActors.data();
+            s_ActorCount = Globals::ActorManager->m_activatedActors.size();
+        }
+
+        for (int i = 0; i < s_ActorCount; ++i) {
+            ZActor* s_Actor = s_ActorArray[i].m_pInterfaceRef;
 
             if (!s_Actor) {
+                continue;
+            }
+
+            if (m_ShowOnlyTargets && !IsActorTarget(s_Actor)) {
                 continue;
             }
 
@@ -529,4 +551,18 @@ void Editor::SetPlayerControlActive(bool s_Active) {
             s_InputControl->m_bActive = s_Active;
         }
     }
+}
+
+bool Editor::IsActorTarget(ZActor* p_Actor) {
+    if (!Globals::TargetManager) {
+        return false;
+    }
+
+    for (const auto& targetInfo : Globals::TargetManager->m_aTargets) {
+        if (targetInfo.m_rActor.m_pInterfaceRef == p_Actor) {
+            return true;
+        }
+    }
+
+    return false;
 }

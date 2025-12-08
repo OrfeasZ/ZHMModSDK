@@ -421,3 +421,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZWorldInventory*, WorldInventory
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x89\x05\x00\x00\x00\x00\xF3\x0F\x10\x0D",
+    "xxx????xxxx",
+    3,
+    ZTargetManager*, TargetManager
+);
