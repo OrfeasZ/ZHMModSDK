@@ -52,7 +52,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         static char s_ActorName[2048] {};
 
         ImGui::Text("Repository Props");
-        ImGui::Text("");
+
+        ImGui::Spacing();
         ImGui::Text("Prop Title");
         ImGui::SameLine();
 
@@ -87,7 +88,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
 
         ImGui::Separator();
         ImGui::Text("Non Repository Props");
-        ImGui::Text("");
+
+        ImGui::Spacing();
         ImGui::Text("Prop Assembly Path");
         ImGui::SameLine();
 
@@ -107,7 +109,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::Separator();
 
         ImGui::Text("Actors");
-        ImGui::Text("");
+        
+        ImGui::Spacing();
         ImGui::Text("Actor Name");
         ImGui::SameLine();
 
