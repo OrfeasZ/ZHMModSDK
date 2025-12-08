@@ -31,7 +31,6 @@ void Editor::DrawActors(const bool p_HasFocus) {
             return;
         }
 
-        ZEntityRef ref;
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
