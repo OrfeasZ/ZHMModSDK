@@ -80,6 +80,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             s_CurrentOutfitVariationIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitVariation;
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
@@ -116,6 +117,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
         );
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Character Set Index");
         ImGui::SameLine();
 
@@ -143,6 +145,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("CharSet Character Type");
         ImGui::SameLine();
 
@@ -170,6 +173,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Outfit Variation");
         ImGui::SameLine();
 
@@ -212,6 +216,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
         static char npcName[2048] { "" };
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("NPC Name");
         ImGui::SameLine();
 
@@ -261,6 +266,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             }
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("CharSet Character Type");
         ImGui::SameLine();
 

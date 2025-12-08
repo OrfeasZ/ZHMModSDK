@@ -54,6 +54,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::Text("Repository Props");
 
         ImGui::Spacing();
+
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Prop Title");
         ImGui::SameLine();
 
@@ -81,15 +83,19 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             s_WorldInventoryButton = 2;
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
         ImGui::InputInt("##RepositoryPropSpawnCount", &s_RepositoryPropSpawnCount);
 
         ImGui::Separator();
+
         ImGui::Text("Non Repository Props");
 
         ImGui::Spacing();
+
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Prop Assembly Path");
         ImGui::SameLine();
 
@@ -102,6 +108,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             }
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
@@ -111,6 +118,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::Text("Actors");
         
         ImGui::Spacing();
+
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Actor Name");
         ImGui::SameLine();
 
@@ -118,6 +127,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
 
         static char s_OutfitName[2048] { "" };
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
@@ -151,6 +161,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             }
         );
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Character Set Index");
         ImGui::SameLine();
 
@@ -168,6 +179,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("CharSet Character Type");
         ImGui::SameLine();
 
@@ -185,6 +197,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Outfit Variation");
         ImGui::SameLine();
 
@@ -209,6 +222,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 

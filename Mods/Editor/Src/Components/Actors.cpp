@@ -38,6 +38,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         static char s_ActorName_Substring[2048] {""};
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Actor Name");
         ImGui::SameLine();
 
@@ -97,6 +98,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
@@ -146,6 +148,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             }
         );
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Character Set Index");
         ImGui::SameLine();
 
@@ -174,6 +177,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("CharSet Character Type");
         ImGui::SameLine();
 
@@ -201,6 +205,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Outfit Variation");
         ImGui::SameLine();
 
@@ -243,6 +248,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         static std::string s_ActorName2;
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("Actor Name");
         ImGui::SameLine();
 
@@ -293,6 +299,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             }
         }
 
+        ImGui::AlignTextToFramePadding();
         ImGui::Text("CharSet Character Type");
         ImGui::SameLine();
 
