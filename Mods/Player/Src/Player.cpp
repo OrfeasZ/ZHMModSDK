@@ -96,23 +96,21 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
                 );
             },
-            [&](
-        const ZRepositoryID&,
-        const std::string& p_Name,
-        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit
-    ) {
-                s_CurrentCharacterSetIndex = 0;
-                s_CurrentOutfitVariationIndex = 0;
+            [&](const ZRepositoryID&,
+                const std::string& p_Name,
+                const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
+                    s_CurrentCharacterSetIndex = 0;
+                    s_CurrentOutfitVariationIndex = 0;
 
-                EquipOutfit(
-                    p_GlobalOutfitKit,
-                    s_CurrentCharacterSetIndex,
-                    s_CurrentCharSetCharacterType.data(),
-                    s_CurrentOutfitVariationIndex,
-                    s_LocalHitman.m_pInterfaceRef
-                );
+                    EquipOutfit(
+                        p_GlobalOutfitKit,
+                        s_CurrentCharacterSetIndex,
+                        s_CurrentCharSetCharacterType.data(),
+                        s_CurrentOutfitVariationIndex,
+                        s_LocalHitman.m_pInterfaceRef
+                    );
 
-                m_GlobalOutfitKit = p_GlobalOutfitKit;
+                    m_GlobalOutfitKit = p_GlobalOutfitKit;
             },
             [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
         );
