@@ -120,6 +120,10 @@ public:
         return strncmp(c_str(), p_Other.c_str(), size()) == 0;
     }
 
+    bool IsEmpty() const {
+        return size() == 0;
+    }
+
     [[nodiscard]]
     bool StartsWith(const ZString& p_Other) const {
         if (size() < p_Other.size())
