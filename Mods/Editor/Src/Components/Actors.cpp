@@ -275,7 +275,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
             for (int i = 0; i < *Globals::NextActorId; ++i) {
-                ZActor* s_Actor2 = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+                ZActor* s_Actor2 = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
 
                 s_Actor2->GetID(s_Ref);
 
