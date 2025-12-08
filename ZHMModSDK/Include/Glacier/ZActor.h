@@ -130,6 +130,8 @@ class ZActor :
         public ISequenceAudioPlayer,
         public ICrowdAIActor {
 public:
+    ZHMSDK_API ZString GetActorName() const;
+
     PAD(0x100); // 0x300
     bool m_bStartEnabled; // 0x400
     TEntityRef<ZCharacterTemplateAspect> m_rCharacter; // 0x408

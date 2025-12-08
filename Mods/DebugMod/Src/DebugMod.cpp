@@ -252,7 +252,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 std::string s_Text;
 
                 if (m_RenderActorNames) {
-                    s_Text += s_Actor->m_sActorName.c_str();
+                    s_Text += s_Actor->GetActorName().c_str();
                 }
 
                 if (m_RenderActorRepoIds) {

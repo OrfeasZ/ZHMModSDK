@@ -25,6 +25,8 @@ public:
         Parentheses,
     };
 
+    ZGuid() = default;
+
     ZGuid(const ZString& p_Data, GuidFormat p_Format = GuidFormat::Dashes) {
         FromString(p_Data, p_Format);
     }
@@ -202,6 +204,8 @@ public:
 class ZRepositoryID :
         public ZGuid {
 public:
+    ZRepositoryID() = default;
+
     ZRepositoryID(const ZString& p_Data, GuidFormat p_Format = GuidFormat::Dashes) :
         ZGuid(p_Data, p_Format) {}
 

@@ -48,9 +48,9 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 continue;
             }
 
-            std::string s_ActorName = s_Actor->m_sActorName.c_str();
+            std::string s_ActorName = s_Actor->GetActorName().c_str();
 
-            if (!Util::StringUtils::FindSubstring(s_ActorName, s_ActorName_Substring)) {
+            if (!Util::StringUtils::FindSubstringUTF8(s_ActorName, s_ActorName_Substring)) {
                 continue;
             }
 
@@ -65,7 +65,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     m_CurrentlySelectedActor = s_Actor;
                     s_SelectedID = i;
 
-                    Logger::Info("Selected actor (by list): {}", m_CurrentlySelectedActor->m_sActorName);
+                    Logger::Info("Selected actor (by list): {}", m_CurrentlySelectedActor->GetActorName());
                 }
             }
         }
