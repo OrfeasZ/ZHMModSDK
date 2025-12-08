@@ -134,13 +134,11 @@ void Assets::OnDrawUI(bool p_HasFocus) {
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
                 );
             },
-            [&](
-        const ZRepositoryID& p_RepoId,
-        const std::string& p_Name,
-        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit
-    ) {
-                s_RepositoryId = p_RepoId;
-                s_GlobalOutfitKit = p_GlobalOutfitKit;
+            [&](const ZRepositoryID& p_RepoId,
+                const std::string& p_Name,
+                const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
+                    s_RepositoryId = p_RepoId;
+                    s_GlobalOutfitKit = p_GlobalOutfitKit;
             },
             [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
         );
