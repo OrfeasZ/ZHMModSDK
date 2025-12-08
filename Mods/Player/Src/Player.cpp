@@ -212,17 +212,17 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::Separator();
 
-        static char npcName[2048] { "" };
+        static char s_ActorName[2048] { "" };
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("NPC Name");
+        ImGui::Text("Actor Name");
         ImGui::SameLine();
 
-        ImGui::InputText("##NPCName", npcName, sizeof(npcName));
+        ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
         ImGui::SameLine();
 
-        if (ImGui::Button("Get NPC Outfit")) {
-            const ZActor* s_Actor = Globals::ActorManager->GetActorByName(npcName);
+        if (ImGui::Button("Get Actor's Outfit")) {
+            const ZActor* s_Actor = Globals::ActorManager->GetActorByName(s_ActorName);
 
             if (s_Actor) {
                 EquipOutfit(
@@ -235,7 +235,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Get Nearest NPC's Outfit")) {
+        if (ImGui::Button("Get Nearest Actor's Outfit")) {
             const ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
             for (int i = 0; i < *Globals::NextActorId; ++i) {
@@ -299,7 +299,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Teleport All NPCs To Player")) {
+        if (ImGui::Button("Teleport All Actors To Player")) {
             const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
             for (size_t i = 0; i < *Globals::NextActorId; ++i) {
