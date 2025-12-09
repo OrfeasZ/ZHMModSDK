@@ -289,6 +289,24 @@ void Editor::DrawActors(const bool p_HasFocus) {
             }
         }
 
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("CharSet Character Type");
+        ImGui::SameLine();
+
+        if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentcharSetCharacterType2.data())) {
+            if (s_GlobalOutfitKit) {
+                for (const auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
+                    const bool s_IsSelected = s_CurrentcharSetCharacterType2 == m_CharSetCharacterType;
+
+                    if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
+                        s_CurrentcharSetCharacterType2 = m_CharSetCharacterType;
+                    }
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
         if (ImGui::Button("Get Nearest Actor's Outfit")) {
             ZEntityRef s_Ref;
 
@@ -319,24 +337,6 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     break;
                 }
             }
-        }
-
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
-        ImGui::SameLine();
-
-        if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentcharSetCharacterType2.data())) {
-            if (s_GlobalOutfitKit) {
-                for (const auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
-                    const bool s_IsSelected = s_CurrentcharSetCharacterType2 == m_CharSetCharacterType;
-
-                    if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
-                        s_CurrentcharSetCharacterType2 = m_CharSetCharacterType;
-                    }
-                }
-            }
-
-            ImGui::EndCombo();
         }
 
         if (ImGui::Button("Select In Entity Tree")) {
