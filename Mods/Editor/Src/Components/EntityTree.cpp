@@ -793,6 +793,20 @@ void Editor::OnSelectEntity(
         }
 
         m_SelectedEntity = p_Entity;
+
+        if (m_SelectActorOnMouseClick) {
+            ZActor* s_Actor = nullptr;
+            ZEntityRef logicalParent = m_SelectedEntity.GetLogicalParent();
+
+            if (logicalParent) {
+                s_Actor = logicalParent.QueryInterface<ZActor>();
+            }
+
+            if (s_Actor) {
+                m_CurrentlySelectedActor = s_Actor;
+                m_ScrollToActor = true;
+            }
+        }
     } else {
         m_SelectedEntity = nullptr; //Unselect it
     }

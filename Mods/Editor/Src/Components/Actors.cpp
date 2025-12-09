@@ -17,8 +17,6 @@
 #undef min
 
 void Editor::DrawActors(const bool p_HasFocus) {
-    static size_t s_SelectedID = -1;
-
     if (!p_HasFocus || !m_ActorsMenuActive) {
         return;
     }
@@ -42,6 +40,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::Checkbox("Show only alive actors", &m_ShowOnlyAliveActors);
         ImGui::Checkbox("Show only targets", &m_ShowOnlyTargets);
+        ImGui::Checkbox("Select actor in list when clicked in game", &m_SelectActorOnMouseClick);
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -77,18 +76,21 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 continue;
             }
 
-            std::string s_ActorSelectableId = std::format("{}###{}", s_ActorName2, i);
+            const bool s_IsSelected = m_CurrentlySelectedActor == s_Actor;
 
-            if (!m_CurrentlySelectedActor) {
-                s_SelectedID = -1;
+            if (m_ScrollToActor && s_IsSelected) {
+                ImGui::SetScrollHereY(0.25f);
+
+                m_ScrollToActor = false;
             }
 
-            if (ImGui::Selectable(s_ActorSelectableId.c_str(), s_SelectedID == i) || m_CurrentlySelectedActor == s_Actor) {
-                if (s_SelectedID != i) {
-                    m_CurrentlySelectedActor = s_Actor;
-                    s_SelectedID = i;
+            std::string s_ActorId = std::format("{}###{}", s_ActorName2, i);
 
-                    Logger::Info("Selected actor (by list): {}", m_CurrentlySelectedActor->GetActorName());
+            if (ImGui::Selectable(s_ActorId.c_str(), s_IsSelected)) {
+                if (!s_IsSelected) {
+                    m_CurrentlySelectedActor = s_Actor;
+
+                    Logger::Info("Selected actor (by list): {}", s_Actor->GetActorName());
                 }
             }
         }

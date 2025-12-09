@@ -464,6 +464,8 @@ private:
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
     bool m_ShowOnlyAliveActors = false;
     bool m_ShowOnlyTargets = false;
+    bool m_SelectActorOnMouseClick = false;
+    bool m_ScrollToActor = false;
 
     ZActor* m_ActorTracked = nullptr;
     bool m_TrackCamActive = false;
