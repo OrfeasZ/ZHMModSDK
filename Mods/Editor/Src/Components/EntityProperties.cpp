@@ -38,7 +38,6 @@ void Editor::DrawEntityProperties() {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select Logical Parent");
 
-
         ImGui::SameLine(0, 5);
 
         if (ImGui::Button(ICON_MD_BRANDING_WATERMARK)) {
