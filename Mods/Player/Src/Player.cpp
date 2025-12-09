@@ -212,28 +212,62 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::Separator();
 
-        static char s_ActorName[2048] { "" };
+        ImGui::Text("Get Actor's Outfit");
+
+        ImGui::Spacing();
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("CharSet Character Type");
+        ImGui::SameLine();
+
+        if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentCharSetCharacterType2.data())) {
+            if (m_GlobalOutfitKit) {
+                for (size_t i = 0; i < 3; ++i) {
+                    const bool s_IsSelected = s_CurrentCharSetCharacterType2 == m_CharSetCharacterTypes[i];
+
+                    if (ImGui::Selectable(m_CharSetCharacterTypes[i].data(), s_IsSelected)) {
+                        s_CurrentCharSetCharacterType2 = m_CharSetCharacterTypes[i];
+                    }
+                }
+            }
+
+            ImGui::EndCombo();
+        }
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Actor Name");
         ImGui::SameLine();
 
-        ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
-        ImGui::SameLine();
+        static char s_ActorName[2048]{ "" };
 
-        if (ImGui::Button("Get Actor's Outfit")) {
-            const ZActor* s_Actor = Globals::ActorManager->GetActorByName(s_ActorName);
-
-            if (s_Actor) {
-                EquipOutfit(
-                    s_Actor->m_rOutfit,
-                    s_Actor->m_nOutfitCharset,
-                    s_CurrentCharSetCharacterType2.data(),
-                    s_Actor->m_nOutfitVariation,
-                    s_LocalHitman.m_pInterfaceRef
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "##ActorName",
+            s_ActorName,
+            sizeof(s_ActorName),
+            Globals::ActorManager->m_activatedActors,
+            [](auto& p_EntityRef) -> const ZEntityRef& { return p_EntityRef.m_ref; },
+            [](auto& p_EntityRef) -> std::string {
+                return std::string(
+                    p_EntityRef.m_pInterfaceRef->m_sActorName.c_str(),
+                    p_EntityRef.m_pInterfaceRef->m_sActorName.size()
                 );
+            },
+            [&](const ZEntityRef&, const std::string& actorName, const TEntityRef<ZActor>& p_EntityRef) {
+                const ZActor* s_Actor = p_EntityRef.m_pInterfaceRef;
+
+                if (s_Actor) {
+                    EquipOutfit(
+                        s_Actor->m_rOutfit,
+                        s_Actor->m_nOutfitCharset,
+                        s_CurrentCharSetCharacterType2.data(),
+                        s_Actor->m_nOutfitVariation,
+                        s_LocalHitman.m_pInterfaceRef
+                    );
+                }
             }
-        }
+        );
+
+        ImGui::Separator();
 
         if (ImGui::Button("Get Nearest Actor's Outfit")) {
             const ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
