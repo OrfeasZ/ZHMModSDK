@@ -239,7 +239,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             const ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
             for (int i = 0; i < *Globals::NextActorId; ++i) {
-                ZActor* actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+                ZActor* actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
                 ZEntityRef s_Ref;
 
                 actor->GetID(s_Ref);
@@ -303,7 +303,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
             for (size_t i = 0; i < *Globals::NextActorId; ++i) {
-                ZActor* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+                ZActor* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
                 ZEntityRef s_Ref;
 
                 s_Actor->GetID(s_Ref);
