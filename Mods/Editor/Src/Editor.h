@@ -460,7 +460,7 @@ private:
     bool m_ActorsMenuActive = false;
     bool m_DebugChannelsMenuActive = false;
 
-    ZActor* m_CurrentlySelectedActor = nullptr;
+    ZActor* m_SelectedActor = nullptr;
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
     bool m_ShowOnlyAliveActors = false;
     bool m_ShowOnlyTargets = false;

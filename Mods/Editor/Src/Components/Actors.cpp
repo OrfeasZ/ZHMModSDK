@@ -76,7 +76,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 continue;
             }
 
-            const bool s_IsSelected = m_CurrentlySelectedActor == s_Actor;
+            const bool s_IsSelected = m_SelectedActor == s_Actor;
 
             if (m_ScrollToActor && s_IsSelected) {
                 ImGui::SetScrollHereY(0.25f);
@@ -88,7 +88,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
             if (ImGui::Selectable(s_ActorId.c_str(), s_IsSelected)) {
                 if (!s_IsSelected) {
-                    m_CurrentlySelectedActor = s_Actor;
+                    m_SelectedActor = s_Actor;
 
                     Logger::Info("Selected actor (by list): {}", s_Actor->GetActorName());
                 }
@@ -97,7 +97,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::EndChild();
 
-        if (!m_CurrentlySelectedActor) {
+        if (!m_SelectedActor) {
             ImGui::PopFont();
             ImGui::End();
             ImGui::PopFont();
@@ -113,7 +113,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         static char s_OutfitName[2048] {""};
 
         if (s_OutfitName[0] == '\0') {
-            const char* s_OutfitName2 = m_CurrentlySelectedActor->m_rOutfit.m_pInterfaceRef->m_sCommonName.c_str();
+            const char* s_OutfitName2 = m_SelectedActor->m_rOutfit.m_pInterfaceRef->m_sCommonName.c_str();
 
             strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
 
@@ -131,9 +131,9 @@ void Editor::DrawActors(const bool p_HasFocus) {
         static uint8_t s_CurrentOutfitVariationIndex = 0;
 
         if (!s_GlobalOutfitKit) {
-            s_GlobalOutfitKit = m_CurrentlySelectedActor->m_rOutfit;
-            s_CurrentCharacterSetIndex = m_CurrentlySelectedActor->m_nOutfitCharset;
-            s_CurrentOutfitVariationIndex = m_CurrentlySelectedActor->m_nOutfitVariation;
+            s_GlobalOutfitKit = m_SelectedActor->m_rOutfit;
+            s_CurrentCharacterSetIndex = m_SelectedActor->m_nOutfitCharset;
+            s_CurrentOutfitVariationIndex = m_SelectedActor->m_nOutfitVariation;
         }
 
         Util::ImGuiUtils::InputWithAutocomplete(
@@ -159,7 +159,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                         s_CurrentCharacterSetIndex,
                         s_CurrentcharSetCharacterType,
                         s_CurrentOutfitVariationIndex,
-                        m_CurrentlySelectedActor
+                        m_SelectedActor
                     );
 
                     s_GlobalOutfitKit = p_GlobalOutfitKit;
@@ -189,7 +189,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                                 s_CurrentCharacterSetIndex,
                                 s_CurrentcharSetCharacterType,
                                 s_CurrentOutfitVariationIndex,
-                                m_CurrentlySelectedActor
+                                m_SelectedActor
                             );
                         }
                     }
@@ -217,7 +217,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                                 s_CurrentCharacterSetIndex,
                                 s_CurrentcharSetCharacterType,
                                 s_CurrentOutfitVariationIndex,
-                                m_CurrentlySelectedActor
+                                m_SelectedActor
                             );
                         }
                     }
@@ -251,7 +251,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                                 s_CurrentCharacterSetIndex,
                                 s_CurrentcharSetCharacterType,
                                 s_CurrentOutfitVariationIndex,
-                                m_CurrentlySelectedActor
+                                m_SelectedActor
                             );
                         }
                     }
@@ -284,7 +284,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     s_Actor2->m_nOutfitCharset,
                     s_CurrentcharSetCharacterType2,
                     s_Actor2->m_nOutfitVariation,
-                    m_CurrentlySelectedActor
+                    m_SelectedActor
                 );
             }
         }
@@ -292,7 +292,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Get Nearest Actor's Outfit")) {
             ZEntityRef s_Ref;
 
-            m_CurrentlySelectedActor->GetID(s_Ref);
+            m_SelectedActor->GetID(s_Ref);
 
             ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
@@ -313,7 +313,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                         s_Actor2->m_nOutfitCharset,
                         s_CurrentcharSetCharacterType2,
                         s_Actor2->m_nOutfitVariation,
-                        m_CurrentlySelectedActor
+                        m_SelectedActor
                     );
 
                     break;
@@ -342,7 +342,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Select In Entity Tree")) {
             ZEntityRef s_Ref;
 
-            m_CurrentlySelectedActor->GetID(s_Ref);
+            m_SelectedActor->GetID(s_Ref);
 
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                 UpdateEntities();
@@ -354,7 +354,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Teleport Actor To Player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZEntityRef s_Ref;
-                m_CurrentlySelectedActor->GetID(s_Ref);
+                m_SelectedActor->GetID(s_Ref);
 
                 ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
@@ -366,7 +366,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         if (ImGui::Button("Teleport Player To Actor")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZEntityRef s_Ref;
-                m_CurrentlySelectedActor->GetID(s_Ref);
+                m_SelectedActor->GetID(s_Ref);
 
                 ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
@@ -380,7 +380,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             TEntityRef<ZSetpieceEntity> s_SetPieceEntity;
 
             Functions::ZActor_KillActor->Call(
-                m_CurrentlySelectedActor, s_Item, s_SetPieceEntity, EDamageEvent::eDE_UNDEFINED,
+                m_SelectedActor, s_Item, s_SetPieceEntity, EDamageEvent::eDE_UNDEFINED,
                 EDeathBehavior::eDB_IMPACT_ANIM
             );
         }
@@ -401,7 +401,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 GetPlayerCam();
             }
 
-            m_ActorTracked = m_CurrentlySelectedActor;
+            m_ActorTracked = m_SelectedActor;
             m_TrackCamActive = true;
 
             EnableTrackCam();

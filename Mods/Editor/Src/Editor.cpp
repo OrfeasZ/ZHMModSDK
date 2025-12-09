@@ -936,7 +936,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_TrackCamActive = false;
     }
 
-    m_CurrentlySelectedActor = nullptr;
+    m_SelectedActor = nullptr;
 
     m_SelectedGizmoEntity = nullptr;
 

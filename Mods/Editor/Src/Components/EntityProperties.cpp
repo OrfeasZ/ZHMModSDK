@@ -80,7 +80,7 @@ void Editor::DrawEntityProperties() {
             ImGui::SameLine(0, 5);
 
             if (ImGui::Button(ICON_MD_PEOPLE)) {
-                m_CurrentlySelectedActor = s_TargetActor;
+                m_SelectedActor = s_TargetActor;
                 m_ScrollToActor = true;
             }
 
