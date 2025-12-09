@@ -63,6 +63,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         static uint8_t s_CurrentCharacterSetIndex = 0;
         static std::string s_CurrentCharSetCharacterType = "HeroA";
         static std::string s_CurrentCharSetCharacterType2 = "HeroA";
+        static std::string s_CurrentCharSetCharacterType3 = "HeroA";
         static uint8_t s_CurrentOutfitVariationIndex = 1;
 
         if (s_OutfitName[0] == '\0') {
@@ -221,13 +222,11 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentCharSetCharacterType2.data())) {
-            if (m_GlobalOutfitKit) {
-                for (size_t i = 0; i < 3; ++i) {
-                    const bool s_IsSelected = s_CurrentCharSetCharacterType2 == m_CharSetCharacterTypes[i];
+            for (size_t i = 0; i < 3; ++i) {
+                const bool s_IsSelected = s_CurrentCharSetCharacterType2 == m_CharSetCharacterTypes[i];
 
-                    if (ImGui::Selectable(m_CharSetCharacterTypes[i].data(), s_IsSelected)) {
-                        s_CurrentCharSetCharacterType2 = m_CharSetCharacterTypes[i];
-                    }
+                if (ImGui::Selectable(m_CharSetCharacterTypes[i].data(), s_IsSelected)) {
+                    s_CurrentCharSetCharacterType2 = m_CharSetCharacterTypes[i];
                 }
             }
 
@@ -269,6 +268,22 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::Separator();
 
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("CharSet Character Type");
+        ImGui::SameLine();
+
+        if (ImGui::BeginCombo("##CharSetCharacterType3", s_CurrentCharSetCharacterType3.data())) {
+            for (size_t i = 0; i < 3; ++i) {
+                const bool s_IsSelected = s_CurrentCharSetCharacterType3 == m_CharSetCharacterTypes[i];
+
+                if (ImGui::Selectable(m_CharSetCharacterTypes[i].data(), s_IsSelected)) {
+                    s_CurrentCharSetCharacterType3 = m_CharSetCharacterTypes[i];
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
         if (ImGui::Button("Get Nearest Actor's Outfit")) {
             const ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
 
@@ -288,7 +303,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                     EquipOutfit(
                         actor->m_rOutfit,
                         actor->m_nOutfitCharset,
-                        s_CurrentCharSetCharacterType2.data(),
+                        s_CurrentCharSetCharacterType3.data(),
                         actor->m_nOutfitVariation,
                         s_LocalHitman.m_pInterfaceRef
                     );
@@ -296,24 +311,6 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                     break;
                 }
             }
-        }
-
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
-        ImGui::SameLine();
-
-        if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentCharSetCharacterType2.data())) {
-            if (m_GlobalOutfitKit) {
-                for (size_t i = 0; i < 3; ++i) {
-                    const bool s_IsSelected = s_CurrentCharSetCharacterType2 == m_CharSetCharacterTypes[i];
-
-                    if (ImGui::Selectable(m_CharSetCharacterTypes[i].data(), s_IsSelected)) {
-                        s_CurrentCharSetCharacterType2 = m_CharSetCharacterTypes[i];
-                    }
-                }
-            }
-
-            ImGui::EndCombo();
         }
 
         ImGui::Separator();
