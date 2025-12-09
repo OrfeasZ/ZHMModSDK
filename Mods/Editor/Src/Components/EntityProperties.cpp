@@ -71,6 +71,24 @@ void Editor::DrawEntityProperties() {
                 ImGui::SetTooltip("Destroy Entity");
         }
 
+        ZActor* s_Actor = s_SelectedEntity.QueryInterface<ZActor>();
+        ZEntityRef s_LogicalParent = s_SelectedEntity.GetLogicalParent();
+        ZActor* s_Actor2 = s_LogicalParent ? s_LogicalParent.QueryInterface<ZActor>() : nullptr;
+        ZActor* s_TargetActor = s_Actor ? s_Actor : s_Actor2;
+
+        if (s_TargetActor) {
+            ImGui::SameLine(0, 5);
+
+            if (ImGui::Button(ICON_MD_PEOPLE)) {
+                m_CurrentlySelectedActor = s_TargetActor;
+                m_ScrollToActor = true;
+            }
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Select In Actors Menu");
+            }
+        }
+
         static bool s_LocalTransform = false;
         ImGui::Checkbox("Local Transforms", &s_LocalTransform);
 
