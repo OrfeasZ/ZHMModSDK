@@ -1,4 +1,10 @@
+#include <complex.h>
+#include <complex.h>
+#include <complex.h>
+#include <complex.h>
 #include <Editor.h>
+#include <functional>
+#include <functional>
 
 #include "Logging.h"
 
@@ -240,23 +246,27 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     return s_Quat;
 }
 
-void Editor::FindAlocForZGeomEntityNode(
-    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
+void Editor::FindAlocAndPrimForZGeomEntityNode(
+    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, ZEntityRef>>& p_Entities,
     const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType
 ) {
     const ZGeomEntity* s_GeomEntity = p_Node->Entity.QueryInterface<ZGeomEntity>();
     std::string s_Id = std::format("{:016x}", p_Node->Entity->GetType()->m_nEntityId);
-    std::string s_HashString =
+    std::string s_TbluHashString =
             std::format("<{:08X}{:08X}>", p_Node->BlueprintFactory.m_IDHigh, p_Node->BlueprintFactory.m_IDLow);
 
     if (ZResourceIndex s_ResourceIndex(s_GeomEntity->m_ResourceID.m_nResourceIndex);
         s_ResourceIndex.val != -1) {
         TArray<unsigned char> s_Flags;
         TArray<ZResourceIndex> s_Indices;
-        std::vector<std::string> s_AlocHashes;
+        std::vector<std::pair<std::string, std::string>> s_AlocAndPrimHashes;
         Functions::ZResourceContainer_GetResourceReferences->Call(
             *Globals::ResourceContainer, s_ResourceIndex, s_Indices, s_Flags
         );
+        const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->
+                m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex.val];
+        const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
+        std::string s_PrimHashString {std::format("{:016X}", s_PrimHash)};
         for (ZResourceIndex s_CurrentResourceIndex : s_Indices) {
             if (s_CurrentResourceIndex.val < 0) {
                 continue;
@@ -265,17 +275,14 @@ void Editor::FindAlocForZGeomEntityNode(
                 s_CurrentResourceIndex.val]; s_ReferenceResourceInfo.resourceType == 'ALOC') {
                 const auto s_AlocHash = s_ReferenceResourceInfo.rid.GetID();
                 std::string s_AlocHashString {std::format("{:016X}", s_AlocHash)};
-                s_AlocHashes.push_back(s_AlocHashString);
+                std::pair s_AlocAndPrimHashStrings {s_AlocHashString, s_PrimHashString};
+                s_AlocAndPrimHashes.push_back(s_AlocAndPrimHashStrings);
                 Logger::Debug(
-                    "Found ALOC. ID: {} TBLU: {} ALOC: {}",
-                    s_Id, s_HashString, s_AlocHashString
+                    "Found ALOC. ID: {} TBLU: {} ALOC: {} PRIM: {}",
+                    s_Id, s_TbluHashString, s_AlocAndPrimHashStrings.first, s_AlocAndPrimHashStrings.second
                 );
             }
         }
-        const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->
-                m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex.val];
-        const auto s_PrimHash = s_PrimResourceInfo.rid.GetID();
-        std::string s_PrimHashString {std::format("{:016X}", s_PrimHash)};
         if (std::string s_collision_ioi_string = GetCollisionHash(p_Node->Entity);
             !s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
             bool s_Skip = false;
@@ -290,10 +297,10 @@ void Editor::FindAlocForZGeomEntityNode(
             }
             if (!s_Skip) {
                 Logger::Debug(
-                    "Found ALOC. ID: {} TBLU: {} PRIM: {} ALOC: {}", s_Id, s_HashString,
+                    "Found ALOC. ID: {} TBLU: {} PRIM: {} ALOC: {}", s_Id, s_TbluHashString,
                     s_PrimHashString, s_collision_ioi_string
                 );
-                s_AlocHashes.push_back(s_collision_ioi_string);
+                s_AlocAndPrimHashes.emplace_back(s_collision_ioi_string, s_PrimHashString);
                 Quat s_EntityQuat = GetQuatFromProperty(p_Node->Entity);
                 Quat s_ParentQuat = GetParentQuat(p_Node->Entity);
 
@@ -301,7 +308,7 @@ void Editor::FindAlocForZGeomEntityNode(
                 s_CombinedQuat = s_ParentQuat * s_EntityQuat;
                 auto s_Entity =
                         std::make_tuple(
-                            s_AlocHashes,
+                            s_AlocAndPrimHashes,
                             s_CombinedQuat,
                             p_Node->Entity
                         );
@@ -311,13 +318,14 @@ void Editor::FindAlocForZGeomEntityNode(
     }
 }
 
-void Editor::FindAlocForZPrimitiveProxyEntityNode(
-    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& entities,
+void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
+    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, ZEntityRef>>& entities,
     const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType
 ) {
     std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
     std::string s_HashString =
             std::format("<{:08X}{:08X}>", s_Node->BlueprintFactory.m_IDHigh, s_Node->BlueprintFactory.m_IDLow);
+    // TODO: Check if the prim hash is needed here
 
     if (std::string s_collision_ioi_string = GetCollisionHash(s_Node->Entity);
         !s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
@@ -332,11 +340,11 @@ void Editor::FindAlocForZPrimitiveProxyEntityNode(
             }
         }
         if (!s_Skip) {
-            std::vector<std::string> s_AlocHashes;
+            std::vector<std::pair<std::string, std::string>> s_AlocHashes;
             Logger::Debug(
                 "Found ALOC. ID: {} TBLU: {} ALOC: {}", s_Id, s_HashString, s_collision_ioi_string
             );
-            s_AlocHashes.push_back(s_collision_ioi_string);
+            s_AlocHashes.emplace_back(s_collision_ioi_string, "");
             Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
             Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
 
@@ -353,9 +361,9 @@ void Editor::FindAlocForZPrimitiveProxyEntityNode(
     }
 }
 
-void Editor::FindAlocs(
+void Editor::FindMeshes(
     const std::function<void(
-        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>&, bool p_Done
+        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, ZEntityRef>>&, bool p_Done
     )>& p_SendEntitiesCallback,
     const std::function<void()>& p_RebuiltCallback
 ) {
@@ -365,13 +373,12 @@ void Editor::FindAlocs(
     }
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-    std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
+    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, ZEntityRef>> entities;
 
     // Create a queue and add the root to it.
     std::queue<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodeQueue;
     s_NodeQueue.emplace(std::shared_ptr<EntityTreeNode>(), m_CachedEntityTree);
-    std::vector<std::string> s_selectorPrimHashes;
-    // Keep iterating through the tree until we find all the prims.
+    // Keep iterating through the tree until we find all the ZGeomEntities.
     while (!s_NodeQueue.empty()) {
         // Send batches of 10 entities at a time so the client can start processing
         if (entities.size() >= 10) {
@@ -389,10 +396,10 @@ void Editor::FindAlocs(
             continue;
         }
         if (char* s_EntityType = typeInfo->m_pTypeName; strcmp(s_EntityType, "ZGeomEntity") == 0) {
-            FindAlocForZGeomEntityNode(entities, s_Node, s_Interfaces, s_EntityType);
+            FindAlocAndPrimForZGeomEntityNode(entities, s_Node, s_Interfaces, s_EntityType);
         }
         else if (strcmp(s_EntityType, "ZPrimitiveProxyEntity") == 0) {
-            FindAlocForZPrimitiveProxyEntityNode(entities, s_Node, s_Interfaces, s_EntityType);
+            FindAlocAndPrimForZPrimitiveProxyEntityNode(entities, s_Node, s_Interfaces, s_EntityType);
         }
 
         // Add children to the queue.

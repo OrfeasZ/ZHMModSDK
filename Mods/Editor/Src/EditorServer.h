@@ -54,7 +54,7 @@ private:
         WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
     );
     static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
-    static void SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket, uWS::Loop* p_Loop);
+    static void SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS::Loop* p_Loop);
     static bool SendEntitiesDetails(
         WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities
     );

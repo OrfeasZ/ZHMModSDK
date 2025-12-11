@@ -208,7 +208,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
     }
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
         Plugin()->QueueTask([p_Socket, p_Loop]() {
-            SendAlocPfBoxesAndSeedPointEntityList(p_Socket, p_Loop);
+            SendMeshPfBoxAndSeedPointEntityList(p_Socket, p_Loop);
         });
     }
     else if (s_Type == "getEntityDetails") {
@@ -667,45 +667,46 @@ bool EditorServer::GetEnabled() {
     return m_Enabled;
 }
 
-void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket, uWS::Loop* p_Loop) {
+void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS::Loop* p_Loop) {
     p_Loop->defer(
         [p_Socket]() {
-            p_Socket->send("{\"alocs\":[", uWS::OpCode::TEXT);
+            p_Socket->send("{\"version\":1,\"meshes\":[", uWS::OpCode::TEXT);
         }
     );
-    auto s_AnyAlocSentOverall = std::make_shared<bool>(false);
-    auto s_TotalAlocsSent = std::make_shared<int>(0);
+    auto s_AnyMeshSentOverall = std::make_shared<bool>(false);
+    auto s_TotalMeshesSent = std::make_shared<int>(0);
     auto s_LastLoggedMilestone = std::make_shared<int>(0);
-    Logger::Info("Sending ALOCs...");
-    Plugin()->FindAlocs(
-        [p_Socket, p_Loop, s_AnyAlocSentOverall, s_TotalAlocsSent, s_LastLoggedMilestone](
-            const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
-            const bool p_IsLastAlocBatch
-        ) -> void {
+    Logger::Info("Sending Meshes...");
+    Plugin()->FindMeshes(
+        [p_Socket, p_Loop, s_AnyMeshSentOverall, s_TotalMeshesSent, s_LastLoggedMilestone](
+    const std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, ZEntityRef>>& p_Entities,
+    const bool p_IsLastMeshBatch
+) -> void {
             std::ostringstream s_BatchJson;
             bool s_DidPrepareDataThisBatch = false;
             if (!p_Entities.empty()) {
                 bool s_IsFirstItemInBatch = true;
-                *s_TotalAlocsSent += p_Entities.size();
-                const int currentMilestone = *s_TotalAlocsSent / 1000;
+                *s_TotalMeshesSent += p_Entities.size();
+                const int currentMilestone = *s_TotalMeshesSent / 1000;
                 if (currentMilestone > *s_LastLoggedMilestone) {
-                    Logger::Info("ALOCs sent: {}", *s_TotalAlocsSent);
+                    Logger::Info("Meshes sent: {}", *s_TotalMeshesSent);
                     *s_LastLoggedMilestone = currentMilestone;
                 }
-                bool s_CurrentBatchWillSend = false;
                 for (auto& [s_Hashes, s_Quat, s_Entity] : p_Entities) {
                     if (IsExcludedFromNavMeshExport(s_Entity)) continue;
                     if (s_Hashes.empty()) {
                         continue;
                     }
-                    for (const auto& s_Hash : s_Hashes) {
+                    for (const auto& s_AlocAndPrimHashes : s_Hashes) {
                         if (!s_IsFirstItemInBatch) {
                             s_BatchJson << ",";
                         }
                         s_IsFirstItemInBatch = false;
                         s_DidPrepareDataThisBatch = true;
 
-                        s_BatchJson << "{" << write_json("hash") << ":" << write_json(s_Hash) << ",";
+                        s_BatchJson << "{";
+                        s_BatchJson << write_json("alocHash") << ":" << write_json(s_AlocAndPrimHashes.first) << ",";
+                        s_BatchJson << write_json("primHash") << ":" << write_json(s_AlocAndPrimHashes.second) << ",";
                         s_BatchJson << write_json("entity") << ":";
                         WriteEntityTransforms(s_BatchJson, s_Quat, s_Entity);
                         s_BatchJson << "}";
@@ -715,16 +716,16 @@ void EditorServer::SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket, uW
             if (s_DidPrepareDataThisBatch) {
                 std::string data_to_send = s_BatchJson.str();
                 p_Loop->defer(
-                    [p_Socket, data_to_send, s_AnyAlocSentOverall]() {
-                        if (*s_AnyAlocSentOverall) {
+                    [p_Socket, data_to_send, s_AnyMeshSentOverall]() {
+                        if (*s_AnyMeshSentOverall) {
                             p_Socket->send(",", uWS::OpCode::TEXT);
                         }
                         p_Socket->send(data_to_send, uWS::OpCode::TEXT);
-                        *s_AnyAlocSentOverall = true;
+                        *s_AnyMeshSentOverall = true;
                     }
                 );
             }
-            if (p_IsLastAlocBatch) {
+            if (p_IsLastMeshBatch) {
                 const auto s_PfBoxEntities = Plugin()->FindEntitiesByType("ZPFBoxEntity", "00724CDE424AFE76");
                 const auto s_PfSeedPointEntities = Plugin()->FindEntitiesByType(
                     "ZPFSeedPoint", "00280B8C4462FAC8"
@@ -900,7 +901,6 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
     // Check if m_bRemovePhysics is true. If it is true, skip this entity.
     const auto s_EntityType = p_Entity->GetType();
     const std::string s_RemovePhysicsPropertyName = "m_bRemovePhysics";
-    const std::string s_VisiblePropertyName = "m_bVisible";
     if (s_EntityType && s_EntityType->m_pProperties01) {
         for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
             const ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
@@ -922,21 +922,11 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
                             return true;
                         }
                     }
-                    else if (s_PropertyNameView == s_VisiblePropertyName) {
-                        if (!IsPropertyValueTrue(s_Property, p_Entity)) {
-                            return true;
-                        }
-                    }
                 }
             }
             else if (s_PropertyInfo->m_pName) {
                 if (s_PropertyInfo->m_pName == s_RemovePhysicsPropertyName) {
                     if (IsPropertyValueTrue(s_Property, p_Entity)) {
-                        return true;
-                    }
-                }
-                else if (s_PropertyInfo->m_pName == s_VisiblePropertyName) {
-                    if (!IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
                 }
@@ -966,11 +956,7 @@ bool EditorServer::SendEntitiesDetails(
             s_DidSendAnything = true;
 
             std::ostringstream s_Event;
-            s_Event << "{" << write_json("hash") << ":";
-            s_Event << write_json(s_Hash) << ",";
-            s_Event << write_json("entity") << ":";
             WriteEntityTransforms(s_Event, s_Quat, s_Entity);
-            s_Event << "}";
             p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
         }
     }
