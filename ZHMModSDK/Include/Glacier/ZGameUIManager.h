@@ -13,7 +13,7 @@ class ZGameUIManager :
         public IComponentInterface,
         public IUITextureRequestResolver {
 public:
-    virtual ~ZGameUIManager();
+    virtual ~ZGameUIManager() = 0;
 
 public:
     PAD(0x68);
