@@ -4,6 +4,7 @@
 #include "ZPhysics.h"
 #include "ZPrimitives.h"
 #include "ZCollision.h"
+#include "ZOutfit.h"
 
 class IFutureCameraState :
         public IComponentInterface {
