@@ -112,6 +112,53 @@ public:
     PAD(0x170);
 };
 
+class IItemWeapon : public IComponentInterface {
+};
+
+class IFirearm : public IComponentInterface {
+};
+
+class IParticleEmitterEntity;
+class ZItemWeaponEffectGroup;
+class ZHM5WeaponSoundSetupEntity;
+class ZWeaponSoundSetupEntity;
+class ZHM5WeaponHandPosBox;
+class ZHM5ClipSpawnerEntity;
+class ZManualReloadSettings;
+
+class ZHM5ItemWeapon :
+    public ZHM5Item,
+    public IItemWeapon,
+    public IFirearm,
+    public ISavableEntity {
+public:
+    PAD(0xC);
+    eWeaponType m_WeaponType; // 0x514
+    ZRuntimeResourceID m_ridClipTemplate; // 0x518
+    EWeaponAnimationCategory m_eAnimationCategory; // 0x520
+    ZEntityRef m_MuzzleExit; // 0x528
+    ZEntityRef m_CartridgeEject; // 0x530
+    float32 m_fCartridgeEjectForceMultiplier; // 0x538
+    TEntityRef<IParticleEmitterEntity> m_MuzzleFlashEffect; // 0x540
+    TEntityRef<IParticleEmitterEntity> m_MuzzleSmokeEffect; // 0x550
+    TEntityRef<ZItemWeaponEffectGroup> m_MuzzleFlashEffectGroup; // 0x560
+    TEntityRef<ZItemWeaponEffectGroup> m_MuzzleSmokeEffectGroup; // 0x570
+    TEntityRef<ZHM5WeaponSoundSetupEntity> m_SoundSetup; // 0x580
+    TEntityRef<ZWeaponSoundSetupEntity> m_AudioSetup; // 0x590
+    TEntityRef<ZHM5WeaponHandPosBox> m_LeftHandPos; // 0x5A0
+    ZEntityRef m_AmmoProperties; // 0x5B0
+    bool m_bConnectsToTarget; // 0x5B8
+    float32 m_fMuzzleEnergyMultiplier; // 0x5BC
+    bool m_bScopedWeapon; // 0x5C0
+    ZEntityRef m_ScopePosition; // 0x5C8
+    ZEntityRef m_ScopeCrossHair; // 0x5D0
+    ZEntityRef m_rSpecialImpactAct; // 0x5D8
+    ZEntityRef m_rSuperSpecialTriggerEffect; // 0x5E0
+    TArray<TEntityRef<ZHM5ClipSpawnerEntity>> m_rClipMeshProviders; // 0x5E8
+    TArray<TEntityRef<ZManualReloadSettings>> m_aManualReloadSettings; // 0x600
+    PAD(0x398);
+};
+
 class ZItemSpawner : public ZSpatialEntity, public IItemOwner, public ISavableEntity //Size: 0x138
 {
 public:
