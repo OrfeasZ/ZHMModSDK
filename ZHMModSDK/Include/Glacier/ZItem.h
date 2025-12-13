@@ -32,14 +32,30 @@ class ZEventConsumerCollection;
 class IBoolCondition;
 class ZValueBool;
 class IVariationResourceEntity;
+class ZItemRepositoryKeyEntity;
+
+struct SItemConfig {
+    eItemType m_ItemType;
+    eItemSize m_ItemSize;
+    EAnimSetType m_eMainAnimSetType;
+    EAnimSetType m_eCarryAnimSetType;
+    EItemGripType m_eGripAnimType;
+    EItemGripType m_eGripAnimTypeVR;
+    eItemHands m_ItemHandsIdle;
+    eItemHands m_ItemHandsUse;
+    PAD(0xDA);
+};
 
 class ZItemConfigDescriptor {
 public:
     virtual ~ZItemConfigDescriptor() = 0;
 
-    ZRepositoryID m_RepositoryId;
-    PAD(0x28);
+    const ZRepositoryID m_ItemID;
+    const TArray<ZRepositoryID> m_ModifierIDs;
+    bool m_bConfigurationApplied;
+    ZRuntimeResourceID m_RuntimeResource;
     ZString m_sTitle;
+    SItemConfig m_ItemConfig;
 };
 
 class ZVrHandAlignPose;
