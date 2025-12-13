@@ -7,6 +7,7 @@
 #include "ZResource.h"
 #include "ZHM5GridManager.h"
 #include "TSet.h"
+#include "ZCollision.h"
 
 #include <Logging.h>
 
@@ -22,13 +23,6 @@ class ZSpatialEntity;
 class ZKnowledge;
 class ZAnimatedActor;
 class ZGlobalOutfitKit;
-
-class ICharacterCollision :
-        public IComponentInterface {
-public:
-    virtual ~ICharacterCollision() {}
-    virtual void ICharacterCollision_unk0() = 0;
-};
 
 class IActor {
 public:

@@ -10,6 +10,7 @@
 #include <Glacier/ZHitman5.h>
 #include <Glacier/ZItem.h>
 #include <Glacier/SExternalReferences.h>
+#include <Glacier/ZActor.h>
 
 #include <Util/ImGuiUtils.h>
 

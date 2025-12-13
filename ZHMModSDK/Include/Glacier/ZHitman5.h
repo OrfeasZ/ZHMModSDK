@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ZActor.h"
 #include "ZHM5BaseCharacter.h"
 #include "ZPhysics.h"
 #include "ZPrimitives.h"
+#include "ZCollision.h"
 
 class IFutureCameraState :
         public IComponentInterface {

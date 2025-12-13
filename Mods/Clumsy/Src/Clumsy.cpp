@@ -6,6 +6,7 @@
 #include <Glacier/ZGameLoopManager.h>
 #include <Glacier/ZHitman5.h>
 #include <Glacier/SGameUpdateEvent.h>
+#include <Glacier/ZActor.h>
 
 #include "IconsMaterialDesign.h"
 #include "Glacier/ZGeomEntity.h"
