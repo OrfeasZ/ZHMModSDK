@@ -415,6 +415,31 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             }
         }
     }
+
+    if (m_RemoveItemFromInventory) {
+        if (!m_ItemToRemove) {
+            m_RemoveItemFromInventory = false;
+            return;
+        }
+
+        const bool s_IsMainWeapon = m_SelectedActor->m_pInventoryHandler->m_rMainWeapon == m_ItemToRemove;
+
+        m_SelectedActor->ReleaseItem(m_ItemToRemove, false);
+
+        Functions::ZWorldInventory_DestroyItem->Call(
+            Globals::WorldInventory,
+            TEntityRef<IItemBase>(m_ItemToRemove.m_ref)
+        );
+
+        if (s_IsMainWeapon) {
+            m_SelectedActor->m_pInventoryHandler->m_rMainWeapon = TEntityRef<ZHM5ItemWeapon>(
+                m_SelectedActor->m_pInventoryHandler->m_aInventory[0].m_ref
+            );
+        }
+
+        m_ItemToRemove = {};
+        m_RemoveItemFromInventory = false;
+    }
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {

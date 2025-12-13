@@ -216,6 +216,9 @@ private:
         const std::string& p_CharSetCharacterType, uint8_t p_OutfitVariationindex, ZActor* p_Actor
     );
 
+    void ItemCreatedHandler(uint32 p_Ticket, TEntityRef<IItemBase> p_NewItem);
+    void LoadRepositoryWeapons();
+
     void EnableTrackCam();
     void UpdateTrackCam() const;
     void DisableTrackCam();
@@ -466,6 +469,10 @@ private:
     bool m_ShowOnlyTargets = false;
     bool m_SelectActorOnMouseClick = false;
     bool m_ScrollToActor = false;
+
+    std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryWeapons;
+    TEntityRef<IItem> m_ItemToRemove {};
+    bool m_RemoveItemFromInventory = false;
 
     ZActor* m_ActorTracked = nullptr;
     bool m_TrackCamActive = false;

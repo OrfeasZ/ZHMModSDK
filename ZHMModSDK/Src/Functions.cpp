@@ -345,6 +345,20 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
+    "\x40\x53\x56\x57\x48\x83\xEC\x00\x48\x8B\xD9\x33\xFF",
+    "xxxxxxx?xxxxx",
+    ZActorInventoryHandler_UpdateAfterAttachChange,
+    void(ZActorInventoryHandler* th)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x57\x41\x57\x48\x83\xEC\x00\x48\x8B\x51\x18",
+    "xxxxxxx?xxxx",
+    ZActorInventoryHandler_FinalizePendingItems,
+    void(ZActorInventoryHandler* th)
+);
+
+PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x48\x8B\x02\x4C\x8B\xD1",
     "xxxxxxxxxxxxxx?xxxxxx",
     ZEntityManager_GenerateDynamicObjectID,
@@ -364,4 +378,11 @@ PATTERN_FUNCTION(
     ZWorldInventory_RequestNewItem,
     uint32(ZWorldInventory* th, const ZRepositoryID& repId, ZDelegate<void(unsigned int, TEntityRef<IItemBase>)> callback,
         uint64_t entityID, bool bLoading, const ZEntityRef& rParentSpatial, const ZEntityRef& rCreator)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x20\x48\x89\x54\x24\x10\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x83\xEC\x00\x4C\x8B\xE9",
+    "xxxxxxxxxxxxxxxxxxxxxxxx?xxx",
+    ZWorldInventory_DestroyItem,
+    void(ZWorldInventory* th, TEntityRef<IItemBase> rItemInc)
 );

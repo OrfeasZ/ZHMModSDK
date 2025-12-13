@@ -423,6 +423,13 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
+    "\x3B\x05\x00\x00\x00\x00\x0F\x84\x00\x00\x00\x00\x4C\x8B\x05",
+    "xx????xx????xxx",
+    2,
+    uint32_t*, WorldInventory_InvalidTicket
+);
+
+PATTERN_RELATIVE_GLOBAL(
     "\x48\x89\x05\x00\x00\x00\x00\xF3\x0F\x10\x0D",
     "xxx????xxxx",
     3,

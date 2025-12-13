@@ -1,5 +1,7 @@
 #include "Editor.h"
 
+#include <IconsMaterialDesign.h>
+
 #include <Glacier/ZActor.h>
 #include <Glacier/ZContentKitManager.h>
 #include <Glacier/ZSpatialEntity.h>
@@ -28,6 +30,10 @@ void Editor::DrawActors(const bool p_HasFocus) {
     if (s_Showing && p_HasFocus) {
         if (!Globals::ActorManager) {
             return;
+        }
+
+        if (m_RepositoryWeapons.size() == 0) {
+            LoadRepositoryWeapons();
         }
 
         static char s_ActorName[2048]{ "" };
@@ -375,6 +381,10 @@ void Editor::DrawActors(const bool p_HasFocus) {
             }
         }
 
+        if (ImGui::Button("Revive Actor")) {
+            Functions::ZActor_ReviveActor->Call(m_SelectedActor);
+        }
+
         if (ImGui::Button("Kill Actor")) {
             TEntityRef<IItem> s_Item;
             TEntityRef<ZSetpieceEntity> s_SetPieceEntity;
@@ -383,6 +393,143 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 m_SelectedActor, s_Item, s_SetPieceEntity, EDamageEvent::eDE_UNDEFINED,
                 EDeathBehavior::eDB_IMPACT_ANIM
             );
+        }
+
+        ImGui::Separator();
+
+        ImGui::Text("Add Weapon To Inventory");
+        ImGui::Spacing();
+
+        static char s_WeaponTitle[2048]{ "" };
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Weapon Title");
+        ImGui::SameLine();
+
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "##RepositoryWeapons",
+            s_WeaponTitle,
+            sizeof(s_WeaponTitle),
+            m_RepositoryWeapons,
+            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
+            [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+                ZEntityRef s_ActorEntityRef = m_SelectedActor->m_pInventoryHandler->m_rActor.m_ref;
+                const uint64_t s_NewEntityID = Functions::ZEntityManager_GenerateDynamicObjectID->Call(
+                    Globals::EntityManager,
+                    s_ActorEntityRef,
+                    EDynamicEntityType::eDET_CharacterInventoryItem,
+                    0
+                );
+
+                const ZEntityRef s_ActorEntityRef2 = m_SelectedActor->m_pInventoryHandler->m_rActor.m_ref;
+                const ZMemberDelegate<Editor, void(uint32 nTicket, TEntityRef<IItemBase> rNewItem)> s_Delegate(
+                    this, &Editor::ItemCreatedHandler
+                );
+
+                uint32_t s_Ticket = Functions::ZWorldInventory_RequestNewItem->Call(
+                    Globals::WorldInventory,
+                    p_Id,
+                    s_Delegate,
+                    s_NewEntityID,
+                    false,
+                    {},
+                    s_ActorEntityRef2
+                );
+
+                if (s_Ticket != *Globals::WorldInventory_InvalidTicket) {
+                    ZActorInventoryHandler::SPendingItemInfo s_PendingItemInfo;
+                    s_PendingItemInfo.m_nTicket = s_Ticket;
+                    s_PendingItemInfo.m_eAttachLocation = EAttachLocation::eALUndefined;
+                    s_PendingItemInfo.m_eMaxTension = EGameTension::EGT_Undefined;
+                    s_PendingItemInfo.m_bLeftHand = false;
+                    s_PendingItemInfo.m_bWeapon = true;
+
+                    m_SelectedActor->m_pInventoryHandler->m_aPendingItems.push_back(s_PendingItemInfo);
+                }
+            }
+        );
+
+        ImGui::Separator();
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Main Weapon");
+        ImGui::SameLine();
+
+        ZHM5ItemWeapon* s_MainWeapon = m_SelectedActor->m_pInventoryHandler->m_rMainWeapon.m_pInterfaceRef;
+        const char* s_MainWeaponName = m_SelectedActor->m_pInventoryHandler->m_rMainWeapon
+            ? s_MainWeapon->m_pItemConfigDescriptor->m_sTitle.c_str()
+            : "None";
+
+        if (ImGui::BeginCombo("##MainWeapon", s_MainWeaponName)) {
+            for (const auto& s_Item : m_SelectedActor->m_pInventoryHandler->m_aInventory) {
+                if (!s_Item) {
+                    continue;
+                }
+
+                ZHM5Item* s_HM5Item = static_cast<ZHM5Item*>(s_Item.m_pInterfaceRef);
+                auto* s_ItemConfigDescriptor = s_HM5Item->m_pItemConfigDescriptor;
+
+                if (!s_ItemConfigDescriptor) {
+                    continue;
+                }
+
+                const bool s_IsSelected = s_HM5Item == s_MainWeapon;
+
+                if (ImGui::Selectable(s_ItemConfigDescriptor->m_sTitle.c_str(), s_IsSelected)) {
+                    ZEntityRef entityRef;
+                    s_HM5Item->GetID(entityRef);
+                    m_SelectedActor->m_pInventoryHandler->m_rMainWeapon = TEntityRef<ZHM5ItemWeapon>(entityRef);
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
+        ImGui::Separator();
+
+        ImGui::Text("Inventory");
+        ImGui::Spacing();
+
+        for (const auto& s_Item : m_SelectedActor->m_pInventoryHandler->m_aInventory) {
+            if (!s_Item) {
+                continue;
+            }
+
+            ZHM5Item* s_HM5Item = static_cast<ZHM5Item*>(s_Item.m_pInterfaceRef);
+            auto* s_ItemConfigDescriptor = s_HM5Item->m_pItemConfigDescriptor;
+
+            if (!s_ItemConfigDescriptor) {
+                continue;
+            }
+
+            std::string s_DisplayName = std::format(
+                "{} [{}]",
+                s_ItemConfigDescriptor->m_sTitle.c_str(),
+                s_ItemConfigDescriptor->m_ItemID.ToString().c_str()
+            );
+
+            char s_Buffer[2048];
+
+            strncpy(s_Buffer, s_DisplayName.c_str(), sizeof(s_Buffer));
+
+            s_Buffer[sizeof(s_Buffer) - 1] = '\0';
+
+            std::string s_InputId = std::format(
+                "###{}",
+                s_ItemConfigDescriptor->m_ItemID.ToString().c_str()
+            );
+
+            ImGui::InputText(s_InputId.c_str(), s_Buffer, sizeof(s_Buffer));
+
+            ImGui::SameLine();
+
+            std::string s_RemoveItemButtonId = std::format("###RemoveItem_{}", s_ItemConfigDescriptor->m_ItemID.ToString().c_str());
+
+            if (ImGui::SmallButton((ICON_MD_CLOSE + s_RemoveItemButtonId).c_str())) {
+                m_ItemToRemove = s_Item;
+                m_RemoveItemFromInventory = true;
+            }
         }
 
         ImGui::Separator();
@@ -507,6 +654,104 @@ void Editor::EquipOutfit(
             }
         }
     }
+}
+
+void Editor::ItemCreatedHandler(uint32 p_Ticket, TEntityRef<IItemBase> p_NewItem) {
+    for (auto& s_PendingItem : m_SelectedActor->m_pInventoryHandler->m_aPendingItems) {
+        if (s_PendingItem.m_nTicket == p_Ticket) {
+            ZHM5Item* s_Item = static_cast<ZHM5Item*>(p_NewItem.m_pInterfaceRef);
+            SItemConfig& s_ItemConfig = s_Item->m_pItemConfigDescriptor->m_ItemConfig;
+
+            s_PendingItem.m_rItem = TEntityRef<IItem>(p_NewItem.m_ref);
+            s_PendingItem.m_eAttachLocation = s_ItemConfig.m_ItemHandsIdle == eItemHands::IH_TWOHANDED ?
+                EAttachLocation::eALRifle : EAttachLocation::eALUndefined;
+
+            break;
+        }
+    }
+
+    Functions::ZActorInventoryHandler_FinalizePendingItems->Call(m_SelectedActor->m_pInventoryHandler);
+}
+
+void Editor::LoadRepositoryWeapons() {
+    m_RepositoryWeapons.clear();
+
+    static TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
+
+    if (m_RepositoryResource.m_nResourceIndex.val == -1) {
+        const auto s_ID = ResId<"[assembly:/repository/pro.repo].pc_repo">;
+
+        Globals::ResourceManager->GetResourcePtr(m_RepositoryResource, s_ID, 0);
+    }
+
+    if (m_RepositoryResource.GetResourceInfo().status == RESOURCE_STATUS_VALID) {
+        const auto s_RepositoryData = static_cast<THashMap<
+            ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
+                GetResourceData());
+
+        for (const auto& [s_RepositoryID, s_DynamicObject] : *s_RepositoryData) {
+            TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
+                SDynamicObjectKeyValuePair>>();
+
+            ZString s_Id, s_Title, s_CommonName, s_Name;
+            std::string s_FinalName;
+            bool s_HasItemType = false;
+            bool s_HasPrimaryConfiguration = false;
+
+            for (auto& s_Entry : *s_Entries) {
+                if (s_Entry.sKey == "ID_") {
+                    s_Id = *s_Entry.value.As<ZString>();
+                }
+                else if (s_Entry.sKey == "Title") {
+                    s_Title = *s_Entry.value.As<ZString>();
+                }
+                else if (s_Entry.sKey == "CommonName") {
+                    s_CommonName = *s_Entry.value.As<ZString>();
+                }
+                else if (s_Entry.sKey == "Name") {
+                    s_Name = *s_Entry.value.As<ZString>();
+                }
+                else if (!s_HasItemType) {
+                    s_HasItemType = s_Entry.sKey == "ItemType";
+                }
+                else if (!s_HasPrimaryConfiguration) {
+                    s_HasPrimaryConfiguration = s_Entry.sKey == "PrimaryConfiguration";
+                }
+            }
+
+            if (s_Id.IsEmpty() || !s_HasItemType || !s_HasPrimaryConfiguration) {
+                continue;
+            }
+
+            if (s_Title.IsEmpty() && s_CommonName.IsEmpty() && s_Name.IsEmpty()) {
+                s_FinalName = std::format("<unnamed> [{}]", s_Id.c_str());
+            }
+            else if (!s_Title.IsEmpty()) {
+                s_FinalName = std::format("{} [{}]", s_Title.c_str(), s_Id.c_str());
+            }
+            else if (!s_CommonName.IsEmpty()) {
+                s_FinalName = std::format("{} [{}]", s_CommonName.c_str(), s_Id.c_str());
+            }
+            else if (!s_Name.IsEmpty()) {
+                s_FinalName = std::format("{} [{}]", s_Name.c_str(), s_Id.c_str());
+            }
+
+            m_RepositoryWeapons.push_back(std::make_pair(s_Id, s_FinalName));
+        }
+    }
+
+    std::ranges::sort(
+        m_RepositoryWeapons,
+        [](const auto& a, const auto& b) {
+            auto [_1, s_LowerA] = a;
+            auto [_2, s_LowerB] = b;
+
+            std::ranges::transform(s_LowerA, s_LowerA.begin(), [](unsigned char c) { return std::tolower(c); });
+            std::ranges::transform(s_LowerB, s_LowerB.begin(), [](unsigned char c) { return std::tolower(c); });
+
+            return s_LowerA < s_LowerB;
+        }
+    );
 }
 
 void Editor::EnableTrackCam() {

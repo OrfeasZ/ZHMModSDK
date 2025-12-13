@@ -116,5 +116,6 @@ public:
     static ZPackageManagerBase** PackageManager;
     static ZUIText* UIText;
     static ZWorldInventory* WorldInventory;
+    static uint32_t* WorldInventory_InvalidTicket;
     static ZTargetManager* TargetManager;
 };

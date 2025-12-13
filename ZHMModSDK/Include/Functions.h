@@ -179,6 +179,8 @@ public:
         bool bMainWeapon,
         bool bGiveItem
     )>* ZActorInventoryHandler_ItemPickup;
+    static EngineFunction<void(ZActorInventoryHandler* th)>* ZActorInventoryHandler_UpdateAfterAttachChange;
+    static EngineFunction<void(ZActorInventoryHandler* th)>* ZActorInventoryHandler_FinalizePendingItems;
 
     static EngineFunction<uint64_t(
         ZEntityManager* th, ZEntityRef& entityRef, EDynamicEntityType dynamicEntityType, uint8 flags
@@ -196,4 +198,8 @@ public:
         const ZEntityRef& rParentSpatial,
         const ZEntityRef& rCreator
     )>* ZWorldInventory_RequestNewItem;
+    static EngineFunction<void(
+        ZWorldInventory* th,
+        TEntityRef<IItemBase> rItemInc
+    )>* ZWorldInventory_DestroyItem;
 };

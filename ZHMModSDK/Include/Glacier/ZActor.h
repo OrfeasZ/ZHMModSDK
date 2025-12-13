@@ -7,6 +7,7 @@
 #include "ZResource.h"
 #include "ZHM5GridManager.h"
 #include "TSet.h"
+#include "ZItem.h"
 #include "ZCollision.h"
 
 #include <Logging.h>
@@ -47,11 +48,14 @@ public:
     virtual void IActor_unk18() = 0;
     virtual void IActor_unk19() = 0;
     virtual ZKnowledge* Knowledge() = 0;
-    virtual void IActor_unk21() = 0;
-    virtual void IActor_unk22() = 0;
+    virtual bool ItemPickup(
+        const TEntityRef<IItem>& rItem, EAttachLocation eLocation, EGameTension eMaxTension,
+        bool bLeftHand, bool bGiveItem
+    ) = 0;
+    virtual bool DropItem(const TEntityRef<IItem>& rItem, bool bAddToPhysicsWorld) = 0;
     virtual void IActor_unk23() = 0;
     virtual void IActor_unk24() = 0;
-    virtual void IActor_unk25() = 0;
+    virtual void ReleaseItem(const TEntityRef<IItem>& rItem, bool bAddToPhysicsWorld) = 0;
     virtual void IActor_unk26() = 0;
     virtual void IActor_unk27() = 0;
     virtual void IActor_unk28() = 0;
@@ -61,7 +65,7 @@ public:
     virtual void IActor_unk32() = 0;
     virtual void IActor_unk33() = 0;
     virtual void IActor_unk34() = 0;
-    virtual void IActor_unk35() = 0;
+    virtual void DisposeOfItem(const TEntityRef<IItem>& rItem, bool bDisposeWeaponsAlso) = 0;
     virtual void IActor_unk36() = 0;
     virtual void IActor_unk37() = 0;
     virtual void IActor_unk38() = 0;
@@ -116,6 +120,41 @@ public:
     virtual void ICrowdAIActor_unk2() = 0;
 };
 
+class ZLinkedEntity;
+class ZAttachmentHandler;
+class IFirearm;
+
+class ZActorInventoryHandler {
+public:
+    struct SPendingItemInfo {
+        uint32 m_nTicket;
+        TEntityRef<IItem> m_rItem;
+        EAttachLocation m_eAttachLocation;
+        EGameTension m_eMaxTension;
+        bool m_bLeftHand;
+        bool m_bWeapon;
+    };
+
+    virtual ~ZActorInventoryHandler() = 0;
+
+    TArray<SPendingItemInfo> m_aPendingItems; // 0x8
+    TEntityRef<ZActor> m_rActor; // 0x20
+    TEntityRef<ZLinkedEntity> m_rLinkedEntity; // 0x30
+    ZAttachmentHandler* m_pAttachmentHandler; // 0x40
+    EGameTension m_eAttachedItemMaxTension; // 0x48
+    bool m_bRequestItemAndVariantReset; // 0x4C
+    TArray<TEntityRef<IItem>> m_aInventory; // 0x50
+    PAD(0x20); // 0x68 (m_ActorItemEvent)
+    bool m_bCarryingWeaponLeftHand; // 0x88
+    PAD(0x17); // 0x89
+    TEntityRef<ZHM5ItemWeapon> m_rMainWeapon; // 0xA0
+    TEntityRef<ZHM5Item> m_rCarriedItem; // 0xB0
+    PAD(0x10); // 0xC8
+    TArray<TEntityRef<IItem>> m_aNotgivenItems; // 0xD0
+    TArray<TEntityRef<IItem>> m_aActorAttachedItems; // 0xE8
+    ZRepositoryID m_rWeaponID; // 0x100
+};
+
 // Size = 0x1410
 class ZActor :
         public ZHM5BaseCharacter,
@@ -151,7 +190,10 @@ public:
     bool m_bEnableOutfitModifiers; // 0x4BD
     TEntityRef<ZAIVisionConfigurationEntity> m_AgentVisionConfiguration; // 0x4C0
     TEntityRef<ZHTNDomainEntity> m_DomainConfig; // 0x4D0
-    PAD(0xB08); // 0x4E0
+    bool m_bDisableBumpAnimations; // 0x4E0
+    PAD(0x3F); // 0x4E1
+    ZActorInventoryHandler* m_pInventoryHandler; // 0x520
+    PAD(0xAC0); // 0x528
     TEntityRef<ZGlobalOutfitKit> m_rOutfit; //0xFE8
     PAD(0xB0); // 0xFF8
     ZAnimatedActor* m_pAnimatedActor; // 0x10A8
