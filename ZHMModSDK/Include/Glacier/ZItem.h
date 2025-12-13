@@ -172,7 +172,7 @@ public:
     PAD(0x40);
     TEntityRef<ZItemRepositoryKeyEntity> m_rMainItemKey; // 0xF0
     TArray<TEntityRef<ZItemRepositoryKeyEntity>> m_rInventoryItems; // 0x100
-    ZItemSpawner::EPhysicsMode m_ePhysicsMode; // 0x118
+    EPhysicsMode m_ePhysicsMode; // 0x118
     EDisposalType m_eDisposalTypeOverwrite; // 0x11C
     ZEntityRef m_rKeywords; // 0x120
     ZEntityRef m_rSetpieceUsed; // 0x128
