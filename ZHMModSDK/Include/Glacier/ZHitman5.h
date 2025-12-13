@@ -5,14 +5,6 @@
 #include "ZPhysics.h"
 #include "ZPrimitives.h"
 
-/*
-class ZHitman5
-{
-public:
-    PAD(0x710);
-    ZRepositoryID m_InitialOutfitId;
-};*/
-
 class IFutureCameraState :
         public IComponentInterface {
 public:
