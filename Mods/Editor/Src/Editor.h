@@ -450,7 +450,7 @@ private:
     std::mutex m_DynamicEntitiesMutex;
     std::unordered_set<ZEntityRef> m_DynamicEntities;
     std::mutex m_PendingDynamicEntitiesMutex;
-    std::vector<ZEntityRef> m_PendingDynamicEntities;
+    std::unordered_set<ZEntityRef> m_PendingDynamicEntities;
     std::mutex m_PendingNodeDeletionsMutex;
     std::vector<std::weak_ptr<EntityTreeNode>> m_PendingNodeDeletions;
 

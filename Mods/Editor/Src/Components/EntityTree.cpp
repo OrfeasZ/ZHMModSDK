@@ -992,7 +992,7 @@ DEFINE_PLUGIN_DETOUR(
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         std::scoped_lock lock(m_PendingDynamicEntitiesMutex);
 
-        m_PendingDynamicEntities.push_back(result);
+        m_PendingDynamicEntities.insert(result);
     }
 
     return HookResult<ZEntityRef*>(HookAction::Return(), s_EntityRef);
@@ -1028,11 +1028,14 @@ DEFINE_PLUGIN_DETOUR(
         DestroyEntityNodeInternal(s_NodeToRemove, std::nullopt);
     }
 
-    //
-
     {
         std::scoped_lock lock(m_DynamicEntitiesMutex);
         m_DynamicEntities.erase(entityRef);
+    }
+
+    {
+        std::scoped_lock lock(m_PendingDynamicEntitiesMutex);
+        m_PendingDynamicEntities.erase(entityRef);
     }
 
     m_EntityRefToFactoryRuntimeResourceIDs.erase(entityRef);

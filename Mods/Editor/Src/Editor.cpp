@@ -395,7 +395,13 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
 
             if (!m_PendingDynamicEntities.empty()) {
-                s_EntitiesToAdd.swap(m_PendingDynamicEntities);
+                s_EntitiesToAdd.reserve(m_PendingDynamicEntities.size());
+
+                for (const auto& ref : m_PendingDynamicEntities) {
+                    s_EntitiesToAdd.push_back(ref);
+                }
+
+                m_PendingDynamicEntities.clear();
             }
         }
 
