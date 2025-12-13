@@ -109,6 +109,7 @@ void FreeCam::Init() {
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &FreeCam::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &FreeCam::OnClearScene);
 
+    m_EditorStyleFreecam = GetSettingBool("general", "use_editor_style_freecam", false);
     m_GamePaused = GetSettingBool("general", "toggle_pause", false);
     m_MoveInFreecam = GetSettingBool("general", "move_in_freecam", false);
 }
@@ -342,7 +343,9 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
             }
 
             ImGui::BeginDisabled(s_FreeCamActive);
-            ImGui::Checkbox("Use editor style freecam", &m_EditorStyleFreecam);
+            if (ImGui::Checkbox("Use editor style freecam", &m_EditorStyleFreecam)) {
+                SetSettingBool("general", "use_editor_style_freecam", m_EditorStyleFreecam);
+            }
             ImGui::EndDisabled();
 
             if (ImGui::Checkbox("Move in freecam", &m_MoveInFreecam)) {
