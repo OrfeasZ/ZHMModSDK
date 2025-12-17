@@ -983,7 +983,9 @@ DEFINE_PLUGIN_DETOUR(
         entityID,
         externalRefs,
         unk0
-    ); {
+    );
+    
+    {
         std::scoped_lock lock(m_DynamicEntitiesMutex);
 
         m_DynamicEntities.insert(result);
