@@ -261,7 +261,7 @@ private:
     static bool IsActorTarget(ZActor* p_Actor);
 
 private:
-    DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
+    DECLARE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
     DECLARE_PLUGIN_DETOUR(
         Editor, ZTemplateEntityBlueprintFactory*, ZTemplateEntityBlueprintFactory_ctor,

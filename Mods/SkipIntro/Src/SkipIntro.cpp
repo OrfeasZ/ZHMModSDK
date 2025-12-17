@@ -7,7 +7,7 @@ void SkipIntro::Init() {
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &SkipIntro::OnLoadScene);
 }
 
-DEFINE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_parameters) {
+DEFINE_PLUGIN_DETOUR(SkipIntro, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_parameters) {
     Logger::Debug("Loading scene: {}", p_parameters.m_SceneResource);
 
     for (auto& s_Brick : p_parameters.m_aAdditionalBrickResources)
@@ -16,7 +16,7 @@ DEFINE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext* th, SSce
     if (p_parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
         p_parameters.m_SceneResource = "assembly:/_PRO/Scenes/Frontend/MainMenu.entity";
 
-    return HookResult<void>(HookAction::Continue());
+    return HookResult<bool>(HookAction::Continue());
 }
 
 DEFINE_ZHM_PLUGIN(SkipIntro);

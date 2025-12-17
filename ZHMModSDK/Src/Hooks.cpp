@@ -19,7 +19,7 @@ PATTERN_HOOK(
     "\x48\x8B\xC4\x48\x89\x48\x08\x41\x54\x41\x56\x41\x57",
     "xxxxxxxxxxxxx",
     ZEntitySceneContext_LoadScene,
-    void(ZEntitySceneContext* th, SSceneInitParameters& parameters)
+    bool(ZEntitySceneContext* th, SSceneInitParameters& parameters)
 );
 
 PATTERN_HOOK(

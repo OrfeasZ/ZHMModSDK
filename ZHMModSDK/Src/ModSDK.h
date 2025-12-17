@@ -213,7 +213,7 @@ private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
 
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     DECLARE_DETOUR_WITH_CONTEXT(

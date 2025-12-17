@@ -25,7 +25,7 @@ private:
     std::string FindLocationForScene(ZString p_Scene) const;
 
 private:
-    DECLARE_PLUGIN_DETOUR(DiscordRichPresence, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
+    DECLARE_PLUGIN_DETOUR(DiscordRichPresence, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
 
 private:
     std::unordered_map<std::string_view, const char*> m_Scenes;

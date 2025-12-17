@@ -1760,7 +1760,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
 
 DEFINE_DETOUR_WITH_CONTEXT(
     ModSDK,
-    void,
+    bool,
     OnLoadScene,
     ZEntitySceneContext* th,
     SSceneInitParameters& p_Parameters

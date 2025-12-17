@@ -875,7 +875,7 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
     return s_Matrix;
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
+DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     if (m_SelectionForFreeCameraEditorStyleEntity) {
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
     }

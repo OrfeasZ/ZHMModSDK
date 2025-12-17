@@ -70,12 +70,12 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     }
 }
 
-DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
+DEFINE_PLUGIN_DETOUR(WakingUpNpcs, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     Logger::Debug("Loading scene: {}", p_Parameters.m_SceneResource);
 
     m_PacifiedTimes.clear();
 
-    return HookResult<void>(HookAction::Continue());
+    return HookResult<bool>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext* th, bool) {

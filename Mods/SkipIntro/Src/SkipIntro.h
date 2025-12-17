@@ -12,7 +12,7 @@ public:
     void Init() override;
 
 private:
-    DECLARE_PLUGIN_DETOUR(SkipIntro, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
+    DECLARE_PLUGIN_DETOUR(SkipIntro, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
 };
 
 DECLARE_ZHM_PLUGIN(SkipIntro)

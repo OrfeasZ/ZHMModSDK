@@ -1206,8 +1206,8 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
     }
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
-    return HookResult<void>(HookAction::Continue());
+DEFINE_PLUGIN_DETOUR(DebugMod, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
+    return HookResult<bool>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {

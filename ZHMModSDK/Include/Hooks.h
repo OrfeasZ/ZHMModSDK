@@ -83,7 +83,7 @@ class ZExtendedCppEntityTypeInstaller;
 class ZHMSDK_API Hooks {
 public:
     static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
-    static Hook<void(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
+    static Hook<bool(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
     static Hook<void(ZEntitySceneContext*, bool bFullyUnloadScene)>* ZEntitySceneContext_ClearScene;
 
     static Hook<void(
