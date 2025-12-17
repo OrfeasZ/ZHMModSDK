@@ -42,6 +42,7 @@ set(MODS
         DebugMod
         AdvancedRating
         FreeCam
+        TitaniumBullets
         DiscordRichPresence
         Editor
         Clumsy
