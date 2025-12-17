@@ -58,7 +58,7 @@ public:
     virtual ~ZEntitySceneContext() = 0;
     virtual void ZEntitySceneContext_unk5() = 0;
     virtual void ClearScene(bool) = 0;
-    virtual void CreateScene(bool bFullyUnloadScene) = 0;
+    virtual void CreateScene(bool bResetScene) = 0;
     virtual void ZEntitySceneContext_unk8() = 0;
     virtual void ZEntitySceneContext_unk9() = 0;
     virtual void ZEntitySceneContext_unk10() = 0;
