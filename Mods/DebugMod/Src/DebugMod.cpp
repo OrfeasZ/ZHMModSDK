@@ -45,7 +45,7 @@ void DebugMod::OnEngineInitialized() {
 void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
 void DebugMod::OnDrawMenu() {
-    if (ImGui::Button(ICON_MD_BUILD " DEBUG MENU")) {
+    if (ImGui::Button(ICON_MD_BUILD " DEBUG")) {
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
@@ -65,7 +65,7 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
+    const auto s_Showing = ImGui::Begin("DEBUG", &m_DebugMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
