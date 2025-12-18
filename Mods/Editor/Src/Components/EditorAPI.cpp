@@ -243,23 +243,30 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     return s_Quat;
 }
 
-std::string Editor::FindRoomForEntity(const ZEntityRef p_Entity) {
+std::pair<std::string, std::string> Editor::FindRoomForEntity(const ZEntityRef p_Entity) {
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
     const ZSpatialEntity* s_SpatialEntity = p_Entity.QueryInterface<ZSpatialEntity>();
     const uint16 s_RoomEntityIndex = Functions::ZRoomManager_GetRoomFromPoint->Call(*Globals::RoomManager, s_SpatialEntity->GetWorldMatrix().Pos);
-    if (s_RoomEntityIndex == 65535) {
-        return "No Room";
+    if (s_RoomEntityIndex == 65535) {        
+        return std::make_pair("No Room", "Default");
     }
     ZRoomEntity* s_RoomEntity = (*Globals::RoomManager)->m_RoomEntities[s_RoomEntityIndex];
     ZEntityRef s_RoomEntityRef;
     s_RoomEntity->GetID(s_RoomEntityRef);
 
     const std::shared_ptr<EntityTreeNode> s_EntityTreeNode = m_CachedEntityTreeMap[s_RoomEntityRef];
-    return s_EntityTreeNode->Name;
+    
+    /*const TEntityRef<ZSpatialEntity> s_EidParent = s_RoomEntity->m_eidParent;
+    const std::shared_ptr<EntityTreeNode> s_ParentEntityTreeNode = m_CachedEntityTreeMap[s_EidParent.m_ref];*/
+
+    ZEntityRef parentEntityRef = s_RoomEntityRef.GetLogicalParent();
+    std::string folderName = parentEntityRef.m_pEntity ? m_CachedEntityTreeMap[parentEntityRef]->Name : "";
+
+    return std::make_pair(s_EntityTreeNode->Name, folderName);
 }
 
 void Editor::FindAlocAndPrimForZGeomEntityNode(
-    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, ZEntityRef>>& p_Entities,
+    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& p_Entities,
     const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType
 ) {
     const ZGeomEntity* s_GeomEntity = p_Node->Entity.QueryInterface<ZGeomEntity>();
@@ -318,12 +325,13 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
 
                 Quat s_CombinedQuat;
                 s_CombinedQuat = s_ParentQuat * s_EntityQuat;
-                std::string s_RoomName = Plugin()->FindRoomForEntity(p_Node->Entity);
+                const auto [s_RoomName, s_FolderName] = Plugin()->FindRoomForEntity(p_Node->Entity);
                 auto s_Entity =
                         std::make_tuple(
                             s_AlocAndPrimHashes,
                             s_CombinedQuat,
                             s_RoomName,
+                            s_FolderName,
                             p_Node->Entity
                         );
                 p_Entities.push_back(s_Entity);
@@ -333,7 +341,7 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
 }
 
 void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
-    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, ZEntityRef>>& entities,
+    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& entities,
     const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType
 ) {
     std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
@@ -364,12 +372,13 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
 
             Quat s_CombinedQuat;
             s_CombinedQuat = s_ParentQuat * s_EntityQuat;
-            std::string s_RoomName = Plugin()->FindRoomForEntity(s_Node->Entity);
+            const auto [s_RoomName, s_FolderName] = Plugin()->FindRoomForEntity(s_Node->Entity);
             auto s_Entity =
                     std::make_tuple(
                         s_AlocHashes,
                         s_CombinedQuat,
                         s_RoomName,
+                        s_FolderName,
                         s_Node->Entity
                     );
             entities.push_back(s_Entity);
@@ -379,7 +388,7 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
 
 void Editor::FindMeshes(
     const std::function<void(
-        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, ZEntityRef>>&, bool p_Done
+        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>&, bool p_Done
     )>& p_SendEntitiesCallback,
     const std::function<void()>& p_RebuiltCallback
 ) {
@@ -389,7 +398,7 @@ void Editor::FindMeshes(
     }
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, ZEntityRef>> entities;
+    std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>> entities;
 
     // Create a queue and add the root to it.
     std::queue<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodeQueue;

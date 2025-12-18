@@ -65,7 +65,7 @@ public:
     ZEntityRef FindEntity(EntitySelector p_Selector);
     static std::string GetCollisionHash(auto p_SelectedEntity);
     void FindMeshes(
-        const std::function<void(std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, ZEntityRef>>&, bool p_Done)>&
+        const std::function<void(std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>&, bool p_Done)>&
         p_SendEntitiesCallback, const std::function<void()>& p_RebuiltCallback
     );
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindEntitiesByType(
@@ -154,11 +154,11 @@ private:
 
     static void ToggleEditorServerEnabled();
     static void FindAlocAndPrimForZGeomEntityNode(
-        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, ZEntityRef>>& p_Entities,
+        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& p_Entities,
         const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType
     );
     static void FindAlocAndPrimForZPrimitiveProxyEntityNode(
-        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, ZEntityRef>>& entities,
+        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& entities,
         const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType
     );
 
@@ -197,7 +197,7 @@ private:
     static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const ZEntityProperty* p_Property);
     static Quat GetQuatFromProperty(ZEntityRef p_Entity);
     static Quat GetParentQuat(ZEntityRef p_Entity);
-    std::string FindRoomForEntity(ZEntityRef p_Entity);
+    std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity);
 
     void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
