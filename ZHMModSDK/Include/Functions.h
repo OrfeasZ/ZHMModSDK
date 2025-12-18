@@ -49,6 +49,7 @@ class ZUIText;
 class ZActorInventoryHandler;
 class ZWorldInventory;
 class IItemBase;
+class ZRoom;
 
 class ZHMSDK_API Functions {
 public:
@@ -196,4 +197,6 @@ public:
         const ZEntityRef& rParentSpatial,
         const ZEntityRef& rCreator
     )>* ZWorldInventory_RequestNewItem;
+
+    static EngineFunction<uint16(ZRoomManager* th, const float4& vPointWS)>* ZRoomManager_GetRoomFromPoint;
 };

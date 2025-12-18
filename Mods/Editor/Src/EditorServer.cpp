@@ -670,7 +670,7 @@ bool EditorServer::GetEnabled() {
 void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS::Loop* p_Loop) {
     p_Loop->defer(
         [p_Socket]() {
-            p_Socket->send("{\"version\":1,\"meshes\":[", uWS::OpCode::TEXT);
+            p_Socket->send(R"({"version":1,"meshes":[)", uWS::OpCode::TEXT);
         }
     );
     auto s_AnyMeshSentOverall = std::make_shared<bool>(false);
@@ -679,7 +679,7 @@ void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS:
     Logger::Info("Sending Meshes...");
     Plugin()->FindMeshes(
         [p_Socket, p_Loop, s_AnyMeshSentOverall, s_TotalMeshesSent, s_LastLoggedMilestone](
-    const std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, ZEntityRef>>& p_Entities,
+    const std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, ZEntityRef>>& p_Entities,
     const bool p_IsLastMeshBatch
 ) -> void {
             std::ostringstream s_BatchJson;
@@ -692,7 +692,7 @@ void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS:
                     Logger::Info("Meshes sent: {}", *s_TotalMeshesSent);
                     *s_LastLoggedMilestone = currentMilestone;
                 }
-                for (auto& [s_Hashes, s_Quat, s_Entity] : p_Entities) {
+                for (auto& [s_Hashes, s_Quat, s_RoomName, s_Entity] : p_Entities) {
                     if (IsExcludedFromNavMeshExport(s_Entity)) continue;
                     if (s_Hashes.empty()) {
                         continue;
@@ -707,6 +707,7 @@ void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS:
                         s_BatchJson << "{";
                         s_BatchJson << write_json("alocHash") << ":" << write_json(s_AlocAndPrimHashes.first) << ",";
                         s_BatchJson << write_json("primHash") << ":" << write_json(s_AlocAndPrimHashes.second) << ",";
+                        s_BatchJson << write_json("roomName") << ":" << write_json(s_RoomName) << ",";
                         s_BatchJson << write_json("entity") << ":";
                         WriteEntityTransforms(s_BatchJson, s_Quat, s_Entity);
                         s_BatchJson << "}";
