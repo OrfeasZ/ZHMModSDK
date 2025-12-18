@@ -246,15 +246,11 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
 std::string Editor::FindRoomForEntity(const ZEntityRef p_Entity) {
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
     const ZSpatialEntity* s_SpatialEntity = p_Entity.QueryInterface<ZSpatialEntity>();
-    uint16 s_RoomEntityIndex = Functions::ZRoomManager_GetRoomFromPoint->Call(*Globals::RoomManager, s_SpatialEntity->GetWorldMatrix().Pos);
-    auto rooms = (*Globals::RoomManager)->m_RoomEntities;
-    if (s_RoomEntityIndex >= rooms.size()) {
+    const uint16 s_RoomEntityIndex = Functions::ZRoomManager_GetRoomFromPoint->Call(*Globals::RoomManager, s_SpatialEntity->GetWorldMatrix().Pos);
+    if (s_RoomEntityIndex == 65535) {
         return "No Room";
     }
     ZRoomEntity* s_RoomEntity = (*Globals::RoomManager)->m_RoomEntities[s_RoomEntityIndex];
-    if (s_RoomEntity->m_nRoomID == 65535) {
-        return "No Room";
-    }
     ZEntityRef s_RoomEntityRef;
     s_RoomEntity->GetID(s_RoomEntityRef);
 
