@@ -12,7 +12,7 @@ on:
 jobs:
     build:
         name: Build
-        runs-on: [ptlm-runner, windows-latest]
+        runs-on: ${{ (github.repository == 'OrfeasZ/ZHMModSDK' && 'ptlm-runner') || 'windows-latest' }}
         if: (github.repository == 'OrfeasZ/ZHMModSDK' && (github.ref == 'refs/heads/master' || github.event_name == 'release')) || (github.repository != 'OrfeasZ/ZHMModSDK')
 
         steps:
