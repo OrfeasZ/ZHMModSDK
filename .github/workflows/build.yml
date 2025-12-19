@@ -24,6 +24,12 @@ jobs:
                 with:
                     submodules: recursive
 
+            -   name: Install Rust nightly toolchain
+                uses: dtolnay/rust-toolchain@nightly
+                if: github.repository != 'OrfeasZ/ZHMModSDK'
+                with:
+                    components: rust-src
+
             -   name: Setup VS environment
                 uses: ilammy/msvc-dev-cmd@v1
                 with:
