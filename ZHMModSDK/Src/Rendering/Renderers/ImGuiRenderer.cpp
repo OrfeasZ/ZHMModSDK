@@ -54,10 +54,16 @@ ImGuiRenderer::ImGuiRenderer() {
     s_IconsConfig.MergeMode = true;
     s_IconsConfig.GlyphOffset = {0.f, 6.f};
 
+    // Unicode ranges used by ImGui font
+    static constexpr ImWchar c_TextRanges[] = {
+        0x0020, 0x00FF, // Basic Latin + Latin-1 Supplement
+        0x2010, 0x2027, // Punctuation
+        0
+    };
     static constexpr ImWchar c_IconRanges[] = {ICON_MIN_MD, ICON_MAX_16_MD, 0};
 
     m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoLight_compressed_data, RobotoLight_compressed_size, 28.f
+        RobotoLight_compressed_data, RobotoLight_compressed_size, 28.f, nullptr, c_TextRanges
     );
     s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
         MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
@@ -65,7 +71,7 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.Fonts->Build();
 
     m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoRegular_compressed_data, RobotoRegular_compressed_size, 28.f
+        RobotoRegular_compressed_data, RobotoRegular_compressed_size, 28.f, nullptr, c_TextRanges
     );
     s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
         MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
@@ -73,7 +79,7 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.Fonts->Build();
 
     m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoMedium_compressed_data, RobotoMedium_compressed_size, 28.f
+        RobotoMedium_compressed_data, RobotoMedium_compressed_size, 28.f, nullptr, c_TextRanges
     );
     s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
         MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
@@ -81,7 +87,7 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.Fonts->Build();
 
     m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoBold_compressed_data, RobotoBold_compressed_size, 28.f
+        RobotoBold_compressed_data, RobotoBold_compressed_size, 28.f, nullptr, c_TextRanges
     );
     s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
         MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
@@ -89,7 +95,7 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.Fonts->Build();
 
     m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoBlack_compressed_data, RobotoBlack_compressed_size, 28.f
+        RobotoBlack_compressed_data, RobotoBlack_compressed_size, 28.f, nullptr, c_TextRanges
     );
     s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
         MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
