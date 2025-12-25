@@ -8,6 +8,7 @@
 #include "THashMap.h"
 #include "TSharedPointer.h"
 #include "ZSharedPointerTarget.h"
+#include "THashSet.h"
 
 class ZRuntimeResourceID;
 
@@ -114,7 +115,12 @@ public:
     TArray<SResourceReferenceInfo> m_references;
     THashMap<ZRuntimeResourceID, ZResourceIndex, TDefaultHashMapPolicy<ZRuntimeResourceID>> m_indices;
     TArray<ZString> m_MountedPackages;
-    TArray<ZResourceIndex> m_aUnknown;
+    TArray<uint32_t> m_firstResourceIndexPerPackage;
+    TArray<uint32_t> m_firstReferenceIndexPerPackage;
+    TArray<uint8_t> m_firstPackageIndexPerMountedPartition;
+    uint8_t m_firstDynamicPackageIndex;
+    uint8_t m_firstBaseLanguagePackageIndex;
+    THashSet<ZRuntimeResourceID, TDefaultHashSetPolicy<ZRuntimeResourceID>> m_dynamicResources;
 };
 
 static_assert(sizeof(ZResourceContainer::SResourceInfo) == 64);
