@@ -35,23 +35,11 @@ public:
     }
 };
 
-inline uint64_t GetPointerHashCode(const void* p) {
-    if (!p) {
-        return 0;
-    }
-
-    const uint64_t s_Address = reinterpret_cast<uint64_t>(p);
-    const uint32_t s_Low = static_cast<uint32_t>(s_Address);
-    const uint32_t s_High = static_cast<uint32_t>(s_Address >> 32);
-
-    return static_cast<uint64_t>(s_Low * 0x13285CD7 - s_High * 0x61C88647);
-}
-
 template <typename T>
 class TDefaultHashMapPolicy<T*> {
 public:
     static uint64_t GetHashCode(const T* p_Key) {
-        return GetPointerHashCode(p_Key);
+        return Hash::Pointer(p_Key);
     }
 };
 
