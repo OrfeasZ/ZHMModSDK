@@ -189,15 +189,13 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     if (ImGui::Selectable(s_CharacterSetIndex.c_str(), s_IsSelected)) {
                         s_CurrentCharacterSetIndex = i;
 
-                        if (s_GlobalOutfitKit) {
-                            EquipOutfit(
-                                s_GlobalOutfitKit,
-                                s_CurrentCharacterSetIndex,
-                                s_CurrentcharSetCharacterType,
-                                s_CurrentOutfitVariationIndex,
-                                m_SelectedActor
-                            );
-                        }
+                        EquipOutfit(
+                            s_GlobalOutfitKit,
+                            s_CurrentCharacterSetIndex,
+                            s_CurrentcharSetCharacterType,
+                            s_CurrentOutfitVariationIndex,
+                            m_SelectedActor
+                        );
                     }
                 }
             }
@@ -217,15 +215,13 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
                         s_CurrentcharSetCharacterType = m_CharSetCharacterType;
 
-                        if (s_GlobalOutfitKit) {
-                            EquipOutfit(
-                                s_GlobalOutfitKit,
-                                s_CurrentCharacterSetIndex,
-                                s_CurrentcharSetCharacterType,
-                                s_CurrentOutfitVariationIndex,
-                                m_SelectedActor
-                            );
-                        }
+                        EquipOutfit(
+                            s_GlobalOutfitKit,
+                            s_CurrentCharacterSetIndex,
+                            s_CurrentcharSetCharacterType,
+                            s_CurrentOutfitVariationIndex,
+                            m_SelectedActor
+                        );
                     }
                 }
             }
@@ -251,15 +247,13 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     if (ImGui::Selectable(std::to_string(i).data(), s_IsSelected)) {
                         s_CurrentOutfitVariationIndex = i;
 
-                        if (s_GlobalOutfitKit) {
-                            EquipOutfit(
-                                s_GlobalOutfitKit,
-                                s_CurrentCharacterSetIndex,
-                                s_CurrentcharSetCharacterType,
-                                s_CurrentOutfitVariationIndex,
-                                m_SelectedActor
-                            );
-                        }
+                        EquipOutfit(
+                            s_GlobalOutfitKit,
+                            s_CurrentCharacterSetIndex,
+                            s_CurrentcharSetCharacterType,
+                            s_CurrentOutfitVariationIndex,
+                            m_SelectedActor
+                        );
                     }
                 }
             }

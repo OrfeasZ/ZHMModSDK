@@ -66,19 +66,21 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         static std::string s_CurrentCharSetCharacterType3 = "HeroA";
         static uint8_t s_CurrentOutfitVariationIndex = 1;
 
-        if (s_OutfitName[0] == '\0') {
-            const char* s_OutfitName2 = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit.m_pInterfaceRef->m_sCommonName.
+        if (s_LocalHitman) {
+            if (s_OutfitName[0] == '\0') {
+                const char* s_OutfitName2 = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit.m_pInterfaceRef->m_sCommonName.
                     c_str();
 
-            strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
+                strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
 
-            s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
-        }
+                s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
+            }
 
-        if (!m_GlobalOutfitKit) {
-            m_GlobalOutfitKit = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit;
-            s_CurrentCharacterSetIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitCharset;
-            s_CurrentOutfitVariationIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitVariation;
+            if (!m_GlobalOutfitKit) {
+                m_GlobalOutfitKit = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit;
+                s_CurrentCharacterSetIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitCharset;
+                s_CurrentOutfitVariationIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitVariation;
+            }
         }
 
         ImGui::AlignTextToFramePadding();
@@ -128,15 +130,13 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                     if (ImGui::Selectable(std::to_string(i).data(), s_IsSelected)) {
                         s_CurrentCharacterSetIndex = i;
 
-                        if (m_GlobalOutfitKit) {
-                            EquipOutfit(
-                                m_GlobalOutfitKit,
-                                s_CurrentCharacterSetIndex,
-                                s_CurrentCharSetCharacterType.data(),
-                                s_CurrentOutfitVariationIndex,
-                                s_LocalHitman.m_pInterfaceRef
-                            );
-                        }
+                        EquipOutfit(
+                            m_GlobalOutfitKit,
+                            s_CurrentCharacterSetIndex,
+                            s_CurrentCharSetCharacterType.data(),
+                            s_CurrentOutfitVariationIndex,
+                            s_LocalHitman.m_pInterfaceRef
+                        );
                     }
                 }
             }
@@ -156,15 +156,13 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                     if (ImGui::Selectable(m_CharSetCharacterTypes[i].data(), s_IsSelected)) {
                         s_CurrentCharSetCharacterType = m_CharSetCharacterTypes[i].data();
 
-                        if (m_GlobalOutfitKit) {
-                            EquipOutfit(
-                                m_GlobalOutfitKit,
-                                s_CurrentCharacterSetIndex,
-                                s_CurrentCharSetCharacterType.data(),
-                                s_CurrentOutfitVariationIndex,
-                                s_LocalHitman.m_pInterfaceRef
-                            );
-                        }
+                        EquipOutfit(
+                            m_GlobalOutfitKit,
+                            s_CurrentCharacterSetIndex,
+                            s_CurrentCharSetCharacterType.data(),
+                            s_CurrentOutfitVariationIndex,
+                            s_LocalHitman.m_pInterfaceRef
+                        );
                     }
                 }
             }
@@ -180,7 +178,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             if (m_GlobalOutfitKit) {
                 const auto s_CurrentCharacterSetIndex2 = s_CurrentCharacterSetIndex;
                 const size_t s_VariationCount = m_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-                            s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->
+                    s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->
                         m_aVariations.
                         size();
 
@@ -190,15 +188,13 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                     if (ImGui::Selectable(std::to_string(i).data(), s_IsSelected)) {
                         s_CurrentOutfitVariationIndex = i;
 
-                        if (m_GlobalOutfitKit) {
-                            EquipOutfit(
-                                m_GlobalOutfitKit,
-                                s_CurrentCharacterSetIndex,
-                                s_CurrentCharSetCharacterType.data(),
-                                s_CurrentOutfitVariationIndex,
-                                s_LocalHitman.m_pInterfaceRef
-                            );
-                        }
+                        EquipOutfit(
+                            m_GlobalOutfitKit,
+                            s_CurrentCharacterSetIndex,
+                            s_CurrentCharSetCharacterType.data(),
+                            s_CurrentOutfitVariationIndex,
+                            s_LocalHitman.m_pInterfaceRef
+                        );
                     }
                 }
             }
@@ -296,7 +292,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
                 const SVector3 s_Temp = s_ActorSpatialEntity->m_mTransform.Trans - s_HitmanSpatialEntity->m_mTransform.
-                                        Trans;
+                    Trans;
                 const float s_Distance = sqrt(s_Temp.x * s_Temp.x + s_Temp.y * s_Temp.y + s_Temp.z * s_Temp.z);
 
                 if (s_Distance <= 3.0f) {
