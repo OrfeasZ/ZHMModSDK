@@ -197,6 +197,10 @@ void Editor::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS")) {
         m_DebugChannelsMenuActive = !m_DebugChannelsMenuActive;
     }
+
+    if (ImGui::Button(ICON_MD_MEETING_ROOM " ROOMS")) {
+        m_RoomsMenuActive = !m_RoomsMenuActive;
+    }
 }
 
 void Editor::ToggleEditorServerEnabled() {
@@ -298,6 +302,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
     DrawItems(p_HasFocus);
     DrawActors(p_HasFocus);
     DrawDebugChannels(p_HasFocus);
+    DrawRooms(p_HasFocus);
 
     if (m_EditorCameraRT && m_EditorCamera) {
         ImGui::Begin("RT Texture");
@@ -981,6 +986,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     }
 
     m_EntityRefToFactoryRuntimeResourceIDs.clear();
+
+    m_SortedRooms.clear();
 
     return { HookAction::Continue() };
 }

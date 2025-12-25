@@ -210,6 +210,7 @@ private:
     void DrawItems(bool p_HasFocus);
     void DrawActors(bool p_HasFocus);
     void DrawDebugChannels(bool p_HasFocus);
+    void DrawRooms(bool p_HasFocus);
 
     static void EquipOutfit(
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharSetIndex,
@@ -462,6 +463,7 @@ private:
     bool m_ItemsMenuActive = false;
     bool m_ActorsMenuActive = false;
     bool m_DebugChannelsMenuActive = false;
+    bool m_RoomsMenuActive = false;
 
     ZActor* m_SelectedActor = nullptr;
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
@@ -514,6 +516,10 @@ private:
     std::unordered_map<ZRuntimeResourceID, ZExtendedCppEntityFactory*> m_RuntimeResourceIDToExtendedCppEntityFactory;
     std::shared_mutex m_EntityRefToFactoryRuntimeResourceIDsMutex;
     std::mutex m_ExtendedCppEntityFactoryResourceMapsMutex;
+
+    std::vector<ZEntityRef> m_SortedRooms;
+    bool m_ShowOnlyVisibleRooms = false;
+    bool m_ShowOnlyVisibleGates = false;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)
