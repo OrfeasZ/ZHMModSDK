@@ -257,6 +257,7 @@ public:
 
     bool IsChunkMounted(uint32_t p_ChunkIndex) override;
     void MountChunk(uint32_t p_ChunkIndex) override;
+    void UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) override;
     const TArray<uint32_t>& GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) override;
 
 private:
