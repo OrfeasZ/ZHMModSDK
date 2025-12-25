@@ -47,6 +47,7 @@ class ZPackageManagerBase;
 class ZUIText;
 class ZWorldInventory;
 class ZTargetManager;
+class ZRoomManager;
 
 namespace bfx {
     class SystemInstance;
@@ -118,4 +119,5 @@ public:
     static ZWorldInventory* WorldInventory;
     static uint32_t* WorldInventory_InvalidTicket;
     static ZTargetManager* TargetManager;
+    static ZRoomManager** RoomManager;
 };
