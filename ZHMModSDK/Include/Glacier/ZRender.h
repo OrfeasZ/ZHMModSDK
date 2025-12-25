@@ -174,6 +174,16 @@ public:
     SMatrix m_mViewToProjection; // 0x340, function called by ZRenderContext_Unknown01, first pair of 4
 };
 
+class ZRenderGraphNodeCamera {
+public:
+    virtual ~ZRenderGraphNodeCamera() = 0;
+
+    PAD(0x5E0); // 0x8
+    uint16 m_nStickyRoomId; // 0x5E8
+    uint16 m_nNumOverlappingRooms; // 0x5EA
+    uint16 m_aOverlappingRooms[32]; // 0x5EC
+};
+
 class ZRenderManager {
 public:
     virtual ~ZRenderManager() = default;
@@ -183,8 +193,10 @@ public:
     ZRenderDevice* m_pDevice; // 0x14180, look for ZRenderDevice constructor
     PAD(0x08); // 0x14188
     ZRenderSharedResources* m_pSharedResources; // 0x14190
-    PAD(0xE8); // 0x14198
-    ZRenderContext* m_pRenderContext;
+    PAD(0x38); // 0x14198
+    ZRenderGraphNodeCamera* m_pCurrentCamera; // 0x141D0
+    PAD(0xA8);
+    ZRenderContext* m_pRenderContext; // 0x14280
     // 0x14280, look for "ZRenderManager::RenderThread" string, first thing being constructed and assigned
 };
 
