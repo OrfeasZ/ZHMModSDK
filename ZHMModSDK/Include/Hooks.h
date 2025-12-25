@@ -85,6 +85,7 @@ public:
     static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
     static Hook<bool(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
     static Hook<void(ZEntitySceneContext*, bool bFullyUnloadScene)>* ZEntitySceneContext_ClearScene;
+    static Hook<void(ZEntitySceneContext*, bool bResetScene)>* ZEntitySceneContext_CreateScene;
 
     static Hook<void(
         ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode

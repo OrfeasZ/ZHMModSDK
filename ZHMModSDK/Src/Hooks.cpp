@@ -30,6 +30,13 @@ PATTERN_HOOK(
 );
 
 PATTERN_HOOK(
+    "\x40\x53\x57\x48\x83\xEC\x00\xFF\x05",
+    "xxxxxx?xx",
+    ZEntitySceneContext_CreateScene,
+    void(ZEntitySceneContext*, bool bResetScene)
+);
+
+PATTERN_HOOK(
     "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x56\x57\x41\x56\x48\x83\xEC\x00\x41\x0F\xB6\xE9",
     "xxxxxxxxxxxxxxxxx?xxxx",
     ZUpdateEventContainer_AddDelegate,
