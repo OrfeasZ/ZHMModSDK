@@ -51,6 +51,7 @@ set(MODS
         OnlineTools
         Player
         Assets
+        Outfits
 )
 
 foreach (MOD IN LISTS MODS)
