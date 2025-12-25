@@ -228,7 +228,7 @@ public:
     virtual void ZResourceManager_unk28() = 0;
     virtual void ZResourceManager_unk29() = 0;
     virtual void ZResourceManager_unk30() = 0;
-    virtual void ZResourceManager_unk31() = 0;
+    virtual ZMutex& GetMutex() const = 0;
     virtual void ZResourceManager_unk32() = 0;
     virtual void ZResourceManager_unk33() = 0;
     virtual void ZResourceManager_unk34() = 0;
@@ -258,6 +258,8 @@ public:
 public:
     PAD(420);
     volatile LONG m_nNumProcessing; // 428 (0x1AC)
+    PAD(0x128);
+    THashSet<ZResourceIndex, TDefaultHashSetPolicy<ZResourceIndex>> m_pendingUninstalls; // 0x2D8
 };
 
 class ZResourceDataBuffer : public ZSharedPointerTarget {
