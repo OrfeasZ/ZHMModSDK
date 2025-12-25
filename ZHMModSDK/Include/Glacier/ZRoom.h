@@ -4,14 +4,7 @@
 #include "SColorRGB.h"
 #include "ZSparseBitArray.h"
 
-class IRoomEntity : public IComponentInterface {
-};
-
-class ZRoomEntity : public ZBoundedEntity, public IRoomEntity {
-public:
-    PAD(0xE0);
-    uint16 m_nRoomID;
-};
+class IRoomEntity;
 
 class IGateEntity : public IComponentInterface {
 };
@@ -46,6 +39,16 @@ public:
     ZEntityRef m_PierceOccluder; // 0x198
     SVector3 m_vConnectorOffset; // 0x1A0
     PAD(0x8);
+};
+
+class IRoomEntity : public IComponentInterface {
+};
+
+class ZRoomEntity : public ZBoundedEntity, public IRoomEntity {
+public:
+    TArray<ZGateEntity*> m_Gates; // 0xC0
+    PAD(0x8); // 0xD8
+    uint16 m_nRoomID; // 0xE0
 };
 
 struct SRoomInfoHeader {
