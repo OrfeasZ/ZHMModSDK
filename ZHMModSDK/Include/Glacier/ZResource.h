@@ -330,7 +330,7 @@ public:
     virtual void ZPackageManagerBase_unk9() = 0;
     virtual void ZPackageManagerBase_unk10() = 0;
     virtual void ZPackageManagerBase_unk11() = 0;
-    virtual void ZPackageManagerBase_unk12() = 0;
+    virtual void UnmountPartitions(uint8_t p_FirstPackageIndex) = 0;
     virtual void ZPackageManagerBase_unk13() = 0;
     virtual void ZPackageManagerBase_unk14() = 0;
     virtual void ZPackageManagerBase_unk15() = 0;
