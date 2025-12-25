@@ -386,3 +386,25 @@ PATTERN_FUNCTION(
     ZWorldInventory_DestroyItem,
     void(ZWorldInventory* th, TEntityRef<IItemBase> rItemInc)
 );
+
+PATTERN_FUNCTION(
+    "\x40\x53\x56\x41\x54\x41\x55\x41\x57\x48\x83\xEC\x00\x48\x8B\x84\x24\x80\x00\x00\x00",
+    "xxxxxxxxxxxx?xxxxxxxx",
+    ZResourceManager_GetResourceIndex,
+    ZResourceIndex* (ZResourceManager* th, ZResourceIndex& result, const ZRuntimeResourceID& ridResource,
+        int32_t nPriority, bool& bOutStartLoading)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x55\x56\x57\x41\x54\x41\x55\x48\x8D\x6C\x24\xC9",
+    "xxxxxxxxxxxxx",
+    ZResourceContainer_UnmountPackages,
+    bool(ZResourceContainer* th, uint8 packageId)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x83\xEC\x00\x48\x8B\xEA\x48\x8B\xF1\x33\xDB",
+    "xxxxxxxxxxxxxxxxxxxxxxxxx?xxxxxxxx",
+    ZRoomManager_GetRoomFromPoint,
+    uint16(ZRoomManager* th, const float4& vPointWS)
+);

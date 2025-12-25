@@ -202,4 +202,16 @@ public:
         ZWorldInventory* th,
         TEntityRef<IItemBase> rItemInc
     )>* ZWorldInventory_DestroyItem;
+
+    static EngineFunction<ZResourceIndex*(
+        ZResourceManager* th,
+        ZResourceIndex& result,
+        const ZRuntimeResourceID& ridResource,
+        int32_t nPriority,
+        bool& bOutStartLoading
+    )>* ZResourceManager_GetResourceIndex;
+
+    static EngineFunction<bool(ZResourceContainer* th, uint8 packageId)>* ZResourceContainer_UnmountPackages;
+
+    static EngineFunction<uint16(ZRoomManager* th, const float4& vPointWS)>* ZRoomManager_GetRoomFromPoint;
 };
