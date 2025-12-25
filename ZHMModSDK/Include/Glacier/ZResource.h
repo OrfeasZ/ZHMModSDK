@@ -127,6 +127,30 @@ static_assert(sizeof(ZResourceContainer::SResourceInfo) == 64);
 
 class ZResourcePtr {
 public:
+    ZResourcePtr() {
+        m_nResourceIndex.val = -1;
+    }
+
+    ZResourcePtr(const ZResourcePtr& p_Other) {
+        m_nResourceIndex = p_Other.m_nResourceIndex;
+
+        if (m_nResourceIndex.val != -1) {
+            auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
+
+            InterlockedIncrement(&s_ResourceInfo.refCount);
+        }
+    }
+
+    ZResourcePtr(ZResourceIndex p_ResourceIndex) {
+        m_nResourceIndex = p_ResourceIndex;
+
+        if (m_nResourceIndex.val != -1) {
+            auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
+
+            InterlockedIncrement(&s_ResourceInfo.refCount);
+        }
+    }
+
     ZHMSDK_API ~ZResourcePtr();
 
 public:
