@@ -357,8 +357,8 @@ void Editor::AddDynamicEntitiesToEntityTree(
 
         s_DynamicEntities.reserve(m_DynamicEntities.size());
 
-        for (const auto& ref: m_DynamicEntities) {
-            s_DynamicEntities.push_back(ref);
+        for (const auto& s_DynamicEntity : m_DynamicEntities) {
+            s_DynamicEntities.push_back(s_DynamicEntity);
         }
 
         m_PendingDynamicEntities.clear();
