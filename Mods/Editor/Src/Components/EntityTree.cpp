@@ -1029,6 +1029,8 @@ DEFINE_PLUGIN_DETOUR(
 
     if (s_NodeToRemove) {
         s_NodeToRemove->IsPendingDeletion = true;
+
+        DeleteDebugEntity(s_NodeToRemove->Entity);
         DestroyEntityNodeInternal(s_NodeToRemove, std::nullopt);
     }
 

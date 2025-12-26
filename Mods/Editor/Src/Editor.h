@@ -255,6 +255,7 @@ private:
         const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
         const SMatrix& p_Transform = SMatrix()
     );
+    void DeleteDebugEntity(const ZEntityRef p_EntityRef);
     EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
     bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
@@ -482,7 +483,8 @@ private:
     TEntityRef<ZCameraEntity> m_TrackCam {};
     TEntityRef<IRenderDestinationEntity> m_RenderDest {};
 
-    std::vector<std::unique_ptr<DebugEntity>> m_DebugEntities;
+    std::unordered_map<ZEntityRef, std::vector<std::unique_ptr<DebugEntity>>> m_EntityRefToDebugEntities;
+    std::shared_mutex m_DebugEntitiesMutex;
     std::vector<std::pair<std::string, EDebugChannel>> m_DebugChannels;
     std::unordered_map<std::string, std::vector<std::string>> m_DebugChannelNameToTypeNames;
     std::unordered_map<EDebugChannel, uint32> m_DebugChannelToDebugEntityCount;

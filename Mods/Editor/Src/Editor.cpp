@@ -420,6 +420,20 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             if (m_ReparentDynamicOutfitEntities) {
                 ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
             }
+
+            {
+                std::scoped_lock s_ScopedLock(m_DebugEntitiesMutex);
+
+                if (!m_EntityRefToDebugEntities.empty()) {
+                    for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
+                        auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
+
+                        if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                            GetDebugEntities(s_Iterator->second);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -978,7 +992,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_SelectedGizmoEntity = nullptr;
 
-    m_DebugEntities.clear();
+    m_EntityRefToDebugEntities.clear();
 
     if (m_EditorData) {
         m_EditorCamera = {};
