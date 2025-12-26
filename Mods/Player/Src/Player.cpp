@@ -67,15 +67,6 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         static uint8_t s_CurrentOutfitVariationIndex = 1;
 
         if (s_LocalHitman) {
-            if (s_OutfitName[0] == '\0') {
-                const char* s_OutfitName2 = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit.m_pInterfaceRef->m_sCommonName.
-                    c_str();
-
-                strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
-
-                s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
-            }
-
             if (!m_GlobalOutfitKit) {
                 m_GlobalOutfitKit = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit;
                 s_CurrentCharacterSetIndex = s_LocalHitman.m_pInterfaceRef->m_nOutfitCharset;
@@ -87,7 +78,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
-        Util::ImGuiUtils::InputWithAutocomplete(
+        const bool s_IsPopupOpen = Util::ImGuiUtils::InputWithAutocomplete(
             "##OutfitsPopup",
             s_OutfitName,
             sizeof(s_OutfitName),
@@ -117,6 +108,15 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             },
             [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
         );
+
+        if (!s_IsPopupOpen && s_LocalHitman && s_OutfitName[0] == '\0') {
+            const char* s_OutfitName2 = s_LocalHitman.m_pInterfaceRef->m_rOutfitKit.m_pInterfaceRef->m_sCommonName.
+                c_str();
+
+            strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
+
+            s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
+        }
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Character Set Index");

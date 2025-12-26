@@ -118,14 +118,6 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         static char s_OutfitName[2048] {""};
 
-        if (s_OutfitName[0] == '\0') {
-            const char* s_OutfitName2 = m_SelectedActor->m_rOutfit.m_pInterfaceRef->m_sCommonName.c_str();
-
-            strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
-
-            s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
-        }
-
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Outfit");
         ImGui::SameLine();
@@ -142,7 +134,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             s_CurrentOutfitVariationIndex = m_SelectedActor->m_nOutfitVariation;
         }
 
-        Util::ImGuiUtils::InputWithAutocomplete(
+        const bool s_IsPopupOpen = Util::ImGuiUtils::InputWithAutocomplete(
             "##OutfitsPopup",
             s_OutfitName,
             sizeof(s_OutfitName),
@@ -175,6 +167,14 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 return p_Pair.second && !p_Pair.second.m_pInterfaceRef->m_bIsHitmanSuit;
             }
         );
+
+        if (!s_IsPopupOpen && s_OutfitName[0] == '\0') {
+            const char* s_OutfitName2 = m_SelectedActor->m_rOutfit.m_pInterfaceRef->m_sCommonName.c_str();
+
+            strncpy(s_OutfitName, s_OutfitName2, sizeof(s_OutfitName) - 1);
+
+            s_OutfitName[sizeof(s_OutfitName) - 1] = '\0';
+        }
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Character Set Index");
