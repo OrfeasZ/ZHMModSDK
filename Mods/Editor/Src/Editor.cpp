@@ -396,7 +396,9 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     m_EntityDestructionMutex.unlock();
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
-        std::vector<ZEntityRef> s_EntitiesToAdd; {
+        std::vector<ZEntityRef> s_EntitiesToAdd;
+        
+        {
             std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
 
             if (!m_PendingDynamicEntities.empty()) {
