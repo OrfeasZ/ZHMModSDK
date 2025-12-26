@@ -905,7 +905,7 @@ void Editor::DestroyEntityNodeInternal(
 
     const uint64_t s_EntityId = p_NodeToRemove->EntityId;
 
-    std::scoped_lock lock(m_CachedEntityTreeMutex);
+    std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
 
     if (p_NodeToRemove->Entity) {
         m_CachedEntityTreeMap.erase(p_NodeToRemove->Entity);
