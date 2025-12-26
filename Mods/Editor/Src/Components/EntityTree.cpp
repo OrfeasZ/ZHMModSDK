@@ -728,15 +728,16 @@ void Editor::DrawEntityTree() {
             }
         }
 
-        m_CachedEntityTreeMutex.lock_shared();
+        {
+            std::shared_lock lock(m_CachedEntityTreeMutex);
 
-        if (m_CachedEntityTree) {
-            RenderEntity(m_CachedEntityTree);
-        } else {
-            ImGui::Text("No entities loaded. You may want to press the 'Rebuild entity tree' button.");
+            if (m_CachedEntityTree) {
+                RenderEntity(m_CachedEntityTree);
+            }
+            else {
+                ImGui::Text("No entities loaded. You may want to press the 'Rebuild entity tree' button.");
+            }
         }
-
-        m_CachedEntityTreeMutex.unlock_shared();
 
         /*const std::string s_PreviewLabel = fmt::format(
             "{:016X}",
@@ -1012,18 +1013,19 @@ DEFINE_PLUGIN_DETOUR(
         m_SelectedEntity = nullptr;
     }
 
-    m_CachedEntityTreeMutex.lock_shared();
     std::shared_ptr<EntityTreeNode> s_NodeToRemove;
 
-    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
-        auto it = m_CachedEntityTreeMap.find(entityRef);
+    {
+        std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-        if (it != m_CachedEntityTreeMap.end()) {
-            s_NodeToRemove = it->second;
+        if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
+            auto it = m_CachedEntityTreeMap.find(entityRef);
+
+            if (it != m_CachedEntityTreeMap.end()) {
+                s_NodeToRemove = it->second;
+            }
         }
     }
-
-    m_CachedEntityTreeMutex.unlock_shared();
 
     if (s_NodeToRemove) {
         s_NodeToRemove->IsPendingDeletion = true;
