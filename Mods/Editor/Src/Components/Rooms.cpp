@@ -26,7 +26,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
             return;
         }
 
-        auto s_LocalHitman = SDK()->GetLocalPlayer();
+        const auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (s_LocalHitman) {
             const ZSpatialEntity* s_SpatialEntity = SDK()->GetLocalPlayer().m_ref.QueryInterface<ZSpatialEntity>();
@@ -41,11 +41,36 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
             std::shared_ptr<EntityTreeNode> s_EntityTreeNode = m_CachedEntityTreeMap[s_CurrentRoomEntityRef];
 
-            ImGui::Text("Current Room: %s", s_EntityTreeNode->Name.c_str());
+            ImGui::Text("Room player is in: %s", s_EntityTreeNode->Name.c_str());
 
             ImGui::SameLine();
 
-            if (ImGui::SmallButton("Select In Entity Tree")) {
+            if (ImGui::SmallButton("Select In Entity Tree##Player")) {
+                OnSelectEntity(s_CurrentRoomEntityRef, true, std::nullopt);
+            }
+
+            ImGui::Separator();
+        }
+
+        const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+        if (s_CurrentCamera) {
+            const uint16 s_CurrentRoomEntityIndex = Functions::ZRoomManager_GetRoomFromPoint->Call(
+                *Globals::RoomManager,
+                s_CurrentCamera->GetWorldMatrix().Pos
+            );
+            const ZRoomEntity* s_CurrentRoomEntity = (*Globals::RoomManager)->m_RoomEntities[s_CurrentRoomEntityIndex];
+            ZEntityRef s_CurrentRoomEntityRef;
+
+            s_CurrentRoomEntity->GetID(s_CurrentRoomEntityRef);
+
+            std::shared_ptr<EntityTreeNode> s_EntityTreeNode = m_CachedEntityTreeMap[s_CurrentRoomEntityRef];
+
+            ImGui::Text("Room camera is in: %s", s_EntityTreeNode->Name.c_str());
+
+            ImGui::SameLine();
+
+            if (ImGui::SmallButton("Select In Entity Tree##Camera")) {
                 OnSelectEntity(s_CurrentRoomEntityRef, true, std::nullopt);
             }
 
