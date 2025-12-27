@@ -362,10 +362,10 @@ void Outfits::BuildSceneNamesToRuntimeResourceIds() {
         simdjson::ondemand::object s_Metadata = s_Document["Metadata"];
         const std::string_view s_CodeNameHint = s_Metadata["CodeName_Hint"];
         const std::string_view s_ScenePath = s_Metadata["ScenePath"];
-        const std::string_view s_Location = s_Metadata["Location"];
+        const std::string_view s_LocationKey = s_Metadata["Location"];
 
-        std::string s_LocationKey = std::format("UI_{}_CITY", s_Location);
-        const uint32_t s_LocationHash = Hash::Crc32(s_LocationKey.data(), s_LocationKey.size());
+        std::string s_LocationKey2 = std::format("UI_{}_CITY", s_LocationKey);
+        const uint32_t s_LocationHash = Hash::Crc32(s_LocationKey2.data(), s_LocationKey2.size());
 
         ZString s_SceneName;
         int s_OutMarkupResult;
@@ -379,8 +379,8 @@ void Outfits::BuildSceneNamesToRuntimeResourceIds() {
 
         if (!s_TextFound) {
             Logger::Error(
-                "Missing UI text for location key: UI_{}_CITY (Runtime Resource ID: {:016x})!",
-                s_Location,
+                "Missing UI text for location key: {} (Runtime Resource ID: {:016x})!",
+                s_LocationKey2,
                 s_JsonReferenceInfo.rid.GetID()
             );
 
