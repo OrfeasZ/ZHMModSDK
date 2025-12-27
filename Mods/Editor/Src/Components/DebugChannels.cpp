@@ -357,11 +357,24 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
 }
 
 void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
-    p_Renderer->SetDistanceCullingEnabled(true);
-
     if (!m_DrawGizmos && !m_DrawShapes) {
         return;
     }
+
+    bool s_IsAnyDebugChannelEnabled = false;
+
+    for (const auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToState) {
+        if (s_IsVisible) {
+            s_IsAnyDebugChannelEnabled = true;
+            break;
+        }
+    }
+
+    if (!s_IsAnyDebugChannelEnabled) {
+        return;
+    }
+
+    p_Renderer->SetDistanceCullingEnabled(true);
 
     for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
         for (const auto& s_DebugEntity : s_DebugEntities) {
