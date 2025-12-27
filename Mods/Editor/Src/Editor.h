@@ -490,8 +490,8 @@ private:
     std::unordered_map<EDebugChannel, uint32> m_DebugChannelToDebugEntityCount;
     std::unordered_map<EDebugChannel, std::unordered_map<std::string, uint32_t>>
     m_DebugChannelToTypeNameToDebugEntityCount;
-    std::unordered_map<EDebugChannel, bool> m_DebugChannelToVisibility;
-    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToVisibility;
+    std::unordered_map<EDebugChannel, bool> m_DebugChannelToState;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToState;
     std::vector<STypeID*> m_DebugEntityTypeIds;
     bool m_DrawGizmos = true;
     bool m_DrawAllGizmos = false;

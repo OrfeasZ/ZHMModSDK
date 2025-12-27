@@ -203,7 +203,7 @@ void Editor::InitializeDebugChannels() {
 
     for (const auto& [s_DebugChannelName, s_DebugChannelEnum] : m_DebugChannels) {
         for (const auto& s_TypeName : m_DebugChannelNameToTypeNames[s_DebugChannelName]) {
-            m_DebugChannelToTypeNameToVisibility[s_DebugChannelEnum][s_TypeName] = true;
+            m_DebugChannelToTypeNameToState[s_DebugChannelEnum][s_TypeName] = true;
         }
     }
 }
@@ -300,7 +300,7 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
             ImGui::Checkbox("Draw Gizmos", &m_DrawGizmos);
             
             if (ImGui::Checkbox("Draw All Gizmos", &m_DrawAllGizmos)) {
-                for (auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToVisibility) {
+                for (auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToState) {
                     s_IsVisible = m_DrawAllGizmos;
                 }
             }
@@ -317,17 +317,17 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
                 );
 
                 if (ImGui::CollapsingHeader(s_Header.c_str())) {
-                    bool& s_DrawGizmos = m_DebugChannelToVisibility[pair.second];
+                    bool& s_DrawGizmos = m_DebugChannelToState[pair.second];
 
                     ImGui::Checkbox(fmt::format("Draw Gizmos##{}", pair.first).c_str(), &s_DrawGizmos);
 
                     ImGui::Separator();
 
                     const auto& s_TypeNameToGizmoCount = m_DebugChannelToTypeNameToDebugEntityCount[pair.second];
-                    auto& s_TypeNameToVisibility = m_DebugChannelToTypeNameToVisibility[pair.second];
+                    auto& s_TypeNameToState = m_DebugChannelToTypeNameToState[pair.second];
 
                     for (const auto& s_Pair : s_TypeNameToGizmoCount) {
-                        bool& s_DrawGizmos2 = s_TypeNameToVisibility[s_Pair.first];
+                        bool& s_DrawGizmos2 = s_TypeNameToState[s_Pair.first];
                         const std::string s_Label = fmt::format("{} ({})##{}{}",
                             s_Pair.first,
                             s_Pair.second,
@@ -382,11 +382,11 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
         return;
     }
 
-    if (!m_DebugChannelToVisibility[p_GizmoEntity.m_DebugChannel]) {
+    if (!m_DebugChannelToState[p_GizmoEntity.m_DebugChannel]) {
         return;
     }
 
-    if (!m_DebugChannelToTypeNameToVisibility[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
+    if (!m_DebugChannelToTypeNameToState[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
         return;
     }
 
@@ -466,11 +466,11 @@ void Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer)
         return;
     }
 
-    if (!m_DebugChannelToVisibility[p_DebugEntity.m_DebugChannel]) {
+    if (!m_DebugChannelToState[p_DebugEntity.m_DebugChannel]) {
         return;
     }
 
-    if (!m_DebugChannelToTypeNameToVisibility[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
+    if (!m_DebugChannelToTypeNameToState[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
         return;
     }
 }
@@ -1382,11 +1382,11 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
 
             GizmoEntity* s_GizmoEntity = static_cast<GizmoEntity*>(s_DebugEntity.get());
 
-            if (!m_DebugChannelToVisibility[s_GizmoEntity->m_DebugChannel]) {
+            if (!m_DebugChannelToState[s_GizmoEntity->m_DebugChannel]) {
                 continue;
             }
 
-            if (!m_DebugChannelToTypeNameToVisibility[s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
+            if (!m_DebugChannelToTypeNameToState[s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
                 continue;
             }
 
