@@ -328,7 +328,12 @@ void Editor::DrawEntityProperties() {
             if (ImGui::Button(ICON_MD_CONTENT_COPY " RT JSON##EntRT")) {
                 CopyToClipboard(
                     fmt::format(
-                        "{{\"XAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"YAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
+                        "{{"
+                        "\"XAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+                        "\"YAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+                        "\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+                        "\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}"
+                        "}}",
                         s_Trans.XAxis.x,
                         s_Trans.XAxis.y,
                         s_Trans.XAxis.z,
