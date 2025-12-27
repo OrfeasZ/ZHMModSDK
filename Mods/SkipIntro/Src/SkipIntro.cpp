@@ -4,19 +4,17 @@
 #include "Logging.h"
 
 void SkipIntro::Init() {
-    Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &SkipIntro::OnLoadScene);
+    Hooks::ZEngineAppCommon_GetBootScene->AddDetour(this, &SkipIntro::ZEngineAppCommon_GetBootScene);
 }
 
-DEFINE_PLUGIN_DETOUR(SkipIntro, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_parameters) {
-    Logger::Debug("Loading scene: {}", p_parameters.m_SceneResource);
+DEFINE_PLUGIN_DETOUR(SkipIntro, ZString*, ZEngineAppCommon_GetBootScene, ZEngineAppCommon* th, ZString& result) {
+    p_Hook->CallOriginal(th, result);
 
-    for (auto& s_Brick : p_parameters.m_aAdditionalBrickResources)
-        Logger::Debug("+ With brick: {}", s_Brick);
+    if (result == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
+        result = "assembly:/_PRO/Scenes/Frontend/MainMenu.entity";
+    }
 
-    if (p_parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity")
-        p_parameters.m_SceneResource = "assembly:/_PRO/Scenes/Frontend/MainMenu.entity";
-
-    return HookResult<bool>(HookAction::Continue());
+    return HookResult<ZString*>(HookAction::Return(), &result);
 }
 
 DEFINE_ZHM_PLUGIN(SkipIntro);

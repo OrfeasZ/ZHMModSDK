@@ -79,6 +79,7 @@ enum class ESceneLoadingStage;
 class ZSecuritySystemCameraManager;
 class ZSecuritySystemCamera;
 class ZExtendedCppEntityTypeInstaller;
+class ZEngineAppCommon;
 
 class ZHMSDK_API Hooks {
 public:
@@ -256,4 +257,6 @@ public:
         Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
         const char* msg
     )>* Scaleform_GFx_AS3_MovieRoot_Output;
+
+    static Hook<ZString*(ZEngineAppCommon* th, ZString& result)>* ZEngineAppCommon_GetBootScene;
 };
