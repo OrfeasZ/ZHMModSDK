@@ -903,6 +903,7 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
     // Check if m_bRemovePhysics is true. If it is true, skip this entity.
     const auto s_EntityType = p_Entity->GetType();
     const std::string s_RemovePhysicsPropertyName = "m_bRemovePhysics";
+    const std::string s_DisableNavmeshExportPropertyName = "m_bDisableNavmeshExport";
     if (s_EntityType && s_EntityType->m_pProperties01) {
         for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
             const ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
@@ -924,11 +925,21 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
                             return true;
                         }
                     }
+                    else if (s_PropertyNameView == s_DisableNavmeshExportPropertyName) {
+                        if (!IsPropertyValueTrue(s_Property, p_Entity)) {
+                            return true;
+                        }
+                    }
                 }
             }
             else if (s_PropertyInfo->m_pName) {
                 if (s_PropertyInfo->m_pName == s_RemovePhysicsPropertyName) {
                     if (IsPropertyValueTrue(s_Property, p_Entity)) {
+                        return true;
+                    }
+                }
+                else if (s_PropertyInfo->m_pName == s_DisableNavmeshExportPropertyName) {
+                    if (!IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
                 }
