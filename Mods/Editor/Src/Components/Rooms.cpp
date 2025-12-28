@@ -134,17 +134,19 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
             ImGui::SetNextItemAllowOverlap();
 
-            if (ImGui::TreeNodeEx(s_RoomName2.c_str(), s_RoomNodeFlags)) {
-                ImGui::SameLine();
+            bool s_IsTreeNodeOpen = ImGui::TreeNodeEx(s_RoomName2.c_str(), s_RoomNodeFlags);
 
-                ImGui::PushID(s_RoomEntityRef);
+            ImGui::SameLine();
 
-                if (ImGui::SmallButton("Select In Entity Tree")) {
-                    OnSelectEntity(s_RoomEntityRef, true, std::nullopt);
-                }
+            ImGui::PushID(s_RoomEntityRef->GetType()->m_nEntityId);
 
-                ImGui::PopID();
+            if (ImGui::SmallButton("Select In Entity Tree")) {
+                OnSelectEntity(s_RoomEntityRef, true, std::nullopt);
+            }
 
+            ImGui::PopID();
+
+            if (s_IsTreeNodeOpen) {
                 if (ImGui::TreeNode("Gates")) {
                     std::vector<ZEntityRef> s_SortedGates;
 
