@@ -109,17 +109,19 @@ void Editor::DrawRooms(const bool p_HasFocus) {
             ZRoomEntity* s_RoomEntity = s_RoomEntityRef.QueryInterface<ZRoomEntity>();
             bool s_IsRoomVisible = false;
 
-            for (const auto& s_RoomEntityIndex : (*Globals::RoomManager)->m_RoomsVisibleMain) {
-                ZRoomEntity* s_RoomEntity2 = (*Globals::RoomManager)->m_RoomEntities[s_RoomEntityIndex];
+            if (m_ShowOnlyVisibleRooms) {
+                for (const auto& s_RoomEntityIndex : (*Globals::RoomManager)->m_RoomsVisibleMain) {
+                    ZRoomEntity* s_RoomEntity2 = (*Globals::RoomManager)->m_RoomEntities[s_RoomEntityIndex];
 
-                if (s_RoomEntity2 == s_RoomEntity) {
-                    s_IsRoomVisible = true;
-                    break;
+                    if (s_RoomEntity2 == s_RoomEntity) {
+                        s_IsRoomVisible = true;
+                        break;
+                    }
                 }
-            }
 
-            if (m_ShowOnlyVisibleRooms && !s_IsRoomVisible) {
-                continue;
+                if (!s_IsRoomVisible) {
+                    continue;
+                }
             }
 
             if (!Util::StringUtils::FindSubstringUTF8(s_RoomName2, s_RoomName)) {
@@ -168,17 +170,19 @@ void Editor::DrawRooms(const bool p_HasFocus) {
                         const ZGateEntity* s_GateEntity = s_GateEntityRef.QueryInterface<ZGateEntity>();
                         bool s_IsGateVisible = false;
 
-                        for (const auto& s_GateIndex : (*Globals::RoomManager)->m_GatesVisibleMain) {
-                            SGateInfoHeader& s_GateInfoHeader = (*Globals::RoomManager)->m_GateHeaders[s_GateIndex];
+                        if (m_ShowOnlyVisibleGates) {
+                            for (const auto& s_GateIndex : (*Globals::RoomManager)->m_GatesVisibleMain) {
+                                SGateInfoHeader& s_GateInfoHeader = (*Globals::RoomManager)->m_GateHeaders[s_GateIndex];
 
-                            if (s_GateInfoHeader.pGateEntity == s_GateEntity) {
-                                s_IsGateVisible = true;
-                                break;
+                                if (s_GateInfoHeader.pGateEntity == s_GateEntity) {
+                                    s_IsGateVisible = true;
+                                    break;
+                                }
                             }
-                        }
 
-                        if (m_ShowOnlyVisibleGates && !s_IsGateVisible) {
-                            continue;
+                            if (!s_IsGateVisible) {
+                                continue;
+                            }
                         }
 
                         auto s_GateEntityTreeNode = m_CachedEntityTreeMap[s_GateEntityRef];
