@@ -96,27 +96,16 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
         ImGui::InputText("##GateName", s_GateName, sizeof(s_GateName));
 
-        if (m_SortedRooms.empty()) {
-            m_SortedRooms.reserve((*Globals::RoomManager)->m_RoomEntities.size());
-
+        if (m_RoomNameToEntityRef.empty()) {
             for (const auto& s_RoomEntity : (*Globals::RoomManager)->m_RoomEntities) {
-                ZEntityRef ref;
+                ZEntityRef s_EntityRef;
 
-                s_RoomEntity->GetID(ref);
-                m_SortedRooms.push_back(ref);
+                s_RoomEntity->GetID(s_EntityRef);
+                m_RoomNameToEntityRef.insert(std::make_pair(m_CachedEntityTreeMap[s_EntityRef]->Name, s_EntityRef));
             }
-
-            std::sort(
-                m_SortedRooms.begin(),
-                m_SortedRooms.end(),
-                [&](const ZEntityRef& a, const ZEntityRef& b) {
-                    return m_CachedEntityTreeMap[a]->Name <
-                        m_CachedEntityTreeMap[b]->Name;
-                }
-            );
         }
 
-        for (const auto& s_RoomEntityRef : m_SortedRooms) {
+        for (const auto& [s_RoomName2, s_RoomEntityRef] : m_RoomNameToEntityRef) {
             ZRoomEntity* s_RoomEntity = s_RoomEntityRef.QueryInterface<ZRoomEntity>();
             bool s_IsRoomVisible = false;
 
@@ -133,9 +122,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
                 continue;
             }
 
-            std::shared_ptr<EntityTreeNode> s_RoomEntityTreeNode = m_CachedEntityTreeMap[s_RoomEntityRef];
-
-            if (!Util::StringUtils::FindSubstringUTF8(s_RoomEntityTreeNode->Name, s_RoomName)) {
+            if (!Util::StringUtils::FindSubstringUTF8(s_RoomName2, s_RoomName)) {
                 continue;
             }
 
@@ -145,10 +132,10 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
             ImGui::SetNextItemAllowOverlap();
 
-            if (ImGui::TreeNodeEx(s_RoomEntityTreeNode->Name.c_str(), s_RoomNodeFlags)) {
+            if (ImGui::TreeNodeEx(s_RoomName2.c_str(), s_RoomNodeFlags)) {
                 ImGui::SameLine();
 
-                ImGui::PushID(s_RoomEntityTreeNode->EntityId);
+                ImGui::PushID(s_RoomEntityRef);
 
                 if (ImGui::SmallButton("Select In Entity Tree")) {
                     OnSelectEntity(s_RoomEntityRef, true, std::nullopt);
