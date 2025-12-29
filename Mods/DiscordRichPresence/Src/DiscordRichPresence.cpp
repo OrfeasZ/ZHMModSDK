@@ -53,8 +53,8 @@ void DiscordRichPresence::OnEngineInitialized() {
 }
 
 void DiscordRichPresence::BuildSceneMappings() {
-    m_CodeNameHintToSceneName.insert(std::make_pair("boot.entity", "In Startup Screen"));
-    m_CodeNameHintToSceneName.insert(std::make_pair("mainmenu.entity", "In Main Menu"));
+    m_CodeNameHintToSceneName.insert(std::make_pair("Boot.entity", "In Startup Screen"));
+    m_CodeNameHintToSceneName.insert(std::make_pair("MainMenu.entity", "In Main Menu"));
     m_CodeNameHintToSceneName.insert(std::make_pair("Vanilla", "Safehouse"));
 
     const ZRuntimeResourceID s_ConfigRuntimeResourceID = ResId<"[assembly:/_pro/online/default/offlineconfig/config.contracts].pc_contracts">;
@@ -221,7 +221,14 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
         }
     }
     else {
-        s_Location = m_CodeNameHintToSceneName[s_SceneInitParameters.m_CodeNameHint.c_str()];
+        std::string s_CodeNameHint = s_SceneInitParameters.m_CodeNameHint.c_str();
+
+        if (s_CodeNameHint.empty()) {
+            s_CodeNameHint = s_SceneInitParameters.m_SceneResource;
+            s_CodeNameHint = s_CodeNameHint.substr(s_CodeNameHint.find_last_of("/") + 1);
+        }
+
+        s_Location = m_CodeNameHintToSceneName[s_CodeNameHint];
     }
 
     if (s_Location == "In Startup Screen" || s_Location == "In Main Menu") {
