@@ -96,16 +96,28 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
         ImGui::InputText("##GateName", s_GateName, sizeof(s_GateName));
 
-        if (m_RoomNameToEntityRef.empty()) {
+        if (m_SortedRoomEntities.empty()) {
+            m_SortedRoomEntities.reserve((*Globals::RoomManager)->m_RoomEntities.size());
+
             for (const auto& s_RoomEntity : (*Globals::RoomManager)->m_RoomEntities) {
                 ZEntityRef s_EntityRef;
 
                 s_RoomEntity->GetID(s_EntityRef);
-                m_RoomNameToEntityRef.insert(std::make_pair(m_CachedEntityTreeMap[s_EntityRef]->Name, s_EntityRef));
+                m_SortedRoomEntities.push_back(s_EntityRef);
             }
+
+            std::sort(
+                m_SortedRoomEntities.begin(),
+                m_SortedRoomEntities.end(),
+                [&](const ZEntityRef& a, const ZEntityRef& b) {
+                    return m_CachedEntityTreeMap[a]->Name <
+                        m_CachedEntityTreeMap[b]->Name;
+                }
+            );
         }
 
-        for (const auto& [s_RoomName2, s_RoomEntityRef] : m_RoomNameToEntityRef) {
+        for (size_t i = 0; i < m_SortedRoomEntities.size(); ++i) {
+            ZEntityRef& s_RoomEntityRef = m_SortedRoomEntities[i];
             ZRoomEntity* s_RoomEntity = s_RoomEntityRef.QueryInterface<ZRoomEntity>();
             bool s_IsRoomVisible = false;
 
@@ -124,7 +136,9 @@ void Editor::DrawRooms(const bool p_HasFocus) {
                 }
             }
 
-            if (!Util::StringUtils::FindSubstringUTF8(s_RoomName2, s_RoomName)) {
+            std::shared_ptr<EntityTreeNode> s_RoomEntityTreeNode = m_CachedEntityTreeMap[s_RoomEntityRef];
+
+            if (!Util::StringUtils::FindSubstringUTF8(s_RoomEntityTreeNode->Name, s_RoomName)) {
                 continue;
             }
 
@@ -134,17 +148,15 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
             ImGui::SetNextItemAllowOverlap();
 
-            bool s_IsTreeNodeOpen = ImGui::TreeNodeEx(s_RoomName2.c_str(), s_RoomNodeFlags);
+            ImGui::PushID(i);
+
+            bool s_IsTreeNodeOpen = ImGui::TreeNodeEx(s_RoomEntityTreeNode->Name.c_str(), s_RoomNodeFlags);
 
             ImGui::SameLine();
-
-            ImGui::PushID(s_RoomEntityRef->GetType()->m_nEntityId);
 
             if (ImGui::SmallButton("Select In Entity Tree")) {
                 OnSelectEntity(s_RoomEntityRef, true, std::nullopt);
             }
-
-            ImGui::PopID();
 
             if (s_IsTreeNodeOpen) {
                 if (ImGui::TreeNode("Gates")) {
@@ -218,6 +230,8 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
                 ImGui::TreePop();
             }
+
+            ImGui::PopID();
         }
     }
 

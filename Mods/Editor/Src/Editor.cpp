@@ -1003,7 +1003,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_EntityRefToFactoryRuntimeResourceIDs.clear();
 
-    m_RoomNameToEntityRef.clear();
+    m_SortedRoomEntities.clear();
 
     return { HookAction::Continue() };
 }

@@ -519,7 +519,7 @@ private:
     std::shared_mutex m_EntityRefToFactoryRuntimeResourceIDsMutex;
     std::mutex m_ExtendedCppEntityFactoryResourceMapsMutex;
 
-    std::map<std::string, ZEntityRef> m_RoomNameToEntityRef;
+    std::vector<ZEntityRef> m_SortedRoomEntities;
     bool m_ShowOnlyVisibleRooms = false;
     bool m_ShowOnlyVisibleGates = false;
 };
