@@ -37,8 +37,9 @@ private:
     static std::string ToEntityTemplatePath(const std::string_view p_ScenePath);
     static std::filesystem::path GetRuntimeDirectory();
 
-    DECLARE_PLUGIN_DETOUR(Outfits, void, OnCreateScene, ZEntitySceneContext* th, bool p_ResetScene);
     DECLARE_PLUGIN_DETOUR(Outfits, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
+
+    DECLARE_PLUGIN_DETOUR(Outfits, void, ZLevelManager_StartGame, ZLevelManager* th);
 
     bool m_OutfitsMenuActive = false;
 

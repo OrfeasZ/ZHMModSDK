@@ -16,8 +16,9 @@
 #include "Functions.h"
 
 void Outfits::Init() {
-    Hooks::ZEntitySceneContext_CreateScene->AddDetour(this, &Outfits::OnCreateScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Outfits::OnClearScene);
+
+    Hooks::ZLevelManager_StartGame->AddDetour(this, &Outfits::ZLevelManager_StartGame);
 }
 
 void Outfits::OnDrawMenu() {
@@ -937,9 +938,7 @@ std::filesystem::path Outfits::GetRuntimeDirectory() {
     return s_ExePath.parent_path().parent_path() / "Runtime";
 }
 
-DEFINE_PLUGIN_DETOUR(Outfits, void, OnCreateScene, ZEntitySceneContext* th, bool p_ResetScene) {
-    p_Hook->CallOriginal(th, p_ResetScene);
-
+DEFINE_PLUGIN_DETOUR(Outfits, void, ZLevelManager_StartGame, ZLevelManager* th) {
     for (const auto& s_Brick : Globals::Hitman5Module->m_pEntitySceneContext->m_aLoadedBricks) {
         if (s_Brick.m_RuntimeResourceID == ResId<"[assembly:/_pro/scenes/bricks/globaldata_s2.brick].pc_entitytype">) {
             m_IsGlobalDataSeason2BrickLoaded = true;
@@ -951,7 +950,7 @@ DEFINE_PLUGIN_DETOUR(Outfits, void, OnCreateScene, ZEntitySceneContext* th, bool
         }
     }
 
-    return HookResult<void>(HookAction::Return());
+    return HookResult<void>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(Outfits, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {

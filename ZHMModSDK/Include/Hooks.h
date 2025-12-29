@@ -74,7 +74,6 @@ enum EPFObstacleClient;
 class ZPFObstacleEntity;
 class ZOnlineVersionConfig;
 struct SExternalReferences;
-class ZLevelManager;
 enum class ESceneLoadingStage;
 class ZSecuritySystemCameraManager;
 class ZSecuritySystemCamera;
@@ -259,4 +258,6 @@ public:
     )>* Scaleform_GFx_AS3_MovieRoot_Output;
 
     static Hook<ZString*(ZEngineAppCommon* th, ZString& result)>* ZEngineAppCommon_GetBootScene;
+
+    static Hook<void(ZLevelManager* th)>* ZLevelManager_StartGame;
 };

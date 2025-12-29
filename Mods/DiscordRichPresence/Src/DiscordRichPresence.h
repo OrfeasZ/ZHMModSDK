@@ -21,7 +21,7 @@ private:
     void BuildGameModeMappings();
 
 private:
-    DECLARE_PLUGIN_DETOUR(DiscordRichPresence, void, OnCreateScene, ZEntitySceneContext* th, bool p_ResetScene);
+    DECLARE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelManager* th);
 
 private:
     std::unordered_map<std::string, std::string> m_CodeNameHintToSceneName;

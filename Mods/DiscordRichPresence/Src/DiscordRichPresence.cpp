@@ -12,6 +12,7 @@
 #include "simdjson.h"
 #include "Functions.h"
 #include "Util/StringUtils.h"
+#include "Glacier/ZModule.h"
 
 static constexpr discord::ClientId APPLICATION_ID = 852754886197379103;
 
@@ -41,7 +42,7 @@ void DiscordRichPresence::Init() {
 
     BuildGameModeMappings();
 
-    Hooks::ZEntitySceneContext_CreateScene->AddDetour(this, &DiscordRichPresence::OnCreateScene);
+    Hooks::ZLevelManager_StartGame->AddDetour(this, &DiscordRichPresence::ZLevelManager_StartGame);
 }
 
 void DiscordRichPresence::OnEngineInitialized() {
@@ -193,16 +194,16 @@ void DiscordRichPresence::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         m_DiscordCore->RunCallbacks();
 }
 
-DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, OnCreateScene, ZEntitySceneContext* th, bool p_ResetScene) {
+DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelManager* th) {
     if (!m_DiscordCore) {
         return HookResult<void>(HookAction::Continue());
     }
 
-    p_Hook->CallOriginal(th, p_ResetScene);
+    SSceneInitParameters& s_SceneInitParameters = Globals::Hitman5Module->m_pEntitySceneContext->m_SceneInitParameters;
 
-    Logger::Trace("Scene: {}", th->m_SceneInitParameters.m_SceneResource);
-    Logger::Trace("Codename: {}", th->m_SceneInitParameters.m_CodeNameHint);
-    Logger::Trace("Type: {}", th->m_SceneInitParameters.m_Type);
+    Logger::Trace("Scene: {}", s_SceneInitParameters.m_SceneResource);
+    Logger::Trace("Codename: {}", s_SceneInitParameters.m_CodeNameHint);
+    Logger::Trace("Type: {}", s_SceneInitParameters.m_Type);
 
     std::string s_Action = "";
     std::string s_Details = "";
@@ -210,24 +211,24 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, OnCreateScene, ZEntitySceneConte
     std::string s_ImageKey = "logo";
 
     if (m_CodeNameHintToSceneName.empty()) {
-        if (th->m_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
+        if (s_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
             s_Location = "In Startup Screen";
         }
-        else if (th->m_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity") {
+        else if (s_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity") {
             s_Location = "In Main Menu";
 
             BuildSceneMappings();
         }
     }
     else {
-        s_Location = m_CodeNameHintToSceneName[th->m_SceneInitParameters.m_CodeNameHint.c_str()];
+        s_Location = m_CodeNameHintToSceneName[s_SceneInitParameters.m_CodeNameHint.c_str()];
     }
 
     if (s_Location == "In Startup Screen" || s_Location == "In Main Menu") {
         s_Action = s_Location;
     }
     else {
-        auto s_GameModeIt = m_TypeToGameMode.find(th->m_SceneInitParameters.m_Type.c_str());
+        auto s_GameModeIt = m_TypeToGameMode.find(s_SceneInitParameters.m_Type.c_str());
         std::string s_GameMode = s_GameModeIt == m_TypeToGameMode.end() ? "ERR_UNKNOWN_GAMEMODE" : s_GameModeIt->second;
 
         s_Details = "Playing " + s_GameMode + " in " + s_Location;
@@ -240,7 +241,7 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, OnCreateScene, ZEntitySceneConte
         s_ImageKey = "location-" + s_LocationKey;
 
         if (s_GameMode == "Mission" || s_GameMode == "Sniper Assassin") {
-            auto s_MissionIt = m_CodeNameHintToTitle.find(th->m_SceneInitParameters.m_CodeNameHint.c_str());
+            auto s_MissionIt = m_CodeNameHintToTitle.find(s_SceneInitParameters.m_CodeNameHint.c_str());
             s_Action = s_MissionIt == m_CodeNameHintToTitle.end() ? "ERR_UNKNOWN_MISSION" : s_MissionIt->second;
             std::string s_MissionName = s_Action;
 
@@ -266,7 +267,7 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, OnCreateScene, ZEntitySceneConte
         }
     );
 
-    return HookResult<void>(HookAction::Return());
+    return HookResult<void>(HookAction::Continue());
 }
 
 DEFINE_ZHM_PLUGIN(DiscordRichPresence);

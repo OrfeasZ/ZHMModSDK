@@ -484,3 +484,10 @@ PATTERN_HOOK(
     ZEngineAppCommon_GetBootScene,
     ZString*(ZEngineAppCommon* th, ZString& result)
 );
+
+PATTERN_HOOK(
+    "\x48\x83\xEC\x00\x8B\x0D\x00\x00\x00\x00\xC7\x05",
+    "xxx?xx????xx",
+    ZLevelManager_StartGame,
+    void(ZLevelManager* th)
+);
