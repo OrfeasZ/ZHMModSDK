@@ -527,8 +527,9 @@ DEFINE_PLUGIN_DETOUR(Randomizer, bool, ZActorInventoryHandler_RequestItem, ZActo
     }
 
     if (!s_RepositoryId.IsEmpty()) {
+        id = s_RepositoryId;
+
         if (s_IsWeapon) {
-            id = s_RepositoryId;
             th->m_rWeaponID = id;
         }
     }
