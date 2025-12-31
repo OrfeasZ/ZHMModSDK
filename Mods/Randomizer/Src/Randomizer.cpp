@@ -81,8 +81,8 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
         ImGui::Separator();
 
         if (ImGui::CollapsingHeader("Categories")) {
-            for (const auto& [s_InventoryCategory, s_ItemTypes] : m_InventoryCategoryToState) {
-                ImGui::Checkbox(s_InventoryCategory.c_str(), &m_InventoryCategoryToState[s_InventoryCategory]);
+            for (auto& [s_InventoryCategory, s_IsEnabled] : m_InventoryCategoryToState) {
+                ImGui::Checkbox(s_InventoryCategory.c_str(), &s_IsEnabled);
             }
         }
 
