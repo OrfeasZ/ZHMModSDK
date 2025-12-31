@@ -24,6 +24,50 @@ void Randomizer::Init() {
         &Randomizer::ZCharacterSubcontrollerInventory_CreateItem
     );
     Hooks::ZActorInventoryHandler_RequestItem->AddDetour(this, &Randomizer::ZActorInventoryHandler_RequestItem);
+
+    if (!HasSetting("general", "enable_randomizer")) {
+        SetSettingBool("general", "enable_randomizer", false);
+    }
+
+    if (!HasSetting("general", "randomize_world_props")) {
+        SetSettingBool("general", "randomize_world_props", true);
+    }
+
+    if (!HasSetting("general", "randomize_stash_props")) {
+        SetSettingBool("general", "randomize_stash_props", true);
+    }
+
+    if (!HasSetting("general", "randomize_player_inventory")) {
+        SetSettingBool("general", "randomize_player_inventory", true);
+    }
+
+    if (!HasSetting("general", "randomize_actor_inventory")) {
+        SetSettingBool("general", "randomize_actor_inventory", true);
+    }
+
+    if (!HasSetting("general", "randomize_items")) {
+        SetSettingBool("general", "randomize_items", true);
+    }
+
+    if (!HasSetting("general", "randomize_weapons")) {
+        SetSettingBool("general", "randomize_weapons", true);
+    }
+
+    if (!HasSetting("general", "number_of_props_to_spawn_in_stashes")) {
+        SetSettingInt("general", "number_of_props_to_spawn_in_stashes", 1);
+    }
+
+    m_IsRandomizerEnabled = GetSettingBool("general", "enable_randomizer", false);
+
+    m_RandomizeWorldProps = GetSettingBool("general", "randomize_world_props", true);
+    m_RandomizeStashProps = GetSettingBool("general", "randomize_stash_props", true);
+    m_RandomizePlayerInventory = GetSettingBool("general", "randomize_player_inventory", true);
+    m_RandomizeActorInventory = GetSettingBool("general", "randomize_actor_inventory", true);
+
+    m_RandomizeItems = GetSettingBool("general", "randomize_items", true);
+    m_RandomizeWeapons = GetSettingBool("general", "randomize_weapons", true);
+
+    m_RepositoryPropSpawnCount = GetSettingInt("general", "number_of_props_to_spawn_in_stashes", 1);
 }
 
 void Randomizer::OnDrawMenu() {
@@ -44,19 +88,34 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
     if (s_Showing) {
         if (m_AllRepositoryProps.empty()) {
             LoadRepositoryProps();
+            LoadCategoriesFromSettings();
+            LoadPropsFromSettings();
         }
 
-        ImGui::Checkbox("Enable Randomizer", &m_IsRandomizerEnabled);
+        if (ImGui::Checkbox("Enable Randomizer", &m_IsRandomizerEnabled)) {
+            SetSettingBool("general", "enable_randomizer", m_IsRandomizerEnabled);
+        }
 
         ImGui::Separator();
 
         ImGui::Text("Inventories");
         ImGui::Spacing();
 
-        ImGui::Checkbox("Randomize World Props", &m_RandomizeWorldProps);
-        ImGui::Checkbox("Randomize Stash Props", &m_RandomizeStashProps);
-        ImGui::Checkbox("Randomize Player Inventory", &m_RandomizePlayerInventory);
-        ImGui::Checkbox("Randomize Actor Inventory", &m_RandomizeActorInventory);
+        if (ImGui::Checkbox("Randomize World Props", &m_RandomizeWorldProps)) {
+            SetSettingBool("general", "randomize_world_props", m_RandomizeWorldProps);
+        }
+
+        if (ImGui::Checkbox("Randomize Stash Props", &m_RandomizeStashProps)) {
+            SetSettingBool("general", "randomize_stash_props", m_RandomizeStashProps);
+        }
+
+        if (ImGui::Checkbox("Randomize Player Inventory", &m_RandomizePlayerInventory)) {
+            SetSettingBool("general", "randomize_player_inventory", m_RandomizePlayerInventory);
+        }
+
+        if (ImGui::Checkbox("Randomize Actor Inventory", &m_RandomizeActorInventory)) {
+            SetSettingBool("general", "randomize_actor_inventory", m_RandomizeActorInventory);
+        }
 
         if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip(
@@ -67,8 +126,13 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::Separator();
 
-        ImGui::Checkbox("Randomize Items", &m_RandomizeItems);
-        ImGui::Checkbox("Randomize Weapons", &m_RandomizeWeapons);
+        if (ImGui::Checkbox("Randomize Items", &m_RandomizeItems)) {
+            SetSettingBool("general", "randomize_items", m_RandomizeItems);
+        }
+
+        if (ImGui::Checkbox("Randomize Weapons", &m_RandomizeWeapons)) {
+            SetSettingBool("general", "randomize_weapons", m_RandomizeWeapons);
+        }
 
         ImGui::Separator();
 
@@ -76,13 +140,17 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
         ImGui::Text("Number Of Props To Spawn In Stashes");
         ImGui::SameLine();
 
-        ImGui::InputInt("##RepositoryPropSpawnCount", &m_RepositoryPropSpawnCount);
+        if (ImGui::InputInt("##RepositoryPropSpawnCount", &m_RepositoryPropSpawnCount)) {
+            SetSettingInt("general", "number_of_props_to_spawn_in_stashes", m_RepositoryPropSpawnCount);
+        }
 
         ImGui::Separator();
 
         if (ImGui::CollapsingHeader("Categories")) {
             for (auto& [s_InventoryCategory, s_IsEnabled] : m_InventoryCategoryToState) {
-                ImGui::Checkbox(s_InventoryCategory.c_str(), &s_IsEnabled);
+                if (ImGui::Checkbox(s_InventoryCategory.c_str(), &s_IsEnabled)) {
+                    SetSettingBool("categories", s_InventoryCategory, s_IsEnabled);
+                }
             }
         }
 
@@ -92,19 +160,35 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
         ImGui::Spacing();
 
         ImGui::BeginDisabled(!m_RandomizeWorldProps);
-        ImGui::Checkbox("Spawn In World", &m_SpawnInWorld);
+
+        if (ImGui::Checkbox("Spawn In World", &m_SpawnInWorld)) {
+            SetSettingBool("props", "spawn_in_world", m_SpawnInWorld);
+        }
+
         ImGui::EndDisabled();
 
         ImGui::BeginDisabled(!m_RandomizeStashProps);
-        ImGui::Checkbox("Spawn In Stash", &m_SpawnInStash);
+
+        if (ImGui::Checkbox("Spawn In Stash", &m_SpawnInStash)) {
+            SetSettingBool("props", "spawn_in_stash", m_SpawnInStash);
+        }
+
         ImGui::EndDisabled();
 
         ImGui::BeginDisabled(!m_RandomizePlayerInventory);
-        ImGui::Checkbox("Spawn In PlayerInventory", &m_SpawnInPlayerInventory);
+
+        if (ImGui::Checkbox("Spawn In PlayerInventory", &m_SpawnInPlayerInventory)) {
+            SetSettingBool("props", "spawn_in_player_inventory", m_SpawnInPlayerInventory);
+        }
+
         ImGui::EndDisabled();
 
         ImGui::BeginDisabled(!m_RandomizeActorInventory);
-        ImGui::Checkbox("Spawn In ActorInventory", &m_SpawnInActorInventory);
+
+        if (ImGui::Checkbox("Spawn In ActorInventory", &m_SpawnInActorInventory)) {
+            SetSettingBool("props", "spawn_in_actor_inventory", m_SpawnInActorInventory);
+        }
+
         ImGui::EndDisabled();
 
         static char s_PropTitle[2048]{ "" };
@@ -123,7 +207,7 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
             [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
                 const bool s_IsAlreadyAdded = std::ranges::any_of(m_PropsToSpawn, [&](const auto& p_Item) {
                     return std::get<0>(p_Item) == p_Id;
-                });
+                    });
 
                 if (s_IsAlreadyAdded) {
                     return;
@@ -137,6 +221,16 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
                     m_SpawnInPlayerInventory,
                     m_SpawnInActorInventory
                 ));
+
+                const std::string s_SettingValue = std::format(
+                    "{},{},{},{}",
+                    m_SpawnInWorld ? "true" : "false",
+                    m_SpawnInStash ? "true" : "false",
+                    m_SpawnInPlayerInventory ? "true" : "false",
+                    m_SpawnInActorInventory ? "true" : "false"
+                );
+
+                SetSetting("props", p_Name, s_SettingValue);
             },
             nullptr,
             [&](const auto& p_Tuple) -> bool {
@@ -179,32 +273,84 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
             ImGui::SameLine();
 
             ImGui::BeginDisabled(!m_RandomizeWorldProps);
-            ImGui::Checkbox("Spawn In World", &s_SpawnInWorld);
+
+            if (ImGui::Checkbox("Spawn In World", &s_SpawnInWorld)) {
+                const std::string s_SettingValue = std::format(
+                    "{},{},{},{}",
+                    s_SpawnInWorld ? "true" : "false",
+                    s_SpawnInStash ? "true" : "false",
+                    s_SpawnInPlayerInventory ? "true" : "false",
+                    s_SpawnInActorInventory ? "true" : "false"
+                );
+
+                SetSetting("props", s_Name, s_SettingValue);
+            }
+
             ImGui::EndDisabled();
 
             ImGui::SameLine();
 
             ImGui::BeginDisabled(!m_RandomizeStashProps);
-            ImGui::Checkbox("Spawn In Stash", &s_SpawnInStash);
+
+            if (ImGui::Checkbox("Spawn In Stash", &s_SpawnInStash)) {
+                const std::string s_SettingValue = std::format(
+                    "{},{},{},{}",
+                    s_SpawnInWorld ? "true" : "false",
+                    s_SpawnInStash ? "true" : "false",
+                    s_SpawnInPlayerInventory ? "true" : "false",
+                    s_SpawnInActorInventory ? "true" : "false"
+                );
+
+                SetSetting("props", s_Name, s_SettingValue);
+            }
+
             ImGui::EndDisabled();
 
             ImGui::SameLine();
 
             ImGui::BeginDisabled(!m_RandomizePlayerInventory);
-            ImGui::Checkbox("Spawn In PlayerInventory", &s_SpawnInPlayerInventory);
+
+            if (ImGui::Checkbox("Spawn In PlayerInventory", &s_SpawnInPlayerInventory)) {
+                const std::string s_SettingValue = std::format(
+                    "{},{},{},{}",
+                    s_SpawnInWorld ? "true" : "false",
+                    s_SpawnInStash ? "true" : "false",
+                    s_SpawnInPlayerInventory ? "true" : "false",
+                    s_SpawnInActorInventory ? "true" : "false"
+                );
+
+                SetSetting("props", s_Name, s_SettingValue);
+            }
+
             ImGui::EndDisabled();
 
             ImGui::SameLine();
 
             ImGui::BeginDisabled(!m_RandomizeActorInventory);
-            ImGui::Checkbox("Spawn In ActorInventory", &s_SpawnInActorInventory);
+
+            if (ImGui::Checkbox("Spawn In ActorInventory", &s_SpawnInActorInventory)) {
+                const std::string s_SettingValue = std::format(
+                    "{},{},{},{}",
+                    s_SpawnInWorld ? "true" : "false",
+                    s_SpawnInStash ? "true" : "false",
+                    s_SpawnInPlayerInventory ? "true" : "false",
+                    s_SpawnInActorInventory ? "true" : "false"
+                );
+
+                SetSetting("props", s_Name, s_SettingValue);
+            }
+
             ImGui::EndDisabled();
 
             ImGui::SameLine();
 
             if (ImGui::SmallButton(ICON_MD_DELETE)) {
                 m_PropsToSpawn.erase(m_PropsToSpawn.begin() + i);
+
+                RemoveSetting("props", s_Name);
+
                 ImGui::PopID();
+
                 break;
             }
 
@@ -242,7 +388,7 @@ void Randomizer::LoadRepositoryProps() {
         const auto s_RepositoryData = static_cast<THashMap<
             ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
                 GetResourceData());
-        
+
         for (const auto& [s_RepositoryID, s_DynamicObject] : *s_RepositoryData) {
             TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
                 SDynamicObjectKeyValuePair>>();
@@ -425,11 +571,102 @@ const ZRepositoryID& Randomizer::GetRandomRepositoryId(const std::vector<ZReposi
     return p_Props[s_Distribution(s_RandomEngine)];
 }
 
+void Randomizer::LoadCategoriesFromSettings() {
+    for (auto& [s_InventoryCategory, s_IsEnabled] : m_InventoryCategoryToState) {
+        if (!HasSetting("categories", s_InventoryCategory)) {
+            SetSettingBool("categories", s_InventoryCategory, true);
+        }
+
+        s_IsEnabled = GetSettingBool("categories", s_InventoryCategory, true);
+    }
+}
+
+void Randomizer::LoadPropsFromSettings() {
+    if (!HasSetting("props", "spawn_in_world")) {
+        SetSettingBool("props", "spawn_in_world", true);
+    }
+
+    if (!HasSetting("props", "spawn_in_stash")) {
+        SetSettingBool("props", "spawn_in_stash", true);
+    }
+
+    if (!HasSetting("props", "spawn_in_player_inventory")) {
+        SetSettingBool("props", "spawn_in_player_inventory", true);
+    }
+
+    if (!HasSetting("props", "spawn_in_actor_inventory")) {
+        SetSettingBool("props", "spawn_in_actor_inventory", true);
+    }
+
+    m_SpawnInWorld = GetSettingBool("props", "spawn_in_world", true);
+    m_SpawnInStash = GetSettingBool("props", "spawn_in_stash", true);
+    m_SpawnInPlayerInventory = GetSettingBool("props", "spawn_in_player_inventory", true);
+    m_SpawnInActorInventory = GetSettingBool("props", "spawn_in_actor_inventory", true);
+
+    for (const auto& [s_RepositoryId, s_Name, s_IsWeapon, s_InventoryCategoryIcon] : m_AllRepositoryProps) {
+        const ZString s_SettingName = Util::StringUtils::ToLowerCase(s_Name);
+
+        if (!HasSetting("props", s_SettingName)) {
+            continue;
+        }
+
+        const std::string s_SettingValue = GetSetting("props", s_SettingName, "").c_str();
+
+        if (s_SettingValue.empty()) {
+            continue;
+        }
+
+        bool s_SpawnInWorld = false;
+        bool s_SpawnInStash = false;
+        bool s_SpawnInPlayerInventory = false;
+        bool s_SpawnInActorInventory = false;
+
+        size_t s_TokenBegin = 0;
+        size_t s_Index = 0;
+
+        while (s_Index < 4) {
+            const size_t s_TokenEnd = s_SettingValue.find(',', s_TokenBegin);
+
+            const std::string s_Token =
+                (s_TokenEnd == std::string::npos)
+                ? s_SettingValue.substr(s_TokenBegin)
+                : s_SettingValue.substr(s_TokenBegin, s_TokenEnd - s_TokenBegin);
+
+            const bool s_Value = s_Token == "true";
+
+            switch (s_Index) {
+                case 0: s_SpawnInWorld = s_Value; break;
+                case 1: s_SpawnInStash = s_Value; break;
+                case 2: s_SpawnInPlayerInventory = s_Value; break;
+                case 3: s_SpawnInActorInventory = s_Value; break;
+            }
+
+            if (s_TokenEnd == std::string::npos) {
+                break;
+            }
+
+            s_TokenBegin = s_TokenEnd + 1;
+            ++s_Index;
+        }
+
+        m_PropsToSpawn.push_back(std::make_tuple(
+            s_RepositoryId,
+            s_Name,
+            s_SpawnInWorld,
+            s_SpawnInStash,
+            s_SpawnInPlayerInventory,
+            s_SpawnInActorInventory
+        ));
+    }
+}
+
 DEFINE_PLUGIN_DETOUR(Randomizer, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& parameters) {
     m_IsRandomizerAllowedForScene = parameters.m_Type != "evergreen";
 
     if (m_AllRepositoryProps.empty()) {
         LoadRepositoryProps();
+        LoadCategoriesFromSettings();
+        LoadPropsFromSettings();
     }
     
     FilterRepositoryProps();
