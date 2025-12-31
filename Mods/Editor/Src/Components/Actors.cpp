@@ -737,13 +737,13 @@ void Editor::LoadRepositoryWeapons() {
     std::ranges::sort(
         m_RepositoryWeapons,
         [](const auto& a, const auto& b) {
-            auto [_1, s_LowerA] = a;
-            auto [_2, s_LowerB] = b;
+            auto [s_RepositoryIdA, s_NameA] = a;
+            auto [s_RepositoryIdB, s_NameB] = b;
 
-            std::ranges::transform(s_LowerA, s_LowerA.begin(), [](unsigned char c) { return std::tolower(c); });
-            std::ranges::transform(s_LowerB, s_LowerB.begin(), [](unsigned char c) { return std::tolower(c); });
+            std::ranges::transform(s_NameA, s_NameA.begin(), [](unsigned char c) { return std::tolower(c); });
+            std::ranges::transform(s_NameB, s_NameB.begin(), [](unsigned char c) { return std::tolower(c); });
 
-            return s_LowerA < s_LowerB;
+            return s_NameA < s_NameB;
         }
     );
 }
