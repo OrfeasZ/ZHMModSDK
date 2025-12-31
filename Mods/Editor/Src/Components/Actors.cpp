@@ -705,11 +705,11 @@ void Editor::LoadRepositoryWeapons() {
                 else if (s_Entry.sKey == "Name") {
                     s_Name = *s_Entry.value.As<ZString>();
                 }
-                else if (!s_HasItemType) {
-                    s_HasItemType = s_Entry.sKey == "ItemType";
+                else if (s_Entry.sKey == "ItemType") {
+                    s_HasItemType = true;
                 }
-                else if (!s_HasPrimaryConfiguration) {
-                    s_HasPrimaryConfiguration = s_Entry.sKey == "PrimaryConfiguration";
+                else if (s_Entry.sKey == "PrimaryConfiguration") {
+                    s_HasPrimaryConfiguration = true;
                 }
             }
 

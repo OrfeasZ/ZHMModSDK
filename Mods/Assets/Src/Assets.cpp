@@ -601,8 +601,8 @@ void Assets::LoadRepositoryProps() {
                 else if (s_Entry.sKey == "Name") {
                     s_Name = *s_Entry.value.As<ZString>();
                 }
-                else if (!s_IsItem) {
-                    s_IsItem = s_Entry.sKey == "ItemType";
+                else if (s_Entry.sKey == "ItemType") {
+                    s_IsItem = true;
                 }
             }
 
