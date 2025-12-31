@@ -367,10 +367,10 @@ void Randomizer::FilterRepositoryProps() {
 
             if (m_RandomizeActorInventory) {
                 m_PropsToSpawnInActorInventory.push_back(s_RepositoryId);
-            }
 
-            if (s_IsWeapon) {
-                m_WeaponsToSpawnInActorInventory.push_back(s_RepositoryId);
+                if (s_IsWeapon) {
+                    m_WeaponsToSpawnInActorInventory.push_back(s_RepositoryId);
+                }
             }
         }
     }
