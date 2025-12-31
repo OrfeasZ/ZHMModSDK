@@ -623,9 +623,7 @@ void Assets::LoadRepositoryProps() {
                 s_FinalName = std::format("{} [{}]", s_Name.c_str(), s_Id.c_str());
             }
 
-            const auto s_RepoId = ZRepositoryID(s_Id);
-
-            m_RepositoryProps.push_back(std::make_pair(s_RepoId, s_FinalName));
+            m_RepositoryProps.push_back(std::make_pair(s_Id, s_FinalName));
         }
     }
 
