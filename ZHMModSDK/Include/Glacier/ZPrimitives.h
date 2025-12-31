@@ -227,6 +227,13 @@ public:
     }
 };
 
+template <>
+struct std::hash<ZRepositoryID> {
+    size_t operator()(const ZRepositoryID& p_Id) const noexcept {
+        return static_cast<size_t>(p_Id.GetHashCode());
+    }
+};
+
 class STokenID {
 public:
     uint32_t m_nValue;
