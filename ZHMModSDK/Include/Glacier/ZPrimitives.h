@@ -185,6 +185,10 @@ public:
         );
     }
 
+    ZHMSDK_API bool IsEmpty() const {
+        return m_nHigh == ZGuid::Empty.m_nHigh && m_nLow == ZGuid::Empty.m_nLow;
+    }
+
 public:
     union {
         struct {
@@ -199,6 +203,8 @@ public:
             uint64_t m_nLow;
         };
     };
+
+    static const ZGuid Empty;
 };
 
 class ZRepositoryID :
