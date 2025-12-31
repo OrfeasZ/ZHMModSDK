@@ -34,7 +34,7 @@ private:
     bool m_AssetsMenuActive = false;
 
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
-    std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps; // RepoId -> Title/Common Name
+    std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps;
 
     const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
 };
