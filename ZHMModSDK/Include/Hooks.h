@@ -14,6 +14,7 @@
 #include <Glacier/ZMath.h>
 #include <Glacier/ZLevelManager.h>
 #include <Glacier/ZResource.h>
+#include <Glacier/ZInventory.h>
 
 #include "Scaleform.h"
 
@@ -79,6 +80,10 @@ class ZSecuritySystemCameraManager;
 class ZSecuritySystemCamera;
 class ZExtendedCppEntityTypeInstaller;
 class ZEngineAppCommon;
+class ZItemSpawner;
+class ZStashPointEntity;
+class ZActorInventoryHandler;
+class ZItemRepositoryKeyEntity;
 
 class ZHMSDK_API Hooks {
 public:
@@ -260,4 +265,25 @@ public:
     static Hook<ZString*(ZEngineAppCommon* th, ZString& result)>* ZEngineAppCommon_GetBootScene;
 
     static Hook<void(ZLevelManager* th)>* ZLevelManager_StartGame;
+
+    static Hook<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
+
+    static Hook<ZCharacterSubcontrollerInventory::SCreateItem*(
+        ZCharacterSubcontrollerInventory* th,
+        ZRepositoryID& repId,
+        const ZString& sOnlineInstanceId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        ZCharacterSubcontrollerInventory::ECreateItemType createItemType
+    )>* ZCharacterSubcontrollerInventory_CreateItem;
+
+    static Hook<bool(
+        ZActorInventoryHandler* th, ZRepositoryID& id
+    )>* ZActorInventoryHandler_RequestItem;
+    static Hook<void(
+        ZActorInventoryHandler* th,
+        TArray<TEntityRef<ZItemRepositoryKeyEntity>>&,
+        TEntityRef<ZItemRepositoryKeyEntity>&,
+        TEntityRef<ZItemRepositoryKeyEntity>&
+    )>* ZActorInventoryHandler_StartItemStreamIn;
+    static Hook<TEntityRef<ZItemRepositoryKeyEntity>* (ZActor* th, TEntityRef<ZItemRepositoryKeyEntity>& result)>* ZActor_GetWeaponKey;
 };

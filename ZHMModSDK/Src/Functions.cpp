@@ -408,3 +408,24 @@ PATTERN_FUNCTION(
     ZRoomManager_GetRoomFromPoint,
     uint16(ZRoomManager* th, const float4& vPointWS)
 );
+
+PATTERN_FUNCTION(
+    "\x40\x55\x56\x41\x57\x48\x8D\x6C\x24\xB9\x48\x81\xEC\x00\x00\x00\x00\x45\x33\xFF",
+    "xxxxxxxxxxxxx????xxx",
+    ZStashPointEntity_RequestContentLoad,
+    void(ZStashPointEntity* th)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xDA\x48\x8B\xF9\xB2",
+    "xxxxxxxxx?xxxxxxx",
+    ZStashPointEntity_SpawnOutfit,
+    void(ZStashPointEntity* th, const ZRepositoryID& id)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x6C\x24\x20\x56\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x05",
+    "xxxxxxxxxxxxx????xxx",
+    ZStashPointEntity_SpawnItem,
+    uint32_t(ZStashPointEntity* th, const ZRepositoryID& repId, const TArray<ZRepositoryID>& instanceModifiersToApply, bool isContainerItem)
+);

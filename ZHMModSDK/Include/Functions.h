@@ -49,6 +49,7 @@ class ZUIText;
 class ZActorInventoryHandler;
 class ZWorldInventory;
 class IItemBase;
+class ZStashPointEntity;
 
 class ZHMSDK_API Functions {
 public:
@@ -214,4 +215,13 @@ public:
     static EngineFunction<bool(ZResourceContainer* th, uint8 packageId)>* ZResourceContainer_UnmountPackages;
 
     static EngineFunction<uint16(ZRoomManager* th, const float4& vPointWS)>* ZRoomManager_GetRoomFromPoint;
+
+    static EngineFunction<void(ZStashPointEntity* th)>* ZStashPointEntity_RequestContentLoad;
+    static EngineFunction<void(ZStashPointEntity* th, const ZRepositoryID& id)>* ZStashPointEntity_SpawnOutfit;
+    static EngineFunction<uint32_t(
+        ZStashPointEntity* th,
+        const ZRepositoryID& repId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        bool isContainerItem
+    )>* ZStashPointEntity_SpawnItem;
 };

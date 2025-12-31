@@ -48,6 +48,8 @@ class ZUIText;
 class ZWorldInventory;
 class ZTargetManager;
 class ZRoomManager;
+class ZUIMapTrackerManager;
+class ZContractsManager;
 
 namespace bfx {
     class SystemInstance;
@@ -120,4 +122,6 @@ public:
     static uint32_t* WorldInventory_InvalidTicket;
     static ZTargetManager* TargetManager;
     static ZRoomManager** RoomManager;
+    static ZUIMapTrackerManager* UIMapTrackerManager;
+    static ZContractsManager* ContractsManager;
 };
