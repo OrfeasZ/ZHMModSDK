@@ -193,7 +193,7 @@ public:
         }
         else {
             // We're not freeing anything here since the allocated memory can be re-used.
-            m_pBegin = m_pEnd;
+            m_pEnd = m_pBegin;
         }
     }
 
