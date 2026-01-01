@@ -640,6 +640,19 @@ void Editor::DrawEntityTree() {
             FilterEntityTree();
         }
 
+        static char s_EntityNameSearchInput[2048] = {};
+
+        if (ImGui::InputText(
+            ICON_MD_SEARCH " Search by name",
+            s_EntityNameSearchInput,
+            IM_ARRAYSIZE(s_EntityNameSearchInput),
+            ImGuiInputTextFlags_EnterReturnsTrue
+        )) {
+            m_EntityNameSearchInput = s_EntityNameSearchInput;
+
+            FilterEntityTree();
+        }
+
         static char s_EntityTypeSearchInput[2048] = {};
 
         Util::ImGuiUtils::InputWithAutocomplete(
@@ -663,19 +676,6 @@ void Editor::DrawEntityTree() {
                 return p_Pair.second->typeInfo() && p_Pair.second->typeInfo()->isClass();
             }
         );
-
-        static char s_EntityNameSearchInput[2048] = {};
-
-        if (ImGui::InputText(
-            ICON_MD_SEARCH " Search by name",
-            s_EntityNameSearchInput,
-            IM_ARRAYSIZE(s_EntityNameSearchInput),
-            ImGuiInputTextFlags_EnterReturnsTrue
-        )) {
-            m_EntityNameSearchInput = s_EntityNameSearchInput;
-
-            FilterEntityTree();
-        }
 
         if (ImGui::BeginCombo("Entity View Mode", m_EntityViewModes[m_EntityViewMode].c_str())) {
             for (int i = 0; i < m_EntityViewModes.size(); ++i) {
