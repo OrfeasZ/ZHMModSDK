@@ -377,9 +377,9 @@ void Randomizer::DrawPropsToSpawnTab() {
         ImGui::SameLine();
 
         if (ImGui::SmallButton(ICON_MD_DELETE)) {
-            m_PropsToSpawn.erase(m_PropsToSpawn.begin() + i);
-
             RemoveSetting("props_to_spawn", s_Name);
+
+            m_PropsToSpawn.erase(m_PropsToSpawn.begin() + i);
 
             ImGui::PopID();
 
@@ -468,10 +468,10 @@ void Randomizer::DrawPropsToExcludeTab() {
         ImGui::SameLine();
 
         if (ImGui::SmallButton(ICON_MD_DELETE)) {
+            RemoveSetting("props_to_exclude", s_Name);
+
             m_PropsToExclude.erase(m_PropsToExclude.begin() + i);
             m_ExcludedPropRepositoryIds.erase(s_RepositoryId);
-
-            RemoveSetting("props_to_exclude", s_Name);
 
             ImGui::PopID();
 
