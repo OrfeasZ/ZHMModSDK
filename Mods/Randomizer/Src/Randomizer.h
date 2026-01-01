@@ -24,6 +24,7 @@ private:
 
     void LoadCategoriesFromSettings();
     void LoadPropsToSpawnFromSettings();
+    void LoadPropsToExcludeFromSettings();
 
     DECLARE_PLUGIN_DETOUR(Randomizer, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters& parameters);
     DECLARE_PLUGIN_DETOUR(Randomizer, void, ZLevelManager_StartGame, ZLevelManager* th);

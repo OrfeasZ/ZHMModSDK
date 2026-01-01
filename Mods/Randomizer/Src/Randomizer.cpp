@@ -90,6 +90,7 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
             LoadRepositoryProps();
             LoadCategoriesFromSettings();
             LoadPropsToSpawnFromSettings();
+            LoadPropsToExcludeFromSettings();
         }
 
         if (ImGui::BeginTabBar("RandomizerTabs")) {
@@ -788,6 +789,19 @@ void Randomizer::LoadPropsToSpawnFromSettings() {
     }
 }
 
+void Randomizer::LoadPropsToExcludeFromSettings() {
+    for (const auto& [s_RepositoryId, s_Name, s_IsWeapon, s_InventoryCategoryIcon] : m_AllRepositoryProps) {
+        const ZString s_SettingName = Util::StringUtils::ToLowerCase(s_Name);
+
+        if (!HasSetting("props_to_exclude", s_SettingName)) {
+            continue;
+        }
+
+        m_PropsToExclude.push_back(std::make_pair(s_RepositoryId, s_Name));
+        m_ExcludedPropRepositoryIds.insert(s_RepositoryId);
+    }
+}
+
 DEFINE_PLUGIN_DETOUR(Randomizer, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& parameters) {
     m_IsRandomizerAllowedForScene = parameters.m_Type != "evergreen";
 
@@ -795,6 +809,7 @@ DEFINE_PLUGIN_DETOUR(Randomizer, bool, OnLoadScene, ZEntitySceneContext* th, SSc
         LoadRepositoryProps();
         LoadCategoriesFromSettings();
         LoadPropsToSpawnFromSettings();
+        LoadPropsToExcludeFromSettings();
     }
     
     FilterRepositoryProps();
