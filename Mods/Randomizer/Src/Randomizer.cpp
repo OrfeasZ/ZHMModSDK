@@ -188,7 +188,7 @@ void Randomizer::DrawPropsToSpawnTab() {
     ImGui::BeginDisabled(!m_RandomizeWorldProps);
 
     if (ImGui::Checkbox("Spawn In World", &m_SpawnInWorld)) {
-        SetSettingBool("props", "spawn_in_world", m_SpawnInWorld);
+        SetSettingBool("props_to_spawn", "spawn_in_world", m_SpawnInWorld);
     }
 
     ImGui::EndDisabled();
@@ -196,7 +196,7 @@ void Randomizer::DrawPropsToSpawnTab() {
     ImGui::BeginDisabled(!m_RandomizeStashProps);
 
     if (ImGui::Checkbox("Spawn In Stash", &m_SpawnInStash)) {
-        SetSettingBool("props", "spawn_in_stash", m_SpawnInStash);
+        SetSettingBool("props_to_spawn", "spawn_in_stash", m_SpawnInStash);
     }
 
     ImGui::EndDisabled();
@@ -204,7 +204,7 @@ void Randomizer::DrawPropsToSpawnTab() {
     ImGui::BeginDisabled(!m_RandomizePlayerInventory);
 
     if (ImGui::Checkbox("Spawn In PlayerInventory", &m_SpawnInPlayerInventory)) {
-        SetSettingBool("props", "spawn_in_player_inventory", m_SpawnInPlayerInventory);
+        SetSettingBool("props_to_spawn", "spawn_in_player_inventory", m_SpawnInPlayerInventory);
     }
 
     ImGui::EndDisabled();
@@ -212,7 +212,7 @@ void Randomizer::DrawPropsToSpawnTab() {
     ImGui::BeginDisabled(!m_RandomizeActorInventory);
 
     if (ImGui::Checkbox("Spawn In ActorInventory", &m_SpawnInActorInventory)) {
-        SetSettingBool("props", "spawn_in_actor_inventory", m_SpawnInActorInventory);
+        SetSettingBool("props_to_spawn", "spawn_in_actor_inventory", m_SpawnInActorInventory);
     }
 
     ImGui::EndDisabled();
@@ -256,7 +256,7 @@ void Randomizer::DrawPropsToSpawnTab() {
                 m_SpawnInActorInventory ? "true" : "false"
             );
 
-            SetSetting("props", p_Name, s_SettingValue);
+            SetSetting("props_to_spawn", p_Name, s_SettingValue);
         },
         nullptr,
         [&](const auto& p_Tuple) -> bool {
@@ -309,7 +309,7 @@ void Randomizer::DrawPropsToSpawnTab() {
                 s_SpawnInActorInventory ? "true" : "false"
             );
 
-            SetSetting("props", s_Name, s_SettingValue);
+            SetSetting("props_to_spawn", s_Name, s_SettingValue);
         }
 
         ImGui::EndDisabled();
@@ -327,7 +327,7 @@ void Randomizer::DrawPropsToSpawnTab() {
                 s_SpawnInActorInventory ? "true" : "false"
             );
 
-            SetSetting("props", s_Name, s_SettingValue);
+            SetSetting("props_to_spawn", s_Name, s_SettingValue);
         }
 
         ImGui::EndDisabled();
@@ -345,7 +345,7 @@ void Randomizer::DrawPropsToSpawnTab() {
                 s_SpawnInActorInventory ? "true" : "false"
             );
 
-            SetSetting("props", s_Name, s_SettingValue);
+            SetSetting("props_to_spawn", s_Name, s_SettingValue);
         }
 
         ImGui::EndDisabled();
@@ -363,7 +363,7 @@ void Randomizer::DrawPropsToSpawnTab() {
                 s_SpawnInActorInventory ? "true" : "false"
             );
 
-            SetSetting("props", s_Name, s_SettingValue);
+            SetSetting("props_to_spawn", s_Name, s_SettingValue);
         }
 
         ImGui::EndDisabled();
@@ -373,7 +373,7 @@ void Randomizer::DrawPropsToSpawnTab() {
         if (ImGui::SmallButton(ICON_MD_DELETE)) {
             m_PropsToSpawn.erase(m_PropsToSpawn.begin() + i);
 
-            RemoveSetting("props", s_Name);
+            RemoveSetting("props_to_spawn", s_Name);
 
             ImGui::PopID();
 
@@ -603,35 +603,35 @@ void Randomizer::LoadCategoriesFromSettings() {
 }
 
 void Randomizer::LoadPropsFromSettings() {
-    if (!HasSetting("props", "spawn_in_world")) {
-        SetSettingBool("props", "spawn_in_world", true);
+    if (!HasSetting("props_to_spawn", "spawn_in_world")) {
+        SetSettingBool("props_to_spawn", "spawn_in_world", true);
     }
 
-    if (!HasSetting("props", "spawn_in_stash")) {
-        SetSettingBool("props", "spawn_in_stash", true);
+    if (!HasSetting("props_to_spawn", "spawn_in_stash")) {
+        SetSettingBool("props_to_spawn", "spawn_in_stash", true);
     }
 
-    if (!HasSetting("props", "spawn_in_player_inventory")) {
-        SetSettingBool("props", "spawn_in_player_inventory", true);
+    if (!HasSetting("props_to_spawn", "spawn_in_player_inventory")) {
+        SetSettingBool("props_to_spawn", "spawn_in_player_inventory", true);
     }
 
-    if (!HasSetting("props", "spawn_in_actor_inventory")) {
-        SetSettingBool("props", "spawn_in_actor_inventory", true);
+    if (!HasSetting("props_to_spawn", "spawn_in_actor_inventory")) {
+        SetSettingBool("props_to_spawn", "spawn_in_actor_inventory", true);
     }
 
-    m_SpawnInWorld = GetSettingBool("props", "spawn_in_world", true);
-    m_SpawnInStash = GetSettingBool("props", "spawn_in_stash", true);
-    m_SpawnInPlayerInventory = GetSettingBool("props", "spawn_in_player_inventory", true);
-    m_SpawnInActorInventory = GetSettingBool("props", "spawn_in_actor_inventory", true);
+    m_SpawnInWorld = GetSettingBool("props_to_spawn", "spawn_in_world", true);
+    m_SpawnInStash = GetSettingBool("props_to_spawn", "spawn_in_stash", true);
+    m_SpawnInPlayerInventory = GetSettingBool("props_to_spawn", "spawn_in_player_inventory", true);
+    m_SpawnInActorInventory = GetSettingBool("props_to_spawn", "spawn_in_actor_inventory", true);
 
     for (const auto& [s_RepositoryId, s_Name, s_IsWeapon, s_InventoryCategoryIcon] : m_AllRepositoryProps) {
         const ZString s_SettingName = Util::StringUtils::ToLowerCase(s_Name);
 
-        if (!HasSetting("props", s_SettingName)) {
+        if (!HasSetting("props_to_spawn", s_SettingName)) {
             continue;
         }
 
-        const std::string s_SettingValue = GetSetting("props", s_SettingName, "").c_str();
+        const std::string s_SettingValue = GetSetting("props_to_spawn", s_SettingName, "").c_str();
 
         if (s_SettingValue.empty()) {
             continue;
