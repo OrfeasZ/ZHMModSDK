@@ -166,7 +166,7 @@ private:
 
     void ZEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    void EntityRefProperty(ZEntityRef p_Entity);
+    void EntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity);
 
     void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
@@ -522,6 +522,10 @@ private:
     std::vector<ZEntityRef> m_SortedRoomEntities;
     bool m_ShowOnlyVisibleRooms = false;
     bool m_ShowOnlyVisibleGates = false;
+
+    static constexpr float m_CopyWidgetButtonSize = 20.f;
+    static constexpr float m_CopyWidgetSpacing = 10.f;
+    static constexpr float m_CopyWidgetWidth = m_CopyWidgetButtonSize + m_CopyWidgetSpacing;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

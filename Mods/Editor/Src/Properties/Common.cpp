@@ -42,9 +42,10 @@ void Editor::ZEntityRefProperty(
     void* p_Data
 ) {
     if (auto s_EntityRef = reinterpret_cast<ZEntityRef*>(p_Data)) {
-        EntityRefProperty(*s_EntityRef);
-    } else {
-        EntityRefProperty(ZEntityRef {});
+        EntityRefProperty(p_Id, *s_EntityRef);
+    }
+    else {
+        EntityRefProperty(p_Id, ZEntityRef{});
     }
 }
 
@@ -55,13 +56,14 @@ void Editor::TEntityRefProperty(
     void* p_Data
 ) {
     if (auto s_EntityRef = reinterpret_cast<TEntityRef<void*>*>(p_Data)) {
-        EntityRefProperty(s_EntityRef->m_ref);
-    } else {
-        EntityRefProperty(ZEntityRef {});
+        EntityRefProperty(p_Id, s_EntityRef->m_ref);
+    }
+    else {
+        EntityRefProperty(p_Id, ZEntityRef{});
     }
 }
 
-void Editor::EntityRefProperty(ZEntityRef p_Entity) {
+void Editor::EntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity) {
     if (!p_Entity) {
         constexpr ImVec4 s_TextColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
 
@@ -79,6 +81,7 @@ void Editor::EntityRefProperty(ZEntityRef p_Entity) {
     if (ImGui::IsItemHovered()) {
         ImVec2 s_Min = ImGui::GetItemRectMin();
         ImVec2 s_Max = ImGui::GetItemRectMax();
+
         ImGui::GetWindowDrawList()->AddLine(
             ImVec2(s_Min.x, s_Max.y),
             ImVec2(s_Max.x, s_Max.y),
@@ -98,6 +101,10 @@ void Editor::EntityRefProperty(ZEntityRef p_Entity) {
 
     if (ImGui::IsItemClicked()) {
         OnSelectEntity(p_Entity, true, std::nullopt);
+    }
+
+    if (ImGuiCopyWidget(("EntityRef_" + p_Id).c_str())) {
+        CopyToClipboard(fmt::format("{:016x}", p_Entity->GetType()->m_nEntityId));
     }
 }
 

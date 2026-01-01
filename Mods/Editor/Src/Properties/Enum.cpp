@@ -29,6 +29,8 @@ void Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityP
         }
     }
 
+    ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - m_CopyWidgetWidth);
+
     if (ImGui::BeginCombo(p_Id.c_str(), s_CurrentValue.c_str())) {
         for (auto& s_EnumValue : s_Type->m_entries) {
             if (ImGui::Selectable(s_EnumValue.m_pName, s_EnumValue.m_nValue == s_Value)) {
@@ -45,5 +47,9 @@ void Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityP
         }
 
         ImGui::EndCombo();
+    }
+
+    if (ImGuiCopyWidget(("Enum_" + p_Id).c_str())) {
+        CopyToClipboard(s_CurrentValue);
     }
 }

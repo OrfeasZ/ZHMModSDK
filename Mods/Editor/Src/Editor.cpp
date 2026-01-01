@@ -277,7 +277,7 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
 
     const auto s_Result = ImGui::ButtonEx(
         (std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(),
-        { 20, 20 },
+        { m_CopyWidgetButtonSize, m_CopyWidgetButtonSize },
         ImGuiButtonFlags_AlignTextBaseLine
     );
 
