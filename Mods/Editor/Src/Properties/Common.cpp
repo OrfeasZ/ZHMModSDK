@@ -86,10 +86,12 @@ void Editor::EntityRefProperty(ZEntityRef p_Entity) {
             ImGui::GetColorU32(s_LinkColor)
         );
 
-        auto s_EntityTreeNode = Editor::m_CachedEntityTreeMap.find(p_Entity);
-        if (s_EntityTreeNode != Editor::m_CachedEntityTreeMap.end() && s_EntityTreeNode->second) {
-            ImGui::SetTooltip("%s", s_EntityTreeNode->second->Name.c_str());
-        } else {
+        auto s_Iterator = m_CachedEntityTreeMap.find(p_Entity);
+
+        if (s_Iterator != m_CachedEntityTreeMap.end()) {
+            ImGui::SetTooltip("%s", s_Iterator->second->Name.c_str());
+        }
+        else {
             ImGui::SetTooltip("%s", "Entity tree not loaded, rebuild the entity tree");
         };
     }
