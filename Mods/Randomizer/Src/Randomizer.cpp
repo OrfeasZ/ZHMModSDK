@@ -111,6 +111,12 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
                 ImGui::EndTabItem();
             }
 
+            if (ImGui::BeginTabItem("Props To Exclude")) {
+                DrawPropsToExcludeTab();
+
+                ImGui::EndTabItem();
+            }
+
             ImGui::EndTabBar();
         }
     }
@@ -400,6 +406,99 @@ void Randomizer::DrawPropsToSpawnTab() {
     }
 }
 
+void Randomizer::DrawPropsToExcludeTab() {
+    static char s_PropTitle[2048]{ "" };
+
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Prop Title");
+    ImGui::SameLine();
+
+    Util::ImGuiUtils::InputWithAutocomplete(
+        "##RepositoryProps",
+        s_PropTitle,
+        sizeof(s_PropTitle),
+        m_AllRepositoryProps,
+        [](auto& p_Tuple) -> const ZRepositoryID& { return std::get<0>(p_Tuple); },
+        [](auto& p_Tuple) -> const std::string& { return std::get<1>(p_Tuple); },
+        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+            const bool s_IsAlreadyAdded = std::ranges::any_of(m_PropsToExclude, [&](const auto& p_Item) {
+                return std::get<0>(p_Item) == p_Id;
+            });
+
+            if (s_IsAlreadyAdded) {
+                return;
+            }
+
+            m_PropsToExclude.push_back(std::make_pair(p_Id, p_Name));
+            m_ExcludedPropRepositoryIds.insert(p_Id);
+
+            SetSettingBool("props_to_exclude", p_Name, true);
+        },
+        nullptr,
+        [&](const auto& p_Tuple) -> bool {
+            const bool s_IsWeapon = std::get<2>(p_Tuple);
+
+            if (m_RandomizeItems && m_RandomizeWeapons) {
+                return true;
+            }
+
+            if (m_RandomizeItems && !s_IsWeapon) {
+                return true;
+            }
+
+            if (m_RandomizeWeapons && s_IsWeapon) {
+                return true;
+            }
+
+            return false;
+        }
+    );
+
+    ImGui::TextUnformatted("Props:");
+    ImGui::BeginChild("PropList", ImVec2(0, 250), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+    for (size_t i = 0; i < m_PropsToExclude.size(); ++i) {
+        auto& [s_RepositoryId, s_Name] = m_PropsToExclude[i];
+
+        ImGui::PushID(static_cast<int>(i));
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted(s_Name.c_str());
+
+        ImGui::SameLine();
+
+        if (ImGui::SmallButton(ICON_MD_DELETE)) {
+            m_PropsToExclude.erase(m_PropsToExclude.begin() + i);
+            m_ExcludedPropRepositoryIds.erase(s_RepositoryId);
+
+            RemoveSetting("props_to_exclude", s_Name);
+
+            ImGui::PopID();
+
+            break;
+        }
+
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Remove");
+        }
+
+        ImGui::PopID();
+    }
+
+    ImGui::EndChild();
+
+    if (!m_PropsToExclude.empty()) {
+        if (ImGui::Button("Clear All")) {
+            for (const auto& [s_RepositoryId, s_Name] : m_PropsToExclude) {
+                RemoveSetting("props_to_exclude", s_Name);
+            }
+
+            m_PropsToExclude.clear();
+            m_ExcludedPropRepositoryIds.clear();
+        }
+    }
+}
+
 void Randomizer::LoadRepositoryProps() {
     m_AllRepositoryProps.clear();
 
@@ -521,6 +620,10 @@ void Randomizer::FilterRepositoryProps() {
             }
 
             if (s_IsWeapon && !m_RandomizeWeapons) {
+                continue;
+            }
+
+            if (m_ExcludedPropRepositoryIds.contains(s_RepositoryId)) {
                 continue;
             }
 

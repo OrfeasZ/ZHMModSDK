@@ -15,6 +15,7 @@ private:
     void DrawGeneralTab();
     void DrawCategoriesTab();
     void DrawPropsToSpawnTab();
+    void DrawPropsToExcludeTab();
 
     void LoadRepositoryProps();
     void FilterRepositoryProps();
@@ -68,6 +69,8 @@ private:
     std::vector<ZRepositoryID> m_PropsToSpawnInPlayerInventory;
     std::vector<ZRepositoryID> m_PropsToSpawnInActorInventory;
     std::vector<ZRepositoryID> m_WeaponsToSpawnInActorInventory;
+    std::vector<std::pair<ZRepositoryID, std::string>> m_PropsToExclude;
+    std::unordered_set<ZRepositoryID> m_ExcludedPropRepositoryIds;
 
     bool m_SpawnInWorld = false;
     bool m_SpawnInStash = false;
