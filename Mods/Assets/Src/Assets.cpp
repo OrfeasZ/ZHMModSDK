@@ -43,7 +43,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
 
         static char s_PropTitle[2048] { "" };
-        static char s_PropAssemblyPath[2048] { "" };
+        static char s_PropResourceId[2048] { "" };
 
         static int s_RepositoryPropSpawnCount = 1;
         static int s_NonRepositoryPropSpawnCount = 1;
@@ -102,12 +102,12 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::Text("Prop Assembly Path");
         ImGui::SameLine();
 
-        ImGui::InputText("##PropAssemblyPath", s_PropAssemblyPath, sizeof(s_PropAssemblyPath));
+        ImGui::InputText("##PropResourceID", s_PropResourceId, sizeof(s_PropResourceId));
         ImGui::SameLine();
 
         if (ImGui::Button("Spawn Prop")) {
             for (size_t i = 0; i < s_NonRepositoryPropSpawnCount; ++i) {
-                SpawnNonRepositoryProp(s_PropAssemblyPath);
+                SpawnNonRepositoryProp(ZRuntimeResourceID::FromString(s_PropResourceId));
             }
         }
 
@@ -346,7 +346,7 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     Functions::ZItemSpawner_RequestContentLoad->Call(s_ItemSpawner);
 }
 
-void Assets::SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath) {
+void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResourceID) {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
@@ -354,21 +354,8 @@ void Assets::SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath) {
         return;
     }
 
-    const Hash::MD5Hash s_Hash = Hash::MD5(std::string_view(p_PropAssemblyPath));
-
-    const uint32_t s_IdHigh = ((s_Hash.A >> 24) & 0x000000FF)
-                              | ((s_Hash.A >> 8) & 0x0000FF00)
-                              | ((s_Hash.A << 8) & 0x00FF0000);
-
-    const uint32_t s_IdLow = ((s_Hash.B >> 24) & 0x000000FF)
-                             | ((s_Hash.B >> 8) & 0x0000FF00)
-                             | ((s_Hash.B << 8) & 0x00FF0000)
-                             | ((s_Hash.B << 24) & 0xFF000000);
-
-    const auto s_RuntimeResourceID = ZRuntimeResourceID(s_IdHigh, s_IdLow);
-
     TResourcePtr<ZTemplateEntityFactory> s_Resource;
-    Globals::ResourceManager->GetResourcePtr(s_Resource, s_RuntimeResourceID, 0);
+    Globals::ResourceManager->GetResourcePtr(s_Resource, s_PropRuntimeResourceID, 0);
 
     if (!s_Resource) {
         Logger::Debug("Resource is not loaded.");
