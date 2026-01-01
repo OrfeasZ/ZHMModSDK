@@ -397,8 +397,8 @@ void Randomizer::DrawPropsToSpawnTab() {
 
     if (!m_PropsToSpawn.empty()) {
         if (ImGui::Button("Clear All")) {
-            for (const auto& [s_RepositoryId, s_Name, _, _, _, _] : m_PropsToSpawn) {
-                RemoveSetting("props_to_spawn", s_Name);
+            for (const auto& s_PropToSpawn : m_PropsToSpawn) {
+                RemoveSetting("props_to_spawn", std::get<1>(s_PropToSpawn));
             }
 
             m_PropsToSpawn.clear();
