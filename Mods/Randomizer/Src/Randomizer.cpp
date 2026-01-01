@@ -794,7 +794,7 @@ DEFINE_PLUGIN_DETOUR(Randomizer, bool, OnLoadScene, ZEntitySceneContext* th, SSc
     if (m_AllRepositoryProps.empty()) {
         LoadRepositoryProps();
         LoadCategoriesFromSettings();
-        LoadPropsFromSettings();
+        LoadPropsToSpawnFromSettings();
     }
     
     FilterRepositoryProps();
