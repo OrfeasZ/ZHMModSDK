@@ -12,6 +12,10 @@ public:
     void OnDrawUI(bool p_HasFocus) override;
 
 private:
+    void DrawGeneralTab();
+    void DrawCategoriesTab();
+    void DrawPropsToSpawnTab();
+
     void LoadRepositoryProps();
     void FilterRepositoryProps();
 
