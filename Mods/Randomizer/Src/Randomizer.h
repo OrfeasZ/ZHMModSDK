@@ -23,7 +23,7 @@ private:
     const ZRepositoryID& GetRandomRepositoryId(const std::vector<ZRepositoryID>& p_Props);
 
     void LoadCategoriesFromSettings();
-    void LoadPropsFromSettings();
+    void LoadPropsToSpawnFromSettings();
 
     DECLARE_PLUGIN_DETOUR(Randomizer, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters& parameters);
     DECLARE_PLUGIN_DETOUR(Randomizer, void, ZLevelManager_StartGame, ZLevelManager* th);

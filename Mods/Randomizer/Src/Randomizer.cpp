@@ -89,7 +89,7 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
         if (m_AllRepositoryProps.empty()) {
             LoadRepositoryProps();
             LoadCategoriesFromSettings();
-            LoadPropsFromSettings();
+            LoadPropsToSpawnFromSettings();
         }
 
         if (ImGui::BeginTabBar("RandomizerTabs")) {
@@ -709,7 +709,7 @@ void Randomizer::LoadCategoriesFromSettings() {
     }
 }
 
-void Randomizer::LoadPropsFromSettings() {
+void Randomizer::LoadPropsToSpawnFromSettings() {
     if (!HasSetting("props_to_spawn", "spawn_in_world")) {
         SetSettingBool("props_to_spawn", "spawn_in_world", true);
     }
