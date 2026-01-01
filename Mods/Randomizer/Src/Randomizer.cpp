@@ -26,7 +26,7 @@ void Randomizer::Init() {
     Hooks::ZActorInventoryHandler_RequestItem->AddDetour(this, &Randomizer::ZActorInventoryHandler_RequestItem);
 
     if (!HasSetting("general", "enable_randomizer")) {
-        SetSettingBool("general", "enable_randomizer", false);
+        SetSettingBool("general", "enable_randomizer", true);
     }
 
     if (!HasSetting("general", "randomize_world_props")) {
