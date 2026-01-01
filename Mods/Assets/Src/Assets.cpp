@@ -88,6 +88,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
 
+        ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
+
         ImGui::InputInt("##RepositoryPropSpawnCount", &s_RepositoryPropSpawnCount);
 
         ImGui::Separator();
@@ -112,6 +114,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
+
+        ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
 
         ImGui::InputInt("##NonRepositoryPropSpawnCount", &s_NonRepositoryPropSpawnCount);
         ImGui::Separator();
@@ -226,6 +230,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Number Of Props To Spawn");
         ImGui::SameLine();
+
+        ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
 
         ImGui::InputInt("##ActorSpawnCount", &s_ActorSpawnCount);
 

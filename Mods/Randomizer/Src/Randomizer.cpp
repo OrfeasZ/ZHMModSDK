@@ -140,6 +140,8 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
         ImGui::Text("Number Of Props To Spawn In Stashes");
         ImGui::SameLine();
 
+        ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
+
         if (ImGui::InputInt("##RepositoryPropSpawnCount", &m_RepositoryPropSpawnCount)) {
             SetSettingInt("general", "number_of_props_to_spawn_in_stashes", m_RepositoryPropSpawnCount);
         }
