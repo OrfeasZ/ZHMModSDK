@@ -89,8 +89,6 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
             ImGui::TextDisabled("(loaded)");
         }
 
-        static int s_SelectedIndex = 0;
-
         ImGui::TextUnformatted("Scenes:");
         ImGui::BeginChild("SceneList", ImVec2(0, 250), true, ImGuiWindowFlags_HorizontalScrollbar);
 
