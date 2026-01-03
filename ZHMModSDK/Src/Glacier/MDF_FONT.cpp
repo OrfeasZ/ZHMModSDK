@@ -1390,7 +1390,7 @@ const MDF_FONT::SGlyphData* MDF_FONT::GetGlyphData(const uint32_t p_Charcode) {
     return &g_GlyphData[s_Index];
 }
 
-bool MDF_FONT::HasGlyph(const uint8_t c) {
+bool MDF_FONT::HasGlyph(const uint32_t c) {
     return MDF_FONT::g_GlyphLookup[c] != -1;
 }
 

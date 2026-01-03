@@ -1277,10 +1277,13 @@ void DirectXTKRenderer::DrawText3D(
     }
 
     int s_PrintableCharacterCount = 0;
+    const char* p = p_Text;
 
-    for (int i = 0; i < s_TextLength; i++) {
-        if (MDF_FONT::HasGlyph((unsigned char)p_Text[i])) {
-            s_PrintableCharacterCount++;
+    while (*p) {
+        uint32_t cp = MDF_FONT::DecodeUTF8(p);
+
+        if (MDF_FONT::HasGlyph(cp)) {
+            ++s_PrintableCharacterCount;
         }
     }
 

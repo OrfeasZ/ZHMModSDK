@@ -61,7 +61,7 @@ namespace MDF_FONT {
     void Initialize();
 
     const SGlyphData* GetGlyphData(const uint32_t p_Charcode);
-    bool HasGlyph(const uint8_t c);
+    bool HasGlyph(const uint32_t c);
     uint32_t DecodeUTF8(const char*& p);
 
     void CalcBoundingBox(STextBoundingBox& p_TextBoundingBox, const char* p_Text);
