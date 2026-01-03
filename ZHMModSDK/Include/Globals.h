@@ -50,6 +50,7 @@ class ZTargetManager;
 class ZRoomManager;
 class ZUIMapTrackerManager;
 class ZContractsManager;
+class ZComponentManager;
 
 namespace bfx {
     class SystemInstance;
@@ -124,4 +125,5 @@ public:
     static ZRoomManager** RoomManager;
     static ZUIMapTrackerManager* UIMapTrackerManager;
     static ZContractsManager* ContractsManager;
+    static ZComponentManager** ComponentManager;
 };

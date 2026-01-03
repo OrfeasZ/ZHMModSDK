@@ -429,3 +429,10 @@ PATTERN_FUNCTION(
     ZStashPointEntity_SpawnItem,
     uint32_t(ZStashPointEntity* th, const ZRepositoryID& repId, const TArray<ZRepositoryID>& instanceModifiersToApply, bool isContainerItem)
 );
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x0F\xB6\xF2\x48\x8B\xD9\xE8",
+    "xxxxxxxxxxxxxx?xxxxxxx",
+    GetApplicationOptionBool,
+    bool(const ZString&, bool)
+);

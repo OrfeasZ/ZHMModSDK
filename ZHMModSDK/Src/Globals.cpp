@@ -456,3 +456,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZContractsManager*, ContractsManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x05\x00\x00\x00\x00\x48\x85\xC0\x75\x00\x48\x8D\x0D\x00\x00\x00\x00\xE8",
+    "xxx????xxxx?xxx????x",
+    3,
+    ZComponentManager**, ComponentManager
+);

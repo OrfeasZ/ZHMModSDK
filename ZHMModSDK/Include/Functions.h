@@ -224,4 +224,6 @@ public:
         const TArray<ZRepositoryID>& instanceModifiersToApply,
         bool isContainerItem
     )>* ZStashPointEntity_SpawnItem;
+
+    static EngineFunction<bool(const ZString& optionName, bool defaultValue)>* GetApplicationOptionBool;
 };

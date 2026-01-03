@@ -1,16 +1,23 @@
 #include "SkipIntro.h"
 
+#include "Glacier/ZComponent.h"
+
 #include "Hooks.h"
 #include "Logging.h"
+#include "Functions.h"
 
 void SkipIntro::Init() {
     Hooks::ZEngineAppCommon_GetBootScene->AddDetour(this, &SkipIntro::ZEngineAppCommon_GetBootScene);
 }
 
 DEFINE_PLUGIN_DETOUR(SkipIntro, ZString*, ZEngineAppCommon_GetBootScene, ZEngineAppCommon* th, ZString& result) {
-    p_Hook->CallOriginal(th, result);
+    if (Functions::GetApplicationOptionBool->Call("START_BENCHMARK", false)) {
+        return HookResult<ZString*>(HookAction::Continue());
+    }
 
-    if (result == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
+    const ZString& s_ScenePath = (*Globals::ComponentManager)->m_pApplication->GetOption("SCENE_FILE");
+
+    if (s_ScenePath == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
         result = "assembly:/_PRO/Scenes/Frontend/MainMenu.entity";
     }
 
