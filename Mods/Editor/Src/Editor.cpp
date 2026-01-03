@@ -452,7 +452,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             TEntityRef<IItemBase>(m_ItemToRemove.m_ref)
         );
 
-        if (s_IsMainWeapon) {
+        if (s_IsMainWeapon && m_SelectedActor->m_pInventoryHandler->m_aInventory.size() > 0) {
             m_SelectedActor->m_pInventoryHandler->m_rMainWeapon = TEntityRef<ZHM5ItemWeapon>(
                 m_SelectedActor->m_pInventoryHandler->m_aInventory[0].m_ref
             );
