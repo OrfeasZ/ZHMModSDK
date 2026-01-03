@@ -96,11 +96,138 @@ void DirectXTKRenderer::DepthDraw() {
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     const CD3DX12_CPU_DESCRIPTOR_HANDLE s_RtvDescriptor(s_RtvHandle, s_BackBufferIndex, m_RtvDescriptorSize);
 
-    const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->
-                                                     GetCPUDescriptorHandleForHeapStart();
-    const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, *m_DsvIndex, m_DsvDescriptorSize);
+    bool s_HasDepth = false;
 
-    m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
+    if (m_DepthBufferResource) {
+        // Instead of using the game's depth buffer directly, we create our own copy.
+        // For some reason, using it directly causes our 3D models to not render correctly
+        // on some machines, instead showing weird blocky artifacts.
+        ScopedD3DRef<ID3D12Device> s_Device;
+        if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) == S_OK) {
+            const D3D12_RESOURCE_DESC s_SrcDesc = m_DepthBufferResource->GetDesc();
+
+            // Create or recreate our depth buffer copy if dimensions changed
+            if (!m_DepthBufferCopy
+                || m_DepthBufferCopyWidth != s_SrcDesc.Width
+                || m_DepthBufferCopyHeight != s_SrcDesc.Height) {
+                m_DepthBufferCopy.Reset();
+                m_DepthBufferCopyDsvHeap.Reset();
+
+                // Create depth buffer with same format.
+                D3D12_RESOURCE_DESC s_DepthDesc = {};
+                s_DepthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+                s_DepthDesc.Width = s_SrcDesc.Width;
+                s_DepthDesc.Height = s_SrcDesc.Height;
+                s_DepthDesc.DepthOrArraySize = 1;
+                s_DepthDesc.MipLevels = 1;
+                s_DepthDesc.Format = s_SrcDesc.Format;
+                s_DepthDesc.SampleDesc.Count = 1;
+                s_DepthDesc.SampleDesc.Quality = 0;
+                s_DepthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+                s_DepthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+                D3D12_CLEAR_VALUE s_ClearValue = {};
+                s_ClearValue.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+                s_ClearValue.DepthStencil.Depth = 0.0f; // Reverse-Z: 0 is far
+                s_ClearValue.DepthStencil.Stencil = 0;
+
+                const CD3DX12_HEAP_PROPERTIES s_HeapProps(D3D12_HEAP_TYPE_DEFAULT);
+
+                if (SUCCEEDED(
+                    s_Device->CreateCommittedResource(
+                        &s_HeapProps,
+                        D3D12_HEAP_FLAG_NONE,
+                        &s_DepthDesc,
+                        D3D12_RESOURCE_STATE_COPY_DEST,
+                        &s_ClearValue,
+                        IID_PPV_ARGS(m_DepthBufferCopy.ReleaseAndGetPtr())
+                    )
+                )) {
+                    // Create DSV heap for our copy
+                    D3D12_DESCRIPTOR_HEAP_DESC s_DsvHeapDesc = {};
+                    s_DsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+                    s_DsvHeapDesc.NumDescriptors = 1;
+                    s_DsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+                    if (SUCCEEDED(
+                        s_Device->CreateDescriptorHeap(
+                            &s_DsvHeapDesc,
+                            IID_PPV_ARGS(m_DepthBufferCopyDsvHeap.ReleaseAndGetPtr())
+                        )
+                    )) {
+                        // Create DSV for our copy
+                        D3D12_DEPTH_STENCIL_VIEW_DESC s_DsvViewDesc = {};
+                        s_DsvViewDesc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+                        s_DsvViewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+                        s_DsvViewDesc.Texture2D.MipSlice = 0;
+
+                        s_Device->CreateDepthStencilView(
+                            m_DepthBufferCopy,
+                            &s_DsvViewDesc,
+                            m_DepthBufferCopyDsvHeap->GetCPUDescriptorHandleForHeapStart()
+                        );
+
+                        m_DepthBufferCopyWidth = s_SrcDesc.Width;
+                        m_DepthBufferCopyHeight = s_SrcDesc.Height;
+
+                        Logger::Debug(
+                            "Created depth buffer copy: {}x{}", m_DepthBufferCopyWidth, m_DepthBufferCopyHeight
+                        );
+                    }
+                }
+            }
+
+            // Copy the game's depth buffer
+            if (m_DepthBufferCopy && m_DepthBufferCopyDsvHeap) {
+                // Transition resources to the appropriate read / write states
+                {
+                    D3D12_RESOURCE_BARRIER s_Barriers[2];
+                    s_Barriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(
+                        m_DepthBufferResource,
+                        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+                        D3D12_RESOURCE_STATE_COPY_SOURCE
+                    );
+                    s_Barriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(
+                        m_DepthBufferCopy,
+                        D3D12_RESOURCE_STATE_DEPTH_READ,
+                        D3D12_RESOURCE_STATE_COPY_DEST
+                    );
+
+                    m_CommandList->ResourceBarrier(2, s_Barriers);
+                }
+
+                // Copy the depth buffer
+                m_CommandList->CopyResource(m_DepthBufferCopy, m_DepthBufferResource);
+
+                // Transition back.
+                {
+                    D3D12_RESOURCE_BARRIER s_Barriers[2];
+                    s_Barriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(
+                        m_DepthBufferResource,
+                        D3D12_RESOURCE_STATE_COPY_SOURCE,
+                        D3D12_RESOURCE_STATE_DEPTH_WRITE
+                    );
+                    s_Barriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(
+                        m_DepthBufferCopy,
+                        D3D12_RESOURCE_STATE_COPY_DEST,
+                        D3D12_RESOURCE_STATE_DEPTH_READ
+                    );
+
+                    m_CommandList->ResourceBarrier(2, s_Barriers);
+                }
+
+                // Use our depth buffer copy for rendering
+                const auto s_DsvDescriptor = m_DepthBufferCopyDsvHeap->GetCPUDescriptorHandleForHeapStart();
+                m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
+                s_HasDepth = true;
+            }
+        }
+    }
+
+    if (!s_HasDepth) {
+        // Fall back to depth-less rendering
+        m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
+    }
 
     m_TriangleBatch->Begin(m_CommandList);
     m_LineBatch->Begin(m_CommandList);
@@ -195,10 +322,7 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
 
     m_CommandList->BeginEvent(0, L"DebugRender", sizeof(L"DebugRender"));
 
-    if (m_DsvIndex.has_value()) {
-        DepthDraw();
-    }
-
+    DepthDraw();
     Draw();
 
     m_CommandList->EndEvent();
@@ -671,6 +795,12 @@ void DirectXTKRenderer::OnReset() {
         s_Frame.FenceValue = m_FenceValue;
 
     m_BackBuffers.clear();
+
+    // Clean up depth buffer copy resources
+    m_DepthBufferCopy.Reset();
+    m_DepthBufferCopyDsvHeap.Reset();
+    m_DepthBufferCopyWidth = 0;
+    m_DepthBufferCopyHeight = 0;
 }
 
 void DirectXTKRenderer::PostReset() {

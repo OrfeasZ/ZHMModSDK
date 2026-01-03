@@ -67,8 +67,8 @@ namespace Rendering::Renderers {
         void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
         void OnReset();
         void PostReset();
-        void SetDsvIndex(size_t p_Index) { m_DsvIndex = p_Index; }
-        void ClearDsvIndex() { m_DsvIndex = std::nullopt; }
+        void SetDepthBuffer(ID3D12Resource* p_DepthResource) { m_DepthBufferResource = p_DepthResource; }
+        void ClearDepthBuffer() { m_DepthBufferResource = nullptr; }
 
     private:
         void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
@@ -221,7 +221,14 @@ namespace Rendering::Renderers {
         std::unique_ptr<DirectX::SpriteFont> m_Font {};
         std::unique_ptr<DirectX::SpriteBatch> m_SpriteBatch {};
 
-        std::optional<size_t> m_DsvIndex = std::nullopt;
+        // Pointer to the game's depth buffer
+        ID3D12Resource* m_DepthBufferResource = nullptr;
+
+        // Our own copy of the depth buffer
+        ScopedD3DRef<ID3D12Resource> m_DepthBufferCopy;
+        ScopedD3DRef<ID3D12DescriptorHeap> m_DepthBufferCopyDsvHeap;
+        uint32_t m_DepthBufferCopyWidth = 0;
+        uint32_t m_DepthBufferCopyHeight = 0;
 
         std::unique_ptr<DirectX::CommonStates> m_CommonStates;
         ScopedD3DRef<ID3D12Resource> m_FontDistanceFieldTexture;
