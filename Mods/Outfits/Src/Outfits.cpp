@@ -578,10 +578,10 @@ bool Outfits::LoadGlobalDataBrick(const ZRuntimeResourceID& p_BrickRuntimeResour
     return false;
 }
 
-void Outfits::LoadOutfits(const std::string& p_SceneName, const ZRuntimeResourceID& p_OutfitsBrickRuntimeResourceId) {
+void Outfits::LoadOutfits(const std::string& p_SceneName, const ZRuntimeResourceID& p_OutfitBrickRuntimeResourceId) {
     TResourcePtr<ZTemplateEntityFactory> s_ResourcePtr;
 
-    Globals::ResourceManager->LoadResource(s_ResourcePtr, p_OutfitsBrickRuntimeResourceId);
+    Globals::ResourceManager->LoadResource(s_ResourcePtr, p_OutfitBrickRuntimeResourceId);
 
     if (!s_ResourcePtr) {
         Logger::Debug("Resource is not loaded.");

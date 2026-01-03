@@ -28,7 +28,7 @@ private:
         ZEntityRef& p_EntityRef
     );
     bool LoadGlobalDataBrick(const ZRuntimeResourceID& p_BrickRuntimeResourceId);
-    void LoadOutfits(const std::string& p_SceneName, const ZRuntimeResourceID& p_OutfitsBrickRuntimeResourceId);
+    void LoadOutfits(const std::string& p_SceneName, const ZRuntimeResourceID& p_OutfitBrickRuntimeResourceId);
     void LoadOutfits(const std::vector<std::string>& p_Scenes);
     void LoadOutfits(const ZRuntimeResourceID& p_OutfitBrickRuntimeResourceId);
     void UnloadOutfits(const std::unordered_set<std::string>& p_Scenes);
