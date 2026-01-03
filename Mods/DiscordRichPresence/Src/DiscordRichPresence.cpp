@@ -81,12 +81,6 @@ void DiscordRichPresence::BuildSceneMappings() {
 
         Globals::ResourceManager->LoadResource(s_JsonResourcePtr, s_JsonReferenceInfo.rid);
 
-        if (!s_JsonReferenceInfo.resourceData) {
-            Logger::Error("{:016x} JSON resource isn't installed!", s_JsonReferenceInfo.rid.GetID());
-
-            continue;
-        }
-
         ZResourceReader* s_JsonResourceReader = *reinterpret_cast<ZResourceReader**>(s_JsonReferenceInfo.resourceData);
         ZResourceDataBuffer* s_DataBuffer = s_JsonResourceReader->m_pResourceData.m_pObject;
 
