@@ -222,7 +222,14 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
             s_CodeNameHint = s_CodeNameHint.substr(s_CodeNameHint.find_last_of("/") + 1);
         }
 
-        s_Location = m_CodeNameHintToSceneName[s_CodeNameHint];
+        auto s_Iterator = m_CodeNameHintToSceneName.find(s_CodeNameHint);
+
+        if (s_Iterator != m_CodeNameHintToSceneName.end()) {
+            s_Location = s_Iterator->second;
+        }
+        else {
+            s_Location = "ERR_UNKNOWN_LOCATION";
+        }
     }
 
     if (s_Location == "In Startup Screen" || s_Location == "In Main Menu") {
