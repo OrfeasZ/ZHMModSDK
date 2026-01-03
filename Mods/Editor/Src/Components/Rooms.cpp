@@ -39,17 +39,21 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
             s_CurrentRoomEntity->GetID(s_CurrentRoomEntityRef);
 
-            std::shared_ptr<EntityTreeNode> s_EntityTreeNode = m_CachedEntityTreeMap[s_CurrentRoomEntityRef];
+            auto s_Iterator = m_CachedEntityTreeMap.find(s_CurrentRoomEntityRef);
+            
+            if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
 
-            ImGui::Text("Room player is in: %s", s_EntityTreeNode->Name.c_str());
+                ImGui::Text("Room player is in: %s", s_EntityTreeNode->Name.c_str());
 
-            ImGui::SameLine();
+                ImGui::SameLine();
 
-            if (ImGui::SmallButton("Select In Entity Tree##Player")) {
-                OnSelectEntity(s_CurrentRoomEntityRef, true, std::nullopt);
+                if (ImGui::SmallButton("Select In Entity Tree##Player")) {
+                    OnSelectEntity(s_CurrentRoomEntityRef, true, std::nullopt);
+                }
+
+                ImGui::Separator();
             }
-
-            ImGui::Separator();
         }
 
         const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
@@ -64,17 +68,21 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
             s_CurrentRoomEntity->GetID(s_CurrentRoomEntityRef);
 
-            std::shared_ptr<EntityTreeNode> s_EntityTreeNode = m_CachedEntityTreeMap[s_CurrentRoomEntityRef];
+            auto s_Iterator = m_CachedEntityTreeMap.find(s_CurrentRoomEntityRef);
 
-            ImGui::Text("Room camera is in: %s", s_EntityTreeNode->Name.c_str());
+            if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
 
-            ImGui::SameLine();
+                ImGui::Text("Room camera is in: %s", s_EntityTreeNode->Name.c_str());
 
-            if (ImGui::SmallButton("Select In Entity Tree##Camera")) {
-                OnSelectEntity(s_CurrentRoomEntityRef, true, std::nullopt);
+                ImGui::SameLine();
+
+                if (ImGui::SmallButton("Select In Entity Tree##Camera")) {
+                    OnSelectEntity(s_CurrentRoomEntityRef, true, std::nullopt);
+                }
+
+                ImGui::Separator();
             }
-
-            ImGui::Separator();
         }
 
         ImGui::Checkbox("Show only visible rooms", &m_ShowOnlyVisibleRooms);
@@ -110,8 +118,18 @@ void Editor::DrawRooms(const bool p_HasFocus) {
                 m_SortedRoomEntities.begin(),
                 m_SortedRoomEntities.end(),
                 [&](const ZEntityRef& a, const ZEntityRef& b) {
-                    return m_CachedEntityTreeMap[a]->Name <
-                        m_CachedEntityTreeMap[b]->Name;
+                    auto s_IteratorA = m_CachedEntityTreeMap.find(a);
+                    auto s_IteratorB = m_CachedEntityTreeMap.find(b);
+
+                    if (s_IteratorA == m_CachedEntityTreeMap.end()) {
+                        return false;
+                    }
+
+                    if (s_IteratorB == m_CachedEntityTreeMap.end()) {
+                        return true;
+                    }
+
+                    return s_IteratorA->second->Name < s_IteratorB->second->Name;
                 }
             );
         }
@@ -136,7 +154,13 @@ void Editor::DrawRooms(const bool p_HasFocus) {
                 }
             }
 
-            std::shared_ptr<EntityTreeNode> s_RoomEntityTreeNode = m_CachedEntityTreeMap[s_RoomEntityRef];
+            auto s_Iterator = m_CachedEntityTreeMap.find(s_RoomEntityRef);
+
+            if (s_Iterator == m_CachedEntityTreeMap.end()) {
+                continue;
+            }
+
+            std::shared_ptr<EntityTreeNode> s_RoomEntityTreeNode = s_Iterator->second;
 
             if (!Util::StringUtils::FindSubstringUTF8(s_RoomEntityTreeNode->Name, s_RoomName)) {
                 continue;
@@ -175,8 +199,18 @@ void Editor::DrawRooms(const bool p_HasFocus) {
                         s_SortedGates.begin(),
                         s_SortedGates.end(),
                         [&](const ZEntityRef& a, const ZEntityRef& b) {
-                            return m_CachedEntityTreeMap[a]->Name <
-                                m_CachedEntityTreeMap[b]->Name;
+                            auto s_IteratorA = m_CachedEntityTreeMap.find(a);
+                            auto s_IteratorB = m_CachedEntityTreeMap.find(b);
+
+                            if (s_IteratorA == m_CachedEntityTreeMap.end()) {
+                                return false;
+                            }
+
+                            if (s_IteratorB == m_CachedEntityTreeMap.end()) {
+                                return true;
+                            }
+
+                            return s_IteratorA->second->Name < s_IteratorB->second->Name;
                         }
                     );
 
@@ -199,7 +233,13 @@ void Editor::DrawRooms(const bool p_HasFocus) {
                             }
                         }
 
-                        auto s_GateEntityTreeNode = m_CachedEntityTreeMap[s_GateEntityRef];
+                        auto s_Iterator = m_CachedEntityTreeMap.find(s_GateEntityRef);
+
+                        if (s_Iterator == m_CachedEntityTreeMap.end()) {
+                            continue;
+                        }
+
+                        std::shared_ptr<EntityTreeNode> s_GateEntityTreeNode = s_Iterator->second;
 
                         if (!Util::StringUtils::FindSubstringUTF8(s_GateEntityTreeNode->Name, s_GateName)) {
                             continue;
