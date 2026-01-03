@@ -3,7 +3,7 @@ name: Build
 on:
     push:
         branches:
-            - master
+            - '**'
     release:
         types: [ created ]
     pull_request:
@@ -12,7 +12,8 @@ on:
 jobs:
     build:
         name: Build
-        runs-on: ptlm-runner
+        runs-on: ${{ (github.repository == 'OrfeasZ/ZHMModSDK' && 'ptlm-runner') || 'windows-latest' }}
+        if: github.event_name == 'pull_request' || github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.repository != 'OrfeasZ/ZHMModSDK'
 
         steps:
             -   name: Get latest CMake and ninja
@@ -22,6 +23,12 @@ jobs:
                 uses: actions/checkout@v4
                 with:
                     submodules: recursive
+
+            -   name: Install Rust nightly toolchain
+                uses: dtolnay/rust-toolchain@nightly
+                if: github.repository != 'OrfeasZ/ZHMModSDK'
+                with:
+                    components: rust-src
 
             -   name: Setup VS environment
                 uses: ilammy/msvc-dev-cmd@v1
@@ -87,7 +94,7 @@ jobs:
                     Copy-Item LICENSE -Destination _sdk/LICENSE
 
             -   name: Upload symbols to sentry
-                if: github.event_name == 'release'
+                if: github.repository == 'OrfeasZ/ZHMModSDK' && github.event_name == 'release'
                 env:
                     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                     SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -129,7 +136,7 @@ jobs:
     upload_release:
         name: Upload release artifacts
         needs: build
-        if: github.event_name == 'release'
+        if: github.repository == 'OrfeasZ/ZHMModSDK' && github.event_name == 'release'
         runs-on: ubuntu-latest
 
         strategy:

@@ -64,8 +64,8 @@ public:
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
     ZEntityRef FindEntity(EntitySelector p_Selector);
     static std::string GetCollisionHash(auto p_SelectedEntity);
-    void FindAlocs(
-        const std::function<void(std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>&, bool p_Done)>&
+    void FindMeshes(
+        const std::function<void(std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>&, bool p_Done)>&
         p_SendEntitiesCallback, const std::function<void()>& p_RebuiltCallback
     );
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindEntitiesByType(
@@ -74,6 +74,7 @@ public:
     void RebuildEntityTree();
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
+    void QueueTask(std::function<void()> p_Task);
 private:
     struct DebugEntity {
         std::string m_TypeName;
@@ -152,12 +153,12 @@ private:
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
     static void ToggleEditorServerEnabled();
-    static void FindAlocForZGeomEntityNode(
-        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities,
+    static void FindAlocAndPrimForZGeomEntityNode(
+        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& p_Entities,
         const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType
     );
-    static void FindAlocForZPrimitiveProxyEntityNode(
-        std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& entities,
+    static void FindAlocAndPrimForZPrimitiveProxyEntityNode(
+        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& entities,
         const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType
     );
 
@@ -196,6 +197,7 @@ private:
     static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const ZEntityProperty* p_Property);
     static Quat GetQuatFromProperty(ZEntityRef p_Entity);
     static Quat GetParentQuat(ZEntityRef p_Entity);
+    std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity);
 
     void SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
     void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
@@ -255,6 +257,7 @@ private:
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
     bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
 
+    void ProcessTasks();
 private:
     DECLARE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
@@ -501,6 +504,9 @@ private:
     std::unordered_map<ZRuntimeResourceID, ZExtendedCppEntityFactory*> m_RuntimeResourceIDToExtendedCppEntityFactory;
     std::shared_mutex m_EntityRefToFactoryRuntimeResourceIDsMutex;
     std::mutex m_ExtendedCppEntityFactoryResourceMapsMutex;
+
+    std::mutex m_TaskMutex;
+    std::vector<std::function<void()>> m_TaskQueue;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

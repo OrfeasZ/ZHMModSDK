@@ -421,3 +421,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZWorldInventory*, WorldInventory
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x89\x05\x00\x00\x00\x00\x48\x8D\x55\x20\x48\x8B\x4E\x60\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x45\x20\xE8\x00\x00\x00\x00\x48\x8D\x1D",
+    "xxx????xxxxxxxxxxx????xxxxx????xxx",
+    3,
+    ZRoomManager**, RoomManager
+);
