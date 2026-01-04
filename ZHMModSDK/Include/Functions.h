@@ -51,6 +51,10 @@ class ZWorldInventory;
 class IItemBase;
 class ZStashPointEntity;
 
+namespace bfx {
+    class AreaHandle;
+}
+
 class ZHMSDK_API Functions {
 public:
     static EngineFunction<void(ZActor* th)>* ZActor_OnOutfitChanged;
@@ -226,4 +230,6 @@ public:
     )>* ZStashPointEntity_SpawnItem;
 
     static EngineFunction<bool(const ZString& optionName, bool defaultValue)>* GetApplicationOptionBool;
+
+    static EngineFunction<ERegionMask(bfx::AreaHandle* th)>* AreaHandle_GetAreaUsageFlags;
 };
