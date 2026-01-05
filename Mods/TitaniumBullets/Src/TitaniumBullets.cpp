@@ -11,6 +11,7 @@
 
 #include <IconsMaterialDesign.h>
 
+#include <algorithm>
 #include <array>
 #include <string_view>
 
@@ -51,13 +52,7 @@ static const std::array<ZRepositoryID, 20> kTargets = {
 };
 
 bool IsTargetId(const ZRepositoryID& p_Id) {
-    for (const auto& target : kTargets) {
-        if (p_Id == target) {
-            return true;
-        }
-    }
-
-    return false;
+    return std::find(kTargets.begin(), kTargets.end(), p_Id) != kTargets.end();
 }
 
 static const ZString kIdKey = ZString(std::string_view("ID_"));
@@ -211,7 +206,7 @@ bool TitaniumBullets::ApplyRepositoryPatch() {
 
     // 2) Fallback: some versions may not use ID_ as the hashmap key; scan by ID_ field.
     if (m_RepoEntriesPatched == 0) {
-        for (auto& [_, s_DynamicObject] : *s_RepositoryData) {
+        for (auto& [s_MapKey, s_DynamicObject] : *s_RepositoryData) {
             auto* s_Entries = s_DynamicObject.As<TArray<SDynamicObjectKeyValuePair>>();
             if (!s_Entries) {
                 continue;
@@ -234,11 +229,11 @@ bool TitaniumBullets::ApplyRepositoryPatch() {
             }
 
             if (s_AmmoConfigPair->value.As<ZRepositoryID>()) {
-                m_OriginalAmmoConfigs.emplace_back(s_RepoId, s_AmmoConfigPair->value);
+                m_OriginalAmmoConfigs.emplace_back(s_MapKey, s_AmmoConfigPair->value);
                 s_AmmoConfigPair->value = kPenetrationAmmoConfigId;
                 ++m_RepoEntriesPatched;
             } else if (s_AmmoConfigPair->value.As<ZString>()) {
-                m_OriginalAmmoConfigs.emplace_back(s_RepoId, s_AmmoConfigPair->value);
+                m_OriginalAmmoConfigs.emplace_back(s_MapKey, s_AmmoConfigPair->value);
                 s_AmmoConfigPair->value = ZString(std::string_view(kPenetrationAmmoConfigIdStr));
                 ++m_RepoEntriesPatched;
             } else {
@@ -278,6 +273,9 @@ void TitaniumBullets::RestoreRepositoryPatch() {
 
     if (!EnsureRepositoryLoaded()) {
         Logger::Warn("[TitaniumBullets] Cannot restore; pro.repo not available");
+        m_PatchApplied = false;
+        m_OriginalAmmoConfigs.clear();
+        m_AutoApplyDisabled = false;
         return;
     }
 
@@ -286,38 +284,28 @@ void TitaniumBullets::RestoreRepositoryPatch() {
 
     if (!s_RepositoryData) {
         Logger::Warn("[TitaniumBullets] Cannot restore; pro.repo resource data is null");
+        m_PatchApplied = false;
+        m_OriginalAmmoConfigs.clear();
+        m_AutoApplyDisabled = false;
         return;
     }
 
     m_RepoEntriesRestored = 0;
 
-    for (auto& [_, s_DynamicObject] : *s_RepositoryData) {
-        auto* s_Entries = s_DynamicObject.As<TArray<SDynamicObjectKeyValuePair>>();
+    // Restore only the entries we originally patched.
+    for (const auto& [s_MapKey, s_OriginalAmmoConfig] : m_OriginalAmmoConfigs) {
+        auto s_It = s_RepositoryData->find(s_MapKey);
+        if (s_It == s_RepositoryData->end()) {
+            continue;
+        }
+
+        auto* s_Entries = s_It->second.As<TArray<SDynamicObjectKeyValuePair>>();
         if (!s_Entries) {
             continue;
         }
 
-        // Determine the entry ID so we can match it against our originals.
-        ZRepositoryID s_RepoId = ZRepositoryID("00000000-0000-0000-0000-000000000000");
-
-        if (auto* s_IdPair = FindPair(s_Entries, kIdKey)) {
-            s_RepoId = GetRepoIdFromDynamicObjectOrDefault(s_IdPair->value);
-        }
-
-        const ZDynamicObject* s_OriginalAmmoConfig = nullptr;
-        for (const auto& [id, value] : m_OriginalAmmoConfigs) {
-            if (id == s_RepoId) {
-                s_OriginalAmmoConfig = &value;
-                break;
-            }
-        }
-
-        if (!s_OriginalAmmoConfig) {
-            continue;
-        }
-
         if (auto* s_AmmoConfigPair = FindPair(s_Entries, kAmmoConfigKey)) {
-            s_AmmoConfigPair->value = *s_OriginalAmmoConfig;
+            s_AmmoConfigPair->value = s_OriginalAmmoConfig;
             ++m_RepoEntriesRestored;
         }
     }
@@ -380,6 +368,8 @@ void TitaniumBullets::OnDrawUI(const bool p_HasFocus) {
         ImGui::SameLine();
 
         if (ImGui::Button("Restore Now")) {
+            m_Enabled = false;
+            SetSettingBool("TitaniumBullets", "Enabled", m_Enabled);
             RestoreRepositoryPatch();
         }
 
