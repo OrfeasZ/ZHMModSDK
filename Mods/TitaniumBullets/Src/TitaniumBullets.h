@@ -48,6 +48,7 @@ private:
     bool m_DebugWindowActive = false;
     bool m_PatchApplied = false;
     bool m_LogRepoNotReadyOnce = false;
+    bool m_AutoApplyDisabled = false;
     
     // Statistics for debugging
     uint32_t m_RepoEntriesPatched = 0;
