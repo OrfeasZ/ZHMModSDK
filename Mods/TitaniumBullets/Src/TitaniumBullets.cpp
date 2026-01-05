@@ -123,8 +123,8 @@ void TitaniumBullets::OnEngineInitialized() {
     }
 
     Logger::Info(
-        "[TitaniumBullets] Ready (enabled=%s). Will apply repository patch when available.",
-        m_Enabled ? "true" : "false"
+        "[TitaniumBullets] Ready (enabled={}). Will apply repository patch when available.",
+        m_Enabled
     );
 
     if (m_Enabled) {
@@ -133,7 +133,7 @@ void TitaniumBullets::OnEngineInitialized() {
 }
 
 void TitaniumBullets::OnFrameUpdate(const SGameUpdateEvent&) {
-    if (!m_Enabled || m_PatchApplied) {
+    if (!m_Enabled || m_PatchApplied || m_AutoApplyDisabled) {
         return;
     }
 
@@ -174,6 +174,7 @@ bool TitaniumBullets::ApplyRepositoryPatch() {
 
     if (!s_RepositoryData) {
         Logger::Warn("[TitaniumBullets] pro.repo resource data is null");
+        m_AutoApplyDisabled = true;
         return false;
     }
 
@@ -228,7 +229,7 @@ bool TitaniumBullets::ApplyRepositoryPatch() {
 
             auto* s_AmmoConfigPair = FindPair(s_Entries, kAmmoConfigKey);
             if (!s_AmmoConfigPair) {
-                Logger::Warn("[TitaniumBullets] Target entry missing AmmoConfig (ID=%s)", s_RepoId.ToString().c_str());
+                Logger::Warn("[TitaniumBullets] Target entry missing AmmoConfig (ID={})", s_RepoId.ToString());
                 continue;
             }
 
@@ -245,23 +246,27 @@ bool TitaniumBullets::ApplyRepositoryPatch() {
                     ? s_AmmoConfigPair->value.GetTypeID()->typeInfo()
                     : nullptr;
                 Logger::Warn(
-                    "[TitaniumBullets] AmmoConfig has unexpected type '%s' (ID=%s)",
+                    "[TitaniumBullets] AmmoConfig has unexpected type '{}' (ID={})",
                     s_TypeInfo && s_TypeInfo->m_pTypeName ? s_TypeInfo->m_pTypeName : "<null>",
-                    s_RepoId.ToString().c_str()
+                    s_RepoId.ToString()
                 );
             }
         }
     }
 
     if (m_RepoEntriesPatched == 0) {
-        Logger::Warn("[TitaniumBullets] No matching repository entries found to patch (game update?)");
+        Logger::Warn(
+            "[TitaniumBullets] No matching repository entries found to patch (game update?). Disabling automatic retries until next scene load."
+        );
         m_OriginalAmmoConfigs.clear();
+        m_AutoApplyDisabled = true;
         return false;
     }
 
     m_PatchApplied = true;
+    m_AutoApplyDisabled = false;
 
-    Logger::Info("[TitaniumBullets] Patched %u repository entries (AmmoConfig -> penetration)", m_RepoEntriesPatched);
+    Logger::Info("[TitaniumBullets] Patched {} repository entries (AmmoConfig -> penetration)", m_RepoEntriesPatched);
 
     return true;
 }
@@ -317,10 +322,11 @@ void TitaniumBullets::RestoreRepositoryPatch() {
         }
     }
 
-    Logger::Info("[TitaniumBullets] Restored %u repository entries", m_RepoEntriesRestored);
+    Logger::Info("[TitaniumBullets] Restored {} repository entries", m_RepoEntriesRestored);
 
     m_PatchApplied = false;
     m_OriginalAmmoConfigs.clear();
+    m_AutoApplyDisabled = false;
 }
 
 void TitaniumBullets::OnDrawMenu() {
@@ -329,6 +335,7 @@ void TitaniumBullets::OnDrawMenu() {
         SetSettingBool("TitaniumBullets", "Enabled", m_Enabled);
 
         if (m_Enabled) {
+            m_AutoApplyDisabled = false;
             // Apply immediately if possible; otherwise the frame update will apply later.
             ApplyRepositoryPatch();
             Logger::Info("[TitaniumBullets] ENABLED");
@@ -366,6 +373,7 @@ void TitaniumBullets::OnDrawUI(const bool p_HasFocus) {
         ImGui::Separator();
 
         if (ImGui::Button("Apply Now")) {
+            m_AutoApplyDisabled = false;
             ApplyRepositoryPatch();
         }
 
@@ -402,6 +410,7 @@ DEFINE_PLUGIN_DETOUR(TitaniumBullets, void, OnClearScene,
     m_RepoEntriesPatched = 0;
     m_RepoEntriesRestored = 0;
     m_LogRepoNotReadyOnce = false;
+    m_AutoApplyDisabled = false;
     
     return HookResult<void>(HookAction::Continue());
 }
