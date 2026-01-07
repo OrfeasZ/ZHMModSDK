@@ -124,8 +124,8 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         static TEntityRef<ZGlobalOutfitKit> s_GlobalOutfitKit = {};
         static uint8_t s_CurrentCharacterSetIndex = 0;
-        static std::string s_CurrentcharSetCharacterType = "Actor";
-        static std::string s_CurrentcharSetCharacterType2 = "Actor";
+        static std::string s_CurrentCharSetCharacterType = "Actor";
+        static std::string s_CurrentCharSetCharacterType2 = "Actor";
         static uint8_t s_CurrentOutfitVariationIndex = 0;
 
         if (!s_GlobalOutfitKit) {
@@ -155,7 +155,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     EquipOutfit(
                         p_GlobalOutfitKit,
                         s_CurrentCharacterSetIndex,
-                        s_CurrentcharSetCharacterType,
+                        s_CurrentCharSetCharacterType,
                         s_CurrentOutfitVariationIndex,
                         m_SelectedActor
                     );
@@ -192,7 +192,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                         EquipOutfit(
                             s_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
-                            s_CurrentcharSetCharacterType,
+                            s_CurrentCharSetCharacterType,
                             s_CurrentOutfitVariationIndex,
                             m_SelectedActor
                         );
@@ -207,18 +207,18 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::Text("CharSet Character Type");
         ImGui::SameLine();
 
-        if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentcharSetCharacterType.data())) {
+        if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
             if (s_GlobalOutfitKit) {
                 for (auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
-                    const bool s_IsSelected = s_CurrentcharSetCharacterType == m_CharSetCharacterType;
+                    const bool s_IsSelected = s_CurrentCharSetCharacterType == m_CharSetCharacterType;
 
                     if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
-                        s_CurrentcharSetCharacterType = m_CharSetCharacterType;
+                        s_CurrentCharSetCharacterType = m_CharSetCharacterType;
 
                         EquipOutfit(
                             s_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
-                            s_CurrentcharSetCharacterType,
+                            s_CurrentCharSetCharacterType,
                             s_CurrentOutfitVariationIndex,
                             m_SelectedActor
                         );
@@ -235,11 +235,22 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
             if (s_GlobalOutfitKit) {
-                const uint8_t s_CurrentCharacterSetIndex2 = s_CurrentCharacterSetIndex;
-                const size_t s_VariationCount = s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[
-                            s_CurrentCharacterSetIndex2].m_pInterfaceRef->m_aCharacters[0].m_pInterfaceRef->
-                        m_aVariations.
-                        size();
+                ECharSetCharacterType s_CharSetCharacterType;
+
+                if (s_CurrentCharSetCharacterType == "Actor") {
+                    s_CharSetCharacterType = ECharSetCharacterType::ECSCT_Actor;
+                }
+                else if (s_CurrentCharSetCharacterType == "Nude") {
+                    s_CharSetCharacterType = ECharSetCharacterType::ECSCT_Nude;
+                }
+                else {
+                    s_CharSetCharacterType = ECharSetCharacterType::ECSCT_HeroA;
+                }
+
+                const size_t s_VariationCount =
+                    s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex].
+                    m_pInterfaceRef->m_aCharacters[static_cast<size_t>(s_CharSetCharacterType)].
+                    m_pInterfaceRef->m_aVariations.size();
 
                 for (size_t i = 0; i < s_VariationCount; ++i) {
                     const bool s_IsSelected = s_CurrentOutfitVariationIndex == i;
@@ -250,7 +261,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                         EquipOutfit(
                             s_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
-                            s_CurrentcharSetCharacterType,
+                            s_CurrentCharSetCharacterType,
                             s_CurrentOutfitVariationIndex,
                             m_SelectedActor
                         );
@@ -282,7 +293,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 EquipOutfit(
                     s_Actor2->m_rOutfit,
                     s_Actor2->m_nOutfitCharset,
-                    s_CurrentcharSetCharacterType2,
+                    s_CurrentCharSetCharacterType2,
                     s_Actor2->m_nOutfitVariation,
                     m_SelectedActor
                 );
@@ -293,13 +304,13 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::Text("CharSet Character Type");
         ImGui::SameLine();
 
-        if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentcharSetCharacterType2.data())) {
+        if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentCharSetCharacterType2.data())) {
             if (s_GlobalOutfitKit) {
                 for (const auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
-                    const bool s_IsSelected = s_CurrentcharSetCharacterType2 == m_CharSetCharacterType;
+                    const bool s_IsSelected = s_CurrentCharSetCharacterType2 == m_CharSetCharacterType;
 
                     if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
-                        s_CurrentcharSetCharacterType2 = m_CharSetCharacterType;
+                        s_CurrentCharSetCharacterType2 = m_CharSetCharacterType;
                     }
                 }
             }
@@ -329,7 +340,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     EquipOutfit(
                         s_Actor2->m_rOutfit,
                         s_Actor2->m_nOutfitCharset,
-                        s_CurrentcharSetCharacterType2,
+                        s_CurrentCharSetCharacterType2,
                         s_Actor2->m_nOutfitVariation,
                         m_SelectedActor
                     );
@@ -598,7 +609,7 @@ void Editor::EquipOutfit(
     std::vector<ZRuntimeResourceID> s_OriginalActorVariations;
 
     if (p_CharSetCharacterType != "Actor") {
-        auto* s_ActorType = &s_Collection->m_aCharacters[0];
+        auto* s_ActorType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
 
         if (!s_ActorType->m_pInterfaceRef) {
             Logger::Error("Couldn't equip outfit - actor character type is null!");
@@ -608,10 +619,10 @@ void Editor::EquipOutfit(
         TEntityRef<ZCharsetCharacterType>* s_TargetType = nullptr;
 
         if (p_CharSetCharacterType == "HeroA") {
-            s_TargetType = &s_Collection->m_aCharacters[2];
+            s_TargetType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_HeroA)];
         }
         else if (p_CharSetCharacterType == "Nude") {
-            s_TargetType = &s_Collection->m_aCharacters[1];
+            s_TargetType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Nude)];
         }
 
         const auto& s_ActorVariations = s_ActorType->m_pInterfaceRef->m_aVariations;
@@ -637,7 +648,8 @@ void Editor::EquipOutfit(
     );
 
     if (p_CharSetCharacterType != "Actor" && !s_OriginalActorVariations.empty()) {
-        auto* s_ActorType = &s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef->m_aCharacters[0];
+        auto* s_ActorType = &s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].
+            m_pInterfaceRef->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
 
         if (s_ActorType->m_pInterfaceRef) {
             auto& s_ActorVariations = s_ActorType->m_pInterfaceRef->m_aVariations;

@@ -208,11 +208,22 @@ void Assets::OnDrawUI(bool p_HasFocus) {
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
             if (s_GlobalOutfitKit) {
-                const uint8_t s_CurrentCharacterSetIndex2 = s_CurrentCharacterSetIndex;
+                ECharSetCharacterType s_CharSetCharacterType;
+
+                if (s_CurrentCharSetCharacterType == "Actor") {
+                    s_CharSetCharacterType = ECharSetCharacterType::ECSCT_Actor;
+                }
+                else if (s_CurrentCharSetCharacterType == "Nude") {
+                    s_CharSetCharacterType = ECharSetCharacterType::ECSCT_Nude;
+                }
+                else {
+                    s_CharSetCharacterType = ECharSetCharacterType::ECSCT_HeroA;
+                }
+
                 const TEntityRef<ZOutfitVariationCollection>& s_OutfitVariationCollection =
-                        s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex2];
+                    s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex];
                 const ZCharsetCharacterType* s_CharsetCharacterType = s_OutfitVariationCollection.m_pInterfaceRef->
-                        m_aCharacters[0].m_pInterfaceRef;
+                    m_aCharacters[static_cast<size_t>(s_CharSetCharacterType)].m_pInterfaceRef;
                 const size_t s_VariationCount = s_CharsetCharacterType->m_aVariations.size();
 
                 for (size_t i = 0; i < s_VariationCount; ++i) {
@@ -507,7 +518,7 @@ void Assets::EquipOutfit(
     std::vector<ZRuntimeResourceID> s_OriginalActorVariations;
 
     if (p_CharSetCharacterType != "Actor") {
-        auto* s_ActorType = &s_Collection->m_aCharacters[0];
+        auto* s_ActorType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
 
         if (!s_ActorType->m_pInterfaceRef) {
             Logger::Error("Couldn't equip outfit - actor character type is null!");
@@ -517,10 +528,10 @@ void Assets::EquipOutfit(
         TEntityRef<ZCharsetCharacterType>* s_TargetType = nullptr;
 
         if (p_CharSetCharacterType == "HeroA") {
-            s_TargetType = &s_Collection->m_aCharacters[2];
+            s_TargetType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_HeroA)];
         }
         else if (p_CharSetCharacterType == "Nude") {
-            s_TargetType = &s_Collection->m_aCharacters[1];
+            s_TargetType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Nude)];
         }
 
         const auto& s_ActorVariations = s_ActorType->m_pInterfaceRef->m_aVariations;
@@ -546,7 +557,8 @@ void Assets::EquipOutfit(
     );
 
     if (p_CharSetCharacterType != "Actor" && !s_OriginalActorVariations.empty()) {
-        auto* s_ActorType = &s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef->m_aCharacters[0];
+        auto* s_ActorType = &s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].
+            m_pInterfaceRef->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
 
         if (s_ActorType->m_pInterfaceRef) {
             auto& s_ActorVariations = s_ActorType->m_pInterfaceRef->m_aVariations;
