@@ -702,11 +702,13 @@ const ZRepositoryID& Randomizer::GetRandomRepositoryId(const std::vector<ZReposi
 
 void Randomizer::LoadCategoriesFromSettings() {
     for (auto& [s_InventoryCategory, s_IsEnabled] : m_InventoryCategoryToState) {
-        if (!HasSetting("categories", s_InventoryCategory)) {
-            SetSettingBool("categories", s_InventoryCategory, true);
+        const std::string s_InventoryCategory2 = Util::StringUtils::ToLowerCase(s_InventoryCategory);
+
+        if (!HasSetting("categories", s_InventoryCategory2)) {
+            SetSettingBool("categories", s_InventoryCategory2, true);
         }
 
-        s_IsEnabled = GetSettingBool("categories", s_InventoryCategory, true);
+        s_IsEnabled = GetSettingBool("categories", s_InventoryCategory2, true);
     }
 }
 
