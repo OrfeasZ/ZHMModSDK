@@ -186,7 +186,7 @@ void Randomizer::DrawGeneralTab() {
 void Randomizer::DrawCategoriesTab() {
     for (auto& [s_InventoryCategory, s_IsEnabled] : m_InventoryCategoryToState) {
         if (ImGui::Checkbox(s_InventoryCategory.c_str(), &s_IsEnabled)) {
-            SetSettingBool("categories", s_InventoryCategory, s_IsEnabled);
+            SetSettingBool("categories", Util::StringUtils::ToLowerCase(s_InventoryCategory), s_IsEnabled);
         }
     }
 }
