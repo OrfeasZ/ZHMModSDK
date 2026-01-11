@@ -60,6 +60,7 @@ There are a few sample mods included in this repository that can be used either 
 | [DiscordRichPresence](/Mods/DiscordRichPresence) | Sends rich presence updates to Discord with details such as level name, gamemode, etc. **[Requires additional setup!](/Mods/DiscordRichPresence)**                                                               |
 | [Editor](/Mods/Editor)                           | A WIP in-engine "editor". Currently supports viewing spawned entities alongside basic lookup and manipulation.                                                                                                   |
 | [Clumsy](/Mods/Clumsy)                           | Makes 47 very clumsy. He just can't seem to figure out how to take cover... **[Requires additional setup!](/Mods/Clumsy)**                                                                                       |
+| [TitaniumBullets](/Mods/TitaniumBullets)         | Enables bullet wall penetration by patching `AmmoConfig` in `pro.repo` (SMF TitaniumBullets behaviour) at runtime.                                                                                               |
 
 ## Uninstalling
 
