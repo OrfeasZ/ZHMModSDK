@@ -944,7 +944,7 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
                         }
                     }
                     else if (s_PropertyNameView == s_DisableNavmeshExportPropertyName) {
-                        if (!IsPropertyValueTrue(s_Property, p_Entity)) {
+                        if (IsPropertyValueTrue(s_Property, p_Entity)) {
                             return true;
                         }
                     }
@@ -957,7 +957,7 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
                     }
                 }
                 else if (s_PropertyInfo->m_pName == s_DisableNavmeshExportPropertyName) {
-                    if (!IsPropertyValueTrue(s_Property, p_Entity)) {
+                    if (IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
                 }
