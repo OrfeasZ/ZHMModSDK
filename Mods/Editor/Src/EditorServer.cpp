@@ -12,6 +12,7 @@
 #include <Glacier/EntityFactory.h>
 #include <Glacier/ZSpatialEntity.h>
 #include <Glacier/ZCameraEntity.h>
+#include <Glacier/ZRoom.h>
 
 #include <ResourceLib_HM3.h>
 
@@ -1036,12 +1037,24 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     p_Stream << write_json("rotation") << ":";
     WriteQuat(p_Stream, p_Quat.m.x, p_Quat.m.y, p_Quat.m.z, p_Quat.m.w);
 
+    //Write the BBox info for the gate
+    const auto* s_Entity0 = p_Entity.QueryInterface<ZBoundedEntity>();
+    const auto* s_Entity1 = p_Entity.QueryInterface<ZGateEntity>();
+    if (s_Entity0 && s_Entity1)
+    {
+        p_Stream << ",";
+        p_Stream << write_json("bboxCenter") << ":";
+        WriteVector3(p_Stream, s_Entity0->m_vCenter.x, s_Entity0->m_vCenter.y, s_Entity0->m_vCenter.z);
+        p_Stream << ",";
+        p_Stream << write_json("bboxHalfSize") << ":";
+        WriteVector3(p_Stream, s_Entity0->m_vHalfSize.x, s_Entity0->m_vHalfSize.y, s_Entity0->m_vHalfSize.z);
+    }
+       
 
     std::unordered_map<std::string_view, std::string> propNameToFieldName = {
         {"m_PrimitiveScale", "scale"},
         {"m_eType", "type"},
         {"m_vGlobalSize", "scale"},
-        {"m_vPortalSize", "scale"},
         {"m_vRoomMin", "roomExtentMin"},
         {"m_vRoomMax", "roomExtentMax"},
         {"m_rParentArea", "parent"},

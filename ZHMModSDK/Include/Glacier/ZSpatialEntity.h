@@ -66,7 +66,8 @@ static_assert(sizeof(ZSpatialEntity) == 0xA0);
 class ZBoundedEntity :
         public ZSpatialEntity {
 public:
-    PAD(0x18);
+    SVector3 m_vCenter;
+    SVector3 m_vHalfSize;
 };
 
 static_assert(sizeof(ZBoundedEntity) == 0xB8);
