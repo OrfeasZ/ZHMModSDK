@@ -732,12 +732,12 @@ void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS:
                 const auto s_PfSeedPointEntities = Plugin()->FindEntitiesByType("ZPFSeedPoint", "00280B8C4462FAC8");
                 const auto s_GateEntities = Plugin()->FindEntitiesByType("ZGateEntity", "00D78DDF8301DF97");
                 const auto s_RoomEntities = Plugin()->FindEntitiesByType("ZRoomEntity", "0071E63EC98496FE");
-                //const auto s_AIAreaWorldEntities = Plugin()->FindEntitiesByType("ZAIAreaWorldEntity", "00D23EE76CC1735F");
-                //const auto s_AIAreaEntities = Plugin()->FindEntitiesByType("ZAIAreaEntity", "000F13E2D42C882E");
-                //const auto s_VolumeBoxEntities = Plugin()->FindEntitiesByType("ZBoxVolumeEntity", "0054667393764C74");
+                const auto s_AIAreaWorldEntities = Plugin()->FindEntitiesByType("ZAIAreaWorldEntity", "00D23EE76CC1735F");
+                const auto s_AIAreaEntities = Plugin()->FindEntitiesByType("ZAIAreaEntity", "000F13E2D42C882E");
+                const auto s_VolumeBoxEntities = Plugin()->FindEntitiesByType("ZBoxVolumeEntity", "0054667393764C74");
 
                 p_Loop->defer(
-                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities]() {
+                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities, s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities]() {
                         p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
@@ -750,14 +750,14 @@ void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS:
                         p_Socket->send("],\"rooms\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_RoomEntities);
 
-                        /*p_Socket->send("],\"aIAreaWorld\":[", uWS::OpCode::TEXT);
+                        p_Socket->send("],\"aiAreaWorld\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_AIAreaWorldEntities);
 
-                        p_Socket->send("],\"aIArea\":[", uWS::OpCode::TEXT);
+                        p_Socket->send("],\"aiArea\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_AIAreaEntities);
 
                         p_Socket->send("],\"volumeBoxes\":[", uWS::OpCode::TEXT);
-                        SendEntitiesDetails(p_Socket, s_VolumeBoxEntities);*/
+                        SendEntitiesDetails(p_Socket, s_VolumeBoxEntities);
 
                         p_Socket->send("]}", uWS::OpCode::TEXT);
                         p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);

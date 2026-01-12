@@ -221,6 +221,8 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
 
 Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     const auto* s_Entity = p_Entity.QueryInterface<ZSpatialEntity>();
+    if (!s_Entity)
+        return {};
     std::vector<Quat> s_ParentQuats;
     while (s_Entity->m_eidParent != NULL) {
         const TEntityRef<ZSpatialEntity> s_EidParent = s_Entity->m_eidParent;
