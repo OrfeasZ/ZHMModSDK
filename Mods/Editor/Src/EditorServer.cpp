@@ -208,7 +208,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
     }
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
         Plugin()->QueueTask([p_Socket, p_Loop]() {
-            SendMeshPfBoxAndSeedPointEntityList(p_Socket, p_Loop);
+            SendNavKitScene(p_Socket, p_Loop);
         });
     }
     else if (s_Type == "getEntityDetails") {
@@ -667,7 +667,7 @@ bool EditorServer::GetEnabled() {
     return m_Enabled;
 }
 
-void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS::Loop* p_Loop) {
+void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
     p_Loop->defer(
         [p_Socket]() {
             p_Socket->send(R"({"version":1,"meshes":[)", uWS::OpCode::TEXT);
