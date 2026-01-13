@@ -197,8 +197,8 @@ public:
     TEntityRef<ZGlobalOutfitKit> m_rOutfit; //0xFE8
     PAD(0xB0); // 0xFF8
     ZAnimatedActor* m_pAnimatedActor; // 0x10A8
-    PAD(0xA8);
-    bool m_bUnk0 : 1; // 0x1158
+    PAD(0xB8);
+    bool m_bUnk0 : 1; // 0x1168
     bool m_bUnk1 : 1;
     bool m_bUnk2 : 1;
     bool m_bUnk3 : 1;
@@ -238,7 +238,7 @@ public:
     bool m_bUnk37 : 1;
     bool m_bUnk38 : 1;
     bool m_bUnk39 : 1;
-    PAD(0x1C); // 0x1160
+    PAD(0xC); // 0x1160
     int32_t m_nCurrentBehaviorIndex; // 0x117C
     PAD(0x2B0);
 
