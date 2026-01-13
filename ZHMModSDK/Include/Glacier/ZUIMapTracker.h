@@ -5,6 +5,7 @@
 #include "ZResource.h"
 #include "ZMath.h"
 #include "ZSpatialEntity.h"
+#include "ISavable.h"
 
 class ZDynamicObjectEntity;
 class ZUIDataProvider;
@@ -60,11 +61,6 @@ public:
 class ZStashPointTrackerAspect : public ZGenericUIMapTrackerAspect {
 public:
     TEntityRef<ZStashPointEntity> m_pStashPoint; // 0x128
-};
-
-class ISavable {
-public:
-    virtual ~ISavable() = 0;
 };
 
 class ZUIMapTrackerManager : public IComponentInterface, public ISavable {
