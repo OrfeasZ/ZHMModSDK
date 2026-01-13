@@ -2,6 +2,7 @@
 
 #include "ZEntity.h"
 #include "ZMorpheme.h"
+#include "ZLinkedEntity.h"
 
 class ZRagdollHandler;
 
