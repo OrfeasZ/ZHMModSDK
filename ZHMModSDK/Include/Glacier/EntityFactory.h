@@ -2,6 +2,7 @@
 
 #include "Reflection.h"
 #include "ZResource.h"
+#include "Enums.h"
 
 struct SEntityTemplatePropertyAlias {
     ZString sAliasName; // 0x0
@@ -65,6 +66,39 @@ struct STemplateEntityBlueprint {
     TArray<SEntityTemplateReference> overrideDeletes; // 0x80
     TArray<SExternalEntityTemplatePinConnection> pinConnectionOverrides; // 0x98
     TArray<SExternalEntityTemplatePinConnection> pinConnectionOverrideDeletes; // 0xB0
+};
+
+struct SEntityTemplateProperty {
+    uint32 nPropertyID; // 0x0
+    ZObjectRef value; // 0x8
+};
+
+struct SEntityTemplatePlatformSpecificProperty {
+    SEntityTemplateProperty propertyValue; // 0x0
+    EVirtualPlatformID platform; // 0x18
+    bool postInit; // 0x1C
+};
+
+struct STemplateFactorySubEntity {
+    SEntityTemplateReference logicalParent; // 0x0
+    int32 entityTypeResourceIndex; // 0x20
+    TArray<SEntityTemplateProperty> propertyValues; // 0x28
+    TArray<SEntityTemplateProperty> postInitPropertyValues; // 0x40
+    TArray<SEntityTemplatePlatformSpecificProperty> platformSpecificPropertyValues; // 0x58
+};
+
+struct SEntityTemplatePropertyOverride {
+    SEntityTemplateReference propertyOwner; // 0x0
+    SEntityTemplateProperty propertyValue; // 0x20
+};
+
+struct STemplateEntityFactory {
+    int32 subType; // 0x0
+    int32 blueprintIndexInResourceHeader; // 0x4
+    int32 rootEntityIndex; // 0x8
+    TArray<STemplateFactorySubEntity> subEntities; // 0x10
+    TArray<SEntityTemplatePropertyOverride> propertyOverrides; // 0x28
+    TArray<int32> externalSceneTypeIndicesInResourceHeader; // 0x40
 };
 
 class ZEntityBlueprintFactoryBase : public IEntityBlueprintFactory {
