@@ -424,7 +424,7 @@ public:
     ZLockdownManager* m_pLockdownManager; // 0x10768
     ZCombatManager m_CombatManager; // 0x10770
     ZGameStatsManager* m_pGameStats; // 0x107F0
-    PAD(0x10);
+    PAD(0x10); // 0x107F8
     ZActorSavableHandler* m_pSavableHandler; // 0x10808
     ZSituationManager m_situationManager; // 0x10810
     ZActorDialogManager m_actorDialogManager; // 0x860A0
