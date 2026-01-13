@@ -142,7 +142,8 @@ public:
 
 class ZTemplateEntityFactory : public IEntityFactory {
 public:
-    PAD(0xC);
+    STemplateEntityFactory* m_pResourceData; // 0x8
+    bool m_bHasCalculatedPropertyValues; // 0x10
     int32 m_rootEntityIndex; // 0x14
     TArray<IEntityFactory*> m_pFactories; // 0x18
     ZRuntimeResourceID m_ridResource; // 0x30
