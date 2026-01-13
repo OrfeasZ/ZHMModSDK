@@ -103,8 +103,8 @@ struct STemplateEntityFactory {
 
 class ZEntityBlueprintFactoryBase : public IEntityBlueprintFactory {
 public:
-    ZRuntimeResourceID m_ridResource;
-    PAD(0x10);
+    ZRuntimeResourceID m_ridResource; // 0x8
+    PAD(0x10); // 0x10
     int32_t m_rootEntityIndex; // 0x20
     PAD(0x0C); // 0x24
     TArray<IEntityBlueprintFactory*> m_aBlueprintFactories; // 0x30
@@ -130,8 +130,8 @@ static_assert(offsetof(ZTemplateEntityBlueprintFactory, m_pTemplateEntityBluepri
 class ZAspectEntityBlueprintFactory : public ZCompositeEntityBlueprintFactoryBase {
 public:
     struct SAspectedSubentityEntry {
-        uint32 m_nAspectIdx;
-        uint32 m_nSubentityIdx;
+        uint32 m_nAspectIdx; // 0x0
+        uint32 m_nSubentityIdx; // 0x4
     };
 
     PAD(0x30); // 0x60
@@ -163,7 +163,7 @@ class ZCppEntityBlueprintFactory;
 
 class ZCppEntityFactory : public IEntityFactory {
 public:
-    PAD(0x48);
+    PAD(0x48); // 0x8
     TResourcePtr<ZCppEntityBlueprintFactory> m_blueprintResource; // 0x50
     ZRuntimeResourceID m_ridResource; // 0x58
 };
