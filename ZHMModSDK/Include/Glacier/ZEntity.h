@@ -72,7 +72,7 @@ public:
     virtual void IEntityBlueprintFactory_unk13() = 0;
     virtual void IEntityBlueprintFactory_unk14() = 0;
     virtual void IEntityBlueprintFactory_unk15() = 0;
-    virtual void IEntityBlueprintFactory_unk16() = 0;
+    virtual bool AreAllResourcesReady(ZEntityType** pEntity) = 0;
     virtual void IEntityBlueprintFactory_unk17() = 0;
     virtual void IEntityBlueprintFactory_unk18() = 0;
     virtual void IEntityBlueprintFactory_unk19() = 0;
