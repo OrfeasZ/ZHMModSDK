@@ -443,3 +443,17 @@ PATTERN_FUNCTION(
     AreaHandle_GetAreaUsageFlags,
     ERegionMask(bfx::AreaHandle* th)
 );
+
+PATTERN_FUNCTION(
+    "\x41\x56\x48\x83\xEC\x00\x0F\x29\x74\x24\x20\x4C\x8B\xF1",
+    "xxxxx?xxxxxxxx",
+    ZTimeOfDayManager_SetTime,
+    void(ZTimeOfDayManager* th, float32 fNewTime)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x57\x0F\xB6\x01",
+    "xxxxx",
+    ZItemConfigDescriptor_GetHashCode,
+    uint32(const ZRepositoryID& id, const TArray<ZRepositoryID>& modifierIds)
+);

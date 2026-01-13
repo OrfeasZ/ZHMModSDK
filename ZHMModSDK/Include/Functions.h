@@ -50,6 +50,7 @@ class ZActorInventoryHandler;
 class ZWorldInventory;
 class IItemBase;
 class ZStashPointEntity;
+class ZTimeOfDayManager;
 
 namespace bfx {
     class AreaHandle;
@@ -232,4 +233,10 @@ public:
     static EngineFunction<bool(const ZString& optionName, bool defaultValue)>* GetApplicationOptionBool;
 
     static EngineFunction<ERegionMask(bfx::AreaHandle* th)>* AreaHandle_GetAreaUsageFlags;
+
+    static EngineFunction<void(ZTimeOfDayManager* th, float32 fNewTime)>* ZTimeOfDayManager_SetTime;
+
+    static EngineFunction<uint32(
+        const ZRepositoryID& id, const TArray<ZRepositoryID>& modifierIds
+    )>* ZItemConfigDescriptor_GetHashCode;
 };
