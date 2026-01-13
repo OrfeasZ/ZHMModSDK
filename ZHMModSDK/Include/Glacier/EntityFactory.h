@@ -3,40 +3,30 @@
 #include "Reflection.h"
 #include "ZResource.h"
 
-// 0x00000001446A5720 (Size: 0x28)
-class SEntityTemplatePropertyAlias {
-public:
+struct SEntityTemplatePropertyAlias {
     ZString sAliasName; // 0x0
     int32 entityID; // 0x10
     ZString sPropertyName; // 0x18
 };
 
-// 0x00000001446A5280 (Size: 0x20)
-class SEntityTemplateReference {
-public:
+struct SEntityTemplateReference {
     uint64 entityID; // 0x0
     int32 externalSceneIndex; // 0x8
     int32 entityIndex; // 0xC
     ZString exposedEntity; // 0x10
 };
 
-// 0x00000001446A53D8 (Size: 0x30)
-class SEntityTemplateExposedEntity {
-public:
+struct SEntityTemplateExposedEntity {
     ZString sName; // 0x0
     bool bIsArray; // 0x10
     TArray<SEntityTemplateReference> aTargets; // 0x18
 };
 
-// 0x00000001446A5498 (Size: 0x18)
-class SEntityTemplateEntitySubset {
-public:
+struct SEntityTemplateEntitySubset {
     TArray<int32> entities; // 0x0
 };
 
-// 0x00000001446A5738 (Size: 0xA8)
-class STemplateBlueprintSubEntity {
-public:
+struct STemplateBlueprintSubEntity {
     SEntityTemplateReference logicalParent; // 0x0
     int32 entityTypeResourceIndex; // 0x20
     uint64 entityId; // 0x28
@@ -48,9 +38,7 @@ public:
     TArray<TPair<ZString, SEntityTemplateEntitySubset>> entitySubsets; // 0x90
 };
 
-// 0x00000001446A5510 (Size: 0x38)
-class SEntityTemplatePinConnection {
-public:
+struct SEntityTemplatePinConnection {
     int32 fromID; // 0x0
     int32 toID; // 0x4
     ZString fromPinName; // 0x8
@@ -58,9 +46,7 @@ public:
     ZObjectRef constantPinValue; // 0x28
 };
 
-// 0x00000001446A56A8 (Size: 0x70)
-class SExternalEntityTemplatePinConnection {
-public:
+struct SExternalEntityTemplatePinConnection {
     SEntityTemplateReference fromEntity; // 0x0
     SEntityTemplateReference toEntity; // 0x20
     ZString fromPinName; // 0x40
@@ -68,9 +54,7 @@ public:
     ZObjectRef constantPinValue; // 0x60
 };
 
-// 0x00000001446A55B8 (Size: 0xC8)
-class STemplateEntityBlueprint {
-public:
+struct STemplateEntityBlueprint {
     int32 subType; // 0x0
     int32 rootEntityIndex; // 0x4
     TArray<STemplateBlueprintSubEntity> subEntities; // 0x8
