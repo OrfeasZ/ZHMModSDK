@@ -13,6 +13,7 @@
 #include <Glacier/ZSpatialEntity.h>
 #include <Glacier/ZCameraEntity.h>
 #include <Glacier/ZRoom.h>
+#include <Glacier/ZAIAreaEntity.h>
 
 #include <ResourceLib_HM3.h>
 
@@ -1037,10 +1038,9 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     p_Stream << write_json("rotation") << ":";
     WriteQuat(p_Stream, p_Quat.m.x, p_Quat.m.y, p_Quat.m.z, p_Quat.m.w);
 
-    //Write the BBox info for the gate
-    const auto* s_Entity0 = p_Entity.QueryInterface<ZBoundedEntity>();
-    const auto* s_Entity1 = p_Entity.QueryInterface<ZGateEntity>();
-    if (s_Entity0 && s_Entity1)
+    //Write the BBox info for the gates
+    auto* s_Entity0 = p_Entity.QueryInterface<ZGateEntity>();
+    if (s_Entity0)
     {
         p_Stream << ",";
         p_Stream << write_json("bboxCenter") << ":";
@@ -1048,6 +1048,41 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
         p_Stream << ",";
         p_Stream << write_json("bboxHalfSize") << ":";
         WriteVector3(p_Stream, s_Entity0->m_vHalfSize.x, s_Entity0->m_vHalfSize.y, s_Entity0->m_vHalfSize.z);
+    }
+    //Same for the AIAreas
+    auto* s_Entity2 = p_Entity.QueryInterface<ZAIAreaEntity>();
+    if (s_Entity2)
+    {
+        //We go up the logical parent chain until we reach a ZAIAreaEntity or a ZAIAreaWorldEntity, as some have ZEntity as logical parents
+        std::vector<std::string> parents = std::vector<std::string>();
+        ZEntityRef parentRef = p_Entity.GetLogicalParent();
+
+        while (parentRef.m_pEntity) {
+            parents.push_back(Plugin()->GetEntityName(parentRef));
+            if(parentRef.QueryInterface<ZAIAreaEntityBase>())
+                break;
+            parentRef = parentRef.GetLogicalParent();
+        }
+
+        p_Stream << ",";
+        p_Stream << write_json("logicalParent") << ":[";
+        for (auto i = 0; i < parents.size(); i++)
+        {
+            if (i)
+                p_Stream << ",";
+            p_Stream << write_json(parents[i]);
+        }
+        p_Stream << "]";
+
+        p_Stream << ",";
+        p_Stream << write_json("areaVolumeNames") << ":[";
+        for (auto i = 0; i < s_Entity2->m_aAreaVolumes.size(); i++)
+        {
+            if (i)
+                p_Stream << ",";
+            p_Stream << write_json(Plugin()->GetEntityName(s_Entity2->m_aAreaVolumes[i].m_ref));
+        }
+        p_Stream << "]";
     }
        
 
@@ -1058,7 +1093,6 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
         {"m_vRoomMin", "roomExtentMin"},
         {"m_vRoomMax", "roomExtentMax"},
         {"m_rParentArea", "parent"},
-        {"m_aAreaVolumes", "volumes" },
     };
 
     if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pProperties01) {
