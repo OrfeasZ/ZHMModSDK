@@ -2,6 +2,7 @@
 
 #include "Reflection.h"
 #include "ZEntity.h"
+#include "ZMath.h"
 
 class ZPhysicsObjectProxy;
 
