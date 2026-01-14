@@ -395,9 +395,9 @@ PATTERN_FUNCTION(
         int32_t nPriority, bool& bOutStartLoading)
 );
 
-PATTERN_FUNCTION(
-    "\x40\x55\x56\x57\x41\x54\x41\x55\x48\x8D\x6C\x24\xC9",
-    "xxxxxxxxxxxxx",
+PATTERN_RELATIVE_FUNCTION(
+    "\xE8\x00\x00\x00\x00\x84\xC0\x74\x00\x8B\xD7\x48\x8B\xCB\xE8\x00\x00\x00\x00\xB0",
+    "x????xxx?xxxxxx????x",
     ZResourceContainer_UnmountPackages,
     bool(ZResourceContainer* th, uint8 packageId)
 );
