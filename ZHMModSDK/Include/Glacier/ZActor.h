@@ -198,15 +198,15 @@ public:
     PAD(0xB0); // 0xFF8
     ZAnimatedActor* m_pAnimatedActor; // 0x10A8
     PAD(0xB8);
-    bool m_bUnk0 : 1; // 0x1168
-    bool m_bUnk1 : 1;
-    bool m_bUnk2 : 1;
+    bool m_bActorActivated : 1; // 0x1168
+    bool m_bEnabled : 1;
+    bool m_bAlive : 1;
     bool m_bUnk3 : 1;
     bool m_bUnk4 : 1;
     bool m_bUnk5 : 1;
     bool m_bIsBeingDragged : 1;
     bool m_bIsBeingDumped : 1;
-    bool m_bUnk8 : 1; // 0x1159
+    bool m_bHasAIIcon : 1; // 0x1169
     bool m_bUnk9 : 1;
     bool m_bUnk10 : 1;
     bool m_bUnk11 : 1;
@@ -214,23 +214,23 @@ public:
     bool m_bUnk13 : 1;
     bool m_bUnk14 : 1;
     bool m_bUnk15 : 1;
-    bool m_bUnk16 : 1; // 0x115A
-    bool m_bUnk17 : 1;
-    bool m_bUnk18 : 1;
-    bool m_bUnk19 : 1;
-    bool m_bUnk20 : 1;
-    bool m_bUnk21 : 1;
-    bool m_bUnk22 : 1;
-    bool m_bUnk23 : 1;
-    bool m_bUnk24 : 1; // 0x115B
-    bool m_bUnk25 : 1;
+    bool m_bContractTarget : 1; // 0x116A
+    bool m_bContractTargetLive : 1;
+    bool m_bContractTargetHidden : 1;
+    bool m_bIsNamedNPC : 1;
+    bool m_bNude : 1;
+    bool m_bIsActiveEnforcer : 1;
+    bool m_bIsPotentialEnforcer : 1;
+    bool m_bIsDynamicEnforcer : 1;
+    bool m_bCrowdCharacter : 1; // 0x116B
+    bool m_bActiveSentry : 1;
     bool m_bUnk26 : 1;
     bool m_bUnk27 : 1;
     bool m_bUnk28 : 1;
     bool m_bUnk29 : 1;
     bool m_bUnk30 : 1;
     bool m_bUnk31 : 1;
-    bool m_bUnk32 : 1; // 0x115C
+    bool m_bUnk32 : 1; // 0x116C
     bool m_bUnk33 : 1;
     bool m_bUnk34 : 1;
     bool m_bUnk35 : 1;
@@ -238,18 +238,26 @@ public:
     bool m_bUnk37 : 1;
     bool m_bUnk38 : 1;
     bool m_bUnk39 : 1;
-    PAD(0xC); // 0x1160
-    int32_t m_nCurrentBehaviorIndex; // 0x117C
+    bool m_bUnk40 : 1; // 0x116D
+    bool m_bUnk41 : 1;
+    bool m_bUnk42 : 1;
+    bool m_bUnk43 : 1;
+    bool m_bUnk44 : 1;
+    bool m_bUnk45 : 1;
+    bool m_bUnk46 : 1;
+    bool m_bHasClothOutfit : 1;
+    PAD(0x1E);
+    int32_t m_nActorRuntimeId; // 0x118C
     PAD(0x2B0);
 
 public:
     void PrintBitflags() {
         Logger::Debug(
             "0:{} 1:{} 2:{} 3:{} 4:{} 5:{} 6:{} 7:{} 8:{} 9:{} 10:{} 11:{} 12:{} 13:{} 14:{} 15:{} 16:{} 17:{} 18:{} 19:{} 20:{} 21:{} 22:{} 23:{} 24:{} 25:{} 26:{} 27:{} 28:{} 29:{} 30:{} 31:{} 32:{} 33:{} 34:{} 35:{} 36:{} 37:{} 38:{} 39:{}",
-            m_bUnk0, m_bUnk1, m_bUnk2, m_bUnk3, m_bUnk4, m_bUnk5, m_bIsBeingDragged, m_bIsBeingDumped, m_bUnk8,
+            m_bActorActivated, m_bEnabled, m_bAlive, m_bUnk3, m_bUnk4, m_bUnk5, m_bIsBeingDragged, m_bIsBeingDumped, m_bHasAIIcon,
             m_bUnk9,
-            m_bUnk10, m_bUnk11, m_bUnk12, m_bUnk13, m_bUnk14, m_bUnk15, m_bUnk16, m_bUnk17, m_bUnk18, m_bUnk19,
-            m_bUnk20, m_bUnk21, m_bUnk22, m_bUnk23, m_bUnk24, m_bUnk25, m_bUnk26, m_bUnk27, m_bUnk28, m_bUnk29,
+            m_bUnk10, m_bUnk11, m_bUnk12, m_bUnk13, m_bUnk14, m_bUnk15, m_bContractTarget, m_bContractTargetLive, m_bContractTargetHidden, m_bIsNamedNPC,
+            m_bNude, m_bIsActiveEnforcer, m_bIsPotentialEnforcer, m_bIsDynamicEnforcer, m_bCrowdCharacter, m_bActiveSentry, m_bUnk26, m_bUnk27, m_bUnk28, m_bUnk29,
             m_bUnk30, m_bUnk31, m_bUnk32, m_bUnk33, m_bUnk34, m_bUnk35, m_bBodyHidden, m_bUnk37, m_bUnk38, m_bUnk39
         );
     }
@@ -258,7 +266,7 @@ public:
 static_assert(offsetof(ZActor, m_OutfitRepositoryID) == 0x420);
 static_assert(offsetof(ZActor, m_sActorName) == 0x488);
 static_assert(offsetof(ZActor, m_DomainConfig) == 0x4D0);
-static_assert(offsetof(ZActor, m_nCurrentBehaviorIndex) == 0x117C);
+static_assert(offsetof(ZActor, m_nActorRuntimeId) == 0x118C);
 
 class ZAIStateChangeService;
 class ZAIModifierService;
