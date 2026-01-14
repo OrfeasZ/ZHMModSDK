@@ -1126,7 +1126,9 @@ DEFINE_PLUGIN_DETOUR(
     }
 
     const auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[index.val];
-    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid; {
+    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid;
+    
+    {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
         auto s_Iterator = m_RuntimeResourceIDToExtendedCppEntityFactory.find(s_RuntimeResourceID);
 
