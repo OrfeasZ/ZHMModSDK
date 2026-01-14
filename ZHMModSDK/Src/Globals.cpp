@@ -463,3 +463,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZComponentManager**, ComponentManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x89\x05\x00\x00\x00\x00\x48\x8D\x55\x30\x66\x0F\x7F\x0D",
+    "xxx????xxxxxxxx",
+    3,
+    ZUIMapManager*, UIMapManager
+);
