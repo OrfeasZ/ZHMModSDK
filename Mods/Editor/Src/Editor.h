@@ -467,6 +467,7 @@ private:
     bool m_RoomsMenuActive = false;
 
     ZActor* m_SelectedActor = nullptr;
+    TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
     bool m_ShowOnlyAliveActors = false;
     bool m_ShowOnlyTargets = false;

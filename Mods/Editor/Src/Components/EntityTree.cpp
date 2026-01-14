@@ -806,6 +806,7 @@ void Editor::OnSelectEntity(
             if (s_Actor) {
                 m_SelectedActor = s_Actor;
                 m_ScrollToActor = true;
+                m_GlobalOutfitKit = {};
             }
         }
     } else {

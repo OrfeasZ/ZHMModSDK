@@ -36,6 +36,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
             LoadRepositoryWeapons();
         }
 
+        static uint8_t s_CurrentCharacterSetIndex = 0;
+        static std::string s_CurrentCharSetCharacterType = "Actor";
+        static std::string s_CurrentCharSetCharacterType2 = "Actor";
+        static uint8_t s_CurrentOutfitVariationIndex = 0;
+
         static char s_ActorName[2048]{ "" };
 
         ImGui::AlignTextToFramePadding();
@@ -95,6 +100,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             if (ImGui::Selectable(s_ActorId.c_str(), s_IsSelected)) {
                 if (!s_IsSelected) {
                     m_SelectedActor = s_Actor;
+                    m_GlobalOutfitKit = {};
 
                     Logger::Info("Selected actor (by list): {}", s_Actor->GetActorName());
                 }
@@ -122,16 +128,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::Text("Outfit");
         ImGui::SameLine();
 
-        static TEntityRef<ZGlobalOutfitKit> s_GlobalOutfitKit = {};
-        static uint8_t s_CurrentCharacterSetIndex = 0;
-        static std::string s_CurrentCharSetCharacterType = "Actor";
-        static std::string s_CurrentCharSetCharacterType2 = "Actor";
-        static uint8_t s_CurrentOutfitVariationIndex = 0;
-
-        if (!s_GlobalOutfitKit) {
-            s_GlobalOutfitKit = m_SelectedActor->m_rOutfit;
+        if (!m_GlobalOutfitKit) {
+            m_GlobalOutfitKit = m_SelectedActor->m_rOutfit;
             s_CurrentCharacterSetIndex = m_SelectedActor->m_nOutfitCharset;
             s_CurrentOutfitVariationIndex = m_SelectedActor->m_nOutfitVariation;
+            s_OutfitName[0] = '\0';
         }
 
         const bool s_IsPopupOpen = Util::ImGuiUtils::InputWithAutocomplete(
@@ -160,7 +161,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                         m_SelectedActor
                     );
 
-                    s_GlobalOutfitKit = p_GlobalOutfitKit;
+                    m_GlobalOutfitKit = p_GlobalOutfitKit;
             },
             [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; },
             [](auto& p_Pair) -> bool {
@@ -181,8 +182,8 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(s_CurrentCharacterSetIndex).data())) {
-            if (s_GlobalOutfitKit) {
-                for (size_t i = 0; i < s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets.size(); ++i) {
+            if (m_GlobalOutfitKit) {
+                for (size_t i = 0; i < m_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets.size(); ++i) {
                     std::string s_CharacterSetIndex = std::to_string(i);
                     const bool s_IsSelected = s_CurrentCharacterSetIndex == i;
 
@@ -190,7 +191,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                         s_CurrentCharacterSetIndex = i;
 
                         EquipOutfit(
-                            s_GlobalOutfitKit,
+                            m_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
                             s_CurrentCharSetCharacterType,
                             s_CurrentOutfitVariationIndex,
@@ -208,7 +209,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
-            if (s_GlobalOutfitKit) {
+            if (m_GlobalOutfitKit) {
                 for (auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
                     const bool s_IsSelected = s_CurrentCharSetCharacterType == m_CharSetCharacterType;
 
@@ -216,7 +217,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                         s_CurrentCharSetCharacterType = m_CharSetCharacterType;
 
                         EquipOutfit(
-                            s_GlobalOutfitKit,
+                            m_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
                             s_CurrentCharSetCharacterType,
                             s_CurrentOutfitVariationIndex,
@@ -234,7 +235,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
-            if (s_GlobalOutfitKit) {
+            if (m_GlobalOutfitKit) {
                 ECharSetCharacterType s_CharSetCharacterType;
 
                 if (s_CurrentCharSetCharacterType == "Actor") {
@@ -248,7 +249,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 }
 
                 const size_t s_VariationCount =
-                    s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex].
+                    m_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex].
                     m_pInterfaceRef->m_aCharacters[static_cast<size_t>(s_CharSetCharacterType)].
                     m_pInterfaceRef->m_aVariations.size();
 
@@ -259,7 +260,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                         s_CurrentOutfitVariationIndex = i;
 
                         EquipOutfit(
-                            s_GlobalOutfitKit,
+                            m_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
                             s_CurrentCharSetCharacterType,
                             s_CurrentOutfitVariationIndex,
@@ -272,9 +273,9 @@ void Editor::DrawActors(const bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
-        if (s_GlobalOutfitKit) {
-            ImGui::Checkbox("Weapons Allowed", &s_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
-            ImGui::Checkbox("Authority Figure", &s_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
+        if (m_GlobalOutfitKit) {
+            ImGui::Checkbox("Weapons Allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
+            ImGui::Checkbox("Authority Figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
         }
 
         ImGui::Separator();
@@ -305,7 +306,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentCharSetCharacterType2.data())) {
-            if (s_GlobalOutfitKit) {
+            if (m_GlobalOutfitKit) {
                 for (const auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
                     const bool s_IsSelected = s_CurrentCharSetCharacterType2 == m_CharSetCharacterType;
 

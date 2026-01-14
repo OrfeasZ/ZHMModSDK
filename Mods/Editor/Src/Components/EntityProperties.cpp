@@ -82,6 +82,7 @@ void Editor::DrawEntityProperties() {
             if (ImGui::Button(ICON_MD_PEOPLE)) {
                 m_SelectedActor = s_TargetActor;
                 m_ScrollToActor = true;
+                m_GlobalOutfitKit = {};
             }
 
             if (ImGui::IsItemHovered()) {
