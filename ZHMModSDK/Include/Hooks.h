@@ -84,6 +84,8 @@ class ZItemSpawner;
 class ZStashPointEntity;
 class ZActorInventoryHandler;
 class ZItemRepositoryKeyEntity;
+class ZGlobalOutfitKit;
+class ZClothBundleEntity;
 
 class ZHMSDK_API Hooks {
 public:
@@ -286,4 +288,23 @@ public:
         TEntityRef<ZItemRepositoryKeyEntity>&
     )>* ZActorInventoryHandler_StartItemStreamIn;
     static Hook<TEntityRef<ZItemRepositoryKeyEntity>* (ZActor* th, TEntityRef<ZItemRepositoryKeyEntity>& result)>* ZActor_GetWeaponKey;
+
+    static Hook<void(
+        ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int32_t nCharset, int32_t nVariation,
+        bool bEnableOutfitModifiers, bool bIgnoreOutifChange
+    )>* ZHitman5_SetOutfit;
+
+    static Hook<void(
+        ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfit, int32_t charset, int32_t variation, bool bNude
+    )>* ZActor_SetOutfit;
+
+    static Hook<TEntityRef<ZClothBundleEntity>*(
+        TEntityRef<ZClothBundleEntity>& result,
+        const SMatrix& mat,
+        ZRepositoryID id,
+        int32_t nOutfitVariation,
+        int32_t nOutfitCharset,
+        bool bSpawnedByHitman,
+        bool bEnableOutfitModifiers
+    )>* ZClothBundleEntity_CreateClothBundle;
 };
