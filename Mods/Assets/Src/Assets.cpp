@@ -189,13 +189,11 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
-            if (s_GlobalOutfitKit) {
-                for (const auto& m_CharSetCharacterType: m_CharSetCharacterTypes) {
-                    const bool s_IsSelected = s_CurrentCharSetCharacterType == m_CharSetCharacterType;
+            for (const auto& m_CharSetCharacterType : m_CharSetCharacterTypes) {
+                const bool s_IsSelected = s_CurrentCharSetCharacterType == m_CharSetCharacterType;
 
-                    if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
-                        s_CurrentCharSetCharacterType = m_CharSetCharacterType;
-                    }
+                if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
+                    s_CurrentCharSetCharacterType = m_CharSetCharacterType;
                 }
             }
 
