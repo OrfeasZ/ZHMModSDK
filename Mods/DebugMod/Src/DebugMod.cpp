@@ -266,18 +266,15 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 }
 
                 if (m_RenderActorBehaviors) {
-                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].
+                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aBehaviorStates[i].
                             m_pCurrentBehavior;
 
                     if (s_BehaviorBase) {
-                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(
-                            s_BehaviorBase->m_Type);
-
                         if (s_Text.length() > 0) {
                             s_Text += "\n\n";
                         }
 
-                        s_Text += CompiledBehaviorTypeToString(s_CompiledBehaviorType);
+                        s_Text += CompiledBehaviorTypeToString(s_BehaviorBase->eBehaviorType);
                     }
                 }
 
