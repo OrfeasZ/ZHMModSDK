@@ -9,18 +9,17 @@ struct SBehaviorBase {
     ECompiledBehaviorType eBehaviorType;
 };
 
-struct SBehaviorData {
-    PAD(0xA0);
-    SBehaviorBase* m_pCurrentBehavior; // 0xA0
-    PAD(0x50); // 0xA8
-};
-
-static_assert(sizeof(SBehaviorData) == 248);
-
 class ZBehaviorService {
 public:
     virtual ~ZBehaviorService() = 0;
 
-public:
-    SBehaviorData m_aKnowledgeData[500];
+    struct SBehaviorState {
+        PAD(0xA0); // 0x0
+        SBehaviorBase* m_pCurrentBehavior; // 0xA0
+        PAD(0x50); // 0xA8
+    };
+
+    TFixedArray<SBehaviorState, 500> m_aBehaviorStates;
 };
+
+static_assert(sizeof(ZBehaviorService::SBehaviorState) == 248);
