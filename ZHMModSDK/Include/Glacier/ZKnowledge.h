@@ -6,7 +6,7 @@
 class ZKnowledge {};
 
 struct SBehaviorBase {
-    uint32_t m_Type;
+    ECompiledBehaviorType eBehaviorType;
 };
 
 struct SBehaviorData {
