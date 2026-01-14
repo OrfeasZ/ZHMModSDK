@@ -1408,7 +1408,8 @@ void Randomizer::FilterRepositoryOutfits() {
                 continue;
             }
 
-            if (!s_CurrentSceneName.IsEmpty() &&
+            if (m_RandomizeOutfitsFromOtherScenes &&
+                !s_CurrentSceneName.IsEmpty() &&
                 !m_SelectedScenes.contains(s_CurrentSceneName.c_str()) &&
                 m_CurrentSceneOutfitRepositoryIds.contains(s_RepositoryId)) {
                 continue;
