@@ -620,7 +620,7 @@ void Editor::DrawEntityPropertyValue(
         ZRepositoryIDProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeID->typeInfo()->isArray()) {
-        TArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeName, p_TypeID);
+        TArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
     }
     else {
         UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data);

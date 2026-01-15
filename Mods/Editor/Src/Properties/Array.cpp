@@ -5,7 +5,7 @@
 #include <ResourceLib_HM3.h>
 
 void Editor::TArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
-    const std::string& s_PropertyName, const std::string& s_TypeName, const STypeID* p_TypeID
+    const std::string& s_PropertyName, const STypeID* p_TypeID
 ) {
     auto* s_Array = reinterpret_cast<TArray<uint8_t>*>(p_Data);
 
