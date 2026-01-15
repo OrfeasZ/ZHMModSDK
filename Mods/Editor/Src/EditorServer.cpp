@@ -737,9 +737,10 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
                 const auto s_AIAreaWorldEntities = Plugin()->FindEntitiesByType("ZAIAreaWorldEntity", "00D23EE76CC1735F");
                 const auto s_AIAreaEntities = Plugin()->FindEntitiesByType("ZAIAreaEntity", "000F13E2D42C882E");
                 const auto s_VolumeBoxEntities = Plugin()->FindEntitiesByType("ZBoxVolumeEntity", "0054667393764C74");
+                const auto s_VolumeSphereEntities = Plugin()->FindEntitiesByType("ZSphereVolumeEntity", "00B86A9EE991EFB2");
 
                 p_Loop->defer(
-                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities, s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities]() {
+                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities, s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities]() {
                         p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
@@ -760,6 +761,9 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
 
                         p_Socket->send("],\"volumeBoxes\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_VolumeBoxEntities);
+
+                        p_Socket->send("],\"volumeSpheres\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_VolumeSphereEntities);
 
                         p_Socket->send("]}", uWS::OpCode::TEXT);
                         p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
@@ -1024,6 +1028,10 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
             ) << ",";
         }
     }
+    else
+    {
+        p_Stream << write_json("name") << ":" << write_json(Plugin()->GetEntityName(p_Entity, false)) << ",";
+    }
 
     // Write transform.
     if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
@@ -1039,19 +1047,19 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     WriteQuat(p_Stream, p_Quat.m.x, p_Quat.m.y, p_Quat.m.z, p_Quat.m.w);
 
     //Write the BBox info for the gates
-    auto* s_Entity0 = p_Entity.QueryInterface<ZGateEntity>();
-    if (s_Entity0)
+    auto* s_Gate = p_Entity.QueryInterface<ZGateEntity>();
+    if (s_Gate)
     {
         p_Stream << ",";
         p_Stream << write_json("bboxCenter") << ":";
-        WriteVector3(p_Stream, s_Entity0->m_vCenter.x, s_Entity0->m_vCenter.y, s_Entity0->m_vCenter.z);
+        WriteVector3(p_Stream, s_Gate->m_vCenter.x, s_Gate->m_vCenter.y, s_Gate->m_vCenter.z);
         p_Stream << ",";
         p_Stream << write_json("bboxHalfSize") << ":";
-        WriteVector3(p_Stream, s_Entity0->m_vHalfSize.x, s_Entity0->m_vHalfSize.y, s_Entity0->m_vHalfSize.z);
+        WriteVector3(p_Stream, s_Gate->m_vHalfSize.x, s_Gate->m_vHalfSize.y, s_Gate->m_vHalfSize.z);
     }
     //Same for the AIAreas
-    auto* s_Entity2 = p_Entity.QueryInterface<ZAIAreaEntity>();
-    if (s_Entity2)
+    auto* s_AiArea = p_Entity.QueryInterface<ZAIAreaEntity>();
+    if (s_AiArea)
     {
         //We go up the logical parent chain until we reach a ZAIAreaEntity or a ZAIAreaWorldEntity, as some have ZEntity as logical parents
         std::vector<std::string> parents = std::vector<std::string>();
@@ -1076,15 +1084,14 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 
         p_Stream << ",";
         p_Stream << write_json("areaVolumeNames") << ":[";
-        for (auto i = 0; i < s_Entity2->m_aAreaVolumes.size(); i++)
+        for (auto i = 0; i < s_AiArea->m_aAreaVolumes.size(); i++)
         {
             if (i)
                 p_Stream << ",";
-            p_Stream << write_json(Plugin()->GetEntityName(s_Entity2->m_aAreaVolumes[i].m_ref));
+            p_Stream << write_json(Plugin()->GetEntityName(s_AiArea->m_aAreaVolumes[i].m_ref));
         }
         p_Stream << "]";
-    }
-       
+    }       
 
     std::unordered_map<std::string_view, std::string> propNameToFieldName = {
         {"m_PrimitiveScale", "scale"},
@@ -1093,6 +1100,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
         {"m_vRoomMin", "roomExtentMin"},
         {"m_vRoomMax", "roomExtentMax"},
         {"m_rParentArea", "parent"},
+        {"m_fRadius", "radius"}
     };
 
     if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pProperties01) {

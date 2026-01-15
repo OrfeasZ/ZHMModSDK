@@ -18,6 +18,7 @@
 
 #include "Glacier/ZRoom.h"
 
+class ZEntity;
 
 ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
@@ -248,17 +249,19 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
 std::pair<std::string, std::string> Editor::FindRoomForEntity(const ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& roomNameToFolderName) {
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-    ZEntityRef entityRef = p_Entity.GetLogicalParent();    
+    //ZEntityRef entityRef = p_Entity.GetLogicalParent();    
+    auto entityRef = p_Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref;
 
-    // Climb up the hierarchy until we find a room entity
+    // Climb up the parent hierarchy until we find a room entity
     while (entityRef.m_pEntity) {
-        std::string entityName = m_CachedEntityTreeMap[entityRef]->Name;
+        std::string entityName = m_CachedEntityTreeMap.at(entityRef)->Name;
         if (roomNameToFolderName.count(entityName)) {
             return std::make_pair(entityName, roomNameToFolderName.at(entityName));
         }
-        entityRef = entityRef.GetLogicalParent();
+        entityRef = entityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref;
     }    
-    return std::make_pair("", "");
+    //No room has been found, either dynamic entity or non tied to a room (see Miami for ex). Default to top logical parent
+    return std::make_pair(m_CachedEntityTreeMap.at(p_Entity)->Parents.back()->Name, "No_Room");
 }
 
 void Editor::FindAlocAndPrimForZGeomEntityNode(
@@ -405,7 +408,7 @@ void Editor::FindMeshes(
     for (const auto& s_RoomEntity : (*Globals::RoomManager)->m_RoomEntities) {
         ZEntityRef roomRef;
         s_RoomEntity->GetID(roomRef);
-        roomNameToFolderName[m_CachedEntityTreeMap[roomRef]->Name] = m_CachedEntityTreeMap[roomRef.GetLogicalParent()]->Name;
+        roomNameToFolderName[m_CachedEntityTreeMap[roomRef]->Name] = m_CachedEntityTreeMap.at(roomRef.GetLogicalParent())->Name;
     }
 
     // Keep iterating through the tree until we find all the ZGeomEntities.
@@ -701,4 +704,18 @@ void Editor::SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p
 
 void Editor::RebuildEntityTree() {
     UpdateEntities();
+}
+
+std::string Editor::GetEntityName(ZEntityRef p_Entity, bool withID)
+{ 
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>::iterator it = m_CachedEntityTreeMap.find(*p_Entity->GetID(p_Entity));
+    if (it == m_CachedEntityTreeMap.end()) {
+        return "";
+    }
+    else {
+        if (withID)
+            return it->second->Name;
+        else
+            return it->second->Name.substr(0,it->second->Name.find_last_of(" (") - 1);
+    }
 }

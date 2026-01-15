@@ -2,7 +2,7 @@
 
 #include "ZEntity.h"
 
-class ZBoxVolumeEntity;
+class ITriggerVolume;
 
 class ZAIAreaEntityBase :
         public ZEntityImpl {
@@ -16,5 +16,5 @@ class ZAIAreaEntity :
         public ZAIAreaEntityBase {
 public:
     TEntityRef<ZAIAreaEntityBase> m_rParentArea; // 0x28
-    TArray<TEntityRef<ZBoxVolumeEntity>> m_aAreaVolumes; // 0x38
+    TArray<TEntityRef<ITriggerVolume>> m_aAreaVolumes; // 0x38
 };

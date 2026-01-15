@@ -62,7 +62,7 @@ public:
     void LockEntityTree() { m_CachedEntityTreeMutex.lock_shared(); }
     std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
-    std::string GetEntityName(ZEntityRef p_Entity) { return m_CachedEntityTreeMap[*p_Entity->GetID(p_Entity)]->Name; }
+    std::string GetEntityName(ZEntityRef p_Entity, bool withID = true);
     ZEntityRef FindEntity(EntitySelector p_Selector);
     static std::string GetCollisionHash(auto p_SelectedEntity);
     void FindMeshes(
