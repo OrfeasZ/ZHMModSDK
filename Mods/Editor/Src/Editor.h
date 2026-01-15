@@ -469,8 +469,18 @@ private:
     ZActor* m_SelectedActor = nullptr;
     TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
     const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
-    bool m_ShowOnlyAliveActors = false;
-    bool m_ShowOnlyTargets = false;
+    bool m_ShowAliveActors = false;
+    bool m_ShowCivilians = true;
+    bool m_ShowGuards = true;
+    bool m_ShowMaleActors = false;
+    bool m_ShowFemaleActors = false;
+    bool m_ShowTargets = false;
+    bool m_ShowActiveEnforcers = false;
+    bool m_ShowPotentialEnforcers = false;
+    bool m_ShowDynamicEnforcers = false;
+    bool m_ShowCrowdCharacters = false;
+    bool m_ShowActiveSentries = false;
+    bool m_ShowActorsWithClothOutfit = false;
     bool m_SelectActorOnMouseClick = false;
     bool m_ScrollToActor = false;
 

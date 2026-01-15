@@ -49,11 +49,32 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
 
-        ImGui::Checkbox("Show only alive actors", &m_ShowOnlyAliveActors);
-        ImGui::Checkbox("Show only targets", &m_ShowOnlyTargets);
-        ImGui::Checkbox("Select actor in list when clicked in game", &m_SelectActorOnMouseClick);
+        ImGui::Checkbox("Show alive actors", &m_ShowAliveActors);
+
+        ImGui::Separator();
+
+        ImGui::Checkbox("Show civilians", &m_ShowCivilians);
+        ImGui::Checkbox("Show guards", &m_ShowGuards);
 
         ImGui::Spacing();
+
+        ImGui::Checkbox("Show male actors", &m_ShowMaleActors);
+        ImGui::Checkbox("Show female actors", &m_ShowFemaleActors);
+
+        ImGui::Separator();
+
+        ImGui::Checkbox("Show targets", &m_ShowTargets);
+        ImGui::Checkbox("Show active enforcers", &m_ShowActiveEnforcers);
+        ImGui::Checkbox("Show potential enforcers", &m_ShowPotentialEnforcers);
+        ImGui::Checkbox("Show dynamic enforcers", &m_ShowDynamicEnforcers);
+        ImGui::Checkbox("Show crowd characters", &m_ShowCrowdCharacters);
+        ImGui::Checkbox("Show active sentries", &m_ShowActiveSentries);
+        ImGui::Checkbox("Show actors with cloth outfit", &m_ShowActorsWithClothOutfit);
+
+        ImGui::Separator();
+
+        ImGui::Checkbox("Select actor in list when clicked in game", &m_SelectActorOnMouseClick);
+
         ImGui::Separator();
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
@@ -61,7 +82,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         TEntityRef<ZActor>* s_ActorArray;
         size_t s_ActorCount;
 
-        if (m_ShowOnlyAliveActors) {
+        if (m_ShowAliveActors) {
             s_ActorArray = Globals::ActorManager->m_aliveActors.data();
             s_ActorCount = Globals::ActorManager->m_aliveActors.size();
         }
@@ -77,7 +98,78 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 continue;
             }
 
-            if (m_ShowOnlyTargets && !IsActorTarget(s_Actor)) {
+            const ZGlobalOutfitKit* s_Outfit = s_Actor->m_rOutfit.m_pInterfaceRef;
+
+            bool s_MatchesActorType = true;
+
+            if (m_ShowCivilians || m_ShowGuards) {
+                s_MatchesActorType = false;
+
+                if (m_ShowCivilians && s_Outfit && s_Outfit->m_eActorType == EActorType::eAT_Civilian) {
+                    s_MatchesActorType = true;
+                }
+
+                if (m_ShowGuards && s_Outfit && s_Outfit->m_eActorType == EActorType::eAT_Guard) {
+                    s_MatchesActorType = true;
+                }
+            }
+
+            bool s_MatchesGender = true;
+
+            if (m_ShowMaleActors || m_ShowFemaleActors) {
+                s_MatchesGender = false;
+
+                if (m_ShowMaleActors && s_Outfit && !s_Outfit->m_bIsFemale) {
+                    s_MatchesGender = true;
+                }
+
+                if (m_ShowFemaleActors && s_Outfit && s_Outfit->m_bIsFemale) {
+                    s_MatchesGender = true;
+                }
+            }
+
+            bool m_MatchesFlags = true;
+
+            if (m_ShowTargets ||
+                m_ShowActiveEnforcers ||
+                m_ShowPotentialEnforcers ||
+                m_ShowDynamicEnforcers ||
+                m_ShowCrowdCharacters ||
+                m_ShowActiveSentries ||
+                m_ShowActorsWithClothOutfit)
+            {
+                m_MatchesFlags = false;
+
+                if (m_ShowTargets && s_Actor->m_bContractTarget) {
+                    m_MatchesFlags = true;
+                }
+
+                if (m_ShowActiveEnforcers && s_Actor->m_bIsActiveEnforcer) {
+                    m_MatchesFlags = true;
+                }
+
+                if (m_ShowPotentialEnforcers && s_Actor->m_bIsPotentialEnforcer) {
+                    m_MatchesFlags = true;
+                }
+
+                if (m_ShowDynamicEnforcers && s_Actor->m_bIsDynamicEnforcer) {
+                    m_MatchesFlags = true;
+                }
+
+                if (m_ShowCrowdCharacters && s_Actor->m_bCrowdCharacter) {
+                    m_MatchesFlags = true;
+                }
+
+                if (m_ShowActiveSentries && s_Actor->m_bActiveSentry) {
+                    m_MatchesFlags = true;
+                }
+
+                if (m_ShowActorsWithClothOutfit && s_Actor->m_bHasClothOutfit) {
+                    m_MatchesFlags = true;
+                }
+            }
+
+            if (!s_MatchesActorType || !s_MatchesGender || !m_MatchesFlags) {
                 continue;
             }
 
