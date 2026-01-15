@@ -3,7 +3,7 @@
 
 #include <Glacier/ZResource.h>
 
-void Editor::ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+void Editor::ResourcePtrProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
     auto* s_ResourcePtr = static_cast<ZResourcePtr*>(p_Data);
     std::string s_RuntimeResourceID = "null";
 
@@ -14,7 +14,7 @@ void Editor::ResourceProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEnt
 
     ImGui::TextUnformatted(s_RuntimeResourceID.c_str());
 
-    if (ImGuiCopyWidget(("Resource_" + p_Id).c_str())) {
+    if (ImGuiCopyWidget(("ResourcePtr_" + p_Id).c_str())) {
         CopyToClipboard(s_RuntimeResourceID.c_str());
     }
 }

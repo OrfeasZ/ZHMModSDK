@@ -608,7 +608,7 @@ void Editor::DrawEntityPropertyValue(
         EnumProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeID->typeInfo()->isResource()) {
-        ResourceProperty(p_Id, p_Entity, p_Property, p_Data);
+        ResourcePtrProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName.starts_with("ZEntityRef")) {
         ZEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
