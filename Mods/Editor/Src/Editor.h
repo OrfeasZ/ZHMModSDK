@@ -114,7 +114,7 @@ private:
         ZEntityRef p_Entity,
         ZEntityProperty* p_Property,
         void* p_Data,
-        const IArrayType* s_ArrayType
+        const IArrayType* p_ArrayType
     );
 
     void DrawLibrary();

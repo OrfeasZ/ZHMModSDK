@@ -50,17 +50,17 @@ void Editor::DrawArrayElements(
     ZEntityRef p_Entity,
     ZEntityProperty* p_Property,
     void* p_Data,
-    const IArrayType* s_ArrayType
+    const IArrayType* p_ArrayType
 ) {
-    const STypeID* s_ElementTypeID = s_ArrayType->m_pArrayElementType;
+    const STypeID* s_ElementTypeID = p_ArrayType->m_pArrayElementType;
     const std::string s_ElementTypeName = s_ElementTypeID->typeInfo()->m_pTypeName;
 
-    void* s_Iterator = s_ArrayType->m_pArrayFunctions->begin(p_Data);
-    void* s_End = s_ArrayType->m_pArrayFunctions->end(p_Data);
+    void* s_Iterator = p_ArrayType->m_pArrayFunctions->begin(p_Data);
+    void* s_End = p_ArrayType->m_pArrayFunctions->end(p_Data);
 
     int s_Index = 0;
 
-    for (; s_Iterator != s_End; s_Iterator = s_ArrayType->m_pArrayFunctions->next(p_Data, s_Iterator), ++s_Index) {
+    for (; s_Iterator != s_End; s_Iterator = p_ArrayType->m_pArrayFunctions->next(p_Data, s_Iterator), ++s_Index) {
         ImGui::PushID(static_cast<int>(s_Index));
 
         ImGui::Separator();
