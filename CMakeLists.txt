@@ -28,6 +28,7 @@ find_package(unofficial-imgui-node-editor CONFIG REQUIRED)
 #CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
 CPMAddPackage("gh:OrfeasZ/ZHMTools@3.6.11")
 #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
+add_subdirectory(External/implot)
 
 # Core modules.
 add_subdirectory(ZHMModSDK)

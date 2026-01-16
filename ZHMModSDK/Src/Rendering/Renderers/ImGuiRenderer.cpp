@@ -36,6 +36,8 @@ ImGuiRenderer::ImGuiRenderer() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
+    ImPlot::CreateContext();
+
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
     s_ImGuiIO.IniFilename = nullptr;
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;

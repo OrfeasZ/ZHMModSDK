@@ -17,6 +17,8 @@ private:
 
         ImGui::SetCurrentContext(s_Context);
         ImGui::SetAllocatorFunctions(SDK()->GetImGuiAlloc(), SDK()->GetImGuiFree(), SDK()->GetImGuiAllocatorUserData());
+
+        ImPlot::SetCurrentContext(SDK()->GetImPlotContext());
     }
 
 public:

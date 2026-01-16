@@ -10,6 +10,8 @@
 #include "D3DUtils.h"
 #include "directx/d3d12.h"
 
+#include "implot.h"
+
 class IPluginInterface;
 class ZRenderDestination;
 class SVector2;
@@ -46,6 +48,8 @@ public:
     virtual ImFont* GetImGuiMediumFont() = 0;
     virtual ImFont* GetImGuiBoldFont() = 0;
     virtual ImFont* GetImGuiBlackFont() = 0;
+
+    virtual ImPlotContext* GetImPlotContext() = 0;
 
     /**
      * Try to get the name of a pin by its ID.

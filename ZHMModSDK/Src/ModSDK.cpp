@@ -1247,6 +1247,10 @@ ImFont* ModSDK::GetImGuiBlackFont() {
     return m_ImguiRenderer->GetFontBlack();
 }
 
+ImPlotContext* ModSDK::GetImPlotContext() {
+    return ImPlot::GetCurrentContext();
+}
+
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name) {
     std::string s_Name;
     if (TryGetPinName(p_PinId, s_Name)) {
