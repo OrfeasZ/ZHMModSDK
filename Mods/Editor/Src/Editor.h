@@ -109,6 +109,14 @@ private:
         void* p_Data
     );
 
+    void DrawArrayElements(
+        const std::string& p_Id,
+        ZEntityRef p_Entity,
+        ZEntityProperty* p_Property,
+        void* p_Data,
+        const IArrayType* s_ArrayType
+    );
+
     void DrawLibrary();
 
     void DrawSettings(bool p_HasFocus);
