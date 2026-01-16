@@ -284,6 +284,10 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
     ImGui::SetWindowFontScale(1.0);
     ImGui::PopStyleVar(2);
 
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Copy to clipboard");
+    }
+
     return s_Result;
 }
 
