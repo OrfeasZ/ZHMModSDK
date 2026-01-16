@@ -12,6 +12,7 @@
 #include "Glacier/ZInput.h"
 #include "Glacier/ZFreeCamera.h"
 #include "Glacier/EDebugChannel.h"
+#include "Glacier/ZCurve.h"
 
 #include "ImGuizmo.h"
 #include "EditorServer.h"
@@ -177,6 +178,7 @@ private:
     void EntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity);
 
     void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     // Primitive properties.
     void StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
@@ -209,9 +211,24 @@ private:
     void SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
     void ResourcePtrProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void ZRuntimeResourceIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
 
-    void TArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+    void ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
         const std::string& s_PropertyName, const STypeID* p_TypeID);
+
+    void ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+
+    void ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+        const std::string& s_PropertyName, const STypeID* p_TypeID);
+
+    static void PlotZCurve(const ZCurve* p_Curve);
+    static float EvaluateZCurveSegment(
+        const TFixedArray<float, 8>& p_Key,
+        const TFixedArray<float, 8>& p_NextKey,
+        float p_Time
+    );
+
+    static std::string FormatZCurveForClipboard(ZCurve* p_Curve, void* p_Data, const IArrayType* p_ArrayType);
 
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 

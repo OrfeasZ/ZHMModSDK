@@ -502,7 +502,9 @@ void Editor::DrawEntityProperties() {
                     s_PropertyName = s_PropertyInfo->m_pName;
                 }
 
-                if (!s_PropertyInfo->m_pType->typeInfo()->isArray()) {
+                if (!s_PropertyInfo->m_pType->typeInfo()->isArray() &&
+                    !s_PropertyInfo->m_pType->typeInfo()->isFixedArray() &&
+                    s_TypeName != "ZCurve") {
                     ImGui::Text("%s", s_PropertyName.c_str());
                 }
 
@@ -512,7 +514,9 @@ void Editor::DrawEntityProperties() {
 
                 ImGui::PopFont();
 
-                if (!s_PropertyInfo->m_pType->typeInfo()->isArray()) {
+                if (!s_PropertyInfo->m_pType->typeInfo()->isArray() &&
+                    !s_PropertyInfo->m_pType->typeInfo()->isFixedArray() &&
+                    s_TypeName != "ZCurve") {
                     ImGui::SameLine();
 
                     // Make the next item fill the rest of the width.
@@ -610,6 +614,9 @@ void Editor::DrawEntityPropertyValue(
     else if (p_TypeID->typeInfo()->isResource()) {
         ResourcePtrProperty(p_Id, p_Entity, p_Property, p_Data);
     }
+    else if (p_TypeName == "ZRuntimeResourceID") {
+        ZRuntimeResourceIDProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
     else if (p_TypeName.starts_with("ZEntityRef")) {
         ZEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
     }
@@ -619,8 +626,17 @@ void Editor::DrawEntityPropertyValue(
     else if (p_TypeName == "ZRepositoryID") {
         ZRepositoryIDProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->typeInfo()->isArray()) {
-        TArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
+    else if (p_TypeName == "ZGuid") {
+        ZGuidProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeID->typeInfo()->isArray() || p_TypeID->typeInfo()->isFixedArray()) {
+        ArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
+    }
+    else if (p_TypeName == "ZCurve") {
+        ZCurveProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
+    }
+    else if (p_TypeName == "ZGameTime") {
+        ZGameTimeProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else {
         UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data);
