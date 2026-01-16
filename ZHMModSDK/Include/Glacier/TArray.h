@@ -278,6 +278,22 @@ public:
         return (m_nFlags >> 62) & 1;
     }
 
+    const T& front() const {
+        return begin()[0];
+    }
+
+    T& front() {
+        return begin()[0];
+    }
+
+    const T& back() const {
+        return begin()[size() - 1];
+    }
+
+    T& back() {
+        return begin()[size() - 1];
+    }
+
 public:
     T* m_pBegin;
     T* m_pEnd;
