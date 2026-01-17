@@ -6,7 +6,10 @@ class ZCharacterStateMachineCoordinator;
 class ZCharacterScheduler;
 
 class ZCharacterSubcontroller : public ZEntityImpl //Size: 0x38
-{};
+{
+public:
+    PAD(0x20);
+};
 
 class ZCharacterSubcontrollerInventory : public ZCharacterSubcontroller //Size: 0x310
 {
