@@ -12,6 +12,8 @@
 #include <Glacier/EntityFactory.h>
 #include <Glacier/ZSpatialEntity.h>
 #include <Glacier/ZCameraEntity.h>
+#include <Glacier/ZRoom.h>
+#include <Glacier/ZAIAreaEntity.h>
 
 #include <ResourceLib_HM3.h>
 
@@ -208,7 +210,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
     }
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
         Plugin()->QueueTask([p_Socket, p_Loop]() {
-            SendMeshPfBoxAndSeedPointEntityList(p_Socket, p_Loop);
+            SendNavKitScene(p_Socket, p_Loop);
         });
     }
     else if (s_Type == "getEntityDetails") {
@@ -667,7 +669,7 @@ bool EditorServer::GetEnabled() {
     return m_Enabled;
 }
 
-void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS::Loop* p_Loop) {
+void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
     p_Loop->defer(
         [p_Socket]() {
             p_Socket->send(R"({"version":1,"meshes":[)", uWS::OpCode::TEXT);
@@ -729,17 +731,39 @@ void EditorServer::SendMeshPfBoxAndSeedPointEntityList(WebSocket* p_Socket, uWS:
             }
             if (p_IsLastMeshBatch) {
                 const auto s_PfBoxEntities = Plugin()->FindEntitiesByType("ZPFBoxEntity", "00724CDE424AFE76");
-                const auto s_PfSeedPointEntities = Plugin()->FindEntitiesByType(
-                    "ZPFSeedPoint", "00280B8C4462FAC8"
-                );
+                const auto s_PfSeedPointEntities = Plugin()->FindEntitiesByType("ZPFSeedPoint", "00280B8C4462FAC8");
+                const auto s_GateEntities = Plugin()->FindEntitiesByType("ZGateEntity", "00D78DDF8301DF97");
+                const auto s_RoomEntities = Plugin()->FindEntitiesByType("ZRoomEntity", "0071E63EC98496FE");
+                const auto s_AIAreaWorldEntities = Plugin()->FindEntitiesByType("ZAIAreaWorldEntity", "00D23EE76CC1735F");
+                const auto s_AIAreaEntities = Plugin()->FindEntitiesByType("ZAIAreaEntity", "000F13E2D42C882E");
+                const auto s_VolumeBoxEntities = Plugin()->FindEntitiesByType("ZBoxVolumeEntity", "0054667393764C74");
+                const auto s_VolumeSphereEntities = Plugin()->FindEntitiesByType("ZSphereVolumeEntity", "00B86A9EE991EFB2");
 
                 p_Loop->defer(
-                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities]() {
+                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities, s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities]() {
                         p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
                         p_Socket->send("],\"pfSeedPoints\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_PfSeedPointEntities);
+
+                        p_Socket->send("],\"gates\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_GateEntities);
+
+                        p_Socket->send("],\"rooms\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_RoomEntities);
+
+                        p_Socket->send("],\"aiAreaWorld\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_AIAreaWorldEntities);
+
+                        p_Socket->send("],\"aiArea\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_AIAreaEntities);
+
+                        p_Socket->send("],\"volumeBoxes\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_VolumeBoxEntities);
+
+                        p_Socket->send("],\"volumeSpheres\":[", uWS::OpCode::TEXT);
+                        SendEntitiesDetails(p_Socket, s_VolumeSphereEntities);
 
                         p_Socket->send("]}", uWS::OpCode::TEXT);
                         p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
@@ -1004,6 +1028,10 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
             ) << ",";
         }
     }
+    else
+    {
+        p_Stream << write_json("name") << ":" << write_json(Plugin()->GetEntityName(p_Entity, false)) << ",";
+    }
 
     // Write transform.
     if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
@@ -1018,9 +1046,62 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     p_Stream << write_json("rotation") << ":";
     WriteQuat(p_Stream, p_Quat.m.x, p_Quat.m.y, p_Quat.m.z, p_Quat.m.w);
 
-    const std::string s_ScalePropertyName = "m_PrimitiveScale";
-    const std::string s_TypePropertyName = "m_eType";
-    const std::string s_GlobalSizePropertyName = "m_vGlobalSize";
+    //Write the BBox info for the gates
+    auto* s_Gate = p_Entity.QueryInterface<ZGateEntity>();
+    if (s_Gate)
+    {
+        p_Stream << ",";
+        p_Stream << write_json("bboxCenter") << ":";
+        WriteVector3(p_Stream, s_Gate->m_vCenter.x, s_Gate->m_vCenter.y, s_Gate->m_vCenter.z);
+        p_Stream << ",";
+        p_Stream << write_json("bboxHalfSize") << ":";
+        WriteVector3(p_Stream, s_Gate->m_vHalfSize.x, s_Gate->m_vHalfSize.y, s_Gate->m_vHalfSize.z);
+    }
+    //Same for the AIAreas
+    auto* s_AiArea = p_Entity.QueryInterface<ZAIAreaEntity>();
+    if (s_AiArea)
+    {
+        //We go up the logical parent chain until we reach a ZAIAreaEntity or a ZAIAreaWorldEntity, as some have ZEntity as logical parents
+        std::vector<std::string> parents = std::vector<std::string>();
+        ZEntityRef parentRef = p_Entity.GetLogicalParent();
+
+        while (parentRef.m_pEntity) {
+            parents.push_back(Plugin()->GetEntityName(parentRef));
+            if(parentRef.QueryInterface<ZAIAreaEntityBase>())
+                break;
+            parentRef = parentRef.GetLogicalParent();
+        }
+
+        p_Stream << ",";
+        p_Stream << write_json("logicalParent") << ":[";
+        for (auto i = 0; i < parents.size(); i++)
+        {
+            if (i)
+                p_Stream << ",";
+            p_Stream << write_json(parents[i]);
+        }
+        p_Stream << "]";
+
+        p_Stream << ",";
+        p_Stream << write_json("areaVolumeNames") << ":[";
+        for (auto i = 0; i < s_AiArea->m_aAreaVolumes.size(); i++)
+        {
+            if (i)
+                p_Stream << ",";
+            p_Stream << write_json(Plugin()->GetEntityName(s_AiArea->m_aAreaVolumes[i].m_ref));
+        }
+        p_Stream << "]";
+    }       
+
+    std::unordered_map<std::string_view, std::string> propNameToFieldName = {
+        {"m_PrimitiveScale", "scale"},
+        {"m_eType", "type"},
+        {"m_vGlobalSize", "scale"},
+        {"m_vRoomMin", "roomExtentMin"},
+        {"m_vRoomMax", "roomExtentMax"},
+        {"m_rParentArea", "parent"},
+        {"m_fRadius", "radius"}
+    };
 
     if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pProperties01) {
         for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
@@ -1037,40 +1118,17 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 
                 if (const auto [s_data, s_size] = HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
                     auto s_PropertyNameView = std::string_view(s_data, s_size);
-                    if (s_PropertyNameView == s_ScalePropertyName) {
+                    if (propNameToFieldName.count(s_PropertyNameView)) {
                         p_Stream << ",";
-                        p_Stream << write_json("scale") << ":";
-                        WriteProperty(p_Stream, p_Entity, s_Property);
-                    }
-                    if (s_PropertyNameView == s_TypePropertyName) {
-                        p_Stream << ",";
-                        p_Stream << write_json("type") << ":";
-                        WriteProperty(p_Stream, p_Entity, s_Property);
-                    }
-                    else if (s_PropertyNameView == s_GlobalSizePropertyName) {
-                        p_Stream << ",";
-                        p_Stream << write_json("scale") << ":";
+                        p_Stream << write_json(propNameToFieldName.at(s_PropertyNameView)) << ":";
                         WriteProperty(p_Stream, p_Entity, s_Property);
                     }
                 }
             }
             else if (s_PropertyInfo->m_pName) {
-                if (s_PropertyInfo->m_pName == s_ScalePropertyName) {
+                if (propNameToFieldName.count(s_PropertyInfo->m_pName)) {
                     p_Stream << ",";
-                    p_Stream << write_json("scale");
-                    p_Stream << ":";
-                    WriteProperty(p_Stream, p_Entity, s_Property);
-                }
-                if (s_PropertyInfo->m_pName == s_TypePropertyName) {
-                    p_Stream << ",";
-                    p_Stream << write_json("type");
-                    p_Stream << ":";
-                    WriteProperty(p_Stream, p_Entity, s_Property);
-                }
-                else if (s_PropertyInfo->m_pName == s_GlobalSizePropertyName) {
-                    p_Stream << ",";
-                    p_Stream << write_json("scale");
-                    p_Stream << ":";
+                    p_Stream << write_json(propNameToFieldName.at(s_PropertyInfo->m_pName)) << ":";
                     WriteProperty(p_Stream, p_Entity, s_Property);
                 }
             }
