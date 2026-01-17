@@ -114,6 +114,10 @@ ImGuiRenderer::~ImGuiRenderer() {
         WaitForCurrentFrameToFinish();
 
     HookRegistry::ClearDetoursWithContext(this);
+
+    ImPlot::DestroyContext();
+
+    ImGui::DestroyContext();
 }
 
 void ImGuiRenderer::SetupStyles() {
