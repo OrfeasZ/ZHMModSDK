@@ -165,9 +165,9 @@ void ModSDK::UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) {
 
     for (size_t i = 0; i < s_ResourceContainer->m_MountedPackages.size(); ++i) {
         const ZString& s_MountedPackage = s_ResourceContainer->m_MountedPackages[i];
-        uint32_t s_ChunkIndex;
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_MountedPackage);
 
-        if (!Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_MountedPackage, s_ChunkIndex)) {
+        if (!s_ChunkIndex) {
             continue;
         }
 
@@ -188,9 +188,9 @@ void ModSDK::UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) {
     if (p_RemountChunksBelow) {
         for (size_t i = s_PackageId; i < s_ResourceContainer->m_MountedPackages.size(); ++i) {
             const ZString& s_MountedPackage = s_ResourceContainer->m_MountedPackages[i];
-            uint32_t s_ChunkIndex;
+            auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_MountedPackage);
 
-            if (!Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_MountedPackage, s_ChunkIndex)) {
+            if (!s_ChunkIndex) {
                 continue;
             }
 
@@ -198,7 +198,7 @@ void ModSDK::UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) {
                 continue;
             }
 
-            s_ChunksToRemount.insert(s_ChunkIndex);
+            s_ChunksToRemount.insert(*s_ChunkIndex);
         }
     }
 

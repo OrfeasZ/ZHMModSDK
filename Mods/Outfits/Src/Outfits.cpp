@@ -438,13 +438,13 @@ void Outfits::BuildChunkIndexToResourcePackageCount() {
         }
 
         const std::string s_FileName = s_Path.filename().string();
-        uint32_t s_ChunkIndex;
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackageFileName(s_FileName);
 
-        if (!Util::ResourceUtils::TryParseChunkIndexFromResourcePackageFileName(s_FileName, s_ChunkIndex)) {
+        if (!s_ChunkIndex) {
             continue;
         }
 
-        m_ChunkIndexToResourcePackageCount[s_ChunkIndex]++;
+        m_ChunkIndexToResourcePackageCount[*s_ChunkIndex]++;
     }
 }
 
@@ -684,28 +684,28 @@ void Outfits::UnloadOutfits(const std::unordered_set<std::string>& p_Scenes) {
 
     for (uint32_t s_PackageId = 0; s_PackageId < s_ResourceContainer->m_MountedPackages.size(); ++s_PackageId) {
         const ZString& s_PackagePath = s_ResourceContainer->m_MountedPackages[s_PackageId];
-        uint32_t s_ChunkIndex;
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_PackagePath);
 
-        if (!Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_PackagePath, s_ChunkIndex)) {
+        if (!s_ChunkIndex) {
             continue;
         }
 
-        if (s_ChunksToUnmount.contains(s_ChunkIndex)) {
+        if (s_ChunksToUnmount.contains(*s_ChunkIndex)) {
             s_EarliestPackageId = s_PackageId;
-            s_EarliestChunkIndex = s_ChunkIndex;
+            s_EarliestChunkIndex = *s_ChunkIndex;
             break;
         }
     }
 
     for (uint32_t s_PackageId = s_EarliestPackageId; s_PackageId < s_ResourceContainer->m_MountedPackages.size(); ++s_PackageId) {
         const ZString& s_PackagePath = s_ResourceContainer->m_MountedPackages[s_PackageId];
-        uint32_t s_ChunkIndex;
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_PackagePath);
 
-        if (!Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_PackagePath, s_ChunkIndex)) {
+        if (!s_ChunkIndex) {
             continue;
         }
 
-        s_ChunksToUnmount.insert(s_ChunkIndex);
+        s_ChunksToUnmount.insert(*s_ChunkIndex);
     }
 
     UnloadOutfits(s_ChunksToUnmount);
@@ -767,13 +767,13 @@ void Outfits::UnloadOutfits(const std::vector<ZRuntimeResourceID>& p_OutfitBrick
 
     for (uint32_t s_PackageId = 0; s_PackageId < s_ResourceContainer->m_MountedPackages.size(); ++s_PackageId) {
         const ZString& s_PackagePath = s_ResourceContainer->m_MountedPackages[s_PackageId];
-        uint32_t s_ChunkIndex;
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_PackagePath);
 
-        if (!Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_PackagePath, s_ChunkIndex)) {
+        if (!s_ChunkIndex) {
             continue;
         }
 
-        if (s_ChunksToUnmount.contains(s_ChunkIndex)) {
+        if (s_ChunksToUnmount.contains(*s_ChunkIndex)) {
             bool s_IsChunkUsedByLoadedScene = false;
 
             for (const auto& s_SceneName : m_LoadedScenes) {
@@ -788,7 +788,7 @@ void Outfits::UnloadOutfits(const std::vector<ZRuntimeResourceID>& p_OutfitBrick
             }
 
             s_EarliestPackageId = s_PackageId;
-            s_EarliestChunkIndex = s_ChunkIndex;
+            s_EarliestChunkIndex = *s_ChunkIndex;
             break;
         }
     }
@@ -796,13 +796,13 @@ void Outfits::UnloadOutfits(const std::vector<ZRuntimeResourceID>& p_OutfitBrick
     if (s_EarliestPackageId != UINT32_MAX) {
         for (uint32_t s_PackageId = s_EarliestPackageId; s_PackageId < s_ResourceContainer->m_MountedPackages.size(); ++s_PackageId) {
             const ZString& s_PackagePath = s_ResourceContainer->m_MountedPackages[s_PackageId];
-            uint32_t s_ChunkIndex;
+            auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_PackagePath);
 
-            if (!Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_PackagePath, s_ChunkIndex)) {
+            if (!s_ChunkIndex) {
                 continue;
             }
 
-            s_ChunksToUnmount.insert(s_ChunkIndex);
+            s_ChunksToUnmount.insert(*s_ChunkIndex);
         }
 
         UnloadOutfits(s_ChunksToUnmount);

@@ -5,24 +5,26 @@
 namespace Util {
     class ResourceUtils {
     public:
-        static bool TryParseChunkIndexFromResourcePackagePath(const ZString& s_ResourcePackagePath, uint32_t& p_OutChunkIndex) {
+        static std::optional<uint32_t> TryParseChunkIndexFromResourcePackagePath(
+            const ZString& s_ResourcePackagePath
+        ) {
             if (s_ResourcePackagePath.size() < 2 ||
                 s_ResourcePackagePath[0] != '.' ||
                 s_ResourcePackagePath[1] != '.') {
-                return false;
+                return std::nullopt;
             }
 
             size_t s_Position = std::string(s_ResourcePackagePath.c_str(), s_ResourcePackagePath.size()).find("chunk");
 
             if (s_Position == std::string::npos) {
-                return false;
+                return std::nullopt;
             }
 
             s_Position += 5;
 
             if (s_Position >= s_ResourcePackagePath.size() ||
                 !std::isdigit(static_cast<unsigned char>(s_ResourcePackagePath[s_Position]))) {
-                return false;
+                return std::nullopt;
             }
 
             uint32_t s_Value = 0;
@@ -33,14 +35,14 @@ namespace Util {
                 ++s_Position;
             }
 
-            p_OutChunkIndex = s_Value;
-
-            return true;
+            return s_Value;
         }
 
-        static bool TryParseChunkIndexFromResourcePackageFileName(const std::string& p_FileName, uint32_t& p_OutChunkIndex) {
+        static std::optional<uint32_t> TryParseChunkIndexFromResourcePackageFileName(
+            const std::string& p_FileName
+        ) {
             if (!p_FileName.starts_with("chunk")) {
-                return false;
+                return std::nullopt;
             }
 
             uint32_t s_Value = 0;
@@ -56,12 +58,10 @@ namespace Util {
             }
 
             if (!s_IsDigitFound) {
-                return false;
+                return std::nullopt;
             }
 
-            p_OutChunkIndex = s_Value;
-
-            return true;
+            return s_Value;
         }
     };
 }

@@ -2121,13 +2121,13 @@ void Randomizer::BuildChunkIndexToResourcePackageCount() {
         }
 
         const std::string s_FileName = s_Path.filename().string();
-        uint32_t s_ChunkIndex;
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackageFileName(s_FileName);
 
-        if (!Util::ResourceUtils::TryParseChunkIndexFromResourcePackageFileName(s_FileName, s_ChunkIndex)) {
+        if (!s_ChunkIndex) {
             continue;
         }
 
-        m_ChunkIndexToResourcePackageCount[s_ChunkIndex]++;
+        m_ChunkIndexToResourcePackageCount[*s_ChunkIndex]++;
     }
 }
 
