@@ -1,3 +1,6 @@
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+
 #include <directx/d3dx12.h>
 
 #include "DirectXTKRenderer.h"
@@ -27,9 +30,6 @@
 #include "ModSDK.h"
 #include "Glacier/ZGameLoopManager.h"
 #include "Glacier/MDF_FONT.h"
-
-#undef min
-#undef max
 
 using namespace Rendering::Renderers;
 

@@ -1,3 +1,6 @@
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+
 #include "D3D12Hooks.h"
 
 #include <directx/d3d12.h>

@@ -1,11 +1,13 @@
 #include "Editor.h"
 #include "imgui.h"
+#include <algorithm>
+#include <cstddef>
 
 void Editor::StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
     auto* s_RealData = static_cast<ZString*>(p_Data);
 
     static char s_StringBuffer[65536] = {};
-    const auto s_StringSize = min(s_RealData->size(), sizeof(s_StringBuffer) - 1);
+    const auto s_StringSize = std::min<std::size_t>(s_RealData->size(), sizeof(s_StringBuffer) - 1);
 
     memcpy(s_StringBuffer, s_RealData->c_str(), s_StringSize);
     s_StringBuffer[s_StringSize] = '\0';
