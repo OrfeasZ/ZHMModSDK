@@ -123,17 +123,19 @@ void Editor::ZRepositoryIDProperty(
     ZEntityProperty* p_Property,
     void* p_Data
 ) {
-    if (auto RepositoryId = reinterpret_cast<ZRepositoryID*>(p_Data)) {
-        const auto& s_RepositoryId = RepositoryId->ToString();
+    if (auto s_RepositoryId = reinterpret_cast<ZRepositoryID*>(p_Data)) {
+        const auto& s_RepositoryIdString = s_RepositoryId->ToString();
 
-        ImGui::Text("%s", s_RepositoryId.c_str());
+        ImGui::Text("%s", s_RepositoryIdString.c_str());
 
         if (ImGuiCopyWidget(("RepositoryId_" + p_Id).c_str())) {
-            CopyToClipboard(s_RepositoryId.c_str());
+            CopyToClipboard(s_RepositoryIdString.c_str());
         }
-    } else {
-        constexpr auto textColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
-        ImGui::TextColored(textColor, "(%s)", "null");
+    }
+    else {
+        constexpr auto s_TextColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
+
+        ImGui::TextColored(s_TextColor, "(%s)", "null");
     }
 }
 
