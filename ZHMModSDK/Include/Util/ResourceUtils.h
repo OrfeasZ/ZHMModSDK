@@ -5,6 +5,15 @@
 namespace Util {
     class ResourceUtils {
     public:
+        /**
+         * Attempts to extract a chunk index from a mounted resource package path
+         * (e.g. "../runtime//chunk3patch3.rpkg").
+         *
+         * Used for entries stored in ResourceContainer::m_MountedPackages.
+         *
+         * @param s_ResourcePackagePath Resource package path from mounted packages.
+         * @return Chunk index if found, std::nullopt otherwise.
+         */
         static std::optional<uint32_t> TryParseChunkIndexFromResourcePackagePath(
             const ZString& s_ResourcePackagePath
         ) {
@@ -38,6 +47,13 @@ namespace Util {
             return s_Value;
         }
 
+        /**
+         * Attempts to extract a chunk index from a resource package file name
+         * (e.g. "chunk3patch3.rpkg").
+         *
+         * @param p_FileName Resource package file name.
+         * @return Chunk index if found, std::nullopt otherwise.
+         */
         static std::optional<uint32_t> TryParseChunkIndexFromResourcePackageFileName(
             const std::string& p_FileName
         ) {
