@@ -204,6 +204,7 @@ public:
         const ZEntityRef& rParentSpatial,
         const ZEntityRef& rCreator
     )>* ZWorldInventory_RequestNewItem;
+
     static EngineFunction<void(
         ZWorldInventory* th,
         TEntityRef<IItemBase> rItemInc

@@ -365,6 +365,7 @@ void Editor::DrawSettings(const bool p_HasFocus) {
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
+    ProcessTasks();
     if (m_TrackCamActive) {
         if (!*Globals::ApplicationEngineWin32)
             return;
@@ -389,15 +390,13 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         //SpawnCameras();
     }
 
-    m_EntityDestructionMutex.lock();
+    std::lock_guard lock(m_EntityDestructionMutex);
 
-    while (!m_EntitiesToDestroy.empty()) {
-        auto [s_Entity, s_ClientId] = m_EntitiesToDestroy.back();
+    for (const auto& [s_Entity, s_ClientId] : m_EntitiesToDestroy) {
         DestroyEntityInternal(s_Entity, s_ClientId);
-        m_EntitiesToDestroy.pop_back();
     }
 
-    m_EntityDestructionMutex.unlock();
+    m_EntitiesToDestroy.clear();
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         std::vector<ZEntityRef> s_EntitiesToAdd;
@@ -465,6 +464,27 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         m_ItemToRemove = {};
         m_RemoveItemFromInventory = false;
     }
+}
+
+void Editor::ProcessTasks() {
+    std::vector<std::function<void()>> tasksToRun;
+
+    {
+        std::lock_guard lock(m_TaskMutex);
+        if (m_TaskQueue.empty()) {
+            return;
+        }
+        tasksToRun.swap(m_TaskQueue);
+    }
+
+    for (const auto& task : tasksToRun) {
+        task();
+    }
+}
+
+void Editor::QueueTask(std::function<void()> p_Task) {
+    std::lock_guard lock(m_TaskMutex);
+    m_TaskQueue.push_back(std::move(p_Task));
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {

@@ -7,6 +7,7 @@
 #include "Reflection.h"
 #include "ZObjectPool.h"
 
+class ZRenderTexture2D;
 class ZEntityRef;
 
 class ZRenderTargetView;
@@ -17,10 +18,13 @@ public:
     virtual ~ZRenderDepthStencilView() = 0;
 
 public:
-    PAD(0x30);
+    PAD(0x20);
+    ZRenderTexture2D* m_pTexture;
+    PAD(0x08);
 };
 
 static_assert(sizeof(ZRenderDepthStencilView) == 56);
+static_assert(offsetof(ZRenderDepthStencilView, m_pTexture) == 0x28);
 
 class ZRenderShaderResourceView {
 public:
