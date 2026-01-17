@@ -7,14 +7,6 @@
 void Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
     const std::string& s_PropertyName, const STypeID* p_TypeID
 ) {
-    auto* s_Array = reinterpret_cast<TArray<uint8_t>*>(p_Data);
-
-    if (!s_Array) {
-        ImGui::TextDisabled("null");
-
-        return;
-    }
-
     const IArrayType* s_ArrayType = static_cast<IArrayType*>(p_TypeID->typeInfo());
     size_t s_ArraySize = s_ArrayType->m_pArrayFunctions->size(p_Data);
 
