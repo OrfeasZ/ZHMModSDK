@@ -1,13 +1,14 @@
 #include "Editor.h"
 #include "imgui.h"
 
-void Editor::SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+    bool s_IsChanged = false;
     auto s_Value = *static_cast<SVector2*>(p_Data);
 
     ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - m_CopyWidgetWidth);
 
     if (ImGui::DragFloat2(p_Id.c_str(), &s_Value.x, 0.1f)) {
-        OnSetPropertyValue(p_Entity, p_Property->m_nPropertyId, ZVariant(s_Value), std::nullopt);
+        s_IsChanged = true;
     }
 
     if (ImGuiCopyWidget(("SVector2_" + p_Id).c_str())) {
@@ -19,15 +20,18 @@ void Editor::SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, ZEnt
             )
         );
     }
+
+    return s_IsChanged;
 }
 
-void Editor::SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+    bool s_IsChanged = false;
     auto s_Value = *static_cast<SVector3*>(p_Data);
 
     ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - m_CopyWidgetWidth);
 
     if (ImGui::DragFloat3(p_Id.c_str(), &s_Value.x, 0.1f)) {
-        OnSetPropertyValue(p_Entity, p_Property->m_nPropertyId, ZVariant(s_Value), std::nullopt);
+        s_IsChanged = true;
     }
 
     if (ImGuiCopyWidget(("SVector3_" + p_Id).c_str())) {
@@ -40,15 +44,18 @@ void Editor::SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, ZEnt
             )
         );
     }
+
+    return s_IsChanged;
 }
 
-void Editor::SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+    bool s_IsChanged = false;
     auto s_Value = *static_cast<SVector4*>(p_Data);
-    
+
     ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - m_CopyWidgetWidth);
 
     if (ImGui::DragFloat4(p_Id.c_str(), &s_Value.x, 0.1f)) {
-        OnSetPropertyValue(p_Entity, p_Property->m_nPropertyId, ZVariant(s_Value), std::nullopt);
+        s_IsChanged = true;
     }
 
     if (ImGuiCopyWidget(("SVector3_" + p_Id).c_str())) {
@@ -62,4 +69,6 @@ void Editor::SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, ZEnt
             )
         );
     }
+
+    return s_IsChanged;
 }

@@ -524,7 +524,7 @@ void Editor::DrawEntityProperties() {
                 }
 
                 // Render the value of the property.
-                DrawEntityPropertyValue(
+                bool s_IsChanged = DrawEntityPropertyValue(
                     s_InputId,
                     s_PropertyName,
                     s_TypeName,
@@ -533,6 +533,14 @@ void Editor::DrawEntityProperties() {
                     s_Property,
                     s_Data
                 );
+
+                if (s_IsChanged) {
+                    ZObjectRef s_ObjectRef;
+
+                    s_ObjectRef.Assign(s_PropertyInfo->m_pType, s_Data);
+
+                    OnSetPropertyValue(s_SelectedEntity, s_Property->m_nPropertyId, s_ObjectRef, std::nullopt);
+                }
 
                 ImGui::Separator();
 
@@ -545,7 +553,7 @@ void Editor::DrawEntityProperties() {
     ImGui::End();
 }
 
-void Editor::DrawEntityPropertyValue(
+bool Editor::DrawEntityPropertyValue(
     const std::string& p_Id,
     const std::string& p_PropertyName,
     const std::string& p_TypeName,
@@ -554,62 +562,64 @@ void Editor::DrawEntityPropertyValue(
     ZEntityProperty* p_Property,
     void* p_Data
 ) {
+    bool s_IsChanged = false;
+
     if (p_TypeName == "ZString") {
-        StringProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = StringProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "bool") {
-        BoolProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = BoolProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "uint8") {
-        Uint8Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Uint8Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "int8") {
-        Int8Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Int8Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "uint16") {
-        Uint16Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Uint16Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "int16") {
-        Int16Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Int16Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "uint32") {
-        Uint32Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Uint32Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "int32") {
-        Int32Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Int32Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "uint64") {
-        Uint64Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Uint64Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "int64") {
-        Int64Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Int64Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "float32") {
-        Float32Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Float32Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "float64") {
-        Float64Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Float64Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SVector2") {
-        SVector2Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SVector2Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SVector3") {
-        SVector3Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SVector3Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SVector4") {
-        SVector4Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SVector4Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SMatrix43") {
-        SMatrix43Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SMatrix43Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SColorRGB") {
-        SColorRGBProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SColorRGBProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SColorRGBA") {
-        SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeID->typeInfo()->isEnum()) {
-        EnumProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = EnumProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeID->typeInfo()->isResource()) {
         ResourcePtrProperty(p_Id, p_Entity, p_Property, p_Data);
@@ -630,15 +640,17 @@ void Editor::DrawEntityPropertyValue(
         ZGuidProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeID->typeInfo()->isArray() || p_TypeID->typeInfo()->isFixedArray()) {
-        ArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
+        s_IsChanged = ArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
     }
     else if (p_TypeName == "ZCurve") {
-        ZCurveProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
+        s_IsChanged = ZCurveProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
     }
     else if (p_TypeName == "ZGameTime") {
-        ZGameTimeProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = ZGameTimeProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else {
         UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data);
     }
+
+    return s_IsChanged;
 }

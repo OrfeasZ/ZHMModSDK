@@ -156,26 +156,27 @@ void Editor::ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
     }
 }
 
-void Editor::ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+    bool s_IsChanged = false;
     auto s_Value = *static_cast<ZGameTime*>(p_Data);
 
     ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - m_CopyWidgetWidth);
 
     if (ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_S64, &s_Value.m_nTicks)) {
-        OnSetPropertyValue(p_Entity, p_Property->m_nPropertyId, ZVariant(s_Value), std::nullopt);
+        s_IsChanged = true;
     }
 
     if (ImGuiCopyWidget(("GameTime_" + p_Id).c_str())) {
         CopyToClipboard(std::to_string(s_Value.m_nTicks));
     }
+
+    return s_IsChanged;
 }
 
-void Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+bool Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
     const std::string& s_PropertyName, const STypeID* p_TypeID) {
+    bool s_IsChanged = false;
     auto* s_Curve = static_cast<ZCurve*>(p_Data);
-
-    if (!s_Curve)
-        return;
 
     IType* s_ArrayTypeInfo = (*Globals::TypeRegistry)->GetTypeID("TArray<TFixedArray<float32>>")->typeInfo();
     const IArrayType* s_ArrayType = static_cast<IArrayType*>(s_ArrayTypeInfo);
@@ -224,7 +225,7 @@ void Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
     }
 
     if (s_IsTreeNodeOpen) {
-        DrawArrayElements(
+        s_IsChanged = DrawArrayElements(
             p_Id,
             p_Entity,
             p_Property,
@@ -259,6 +260,8 @@ void Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
     }
 
     ImGui::PopID();
+
+    return s_IsChanged;
 }
 
 void Editor::PlotZCurve(const ZCurve* p_Curve) {

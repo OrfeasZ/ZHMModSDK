@@ -4,9 +4,10 @@
 
 #include <ResourceLib_HM3.h>
 
-void Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+bool Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
     const std::string& s_PropertyName, const STypeID* p_TypeID
 ) {
+    bool s_IsChanged = false;
     const IArrayType* s_ArrayType = static_cast<IArrayType*>(p_TypeID->typeInfo());
     size_t s_ArraySize = s_ArrayType->m_pArrayFunctions->size(p_Data);
 
@@ -25,7 +26,7 @@ void Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
     ImGui::PopFont();
 
     if (s_IsTreeNodeOpen) {
-        DrawArrayElements(
+        s_IsChanged = DrawArrayElements(
             p_Id,
             p_Entity,
             p_Property,
@@ -35,15 +36,18 @@ void Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
 
         ImGui::TreePop();
     }
+
+    return s_IsChanged;
 }
 
-void Editor::DrawArrayElements(
+bool Editor::DrawArrayElements(
     const std::string& p_Id,
     ZEntityRef p_Entity,
     ZEntityProperty* p_Property,
     void* p_Data,
     const IArrayType* p_ArrayType
 ) {
+    bool s_IsAnyElementChanged = false;
     const STypeID* s_ElementTypeID = p_ArrayType->m_pArrayElementType;
     const std::string s_ElementTypeName = s_ElementTypeID->typeInfo()->m_pTypeName;
 
@@ -64,7 +68,7 @@ void Editor::DrawArrayElements(
 
         const std::string s_ElementId = std::format("{}[{}]", p_Id, s_Index);
 
-        DrawEntityPropertyValue(
+        s_IsAnyElementChanged |= DrawEntityPropertyValue(
             s_ElementId,
             "",
             s_ElementTypeName,
@@ -76,4 +80,6 @@ void Editor::DrawArrayElements(
 
         ImGui::PopID();
     }
+
+    return s_IsAnyElementChanged;
 }
