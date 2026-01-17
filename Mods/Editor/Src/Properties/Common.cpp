@@ -141,17 +141,18 @@ void Editor::ZRepositoryIDProperty(
 
 void Editor::ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
     if (auto s_Guid = reinterpret_cast<ZGuid*>(p_Data)) {
-        const auto& s_RepositoryId = s_Guid->ToString();
+        const auto& s_GuidString = s_Guid->ToString();
 
-        ImGui::Text("%s", s_RepositoryId.c_str());
+        ImGui::Text("%s", s_GuidString.c_str());
 
         if (ImGuiCopyWidget(("Guid_" + p_Id).c_str())) {
-            CopyToClipboard(s_RepositoryId.c_str());
+            CopyToClipboard(s_GuidString.c_str());
         }
     }
     else {
-        constexpr auto textColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
-        ImGui::TextColored(textColor, "(%s)", "null");
+        constexpr auto s_TextColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
+
+        ImGui::TextColored(s_TextColor, "(%s)", "null");
     }
 }
 
