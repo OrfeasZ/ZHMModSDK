@@ -153,6 +153,12 @@ namespace bfx {
 
         void* m_pProxy;
     };
+
+    class AreaHandle {
+    public:
+        void* m_handleImpl;
+        void* m_pSpace;
+    };
 }
 
 class ZPFObstacleHandle;
@@ -225,3 +231,14 @@ public:
     PAD(0x20);
     IPFObstacleManager* m_obstacleManager; // 0x78
 };
+
+#pragma pack(push, 4)
+
+class ZPFLocation {
+public:
+    SVector3 m_pos;
+    bfx::AreaHandle m_area;
+    bool m_bMapped;
+};
+
+#pragma pack(pop)

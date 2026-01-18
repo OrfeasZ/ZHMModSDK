@@ -10,6 +10,7 @@
 #include <ResourceLib_HM3.h>
 #include <simdjson.h>
 #include <filesystem>
+#include <Util/ResourceUtils.h>
 
 static void WaitForResources() {
     while (!Globals::ResourceManager->DoneLoading()) {
@@ -108,6 +109,117 @@ void ModSDK::MountChunk(uint32_t p_ChunkIndex) {
     }
 
     Logger::Debug("All requested chunks have been mounted.");
+}
+
+void ModSDK::UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) {
+    if (!IsChunkMounted(p_ChunkIndex)) {
+        return;
+    }
+
+    ZPackageManagerBase* s_PackageManagerBase = *Globals::PackageManager;
+    uint32_t s_ParentChunkIndex = -1;
+    bool s_UnmountParentChunk = false;
+    bool s_IsPartitionFound = false;
+
+    for (auto& s_PartitionInfo : s_PackageManagerBase->m_aPartitionInfos) {
+        if (s_PartitionInfo->m_nIndex == p_ChunkIndex) {
+            s_IsPartitionFound = true;
+
+            if (s_PartitionInfo->m_pParent) {
+                s_ParentChunkIndex = s_PartitionInfo->m_pParent->m_nIndex;
+                s_UnmountParentChunk = true;
+            }
+
+            break;
+        }
+    }
+
+    if (!s_IsPartitionFound) {
+        Logger::Error("Can't unmount chunk {}: no matching partition found!", p_ChunkIndex);
+        return;
+    }
+
+    if (s_ParentChunkIndex != -1) {
+        for (auto& s_PartitionInfo : s_PackageManagerBase->m_aPartitionInfos) {
+            if (s_PartitionInfo->m_nIndex == p_ChunkIndex) {
+                continue;
+            }
+
+            if (!s_PartitionInfo->m_pParent) {
+                continue;
+            }
+
+            if (s_PartitionInfo->m_pParent->m_nIndex != s_ParentChunkIndex) {
+                continue;
+            }
+
+            if (IsChunkMounted(s_PartitionInfo->m_nIndex)) {
+                s_UnmountParentChunk = false;
+                break;
+            }
+        }
+    }
+
+    ZResourceContainer* s_ResourceContainer = *Globals::ResourceContainer;
+    uint8_t s_PackageId = 0;
+
+    for (size_t i = 0; i < s_ResourceContainer->m_MountedPackages.size(); ++i) {
+        const ZString& s_MountedPackage = s_ResourceContainer->m_MountedPackages[i];
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_MountedPackage);
+
+        if (!s_ChunkIndex) {
+            continue;
+        }
+
+        if (s_UnmountParentChunk) {
+            if (s_ChunkIndex == s_ParentChunkIndex) {
+                s_PackageId = i;
+                break;
+            }
+        }
+        else if (s_ChunkIndex == p_ChunkIndex) {
+            s_PackageId = i;
+            break;
+        }
+    }
+
+    std::unordered_set<uint32_t> s_ChunksToRemount;
+
+    if (p_RemountChunksBelow) {
+        for (size_t i = s_PackageId; i < s_ResourceContainer->m_MountedPackages.size(); ++i) {
+            const ZString& s_MountedPackage = s_ResourceContainer->m_MountedPackages[i];
+            auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_MountedPackage);
+
+            if (!s_ChunkIndex) {
+                continue;
+            }
+
+            if (s_ChunkIndex == p_ChunkIndex) {
+                continue;
+            }
+
+            s_ChunksToRemount.insert(*s_ChunkIndex);
+        }
+    }
+
+    for (size_t i = 0; i < s_ResourceContainer->m_firstPackageIndexPerMountedPartition.size(); ++i) {
+        if (s_ResourceContainer->m_firstPackageIndexPerMountedPartition[i] == s_PackageId) {
+            s_PackageManagerBase->UnmountPartitions(i);
+            break;
+        }
+    }
+
+    if (p_RemountChunksBelow) {
+        for (uint32_t s_ChunkIndex : s_ChunksToRemount) {
+            MountChunk(s_ChunkIndex);
+        }
+    }
+
+    Logger::Info(
+        "Unmounted chunk {}{}",
+        p_ChunkIndex,
+        p_RemountChunksBelow ? " and remounted chunks below" : ""
+    );
 }
 
 const TArray<uint32_t>& ModSDK::GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) {

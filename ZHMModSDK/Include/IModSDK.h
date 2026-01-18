@@ -10,6 +10,8 @@
 #include "D3DUtils.h"
 #include "directx/d3d12.h"
 
+#include "implot.h"
+
 class IPluginInterface;
 class ZRenderDestination;
 class SVector2;
@@ -46,6 +48,8 @@ public:
     virtual ImFont* GetImGuiMediumFont() = 0;
     virtual ImFont* GetImGuiBoldFont() = 0;
     virtual ImFont* GetImGuiBlackFont() = 0;
+
+    virtual ImPlotContext* GetImPlotContext() = 0;
 
     /**
      * Try to get the name of a pin by its ID.
@@ -271,6 +275,31 @@ public:
      * @param p_ChunkIndex The index of the chunk to mount.
      */
     virtual void MountChunk(uint32_t p_ChunkIndex) = 0;
+
+    /**
+     * Unmounts a chunk and all chunks mounted after it.
+     *
+     * Resources in the resource container are stored in a single contiguous array
+     * and grouped by package using prefix indices. Because resource indices are
+     * assigned sequentially and packages occupy a tail range of the resource array,
+     * it is not possible to unmount a package without also unmounting all packages
+     * mounted after it.
+     *
+     * If the target chunk belongs to a parent chunk, the parent chunk will also be
+     * unmounted if it is not required by any other currently mounted chunk.
+     *
+     * If p_RemountChunksBelow is true, all chunks below the target chunk that were
+     * unmounted as a result of this operation will be
+     * mounted again in their original order.
+     *
+     * The unmount operation will fail if any resource belonging to the affected
+     * packages still has a non-zero reference count.
+     *
+     * @param p_ChunkIndex Index of the chunk to unmount.
+     * @param p_RemountChunksBelow Whether to remount chunks that were unmounted
+     *                             after the target chunk.
+     */
+    virtual void UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) = 0;
 
     /**
      * Get the list of indices of chunks that contain the resource with the specified runtime resource ID.

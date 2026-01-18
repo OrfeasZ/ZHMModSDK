@@ -197,6 +197,10 @@ void Editor::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS")) {
         m_DebugChannelsMenuActive = !m_DebugChannelsMenuActive;
     }
+
+    if (ImGui::Button(ICON_MD_MEETING_ROOM " ROOMS")) {
+        m_RoomsMenuActive = !m_RoomsMenuActive;
+    }
 }
 
 void Editor::ToggleEditorServerEnabled() {
@@ -273,12 +277,16 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
 
     const auto s_Result = ImGui::ButtonEx(
         (std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(),
-        { 20, 20 },
+        { m_CopyWidgetButtonSize, m_CopyWidgetButtonSize },
         ImGuiButtonFlags_AlignTextBaseLine
     );
 
     ImGui::SetWindowFontScale(1.0);
     ImGui::PopStyleVar(2);
+
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Copy to clipboard");
+    }
 
     return s_Result;
 }
@@ -292,12 +300,13 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawEntityProperties();
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracer();
-
-        DrawItems(p_HasFocus);
-        DrawActors(p_HasFocus);
-        DrawDebugChannels(p_HasFocus);
         //DrawLibrary();
     }
+
+    DrawItems(p_HasFocus);
+    DrawActors(p_HasFocus);
+    DrawDebugChannels(p_HasFocus);
+    DrawRooms(p_HasFocus);
 
     if (m_EditorCameraRT && m_EditorCamera) {
         ImGui::Begin("RT Texture");
@@ -390,11 +399,19 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     m_EntitiesToDestroy.clear();
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
-        std::vector<ZEntityRef> s_EntitiesToAdd; {
+        std::vector<ZEntityRef> s_EntitiesToAdd;
+        
+        {
             std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
 
             if (!m_PendingDynamicEntities.empty()) {
-                s_EntitiesToAdd.swap(m_PendingDynamicEntities);
+                s_EntitiesToAdd.reserve(m_PendingDynamicEntities.size());
+
+                for (const auto& ref : m_PendingDynamicEntities) {
+                    s_EntitiesToAdd.push_back(ref);
+                }
+
+                m_PendingDynamicEntities.clear();
             }
         }
 
@@ -406,7 +423,46 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             if (m_ReparentDynamicOutfitEntities) {
                 ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
             }
+
+            {
+                std::scoped_lock s_ScopedLock(m_DebugEntitiesMutex);
+
+                if (!m_EntityRefToDebugEntities.empty()) {
+                    for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
+                        auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
+
+                        if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                            GetDebugEntities(s_Iterator->second);
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    if (m_RemoveItemFromInventory) {
+        if (!m_ItemToRemove) {
+            m_RemoveItemFromInventory = false;
+            return;
+        }
+
+        const bool s_IsMainWeapon = m_SelectedActor->m_pInventoryHandler->m_rMainWeapon == m_ItemToRemove;
+
+        m_SelectedActor->ReleaseItem(m_ItemToRemove, false);
+
+        Functions::ZWorldInventory_DestroyItem->Call(
+            Globals::WorldInventory,
+            TEntityRef<IItemBase>(m_ItemToRemove.m_ref)
+        );
+
+        if (s_IsMainWeapon && m_SelectedActor->m_pInventoryHandler->m_aInventory.size() > 0) {
+            m_SelectedActor->m_pInventoryHandler->m_rMainWeapon = TEntityRef<ZHM5ItemWeapon>(
+                m_SelectedActor->m_pInventoryHandler->m_aInventory[0].m_ref
+            );
+        }
+
+        m_ItemToRemove = {};
+        m_RemoveItemFromInventory = false;
     }
 }
 
@@ -864,7 +920,7 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
     return s_Matrix;
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
+DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     if (m_SelectionForFreeCameraEditorStyleEntity) {
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
     }
@@ -956,11 +1012,12 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_TrackCamActive = false;
     }
 
-    m_CurrentlySelectedActor = nullptr;
+    m_SelectedActor = nullptr;
+    m_GlobalOutfitKit = {};
 
     m_SelectedGizmoEntity = nullptr;
 
-    m_DebugEntities.clear();
+    m_EntityRefToDebugEntities.clear();
 
     if (m_EditorData) {
         m_EditorCamera = {};
@@ -970,6 +1027,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     }
 
     m_EntityRefToFactoryRuntimeResourceIDs.clear();
+
+    m_SortedRoomEntities.clear();
 
     return { HookAction::Continue() };
 }
@@ -1092,7 +1151,9 @@ DEFINE_PLUGIN_DETOUR(
     }
 
     const auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[index.val];
-    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid; {
+    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid;
+    
+    {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
         auto s_Iterator = m_RuntimeResourceIDToExtendedCppEntityFactory.find(s_RuntimeResourceID);
 

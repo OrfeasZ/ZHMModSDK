@@ -203,7 +203,7 @@ void Editor::InitializeDebugChannels() {
 
     for (const auto& [s_DebugChannelName, s_DebugChannelEnum] : m_DebugChannels) {
         for (const auto& s_TypeName : m_DebugChannelNameToTypeNames[s_DebugChannelName]) {
-            m_DebugChannelToTypeNameToVisibility[s_DebugChannelEnum][s_TypeName] = true;
+            m_DebugChannelToTypeNameToState[s_DebugChannelEnum][s_TypeName] = true;
         }
     }
 }
@@ -292,15 +292,15 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
             InitializeDebugEntityTypeIDs();
         }
 
-        if (!m_DebugEntities.empty()) {
-            ImGui::Text("Debug Entity Count: %zu", m_DebugEntities.size());
+        if (!m_EntityRefToDebugEntities.empty()) {
+            ImGui::Text("Debug Entity Count: %zu", m_EntityRefToDebugEntities.size());
 
             ImGui::Separator();
 
             ImGui::Checkbox("Draw Gizmos", &m_DrawGizmos);
             
             if (ImGui::Checkbox("Draw All Gizmos", &m_DrawAllGizmos)) {
-                for (auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToVisibility) {
+                for (auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToState) {
                     s_IsVisible = m_DrawAllGizmos;
                 }
             }
@@ -317,17 +317,17 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
                 );
 
                 if (ImGui::CollapsingHeader(s_Header.c_str())) {
-                    bool& s_DrawGizmos = m_DebugChannelToVisibility[pair.second];
+                    bool& s_DrawGizmos = m_DebugChannelToState[pair.second];
 
                     ImGui::Checkbox(fmt::format("Draw Gizmos##{}", pair.first).c_str(), &s_DrawGizmos);
 
                     ImGui::Separator();
 
                     const auto& s_TypeNameToGizmoCount = m_DebugChannelToTypeNameToDebugEntityCount[pair.second];
-                    auto& s_TypeNameToVisibility = m_DebugChannelToTypeNameToVisibility[pair.second];
+                    auto& s_TypeNameToState = m_DebugChannelToTypeNameToState[pair.second];
 
                     for (const auto& s_Pair : s_TypeNameToGizmoCount) {
-                        bool& s_DrawGizmos2 = s_TypeNameToVisibility[s_Pair.first];
+                        bool& s_DrawGizmos2 = s_TypeNameToState[s_Pair.first];
                         const std::string s_Label = fmt::format("{} ({})##{}{}",
                             s_Pair.first,
                             s_Pair.second,
@@ -357,18 +357,35 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
 }
 
 void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
-    p_Renderer->SetDistanceCullingEnabled(true);
-
     if (!m_DrawGizmos && !m_DrawShapes) {
         return;
     }
 
-    for (const auto& s_DebugEntity : m_DebugEntities) {
-        if (s_DebugEntity->m_HasGizmo) {
-            DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
+    if (!m_DrawAllGizmos) {
+        bool s_IsAnyDebugChannelEnabled = false;
+
+        for (const auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToState) {
+            if (s_IsVisible) {
+                s_IsAnyDebugChannelEnabled = true;
+                break;
+            }
         }
-        else {
-            DrawShapes(*s_DebugEntity, p_Renderer);
+
+        if (!s_IsAnyDebugChannelEnabled) {
+            return;
+        }
+    }
+
+    p_Renderer->SetDistanceCullingEnabled(true);
+
+    for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
+        for (const auto& s_DebugEntity : s_DebugEntities) {
+            if (s_DebugEntity->m_HasGizmo) {
+                DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
+            }
+            else {
+                DrawShapes(*s_DebugEntity, p_Renderer);
+            }
         }
     }
 
@@ -380,11 +397,11 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
         return;
     }
 
-    if (!m_DebugChannelToVisibility[p_GizmoEntity.m_DebugChannel]) {
+    if (!m_DebugChannelToState[p_GizmoEntity.m_DebugChannel]) {
         return;
     }
 
-    if (!m_DebugChannelToTypeNameToVisibility[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
+    if (!m_DebugChannelToTypeNameToState[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
         return;
     }
 
@@ -464,11 +481,11 @@ void Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer)
         return;
     }
 
-    if (!m_DebugChannelToVisibility[p_DebugEntity.m_DebugChannel]) {
+    if (!m_DebugChannelToState[p_DebugEntity.m_DebugChannel]) {
         return;
     }
 
-    if (!m_DebugChannelToTypeNameToVisibility[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
+    if (!m_DebugChannelToTypeNameToState[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
         return;
     }
 }
@@ -495,10 +512,6 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
     }
 
     if (p_EntityTreeNode->IsPendingDeletion) {
-        return;
-    }
-
-    if (p_EntityTreeNode->IsDynamicEntity) {
         return;
     }
 
@@ -1229,7 +1242,7 @@ void Editor::AddDebugEntity(
     s_DebugEntity->m_DebugChannel = p_DebugChannel;
     s_DebugEntity->m_HasGizmo = false;
 
-    m_DebugEntities.push_back(std::move(s_DebugEntity));
+    m_EntityRefToDebugEntities[p_EntityRef].push_back(std::move(s_DebugEntity));
 
     ++m_DebugChannelToDebugEntityCount[p_DebugChannel];
     ++m_DebugChannelToTypeNameToDebugEntityCount[p_DebugChannel][p_TypeName];
@@ -1258,7 +1271,7 @@ void Editor::AddGizmoEntity(
     s_GizmoEntity->m_Color = p_Color;
     s_GizmoEntity->m_Transform = p_Transform;
 
-    m_DebugEntities.push_back(std::move(s_GizmoEntity));
+    m_EntityRefToDebugEntities[p_EntityRef].push_back(std::move(s_GizmoEntity));
 
     ++m_DebugChannelToDebugEntityCount[p_DebugChannel];
     ++m_DebugChannelToTypeNameToDebugEntityCount[p_DebugChannel][p_TypeName];
@@ -1289,7 +1302,7 @@ void Editor::AddGizmoEntity(
         s_GizmoEntity->m_Color = p_Color;
         s_GizmoEntity->m_Transform = p_Transform;
 
-        m_DebugEntities.push_back(std::move(s_GizmoEntity));
+        m_EntityRefToDebugEntities[p_EntityRef].push_back(std::move(s_GizmoEntity));
 
         ++m_DebugChannelToDebugEntityCount[p_DebugChannel];
         ++m_DebugChannelToTypeNameToDebugEntityCount[p_DebugChannel][p_TypeName];
@@ -1299,6 +1312,34 @@ void Editor::AddGizmoEntity(
 
         Logger::Error("Hash of gizmo is missing for entity with {:016x} id and {} type!", s_EntityId, p_TypeName);
     }
+}
+
+void Editor::DeleteDebugEntity(const ZEntityRef p_EntityRef) {
+    std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+
+    auto s_Iterator = m_EntityRefToDebugEntities.find(p_EntityRef);
+
+    if (s_Iterator == m_EntityRefToDebugEntities.end()) {
+        return;
+    }
+
+    for (const auto& s_DebugEntity : s_Iterator->second) {
+        const EDebugChannel s_DebugChannel = s_DebugEntity->m_DebugChannel;
+        const std::string& s_TypeName = s_DebugEntity->m_TypeName;
+
+        auto& s_DebugEntityCountForChannel = m_DebugChannelToDebugEntityCount[s_DebugChannel];
+        auto& s_DebugEntityCountForTypeName = m_DebugChannelToTypeNameToDebugEntityCount[s_DebugChannel][s_TypeName];
+
+        if (s_DebugEntityCountForChannel > 0) {
+            --s_DebugEntityCountForChannel;
+        }
+
+        if (s_DebugEntityCountForTypeName > 0) {
+            --s_DebugEntityCountForTypeName;
+        }
+    }
+
+    m_EntityRefToDebugEntities.erase(s_Iterator);
 }
 
 EDebugChannel Editor::ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer) {
@@ -1344,67 +1385,69 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
         DirectX::SimpleMath::Vector3(p_Direction.x, p_Direction.y, p_Direction.z)
     );
     float s_ClosestDistance = FLT_MAX;
-    int s_HitIndex = -1;
+    GizmoEntity* s_HitGizmo = nullptr;
 
     static STypeID* s_SpatialEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZSpatialEntity");
 
-    for (size_t i = 0; i < m_DebugEntities.size(); ++i) {
-        if (!m_DebugEntities[i]->m_HasGizmo) {
-            continue;
-        }
+    for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
+        for (const auto& s_DebugEntity : s_DebugEntities) {
+            if (!s_DebugEntity->m_HasGizmo) {
+                continue;
+            }
 
-        GizmoEntity* s_GizmoEntity = static_cast<GizmoEntity*>(m_DebugEntities[i].get());
+            GizmoEntity* s_GizmoEntity = static_cast<GizmoEntity*>(s_DebugEntity.get());
 
-        if (!m_DebugChannelToVisibility[s_GizmoEntity->m_DebugChannel]) {
-            continue;
-        }
+            if (!m_DebugChannelToState[s_GizmoEntity->m_DebugChannel]) {
+                continue;
+            }
 
-        if (!m_DebugChannelToTypeNameToVisibility[s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
-            continue;
-        }
+            if (!m_DebugChannelToTypeNameToState[s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
+                continue;
+            }
 
-        ZRenderPrimitiveResource* s_RenderPrimitiveResource = static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());
+            ZRenderPrimitiveResource* s_RenderPrimitiveResource = static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());
 
-        if (!s_RenderPrimitiveResource) {
-            continue;
-        }
+            if (!s_RenderPrimitiveResource) {
+                continue;
+            }
 
-        SVector3 s_Center = (s_RenderPrimitiveResource->m_vMin + s_RenderPrimitiveResource->m_vMax) * 0.5f;
-        SVector3 s_Extents = (s_RenderPrimitiveResource->m_vMax - s_RenderPrimitiveResource->m_vMin) * 0.5f;
+            SVector3 s_Center = (s_RenderPrimitiveResource->m_vMin + s_RenderPrimitiveResource->m_vMax) * 0.5f;
+            SVector3 s_Extents = (s_RenderPrimitiveResource->m_vMax - s_RenderPrimitiveResource->m_vMin) * 0.5f;
 
-        DirectX::BoundingBox s_Box(
-            DirectX::SimpleMath::Vector3(s_Center.x, s_Center.y, s_Center.z),
-            DirectX::SimpleMath::Vector3(s_Extents.x, s_Extents.y, s_Extents.z)
-        );
-        
-        SMatrix s_Transform;
+            DirectX::BoundingBox s_Box(
+                DirectX::SimpleMath::Vector3(s_Center.x, s_Center.y, s_Center.z),
+                DirectX::SimpleMath::Vector3(s_Extents.x, s_Extents.y, s_Extents.z)
+            );
 
-        if (s_GizmoEntity->m_TypeName == "ZActBehaviorEntity") {
-            const TEntityRef<ZSpatialEntity> s_MoveToTransform = s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
+            SMatrix s_Transform;
 
-            s_Transform = s_MoveToTransform.m_pInterfaceRef->GetWorldMatrix() * s_GizmoEntity->m_Transform;
-        }
-        else {
-            auto s_SpatialEntity = s_GizmoEntity->m_EntityRef.QueryInterface<ZSpatialEntity>(s_SpatialEntityTypeID);
+            if (s_GizmoEntity->m_TypeName == "ZActBehaviorEntity") {
+                const TEntityRef<ZSpatialEntity> s_MoveToTransform = s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
 
-            s_Transform = s_SpatialEntity->GetWorldMatrix();
-        }
+                s_Transform = s_MoveToTransform.m_pInterfaceRef->GetWorldMatrix() * s_GizmoEntity->m_Transform;
+            }
+            else {
+                auto s_SpatialEntity = s_GizmoEntity->m_EntityRef.QueryInterface<ZSpatialEntity>(s_SpatialEntityTypeID);
 
-        DirectX::XMMATRIX s_Transform2 = DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));
+                s_Transform = s_SpatialEntity->GetWorldMatrix();
+            }
 
-        s_Box.Transform(s_Box, s_Transform2);
+            DirectX::XMMATRIX s_Transform2 = DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));
 
-        float s_Distance = 0.f;
+            s_Box.Transform(s_Box, s_Transform2);
 
-        if (s_Ray.Intersects(s_Box, s_Distance)) {
-            if (s_Distance < s_ClosestDistance && s_Distance <= 200.f) {
-                s_ClosestDistance = s_Distance;
-                s_HitIndex = static_cast<int>(i);
+            float s_Distance = 0.f;
+
+            if (s_Ray.Intersects(s_Box, s_Distance)) {
+                if (s_Distance < s_ClosestDistance && s_Distance <= 200.f) {
+                    s_ClosestDistance = s_Distance;
+                    s_HitGizmo = s_GizmoEntity;
+                }
             }
         }
     }
 
-    if (s_HitIndex == -1) {
+    if (!s_HitGizmo) {
         if (m_raycastLogging)
             Logger::Debug("RaycastGizmos found no hits.");
 
@@ -1413,7 +1456,7 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
         return false;
     }
 
-    m_SelectedGizmoEntity = static_cast<GizmoEntity*>(m_DebugEntities[s_HitIndex].get());
+    m_SelectedGizmoEntity = s_HitGizmo;
 
     if (m_raycastLogging)
     {

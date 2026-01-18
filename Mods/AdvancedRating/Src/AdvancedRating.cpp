@@ -130,7 +130,7 @@ DEFINE_PLUGIN_DETOUR(
     const ZDynamicObject& event
 ) {
     ZString s_EventData;
-    Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), &s_EventData);
+    Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), s_EventData);
 
     Logger::Debug("Achievement Event Sent: {} - {}", eventId, s_EventData);
 

@@ -46,7 +46,12 @@ class ZInputDeviceManager;
 class ZPackageManagerBase;
 class ZUIText;
 class ZWorldInventory;
+class ZTargetManager;
 class ZRoomManager;
+class ZUIMapTrackerManager;
+class ZContractsManager;
+class ZComponentManager;
+class ZUIMapManager;
 
 namespace bfx {
     class SystemInstance;
@@ -116,5 +121,11 @@ public:
     static ZPackageManagerBase** PackageManager;
     static ZUIText* UIText;
     static ZWorldInventory* WorldInventory;
+    static uint32_t* WorldInventory_InvalidTicket;
+    static ZTargetManager* TargetManager;
     static ZRoomManager** RoomManager;
+    static ZUIMapTrackerManager* UIMapTrackerManager;
+    static ZContractsManager* ContractsManager;
+    static ZComponentManager** ComponentManager;
+    static ZUIMapManager* UIMapManager;
 };

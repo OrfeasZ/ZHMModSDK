@@ -98,6 +98,7 @@ public:
     ZResourcePtr m_ResourceID; // 0x188
     SVector3 m_PrimitiveScale; // 0x190
     ESeamFixMode m_eSeamFix; // 0x19C
+    PAD(0x10);
 };
 
 static_assert(sizeof(ZRenderableEntity) == 0xD0);

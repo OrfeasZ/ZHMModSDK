@@ -357,8 +357,8 @@ void Editor::AddDynamicEntitiesToEntityTree(
 
         s_DynamicEntities.reserve(m_DynamicEntities.size());
 
-        for (const auto& ref: m_DynamicEntities) {
-            s_DynamicEntities.push_back(ref);
+        for (const auto& s_DynamicEntity : m_DynamicEntities) {
+            s_DynamicEntities.push_back(s_DynamicEntity);
         }
 
         m_PendingDynamicEntities.clear();
@@ -640,39 +640,6 @@ void Editor::DrawEntityTree() {
             FilterEntityTree();
         }
 
-        static char s_EntityTypeSearchInput[2048] = {};
-        static std::vector<std::string> s_TypeNames;
-
-        if (s_TypeNames.empty()) {
-            ZTypeRegistry* typeRegistry = *Globals::TypeRegistry;
-
-            s_TypeNames.reserve(typeRegistry->m_types.size());
-
-            for (auto& pair: typeRegistry->m_types) {
-                if (!pair.second->typeInfo()->isClass()) {
-                    continue;
-                }
-
-                s_TypeNames.push_back(pair.first.c_str());
-            }
-
-            std::sort(s_TypeNames.begin(), s_TypeNames.end());
-        }
-
-        Util::ImGuiUtils::InputWithAutocomplete(
-            ICON_MD_SEARCH " Search by type##EntityTypesPopup",
-            s_EntityTypeSearchInput,
-            sizeof(s_EntityTypeSearchInput),
-            s_TypeNames,
-            [](auto& s_TypeName) -> const std::string& { return s_TypeName; },
-            [](auto& s_TypeName) -> const std::string& { return s_TypeName; },
-            [&](const std::string& s_TypeName, const std::string&, const auto&) {
-                m_EntityTypeSearchInput = s_EntityTypeSearchInput;
-
-                FilterEntityTree();
-            }
-        );
-
         static char s_EntityNameSearchInput[2048] = {};
 
         if (ImGui::InputText(
@@ -685,6 +652,30 @@ void Editor::DrawEntityTree() {
 
             FilterEntityTree();
         }
+
+        static char s_EntityTypeSearchInput[2048] = {};
+
+        Util::ImGuiUtils::InputWithAutocomplete(
+            ICON_MD_SEARCH " Search by type##EntityTypesPopup",
+            s_EntityTypeSearchInput,
+            sizeof(s_EntityTypeSearchInput),
+            (*Globals::TypeRegistry)->m_types,
+            [](auto& p_Pair) -> std::string {
+                return std::string(p_Pair.first.c_str(), p_Pair.first.size());
+            },
+            [](auto& p_Pair) -> std::string {
+                return std::string(p_Pair.first.c_str(), p_Pair.first.size());
+            },
+            [&](const std::string& typeName, const std::string&, const auto&) {
+                m_EntityTypeSearchInput = s_EntityTypeSearchInput;
+
+                FilterEntityTree();
+            },
+            nullptr,
+            [](auto& p_Pair) {
+                return p_Pair.second->typeInfo() && p_Pair.second->typeInfo()->isClass();
+            }
+        );
 
         if (ImGui::BeginCombo("Entity View Mode", m_EntityViewModes[m_EntityViewMode].c_str())) {
             for (int i = 0; i < m_EntityViewModes.size(); ++i) {
@@ -737,15 +728,16 @@ void Editor::DrawEntityTree() {
             }
         }
 
-        m_CachedEntityTreeMutex.lock_shared();
+        {
+            std::shared_lock lock(m_CachedEntityTreeMutex);
 
-        if (m_CachedEntityTree) {
-            RenderEntity(m_CachedEntityTree);
-        } else {
-            ImGui::Text("No entities loaded. You may want to press the 'Rebuild entity tree' button.");
+            if (m_CachedEntityTree) {
+                RenderEntity(m_CachedEntityTree);
+            }
+            else {
+                ImGui::Text("No entities loaded. You may want to press the 'Rebuild entity tree' button.");
+            }
         }
-
-        m_CachedEntityTreeMutex.unlock_shared();
 
         /*const std::string s_PreviewLabel = fmt::format(
             "{:016X}",
@@ -802,6 +794,21 @@ void Editor::OnSelectEntity(
         }
 
         m_SelectedEntity = p_Entity;
+
+        if (m_SelectActorOnMouseClick) {
+            ZActor* s_Actor = nullptr;
+            ZEntityRef logicalParent = m_SelectedEntity.GetLogicalParent();
+
+            if (logicalParent) {
+                s_Actor = logicalParent.QueryInterface<ZActor>();
+            }
+
+            if (s_Actor) {
+                m_SelectedActor = s_Actor;
+                m_ScrollToActor = true;
+                m_GlobalOutfitKit = {};
+            }
+        }
     } else {
         m_SelectedEntity = nullptr; //Unselect it
     }
@@ -900,7 +907,7 @@ void Editor::DestroyEntityNodeInternal(
 
     const uint64_t s_EntityId = p_NodeToRemove->EntityId;
 
-    std::scoped_lock lock(m_CachedEntityTreeMutex);
+    std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
 
     if (p_NodeToRemove->Entity) {
         m_CachedEntityTreeMap.erase(p_NodeToRemove->Entity);
@@ -978,7 +985,9 @@ DEFINE_PLUGIN_DETOUR(
         entityID,
         externalRefs,
         unk0
-    ); {
+    );
+    
+    {
         std::scoped_lock lock(m_DynamicEntitiesMutex);
 
         m_DynamicEntities.insert(result);
@@ -987,7 +996,7 @@ DEFINE_PLUGIN_DETOUR(
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         std::scoped_lock lock(m_PendingDynamicEntitiesMutex);
 
-        m_PendingDynamicEntities.push_back(result);
+        m_PendingDynamicEntities.insert(result);
     }
 
     return HookResult<ZEntityRef*>(HookAction::Return(), s_EntityRef);
@@ -1005,29 +1014,35 @@ DEFINE_PLUGIN_DETOUR(
         m_SelectedEntity = nullptr;
     }
 
-    m_CachedEntityTreeMutex.lock_shared();
     std::shared_ptr<EntityTreeNode> s_NodeToRemove;
 
-    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
-        auto it = m_CachedEntityTreeMap.find(entityRef);
+    {
+        std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-        if (it != m_CachedEntityTreeMap.end()) {
-            s_NodeToRemove = it->second;
+        if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
+            auto it = m_CachedEntityTreeMap.find(entityRef);
+
+            if (it != m_CachedEntityTreeMap.end()) {
+                s_NodeToRemove = it->second;
+            }
         }
     }
 
-    m_CachedEntityTreeMutex.unlock_shared();
-
     if (s_NodeToRemove) {
         s_NodeToRemove->IsPendingDeletion = true;
+
+        DeleteDebugEntity(s_NodeToRemove->Entity);
         DestroyEntityNodeInternal(s_NodeToRemove, std::nullopt);
     }
-
-    //
 
     {
         std::scoped_lock lock(m_DynamicEntitiesMutex);
         m_DynamicEntities.erase(entityRef);
+    }
+
+    {
+        std::scoped_lock lock(m_PendingDynamicEntitiesMutex);
+        m_PendingDynamicEntities.erase(entityRef);
     }
 
     m_EntityRefToFactoryRuntimeResourceIDs.erase(entityRef);

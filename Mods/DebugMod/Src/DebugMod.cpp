@@ -45,7 +45,7 @@ void DebugMod::OnEngineInitialized() {
 void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
 void DebugMod::OnDrawMenu() {
-    if (ImGui::Button(ICON_MD_BUILD " DEBUG MENU")) {
+    if (ImGui::Button(ICON_MD_BUILD " DEBUG")) {
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
@@ -65,7 +65,7 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
+    const auto s_Showing = ImGui::Begin("DEBUG", &m_DebugMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
@@ -211,7 +211,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
     if (m_RenderActorBoxes || m_RenderActorNames || m_RenderActorRepoIds || m_RenderActorBehaviors) {
         for (size_t i = 0; i < *Globals::NextActorId; ++i) {
-            auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+            auto* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
 
             ZEntityRef s_Ref;
             s_Actor->GetID(s_Ref);
@@ -252,7 +252,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 std::string s_Text;
 
                 if (m_RenderActorNames) {
-                    s_Text += s_Actor->m_sActorName.c_str();
+                    s_Text += s_Actor->GetActorName().c_str();
                 }
 
                 if (m_RenderActorRepoIds) {
@@ -266,18 +266,15 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 }
 
                 if (m_RenderActorBehaviors) {
-                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].
+                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aBehaviorStates[i].
                             m_pCurrentBehavior;
 
                     if (s_BehaviorBase) {
-                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(
-                            s_BehaviorBase->m_Type);
-
                         if (s_Text.length() > 0) {
                             s_Text += "\n\n";
                         }
 
-                        s_Text += CompiledBehaviorTypeToString(s_CompiledBehaviorType);
+                        s_Text += CompiledBehaviorTypeToString(s_BehaviorBase->eBehaviorType);
                     }
                 }
 
@@ -1206,8 +1203,8 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
     }
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
-    return HookResult<void>(HookAction::Continue());
+DEFINE_PLUGIN_DETOUR(DebugMod, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
+    return HookResult<bool>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {

@@ -175,3 +175,10 @@ public:
     virtual void ZCollisionManager_unk122() = 0;
     virtual void ZCollisionManager_unk123() = 0;
 };
+
+class ICharacterCollision :
+    public IComponentInterface {
+public:
+    virtual ~ICharacterCollision() {}
+    virtual void ICharacterCollision_unk0() = 0;
+};

@@ -38,7 +38,6 @@ void Editor::DrawEntityProperties() {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select Logical Parent");
 
-
         ImGui::SameLine(0, 5);
 
         if (ImGui::Button(ICON_MD_BRANDING_WATERMARK)) {
@@ -70,6 +69,25 @@ void Editor::DrawEntityProperties() {
 
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Destroy Entity");
+        }
+
+        ZActor* s_Actor = s_SelectedEntity.QueryInterface<ZActor>();
+        ZEntityRef s_LogicalParent = s_SelectedEntity.GetLogicalParent();
+        ZActor* s_Actor2 = s_LogicalParent ? s_LogicalParent.QueryInterface<ZActor>() : nullptr;
+        ZActor* s_TargetActor = s_Actor ? s_Actor : s_Actor2;
+
+        if (s_TargetActor) {
+            ImGui::SameLine(0, 5);
+
+            if (ImGui::Button(ICON_MD_PEOPLE)) {
+                m_SelectedActor = s_TargetActor;
+                m_ScrollToActor = true;
+                m_GlobalOutfitKit = {};
+            }
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Select In Actors Menu");
+            }
         }
 
         static bool s_LocalTransform = false;
@@ -311,7 +329,12 @@ void Editor::DrawEntityProperties() {
             if (ImGui::Button(ICON_MD_CONTENT_COPY " RT JSON##EntRT")) {
                 CopyToClipboard(
                     fmt::format(
-                        "{{\"XAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"YAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
+                        "{{"
+                        "\"XAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+                        "\"YAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+                        "\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+                        "\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}"
+                        "}}",
                         s_Trans.XAxis.x,
                         s_Trans.XAxis.y,
                         s_Trans.XAxis.z,
@@ -479,7 +502,9 @@ void Editor::DrawEntityProperties() {
                     s_PropertyName = s_PropertyInfo->m_pName;
                 }
 
-                if (!s_PropertyInfo->m_pType->typeInfo()->isArray()) {
+                if (!s_PropertyInfo->m_pType->typeInfo()->isArray() &&
+                    !s_PropertyInfo->m_pType->typeInfo()->isFixedArray() &&
+                    s_TypeName != "ZCurve") {
                     ImGui::Text("%s", s_PropertyName.c_str());
                 }
 
@@ -489,7 +514,9 @@ void Editor::DrawEntityProperties() {
 
                 ImGui::PopFont();
 
-                if (!s_PropertyInfo->m_pType->typeInfo()->isArray()) {
+                if (!s_PropertyInfo->m_pType->typeInfo()->isArray() &&
+                    !s_PropertyInfo->m_pType->typeInfo()->isFixedArray() &&
+                    s_TypeName != "ZCurve") {
                     ImGui::SameLine();
 
                     // Make the next item fill the rest of the width.
@@ -497,7 +524,7 @@ void Editor::DrawEntityProperties() {
                 }
 
                 // Render the value of the property.
-                DrawEntityPropertyValue(
+                bool s_IsChanged = DrawEntityPropertyValue(
                     s_InputId,
                     s_PropertyName,
                     s_TypeName,
@@ -506,6 +533,14 @@ void Editor::DrawEntityProperties() {
                     s_Property,
                     s_Data
                 );
+
+                if (s_IsChanged) {
+                    ZObjectRef s_ObjectRef;
+
+                    s_ObjectRef.Assign(s_PropertyInfo->m_pType, s_Data);
+
+                    OnSetPropertyValue(s_SelectedEntity, s_Property->m_nPropertyId, s_ObjectRef, std::nullopt);
+                }
 
                 ImGui::Separator();
 
@@ -518,7 +553,7 @@ void Editor::DrawEntityProperties() {
     ImGui::End();
 }
 
-void Editor::DrawEntityPropertyValue(
+bool Editor::DrawEntityPropertyValue(
     const std::string& p_Id,
     const std::string& p_PropertyName,
     const std::string& p_TypeName,
@@ -527,65 +562,70 @@ void Editor::DrawEntityPropertyValue(
     ZEntityProperty* p_Property,
     void* p_Data
 ) {
+    bool s_IsChanged = false;
+
     if (p_TypeName == "ZString") {
-        StringProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = StringProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "bool") {
-        BoolProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = BoolProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "uint8") {
-        Uint8Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Uint8Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "int8") {
-        Int8Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Int8Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "uint16") {
-        Uint16Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Uint16Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "int16") {
-        Int16Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Int16Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "uint32") {
-        Uint32Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Uint32Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "int32") {
-        Int32Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Int32Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "uint64") {
-        Uint64Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Uint64Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "int64") {
-        Int64Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Int64Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "float32") {
-        Float32Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Float32Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "float64") {
-        Float64Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = Float64Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SVector2") {
-        SVector2Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SVector2Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SVector3") {
-        SVector3Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SVector3Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SVector4") {
-        SVector4Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SVector4Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SMatrix43") {
-        SMatrix43Property(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SMatrix43Property(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SColorRGB") {
-        SColorRGBProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SColorRGBProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "SColorRGBA") {
-        SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeID->typeInfo()->isEnum()) {
-        EnumProperty(p_Id, p_Entity, p_Property, p_Data);
+        s_IsChanged = EnumProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeID->typeInfo()->isResource()) {
-        ResourceProperty(p_Id, p_Entity, p_Property, p_Data);
+        ResourcePtrProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeName == "ZRuntimeResourceID") {
+        ZRuntimeResourceIDProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName.starts_with("ZEntityRef")) {
         ZEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
@@ -596,10 +636,21 @@ void Editor::DrawEntityPropertyValue(
     else if (p_TypeName == "ZRepositoryID") {
         ZRepositoryIDProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->typeInfo()->isArray()) {
-        TArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeName, p_TypeID);
+    else if (p_TypeName == "ZGuid") {
+        ZGuidProperty(p_Id, p_Entity, p_Property, p_Data);
+    }
+    else if (p_TypeID->typeInfo()->isArray() || p_TypeID->typeInfo()->isFixedArray()) {
+        s_IsChanged = ArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
+    }
+    else if (p_TypeName == "ZCurve") {
+        s_IsChanged = ZCurveProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
+    }
+    else if (p_TypeName == "ZGameTime") {
+        s_IsChanged = ZGameTimeProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else {
         UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data);
     }
+
+    return s_IsChanged;
 }

@@ -49,13 +49,18 @@ class ZUIText;
 class ZActorInventoryHandler;
 class ZWorldInventory;
 class IItemBase;
-class ZRoom;
+class ZStashPointEntity;
+class ZTimeOfDayManager;
+
+namespace bfx {
+    class AreaHandle;
+}
 
 class ZHMSDK_API Functions {
 public:
     static EngineFunction<void(ZActor* th)>* ZActor_OnOutfitChanged;
     static EngineFunction<void(ZActor* th)>* ZActor_ReviveActor;
-    static EngineFunction<void(ZDynamicObject* th, ZString* a2)>* ZDynamicObject_ToString;
+    static EngineFunction<void(ZDynamicObject* th, ZString& result)>* ZDynamicObject_ToString;
     static EngineFunction<ZDynamicObject*(ZDynamicObject& result, const uint8_t* pData, uint64_t nLength)>* ZJsonDeserializer_Deserialize;
     static EngineFunction<void(ZHM5BaseCharacter* th, bool inMotion)>* ZHM5BaseCharacter_ActivateRagdoll;
     static EngineFunction<void(ZHM5BaseCharacter* th)>* ZHM5BaseCharacter_DeactivateRagdoll;
@@ -180,6 +185,8 @@ public:
         bool bMainWeapon,
         bool bGiveItem
     )>* ZActorInventoryHandler_ItemPickup;
+    static EngineFunction<void(ZActorInventoryHandler* th)>* ZActorInventoryHandler_UpdateAfterAttachChange;
+    static EngineFunction<void(ZActorInventoryHandler* th)>* ZActorInventoryHandler_FinalizePendingItems;
 
     static EngineFunction<uint64_t(
         ZEntityManager* th, ZEntityRef& entityRef, EDynamicEntityType dynamicEntityType, uint8 flags
@@ -198,5 +205,39 @@ public:
         const ZEntityRef& rCreator
     )>* ZWorldInventory_RequestNewItem;
 
+    static EngineFunction<void(
+        ZWorldInventory* th,
+        TEntityRef<IItemBase> rItemInc
+    )>* ZWorldInventory_DestroyItem;
+
+    static EngineFunction<ZResourceIndex*(
+        ZResourceManager* th,
+        ZResourceIndex& result,
+        const ZRuntimeResourceID& ridResource,
+        int32_t nPriority,
+        bool& bOutStartLoading
+    )>* ZResourceManager_GetResourceIndex;
+
+    static EngineFunction<bool(ZResourceContainer* th, uint8 packageId)>* ZResourceContainer_UnmountPackages;
+
     static EngineFunction<uint16(ZRoomManager* th, const float4& vPointWS)>* ZRoomManager_GetRoomFromPoint;
+
+    static EngineFunction<void(ZStashPointEntity* th)>* ZStashPointEntity_RequestContentLoad;
+    static EngineFunction<void(ZStashPointEntity* th, const ZRepositoryID& id)>* ZStashPointEntity_SpawnOutfit;
+    static EngineFunction<uint32_t(
+        ZStashPointEntity* th,
+        const ZRepositoryID& repId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        bool isContainerItem
+    )>* ZStashPointEntity_SpawnItem;
+
+    static EngineFunction<bool(const ZString& optionName, bool defaultValue)>* GetApplicationOptionBool;
+
+    static EngineFunction<ERegionMask(bfx::AreaHandle* th)>* AreaHandle_GetAreaUsageFlags;
+
+    static EngineFunction<void(ZTimeOfDayManager* th, float32 fNewTime)>* ZTimeOfDayManager_SetTime;
+
+    static EngineFunction<uint32(
+        const ZRepositoryID& id, const TArray<ZRepositoryID>& modifierIds
+    )>* ZItemConfigDescriptor_GetHashCode;
 };

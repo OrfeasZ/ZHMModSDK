@@ -19,7 +19,7 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xF1\x0F\x57\xC0\x48\xB8\x00\x00\x00\x00\x00\x00\x00\x00\xB9",
     "xxxxxxxxxxxxxx?xxxxxxxx????????x",
     ZDynamicObject_ToString,
-    void(ZDynamicObject*, ZString*)
+    void(ZDynamicObject*, ZString&)
 );
 
 PATTERN_FUNCTION(
@@ -345,6 +345,20 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
+    "\x40\x53\x56\x57\x48\x83\xEC\x00\x48\x8B\xD9\x33\xFF",
+    "xxxxxxx?xxxxx",
+    ZActorInventoryHandler_UpdateAfterAttachChange,
+    void(ZActorInventoryHandler* th)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x57\x41\x57\x48\x83\xEC\x00\x48\x8B\x51\x18",
+    "xxxxxxx?xxxx",
+    ZActorInventoryHandler_FinalizePendingItems,
+    void(ZActorInventoryHandler* th)
+);
+
+PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x48\x8B\x02\x4C\x8B\xD1",
     "xxxxxxxxxxxxxx?xxxxxx",
     ZEntityManager_GenerateDynamicObjectID,
@@ -367,8 +381,79 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x20\x48\x89\x54\x24\x10\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x83\xEC\x00\x4C\x8B\xE9",
+    "xxxxxxxxxxxxxxxxxxxxxxxx?xxx",
+    ZWorldInventory_DestroyItem,
+    void(ZWorldInventory* th, TEntityRef<IItemBase> rItemInc)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x53\x56\x41\x54\x41\x55\x41\x57\x48\x83\xEC\x00\x48\x8B\x84\x24\x80\x00\x00\x00",
+    "xxxxxxxxxxxx?xxxxxxxx",
+    ZResourceManager_GetResourceIndex,
+    ZResourceIndex* (ZResourceManager* th, ZResourceIndex& result, const ZRuntimeResourceID& ridResource,
+        int32_t nPriority, bool& bOutStartLoading)
+);
+
+PATTERN_RELATIVE_FUNCTION(
+    "\xE8\x00\x00\x00\x00\x84\xC0\x74\x00\x8B\xD7\x48\x8B\xCB\xE8\x00\x00\x00\x00\xB0",
+    "x????xxx?xxxxxx????x",
+    ZResourceContainer_UnmountPackages,
+    bool(ZResourceContainer* th, uint8 packageId)
+);
+
+PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x83\xEC\x00\x48\x8B\xEA\x48\x8B\xF1\x33\xDB",
     "xxxxxxxxxxxxxxxxxxxxxxxxx?xxxxxxxx",
     ZRoomManager_GetRoomFromPoint,
     uint16(ZRoomManager* th, const float4& vPointWS)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x55\x56\x41\x57\x48\x8D\x6C\x24\xB9\x48\x81\xEC\x00\x00\x00\x00\x45\x33\xFF",
+    "xxxxxxxxxxxxx????xxx",
+    ZStashPointEntity_RequestContentLoad,
+    void(ZStashPointEntity* th)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xDA\x48\x8B\xF9\xB2",
+    "xxxxxxxxx?xxxxxxx",
+    ZStashPointEntity_SpawnOutfit,
+    void(ZStashPointEntity* th, const ZRepositoryID& id)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x6C\x24\x20\x56\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x05",
+    "xxxxxxxxxxxxx????xxx",
+    ZStashPointEntity_SpawnItem,
+    uint32_t(ZStashPointEntity* th, const ZRepositoryID& repId, const TArray<ZRepositoryID>& instanceModifiersToApply, bool isContainerItem)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x0F\xB6\xF2\x48\x8B\xD9\xE8",
+    "xxxxxxxxxxxxxx?xxxxxxx",
+    GetApplicationOptionBool,
+    bool(const ZString&, bool)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8B\x1D\x00\x00\x00\x00\x48\x8B\xF9\x48\x8B\x5B\x70\x48\x85\xDB\x74\x00\x48\x8B\xCB\xFF\x15\x00\x00\x00\x00\x48\x8B\x07\x48\x85\xC0\x74\x00\x48\x8B\x08",
+    "xxxxxxxxx?xxx????xxxxxxxxxxx?xxxxx????xxxxxxx?xxx",
+    AreaHandle_GetAreaUsageFlags,
+    ERegionMask(bfx::AreaHandle* th)
+);
+
+PATTERN_FUNCTION(
+    "\x41\x56\x48\x83\xEC\x00\x0F\x29\x74\x24\x20\x4C\x8B\xF1",
+    "xxxxx?xxxxxxxx",
+    ZTimeOfDayManager_SetTime,
+    void(ZTimeOfDayManager* th, float32 fNewTime)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x57\x0F\xB6\x01",
+    "xxxxx",
+    ZItemConfigDescriptor_GetHashCode,
+    uint32(const ZRepositoryID& id, const TArray<ZRepositoryID>& modifierIds)
 );

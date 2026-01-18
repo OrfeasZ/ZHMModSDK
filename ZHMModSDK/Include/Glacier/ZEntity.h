@@ -72,7 +72,7 @@ public:
     virtual void IEntityBlueprintFactory_unk13() = 0;
     virtual void IEntityBlueprintFactory_unk14() = 0;
     virtual void IEntityBlueprintFactory_unk15() = 0;
-    virtual void IEntityBlueprintFactory_unk16() = 0;
+    virtual bool AreAllResourcesReady(ZEntityType** pEntity) = 0;
     virtual void IEntityBlueprintFactory_unk17() = 0;
     virtual void IEntityBlueprintFactory_unk18() = 0;
     virtual void IEntityBlueprintFactory_unk19() = 0;
@@ -230,7 +230,7 @@ public:
     };
 
     virtual ~ZEntityImpl() {}
-    virtual ZEntityRef* GetID(ZEntityRef& result) = 0;
+    virtual ZEntityRef* GetID(ZEntityRef& result) const = 0;
     virtual void Activate(int) = 0;
     virtual void Deactivate(int) = 0;
     virtual void ZEntityImpl_unk8() = 0;

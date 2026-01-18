@@ -115,6 +115,7 @@ public:
     ImFont* GetImGuiMediumFont() override;
     ImFont* GetImGuiBoldFont() override;
     ImFont* GetImGuiBlackFont() override;
+    ImPlotContext* GetImPlotContext() override;
     bool GetPinName(int32_t p_PinId, ZString& p_Name) override;
     bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
     bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
@@ -213,7 +214,7 @@ private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
 
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     DECLARE_DETOUR_WITH_CONTEXT(
@@ -257,6 +258,7 @@ public:
 
     bool IsChunkMounted(uint32_t p_ChunkIndex) override;
     void MountChunk(uint32_t p_ChunkIndex) override;
+    void UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) override;
     const TArray<uint32_t>& GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) override;
 
 private:

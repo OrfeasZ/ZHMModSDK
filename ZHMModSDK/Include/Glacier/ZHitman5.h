@@ -1,17 +1,10 @@
 #pragma once
 
-#include "ZActor.h"
 #include "ZHM5BaseCharacter.h"
 #include "ZPhysics.h"
 #include "ZPrimitives.h"
-
-/*
-class ZHitman5
-{
-public:
-    PAD(0x710);
-    ZRepositoryID m_InitialOutfitId;
-};*/
+#include "ZCollision.h"
+#include "ZOutfit.h"
 
 class IFutureCameraState :
         public IComponentInterface {

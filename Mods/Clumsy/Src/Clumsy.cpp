@@ -6,6 +6,7 @@
 #include <Glacier/ZGameLoopManager.h>
 #include <Glacier/ZHitman5.h>
 #include <Glacier/SGameUpdateEvent.h>
+#include <Glacier/ZActor.h>
 
 #include "IconsMaterialDesign.h"
 #include "Glacier/ZGeomEntity.h"
@@ -254,7 +255,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         const auto s_HitmanTransform = s_HitmanSpatial->GetWorldMatrix();
 
         for (int i = 0; i < *Globals::NextActorId; ++i) {
-            const auto& s_Actor = Globals::ActorManager->m_aActiveActors[i];
+            const auto& s_Actor = Globals::ActorManager->m_activatedActors[i];
 
             const auto s_ActorSpatial = s_Actor.m_ref.QueryInterface<ZSpatialEntity>();
 

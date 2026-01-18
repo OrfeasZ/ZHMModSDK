@@ -114,6 +114,7 @@ target_link_libraries(ZHMModSDK PUBLIC
         sentry::sentry
         zhmmodsdk_rs
         ResourceLib_HM3
+        implot
 )
 
 install(TARGETS ZHMModSDK

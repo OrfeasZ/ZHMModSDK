@@ -137,6 +137,18 @@ public:
         m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(m_pData, &p_Value);
     }
 
+    void Assign(STypeID* p_Type, void* p_Data) {
+        Clear();
+
+        m_pTypeID = p_Type;
+        m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+            m_pTypeID->typeInfo()->m_nTypeSize,
+            m_pTypeID->typeInfo()->m_nTypeAlignment
+        );
+
+        m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(m_pData, p_Data);
+    }
+
     template <class T>
     ZObjectRef& operator=(const T& p_Value) {
         Replace(p_Value);
