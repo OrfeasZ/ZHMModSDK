@@ -437,8 +437,7 @@ void Outfits::BuildChunkIndexToResourcePackageCount() {
             continue;
         }
 
-        const std::string s_FileName = s_Path.filename().string();
-        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackageFileName(s_FileName);
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_Path.string());
 
         if (!s_ChunkIndex) {
             continue;
