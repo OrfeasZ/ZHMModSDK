@@ -1,8 +1,5 @@
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-
 #include <directx/d3d12.h>
 #include <cstdint>
 #include <functional>
