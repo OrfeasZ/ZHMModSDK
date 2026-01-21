@@ -142,12 +142,30 @@ public:
 
 class ZTemplateEntityFactory : public IEntityFactory {
 public:
+    struct SDirectlySettableProperty {
+        int32 entityIndex; // 0x0
+        int32 unk; // 0x4
+        int64 propertyOffset; // 0x8
+        ZObjectRef value; // 0x10
+    };
+
+    struct SDirectlySettablePropertyWithSetter {
+        int32 entityIndex; // 0x0
+        int32 unk; // 0x4
+        int64 propertyOffset; // 0x8
+        const SPropertyInfo* pInfo; // 0x10
+        ZObjectRef value; // 0x18
+    };
+
     STemplateEntityFactory* m_pResourceData; // 0x8
     bool m_bHasCalculatedPropertyValues; // 0x10
     int32 m_rootEntityIndex; // 0x14
     TArray<IEntityFactory*> m_pFactories; // 0x18
     ZRuntimeResourceID m_ridResource; // 0x30
     TResourcePtr<ZTemplateEntityBlueprintFactory> m_blueprintResource; // 0x38
+    PAD(0x90); // 0x40
+    TArray<SDirectlySettableProperty> m_directlySettableProperties; // 0xD0
+    TArray<SDirectlySettablePropertyWithSetter> m_directlySettablePropertiesWithSetter; // 0xE8
 };
 
 static_assert(offsetof(ZTemplateEntityFactory, m_blueprintResource) == 0x38);
