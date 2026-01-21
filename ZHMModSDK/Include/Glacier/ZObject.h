@@ -23,11 +23,11 @@ public:
     ZObjectRef(const ZObjectRef& p_Other) : m_pTypeID(p_Other.m_pTypeID) {
         if (p_Other.m_pTypeID != GetVoidType()) {
             m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                m_pTypeID->typeInfo()->m_nTypeSize,
-                m_pTypeID->typeInfo()->m_nTypeAlignment
+                m_pTypeID->GetTypeInfo()->m_nTypeSize,
+                m_pTypeID->GetTypeInfo()->m_nTypeAlignment
             );
 
-            m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(m_pData, p_Other.m_pData);
+            m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(m_pData, p_Other.m_pData);
         }
     }
 
@@ -55,11 +55,11 @@ public:
 
         if (p_Other.m_pTypeID != GetVoidType()) {
             m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                m_pTypeID->typeInfo()->m_nTypeSize,
-                m_pTypeID->typeInfo()->m_nTypeAlignment
+                m_pTypeID->GetTypeInfo()->m_nTypeSize,
+                m_pTypeID->GetTypeInfo()->m_nTypeAlignment
             );
 
-            m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(m_pData, p_Other.m_pData);
+            m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(m_pData, p_Other.m_pData);
         }
 
         return *this;
@@ -80,12 +80,12 @@ public:
     template <class T>
     [[nodiscard]] bool Is() const {
         if (m_pTypeID == nullptr ||
-            m_pTypeID->typeInfo() == nullptr ||
-            m_pTypeID->typeInfo()->m_pTypeName == nullptr) {
+            m_pTypeID->GetTypeInfo() == nullptr ||
+            m_pTypeID->GetTypeInfo()->pszTypeName == nullptr) {
             return false;
         }
 
-        return ZHMTypeId<T> == Hash::Crc32(m_pTypeID->typeInfo()->m_pTypeName);
+        return ZHMTypeId<T> == Hash::Crc32(m_pTypeID->GetTypeInfo()->pszTypeName);
     }
 
     template <class T>
@@ -130,11 +130,11 @@ public:
 
         m_pTypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
         m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-            m_pTypeID->typeInfo()->m_nTypeSize,
-            m_pTypeID->typeInfo()->m_nTypeAlignment
+            m_pTypeID->GetTypeInfo()->m_nTypeSize,
+            m_pTypeID->GetTypeInfo()->m_nTypeAlignment
         );
 
-        m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(m_pData, &p_Value);
+        m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(m_pData, &p_Value);
     }
 
     void Assign(STypeID* p_Type, void* p_Data) {
@@ -142,11 +142,11 @@ public:
 
         m_pTypeID = p_Type;
         m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-            m_pTypeID->typeInfo()->m_nTypeSize,
-            m_pTypeID->typeInfo()->m_nTypeAlignment
+            m_pTypeID->GetTypeInfo()->m_nTypeSize,
+            m_pTypeID->GetTypeInfo()->m_nTypeAlignment
         );
 
-        m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(m_pData, p_Data);
+        m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(m_pData, p_Data);
     }
 
     template <class T>
@@ -167,7 +167,7 @@ public:
     }
 
     bool IsEmpty() const {
-        return m_pTypeID == nullptr || m_pData == nullptr || Hash::Crc32(m_pTypeID->typeInfo()->m_pTypeName) ==
+        return m_pTypeID == nullptr || m_pData == nullptr || Hash::Crc32(m_pTypeID->GetTypeInfo()->pszTypeName) ==
                 ZHMTypeId<void>;
     }
 
@@ -184,11 +184,11 @@ public:
 
         s_Obj.m_pTypeID = m_pTypeID;
         s_Obj.m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-            m_pTypeID->typeInfo()->m_nTypeSize,
-            m_pTypeID->typeInfo()->m_nTypeAlignment
+            m_pTypeID->GetTypeInfo()->m_nTypeSize,
+            m_pTypeID->GetTypeInfo()->m_nTypeAlignment
         );
 
-        m_pTypeID->typeInfo()->m_pTypeFunctions->copyConstruct(s_Obj.m_pData, m_pData);
+        m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(s_Obj.m_pData, m_pData);
 
         return s_Obj;
     }

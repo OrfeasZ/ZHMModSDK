@@ -261,7 +261,7 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> 
 
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
-    if (!s_LocalHitman || !s_LocalHitman.m_ref) {
+    if (!s_LocalHitman || !s_LocalHitman.m_entityRef) {
         SendError(p_Socket, "Failed to get local hitman entity.", p_MessageId);
         return;
     }
@@ -276,7 +276,7 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> 
 
     s_Event << write_json("type") << ":" << write_json("hitmanEntity") << ",";
     s_Event << write_json("entity") << ":";
-    WriteEntityDetails(s_Event, s_LocalHitman.m_ref);
+    WriteEntityDetails(s_Event, s_LocalHitman.m_entityRef);
     s_Event << "}";
 
     p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
@@ -451,11 +451,11 @@ void EditorServer::OnEntityPropertySet(
 
             const auto s_Property = s_EntityType->FindProperty(p_PropertyId);
 
-            if (!s_Property || !s_Property->m_pType) {
+            if (!s_Property || !s_Property->m_pPropertyInfo->m_Type) {
                 return;
             }
 
-            const auto s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+            const auto s_PropertyInfo = s_Property->GetPropertyInfo();
 
             if (!s_PropertyInfo) {
                 return;
@@ -471,20 +471,20 @@ void EditorServer::OnEntityPropertySet(
             s_Event << ",";
             s_Event << write_json("property") << ":";
 
-            if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->
-                m_nPropertyId) {
+            if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
+                s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyID) {
                 // Some properties don't have a name for some reason. Try to find using RL.
-                const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyId);
+                const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyID);
 
                 if (s_PropertyName.Size > 0) {
                     s_Event << write_json(std::string_view(s_PropertyName.Data, s_PropertyName.Size)) << ",";
                 }
                 else {
-                    s_Event << write_json(s_Property->m_nPropertyId) << ",";
+                    s_Event << write_json(s_Property->m_nPropertyID) << ",";
                 }
             }
             else {
-                s_Event << write_json(s_PropertyInfo->m_pName) << ",";
+                s_Event << write_json(s_PropertyInfo->m_pszPropertyName) << ",";
             }
 
             s_Event << write_json("value") << ":";
@@ -835,12 +835,12 @@ void EditorServer::SendEntityList(
         s_EventStream << write_json("source") << ":" << write_json("game") << ",";
         s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->BlueprintFactory.GetID())) << ",";
         s_EventStream << write_json("type") << ":" << write_json(
-            (*s_Node->Entity->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName
+            (*s_Node->Entity->GetType()->m_pInterfaceData)[0].m_Type->GetTypeInfo()->pszTypeName
         );
 
         if (s_Factory) {
             // This is also probably wrong.
-            auto s_Index = s_Factory->GetSubEntityIndex(s_Node->Entity->GetType()->m_nEntityId);
+            auto s_Index = s_Factory->GetSubEntityIndex(s_Node->Entity->GetType()->m_nEntityID);
 
             if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
                 const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
@@ -888,25 +888,29 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
     p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-bool EditorServer::IsPropertyValueTrue(const ZEntityProperty* s_Property, const ZEntityRef& p_Entity) {
-    const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+bool EditorServer::IsPropertyValueTrue(const SPropertyData* s_Property, const ZEntityRef& p_Entity) {
+    const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
-    if (!s_PropertyInfo || !s_PropertyInfo->m_pType) {
+    if (!s_PropertyInfo || !s_PropertyInfo->m_propertyInfo.m_Type) {
         return true;
     }
 
-    const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + s_Property->m_nOffset;
-    const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-    const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
-    const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+    const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pObj) + s_Property->m_nPropertyOffset;
+    const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
+    const uint16_t s_TypeAlignment = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeAlignment;
+    const std::string s_TypeName = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName;
 
     // Get the value of the property.
     auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
-    if (s_PropertyInfo->m_nFlags & E_HAS_GETTER_SETTER)
-        s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
+    if (s_PropertyInfo->m_propertyInfo.m_Flags & E_HAS_GETTER_SETTER)
+        s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
+            reinterpret_cast<void*>(s_PropertyAddress),
+            s_Data,
+            s_PropertyInfo->m_propertyInfo.m_nExtraData
+        );
     else
-        s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+        s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(
             s_Data, reinterpret_cast<void*>(s_PropertyAddress)
         );
 
@@ -928,21 +932,23 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
     const auto s_EntityType = p_Entity->GetType();
     const std::string s_RemovePhysicsPropertyName = "m_bRemovePhysics";
     const std::string s_DisableNavmeshExportPropertyName = "m_bDisableNavmeshExport";
-    if (s_EntityType && s_EntityType->m_pProperties01) {
-        for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-            const ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
-            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+    if (s_EntityType && s_EntityType->m_pPropertyData) {
+        for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
+            const SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+            const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
-            if (!s_PropertyInfo || !s_PropertyInfo->m_pType || !s_PropertyInfo->m_pType->typeInfo()) {
+            if (!s_PropertyInfo ||
+                !s_PropertyInfo->m_propertyInfo.m_Type ||
+                !s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()) {
                 continue;
             }
 
-            if (s_PropertyInfo->m_pType->typeInfo()->isResource() ||
-                s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+            if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
+                s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyID) {
                 // Some properties don't have a name for some reason. Try to find using RL.
 
                 if (const auto [s_data, s_size] =
-                        HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                        HM3_GetPropertyName(s_Property->m_nPropertyID); s_size > 0) {
                     if (const auto s_PropertyNameView = std::string_view(s_data, s_size);
                         s_PropertyNameView == s_RemovePhysicsPropertyName) {
                         if (IsPropertyValueTrue(s_Property, p_Entity)) {
@@ -956,13 +962,13 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
                     }
                 }
             }
-            else if (s_PropertyInfo->m_pName) {
-                if (s_PropertyInfo->m_pName == s_RemovePhysicsPropertyName) {
+            else if (s_PropertyInfo->m_pszPropertyName) {
+                if (s_PropertyInfo->m_pszPropertyName == s_RemovePhysicsPropertyName) {
                     if (IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
                 }
-                else if (s_PropertyInfo->m_pName == s_DisableNavmeshExportPropertyName) {
+                else if (s_PropertyInfo->m_pszPropertyName == s_DisableNavmeshExportPropertyName) {
                     if (IsPropertyValueTrue(s_Property, p_Entity)) {
                         return true;
                     }
@@ -1009,7 +1015,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     p_Stream << "{";
 
     p_Stream << write_json("id") << ":" << write_json(
-        std::format("{:016x}", p_Entity->GetType()->m_nEntityId)
+        std::format("{:016x}", p_Entity->GetType()->m_nEntityID)
     ) << ",";
 
     auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
@@ -1020,7 +1026,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     }
 
     if (s_Factory) {
-        if (auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityId); s_Index != -1) {
+        if (auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityID); s_Index != -1) {
             const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
             p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
             p_Stream << write_json("tblu") << ":" << write_json(
@@ -1065,7 +1071,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
         std::vector<std::string> parents = std::vector<std::string>();
         ZEntityRef parentRef = p_Entity.GetLogicalParent();
 
-        while (parentRef.m_pEntity) {
+        while (parentRef.m_pObj) {
             parents.push_back(Plugin()->GetEntityName(parentRef));
             if(parentRef.QueryInterface<ZAIAreaEntityBase>())
                 break;
@@ -1088,7 +1094,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
         {
             if (i)
                 p_Stream << ",";
-            p_Stream << write_json(Plugin()->GetEntityName(s_AiArea->m_aAreaVolumes[i].m_ref));
+            p_Stream << write_json(Plugin()->GetEntityName(s_AiArea->m_aAreaVolumes[i].m_entityRef));
         }
         p_Stream << "]";
     }       
@@ -1103,20 +1109,22 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
         {"m_fRadius", "radius"}
     };
 
-    if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pProperties01) {
-        for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-            ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
-            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+    if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pPropertyData) {
+        for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
+            SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+            const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
-            if (!s_PropertyInfo || !s_PropertyInfo->m_pType || !s_PropertyInfo->m_pType->typeInfo()) {
+            if (!s_PropertyInfo ||
+                !s_PropertyInfo->m_propertyInfo.m_Type ||
+                !s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()) {
                 continue;
             }
 
-            if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != s_Property->
-                m_nPropertyId) {
+            if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
+                s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyID) {
                 // Some properties don't have a name for some reason. Try to find using RL.
 
-                if (const auto [s_data, s_size] = HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                if (const auto [s_data, s_size] = HM3_GetPropertyName(s_Property->m_nPropertyID); s_size > 0) {
                     auto s_PropertyNameView = std::string_view(s_data, s_size);
                     if (propNameToFieldName.count(s_PropertyNameView)) {
                         p_Stream << ",";
@@ -1125,10 +1133,10 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
                     }
                 }
             }
-            else if (s_PropertyInfo->m_pName) {
-                if (propNameToFieldName.count(s_PropertyInfo->m_pName)) {
+            else if (s_PropertyInfo->m_pszPropertyName) {
+                if (propNameToFieldName.count(s_PropertyInfo->m_pszPropertyName)) {
                     p_Stream << ",";
-                    p_Stream << write_json(propNameToFieldName.at(s_PropertyInfo->m_pName)) << ":";
+                    p_Stream << write_json(propNameToFieldName.at(s_PropertyInfo->m_pszPropertyName)) << ":";
                     WriteProperty(p_Stream, p_Entity, s_Property);
                 }
             }
@@ -1143,11 +1151,11 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
         p_Stream << "null";
         return;
     }
-    Logger::Debug("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityId);
+    Logger::Debug("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityID);
 
     p_Stream << "{";
 
-    p_Stream << write_json("id") << ":" << write_json(std::format("{:016x}", p_Entity->GetType()->m_nEntityId)) << ",";
+    p_Stream << write_json("id") << ":" << write_json(std::format("{:016x}", p_Entity->GetType()->m_nEntityID)) << ",";
 
     auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
 
@@ -1158,7 +1166,7 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 
     if (s_Factory) {
         // This is also probably wrong.
-        auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityId);
+        auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityID);
 
         if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
             const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
@@ -1177,21 +1185,21 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
     }
 
     // Write type and interfaces.
-    auto s_Interfaces = (*p_Entity->GetType()->m_pInterfaces);
+    auto s_Interfaces = (*p_Entity->GetType()->m_pInterfaceData);
 
-    p_Stream << write_json("type") << ":" << write_json(s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName) << ",";
+    p_Stream << write_json("type") << ":" << write_json(s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName) << ",";
 
     p_Stream << write_json("interfaces") << ":" << "[";
     bool s_FirstInterface = true;
 
     for (auto& s_Interface : s_Interfaces) {
-        if (!s_Interface.m_pTypeId) {
+        if (!s_Interface.m_Type) {
             continue;
         }
 
-        const auto* s_TypeInfo = s_Interface.m_pTypeId->typeInfo();
+        const auto* s_TypeInfo = s_Interface.m_Type->GetTypeInfo();
 
-        if (!s_TypeInfo || !s_TypeInfo->m_pTypeName) {
+        if (!s_TypeInfo || !s_TypeInfo->pszTypeName) {
             continue;
         }
 
@@ -1201,7 +1209,7 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 
         s_FirstInterface = false;
 
-        p_Stream << write_json(s_TypeInfo->m_pTypeName);
+        p_Stream << write_json(s_TypeInfo->pszTypeName);
     }
 
     p_Stream << "],";
@@ -1251,12 +1259,14 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
     const auto s_EntityType = p_Entity->GetType();
     bool s_FirstProperty = true;
 
-    if (s_EntityType && s_EntityType->m_pProperties01) {
-        for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-            ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
-            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+    if (s_EntityType && s_EntityType->m_pPropertyData) {
+        for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
+            SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+            const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
-            if (!s_PropertyInfo || !s_PropertyInfo->m_pType || !s_PropertyInfo->m_pType->typeInfo()) {
+            if (!s_PropertyInfo ||
+                !s_PropertyInfo->m_propertyInfo.m_Type ||
+                !s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()) {
                 continue;
             }
 
@@ -1322,44 +1332,44 @@ void EditorServer::WriteTransform(std::ostream& p_Stream, SMatrix p_Transform) {
     p_Stream << "}";
 }
 
-void EditorServer::WritePropertyName(std::ostream& p_Stream, ZEntityProperty* p_Property) {
-    const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
+void EditorServer::WritePropertyName(std::ostream& p_Stream, SPropertyData* p_Property) {
+    const auto* s_PropertyInfo = p_Property->GetPropertyInfo();
 
-    if (s_PropertyInfo->m_pType->typeInfo()->isResource() || s_PropertyInfo->m_nPropertyID != p_Property->
-        m_nPropertyId) {
+    if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
+        s_PropertyInfo->m_nPropertyID != p_Property->m_nPropertyID) {
         // Some properties don't have a name for some reason. Try to find using RL.
-        const auto s_PropertyName = HM3_GetPropertyName(p_Property->m_nPropertyId);
+        const auto s_PropertyName = HM3_GetPropertyName(p_Property->m_nPropertyID);
 
         if (s_PropertyName.Size > 0) {
             p_Stream << write_json(std::string_view(s_PropertyName.Data, s_PropertyName.Size));
         }
         else {
-            p_Stream << write_json(std::format("~{:08x}", p_Property->m_nPropertyId));
+            p_Stream << write_json(std::format("~{:08x}", p_Property->m_nPropertyID));
         }
     }
-    else if (s_PropertyInfo->m_pName) {
-        p_Stream << write_json(s_PropertyInfo->m_pName);
+    else if (s_PropertyInfo->m_pszPropertyName) {
+        p_Stream << write_json(s_PropertyInfo->m_pszPropertyName);
     }
     else {
-        p_Stream << write_json(std::format("~{:08x}", p_Property->m_nPropertyId));
+        p_Stream << write_json(std::format("~{:08x}", p_Property->m_nPropertyID));
     }
 }
 
-void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZEntityProperty* p_Property) {
+void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SPropertyData* p_Property) {
     p_Stream << "{" << write_json("type") << ":";
 
-    const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
+    const auto* s_PropertyInfo = p_Property->GetPropertyInfo();
 
-    if (!s_PropertyInfo || !s_PropertyInfo->m_pType) {
+    if (!s_PropertyInfo || !s_PropertyInfo->m_propertyInfo.m_Type) {
         p_Stream << write_json("unknown") << ",";
         p_Stream << write_json("data") << ":" << "null" << "}";
         return;
     }
 
-    const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + p_Property->m_nOffset;
-    const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-    const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
-    const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+    const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(p_Entity.m_pObj) + p_Property->m_nPropertyOffset;
+    const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
+    const uint16_t s_TypeAlignment = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeAlignment;
+    const std::string s_TypeName = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName;
 
     p_Stream << write_json(s_TypeName) << ",";
     p_Stream << write_json("data") << ":";
@@ -1367,14 +1377,19 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZE
     // Get the value of the property.
     auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
-    if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
-        s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
+    if (s_PropertyInfo->m_propertyInfo.m_Flags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
+        s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
+            reinterpret_cast<void*>(s_PropertyAddress),
+            s_Data,
+            s_PropertyInfo->m_propertyInfo.m_nExtraData
+        );
     else
-        s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+        s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(
             s_Data, reinterpret_cast<void*>(s_PropertyAddress)
         );
 
-    if (s_PropertyInfo->m_pType->typeInfo() && s_PropertyInfo->m_pType->typeInfo()->isEntity()) {
+    if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo() &&
+        s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsEntity()) {
         auto* s_EntityData = reinterpret_cast<TEntityRef<ZEntityImpl>*>(s_Data);
 
         if (!s_EntityData || !*s_EntityData) {
@@ -1384,19 +1399,19 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZE
         }
 
         p_Stream << "{" << write_json("id") << ":" << write_json(
-            std::format("{:016x}", s_EntityData->m_ref->GetType()->m_nEntityId)
+            std::format("{:016x}", s_EntityData->m_entityRef->GetType()->m_nEntityID)
         ) << ",";
 
-        auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_ref.GetBlueprintFactory());
+        auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_entityRef.GetBlueprintFactory());
 
-        if (s_EntityData->m_ref.GetOwningEntity()) {
-            s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_ref.GetOwningEntity().
+        if (s_EntityData->m_entityRef.GetOwningEntity()) {
+            s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_entityRef.GetOwningEntity().
                 GetBlueprintFactory());
         }
 
         if (s_Factory) {
             // This is also probably wrong.
-            auto s_Index = s_Factory->GetSubEntityIndex(s_EntityData->m_ref->GetType()->m_nEntityId);
+            auto s_Index = s_Factory->GetSubEntityIndex(s_EntityData->m_entityRef->GetType()->m_nEntityID);
 
             if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
                 const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
@@ -1415,9 +1430,9 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZE
         }
 
         // Write type and interfaces.
-        auto s_Interfaces = (*s_EntityData->m_ref->GetType()->m_pInterfaces);
+        auto s_Interfaces = (*s_EntityData->m_entityRef->GetType()->m_pInterfaceData);
 
-        p_Stream << write_json("type") << ":" << write_json(s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName) << "}}";
+        p_Stream << write_json("type") << ":" << write_json(s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName) << "}}";
 
         (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
     }

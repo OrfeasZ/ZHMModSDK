@@ -1,7 +1,7 @@
 #include "Editor.h"
 #include "imgui.h"
 
-bool Editor::SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<SVector2*>(p_Data);
 
@@ -24,7 +24,7 @@ bool Editor::SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, ZEnt
     return s_IsChanged;
 }
 
-bool Editor::SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<SVector3*>(p_Data);
 
@@ -48,7 +48,7 @@ bool Editor::SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, ZEnt
     return s_IsChanged;
 }
 
-bool Editor::SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<SVector4*>(p_Data);
 

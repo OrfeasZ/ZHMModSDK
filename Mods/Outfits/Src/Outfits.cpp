@@ -543,7 +543,7 @@ bool Outfits::LoadBrick(
     }
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, p_EntityRef, "", p_ResourcePtr, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager, p_EntityRef, "", p_ResourcePtr, s_Scene.m_entityRef, s_ExternalRefs, -1
     );
 
     if (!p_EntityRef) {
@@ -599,7 +599,7 @@ void Outfits::LoadOutfits(const std::string& p_SceneName, const ZRuntimeResource
     ZEntityRef s_EntityRef;
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_EntityRef, "", s_ResourcePtr, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager, s_EntityRef, "", s_ResourcePtr, s_Scene.m_entityRef, s_ExternalRefs, -1
     );
 
     if (!s_EntityRef) {

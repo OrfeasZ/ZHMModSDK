@@ -29,7 +29,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
         const auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (s_LocalHitman) {
-            const ZSpatialEntity* s_SpatialEntity = SDK()->GetLocalPlayer().m_ref.QueryInterface<ZSpatialEntity>();
+            const ZSpatialEntity* s_SpatialEntity = SDK()->GetLocalPlayer().m_entityRef.QueryInterface<ZSpatialEntity>();
             const uint16 s_CurrentRoomEntityIndex = Functions::ZRoomManager_GetRoomFromPoint->Call(
                 *Globals::RoomManager,
                 s_SpatialEntity->GetWorldMatrix().Pos

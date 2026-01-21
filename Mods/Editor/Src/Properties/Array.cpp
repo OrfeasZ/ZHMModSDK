@@ -4,12 +4,12 @@
 
 #include <ResourceLib_HM3.h>
 
-bool Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+bool Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
     const std::string& s_PropertyName, const STypeID* p_TypeID
 ) {
     bool s_IsChanged = false;
-    const IArrayType* s_ArrayType = static_cast<IArrayType*>(p_TypeID->typeInfo());
-    size_t s_ArraySize = s_ArrayType->m_pArrayFunctions->size(p_Data);
+    const IArrayType* s_ArrayType = reinterpret_cast<IArrayType*>(p_TypeID->GetTypeInfo());
+    size_t s_ArraySize = s_ArrayType->containerType.pVTab->getSize(p_Data);
 
     ImGui::PushFont(SDK()->GetImGuiBoldFont());
     ImGui::AlignTextToFramePadding();
@@ -43,20 +43,20 @@ bool Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
 bool Editor::DrawArrayElements(
     const std::string& p_Id,
     ZEntityRef p_Entity,
-    ZEntityProperty* p_Property,
+    SPropertyData* p_Property,
     void* p_Data,
     const IArrayType* p_ArrayType
 ) {
     bool s_IsAnyElementChanged = false;
-    const STypeID* s_ElementTypeID = p_ArrayType->m_pArrayElementType;
-    const std::string s_ElementTypeName = s_ElementTypeID->typeInfo()->m_pTypeName;
+    const STypeID* s_ElementTypeID = p_ArrayType->containerType.elementType;
+    const std::string s_ElementTypeName = s_ElementTypeID->GetTypeInfo()->pszTypeName;
 
-    void* s_Iterator = p_ArrayType->m_pArrayFunctions->begin(p_Data);
-    void* s_End = p_ArrayType->m_pArrayFunctions->end(p_Data);
+    void* s_Iterator = p_ArrayType->containerType.pVTab->begin(p_Data);
+    void* s_End = p_ArrayType->containerType.pVTab->end(p_Data);
 
     int s_Index = 0;
 
-    for (; s_Iterator != s_End; s_Iterator = p_ArrayType->m_pArrayFunctions->next(p_Data, s_Iterator), ++s_Index) {
+    for (; s_Iterator != s_End; s_Iterator = p_ArrayType->containerType.pVTab->next(p_Data, s_Iterator), ++s_Index) {
         ImGui::PushID(static_cast<int>(s_Index));
 
         ImGui::Separator();

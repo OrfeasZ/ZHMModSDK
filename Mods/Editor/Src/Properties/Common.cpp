@@ -34,11 +34,11 @@ void Editor::OnSignalEntityPin(ZEntityRef p_Entity, const std::string& p_Pin, bo
 void Editor::UnsupportedProperty(
     const std::string& p_Id,
     ZEntityRef p_Entity,
-    ZEntityProperty* p_Property,
+    SPropertyData* p_Property,
     void* p_Data
 ) {
-    const auto s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
-    const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+    const auto s_PropertyInfo = p_Property->GetPropertyInfo();
+    const std::string s_TypeName = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName;
 
     constexpr auto s_TextColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
     ImGui::TextColored(s_TextColor, "(Unsupported)", s_TypeName.c_str());
@@ -47,7 +47,7 @@ void Editor::UnsupportedProperty(
 void Editor::ZEntityRefProperty(
     const std::string& p_Id,
     ZEntityRef p_Entity,
-    ZEntityProperty* p_Property,
+    SPropertyData* p_Property,
     void* p_Data
 ) {
     if (auto s_EntityRef = reinterpret_cast<ZEntityRef*>(p_Data)) {
@@ -61,11 +61,11 @@ void Editor::ZEntityRefProperty(
 void Editor::TEntityRefProperty(
     const std::string& p_Id,
     ZEntityRef p_Entity,
-    ZEntityProperty* p_Property,
+    SPropertyData* p_Property,
     void* p_Data
 ) {
     if (auto s_EntityRef = reinterpret_cast<TEntityRef<void*>*>(p_Data)) {
-        EntityRefProperty(p_Id, s_EntityRef->m_ref);
+        EntityRefProperty(p_Id, s_EntityRef->m_entityRef);
     }
     else {
         EntityRefProperty(p_Id, ZEntityRef{});
@@ -84,7 +84,7 @@ void Editor::EntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity) {
     ImVec4 s_LinkColor = ImVec4(0.2f, 0.6f, 1.0f, 1.0f);
 
     ImGui::PushStyleColor(ImGuiCol_Text, s_LinkColor);
-    ImGui::Text("%s", fmt::format("{:016x}", p_Entity->GetType()->m_nEntityId).c_str());
+    ImGui::Text("%s", fmt::format("{:016x}", p_Entity->GetType()->m_nEntityID).c_str());
     ImGui::PopStyleColor();
 
     if (ImGui::IsItemHovered()) {
@@ -113,14 +113,14 @@ void Editor::EntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity) {
     }
 
     if (ImGuiCopyWidget(("EntityRef_" + p_Id).c_str())) {
-        CopyToClipboard(fmt::format("{:016x}", p_Entity->GetType()->m_nEntityId));
+        CopyToClipboard(fmt::format("{:016x}", p_Entity->GetType()->m_nEntityID));
     }
 }
 
 void Editor::ZRepositoryIDProperty(
     const std::string& p_Id,
     ZEntityRef p_Entity,
-    ZEntityProperty* p_Property,
+    SPropertyData* p_Property,
     void* p_Data
 ) {
     if (auto s_RepositoryId = reinterpret_cast<ZRepositoryID*>(p_Data)) {
@@ -139,7 +139,7 @@ void Editor::ZRepositoryIDProperty(
     }
 }
 
-void Editor::ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+void Editor::ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     if (auto s_Guid = reinterpret_cast<ZGuid*>(p_Data)) {
         const auto& s_GuidString = s_Guid->ToString();
 
@@ -156,7 +156,7 @@ void Editor::ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
     }
 }
 
-bool Editor::ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<ZGameTime*>(p_Data);
 
@@ -173,14 +173,14 @@ bool Editor::ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEn
     return s_IsChanged;
 }
 
-bool Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+bool Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
     const std::string& s_PropertyName, const STypeID* p_TypeID) {
     bool s_IsChanged = false;
     auto* s_Curve = static_cast<ZCurve*>(p_Data);
 
-    IType* s_ArrayTypeInfo = (*Globals::TypeRegistry)->GetTypeID("TArray<TFixedArray<float32>>")->typeInfo();
-    const IArrayType* s_ArrayType = static_cast<IArrayType*>(s_ArrayTypeInfo);
-    size_t s_ArraySize = s_ArrayType->m_pArrayFunctions->size(&s_Curve->data);
+    IType* s_ArrayTypeInfo = (*Globals::TypeRegistry)->GetTypeID("TArray<TFixedArray<float32>>")->GetTypeInfo();
+    const IArrayType* s_ArrayType = reinterpret_cast<IArrayType*>(s_ArrayTypeInfo);
+    size_t s_ArraySize = s_ArrayType->containerType.pVTab->getSize(&s_Curve->data);
 
     ImGui::SetNextItemAllowOverlap();
 
@@ -359,13 +359,13 @@ std::string Editor::FormatZCurveForClipboard(ZCurve* p_Curve, void* p_Data, cons
 
     s_Result += "[\n";
 
-    void* s_Iterator = p_ArrayType->m_pArrayFunctions->begin(&p_Curve->data);
-    void* s_End = p_ArrayType->m_pArrayFunctions->end(&p_Curve->data);
+    void* s_Iterator = p_ArrayType->containerType.pVTab->begin(&p_Curve->data);
+    void* s_End = p_ArrayType->containerType.pVTab->end(&p_Curve->data);
 
     size_t s_Index = 0;
-    size_t s_ArraySize = p_ArrayType->m_pArrayFunctions->size(&p_Curve->data);
+    size_t s_ArraySize = p_ArrayType->containerType.pVTab->getSize(&p_Curve->data);
 
-    for (; s_Iterator != s_End; s_Iterator = p_ArrayType->m_pArrayFunctions->next(p_Data, s_Iterator), ++s_Index) {
+    for (; s_Iterator != s_End; s_Iterator = p_ArrayType->containerType.pVTab->next(p_Data, s_Iterator), ++s_Index) {
         auto* s_FixedArray = static_cast<TFixedArray<float32, 8>*>(s_Iterator);
 
         s_Result += "\t[\n";

@@ -15,7 +15,6 @@
 #include "Glacier/ZStash.h"
 #include "Glacier/ZContract.h"
 #include "Glacier/ZScene.h"
-#include "Glacier/IEnumType.h"
 #include "Glacier/ZContentKitManager.h"
 #include "Glacier/ZModule.h"
 #include "Glacier/SExternalReferences.h"
@@ -2231,7 +2230,7 @@ bool Randomizer::LoadBrick(
     }
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, p_EntityRef, "", p_ResourcePtr, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager, p_EntityRef, "", p_ResourcePtr, s_Scene.m_entityRef, s_ExternalRefs, -1
     );
 
     if (!p_EntityRef) {
@@ -2239,7 +2238,7 @@ bool Randomizer::LoadBrick(
         return false;
     }
 
-    while (!p_ResourcePtr.GetResource()->m_blueprintResource.GetResource()->AreAllResourcesReady(p_EntityRef.m_pEntity)) {
+    while (!p_ResourcePtr.GetResource()->m_blueprintResource.GetResource()->AreAllResourcesReady(p_EntityRef.m_pObj)) {
         Logger::Debug("Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
         Globals::ResourceManager->Update(true);
     }
@@ -2288,7 +2287,7 @@ void Randomizer::LoadOutfits(const ZRuntimeResourceID& p_OutfitsBrickRuntimeReso
     ZEntityRef s_EntityRef;
 
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_EntityRef, "", s_ResourcePtr, s_Scene.m_ref, s_ExternalRefs, -1
+        Globals::EntityManager, s_EntityRef, "", s_ResourcePtr, s_Scene.m_entityRef, s_ExternalRefs, -1
     );
 
     if (!s_EntityRef) {
@@ -2426,7 +2425,7 @@ void Randomizer::FindGlobalOutfitRepositoryIds(
     const auto s_SubEntityCount = p_ResourcePtr.GetResource()->GetSubEntitiesCount();
 
     for (int64_t i = 0; i < s_SubEntityCount; ++i) {
-        const ZEntityRef s_SubEntity = p_ResourcePtr.GetResource()->GetSubEntity(p_BrickEntityRef.m_pEntity, i);
+        const ZEntityRef s_SubEntity = p_ResourcePtr.GetResource()->GetSubEntity(p_BrickEntityRef.m_pObj, i);
         ZGlobalOutfitKit* s_GlobalOutfitKit = s_SubEntity.QueryInterface<ZGlobalOutfitKit>();
 
         if (s_GlobalOutfitKit) {
@@ -2513,7 +2512,7 @@ bool Randomizer::HasBonesAndCollisionResourceProperty(const ZRuntimeResourceID& 
         [s_TemplateEntityFactory->m_rootEntityIndex];
 
     for (const auto& s_Property : s_RootEntity.propertyValues) {
-        if (strcmp(s_Property.value.GetTypeID()->typeInfo()->m_pTypeName, "ZRuntimeResourceID") == 0) {
+        if (strcmp(s_Property.value.GetTypeID()->GetTypeInfo()->pszTypeName, "ZRuntimeResourceID") == 0) {
             std::string s_PropertyName;
             const auto s_PropertyNameData = HM3_GetPropertyName(s_Property.nPropertyID);
 
@@ -2659,7 +2658,7 @@ bool Randomizer::ResourceContainsOutfitsToSpawn(
         }
 
         for (const auto& s_Property : s_SubEntity.propertyValues) {
-            if (strcmp(s_Property.value.GetTypeID()->typeInfo()->m_pTypeName, "ZGuid") == 0) {
+            if (strcmp(s_Property.value.GetTypeID()->GetTypeInfo()->pszTypeName, "ZGuid") == 0) {
                 std::string s_PropertyName;
                 const auto s_PropertyNameData = HM3_GetPropertyName(s_Property.nPropertyID);
 

@@ -43,7 +43,7 @@ void Editor::DrawItems(bool p_HasFocus) {
             const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
             std::string s_Title = fmt::format(
                 "{} ({:016x})###{}", s_Item->m_pItemConfigDescriptor->m_sTitle.c_str(),
-                s_Action->m_Object->GetType()->m_nEntityId, i + 1
+                s_Action->m_Object->GetType()->m_nEntityID, i + 1
             );
 
             if (ImGui::Selectable(s_Title.c_str(), s_Selected == i)) {
@@ -72,14 +72,14 @@ void Editor::DrawItems(bool p_HasFocus) {
 
         if (ImGui::Button("Teleport Item To Player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+                ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 s_Item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());
             }
         }
 
         if (ImGui::Button("Teleport Player To Item")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+                ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 s_HitmanSpatial->SetWorldMatrix(s_Item->m_rGeomentity.m_pInterfaceRef->GetWorldMatrix());
             }
         }

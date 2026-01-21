@@ -460,7 +460,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 ZEntityRef s_Ref;
                 m_SelectedActor->GetID(s_Ref);
 
-                ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+                ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
                 s_ActorSpatialEntity->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
@@ -472,7 +472,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 ZEntityRef s_Ref;
                 m_SelectedActor->GetID(s_Ref);
 
-                ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+                ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
                 s_HitmanSpatialEntity->SetWorldMatrix(s_ActorSpatialEntity->GetWorldMatrix());
@@ -512,7 +512,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
             [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
             [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
-                ZEntityRef s_ActorEntityRef = m_SelectedActor->m_pInventoryHandler->m_rActor.m_ref;
+                ZEntityRef s_ActorEntityRef = m_SelectedActor->m_pInventoryHandler->m_rActor.m_entityRef;
                 const uint64_t s_NewEntityID = Functions::ZEntityManager_GenerateDynamicObjectID->Call(
                     Globals::EntityManager,
                     s_ActorEntityRef,
@@ -520,7 +520,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     0
                 );
 
-                const ZEntityRef s_ActorEntityRef2 = m_SelectedActor->m_pInventoryHandler->m_rActor.m_ref;
+                const ZEntityRef s_ActorEntityRef2 = m_SelectedActor->m_pInventoryHandler->m_rActor.m_entityRef;
                 const ZMemberDelegate<Editor, void(uint32 nTicket, TEntityRef<IItemBase> rNewItem)> s_Delegate(
                     this, &Editor::ItemCreatedHandler
                 );
@@ -634,11 +634,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         if (ImGui::Button(std::format("Track This Actor##{}", s_ActorName).c_str())) {
 
-            if (m_RenderDest.m_ref == nullptr) {
+            if (m_RenderDest.m_entityRef == nullptr) {
                 GetRenderDest();
             }
 
-            if (m_TrackCam.m_ref == nullptr) {
+            if (m_TrackCam.m_entityRef == nullptr) {
                 GetTrackCam();
             }
 
@@ -761,7 +761,7 @@ void Editor::ItemCreatedHandler(uint32 p_Ticket, TEntityRef<IItemBase> p_NewItem
             ZHM5Item* s_Item = static_cast<ZHM5Item*>(p_NewItem.m_pInterfaceRef);
             SItemConfig& s_ItemConfig = s_Item->m_pItemConfigDescriptor->m_ItemConfig;
 
-            s_PendingItem.m_rItem = TEntityRef<IItem>(p_NewItem.m_ref);
+            s_PendingItem.m_rItem = TEntityRef<IItem>(p_NewItem.m_entityRef);
             s_PendingItem.m_eAttachLocation = s_ItemConfig.m_ItemHandsIdle == eItemHands::IH_TWOHANDED ?
                 EAttachLocation::eALRifle : EAttachLocation::eALUndefined;
 
@@ -854,7 +854,7 @@ void Editor::LoadRepositoryWeapons() {
 }
 
 void Editor::EnableTrackCam() {
-    m_RenderDest.m_pInterfaceRef->SetSource(&m_TrackCam.m_ref);
+    m_RenderDest.m_pInterfaceRef->SetSource(&m_TrackCam.m_entityRef);
     SetPlayerControlActive(false);
 }
 

@@ -367,7 +367,7 @@ public:
 
             s_Actor->GetID(entRef);
 
-            if (entRef->GetType()->m_nEntityId == p_Id) {
+            if (entRef->GetType()->m_nEntityID == p_Id) {
                 return s_Actor;
             }
         }

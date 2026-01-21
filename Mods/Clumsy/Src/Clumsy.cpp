@@ -228,7 +228,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
             if (s_EmitterSpatial)
                 s_EmitterSpatial->SetWorldMatrix(
-                    s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>()->GetWorldMatrix()
+                    s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>()->GetWorldMatrix()
                 );
 
             m_ShakeEntity.SignalInputPin("Activate");
@@ -251,13 +251,13 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         if (!s_LocalHitman)
             return;
 
-        const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+        const auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
         const auto s_HitmanTransform = s_HitmanSpatial->GetWorldMatrix();
 
         for (int i = 0; i < *Globals::NextActorId; ++i) {
             const auto& s_Actor = Globals::ActorManager->m_activatedActors[i];
 
-            const auto s_ActorSpatial = s_Actor.m_ref.QueryInterface<ZSpatialEntity>();
+            const auto s_ActorSpatial = s_Actor.m_entityRef.QueryInterface<ZSpatialEntity>();
 
             if (!s_ActorSpatial)
                 continue;
@@ -323,16 +323,16 @@ bool Clumsy::GetEntities() {
             GetBlueprintFactory());
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeedf42ba555b602); s_Index != -1)
-            m_GetUpAnimation = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pEntity, s_Index);
+            m_GetUpAnimation = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pObj, s_Index);
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeed8cfffcae85dd); s_Index != -1)
-            m_ShakeEntity = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pEntity, s_Index);
+            m_ShakeEntity = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pObj, s_Index);
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeed6ea2fc060cbd); s_Index != -1)
-            m_MusicEntity = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pEntity, s_Index);
+            m_MusicEntity = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pObj, s_Index);
 
         if (const auto s_Index = s_BpFactory->GetSubEntityIndex(0xfeed9c1aab9f3d1e); s_Index != -1)
-            m_MusicEmitter = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pEntity, s_Index);
+            m_MusicEmitter = s_BpFactory->GetSubEntity(s_Brick.m_EntityRef.m_pObj, s_Index);
 
         break;
     }

@@ -98,24 +98,24 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 }
 
 std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
-    if (const auto s_EntityType = p_SelectedEntity->GetType(); s_EntityType && s_EntityType->m_pProperties01) {
-        for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-            const ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
-            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+    if (const auto s_EntityType = p_SelectedEntity->GetType(); s_EntityType && s_EntityType->m_pPropertyData) {
+        for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
+            const SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+            const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
-            if (!s_PropertyInfo || !s_PropertyInfo->m_pType)
+            if (!s_PropertyInfo || !s_PropertyInfo->m_propertyInfo.m_Type)
                 continue;
 
             const auto s_PropertyAddress =
-                    reinterpret_cast<uintptr_t>(p_SelectedEntity.m_pEntity) + s_Property->m_nOffset;
-            const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-            const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+                reinterpret_cast<uintptr_t>(p_SelectedEntity.m_pObj) + s_Property->m_nPropertyOffset;
+            const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
+            const uint16_t s_TypeAlignment = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeAlignment;
 
-            if (s_PropertyInfo->m_pType->typeInfo()->isResource() ||
-                s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+            if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
+                s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyID) {
                 // Some properties don't have a name for some reason. Try to find using RL.
                 if (const auto [s_data, s_size] =
-                        HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                    HM3_GetPropertyName(s_Property->m_nPropertyID); s_size > 0) {
                     if (const auto s_COLLISION_RESOURCE_ID_PROPERTY_NAME = "m_CollisionResourceID"; std::string(
                         s_data, s_size
                     ) != s_COLLISION_RESOURCE_ID_PROPERTY_NAME) {
@@ -126,15 +126,15 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
                         s_TypeSize, s_TypeAlignment
                     );
 
-                    if (s_PropertyInfo->m_nFlags & E_HAS_GETTER_SETTER) {
-                        s_PropertyInfo->get(
+                    if (s_PropertyInfo->m_propertyInfo.m_Flags & E_HAS_GETTER_SETTER) {
+                        s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
                             reinterpret_cast<void*>(s_PropertyAddress),
                             s_Data,
-                            s_PropertyInfo->m_nOffset
+                            s_PropertyInfo->m_propertyInfo.m_nExtraData
                         );
                     }
                     else {
-                        s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+                        s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(
                             s_Data,
                             reinterpret_cast<void*>(s_PropertyAddress)
                         );
@@ -162,22 +162,26 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
 }
 
 template <typename T>
-std::unique_ptr<T, AlignedDeleter> Editor::GetProperty(ZEntityRef p_Entity, const ZEntityProperty* p_Property) {
-    const auto* s_PropertyInfo = p_Property->m_pType->getPropertyInfo();
+std::unique_ptr<T, AlignedDeleter> Editor::GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property) {
+    const auto* s_PropertyInfo = p_Property->GetPropertyInfo();
     const auto s_PropertyAddress =
-            reinterpret_cast<uintptr_t>(p_Entity.m_pEntity) + p_Property->m_nOffset;
-    const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-    const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+        reinterpret_cast<uintptr_t>(p_Entity.m_pObj) + p_Property->m_nPropertyOffset;
+    const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
+    const uint16_t s_TypeAlignment = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeAlignment;
 
     // Get the value of the property.
     T* s_Data =
-            static_cast<T*>((*Globals::MemoryManager)->m_pNormalAllocator->
-                                                       AllocateAligned(s_TypeSize, s_TypeAlignment));
+        static_cast<T*>((*Globals::MemoryManager)->m_pNormalAllocator->
+            AllocateAligned(s_TypeSize, s_TypeAlignment));
 
-    if (s_PropertyInfo->m_nFlags & E_HAS_GETTER_SETTER)
-        s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
+    if (s_PropertyInfo->m_propertyInfo.m_Flags & E_HAS_GETTER_SETTER)
+        s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
+            reinterpret_cast<void*>(s_PropertyAddress),
+            s_Data,
+            s_PropertyInfo->m_propertyInfo.m_nExtraData
+        );
     else
-        s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+        s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(
             s_Data, reinterpret_cast<void*>(s_PropertyAddress)
         );
     return std::unique_ptr<T, AlignedDeleter>(s_Data, AlignedDeleter());;
@@ -187,15 +191,16 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
     const std::string s_TransformPropertyName = "m_mTransform";
     const auto s_EntityType = p_Entity->GetType();
 
-    for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-        ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
+    for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
+        SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
 
-        if (const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo(); s_PropertyInfo->m_pType->typeInfo()->
-            isResource() || s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId) {
+        if (const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
+            s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
+            s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyID) {
             // Some properties don't have a name for some reason. Try to find using RL.
 
             if (const auto [s_data, s_size] =
-                    HM3_GetPropertyName(s_Property->m_nPropertyId); s_size > 0) {
+                HM3_GetPropertyName(s_Property->m_nPropertyID); s_size > 0) {
                 if (auto s_PropertyNameView = std::string_view(s_data, s_size);
                     s_PropertyNameView == s_TransformPropertyName) {
                     if (auto s_Data43 = GetProperty<SMatrix43>(p_Entity, s_Property)) {
@@ -207,7 +212,7 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
                 }
             }
         }
-        else if (s_PropertyInfo->m_pName && s_PropertyInfo->m_pName == s_TransformPropertyName) {
+        else if (s_PropertyInfo->m_pszPropertyName && s_PropertyInfo->m_pszPropertyName == s_TransformPropertyName) {
             if (auto s_Data43 = GetProperty<SMatrix43>(p_Entity, s_Property)) {
                 auto s_Data = SMatrix(*s_Data43);
                 const auto s_Decomposed = s_Data.Decompose();
@@ -219,7 +224,6 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
     return {};
 }
 
-
 Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     const auto* s_Entity = p_Entity.QueryInterface<ZSpatialEntity>();
     if (!s_Entity)
@@ -228,7 +232,7 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     while (s_Entity->m_eidParent != NULL) {
         const TEntityRef<ZSpatialEntity> s_EidParent = s_Entity->m_eidParent;
         s_Entity = s_EidParent.m_pInterfaceRef;
-        s_ParentQuats.push_back(GetQuatFromProperty(s_EidParent.m_ref));
+        s_ParentQuats.push_back(GetQuatFromProperty(s_EidParent.m_entityRef));
     }
 
     if (s_ParentQuats.empty()) {
@@ -250,15 +254,15 @@ std::pair<std::string, std::string> Editor::FindRoomForEntity(const ZEntityRef p
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
     //ZEntityRef entityRef = p_Entity.GetLogicalParent();    
-    auto entityRef = p_Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref;
+    auto entityRef = p_Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_entityRef;
 
     // Climb up the parent hierarchy until we find a room entity
-    while (entityRef.m_pEntity) {
+    while (entityRef.m_pObj) {
         std::string entityName = m_CachedEntityTreeMap.at(entityRef)->Name;
         if (roomNameToFolderName.count(entityName)) {
             return std::make_pair(entityName, roomNameToFolderName.at(entityName));
         }
-        entityRef = entityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_ref;
+        entityRef = entityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_entityRef;
     }    
     //No room has been found, either dynamic entity or non tied to a room (see Miami for ex). Default to top logical parent
     return std::make_pair(m_CachedEntityTreeMap.at(p_Entity)->Parents.back()->Name, "No_Room");
@@ -266,10 +270,10 @@ std::pair<std::string, std::string> Editor::FindRoomForEntity(const ZEntityRef p
 
 void Editor::FindAlocAndPrimForZGeomEntityNode(
     std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& p_Entities,
-    const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
+    const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
 ) {
     const ZGeomEntity* s_GeomEntity = p_Node->Entity.QueryInterface<ZGeomEntity>();
-    std::string s_Id = std::format("{:016x}", p_Node->Entity->GetType()->m_nEntityId);
+    std::string s_Id = std::format("{:016x}", p_Node->Entity->GetType()->m_nEntityID);
     std::string s_TbluHashString =
             std::format("<{:08X}{:08X}>", p_Node->BlueprintFactory.m_IDHigh, p_Node->BlueprintFactory.m_IDLow);
 
@@ -305,8 +309,8 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
             !s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
             bool s_Skip = false;
             for (auto s_Interface : p_Interfaces) {
-                if (s_Interface.m_pTypeId->typeInfo() != nullptr) {
-                    p_EntityType = s_Interface.m_pTypeId->typeInfo()->m_pTypeName;
+                if (s_Interface.m_Type->GetTypeInfo() != nullptr) {
+                    p_EntityType = s_Interface.m_Type->GetTypeInfo()->pszTypeName;
                     if (strcmp(p_EntityType, "ZPureWaterAspect") == 0) {
                         s_Skip = true;
                         break;
@@ -341,9 +345,9 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
 
 void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
     std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& entities,
-    const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
+    const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<SInterfaceData>& s_Interfaces, const char*& s_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
 ) {
-    std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityId);
+    std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityID);
     std::string s_HashString =
             std::format("<{:08X}{:08X}>", s_Node->BlueprintFactory.m_IDHigh, s_Node->BlueprintFactory.m_IDLow);
     // TODO: Check if the prim hash is needed here
@@ -352,8 +356,8 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
         !s_collision_ioi_string.empty() && s_collision_ioi_string != "null") {
         bool s_Skip = false;
         for (auto s_Interface : s_Interfaces) {
-            if (s_Interface.m_pTypeId->typeInfo() != nullptr) {
-                s_EntityType = s_Interface.m_pTypeId->typeInfo()->m_pTypeName;
+            if (s_Interface.m_Type->GetTypeInfo() != nullptr) {
+                s_EntityType = s_Interface.m_Type->GetTypeInfo()->pszTypeName;
                 if (strcmp(s_EntityType, "ZPureWaterAspect") == 0) {
                     s_Skip = true;
                     break;
@@ -388,7 +392,7 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
 void Editor::FindMeshes(
     const std::function<void(
         std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>&, bool p_Done
-    )>& p_SendEntitiesCallback,
+        )>& p_SendEntitiesCallback,
     const std::function<void()>& p_RebuiltCallback
 ) {
     if (!m_CachedEntityTree) {
@@ -423,12 +427,12 @@ void Editor::FindMeshes(
         auto s_Parent = s_NodeQueue.front().first;
         auto s_Node = s_NodeQueue.front().second;
         s_NodeQueue.pop();
-        const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
-        const auto typeInfo = s_Interfaces[0].m_pTypeId->typeInfo();
+        const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaceData;
+        const auto typeInfo = s_Interfaces[0].m_Type->GetTypeInfo();
         if (typeInfo == nullptr) {
             continue;
         }
-        if (char* s_EntityType = typeInfo->m_pTypeName; strcmp(s_EntityType, "ZGeomEntity") == 0) {
+        if (const char* s_EntityType = typeInfo->pszTypeName; strcmp(s_EntityType, "ZGeomEntity") == 0) {
             FindAlocAndPrimForZGeomEntityNode(entities, s_Node, s_Interfaces, s_EntityType, roomNameToFolderName);
         }
         else if (strcmp(s_EntityType, "ZPrimitiveProxyEntity") == 0) {
@@ -443,8 +447,8 @@ void Editor::FindMeshes(
                 node->IsPendingDeletion) {
                 continue;
             }
-            std::string s_ChildId = std::format("{:016x}", node->Entity->GetType()->m_nEntityId);
-            s_NodeQueue.push(std::pair {s_Node, node});
+            std::string s_ChildId = std::format("{:016x}", node->Entity->GetType()->m_nEntityID);
+            s_NodeQueue.push(std::pair { s_Node, node });
         }
     }
     p_SendEntitiesCallback(entities, true);
@@ -471,14 +475,14 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
         auto s_Node = s_NodeQueue.front();
         s_NodeQueue.pop();
         if (s_Node->Entity == m_DynamicEntitiesNodeEntityRef ||
-           s_Node->Entity == m_UnparentedEntitiesNodeEntityRef ||
-           s_Node->IsDynamicEntity ||
-           s_Node->IsPendingDeletion) {
+            s_Node->Entity == m_UnparentedEntitiesNodeEntityRef ||
+            s_Node->IsDynamicEntity ||
+            s_Node->IsPendingDeletion) {
             continue;
         }
-        const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaces;
+        const auto& s_Interfaces = *s_Node->Entity.GetEntity()->GetType()->m_pInterfaceData;
 
-        if (char* s_EntityType = s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName;
+        if (const char* s_EntityType = s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName;
             strcmp(s_EntityType, p_EntityType.c_str()) == 0) {
             Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
             Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
@@ -486,11 +490,11 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
             Quat s_CombinedQuat;
             s_CombinedQuat = s_ParentQuat * s_EntityQuat;
             std::tuple<std::vector<std::string>, Quat, ZEntityRef> s_Entity =
-                    std::make_tuple(
-                        std::vector {p_Hash},
-                        s_CombinedQuat,
-                        s_Node->Entity
-                    );
+                std::make_tuple(
+                    std::vector{ p_Hash },
+                    s_CombinedQuat,
+                    s_Node->Entity
+                );
 
             entities.push_back(s_Entity);
         }
@@ -551,7 +555,7 @@ void Editor::SpawnQnEntity(
 
     ZEntityRef s_SpawnedEnt;
     Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager, s_SpawnedEnt, p_Name, s_Factory, s_Scene.m_ref, {}, p_EntityId
+        Globals::EntityManager, s_SpawnedEnt, p_Name, s_Factory, s_Scene.m_entityRef, {}, p_EntityId
     );
 
     if (!s_SpawnedEnt) {
@@ -560,7 +564,7 @@ void Editor::SpawnQnEntity(
 
     Logger::Info(
         "Spawned entity from rid {} with id {}!", s_Factory.GetResourceInfo().rid,
-        s_SpawnedEnt->GetType()->m_nEntityId
+        s_SpawnedEnt->GetType()->m_nEntityID
     );
 
     m_CachedEntityTreeMutex.lock();
@@ -616,19 +620,21 @@ void Editor::SetEntityProperty(
             throw std::runtime_error("Could not find property for the given ID.");
         }
 
-        if (!s_Property->m_pType || !s_Property->m_pType->getPropertyInfo() || !s_Property->m_pType->getPropertyInfo()->
-            m_pType) {
+        if (!s_Property->m_pPropertyInfo->m_Type ||
+            !s_Property->GetPropertyInfo() ||
+            !s_Property->GetPropertyInfo()->
+            m_propertyInfo.m_Type) {
             throw std::runtime_error(
                 "Unable to set this property because its type information is missing from the game."
             );
         }
 
-        const auto s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+        const auto s_PropertyInfo = s_Property->GetPropertyInfo();
 
-        if (s_PropertyInfo->m_pType->typeInfo()->isEntity()) {
+        if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsEntity()) {
             if (p_JsonValue == "null") {
                 auto s_EntityRefObj = ZObjectRef::From<ZEntityRef>({});
-                s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_pType);
+                s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_propertyInfo.m_Type);
 
                 OnSetPropertyValue(
                     s_Entity, p_PropertyId, s_EntityRefObj, std::move(p_ClientId)
@@ -646,7 +652,7 @@ void Editor::SetEntityProperty(
                     auto s_EntityRefObj = ZObjectRef::From<TEntityRef<ZEntityImpl>>(
                         TEntityRef<ZEntityImpl>(s_TargetEntity)
                     );
-                    s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_pType);
+                    s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_propertyInfo.m_Type);
 
                     OnSetPropertyValue(
                         s_Entity, p_PropertyId, s_EntityRefObj, std::move(p_ClientId)
@@ -658,9 +664,9 @@ void Editor::SetEntityProperty(
             }
         }
         else {
-            const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-            const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
-            const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+            const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
+            const uint16_t s_TypeAlignment = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeAlignment;
+            const std::string s_TypeName = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName;
 
             void* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
                 s_TypeSize,
@@ -681,7 +687,7 @@ void Editor::SetEntityProperty(
             }
 
             ZObjectRef s_DataObj;
-            s_DataObj.UNSAFE_Assign(s_PropertyInfo->m_pType, s_Data);
+            s_DataObj.UNSAFE_Assign(s_PropertyInfo->m_propertyInfo.m_Type, s_Data);
 
             OnSetPropertyValue(
                 s_Entity, p_PropertyId, s_DataObj, std::move(p_ClientId)

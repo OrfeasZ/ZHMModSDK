@@ -1239,7 +1239,7 @@ DEFINE_PLUGIN_DETOUR(
 ) {
     p_Hook->CallOriginal(th, nObstacleBlockageFlags, bEnabled, forceUpdate);
 
-    m_ObstaclesToEntityIDs[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityId;
+    m_ObstaclesToEntityIDs[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityID;
 
     return HookResult<void>(HookAction::Return());
 }

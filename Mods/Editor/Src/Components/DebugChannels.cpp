@@ -1308,7 +1308,7 @@ void Editor::AddGizmoEntity(
         ++m_DebugChannelToTypeNameToDebugEntityCount[p_DebugChannel][p_TypeName];
     }
     else {
-        const uint64_t s_EntityId = p_EntityRef.GetEntity()->GetType()->m_nEntityId;
+        const uint64_t s_EntityId = p_EntityRef.GetEntity()->GetType()->m_nEntityID;
 
         Logger::Error("Hash of gizmo is missing for entity with {:016x} id and {} type!", s_EntityId, p_TypeName);
     }
@@ -1372,7 +1372,7 @@ EDebugChannel Editor::ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDr
 bool Editor::EntityIDMatches(void* p_Interface, const uint64 p_EntityID) {
     auto s_EntityType = reinterpret_cast<ZEntityType**>(reinterpret_cast<uintptr_t>(p_Interface) + 8);
 
-    if (s_EntityType && *s_EntityType && (*s_EntityType)->m_nEntityId == p_EntityID) {
+    if (s_EntityType && *s_EntityType && (*s_EntityType)->m_nEntityID == p_EntityID) {
         return true;
     }
 
@@ -1479,11 +1479,11 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
 
     if (m_SelectedGizmoEntity->m_EntityRef.GetEntity() && m_SelectedGizmoEntity->m_EntityRef.GetEntity()->GetType()) {
         const auto& s_Type = *m_SelectedGizmoEntity->m_EntityRef.GetEntity()->GetType();
-        const auto& s_Interfaces = *s_Type.m_pInterfaces;
+        const auto& s_Interfaces = *s_Type.m_pInterfaceData;
 
         Logger::Trace(
-            "Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
-            s_Type.m_nEntityId
+            "Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
+            s_Type.m_nEntityID
         );
     }
 

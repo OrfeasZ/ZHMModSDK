@@ -288,12 +288,12 @@ void Editor::DrawEntityProperties() {
                 else if (s_SelectedEntity.GetLogicalParent() && s_SelectedEntity.GetLogicalParent().QueryInterface<
                     ZSpatialEntity>()) {
                     s_ParentTrans = s_SelectedEntity.GetLogicalParent().QueryInterface<ZSpatialEntity>()->
-                                                     GetWorldMatrix();
+                        GetWorldMatrix();
                 }
                 else if (s_SelectedEntity.GetOwningEntity() && s_SelectedEntity.GetOwningEntity().QueryInterface<
                     ZSpatialEntity>()) {
                     s_ParentTrans = s_SelectedEntity.GetOwningEntity().QueryInterface<ZSpatialEntity>()->
-                                                     GetWorldMatrix();
+                        GetWorldMatrix();
                 }
 
                 const auto s_ParentTransInv = s_ParentTrans.Inverse();
@@ -369,7 +369,7 @@ void Editor::DrawEntityProperties() {
 
             if (ImGui::Button(ICON_MD_PERSON_PIN " Move to Hitman")) {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                    auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+                    auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
                     OnEntityTransformChange(s_SelectedEntity, s_HitmanSpatial->GetWorldMatrix(), false, std::nullopt);
                 }
@@ -379,11 +379,11 @@ void Editor::DrawEntityProperties() {
 
             if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move Hitman to")) {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                    auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+                    auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
                     s_HitmanSpatial->SetWorldMatrix(s_Spatial->GetWorldMatrix());
 
-                    OnEntityTransformChange(s_LocalHitman.m_ref, s_Spatial->GetWorldMatrix(), false, std::nullopt);
+                    OnEntityTransformChange(s_LocalHitman.m_entityRef, s_Spatial->GetWorldMatrix(), false, std::nullopt);
                 }
             }
         }
@@ -443,39 +443,39 @@ void Editor::DrawEntityProperties() {
 
         const auto s_EntityType = s_SelectedEntity->GetType();
 
-        if (s_EntityType && s_EntityType->m_pProperties01) {
-            for (uint32_t i = 0; i < s_EntityType->m_pProperties01->size(); ++i) {
-                ZEntityProperty* s_Property = &s_EntityType->m_pProperties01->operator[](i);
-                const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
+        if (s_EntityType && s_EntityType->m_pPropertyData) {
+            for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
+                SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+                const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
-                if (!s_PropertyInfo || !s_PropertyInfo->m_pType)
+                if (!s_PropertyInfo || !s_PropertyInfo->m_propertyInfo.m_Type)
                     continue;
 
-                const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(s_SelectedEntity.m_pEntity) + s_Property->
-                        m_nOffset;
-                const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-                const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+                const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(s_SelectedEntity.m_pObj) + s_Property->
+                    m_nPropertyOffset;
+                const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
+                const uint16_t s_TypeAlignment = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeAlignment;
 
                 // Get the value of the property.
                 auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
                     s_TypeSize, s_TypeAlignment
                 );
 
-                if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
-                    s_PropertyInfo->get(
+                if (s_PropertyInfo->m_propertyInfo.m_Flags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
+                    s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
                         reinterpret_cast<void*>(s_PropertyAddress),
                         s_Data,
-                        s_PropertyInfo->m_nOffset
+                        s_PropertyInfo->m_propertyInfo.m_nExtraData
                     );
                 }
                 else {
-                    s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+                    s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(
                         s_Data,
                         reinterpret_cast<void*>(s_PropertyAddress)
                     );
                 }
 
-                const std::string s_TypeName = s_PropertyInfo->m_pType->typeInfo()->m_pTypeName;
+                const std::string s_TypeName = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName;
                 const std::string s_InputId = std::format("##Property{}", i);
 
                 // Render the name of the property.
@@ -485,37 +485,37 @@ void Editor::DrawEntityProperties() {
 
                 std::string s_PropertyName;
 
-                if (s_PropertyInfo->m_pType->typeInfo()->isResource() ||
-                    s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyId
-                ) {
+                if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
+                    s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyID
+                    ) {
                     // Some properties don't have a name for some reason. Try to find using RL.
-                    const auto s_PropertyNameData = HM3_GetPropertyName(s_Property->m_nPropertyId);
+                    const auto s_PropertyNameData = HM3_GetPropertyName(s_Property->m_nPropertyID);
 
                     if (s_PropertyNameData.Size > 0) {
                         s_PropertyName.assign(s_PropertyNameData.Data, s_PropertyNameData.Size);
                     }
                     else {
-                        s_PropertyName = fmt::format("~{:08x}", s_Property->m_nPropertyId);
+                        s_PropertyName = fmt::format("~{:08x}", s_Property->m_nPropertyID);
                     }
                 }
                 else {
-                    s_PropertyName = s_PropertyInfo->m_pName;
+                    s_PropertyName = s_PropertyInfo->m_pszPropertyName;
                 }
 
-                if (!s_PropertyInfo->m_pType->typeInfo()->isArray() &&
-                    !s_PropertyInfo->m_pType->typeInfo()->isFixedArray() &&
+                if (!s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsArray() &&
+                    !s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsFixedArray() &&
                     s_TypeName != "ZCurve") {
                     ImGui::Text("%s", s_PropertyName.c_str());
                 }
 
                 if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%s", s_PropertyInfo->m_pType->typeInfo()->m_pTypeName);
+                    ImGui::SetTooltip("%s", s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName);
                 }
 
                 ImGui::PopFont();
 
-                if (!s_PropertyInfo->m_pType->typeInfo()->isArray() &&
-                    !s_PropertyInfo->m_pType->typeInfo()->isFixedArray() &&
+                if (!s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsArray() &&
+                    !s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsFixedArray() &&
                     s_TypeName != "ZCurve") {
                     ImGui::SameLine();
 
@@ -528,7 +528,7 @@ void Editor::DrawEntityProperties() {
                     s_InputId,
                     s_PropertyName,
                     s_TypeName,
-                    s_PropertyInfo->m_pType,
+                    s_PropertyInfo->m_propertyInfo.m_Type,
                     s_SelectedEntity,
                     s_Property,
                     s_Data
@@ -537,9 +537,9 @@ void Editor::DrawEntityProperties() {
                 if (s_IsChanged) {
                     ZObjectRef s_ObjectRef;
 
-                    s_ObjectRef.Assign(s_PropertyInfo->m_pType, s_Data);
+                    s_ObjectRef.Assign(s_PropertyInfo->m_propertyInfo.m_Type, s_Data);
 
-                    OnSetPropertyValue(s_SelectedEntity, s_Property->m_nPropertyId, s_ObjectRef, std::nullopt);
+                    OnSetPropertyValue(s_SelectedEntity, s_Property->m_nPropertyID, s_ObjectRef, std::nullopt);
                 }
 
                 ImGui::Separator();
@@ -559,7 +559,7 @@ bool Editor::DrawEntityPropertyValue(
     const std::string& p_TypeName,
     const STypeID* p_TypeID,
     ZEntityRef p_Entity,
-    ZEntityProperty* p_Property,
+    SPropertyData* p_Property,
     void* p_Data
 ) {
     bool s_IsChanged = false;
@@ -618,10 +618,10 @@ bool Editor::DrawEntityPropertyValue(
     else if (p_TypeName == "SColorRGBA") {
         s_IsChanged = SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->typeInfo()->isEnum()) {
+    else if (p_TypeID->GetTypeInfo()->IsEnum()) {
         s_IsChanged = EnumProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->typeInfo()->isResource()) {
+    else if (p_TypeID->GetTypeInfo()->IsResource()) {
         ResourcePtrProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else if (p_TypeName == "ZRuntimeResourceID") {
@@ -639,7 +639,7 @@ bool Editor::DrawEntityPropertyValue(
     else if (p_TypeName == "ZGuid") {
         ZGuidProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->typeInfo()->isArray() || p_TypeID->typeInfo()->isFixedArray()) {
+    else if (p_TypeID->GetTypeInfo()->IsArray() || p_TypeID->GetTypeInfo()->IsFixedArray()) {
         s_IsChanged = ArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
     }
     else if (p_TypeName == "ZCurve") {

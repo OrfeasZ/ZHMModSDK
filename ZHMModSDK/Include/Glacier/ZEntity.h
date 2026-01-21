@@ -5,6 +5,7 @@
 #include "Reflection.h"
 #include "ZObject.h"
 #include "Globals.h"
+#include "ZEvent.h"
 
 class IEntityBlueprintFactory;
 class ZEntityBlueprintFactoryBase;
@@ -127,92 +128,104 @@ public:
     }
 };
 
-class IEntity :
-        public IComponentInterface {
-public:
-    virtual ~IEntity() {}
-};
-
-class ZPinFunctions {
-public:
-    void (*trigger)();
-    void (*unk1)();
-    void (*unk2)();
-    void (*unk3)();
-    int32_t m_nPin;
-};
-
-class ZPinData {
-public:
-    int32_t m_unk0x0;
-    IType* m_pType;
-};
-
-class ZPin {
-public:
-    int64_t m_nObjectOffset;
-    ZPinFunctions* m_pPinFunctions;
-    ZPinData* m_pPinData;
-    void* m_unk0x18;
-    int32_t m_nPin;
-};
-
-class ZEntityPropertyType {
-public:
-    ZClassProperty* getPropertyInfo() const {
-        return reinterpret_cast<ZClassProperty*>(reinterpret_cast<uintptr_t>(this) - 16);
+struct SPropertyData {
+    SNamedPropertyInfo* GetPropertyInfo() const {
+        return reinterpret_cast<SNamedPropertyInfo*>(
+            reinterpret_cast<uintptr_t>(m_pPropertyInfo) - offsetof(SNamedPropertyInfo, m_propertyInfo)
+        );
     }
+
+    SPropertyInfo* m_pPropertyInfo; // 0x0
+    int64_t m_nPropertyOffset; // 0x8
+    uint32_t m_nPropertyID; // 0x10
+    uint32_t m_nPropertyFlags; // 0x14
+
+    /*
+     * Assigned from the extraData field of SExtendedCppEntityProperty.
+     * 
+     * May contain, for example, the runtime resource ID of a material instance.
+     */
+    uint64_t m_nExtraData; // 0x18
+
+    /*
+     * Property offset which is calculated in:
+     *  - ZTemplateEntityBlueprintFactory::CalculateEntityTypes (property aliases)
+     *  - ZAspectEntityBlueprintFactory::CreateEntityType (properties of aspect-referenced entities)
+     * 
+     * Copied into:
+     *  - SDirectlySettableProperty::unk
+     *  - SDirectlySettablePropertyWithSetter::unk
+     *
+     * Used in:
+     *  - ZTemplateEntityFactory::ConfigureEntity
+     */
+    int32_t m_nUnk; // 0x20
 };
 
-class ZEntityProperty {
-public:
-    ZEntityPropertyType* m_pType;
-    int64_t m_nOffset;
-    uint32_t m_nPropertyId;
-    uint32_t m_nUnk01;
-    uint64_t m_nUnk02;
-    uint32_t m_nUnk03;
+struct SInterfaceData {
+    STypeID* m_Type; // 0x0
+    int64_t m_nInterfaceOffset; // 0x8
 };
 
-class ZEntityInterface {
-public:
-    STypeID* m_pTypeId;
-    int64_t m_nOffset;
+struct SExposedEntityData {
+    ZString m_sExposedEntityName; // 0x0
+    bool m_bIsArray; // 0x10
+    TArray<int64_t> m_aEntityOffsets; // 0x18
+};
+
+struct SSubsetData {
+    ZString m_sSubsetName; // 0x0
+    uint32 m_nSubsetFlags; // 0x10
+    TArray<int64_t> m_aEntityOffsets; // 0x18
+    TArray<TPair<int64_t, SSubsetData*>> m_aEntitySubsets; // 0x30
+};
+
+struct SPinData {
+    int64_t m_nOffsetToThisPtr; // 0x0
+    SPinInfo m_pInfo; // 0x8
 };
 
 class ZEntityType {
 public:
-    ZEntityProperty* FindProperty(uint32_t p_PropertyId) const {
-        if (!m_pProperties01) {
+    SPropertyData* FindProperty(uint32_t p_PropertyId) const {
+        if (!m_pPropertyData) {
             return nullptr;
         }
 
         auto s_Property = std::find_if(
-            m_pProperties01->begin(),
-            m_pProperties01->end(),
-            [p_PropertyId](const ZEntityProperty& p_Property) {
-                return p_Property.m_nPropertyId == p_PropertyId;
+            m_pPropertyData->begin(),
+            m_pPropertyData->end(),
+            [p_PropertyId](const SPropertyData& p_Property) {
+                return p_Property.m_nPropertyID == p_PropertyId;
             }
         );
 
-        if (s_Property != m_pProperties01->end()) {
+        if (s_Property != m_pPropertyData->end()) {
             return s_Property;
         }
 
         return nullptr;
     }
 
-    uint32_t m_nUnkFlags;
-    TArray<ZEntityProperty>* m_pProperties01;
-    TArray<ZEntityProperty>* m_pProperties02;
-    PAD(0x08);
-    TArray<ZEntityInterface>* m_pInterfaces; // 32
-    PAD(0x10);
-    TArray<ZPin>* m_pInputs;
-    TArray<ZPin>* m_pOutputs;
-    int64_t m_nLogicalParentEntityOffset;
-    int64_t m_nOwningEntityOffset;
-    uint64_t m_nEntityId;
+    int32_t m_nBorrowedPointersMask; // 0x0
+    TArray<SPropertyData>* m_pPropertyData; // 0x8
+    TArray<SPropertyData>* m_pResettablePropertyData; // 0x10
+    TArray<SPropertyData>* m_pStreamablePropertyData; // 0x18
+    TArray<SInterfaceData>* m_pInterfaceData; // 0x20
+    TArray<SExposedEntityData>* m_pExposedEntityData; // 0x28
+    TArray<SSubsetData>* m_pSubsets; // 0x30
+    TArray<SPinData>* m_pInputPins; // 0x38
+    TArray<SPinData>* m_pOutputPins; // 0x40
+    int64_t m_nLogicalParentEntityOffset; // 0x48
+    int64_t m_nOwningEntityOffset; // 0x50
+    uint64_t m_nEntityID; // 0x58
+    ZEvent<const ZEntityRef&>* m_pDeletionListeners; // 0x60
+};
+
+class IEntity :
+    public IComponentInterface {
+public:
+    virtual ~IEntity() {}
 };
 
 // Size = 0x18
@@ -247,29 +260,25 @@ public:
     virtual void ZEntityImpl_unk19() = 0;
 
     inline ZEntityType* GetType() const {
-        if ((reinterpret_cast<ptrdiff_t>(m_pType) & 1) == 0)
-            return m_pType;
+        if ((reinterpret_cast<ptrdiff_t>(m_pEntityType) & 1) == 0)
+            return m_pEntityType;
 
         return *reinterpret_cast<ZEntityType**>(
-            reinterpret_cast<intptr_t>(&m_pType) + (reinterpret_cast<ptrdiff_t>(m_pType) >> 1)
+            reinterpret_cast<intptr_t>(&m_pEntityType) + (reinterpret_cast<ptrdiff_t>(m_pEntityType) >> 1)
         );
     }
 
-public:
-    ZEntityType* m_pType;
-    uint32_t m_nEntityPtrIndex;
-    uint32_t m_nEntityFlags;
+    ZEntityType* m_pEntityType; // 0x8
+    uint32_t m_nEntityPtrIndex; // 0x10
+    uint32_t m_nEntityFlags; // 0x14
 };
 
 class ZEntityRef {
 public:
-    ZEntityType** m_pEntity = nullptr;
-
-public:
     ZEntityRef() {}
 
     ZEntityRef(ZEntityType** p_EntityRef) :
-        m_pEntity(p_EntityRef) {}
+        m_pObj(p_EntityRef) {}
 
     bool operator==(const ZEntityRef& p_Other) const {
         return GetEntity() == p_Other.GetEntity();
@@ -280,10 +289,10 @@ public:
     }
 
     ZEntityImpl* GetEntity() const {
-        if (!m_pEntity)
+        if (!m_pObj)
             return nullptr;
 
-        auto s_RealPtr = reinterpret_cast<uintptr_t>(m_pEntity) - sizeof(uintptr_t);
+        auto s_RealPtr = reinterpret_cast<uintptr_t>(m_pObj) - sizeof(uintptr_t);
         return reinterpret_cast<ZEntityImpl*>(s_RealPtr);
     }
 
@@ -298,7 +307,7 @@ public:
             return {};
 
         return {
-            reinterpret_cast<ZEntityType**>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Entity->GetType()->
+            reinterpret_cast<ZEntityType**>(reinterpret_cast<uintptr_t>(m_pObj) + s_Entity->GetType()->
                 m_nLogicalParentEntityOffset)
         };
     }
@@ -325,7 +334,7 @@ public:
             return {};
 
         return {
-            reinterpret_cast<ZEntityType**>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Entity->GetType()->
+            reinterpret_cast<ZEntityType**>(reinterpret_cast<uintptr_t>(m_pObj) + s_Entity->GetType()->
                 m_nOwningEntityOffset)
         };
     }
@@ -351,7 +360,7 @@ public:
         if (!s_Type)
             return nullptr;
 
-        if ((s_Type->m_nUnkFlags & 0x200) == 0) // IsRootFactoryEntity or something
+        if ((s_Type->m_nBorrowedPointersMask & 0x200) == 0) // IsRootFactoryEntity or something
             return nullptr;
 
         auto s_RootEntity = QueryInterface<void>();
@@ -376,9 +385,9 @@ public:
         if (!s_TypeID)
             return nullptr;
 
-        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == s_TypeID) {
-                return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Interface.m_nOffset);
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaceData) {
+            if (s_Interface.m_Type == s_TypeID) {
+                return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pObj) + s_Interface.m_nInterfaceOffset);
             }
         }
 
@@ -392,9 +401,9 @@ public:
         if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
             return nullptr;
 
-        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == p_TypeID) {
-                return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pEntity) + s_Interface.m_nOffset);
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaceData) {
+            if (s_Interface.m_Type == p_TypeID) {
+                return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(m_pObj) + s_Interface.m_nInterfaceOffset);
             }
         }
 
@@ -413,8 +422,8 @@ public:
         if (!s_TypeID)
             return false;
 
-        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == s_TypeID) {
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaceData) {
+            if (s_Interface.m_Type == s_TypeID) {
                 return true;
             }
         }
@@ -433,8 +442,8 @@ public:
         if (!s_TypeID)
             return false;
 
-        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaces) {
-            if (s_Interface.m_pTypeId == s_TypeID) {
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaceData) {
+            if (s_Interface.m_Type == s_TypeID) {
                 return true;
             }
         }
@@ -444,47 +453,52 @@ public:
 
     template <typename T>
     ZVariant<T> GetProperty(const uint32_t nPropertyID) const {
-        ZVariant<T> s_PropertyVal;
+        ZVariant<T> s_PropertyValue;
 
         const auto s_Entity = GetEntity();
 
         if (!s_Entity || !*Globals::MemoryManager)
-            return s_PropertyVal;
+            return s_PropertyValue;
 
         const auto s_Type = s_Entity->GetType();
 
-        if (!s_Type || !s_Type->m_pProperties01)
-            return s_PropertyVal;
+        if (!s_Type || !s_Type->m_pPropertyData)
+            return s_PropertyValue;
 
-        for (uint32_t i = 0; i < s_Type->m_pProperties01->size(); ++i) {
-            const ZEntityProperty* s_Property = &s_Type->m_pProperties01->operator[](i);
+        for (uint32_t i = 0; i < s_Type->m_pPropertyData->size(); ++i) {
+            const SPropertyData* s_Property = &(*s_Type->m_pPropertyData)[i];
 
-            if (s_Property->m_nPropertyId != nPropertyID)
+            if (s_Property->m_nPropertyID != nPropertyID) {
                 continue;
+            }
 
-            const auto* s_PropertyInfo = s_Property->m_pType->getPropertyInfo();
-            const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(m_pEntity) + s_Property->m_nOffset;
+            const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
+            const auto s_PropertyAddress = reinterpret_cast<uintptr_t>(m_pObj) + s_Property->m_nPropertyOffset;
 
-            const uint16_t s_TypeSize = s_PropertyInfo->m_pType->typeInfo()->m_nTypeSize;
-            const uint16_t s_TypeAlignment = s_PropertyInfo->m_pType->typeInfo()->m_nTypeAlignment;
+            const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
+            const uint16_t s_TypeAlignment = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeAlignment;
 
             auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
-            if (s_PropertyInfo->m_nFlags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
-                s_PropertyInfo->get(reinterpret_cast<void*>(s_PropertyAddress), s_Data, s_PropertyInfo->m_nOffset);
+            if (s_PropertyInfo->m_propertyInfo.m_Flags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
+                s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
+                    reinterpret_cast<void*>(s_PropertyAddress),
+                    s_Data,
+                    s_PropertyInfo->m_propertyInfo.m_nExtraData
+                );
             }
             else {
-                s_PropertyInfo->m_pType->typeInfo()->m_pTypeFunctions->copyConstruct(
+                s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(
                     s_Data, reinterpret_cast<void*>(s_PropertyAddress)
                 );
             }
 
-            s_PropertyVal.UNSAFE_Assign(s_PropertyInfo->m_pType, s_Data);
+            s_PropertyValue.UNSAFE_Assign(s_PropertyInfo->m_propertyInfo.m_Type, s_Data);
 
             break;
         }
 
-        return s_PropertyVal;
+        return s_PropertyValue;
     }
 
     template <typename T>
@@ -555,6 +569,8 @@ public:
             return reinterpret_cast<uintptr_t>(p_Ref.GetEntity());
         }
     };
+
+    ZEntityType** m_pObj = nullptr;
 };
 
 template <>
@@ -570,18 +586,12 @@ public:
     TEntityRef() = default;
 
     explicit TEntityRef(ZEntityRef p_Ref) :
-        m_ref(p_Ref), m_pInterfaceRef(p_Ref.QueryInterface<T>()) {}
-
-    ZEntityRef m_ref;
-    T* m_pInterfaceRef = nullptr;
+        m_entityRef(p_Ref), m_pInterfaceRef(p_Ref.QueryInterface<T>()) {}
 
     operator bool() const {
-        return m_ref && m_pInterfaceRef != nullptr;
+        return m_entityRef && m_pInterfaceRef != nullptr;
     }
-};
 
-class ZRepositoryItemEntity :
-        public ZEntityImpl {
-public:
-    ZRepositoryID m_sId;
+    ZEntityRef m_entityRef;
+    T* m_pInterfaceRef = nullptr;
 };

@@ -19,7 +19,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
 
         // Enable Hitman input.
         if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-            auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+            auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
             const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 

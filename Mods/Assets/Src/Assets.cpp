@@ -317,7 +317,7 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
         s_NewEntity,
         "",
         s_Resource,
-        s_Scene.m_ref,
+        s_Scene.m_entityRef,
         s_ExternalRefs,
         -1
     );
@@ -327,7 +327,7 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
         s_NewEntity2,
         "",
         s_Resource2,
-        s_Scene.m_ref,
+        s_Scene.m_entityRef,
         s_ExternalRefs,
         -1
     );
@@ -342,11 +342,11 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
         return;
     }
 
-    const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+    const auto s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
     const auto s_ItemSpawner = s_NewEntity.QueryInterface<ZItemSpawner>();
 
     s_ItemSpawner->m_ePhysicsMode = ZItemSpawner::EPhysicsMode::EPM_KINEMATIC;
-    s_ItemSpawner->m_rMainItemKey.m_ref = s_NewEntity2;
+    s_ItemSpawner->m_rMainItemKey.m_entityRef = s_NewEntity2;
     s_ItemSpawner->m_rMainItemKey.m_pInterfaceRef = s_NewEntity2.QueryInterface<ZItemRepositoryKeyEntity>();
     s_ItemSpawner->m_rMainItemKey.m_pInterfaceRef->m_RepositoryId = p_RepositoryId;
     s_ItemSpawner->m_bUsePlacementAttach = false;
@@ -379,7 +379,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
         s_NewEntity,
         "",
         s_Resource,
-        s_Scene.m_ref,
+        s_Scene.m_entityRef,
         s_ExternalRefs,
         -1
     );
@@ -398,7 +398,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
         return;
     }
 
-    const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+    const auto s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
     const auto s_PropSpatialEntity = s_NewEntity.QueryInterface<ZSpatialEntity>();
 
     s_PropSpatialEntity->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
@@ -438,7 +438,7 @@ void Assets::SpawnActor(
         s_NewEntity,
         "",
         s_Resource,
-        s_Scene.m_ref,
+        s_Scene.m_entityRef,
         s_ExternalRefs,
         -1
     );
@@ -467,7 +467,7 @@ void Assets::SpawnActor(
     s_Actor->Activate(0);
 
     ZSpatialEntity* s_ActorSpatialEntity = s_NewEntity.QueryInterface<ZSpatialEntity>();
-    ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+    ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
     s_ActorSpatialEntity->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
 

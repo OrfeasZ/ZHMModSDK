@@ -251,7 +251,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             s_ActorName,
             sizeof(s_ActorName),
             Globals::ActorManager->m_activatedActors,
-            [](auto& p_EntityRef) -> const ZEntityRef& { return p_EntityRef.m_ref; },
+            [](auto& p_EntityRef) -> const ZEntityRef& { return p_EntityRef.m_entityRef; },
             [](auto& p_EntityRef) -> std::string {
                 return std::string(
                     p_EntityRef.m_pInterfaceRef->m_sActorName.c_str(),
@@ -292,7 +292,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         if (ImGui::Button("Get Nearest Actor's Outfit")) {
-            const ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+            const ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
             for (int i = 0; i < *Globals::NextActorId; ++i) {
                 ZActor* actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
@@ -323,7 +323,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         ImGui::Separator();
 
         if (ImGui::Button("Teleport All Items To Player")) {
-            auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+            auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
             const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
 
             for (size_t i = 0; i < s_Hm5ActionManager->m_Actions.size(); ++i) {
@@ -338,7 +338,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         if (ImGui::Button("Teleport All Actors To Player")) {
-            const auto s_HitmanSpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+            const auto s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
             for (size_t i = 0; i < *Globals::NextActorId; ++i) {
                 ZActor* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
@@ -494,7 +494,7 @@ void Player::ToggleInfiniteAmmo() {
             s_HM5CrippleBox->Activate(0);
         }
     } else {
-        if (m_HM5CrippleBoxEntity.m_pEntity) {
+        if (m_HM5CrippleBoxEntity) {
             Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
 
             m_HM5CrippleBoxEntity = {};
@@ -529,7 +529,7 @@ bool Player::CreateAICrippleEntity() {
         m_AICrippleEntity,
         "",
         s_AICrippleEntityFactory,
-        s_Scene.m_ref,
+        s_Scene.m_entityRef,
         s_ExternalRefs,
         -1
     );
@@ -570,7 +570,7 @@ bool Player::CreateHM5CrippleBoxEntity() {
         m_HM5CrippleBoxEntity,
         "",
         s_CrippleBoxFactory,
-        s_Scene.m_ref,
+        s_Scene.m_entityRef,
         s_ExternalRefs,
         -1
     );
@@ -585,13 +585,13 @@ bool Player::CreateHM5CrippleBoxEntity() {
 }
 
 DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
-    if (m_AICrippleEntity.m_pEntity) {
+    if (m_AICrippleEntity) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_AICrippleEntity, {});
 
         m_AICrippleEntity = {};
     }
 
-    if (m_HM5CrippleBoxEntity.m_pEntity) {
+    if (m_HM5CrippleBoxEntity) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
 
         m_HM5CrippleBoxEntity = {};

@@ -3,7 +3,7 @@
 #include <Glacier/SColorRGBA.h>
 
 bool Editor::SColorRGBProperty(
-    const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data
+    const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data
 ) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<SColorRGB*>(p_Data);
@@ -30,7 +30,7 @@ bool Editor::SColorRGBProperty(
 }
 
 bool Editor::SColorRGBAProperty(
-    const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data
+    const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data
 ) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<SColorRGBA*>(p_Data);

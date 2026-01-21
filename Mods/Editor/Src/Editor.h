@@ -108,14 +108,14 @@ private:
         const std::string& p_TypeName,
         const STypeID* p_TypeID,
         ZEntityRef p_Entity,
-        ZEntityProperty* p_Property,
+        SPropertyData* p_Property,
         void* p_Data
     );
 
     bool DrawArrayElements(
         const std::string& p_Id,
         ZEntityRef p_Entity,
-        ZEntityProperty* p_Property,
+        SPropertyData* p_Property,
         void* p_Data,
         const IArrayType* p_ArrayType
     );
@@ -165,63 +165,63 @@ private:
     static void ToggleEditorServerEnabled();
     static void FindAlocAndPrimForZGeomEntityNode(
         std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& p_Entities,
-        const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<ZEntityInterface>& p_Interfaces, char*& p_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
+        const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
     );
     static void FindAlocAndPrimForZPrimitiveProxyEntityNode(
         std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& entities,
-        const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<ZEntityInterface>& s_Interfaces, char*& s_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
+        const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<SInterfaceData>& s_Interfaces, const char*& s_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
     );
 
     // Properties
-    void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
-    void ZEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void ZEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     void EntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity);
 
-    void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    void ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    void ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     // Primitive properties.
-    bool StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool BoolProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Uint8Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Uint16Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Uint32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Uint64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Int8Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Int16Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Int32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Int64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Float32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool Float64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    bool StringProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool BoolProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Uint8Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Uint16Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Uint32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Uint64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Int8Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Int16Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Int32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Int64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Float32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool Float64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     // Vector properties.
-    bool SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    bool SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
-    bool SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    bool SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     template <typename T>
-    static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const ZEntityProperty* p_Property);
+    static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property);
     static Quat GetQuatFromProperty(ZEntityRef p_Entity);
     static Quat GetParentQuat(ZEntityRef p_Entity);
     std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& roomNameToFolderName);
 
-    bool SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    bool SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    bool SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
-    void ResourcePtrProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
-    void ZRuntimeResourceIDProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    void ResourcePtrProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    void ZRuntimeResourceIDProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
-    bool ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+    bool ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
         const std::string& s_PropertyName, const STypeID* p_TypeID);
 
-    bool ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data);
+    bool ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
-    bool ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
+    bool ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
         const std::string& s_PropertyName, const STypeID* p_TypeID);
 
     static void PlotZCurve(const ZCurve* p_Curve);

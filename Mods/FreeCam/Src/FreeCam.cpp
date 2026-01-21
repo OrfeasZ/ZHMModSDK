@@ -235,7 +235,7 @@ void FreeCam::EnableFreecam() {
 
     Logger::Debug("Camera trans: {}", fmt::ptr(&s_Camera.m_pInterfaceRef->m_mTransform.Trans));
 
-    s_RenderDest.m_pInterfaceRef->SetSource(&s_Camera.m_ref);
+    s_RenderDest.m_pInterfaceRef->SetSource(&s_Camera.m_entityRef);
 
     if (m_GamePaused)
         Globals::GameTimeManager->m_bPaused = true;
@@ -269,7 +269,7 @@ void FreeCam::InstantlyKillNpc() {
     ZRayQueryOutput s_RayOutput {};
 
     if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
-        ZEntityRef s_LogicalParent = s_RayOutput.m_pBlockingSpatialEntity.m_ref.GetLogicalParent();
+        ZEntityRef s_LogicalParent = s_RayOutput.m_pBlockingSpatialEntity.m_entityRef.GetLogicalParent();
         ZActor* s_Actor = s_LogicalParent.QueryInterface<ZActor>();
 
         if (s_Actor) {
@@ -288,7 +288,7 @@ void FreeCam::TeleportMainCharacter() {
 
     if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
         if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-            ZSpatialEntity* s_SpatialEntity = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+            ZSpatialEntity* s_SpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
             SMatrix s_WorldMatrix = s_SpatialEntity->GetWorldMatrix();
 
             s_WorldMatrix.Trans = s_RayOutput.m_vPosition;

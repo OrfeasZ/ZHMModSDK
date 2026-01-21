@@ -314,8 +314,8 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         const auto s_RT = reinterpret_cast<ZRenderDestination*>(m_EditorCameraRT.m_pInterfaceRef->
             GetRenderDestination());
 
-        m_EditorCameraRT.m_ref.SetProperty("m_bVisible", true);
-        m_EditorCamera.m_ref.SetProperty("m_bVisible", true);
+        m_EditorCameraRT.m_entityRef.SetProperty("m_bVisible", true);
+        m_EditorCamera.m_entityRef.SetProperty("m_bVisible", true);
 
         if (s_RT)
             SDK()->ImGuiGameRenderTarget(s_RT);
@@ -452,12 +452,12 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
         Functions::ZWorldInventory_DestroyItem->Call(
             Globals::WorldInventory,
-            TEntityRef<IItemBase>(m_ItemToRemove.m_ref)
+            TEntityRef<IItemBase>(m_ItemToRemove.m_entityRef)
         );
 
         if (s_IsMainWeapon && m_SelectedActor->m_pInventoryHandler->m_aInventory.size() > 0) {
             m_SelectedActor->m_pInventoryHandler->m_rMainWeapon = TEntityRef<ZHM5ItemWeapon>(
-                m_SelectedActor->m_pInventoryHandler->m_aInventory[0].m_ref
+                m_SelectedActor->m_pInventoryHandler->m_aInventory[0].m_entityRef
             );
         }
 
@@ -535,15 +535,15 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
 
     if (p_FirstClick) {
         if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
-            const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaces;
+            const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaceData;
             Logger::Trace(
                 "Hit entity of type '{}' with id '{:x}'.",
-                s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
-                s_RayOutput.m_pBlockingSpatialEntity.m_ref->GetType()->m_nEntityId
+                s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
+                s_RayOutput.m_pBlockingSpatialEntity.m_entityRef->GetType()->m_nEntityID
             );
 
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-            ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_ref;
+            ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_entityRef;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
@@ -747,7 +747,7 @@ void Editor::SpawnCameras() {
         m_EditorData,
         "SDKCam",
         s_CameraRTFactory,
-        s_Scene.m_ref,
+        s_Scene.m_entityRef,
         s_ExternalRefs,
         -1
     );
@@ -755,13 +755,13 @@ void Editor::SpawnCameras() {
     Logger::Debug("Spawned editor data entity!");
 
     if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedb6fc4f5626ea); idx != -1) {
-        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pEntity, idx)) {
+        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pObj, idx)) {
             m_EditorCamera = TEntityRef<ZCameraEntity>(s_Ent);
         }
     }
 
     if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedbf5a41eb9c48); idx != -1) {
-        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pEntity, idx)) {
+        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pObj, idx)) {
             m_EditorCameraRT = TEntityRef<ZRenderDestinationTextureEntity>(s_Ent);
         }
     }

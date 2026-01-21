@@ -57,7 +57,7 @@ void Noclip::OnDrawMenu() {
     if (ImGui::Checkbox(ICON_MD_SELF_IMPROVEMENT " Noclip", &m_NoclipEnabled)) {
         if (m_NoclipEnabled) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                if (const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>())
+                if (const auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>())
                     m_PlayerPosition = s_HitmanSpatial->GetWorldMatrix();
             }
         }
@@ -70,7 +70,7 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     if (!s_LocalHitman)
         return;
 
-    const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+    const auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
     if (!s_HitmanSpatial)
         return;

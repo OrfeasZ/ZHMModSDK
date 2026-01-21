@@ -2,7 +2,7 @@
 #include "imgui.h"
 
 bool Editor::SMatrix43Property(
-    const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data
+    const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data
 ) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<SMatrix43*>(p_Data);

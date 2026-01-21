@@ -1,7 +1,7 @@
 #include "Editor.h"
 #include "imgui.h"
 
-bool Editor::StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::StringProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto* s_RealData = static_cast<ZString*>(p_Data);
 
@@ -19,7 +19,7 @@ bool Editor::StringProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
     return s_IsChanged;
 }
 
-bool Editor::BoolProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::BoolProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<bool*>(p_Data);
 
@@ -30,7 +30,7 @@ bool Editor::BoolProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityP
     return s_IsChanged;
 }
 
-bool Editor::Uint8Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Uint8Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<uint8*>(p_Data);
 
@@ -47,7 +47,7 @@ bool Editor::Uint8Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
     return s_IsChanged;
 }
 
-bool Editor::Uint16Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Uint16Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<uint16*>(p_Data);
 
@@ -64,7 +64,7 @@ bool Editor::Uint16Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
     return s_IsChanged;
 }
 
-bool Editor::Uint32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Uint32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<uint32*>(p_Data);
 
@@ -81,7 +81,7 @@ bool Editor::Uint32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
     return s_IsChanged;
 }
 
-bool Editor::Uint64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Uint64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<uint64*>(p_Data);
 
@@ -98,7 +98,7 @@ bool Editor::Uint64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
     return s_IsChanged;
 }
 
-bool Editor::Int8Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Int8Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<int8*>(p_Data);
 
@@ -115,7 +115,7 @@ bool Editor::Int8Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityP
     return s_IsChanged;
 }
 
-bool Editor::Int16Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Int16Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<int16*>(p_Data);
 
@@ -132,7 +132,7 @@ bool Editor::Int16Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
     return s_IsChanged;
 }
 
-bool Editor::Int32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Int32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<int32*>(p_Data);
 
@@ -149,7 +149,7 @@ bool Editor::Int32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
     return s_IsChanged;
 }
 
-bool Editor::Int64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Int64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<int64*>(p_Data);
 
@@ -166,7 +166,7 @@ bool Editor::Int64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntity
     return s_IsChanged;
 }
 
-bool Editor::Float32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Float32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<float32*>(p_Data);
 
@@ -183,7 +183,7 @@ bool Editor::Float32Property(const std::string& p_Id, ZEntityRef p_Entity, ZEnti
     return s_IsChanged;
 }
 
-bool Editor::Float64Property(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data) {
+bool Editor::Float64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
     bool s_IsChanged = false;
     auto s_Value = static_cast<float64*>(p_Data);
 

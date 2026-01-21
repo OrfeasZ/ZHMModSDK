@@ -238,11 +238,11 @@ bool TitaniumBullets::ApplyRepositoryPatch() {
                 ++m_RepoEntriesPatched;
             } else {
                 const auto* s_TypeInfo = s_AmmoConfigPair->value.GetTypeID()
-                    ? s_AmmoConfigPair->value.GetTypeID()->typeInfo()
+                    ? s_AmmoConfigPair->value.GetTypeID()->GetTypeInfo()
                     : nullptr;
                 Logger::Warn(
                     "[TitaniumBullets] AmmoConfig has unexpected type '{}' (ID={})",
-                    s_TypeInfo && s_TypeInfo->m_pTypeName ? s_TypeInfo->m_pTypeName : "<null>",
+                    s_TypeInfo && s_TypeInfo->pszTypeName ? s_TypeInfo->pszTypeName : "<null>",
                     s_RepoId.ToString()
                 );
             }
