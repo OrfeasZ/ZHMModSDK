@@ -100,7 +100,7 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
     if (const auto s_EntityType = p_SelectedEntity->GetType(); s_EntityType && s_EntityType->m_pPropertyData) {
         for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
-            const SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+            const SPropertyData* s_Property = &(*s_EntityType->m_pPropertyData)[i];
             const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
             if (!s_PropertyInfo || !s_PropertyInfo->m_propertyInfo.m_Type)
@@ -192,7 +192,7 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
     const auto s_EntityType = p_Entity->GetType();
 
     for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
-        SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+        const SPropertyData* s_Property = &(*s_EntityType->m_pPropertyData)[i];
 
         if (const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
             s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||

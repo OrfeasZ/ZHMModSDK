@@ -934,7 +934,7 @@ bool EditorServer::IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity) {
     const std::string s_DisableNavmeshExportPropertyName = "m_bDisableNavmeshExport";
     if (s_EntityType && s_EntityType->m_pPropertyData) {
         for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
-            const SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+            const SPropertyData* s_Property = &(*s_EntityType->m_pPropertyData)[i];
             const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
             if (!s_PropertyInfo ||
@@ -1111,7 +1111,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 
     if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pPropertyData) {
         for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
-            SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+            SPropertyData* s_Property = &(*s_EntityType->m_pPropertyData)[i];
             const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
             if (!s_PropertyInfo ||
@@ -1261,7 +1261,7 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 
     if (s_EntityType && s_EntityType->m_pPropertyData) {
         for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
-            SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+            SPropertyData* s_Property = &(*s_EntityType->m_pPropertyData)[i];
             const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
             if (!s_PropertyInfo ||

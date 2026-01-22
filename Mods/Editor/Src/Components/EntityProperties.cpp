@@ -445,7 +445,7 @@ void Editor::DrawEntityProperties() {
 
         if (s_EntityType && s_EntityType->m_pPropertyData) {
             for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
-                SPropertyData* s_Property = &s_EntityType->m_pPropertyData->operator[](i);
+                SPropertyData* s_Property = &(*s_EntityType->m_pPropertyData)[i];
                 const auto* s_PropertyInfo = s_Property->GetPropertyInfo();
 
                 if (!s_PropertyInfo || !s_PropertyInfo->m_propertyInfo.m_Type)
