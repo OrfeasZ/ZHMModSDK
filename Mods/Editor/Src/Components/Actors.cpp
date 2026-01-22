@@ -49,7 +49,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
 
-        if (ImGui::CollapsingHeader("Filters", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::CollapsingHeader("Filters")) {
             ImGui::Checkbox("Show alive actors", &m_ShowAliveActors);
 
             ImGui::Separator();
