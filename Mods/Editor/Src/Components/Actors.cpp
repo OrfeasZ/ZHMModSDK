@@ -49,29 +49,29 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
 
-        ImGui::Checkbox("Show alive actors", &m_ShowAliveActors);
+        if (ImGui::CollapsingHeader("Filters", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Checkbox("Show alive actors", &m_ShowAliveActors);
 
-        ImGui::Separator();
+            ImGui::Separator();
 
-        ImGui::Checkbox("Show civilians", &m_ShowCivilians);
-        ImGui::Checkbox("Show guards", &m_ShowGuards);
+            ImGui::Checkbox("Show civilians", &m_ShowCivilians);
+            ImGui::Checkbox("Show guards", &m_ShowGuards);
 
-        ImGui::Spacing();
+            ImGui::Spacing();
 
-        ImGui::Checkbox("Show male actors", &m_ShowMaleActors);
-        ImGui::Checkbox("Show female actors", &m_ShowFemaleActors);
+            ImGui::Checkbox("Show male actors", &m_ShowMaleActors);
+            ImGui::Checkbox("Show female actors", &m_ShowFemaleActors);
 
-        ImGui::Separator();
+            ImGui::Separator();
 
-        ImGui::Checkbox("Show targets", &m_ShowTargets);
-        ImGui::Checkbox("Show active enforcers", &m_ShowActiveEnforcers);
-        ImGui::Checkbox("Show potential enforcers", &m_ShowPotentialEnforcers);
-        ImGui::Checkbox("Show dynamic enforcers", &m_ShowDynamicEnforcers);
-        ImGui::Checkbox("Show crowd characters", &m_ShowCrowdCharacters);
-        ImGui::Checkbox("Show active sentries", &m_ShowActiveSentries);
-        ImGui::Checkbox("Show actors with cloth outfit", &m_ShowActorsWithClothOutfit);
-
-        ImGui::Separator();
+            ImGui::Checkbox("Show targets", &m_ShowTargets);
+            ImGui::Checkbox("Show active enforcers", &m_ShowActiveEnforcers);
+            ImGui::Checkbox("Show potential enforcers", &m_ShowPotentialEnforcers);
+            ImGui::Checkbox("Show dynamic enforcers", &m_ShowDynamicEnforcers);
+            ImGui::Checkbox("Show crowd characters", &m_ShowCrowdCharacters);
+            ImGui::Checkbox("Show active sentries", &m_ShowActiveSentries);
+            ImGui::Checkbox("Show actors with cloth outfit", &m_ShowActorsWithClothOutfit);
+        }
 
         ImGui::Checkbox("Select actor in list when clicked in game", &m_SelectActorOnMouseClick);
 
