@@ -5,6 +5,8 @@
 #include <Glacier/ZResourceID.h>
 #include <Glacier/ZEntity.h>
 
+#include "EntityNameCompare.h"
+
 struct EntityTreeNode {
     std::string Name;
     std::string EntityType;
@@ -14,7 +16,7 @@ struct EntityTreeNode {
     ZRuntimeResourceID ReferencedBlueprintFactory;
     std::string ReferencedBlueprintFactoryType;
     ZEntityRef Entity;
-    std::multimap<std::string, std::shared_ptr<EntityTreeNode>> Children;
+    std::multimap<std::string, std::shared_ptr<EntityTreeNode>, EntityNameCompare> Children;
     std::vector<std::shared_ptr<EntityTreeNode>> Parents;
     bool IsDynamicEntity;
     std::atomic<bool> IsPendingDeletion = false;
