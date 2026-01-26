@@ -55,6 +55,7 @@ set(MODS
         Assets
         Outfits
         Randomizer
+        World
 )
 
 foreach (MOD IN LISTS MODS)
