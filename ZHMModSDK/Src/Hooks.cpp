@@ -520,7 +520,8 @@ PATTERN_HOOK(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x41\x56\x41\x57\x48\x83\xEC\x00\x33\xFF\x4D\x8B\xF1",
     "xxxxxxxxxxxxxxxxxxxxxxx?xxxxx",
     ZActorInventoryHandler_StartItemStreamIn,
-    void(ZActorInventoryHandler* th, TArray<TEntityRef<ZItemRepositoryKeyEntity>>&, TEntityRef<ZItemRepositoryKeyEntity>&, TEntityRef<ZItemRepositoryKeyEntity>&)
+    void(ZActorInventoryHandler* th, TArray<TEntityRef<ZItemRepositoryKeyEntity>>& rInventoryKeys,
+        TEntityRef<ZItemRepositoryKeyEntity>& rWeaponKey, TEntityRef<ZItemRepositoryKeyEntity>& rGrenadeKey)
 );
 
 PATTERN_HOOK(

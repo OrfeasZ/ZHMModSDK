@@ -283,9 +283,9 @@ public:
     )>* ZActorInventoryHandler_RequestItem;
     static Hook<void(
         ZActorInventoryHandler* th,
-        TArray<TEntityRef<ZItemRepositoryKeyEntity>>&,
-        TEntityRef<ZItemRepositoryKeyEntity>&,
-        TEntityRef<ZItemRepositoryKeyEntity>&
+        TArray<TEntityRef<ZItemRepositoryKeyEntity>>& rInventoryKeys,
+        TEntityRef<ZItemRepositoryKeyEntity>& rWeaponKey,
+        TEntityRef<ZItemRepositoryKeyEntity>& rGrenadeKey
     )>* ZActorInventoryHandler_StartItemStreamIn;
     static Hook<TEntityRef<ZItemRepositoryKeyEntity>* (ZActor* th, TEntityRef<ZItemRepositoryKeyEntity>& result)>* ZActor_GetWeaponKey;
 
