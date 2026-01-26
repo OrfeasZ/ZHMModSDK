@@ -69,6 +69,7 @@ There are a few sample mods included in this repository that can be used either 
 | [SkipIntro](/Mods/SkipIntro)                                   | Skips the intro sequence and starts the game directly at the main menu.                                                                                                                                                                                                                                    |
 | [TitaniumBullets](/Mods/TitaniumBullets)                       | Enables bullet wall penetration by patching `AmmoConfig` in `pro.repo` (SMF TitaniumBullets behaviour) at runtime.                                                                                                                                                                                         |
 | [WakingUpNpcs](/Mods/WakingUpNpcs)                             | Makes pacified NPCs wake up after a random interval between 4 and 8 minutes.                                                                                                                                                                                                                               |
+| [World](/Mods/World)                                           | Provides world-level gameplay controls and simulation tweaks. Currently includes a configurable game time multiplier.                                                                                                                                                                                      |
 
 ## Uninstalling
 
