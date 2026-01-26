@@ -10,7 +10,7 @@ struct EntityNameCompare {
     static std::string StripSuffix(const std::string& p_String) {
         const size_t s_Position = p_String.find(" (");
 
-        return (s_Position == std::string::npos) ? p_String : s.substr(0, s_Position);
+        return (s_Position == std::string::npos) ? p_String : p_String.substr(0, s_Position);
     }
 
     static Parsed Parse(const std::string& p_String) {
