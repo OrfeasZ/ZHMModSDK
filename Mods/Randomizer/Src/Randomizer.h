@@ -116,7 +116,15 @@ private:
         ZCharacterSubcontrollerInventory::ECreateItemType createItemType
     );
 
-    DECLARE_PLUGIN_DETOUR(Randomizer, bool, ZActorInventoryHandler_RequestItem, ZActorInventoryHandler* th, ZRepositoryID& id);
+    DECLARE_PLUGIN_DETOUR(
+        Randomizer,
+        void,
+        ZActorInventoryHandler_StartItemStreamIn,
+        ZActorInventoryHandler* th,
+        TArray<TEntityRef<ZItemRepositoryKeyEntity>>& rInventoryKeys,
+        TEntityRef<ZItemRepositoryKeyEntity>& rWeaponKey,
+        TEntityRef<ZItemRepositoryKeyEntity>& rGrenadeKey
+    );
 
     DECLARE_PLUGIN_DETOUR(
         Randomizer,

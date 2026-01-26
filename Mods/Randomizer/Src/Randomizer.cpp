@@ -51,7 +51,7 @@ void Randomizer::Init() {
         this,
         &Randomizer::ZCharacterSubcontrollerInventory_CreateItem
     );
-    Hooks::ZActorInventoryHandler_RequestItem->AddDetour(this, &Randomizer::ZActorInventoryHandler_RequestItem);
+    Hooks::ZActorInventoryHandler_StartItemStreamIn->AddDetour(this, &Randomizer::ZActorInventoryHandler_StartItemStreamIn);
     Hooks::ZHitman5_SetOutfit->AddDetour(this, &Randomizer::ZHitman5_SetOutfit);
     Hooks::ZActor_SetOutfit->AddDetour(this, &Randomizer::ZActor_SetOutfit);
     Hooks::ZClothBundleEntity_CreateClothBundle->AddDetour(this, &Randomizer::ZClothBundleEntity_CreateClothBundle);
@@ -2863,31 +2863,32 @@ DEFINE_PLUGIN_DETOUR(
     return HookResult<ZCharacterSubcontrollerInventory::SCreateItem*>(HookAction::Continue());
 }
 
-DEFINE_PLUGIN_DETOUR(Randomizer, bool, ZActorInventoryHandler_RequestItem, ZActorInventoryHandler* th, ZRepositoryID& id) {
+DEFINE_PLUGIN_DETOUR(
+    Randomizer,
+    void,
+    ZActorInventoryHandler_StartItemStreamIn,
+    ZActorInventoryHandler* th,
+    TArray<TEntityRef<ZItemRepositoryKeyEntity>>& rInventoryKeys,
+    TEntityRef<ZItemRepositoryKeyEntity>& rWeaponKey,
+    TEntityRef<ZItemRepositoryKeyEntity>& rGrenadeKey
+) {
     if (!m_IsRandomizerEnabled || !m_IsRandomizerAllowedForScene || !m_RandomizeProps || !m_RandomizeActorInventory) {
-        return HookResult<bool>(HookAction::Continue());
+        return HookResult<void>(HookAction::Continue());
     }
 
-    ZRepositoryID s_RepositoryId;
-    bool s_IsWeapon = false;
-
-    if (m_RepositoryWeapons.contains(id)) {
-        s_RepositoryId = GetRandomRepositoryId(m_WeaponsToSpawnInActorInventory);
-        s_IsWeapon = true;
-    }
-    else {
-        s_RepositoryId = GetRandomRepositoryId(m_PropsToSpawnInActorInventory);
+    for (const auto& s_InventoryKey : rInventoryKeys) {
+        s_InventoryKey.m_pInterfaceRef->m_RepositoryId = GetRandomRepositoryId(m_PropsToSpawnInActorInventory);
     }
 
-    if (!s_RepositoryId.IsEmpty()) {
-        id = s_RepositoryId;
-
-        if (s_IsWeapon) {
-            th->m_rWeaponID = id;
-        }
+    if (rWeaponKey) {
+        rWeaponKey.m_pInterfaceRef->m_RepositoryId = GetRandomRepositoryId(m_WeaponsToSpawnInActorInventory);
     }
 
-    return HookResult<bool>(HookAction::Continue());
+    if (rGrenadeKey) {
+        rGrenadeKey.m_pInterfaceRef->m_RepositoryId = GetRandomRepositoryId(m_PropsToSpawnInActorInventory);
+    }
+
+    return HookResult<void>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(
