@@ -440,18 +440,20 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
 
     if (p_GizmoEntity.m_DebugChannel == EDebugChannel::DEBUGCHANNEL_AI &&
         p_GizmoEntity.m_TypeName == "ZActBehaviorEntity") {
-        const TEntityRef<ZSpatialEntity> s_MoveToTransform = p_GizmoEntity.m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
+        const TEntityRef<ZSpatialEntity> s_MoveToTransform =
+            p_GizmoEntity.m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
 
-        s_Transform = s_MoveToTransform.m_pInterfaceRef->GetWorldMatrix() * p_GizmoEntity.m_Transform;
+        s_Transform = s_MoveToTransform.m_pInterfaceRef->GetObjectToWorldMatrix() * p_GizmoEntity.m_Transform;
     }
     else {
         static STypeID* s_SpatialEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZSpatialEntity");
         auto s_SpatialEntity = p_GizmoEntity.m_EntityRef.QueryInterface<ZSpatialEntity>(s_SpatialEntityTypeID);
 
-        s_Transform = s_SpatialEntity->GetWorldMatrix() * p_GizmoEntity.m_Transform;
+        s_Transform = s_SpatialEntity->GetObjectToWorldMatrix() * p_GizmoEntity.m_Transform;
     }
 
-    ZRenderPrimitiveResource* s_pRenderPrimitiveResource = static_cast<ZRenderPrimitiveResource*>(p_GizmoEntity.m_PrimResourcePtr.GetResourceData());
+    ZRenderPrimitiveResource* s_pRenderPrimitiveResource =
+        static_cast<ZRenderPrimitiveResource*>(p_GizmoEntity.m_PrimResourcePtr.GetResourceData());
 
     if (!s_pRenderPrimitiveResource) {
         Logger::Error("PRIM of {:016x} gizmo isn't installed!", p_GizmoEntity.m_RuntimeResourceID.GetID());
@@ -459,8 +461,10 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
     }
 
     for (size_t j = 0; j < s_pRenderPrimitiveResource->m_Primitives.size(); ++j) {
-        ZRenderPrimitiveMesh* s_pRenderPrimitive = static_cast<ZRenderPrimitiveMesh*>(s_pRenderPrimitiveResource->m_Primitives[j].m_pObject);
-        SPrimitiveBufferData* s_PrimitiveBufferData = &Globals::PrimitiveBufferData[s_pRenderPrimitive->m_BufferDataIndex];
+        ZRenderPrimitiveMesh* s_pRenderPrimitive =
+            static_cast<ZRenderPrimitiveMesh*>(s_pRenderPrimitiveResource->m_Primitives[j].m_pObject);
+        SPrimitiveBufferData* s_PrimitiveBufferData =
+            &Globals::PrimitiveBufferData[s_pRenderPrimitive->m_BufferDataIndex];
 
         p_Renderer->DrawMesh(
             s_pRenderPrimitiveResource,
@@ -1424,12 +1428,12 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
             if (s_GizmoEntity->m_TypeName == "ZActBehaviorEntity") {
                 const TEntityRef<ZSpatialEntity> s_MoveToTransform = s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
 
-                s_Transform = s_MoveToTransform.m_pInterfaceRef->GetWorldMatrix() * s_GizmoEntity->m_Transform;
+                s_Transform = s_MoveToTransform.m_pInterfaceRef->GetObjectToWorldMatrix() * s_GizmoEntity->m_Transform;
             }
             else {
                 auto s_SpatialEntity = s_GizmoEntity->m_EntityRef.QueryInterface<ZSpatialEntity>(s_SpatialEntityTypeID);
 
-                s_Transform = s_SpatialEntity->GetWorldMatrix();
+                s_Transform = s_SpatialEntity->GetObjectToWorldMatrix();
             }
 
             DirectX::XMMATRIX s_Transform2 = DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));

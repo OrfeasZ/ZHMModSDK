@@ -231,7 +231,7 @@ void FreeCam::EnableFreecam() {
     m_OriginalCam = *s_RenderDest.m_pInterfaceRef->GetSource();
 
     const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
-    s_Camera.m_pInterfaceRef->SetWorldMatrix(s_CurrentCamera->GetWorldMatrix());
+    s_Camera.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(s_CurrentCamera->GetObjectToWorldMatrix());
 
     Logger::Debug("Camera trans: {}", fmt::ptr(&s_Camera.m_pInterfaceRef->m_mTransform.Trans));
 
@@ -289,18 +289,18 @@ void FreeCam::TeleportMainCharacter() {
     if (GetFreeCameraRayCastClosestHitQueryOutput(s_RayOutput) && s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
         if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
             ZSpatialEntity* s_SpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-            SMatrix s_WorldMatrix = s_SpatialEntity->GetWorldMatrix();
+            SMatrix s_WorldMatrix = s_SpatialEntity->GetObjectToWorldMatrix();
 
             s_WorldMatrix.Trans = s_RayOutput.m_vPosition;
 
-            s_SpatialEntity->SetWorldMatrix(s_WorldMatrix);
+            s_SpatialEntity->SetObjectToWorldMatrixFromEditor(s_WorldMatrix);
         }
     }
 }
 
 bool FreeCam::GetFreeCameraRayCastClosestHitQueryOutput(ZRayQueryOutput& p_RayOutput) {
     auto s_Camera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
-    SMatrix s_WorldMatrix = s_Camera.m_pInterfaceRef->GetWorldMatrix();
+    SMatrix s_WorldMatrix = s_Camera.m_pInterfaceRef->GetObjectToWorldMatrix();
     float4 s_InvertedDirection = float4(
         -s_WorldMatrix.ZAxis.x, -s_WorldMatrix.ZAxis.y, -s_WorldMatrix.ZAxis.z, -s_WorldMatrix.ZAxis.w
     );

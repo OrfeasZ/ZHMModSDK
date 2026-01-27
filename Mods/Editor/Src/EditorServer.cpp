@@ -1041,9 +1041,9 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 
     // Write transform.
     if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
-        const auto s_Trans = s_Spatial->GetWorldMatrix();
+        const auto s_Trans = s_Spatial->GetObjectToWorldMatrix();
 
-        SMatrix p_Transform = s_Spatial->GetWorldMatrix();
+        SMatrix p_Transform = s_Spatial->GetObjectToWorldMatrix();
         const auto s_Decomposed = p_Transform.Decompose();
         p_Stream << write_json("position") << ":";
         WriteVector3(p_Stream, s_Decomposed.Position.x, s_Decomposed.Position.y, s_Decomposed.Position.z);
@@ -1216,10 +1216,10 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 
     // Write transform.
     if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
-        const auto s_Trans = s_Spatial->GetWorldMatrix();
+        const auto s_Trans = s_Spatial->GetObjectToWorldMatrix();
 
         p_Stream << write_json("transform") << ":";
-        WriteTransform(p_Stream, s_Spatial->GetWorldMatrix());
+        WriteTransform(p_Stream, s_Spatial->GetObjectToWorldMatrix());
         p_Stream << ",";
 
         SMatrix s_ParentTrans;
@@ -1228,13 +1228,13 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 
         // Get parent entity.
         if (s_Spatial->m_eidParent.m_pInterfaceRef) {
-            s_ParentTrans = s_Spatial->m_eidParent.m_pInterfaceRef->GetWorldMatrix();
+            s_ParentTrans = s_Spatial->m_eidParent.m_pInterfaceRef->GetObjectToWorldMatrix();
         }
         else if (p_Entity.GetLogicalParent() && p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()) {
-            s_ParentTrans = p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
+            s_ParentTrans = p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
         }
         else if (p_Entity.GetOwningEntity() && p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()) {
-            s_ParentTrans = p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
+            s_ParentTrans = p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
         }
         else {
             s_DoesntHaveParent = true;

@@ -73,14 +73,18 @@ void Editor::DrawItems(bool p_HasFocus) {
         if (ImGui::Button("Teleport Item To Player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-                s_Item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());
+                s_Item->m_rGeomentity.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(
+                    s_HitmanSpatial->GetObjectToWorldMatrix()
+                );
             }
         }
 
         if (ImGui::Button("Teleport Player To Item")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-                s_HitmanSpatial->SetWorldMatrix(s_Item->m_rGeomentity.m_pInterfaceRef->GetWorldMatrix());
+                s_HitmanSpatial->SetObjectToWorldMatrixFromEditor(
+                    s_Item->m_rGeomentity.m_pInterfaceRef->GetObjectToWorldMatrix()
+                );
             }
         }
 

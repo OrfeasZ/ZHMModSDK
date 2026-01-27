@@ -332,7 +332,9 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                 if (s_Action->m_eActionType == EActionType::AT_PICKUP) {
                     const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
 
-                    s_Item->m_rGeomentity.m_pInterfaceRef->SetWorldMatrix(s_HitmanSpatial->GetWorldMatrix());
+                    s_Item->m_rGeomentity.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(
+                        s_HitmanSpatial->GetObjectToWorldMatrix()
+                    );
                 }
             }
         }
@@ -348,7 +350,9 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-                s_ActorSpatialEntity->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
+                s_ActorSpatialEntity->SetObjectToWorldMatrixFromEditor(
+                    s_HitmanSpatialEntity->GetObjectToWorldMatrix()
+                );
             }
         }
     }

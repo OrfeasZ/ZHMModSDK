@@ -217,7 +217,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
             s_Actor->GetID(s_Ref);
 
             auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
-            auto s_ActorTransform = s_SpatialEntity->GetWorldMatrix();
+            auto s_ActorTransform = s_SpatialEntity->GetObjectToWorldMatrix();
 
             float4 s_Min, s_Max;
 
@@ -238,7 +238,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                     return;
                 }
 
-                auto s_CameraTransform = s_CurrentCamera->GetWorldMatrix();
+                auto s_CameraTransform = s_CurrentCamera->GetObjectToWorldMatrix();
 
                 const float4 s_Center = (s_Min + s_Max) * 0.5f;
                 const float4 s_Extents = (s_Max - s_Min) * 0.5f;
@@ -372,7 +372,7 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
 
         p_Renderer->SetDistanceCullingEnabled(true);
 
-        SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+        SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
         const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
         static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
@@ -433,7 +433,7 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
             return;
         }
 
-        SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+        SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
 
         static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
         static const float s_Scale = 0.2f;
@@ -498,7 +498,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         return;
     }
 
-    SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+    SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
 
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
     static const float s_Scale = 0.3f;

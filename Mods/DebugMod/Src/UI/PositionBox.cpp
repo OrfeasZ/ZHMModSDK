@@ -24,10 +24,10 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
             const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
             if (s_HitmanSpatial)
-                s_HitmanTrans = s_HitmanSpatial->GetWorldMatrix();
+                s_HitmanTrans = s_HitmanSpatial->GetObjectToWorldMatrix();
 
             if (s_CurrentCamera)
-                s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
+                s_CameraTrans = s_CurrentCamera->GetObjectToWorldMatrix();
 
             constexpr uint8_t s_ColumnCount = 4;
             constexpr uint8_t s_RowCount = 4;

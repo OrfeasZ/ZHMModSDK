@@ -26,8 +26,8 @@ public:
     virtual void ZSpatialEntity_unk28() = 0;
     virtual void ZSpatialEntity_unk29() = 0;
     virtual void ZSpatialEntity_unk30() = 0;
-    virtual void SetWorldMatrix(const SMatrix& matrix) = 0;
     virtual void CalculateBounds(float4& min, float4& max, uint32_t a3, uint32_t a4) = 0;
+    virtual void SetObjectToWorldMatrixFromEditor(SMatrix mObjectToWorld) = 0;
     virtual void ZSpatialEntity_unk33() = 0;
     virtual void ZSpatialEntity_unk34() = 0;
     virtual void ZSpatialEntity_unk35() = 0;
@@ -39,15 +39,15 @@ public:
     virtual void ZSpatialEntity_unk41() = 0;
 
 public:
-    SMatrix GetWorldMatrix() const {
         if ((m_nUnknownFlags & 0x80000) != 0)
+    SMatrix GetObjectToWorldMatrix() const {
             Functions::ZSpatialEntity_UpdateCachedWorldMat->Call(this);
 
         return m_mTransform;
     }
 
     float4 GetWorldDirection(const float4& p_LocalDirection) const {
-        return GetWorldMatrix().WVectorRotate(p_LocalDirection);
+        return GetObjectToWorldMatrix().WVectorRotate(p_LocalDirection);
     }
 
 public:

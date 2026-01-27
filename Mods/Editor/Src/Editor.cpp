@@ -773,7 +773,7 @@ void Editor::SpawnCameras() {
 
     // If we have a current camera, move the editor camera to its position.
     if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call()) {
-        m_EditorCamera.m_pInterfaceRef->SetWorldMatrix(s_CurrentCamera->GetWorldMatrix());
+        m_EditorCamera.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(s_CurrentCamera->GetObjectToWorldMatrix());
     }
 }
 

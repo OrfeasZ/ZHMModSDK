@@ -1011,7 +1011,7 @@ bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_W
     if (!s_CurrentCamera)
         return false;
 
-    auto s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
+    auto s_CameraTrans = s_CurrentCamera->GetObjectToWorldMatrix();
 
     auto s_ScreenPos = DirectX::SimpleMath::Vector3(
         (2.0f * p_ScreenPos.x) / m_WindowWidth - 1.0f, 1.0f - (2.0f * p_ScreenPos.y) / m_WindowHeight, 1.f

@@ -32,7 +32,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
             const ZSpatialEntity* s_SpatialEntity = SDK()->GetLocalPlayer().m_entityRef.QueryInterface<ZSpatialEntity>();
             const uint16 s_CurrentRoomEntityIndex = Functions::ZRoomManager_GetRoomFromPoint->Call(
                 *Globals::RoomManager,
-                s_SpatialEntity->GetWorldMatrix().Pos
+                s_SpatialEntity->GetObjectToWorldMatrix().Pos
             );
             const ZRoomEntity* s_CurrentRoomEntity = (*Globals::RoomManager)->m_RoomEntities[s_CurrentRoomEntityIndex];
             ZEntityRef s_CurrentRoomEntityRef;
@@ -61,7 +61,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
         if (s_CurrentCamera) {
             const uint16 s_CurrentRoomEntityIndex = Functions::ZRoomManager_GetRoomFromPoint->Call(
                 *Globals::RoomManager,
-                s_CurrentCamera->GetWorldMatrix().Pos
+                s_CurrentCamera->GetObjectToWorldMatrix().Pos
             );
             const ZRoomEntity* s_CurrentRoomEntity = (*Globals::RoomManager)->m_RoomEntities[s_CurrentRoomEntityIndex];
             ZEntityRef s_CurrentRoomEntityRef;

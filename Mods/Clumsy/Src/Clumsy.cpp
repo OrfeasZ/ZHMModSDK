@@ -227,8 +227,8 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             const auto s_EmitterSpatial = m_MusicEmitter.QueryInterface<ZSpatialEntity>();
 
             if (s_EmitterSpatial)
-                s_EmitterSpatial->SetWorldMatrix(
-                    s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>()->GetWorldMatrix()
+                s_EmitterSpatial->SetObjectToWorldMatrixFromEditor(
+                    s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix()
                 );
 
             m_ShakeEntity.SignalInputPin("Activate");
@@ -252,7 +252,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             return;
 
         const auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-        const auto s_HitmanTransform = s_HitmanSpatial->GetWorldMatrix();
+        const auto s_HitmanTransform = s_HitmanSpatial->GetObjectToWorldMatrix();
 
         for (int i = 0; i < *Globals::NextActorId; ++i) {
             const auto& s_Actor = Globals::ActorManager->m_activatedActors[i];
@@ -262,7 +262,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             if (!s_ActorSpatial)
                 continue;
 
-            const auto s_ActorTrans = s_ActorSpatial->GetWorldMatrix();
+            const auto s_ActorTrans = s_ActorSpatial->GetObjectToWorldMatrix();
 
             if (float4::Distance(s_ActorTrans.Trans, s_HitmanTransform.Trans) < 4.f) {
                 Functions::ZHM5BaseCharacter_ActivateRagdoll->Call(s_Actor.m_pInterfaceRef, true);
@@ -278,7 +278,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         const auto s_EmitterSpatial = m_MusicEmitter.QueryInterface<ZSpatialEntity>();
 
         if (s_EmitterSpatial)
-            s_EmitterSpatial->SetWorldMatrix(s_HitmanTransform);
+            s_EmitterSpatial->SetObjectToWorldMatrixFromEditor(s_HitmanTransform);
 
         // head = 11
         // l_hand = 128

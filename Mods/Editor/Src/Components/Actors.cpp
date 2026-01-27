@@ -463,7 +463,9 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-                s_ActorSpatialEntity->SetWorldMatrix(s_HitmanSpatialEntity->GetWorldMatrix());
+                s_ActorSpatialEntity->SetObjectToWorldMatrixFromEditor(
+                    s_HitmanSpatialEntity->GetObjectToWorldMatrix()
+                );
             }
         }
 
@@ -475,7 +477,9 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-                s_HitmanSpatialEntity->SetWorldMatrix(s_ActorSpatialEntity->GetWorldMatrix());
+                s_HitmanSpatialEntity->SetObjectToWorldMatrixFromEditor(
+                    s_ActorSpatialEntity->GetObjectToWorldMatrix()
+                );
             }
         }
 
@@ -863,11 +867,11 @@ void Editor::UpdateTrackCam() const {
 
     m_ActorTracked->GetID(s_Ref);
 
-    SMatrix s_ActorWorldMatrix = s_Ref.QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
-    SMatrix s_TrackCamWorldMatrix = m_TrackCam.m_pInterfaceRef->GetWorldMatrix();
+    SMatrix s_ActorWorldMatrix = s_Ref.QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
+    SMatrix s_TrackCamWorldMatrix = m_TrackCam.m_pInterfaceRef->GetObjectToWorldMatrix();
     s_TrackCamWorldMatrix.Trans = s_ActorWorldMatrix.Trans + float4(0.f, 0.f, 2.f, 0.f);
 
-    m_TrackCam.m_pInterfaceRef->SetWorldMatrix(s_TrackCamWorldMatrix);
+    m_TrackCam.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(s_TrackCamWorldMatrix);
 }
 
 void Editor::DisableTrackCam() {

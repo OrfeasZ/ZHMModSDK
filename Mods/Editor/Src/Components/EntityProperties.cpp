@@ -276,24 +276,24 @@ void Editor::DrawEntityProperties() {
         if (const auto s_Spatial = s_SelectedEntity.QueryInterface<ZSpatialEntity>()) {
             ImGui::TextUnformatted("Entity Transform");
 
-            auto s_Trans = s_Spatial->GetWorldMatrix();
+            auto s_Trans = s_Spatial->GetObjectToWorldMatrix();
 
             if (s_LocalTransform) {
                 SMatrix s_ParentTrans;
 
                 // Get parent entity.
                 if (s_Spatial->m_eidParent.m_pInterfaceRef) {
-                    s_ParentTrans = s_Spatial->m_eidParent.m_pInterfaceRef->GetWorldMatrix();
+                    s_ParentTrans = s_Spatial->m_eidParent.m_pInterfaceRef->GetObjectToWorldMatrix();
                 }
                 else if (s_SelectedEntity.GetLogicalParent() && s_SelectedEntity.GetLogicalParent().QueryInterface<
                     ZSpatialEntity>()) {
                     s_ParentTrans = s_SelectedEntity.GetLogicalParent().QueryInterface<ZSpatialEntity>()->
-                        GetWorldMatrix();
+                        GetObjectToWorldMatrix();
                 }
                 else if (s_SelectedEntity.GetOwningEntity() && s_SelectedEntity.GetOwningEntity().QueryInterface<
                     ZSpatialEntity>()) {
                     s_ParentTrans = s_SelectedEntity.GetOwningEntity().QueryInterface<ZSpatialEntity>()->
-                        GetWorldMatrix();
+                        GetObjectToWorldMatrix();
                 }
 
                 const auto s_ParentTransInv = s_ParentTrans.Inverse();
@@ -371,7 +371,7 @@ void Editor::DrawEntityProperties() {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                     auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
-                    OnEntityTransformChange(s_SelectedEntity, s_HitmanSpatial->GetWorldMatrix(), false, std::nullopt);
+                    OnEntityTransformChange(s_SelectedEntity, s_HitmanSpatial->GetObjectToWorldMatrix(), false, std::nullopt);
                 }
             }
 
@@ -381,9 +381,9 @@ void Editor::DrawEntityProperties() {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                     auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
-                    s_HitmanSpatial->SetWorldMatrix(s_Spatial->GetWorldMatrix());
+                    s_HitmanSpatial->SetObjectToWorldMatrixFromEditor(s_Spatial->GetObjectToWorldMatrix());
 
-                    OnEntityTransformChange(s_LocalHitman.m_entityRef, s_Spatial->GetWorldMatrix(), false, std::nullopt);
+                    OnEntityTransformChange(s_LocalHitman.m_entityRef, s_Spatial->GetObjectToWorldMatrix(), false, std::nullopt);
                 }
             }
         }
