@@ -29,6 +29,12 @@ public:
     virtual void OnDrawMenu() {}
     virtual void OnDepthDraw3D(IRenderer* p_Renderer) {}
 
+private:
+    virtual void CleanupUI() {
+        ImGui::SetCurrentContext(nullptr);
+        ImPlot::SetCurrentContext(nullptr);
+    }
+
 public:
     /**
      * Set a setting string value for the given name.

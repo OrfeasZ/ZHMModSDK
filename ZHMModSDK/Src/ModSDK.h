@@ -62,6 +62,7 @@ private:
 
 public:
     void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
+    void OnModUnloading(const std::string& p_Name, IPluginInterface* p_Mod);
     void OnModUnloaded(const std::string& p_Name);
     void OnEngineInit();
     void OnDrawUI(bool p_HasFocus);
@@ -229,10 +230,15 @@ private:
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     );
 
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state);
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage);
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state
+    );
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage
+    );
 
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
         Scaleform::GFx::AS3::MovieRoot* th,
         Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
         const char* msg

@@ -987,6 +987,10 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
     Logger::Info("Mod {} successfully loaded.", p_Name);
 }
 
+void ModSDK::OnModUnloading(const std::string& p_Name, IPluginInterface* p_Mod) {
+    p_Mod->CleanupUI();
+}
+
 void ModSDK::OnModUnloaded(const std::string& p_Name) {}
 
 void ModSDK::OnEngineInit() {
