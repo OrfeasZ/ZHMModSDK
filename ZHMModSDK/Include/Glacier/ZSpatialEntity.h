@@ -39,9 +39,10 @@ public:
     virtual void ZSpatialEntity_unk41() = 0;
 
 public:
-        if ((m_nUnknownFlags & 0x80000) != 0)
     SMatrix GetObjectToWorldMatrix() const {
+        if (m_bWorldTransformDirty) {
             Functions::ZSpatialEntity_UpdateCachedWorldMat->Call(this);
+        }
 
         return m_mTransform;
     }
@@ -51,16 +52,40 @@ public:
     }
 
 public:
-    PAD(0x08);
+    ZEvent<const ZEntityRef&, const SMatrix43&>* m_pTransformChangeCallBackEvent; // 0x18
     SMatrix43 m_mTransform; // 0x20
-    PAD(0x1C); // 0x50
-    uint32_t m_nUnknownFlags; // 0x6C
+    SVector4 m_vObjectToParentRotation; // 0x50
+    SVector3 m_vObjectToParentTranslation; // 0x60
+    uint32_t m_bVisible : 1; // 0x6C
+    uint32_t m_bIsPrivate : 1;
+    uint32_t m_bVisibleInBoxReflection : 1;
+    uint32_t m_Unk0 : 1;
+    uint32_t m_Unk1 : 1;
+    uint32_t m_Unk2 : 1;
+    uint32_t m_Unk3 : 1;
+    uint32_t m_bEditorVisible : 1;
+    uint32_t m_bParentHidden : 1;
+    uint32_t m_bSceneChild : 1;
+    uint32_t m_bFPSDrawMode : 1;
+    uint32_t m_bNotifyChange : 1;
+    uint32_t m_bRoomDynamicAlways : 1;
+    uint32_t m_bParentDynamic : 1;
+    uint32_t m_bIsDynamic : 1;
+    uint32_t m_bIncludeInParentsBounds : 1;
+    uint32_t m_bUpdateBoundsPending : 1;
+    uint32_t m_bParentHiddenInBoxReflection : 1;
+    uint32_t m_bForceVisible : 1;
+    uint32_t m_bWorldTransformDirty : 1;
+    uint32_t m_eRoomBehaviour : 2;
+    uint32_t m_bHighPriorityTextures : 1;
     TEntityRef<ZSpatialEntity> m_eidParent; // 0x70
-    PAD(0x20);
+    ZSpatialEntity* m_pTransformParent; // 0x80
+    ZSpatialEntity* m_pTransformChildren; // 0x88
+    ZSpatialEntity* m_pTransformNext; // 0x90
+    ZSpatialEntity* m_pTransformPrev; // 0x98
 };
 
 static_assert(offsetof(ZSpatialEntity, m_mTransform) == 0x20);
-static_assert(offsetof(ZSpatialEntity, m_nUnknownFlags) == 0x6C);
 static_assert(sizeof(ZSpatialEntity) == 0xA0);
 
 class ZBoundedEntity :
