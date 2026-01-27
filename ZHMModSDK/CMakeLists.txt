@@ -164,6 +164,10 @@ install(FILES "${VCPKG_BUILD_ROOT}/include/imconfig.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stacklayout.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stdlib.h" DESTINATION include)
 
+# Install implot lib and headers.
+install(FILES "${VCPKG_BUILD_ROOT}/lib/implot.lib" DESTINATION lib)
+install(FILES "${VCPKG_BUILD_ROOT}/include/implot.h" DESTINATION include)
+
 # Install ResourceLib.
 install(TARGETS ResourceLib_HM3
         RUNTIME DESTINATION bin
