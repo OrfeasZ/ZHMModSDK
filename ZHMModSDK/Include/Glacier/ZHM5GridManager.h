@@ -1,6 +1,8 @@
 #pragma once
 
 #include "SReasoningGrid.h"
+#include "ZPathfinder.h"
+
 #include "Reflection.h"
 #include "Globals.h"
 
@@ -38,6 +40,7 @@ public:
 
 class ZHM5GridManager : public IComponentInterface {
 public:
-    PAD(0x60);
+    PAD(0x40);
+    ZPFLocation m_HitmanPFLocation; // 0x48
     ZGridNodeRef m_HitmanNode; //0x68
 };

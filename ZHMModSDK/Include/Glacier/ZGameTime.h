@@ -10,21 +10,21 @@ struct ZGameTime {
     }
 };
 
-class ZGameTimeManager :
-        public IComponentInterface {
+class ZGameTimeManager : public IComponentInterface {
 public:
-    int64_t m_unk0x8;
-    ZGameTime m_tSystemTime;
-    ZGameTime m_tLevelTime;
-    ZGameTime m_tLastLevelTime;
-    ZGameTime m_tLevelTimeDelta;
+    int64 m_nTicksPerSecond;
+    int64 m_nLastTimeTicks;
+    ZGameTime m_tGameTime;
+    ZGameTime m_tGameTimePrev;
+    ZGameTime m_tGameTimeDelta;
     ZGameTime m_tRealTime;
-    ZGameTime m_tLastRealTime;
+    ZGameTime m_tRealTimePrev;
     ZGameTime m_tRealTimeDelta;
-    float m_fTimeMultiplier0;
-    float m_fTimeMultiplier1;
-    bool m_unk0x50;
-    PAD(0x1F);
-    bool m_bPaused; // 0x70
-    uint32_t m_nRenderedFrames;
+    float m_fGameTimeMultiplier;
+    float m_fDebugTimeMultiplier;
+    ZGameTime m_FrameWait;
+    ZGameTime m_FrameStep;
+    ZGameTime m_FrameRemain;
+    bool m_bPaused;
+    uint32 m_nFrameCount;
 };

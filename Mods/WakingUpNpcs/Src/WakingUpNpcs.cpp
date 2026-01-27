@@ -33,7 +33,7 @@ void WakingUpNpcs::OnEngineInitialized() {
 
 void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     for (int i = 0; i < *Globals::NextActorId; ++i) {
-        auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+        auto* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
 
         // Process NPCs that are pacified (knocked out) and are not hidden (or being hidden) in a container.
         if (s_Actor->IsPacified() && !s_Actor->m_bBodyHidden && !s_Actor->m_bIsBeingDumped) {
@@ -70,12 +70,12 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     }
 }
 
-DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
+DEFINE_PLUGIN_DETOUR(WakingUpNpcs, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     Logger::Debug("Loading scene: {}", p_Parameters.m_SceneResource);
 
     m_PacifiedTimes.clear();
 
-    return HookResult<void>(HookAction::Continue());
+    return HookResult<bool>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext* th, bool) {

@@ -1265,6 +1265,10 @@ ImFont* ModSDK::GetImGuiBlackFont() {
     return m_ImguiRenderer->GetFontBlack();
 }
 
+ImPlotContext* ModSDK::GetImPlotContext() {
+    return ImPlot::GetCurrentContext();
+}
+
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name) {
     std::string s_Name;
     if (TryGetPinName(p_PinId, s_Name)) {
@@ -1784,7 +1788,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
 
 DEFINE_DETOUR_WITH_CONTEXT(
     ModSDK,
-    void,
+    bool,
     OnLoadScene,
     ZEntitySceneContext* th,
     SSceneInitParameters& p_Parameters

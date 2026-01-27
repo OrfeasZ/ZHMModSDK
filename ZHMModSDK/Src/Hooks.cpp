@@ -19,7 +19,7 @@ PATTERN_HOOK(
     "\x48\x8B\xC4\x48\x89\x48\x08\x41\x54\x41\x56\x41\x57",
     "xxxxxxxxxxxxx",
     ZEntitySceneContext_LoadScene,
-    void(ZEntitySceneContext* th, SSceneInitParameters& parameters)
+    bool(ZEntitySceneContext* th, SSceneInitParameters& parameters)
 );
 
 PATTERN_HOOK(
@@ -27,6 +27,13 @@ PATTERN_HOOK(
     "xxxxxxxxxxxxxxxxxxxx?xx",
     ZEntitySceneContext_ClearScene,
     void(ZEntitySceneContext*, bool bFullyUnloadScene)
+);
+
+PATTERN_HOOK(
+    "\x40\x53\x57\x48\x83\xEC\x00\xFF\x05",
+    "xxxxxx?xx",
+    ZEntitySceneContext_CreateScene,
+    void(ZEntitySceneContext*, bool bResetScene)
 );
 
 PATTERN_HOOK(
@@ -469,4 +476,80 @@ PATTERN_HOOK(
     "xxxxxx?xxxxx",
     Scaleform_GFx_AS3_MovieRoot_Output,
     void(Scaleform::GFx::AS3::MovieRoot* th, Scaleform::GFx::AS3::FlashUI::OutputMessageType type, const char* msg)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8B\xDA\xC7\x44\x24\x20\x00\x00\x00\x00\x48\x8D\x05\x00\x00\x00\x00\x33\xD2\x48\x8D\x4C\x24\x20\x48\x89\x44\x24\x28\xE8\x00\x00\x00\x00\xF7\x44\x24\x20\x00\x00\x00\x00\x0F\xB6\xF8\x75\x00\x48\x8B\x4C\x24\x28\x48\x83\xC1\x00\xE8\x00\x00\x00\x00\x40\x84\xFF\x74\x00\x48\x8D\x05",
+    "xxxxxxxxx?xxxxxxx????xxx????xxxxxxxxxxxxx????xxxx????xxxx?xxxxxxxx?x????xxxx?xxx",
+    ZEngineAppCommon_GetBootScene,
+    ZString*(ZEngineAppCommon* th, ZString& result)
+);
+
+PATTERN_HOOK(
+    "\x48\x83\xEC\x00\x8B\x0D\x00\x00\x00\x00\xC7\x05",
+    "xxx?xx????xx",
+    ZLevelManager_StartGame,
+    void(ZLevelManager* th)
+);
+
+PATTERN_HOOK(
+    "\x40\x56\x48\x81\xEC\x00\x00\x00\x00\xF6\x81\x34\x01\x00\x00",
+    "xxxxx????xxxxxx",
+    ZItemSpawner_RequestContentLoad,
+    void(ZItemSpawner* th)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x55\x57\x41\x54\x41\x56\x41\x57\x48\x8D\x6C\x24\xD1",
+    "xxxxxxxxxxxxxxxxxxxxxxx",
+    ZCharacterSubcontrollerInventory_CreateItem,
+    ZCharacterSubcontrollerInventory::SCreateItem* (
+        ZCharacterSubcontrollerInventory* th, ZRepositoryID& repId, const ZString& sOnlineInstanceId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        ZCharacterSubcontrollerInventory::ECreateItemType createItemType)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x10\x55\x56\x57\x48\x8D\x6C\x24\xB9\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x41\x20",
+    "xxxxxxxxxxxxxxxx????xxxx",
+    ZActorInventoryHandler_RequestItem,
+    bool(ZActorInventoryHandler* th, ZRepositoryID& id)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x41\x56\x41\x57\x48\x83\xEC\x00\x33\xFF\x4D\x8B\xF1",
+    "xxxxxxxxxxxxxxxxxxxxxxx?xxxxx",
+    ZActorInventoryHandler_StartItemStreamIn,
+    void(ZActorInventoryHandler* th, TArray<TEntityRef<ZItemRepositoryKeyEntity>>& rInventoryKeys,
+        TEntityRef<ZItemRepositoryKeyEntity>& rWeaponKey, TEntityRef<ZItemRepositoryKeyEntity>& rGrenadeKey)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\x01\x48\x8B\xFA\x48\x8D\x54\x24\x20\x48\x8B\xF1",
+    "xxxxxxxxxxxxxx?xxxxxxxxxxxxxx",
+    ZActor_GetWeaponKey,
+    TEntityRef<ZItemRepositoryKeyEntity>* (ZActor* th, TEntityRef<ZItemRepositoryKeyEntity>& result)
+);
+
+PATTERN_HOOK(
+    "\x4C\x8B\xDC\x55\x56\x41\x54\x41\x56\x41\x57\x48\x83\xEC",
+    "xxxxxxxxxxxxxx",
+    ZHitman5_SetOutfit,
+    void(ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int nCharset, int nVariation,
+        bool bEnableOutfitModifiers, bool bIgnoreOutifChange)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x55\x41\x56\x41\x57\x48\x8B\xEC\x48\x83\xEC\x00\x41\x8B\xF9",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxx?xxx",
+    ZActor_SetOutfit,
+    void(ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfit, int charset, int variation, bool bNude)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x10\x55\x56\x57\x41\x56\x41\x57\x48\x83\xEC\x00\x8B\x1D",
+    "xxxxxxxxxxxxxxx?xx",
+    ZClothBundleEntity_CreateClothBundle,
+    TEntityRef<ZClothBundleEntity>* (TEntityRef<ZClothBundleEntity>& result, const SMatrix& mat, ZRepositoryID id,
+        int32_t nOutfitVariation, int32_t nOutfitCharset, bool bSpawnedByHitman, bool bEnableOutfitModifiers)
 );

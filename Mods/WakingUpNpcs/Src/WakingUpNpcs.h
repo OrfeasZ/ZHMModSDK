@@ -19,7 +19,7 @@ private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
 private:
-    DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
+    DECLARE_PLUGIN_DETOUR(WakingUpNpcs, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext*, bool);
 
 private:

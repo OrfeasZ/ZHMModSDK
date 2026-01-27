@@ -4,41 +4,12 @@
 
 #include <ResourceLib_HM3.h>
 
-void Editor::TArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntityProperty* p_Property, void* p_Data,
-    const std::string& s_PropertyName, const std::string& s_TypeName, const STypeID* p_TypeID
+bool Editor::ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
+    const std::string& s_PropertyName, const STypeID* p_TypeID
 ) {
-    auto* s_Array = reinterpret_cast<TArray<uint8_t>*>(p_Data);
-
-    if (!s_Array) {
-        ImGui::TextDisabled("null");
-
-        return;
-    }
-
-    const IArrayType* s_ArrayType = static_cast<IArrayType*>(p_TypeID->typeInfo());
-    const STypeID* s_ElementTypeID = s_ArrayType->m_pArrayElementType;
-    const std::string s_ElementTypeName = s_ElementTypeID->typeInfo()->m_pTypeName;
-    const size_t s_ElementSize = s_ElementTypeID->typeInfo()->m_nTypeSize;
-    const size_t s_ElementAlign = s_ElementTypeID->typeInfo()->m_nTypeAlignment;
-
-    size_t s_ArraySize;
-
-    if (s_Array->fitsInline() && s_Array->hasInlineFlag()) {
-        s_ArraySize = s_Array->m_nInlineCount;
-    }
-    else {
-        s_ArraySize = (reinterpret_cast<uintptr_t>(s_Array->m_pEnd) -
-            reinterpret_cast<uintptr_t>(s_Array->m_pBegin)) / s_ElementSize;
-    }
-
-    uint8_t* s_BasePtr;
-
-    if (s_Array->fitsInline() && s_Array->hasInlineFlag()) {
-        s_BasePtr = reinterpret_cast<uint8_t*>(&s_Array->m_pBegin);
-    }
-    else {
-        s_BasePtr = reinterpret_cast<uint8_t*>(s_Array->m_pBegin);
-    }
+    bool s_IsChanged = false;
+    const IArrayType* s_ArrayType = reinterpret_cast<IArrayType*>(p_TypeID->GetTypeInfo());
+    size_t s_ArraySize = s_ArrayType->containerType.pVTab->getSize(p_Data);
 
     ImGui::PushFont(SDK()->GetImGuiBoldFont());
     ImGui::AlignTextToFramePadding();
@@ -55,33 +26,60 @@ void Editor::TArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, ZEntit
     ImGui::PopFont();
 
     if (s_IsTreeNodeOpen) {
-        for (size_t i = 0; i < s_ArraySize; ++i) {
-            uint8_t* s_ElementPtr = s_BasePtr + i * s_ElementSize;
-
-            ImGui::PushID(static_cast<int>(i));
-
-            ImGui::Separator();
-
-            ImGui::AlignTextToFramePadding();
-            ImGui::Text("[%zu]", i);
-
-            ImGui::SameLine();
-
-            const std::string s_ElementId = std::format("{}[{}]", p_Id, i);
-
-            DrawEntityPropertyValue(
-                s_ElementId,
-                "",
-                s_ElementTypeName,
-                s_ElementTypeID,
-                p_Entity,
-                p_Property,
-                s_ElementPtr
-            );
-
-            ImGui::PopID();
-        }
+        s_IsChanged = DrawArrayElements(
+            p_Id,
+            p_Entity,
+            p_Property,
+            p_Data,
+            s_ArrayType
+        );
 
         ImGui::TreePop();
     }
+
+    return s_IsChanged;
+}
+
+bool Editor::DrawArrayElements(
+    const std::string& p_Id,
+    ZEntityRef p_Entity,
+    SPropertyData* p_Property,
+    void* p_Data,
+    const IArrayType* p_ArrayType
+) {
+    bool s_IsAnyElementChanged = false;
+    const STypeID* s_ElementTypeID = p_ArrayType->containerType.elementType;
+    const std::string s_ElementTypeName = s_ElementTypeID->GetTypeInfo()->pszTypeName;
+
+    void* s_Iterator = p_ArrayType->containerType.pVTab->begin(p_Data);
+    void* s_End = p_ArrayType->containerType.pVTab->end(p_Data);
+
+    int s_Index = 0;
+
+    for (; s_Iterator != s_End; s_Iterator = p_ArrayType->containerType.pVTab->next(p_Data, s_Iterator), ++s_Index) {
+        ImGui::PushID(static_cast<int>(s_Index));
+
+        ImGui::Separator();
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("[%zu]", s_Index);
+
+        ImGui::SameLine();
+
+        const std::string s_ElementId = std::format("{}[{}]", p_Id, s_Index);
+
+        s_IsAnyElementChanged |= DrawEntityPropertyValue(
+            s_ElementId,
+            "",
+            s_ElementTypeName,
+            s_ElementTypeID,
+            p_Entity,
+            p_Property,
+            s_Iterator
+        );
+
+        ImGui::PopID();
+    }
+
+    return s_IsAnyElementChanged;
 }

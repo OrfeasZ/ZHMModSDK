@@ -109,6 +109,10 @@ public:
         return m_pChars;
     }
 
+    char operator[](int64_t p_Index) const {
+        return m_pChars[p_Index];
+    }
+
     bool operator<(const ZString& p_Other) const {
         return strncmp(c_str(), p_Other.c_str(), min(size(), p_Other.size())) >> 31;
     }
@@ -118,6 +122,10 @@ public:
             return false;
 
         return strncmp(c_str(), p_Other.c_str(), size()) == 0;
+    }
+
+    bool IsEmpty() const {
+        return size() == 0;
     }
 
     [[nodiscard]]

@@ -543,6 +543,8 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
             return false;
         }
 
+        MDF_FONT::Initialize();
+
         m_CommonStates = std::make_unique<DirectX::CommonStates>(s_Device.Ref);
 
         m_TextEffect->SetTexture(
@@ -910,7 +912,7 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
         D3D12_RESOURCE_DIMENSION_TEXTURE2D,
         0,
         1024,
-        384,
+        512,
         1,
         1,
         DXGI_FORMAT_R8_UNORM,
@@ -938,7 +940,7 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
     D3D12_SUBRESOURCE_DATA s_InitData = {};
     s_InitData.pData = MDF_FONT::g_DistanceField;
     s_InitData.RowPitch = 1024;
-    s_InitData.SlicePitch = 1024 * 384;
+    s_InitData.SlicePitch = 1024 * 512;
 
     s_Upload.Upload(m_FontDistanceFieldTexture.Ref, 0, &s_InitData, 1);
 
@@ -1009,7 +1011,7 @@ bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_W
     if (!s_CurrentCamera)
         return false;
 
-    auto s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
+    auto s_CameraTrans = s_CurrentCamera->GetObjectToWorldMatrix();
 
     auto s_ScreenPos = DirectX::SimpleMath::Vector3(
         (2.0f * p_ScreenPos.x) / m_WindowWidth - 1.0f, 1.0f - (2.0f * p_ScreenPos.y) / m_WindowHeight, 1.f
@@ -1389,32 +1391,28 @@ void DirectXTKRenderer::DrawText2D(const Text2D& p_Text2D) {
 
 void DirectXTKRenderer::DrawText3D(
     const char* p_Text, const SMatrix& p_Transform,
-    const SVector4& p_Color, const float p_Scale,
-    const TextAlignment p_HorizontalAlignment, const TextAlignment p_VerticalAlignment,
-    const bool p_IsCameraTransform
+    const SVector4& p_Color, float p_Scale,
+    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment,
+    bool p_IsCameraTransform
 ) {
     if (m_IsFrustumCullingEnabled &&
         !IsPointInsideViewFrustum(p_Transform.Trans)) {
         return;
     }
 
-    int s_TextLength = -1;
+    int s_TextLength = 0;
 
-    do {
-        ++s_TextLength;
-    }
-    while (p_Text[s_TextLength] != '\0');
-
-    if (s_TextLength > 255) {
-        s_TextLength = 255;
+    while (p_Text[s_TextLength] && s_TextLength < 255) {
+        s_TextLength++;
     }
 
     int s_PrintableCharacterCount = 0;
+    const char* p = p_Text;
 
-    for (int i = 0; i < s_TextLength; ++i) {
-        unsigned char c = static_cast<unsigned char>(p_Text[i]);
+    while (*p) {
+        uint32_t cp = MDF_FONT::DecodeUTF8(p);
 
-        if (c >= 33 && c <= 126) {
+        if (MDF_FONT::HasGlyph(cp)) {
             ++s_PrintableCharacterCount;
         }
     }
@@ -1426,45 +1424,37 @@ void DirectXTKRenderer::DrawText3D(
     float s_OffsetY = 0.f;
 
     if (p_VerticalAlignment == TextAlignment::Middle) {
-        s_OffsetY = (s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY) * -0.5f;
+        s_OffsetY = -(s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY) * 0.5f;
     }
     else if (p_VerticalAlignment == TextAlignment::Bottom) {
-        s_OffsetY = (s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY) * -1.f;
+        s_OffsetY = -(s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY);
     }
 
-    const float4 s_Translate = float4(0.f, 0.f, s_OffsetY * p_Scale, 1.f);
-    const float4 s_Scale2 = float4(p_Scale, p_Scale, p_Scale, 1.f);
-    const SMatrix s_OffsetMatrix = SMatrix::ScaleTranslate(s_Scale2, s_Translate);
+    const float4 s_Translate = float4(0.f, s_OffsetY * p_Scale, 0.f, 1.f);
+    const float4 s_Scale = float4(p_Scale, p_Scale, p_Scale, 1.f);
+    const SMatrix s_OffsetMatrix = SMatrix::ScaleTranslate(s_Scale, s_Translate);
 
-    SMatrix s_Transform = p_Transform;
+    SMatrix s_FinalTransform = p_Transform;
 
     if (p_IsCameraTransform) {
-        std::swap(s_Transform.YAxis, s_Transform.ZAxis);
+        std::swap(s_FinalTransform.YAxis, s_FinalTransform.ZAxis);
     }
 
-    const SMatrix s_Transform2 = s_Transform.AffineMultiply(s_OffsetMatrix);
+    s_FinalTransform = s_FinalTransform.AffineMultiply(s_OffsetMatrix);
 
-    const unsigned int s_VertexCount = 2 * s_PrintableCharacterCount;
     std::vector<Triangle> s_Triangles;
 
-    s_Triangles.reserve(s_VertexCount);
+    s_Triangles.reserve(2 * s_PrintableCharacterCount);
 
-    static const float s_LineHeight =
-    (MDF_FONT::ComputeLineHeightFromMetrics() /
-        static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
+    const float s_LineHeight = MDF_FONT::g_LineHeight /
+        static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]);
 
-    std::string s_Text(p_Text);
+    std::istringstream s_InputStringStream(p_Text);
     std::string s_Line;
-    std::istringstream s_InputStringStream(s_Text);
     int s_LineIndex = 0;
 
-    while (std::getline(s_InputStringStream, s_Line)) {
-        if (s_Line.empty()) {
-            ++s_LineIndex;
-
-            continue;
-        }
-
+    while (std::getline(s_InputStringStream, s_Line))
+    {
         MDF_FONT::STextBoundingBox s_TextBoundingBox2;
 
         MDF_FONT::CalcBoundingBox(s_TextBoundingBox2, s_Line.c_str());
@@ -1472,82 +1462,75 @@ void DirectXTKRenderer::DrawText3D(
         float s_OffsetX = 0.f;
 
         if (p_HorizontalAlignment == TextAlignment::Center) {
-            s_OffsetX = (s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX) * -0.5f;
+            s_OffsetX = -(s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX) * 0.5f;
         }
         else if (p_HorizontalAlignment == TextAlignment::Right) {
-            s_OffsetX = (s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX) * -1.f;
+            s_OffsetX = -(s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX);
         }
 
         float s_PenX = s_OffsetX;
         float s_PenY = -(s_LineIndex * s_LineHeight);
 
-        for (size_t i = 0; i < s_Line.size(); ++i) {
-            const unsigned char c = static_cast<unsigned char>(s_Line[i]);
+        const char* p = s_Line.c_str();
 
-            if (c == ' ') {
-                s_PenX += MDF_FONT::GetAdvanceWidth(c);
+        while (*p) {
+            uint32_t s_Codepoint = MDF_FONT::DecodeUTF8(p);
 
+            if (s_Codepoint == ' ') {
+                s_PenX += MDF_FONT::GetAdvanceWidth(s_Codepoint);
                 continue;
             }
 
-            if (c < 33 || c > 126) {
+            if (!MDF_FONT::HasGlyph(s_Codepoint)) {
                 continue;
             }
 
-            static const float s_Scale = 1.f;
             float s_Vertices[8];
             float s_TextureCoordinates[8];
 
-            MDF_FONT::RenderQuad(
-                static_cast<unsigned int>(c), s_Scale, s_PenX, s_PenY, s_Vertices, s_TextureCoordinates
-            );
+            MDF_FONT::RenderQuad(s_Codepoint, 1.0f, s_PenX, s_PenY, s_Vertices, s_TextureCoordinates);
 
             float4 s_BottomLeft = float4(s_Vertices[0], 0.f, s_Vertices[1], 1.f);
             float4 s_BottomRight = float4(s_Vertices[2], 0.f, s_Vertices[3], 1.f);
             float4 s_TopRight = float4(s_Vertices[4], 0.f, s_Vertices[5], 1.f);
             float4 s_TopLeft = float4(s_Vertices[6], 0.f, s_Vertices[7], 1.f);
 
-            s_BottomLeft = s_Transform2.WVectorTransform(s_BottomLeft);
-            s_BottomRight = s_Transform2.WVectorTransform(s_BottomRight);
-            s_TopRight = s_Transform2.WVectorTransform(s_TopRight);
-            s_TopLeft = s_Transform2.WVectorTransform(s_TopLeft);
+            s_BottomLeft = s_FinalTransform.WVectorTransform(s_BottomLeft);
+            s_BottomRight = s_FinalTransform.WVectorTransform(s_BottomRight);
+            s_TopRight = s_FinalTransform.WVectorTransform(s_TopRight);
+            s_TopLeft = s_FinalTransform.WVectorTransform(s_TopLeft);
 
             Triangle& s_Triangle1 = s_Triangles.emplace_back();
             Triangle& s_Triangle2 = s_Triangles.emplace_back();
 
-            s_Triangle1.vertexPosition1 = SVector3 {s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z};
-            s_Triangle1.vertexPosition2 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
-            s_Triangle1.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
+            s_Triangle1.vertexPosition1 = {s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z};
+            s_Triangle1.vertexPosition2 = {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle1.vertexPosition3 = {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
-            s_Triangle2.vertexPosition1 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
-            s_Triangle2.vertexPosition2 = SVector3 {s_TopRight.x, s_TopRight.y, s_TopRight.z};
-            s_Triangle2.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
+            s_Triangle2.vertexPosition1 = {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle2.vertexPosition2 = {s_TopRight.x, s_TopRight.y, s_TopRight.z};
+            s_Triangle2.vertexPosition3 = {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
-            s_Triangle1.vertexColor1 = p_Color;
-            s_Triangle1.vertexColor2 = p_Color;
-            s_Triangle1.vertexColor3 = p_Color;
+            s_Triangle1.vertexColor1 = s_Triangle1.vertexColor2 = s_Triangle1.vertexColor3 = p_Color;
+            s_Triangle2.vertexColor1 = s_Triangle2.vertexColor2 = s_Triangle2.vertexColor3 = p_Color;
 
-            s_Triangle2.vertexColor1 = p_Color;
-            s_Triangle2.vertexColor2 = p_Color;
-            s_Triangle2.vertexColor3 = p_Color;
+            s_Triangle1.textureCoordinates1 = { s_TextureCoordinates[0], s_TextureCoordinates[1] };
+            s_Triangle1.textureCoordinates2 = { s_TextureCoordinates[2], s_TextureCoordinates[3] };
+            s_Triangle1.textureCoordinates3 = { s_TextureCoordinates[6], s_TextureCoordinates[7] };
 
-            s_Triangle1.textureCoordinates1 = SVector2 {s_TextureCoordinates[0], s_TextureCoordinates[1]};
-            s_Triangle1.textureCoordinates2 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
-            s_Triangle1.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
-
-            s_Triangle2.textureCoordinates1 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
-            s_Triangle2.textureCoordinates2 = SVector2 {s_TextureCoordinates[4], s_TextureCoordinates[5]};
-            s_Triangle2.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
+            s_Triangle2.textureCoordinates1 = { s_TextureCoordinates[2], s_TextureCoordinates[3] };
+            s_Triangle2.textureCoordinates2 = { s_TextureCoordinates[4], s_TextureCoordinates[5] };
+            s_Triangle2.textureCoordinates3 = { s_TextureCoordinates[6], s_TextureCoordinates[7] };
         }
 
-        ++s_LineIndex;
+        s_LineIndex++;
     }
 
-    for (size_t i = 0; i < s_Triangles.size(); ++i) {
+    for (auto& s_Triangle : s_Triangles) {
         DrawTriangle3D(
-            s_Triangles[i].vertexPosition1, s_Triangles[i].vertexColor1, s_Triangles[i].textureCoordinates1,
-            s_Triangles[i].vertexPosition2, s_Triangles[i].vertexColor2, s_Triangles[i].textureCoordinates2,
-            s_Triangles[i].vertexPosition3, s_Triangles[i].vertexColor3, s_Triangles[i].textureCoordinates3
+            s_Triangle.vertexPosition1, s_Triangle.vertexColor1, s_Triangle.textureCoordinates1,
+            s_Triangle.vertexPosition2, s_Triangle.vertexColor2, s_Triangle.textureCoordinates2,
+            s_Triangle.vertexPosition3, s_Triangle.vertexColor3, s_Triangle.textureCoordinates3
         );
     }
 }

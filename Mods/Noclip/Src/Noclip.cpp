@@ -57,8 +57,8 @@ void Noclip::OnDrawMenu() {
     if (ImGui::Checkbox(ICON_MD_SELF_IMPROVEMENT " Noclip", &m_NoclipEnabled)) {
         if (m_NoclipEnabled) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                if (const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>())
-                    m_PlayerPosition = s_HitmanSpatial->GetWorldMatrix();
+                if (const auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>())
+                    m_PlayerPosition = s_HitmanSpatial->GetObjectToWorldMatrix();
             }
         }
     }
@@ -70,7 +70,7 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     if (!s_LocalHitman)
         return;
 
-    const auto s_HitmanSpatial = s_LocalHitman.m_ref.QueryInterface<ZSpatialEntity>();
+    const auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
     if (!s_HitmanSpatial)
         return;
@@ -84,14 +84,14 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         m_NoclipEnabled = !m_NoclipEnabled;
 
         if (m_NoclipEnabled) {
-            m_PlayerPosition = s_HitmanSpatial->GetWorldMatrix();
+            m_PlayerPosition = s_HitmanSpatial->GetObjectToWorldMatrix();
         }
     }
 
     if (!m_NoclipEnabled)
         return;
 
-    auto s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
+    auto s_CameraTrans = s_CurrentCamera->GetObjectToWorldMatrix();
 
     // Meters per second.
     float s_MoveSpeed = 5.f;
@@ -111,7 +111,7 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     if (Functions::ZInputAction_Digital->Call(&m_RightAction, -1))
         m_PlayerPosition.Trans += s_CameraTrans.Right * s_MoveSpeed * p_UpdateEvent.m_GameTimeDelta.ToSeconds();
 
-    s_HitmanSpatial->SetWorldMatrix(m_PlayerPosition);
+    s_HitmanSpatial->SetObjectToWorldMatrixFromEditor(m_PlayerPosition);
 }
 
 DEFINE_PLUGIN_DETOUR(Noclip, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {

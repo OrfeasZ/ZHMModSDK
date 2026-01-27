@@ -45,7 +45,7 @@ void DebugMod::OnEngineInitialized() {
 void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
 void DebugMod::OnDrawMenu() {
-    if (ImGui::Button(ICON_MD_BUILD " DEBUG MENU")) {
+    if (ImGui::Button(ICON_MD_BUILD " DEBUG")) {
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
@@ -65,7 +65,7 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
+    const auto s_Showing = ImGui::Begin("DEBUG", &m_DebugMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
@@ -211,13 +211,13 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
     if (m_RenderActorBoxes || m_RenderActorNames || m_RenderActorRepoIds || m_RenderActorBehaviors) {
         for (size_t i = 0; i < *Globals::NextActorId; ++i) {
-            auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+            auto* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
 
             ZEntityRef s_Ref;
             s_Actor->GetID(s_Ref);
 
             auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
-            auto s_ActorTransform = s_SpatialEntity->GetWorldMatrix();
+            auto s_ActorTransform = s_SpatialEntity->GetObjectToWorldMatrix();
 
             float4 s_Min, s_Max;
 
@@ -238,7 +238,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                     return;
                 }
 
-                auto s_CameraTransform = s_CurrentCamera->GetWorldMatrix();
+                auto s_CameraTransform = s_CurrentCamera->GetObjectToWorldMatrix();
 
                 const float4 s_Center = (s_Min + s_Max) * 0.5f;
                 const float4 s_Extents = (s_Max - s_Min) * 0.5f;
@@ -252,7 +252,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 std::string s_Text;
 
                 if (m_RenderActorNames) {
-                    s_Text += s_Actor->m_sActorName.c_str();
+                    s_Text += s_Actor->GetActorName().c_str();
                 }
 
                 if (m_RenderActorRepoIds) {
@@ -266,18 +266,15 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 }
 
                 if (m_RenderActorBehaviors) {
-                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].
+                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aBehaviorStates[i].
                             m_pCurrentBehavior;
 
                     if (s_BehaviorBase) {
-                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(
-                            s_BehaviorBase->m_Type);
-
                         if (s_Text.length() > 0) {
                             s_Text += "\n\n";
                         }
 
-                        s_Text += CompiledBehaviorTypeToString(s_CompiledBehaviorType);
+                        s_Text += CompiledBehaviorTypeToString(s_BehaviorBase->eBehaviorType);
                     }
                 }
 
@@ -375,7 +372,7 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
 
         p_Renderer->SetDistanceCullingEnabled(true);
 
-        SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+        SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
         const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
         static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
@@ -436,7 +433,7 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
             return;
         }
 
-        SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+        SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
 
         static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
         static const float s_Scale = 0.2f;
@@ -501,7 +498,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         return;
     }
 
-    SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+    SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
 
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
     static const float s_Scale = 0.3f;
@@ -1206,8 +1203,8 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
     }
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
-    return HookResult<void>(HookAction::Continue());
+DEFINE_PLUGIN_DETOUR(DebugMod, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
+    return HookResult<bool>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
@@ -1242,7 +1239,7 @@ DEFINE_PLUGIN_DETOUR(
 ) {
     p_Hook->CallOriginal(th, nObstacleBlockageFlags, bEnabled, forceUpdate);
 
-    m_ObstaclesToEntityIDs[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityId;
+    m_ObstaclesToEntityIDs[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityID;
 
     return HookResult<void>(HookAction::Return());
 }

@@ -193,7 +193,7 @@ public:
         }
         else {
             // We're not freeing anything here since the allocated memory can be re-used.
-            m_pBegin = m_pEnd;
+            m_pEnd = m_pBegin;
         }
     }
 
@@ -276,6 +276,22 @@ public:
 
     [[nodiscard]] bool hasInlineFlag() const {
         return (m_nFlags >> 62) & 1;
+    }
+
+    const T& front() const {
+        return begin()[0];
+    }
+
+    T& front() {
+        return begin()[0];
+    }
+
+    const T& back() const {
+        return begin()[size() - 1];
+    }
+
+    T& back() {
+        return begin()[size() - 1];
     }
 
 public:

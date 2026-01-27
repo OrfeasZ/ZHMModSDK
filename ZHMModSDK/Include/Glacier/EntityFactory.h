@@ -2,41 +2,32 @@
 
 #include "Reflection.h"
 #include "ZResource.h"
+#include "Enums.h"
 
-// 0x00000001446A5720 (Size: 0x28)
-class SEntityTemplatePropertyAlias {
-public:
+struct SEntityTemplatePropertyAlias {
     ZString sAliasName; // 0x0
     int32 entityID; // 0x10
     ZString sPropertyName; // 0x18
 };
 
-// 0x00000001446A5280 (Size: 0x20)
-class SEntityTemplateReference {
-public:
+struct SEntityTemplateReference {
     uint64 entityID; // 0x0
     int32 externalSceneIndex; // 0x8
     int32 entityIndex; // 0xC
     ZString exposedEntity; // 0x10
 };
 
-// 0x00000001446A53D8 (Size: 0x30)
-class SEntityTemplateExposedEntity {
-public:
+struct SEntityTemplateExposedEntity {
     ZString sName; // 0x0
     bool bIsArray; // 0x10
     TArray<SEntityTemplateReference> aTargets; // 0x18
 };
 
-// 0x00000001446A5498 (Size: 0x18)
-class SEntityTemplateEntitySubset {
-public:
+struct SEntityTemplateEntitySubset {
     TArray<int32> entities; // 0x0
 };
 
-// 0x00000001446A5738 (Size: 0xA8)
-class STemplateBlueprintSubEntity {
-public:
+struct STemplateBlueprintSubEntity {
     SEntityTemplateReference logicalParent; // 0x0
     int32 entityTypeResourceIndex; // 0x20
     uint64 entityId; // 0x28
@@ -48,9 +39,7 @@ public:
     TArray<TPair<ZString, SEntityTemplateEntitySubset>> entitySubsets; // 0x90
 };
 
-// 0x00000001446A5510 (Size: 0x38)
-class SEntityTemplatePinConnection {
-public:
+struct SEntityTemplatePinConnection {
     int32 fromID; // 0x0
     int32 toID; // 0x4
     ZString fromPinName; // 0x8
@@ -58,9 +47,7 @@ public:
     ZObjectRef constantPinValue; // 0x28
 };
 
-// 0x00000001446A56A8 (Size: 0x70)
-class SExternalEntityTemplatePinConnection {
-public:
+struct SExternalEntityTemplatePinConnection {
     SEntityTemplateReference fromEntity; // 0x0
     SEntityTemplateReference toEntity; // 0x20
     ZString fromPinName; // 0x40
@@ -68,9 +55,7 @@ public:
     ZObjectRef constantPinValue; // 0x60
 };
 
-// 0x00000001446A55B8 (Size: 0xC8)
-class STemplateEntityBlueprint {
-public:
+struct STemplateEntityBlueprint {
     int32 subType; // 0x0
     int32 rootEntityIndex; // 0x4
     TArray<STemplateBlueprintSubEntity> subEntities; // 0x8
@@ -83,10 +68,43 @@ public:
     TArray<SExternalEntityTemplatePinConnection> pinConnectionOverrideDeletes; // 0xB0
 };
 
+struct SEntityTemplateProperty {
+    uint32 nPropertyID; // 0x0
+    ZObjectRef value; // 0x8
+};
+
+struct SEntityTemplatePlatformSpecificProperty {
+    SEntityTemplateProperty propertyValue; // 0x0
+    EVirtualPlatformID platform; // 0x18
+    bool postInit; // 0x1C
+};
+
+struct STemplateFactorySubEntity {
+    SEntityTemplateReference logicalParent; // 0x0
+    int32 entityTypeResourceIndex; // 0x20
+    TArray<SEntityTemplateProperty> propertyValues; // 0x28
+    TArray<SEntityTemplateProperty> postInitPropertyValues; // 0x40
+    TArray<SEntityTemplatePlatformSpecificProperty> platformSpecificPropertyValues; // 0x58
+};
+
+struct SEntityTemplatePropertyOverride {
+    SEntityTemplateReference propertyOwner; // 0x0
+    SEntityTemplateProperty propertyValue; // 0x20
+};
+
+struct STemplateEntityFactory {
+    int32 subType; // 0x0
+    int32 blueprintIndexInResourceHeader; // 0x4
+    int32 rootEntityIndex; // 0x8
+    TArray<STemplateFactorySubEntity> subEntities; // 0x10
+    TArray<SEntityTemplatePropertyOverride> propertyOverrides; // 0x28
+    TArray<int32> externalSceneTypeIndicesInResourceHeader; // 0x40
+};
+
 class ZEntityBlueprintFactoryBase : public IEntityBlueprintFactory {
 public:
-    ZRuntimeResourceID m_ridResource;
-    PAD(0x10);
+    ZRuntimeResourceID m_ridResource; // 0x8
+    PAD(0x10); // 0x10
     int32_t m_rootEntityIndex; // 0x20
     PAD(0x0C); // 0x24
     TArray<IEntityBlueprintFactory*> m_aBlueprintFactories; // 0x30
@@ -112,8 +130,8 @@ static_assert(offsetof(ZTemplateEntityBlueprintFactory, m_pTemplateEntityBluepri
 class ZAspectEntityBlueprintFactory : public ZCompositeEntityBlueprintFactoryBase {
 public:
     struct SAspectedSubentityEntry {
-        uint32 m_nAspectIdx;
-        uint32 m_nSubentityIdx;
+        uint32 m_nAspectIdx; // 0x0
+        uint32 m_nSubentityIdx; // 0x4
     };
 
     PAD(0x30); // 0x60
@@ -124,11 +142,30 @@ public:
 
 class ZTemplateEntityFactory : public IEntityFactory {
 public:
-    PAD(0xC);
+    struct SDirectlySettableProperty {
+        int32 entityIndex; // 0x0
+        int32 unk; // 0x4
+        int64 propertyOffset; // 0x8
+        ZObjectRef value; // 0x10
+    };
+
+    struct SDirectlySettablePropertyWithSetter {
+        int32 entityIndex; // 0x0
+        int32 unk; // 0x4
+        int64 propertyOffset; // 0x8
+        const SPropertyInfo* pInfo; // 0x10
+        ZObjectRef value; // 0x18
+    };
+
+    STemplateEntityFactory* m_pResourceData; // 0x8
+    bool m_bHasCalculatedPropertyValues; // 0x10
     int32 m_rootEntityIndex; // 0x14
     TArray<IEntityFactory*> m_pFactories; // 0x18
     ZRuntimeResourceID m_ridResource; // 0x30
     TResourcePtr<ZTemplateEntityBlueprintFactory> m_blueprintResource; // 0x38
+    PAD(0x90); // 0x40
+    TArray<SDirectlySettableProperty> m_directlySettableProperties; // 0xD0
+    TArray<SDirectlySettablePropertyWithSetter> m_directlySettablePropertiesWithSetter; // 0xE8
 };
 
 static_assert(offsetof(ZTemplateEntityFactory, m_blueprintResource) == 0x38);
@@ -144,7 +181,7 @@ class ZCppEntityBlueprintFactory;
 
 class ZCppEntityFactory : public IEntityFactory {
 public:
-    PAD(0x48);
+    PAD(0x48); // 0x8
     TResourcePtr<ZCppEntityBlueprintFactory> m_blueprintResource; // 0x50
     ZRuntimeResourceID m_ridResource; // 0x58
 };

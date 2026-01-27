@@ -64,8 +64,8 @@ private:
     static void WriteRotation(std::ostream& p_Stream, double p_Yaw, double p_Pitch, double p_Roll);
     static void WriteQuat(std::ostream& p_Stream, double p_x, double p_y, double p_z, double p_w);
     static void WriteTransform(std::ostream& p_Stream, SMatrix p_Transform);
-    static void WritePropertyName(std::ostream& p_Stream, ZEntityProperty* p_Property);
-    static void WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZEntityProperty* p_Property);
+    static void WritePropertyName(std::ostream& p_Stream, SPropertyData* p_Property);
+    static void WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SPropertyData* p_Property);
 
 public:
     static EntitySelector ReadEntitySelector(simdjson::ondemand::value p_Selector);
@@ -78,7 +78,7 @@ public:
 
 private:
     void PublishEvent(const std::string& p_Event, std::optional<std::string> p_IgnoreClient);
-    static bool IsPropertyValueTrue(const ZEntityProperty* s_Property, const ZEntityRef& p_Entity);
+    static bool IsPropertyValueTrue(const SPropertyData* s_Property, const ZEntityRef& p_Entity);
     static bool IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity);
 
 private:

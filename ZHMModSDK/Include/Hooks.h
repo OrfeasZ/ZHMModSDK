@@ -14,6 +14,7 @@
 #include <Glacier/ZMath.h>
 #include <Glacier/ZLevelManager.h>
 #include <Glacier/ZResource.h>
+#include <Glacier/ZInventory.h>
 
 #include "Scaleform.h"
 
@@ -74,17 +75,24 @@ enum EPFObstacleClient;
 class ZPFObstacleEntity;
 class ZOnlineVersionConfig;
 struct SExternalReferences;
-class ZLevelManager;
 enum class ESceneLoadingStage;
 class ZSecuritySystemCameraManager;
 class ZSecuritySystemCamera;
 class ZExtendedCppEntityTypeInstaller;
+class ZEngineAppCommon;
+class ZItemSpawner;
+class ZStashPointEntity;
+class ZActorInventoryHandler;
+class ZItemRepositoryKeyEntity;
+class ZGlobalOutfitKit;
+class ZClothBundleEntity;
 
 class ZHMSDK_API Hooks {
 public:
     static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
-    static Hook<void(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
+    static Hook<bool(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
     static Hook<void(ZEntitySceneContext*, bool bFullyUnloadScene)>* ZEntitySceneContext_ClearScene;
+    static Hook<void(ZEntitySceneContext*, bool bResetScene)>* ZEntitySceneContext_CreateScene;
 
     static Hook<void(
         ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode
@@ -255,4 +263,48 @@ public:
         Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
         const char* msg
     )>* Scaleform_GFx_AS3_MovieRoot_Output;
+
+    static Hook<ZString*(ZEngineAppCommon* th, ZString& result)>* ZEngineAppCommon_GetBootScene;
+
+    static Hook<void(ZLevelManager* th)>* ZLevelManager_StartGame;
+
+    static Hook<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
+
+    static Hook<ZCharacterSubcontrollerInventory::SCreateItem*(
+        ZCharacterSubcontrollerInventory* th,
+        ZRepositoryID& repId,
+        const ZString& sOnlineInstanceId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        ZCharacterSubcontrollerInventory::ECreateItemType createItemType
+    )>* ZCharacterSubcontrollerInventory_CreateItem;
+
+    static Hook<bool(
+        ZActorInventoryHandler* th, ZRepositoryID& id
+    )>* ZActorInventoryHandler_RequestItem;
+    static Hook<void(
+        ZActorInventoryHandler* th,
+        TArray<TEntityRef<ZItemRepositoryKeyEntity>>& rInventoryKeys,
+        TEntityRef<ZItemRepositoryKeyEntity>& rWeaponKey,
+        TEntityRef<ZItemRepositoryKeyEntity>& rGrenadeKey
+    )>* ZActorInventoryHandler_StartItemStreamIn;
+    static Hook<TEntityRef<ZItemRepositoryKeyEntity>* (ZActor* th, TEntityRef<ZItemRepositoryKeyEntity>& result)>* ZActor_GetWeaponKey;
+
+    static Hook<void(
+        ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int32_t nCharset, int32_t nVariation,
+        bool bEnableOutfitModifiers, bool bIgnoreOutifChange
+    )>* ZHitman5_SetOutfit;
+
+    static Hook<void(
+        ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfit, int32_t charset, int32_t variation, bool bNude
+    )>* ZActor_SetOutfit;
+
+    static Hook<TEntityRef<ZClothBundleEntity>*(
+        TEntityRef<ZClothBundleEntity>& result,
+        const SMatrix& mat,
+        ZRepositoryID id,
+        int32_t nOutfitVariation,
+        int32_t nOutfitCharset,
+        bool bSpawnedByHitman,
+        bool bEnableOutfitModifiers
+    )>* ZClothBundleEntity_CreateClothBundle;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Reflection.h"
+#include "IComponentInterface.h"
 
 class IAllocator : public IComponentInterface {
 public:

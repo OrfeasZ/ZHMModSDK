@@ -14,7 +14,7 @@ void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
 
     if (const auto s_SelectedEntity = m_SelectedEntity) {
         if (auto* s_SpatialEntity = s_SelectedEntity.QueryInterface<ZSpatialEntity>()) {
-            auto s_Transform = s_SpatialEntity->GetWorldMatrix();
+            auto s_Transform = s_SpatialEntity->GetObjectToWorldMatrix();
 
             float4 s_Min, s_Max;
 
@@ -75,7 +75,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
     if (const auto s_SelectedEntity = m_SelectedEntity) {
         if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call()) {
             if (const auto s_SpatialEntity = s_SelectedEntity.QueryInterface<ZSpatialEntity>()) {
-                auto s_ModelMatrix = s_SpatialEntity->GetWorldMatrix();
+                auto s_ModelMatrix = s_SpatialEntity->GetObjectToWorldMatrix();
 
                 const auto s_CameraRight = Globals::RenderManager->m_pDevice->m_Constants.cameraRight;
                 const auto s_CameraUp = Globals::RenderManager->m_pDevice->m_Constants.cameraUp;
@@ -150,20 +150,20 @@ void Editor::OnEntityTransformChange(
 ) {
     if (auto* s_SpatialEntity = p_Entity.QueryInterface<ZSpatialEntity>()) {
         if (!p_Relative) {
-            s_SpatialEntity->SetWorldMatrix(p_Transform);
+            s_SpatialEntity->SetObjectToWorldMatrixFromEditor(p_Transform);
         }
         else {
             SMatrix s_ParentTrans;
 
             // Get parent entity transform.
             if (s_SpatialEntity->m_eidParent.m_pInterfaceRef) {
-                s_ParentTrans = s_SpatialEntity->m_eidParent.m_pInterfaceRef->GetWorldMatrix();
+                s_ParentTrans = s_SpatialEntity->m_eidParent.m_pInterfaceRef->GetObjectToWorldMatrix();
             }
             else if (p_Entity.GetLogicalParent() && p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()) {
-                s_ParentTrans = p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
+                s_ParentTrans = p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
             }
             else if (p_Entity.GetOwningEntity() && p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()) {
-                s_ParentTrans = p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()->GetWorldMatrix();
+                s_ParentTrans = p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
             }
 
             // Calculate world transform based on the provided relative transform.
@@ -171,12 +171,12 @@ void Editor::OnEntityTransformChange(
             s_WorldTrans.Trans = s_ParentTrans.Trans + p_Transform.Trans;
             s_WorldTrans.Trans.w = 1.f;
 
-            s_SpatialEntity->SetWorldMatrix(s_WorldTrans);
+            s_SpatialEntity->SetObjectToWorldMatrixFromEditor(s_WorldTrans);
         }
 
         if (const auto s_PhysicsAspect = p_Entity.QueryInterface<ZStaticPhysicsAspect>()) {
             if (s_PhysicsAspect->m_pPhysicsObject) {
-                s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetWorldMatrix());
+                s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetObjectToWorldMatrix());
             }
         }
 
