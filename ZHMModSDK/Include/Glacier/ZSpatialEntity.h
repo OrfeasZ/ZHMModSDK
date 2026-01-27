@@ -26,8 +26,8 @@ public:
     virtual void ZSpatialEntity_unk28() = 0;
     virtual void ZSpatialEntity_unk29() = 0;
     virtual void ZSpatialEntity_unk30() = 0;
-    virtual void CalculateBounds(float4& min, float4& max, uint32_t a3, uint32_t a4) = 0;
     virtual void SetObjectToWorldMatrixFromEditor(SMatrix mObjectToWorld) = 0;
+    virtual void CalculateBounds(float4& vMin_, float4& vMax_, uint32_t nIncludeFlags, uint32_t nExcludeFlags) = 0;
     virtual void ZSpatialEntity_unk33() = 0;
     virtual void ZSpatialEntity_unk34() = 0;
     virtual void ZSpatialEntity_unk35() = 0;
