@@ -209,9 +209,11 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
         SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
     }
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
-        Plugin()->QueueTask([p_Socket, p_Loop]() {
-            SendNavKitScene(p_Socket, p_Loop);
-        });
+        Plugin()->QueueTask(
+            [p_Socket, p_Loop]() {
+                SendNavKitScene(p_Socket, p_Loop);
+            }
+        );
     }
     else if (s_Type == "getEntityDetails") {
         const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
@@ -620,7 +622,7 @@ void EditorServer::OnSceneClearing(bool p_FullyUnloadScene) {
             s_Event << "{";
 
             s_Event << write_json("type") << ":" << write_json("sceneClearing") << ",";
-            s_Event << write_json("p_FullyUnloadScene") << ":" << write_json(p_FullyUnloadScene);
+            s_Event << write_json("forReload") << ":" << write_json(p_FullyUnloadScene);
 
             s_Event << "}";
 
@@ -681,7 +683,8 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
     Logger::Info("Sending Meshes...");
     Plugin()->FindMeshes(
         [p_Socket, p_Loop, s_AnyMeshSentOverall, s_TotalMeshesSent, s_LastLoggedMilestone](
-    const std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& p_Entities,
+    const std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string,
+                                 ZEntityRef>>& p_Entities,
     const bool p_IsLastMeshBatch
 ) -> void {
             std::ostringstream s_BatchJson;
@@ -734,13 +737,18 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
                 const auto s_PfSeedPointEntities = Plugin()->FindEntitiesByType("ZPFSeedPoint", "00280B8C4462FAC8");
                 const auto s_GateEntities = Plugin()->FindEntitiesByType("ZGateEntity", "00D78DDF8301DF97");
                 const auto s_RoomEntities = Plugin()->FindEntitiesByType("ZRoomEntity", "0071E63EC98496FE");
-                const auto s_AIAreaWorldEntities = Plugin()->FindEntitiesByType("ZAIAreaWorldEntity", "00D23EE76CC1735F");
+                const auto s_AIAreaWorldEntities = Plugin()->FindEntitiesByType(
+                    "ZAIAreaWorldEntity", "00D23EE76CC1735F"
+                );
                 const auto s_AIAreaEntities = Plugin()->FindEntitiesByType("ZAIAreaEntity", "000F13E2D42C882E");
                 const auto s_VolumeBoxEntities = Plugin()->FindEntitiesByType("ZBoxVolumeEntity", "0054667393764C74");
-                const auto s_VolumeSphereEntities = Plugin()->FindEntitiesByType("ZSphereVolumeEntity", "00B86A9EE991EFB2");
+                const auto s_VolumeSphereEntities = Plugin()->FindEntitiesByType(
+                    "ZSphereVolumeEntity", "00B86A9EE991EFB2"
+                );
 
                 p_Loop->defer(
-                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities, s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities]() {
+                    [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities,
+                        s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities]() {
                         p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
@@ -833,7 +841,9 @@ void EditorServer::SendEntityList(
         s_EventStream << "{";
         s_EventStream << write_json("id") << ":" << write_json(std::format("{:016x}", s_Node->EntityId)) << ",";
         s_EventStream << write_json("source") << ":" << write_json("game") << ",";
-        s_EventStream << write_json("tblu") << ":" << write_json(std::format("{:016X}", s_Node->BlueprintFactory.GetID())) << ",";
+        s_EventStream << write_json("tblu") << ":" << write_json(
+            std::format("{:016X}", s_Node->BlueprintFactory.GetID())
+        ) << ",";
         s_EventStream << write_json("type") << ":" << write_json(
             (*s_Node->Entity->GetType()->m_pInterfaceData)[0].m_Type->GetTypeInfo()->pszTypeName
         );
@@ -986,7 +996,9 @@ bool EditorServer::SendEntitiesDetails(
     bool s_DidSendAnything = false;
 
     for (const auto& [s_Hashes, s_Quat, s_Entity] : p_Entities) {
-        if (strcmp(s_Hashes.front().c_str(), "00724CDE424AFE76") != 0 && strcmp(s_Hashes.front().c_str(), "00280B8C4462FAC8") != 0
+        if (strcmp(s_Hashes.front().c_str(), "00724CDE424AFE76") != 0 && strcmp(
+                s_Hashes.front().c_str(), "00280B8C4462FAC8"
+            ) != 0
             && IsExcludedFromNavMeshExport(s_Entity)) {
             continue;
         }
@@ -1034,8 +1046,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
             ) << ",";
         }
     }
-    else
-    {
+    else {
         p_Stream << write_json("name") << ":" << write_json(Plugin()->GetEntityName(p_Entity, false)) << ",";
     }
 
@@ -1054,8 +1065,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 
     //Write the BBox info for the gates
     auto* s_Gate = p_Entity.QueryInterface<ZGateEntity>();
-    if (s_Gate)
-    {
+    if (s_Gate) {
         p_Stream << ",";
         p_Stream << write_json("bboxCenter") << ":";
         WriteVector3(p_Stream, s_Gate->m_vCenter.x, s_Gate->m_vCenter.y, s_Gate->m_vCenter.z);
@@ -1065,23 +1075,21 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
     }
     //Same for the AIAreas
     auto* s_AiArea = p_Entity.QueryInterface<ZAIAreaEntity>();
-    if (s_AiArea)
-    {
+    if (s_AiArea) {
         //We go up the logical parent chain until we reach a ZAIAreaEntity or a ZAIAreaWorldEntity, as some have ZEntity as logical parents
         std::vector<std::string> parents = std::vector<std::string>();
         ZEntityRef parentRef = p_Entity.GetLogicalParent();
 
         while (parentRef.m_pObj) {
             parents.push_back(Plugin()->GetEntityName(parentRef));
-            if(parentRef.QueryInterface<ZAIAreaEntityBase>())
+            if (parentRef.QueryInterface<ZAIAreaEntityBase>())
                 break;
             parentRef = parentRef.GetLogicalParent();
         }
 
         p_Stream << ",";
         p_Stream << write_json("logicalParent") << ":[";
-        for (auto i = 0; i < parents.size(); i++)
-        {
+        for (auto i = 0; i < parents.size(); i++) {
             if (i)
                 p_Stream << ",";
             p_Stream << write_json(parents[i]);
@@ -1090,14 +1098,13 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 
         p_Stream << ",";
         p_Stream << write_json("areaVolumeNames") << ":[";
-        for (auto i = 0; i < s_AiArea->m_aAreaVolumes.size(); i++)
-        {
+        for (auto i = 0; i < s_AiArea->m_aAreaVolumes.size(); i++) {
             if (i)
                 p_Stream << ",";
             p_Stream << write_json(Plugin()->GetEntityName(s_AiArea->m_aAreaVolumes[i].m_entityRef));
         }
         p_Stream << "]";
-    }       
+    }
 
     std::unordered_map<std::string_view, std::string> propNameToFieldName = {
         {"m_PrimitiveScale", "scale"},
@@ -1402,7 +1409,8 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SP
             std::format("{:016x}", s_EntityData->m_entityRef->GetType()->m_nEntityID)
         ) << ",";
 
-        auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_entityRef.GetBlueprintFactory());
+        auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_entityRef.
+            GetBlueprintFactory());
 
         if (s_EntityData->m_entityRef.GetOwningEntity()) {
             s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_entityRef.GetOwningEntity().
