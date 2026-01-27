@@ -8,6 +8,7 @@
 
 #include "Glacier/ZGameTime.h"
 #include "Glacier/ZCurve.h"
+#include "Util/StringUtils.h"
 
 void Editor::OnSetPropertyValue(
     ZEntityRef p_Entity,
@@ -22,7 +23,8 @@ void Editor::OnSetPropertyValue(
 void Editor::OnSignalEntityPin(ZEntityRef p_Entity, uint32_t p_PinId, bool p_Output) {
     if (p_Output) {
         p_Entity.SignalOutputPin(p_PinId);
-    } else {
+    }
+    else {
         p_Entity.SignalInputPin(p_PinId);
     }
 }
@@ -54,7 +56,7 @@ void Editor::ZEntityRefProperty(
         EntityRefProperty(p_Id, *s_EntityRef);
     }
     else {
-        EntityRefProperty(p_Id, ZEntityRef{});
+        EntityRefProperty(p_Id, ZEntityRef {});
     }
 }
 
@@ -68,7 +70,7 @@ void Editor::TEntityRefProperty(
         EntityRefProperty(p_Id, s_EntityRef->m_entityRef);
     }
     else {
-        EntityRefProperty(p_Id, ZEntityRef{});
+        EntityRefProperty(p_Id, ZEntityRef {});
     }
 }
 
@@ -146,7 +148,7 @@ void Editor::ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, SProper
         ImGui::Text("%s", s_GuidString.c_str());
 
         if (ImGuiCopyWidget(("Guid_" + p_Id).c_str())) {
-            CopyToClipboard(s_GuidString.c_str());
+            CopyToClipboard(Util::StringUtils::ToLowerCase(s_GuidString.c_str()));
         }
     }
     else {
@@ -173,8 +175,10 @@ bool Editor::ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, SPr
     return s_IsChanged;
 }
 
-bool Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
-    const std::string& s_PropertyName, const STypeID* p_TypeID) {
+bool Editor::ZCurveProperty(
+    const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
+    const std::string& s_PropertyName, const STypeID* p_TypeID
+) {
     bool s_IsChanged = false;
     auto* s_Curve = static_cast<ZCurve*>(p_Data);
 
@@ -188,7 +192,8 @@ bool Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPrope
     ImGui::AlignTextToFramePadding();
 
     const bool s_IsTreeNodeOpen = ImGui::TreeNodeEx(
-        fmt::format("{} ({} {})##{}",
+        fmt::format(
+            "{} ({} {})##{}",
             s_PropertyName,
             s_ArraySize,
             s_ArraySize == 1 ? "element" : "elements",
@@ -201,13 +206,13 @@ bool Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPrope
     ImGui::PushID(p_Id.c_str());
 
     ImGui::SameLine(0, 10.f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 });
-    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, { 0.5, 0.5 });
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0, 0});
+    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.5, 0.5});
     ImGui::SetWindowFontScale(0.6);
 
     const auto s_Result = ImGui::ButtonEx(
         (std::string(ICON_MD_SHOW_CHART) + "##" + p_Id).c_str(),
-        { m_CopyWidgetButtonSize, m_CopyWidgetButtonSize },
+        {m_CopyWidgetButtonSize, m_CopyWidgetButtonSize},
         ImGuiButtonFlags_AlignTextBaseLine
     );
 
@@ -244,7 +249,6 @@ bool Editor::ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPrope
         ImPlot::SetNextAxesToFit();
 
         if (ImPlot::BeginPlot("##ZCurve", ImVec2(600, 320))) {
-
             ImPlot::SetupAxes("Time", "Value");
 
             PlotZCurve(s_Curve);
@@ -298,7 +302,7 @@ void Editor::PlotZCurve(const ZCurve* p_Curve) {
             ("Segment##" + std::to_string(i)).c_str(),
             s_Xs.data(),
             s_Ys.data(),
-            (int)s_Xs.size()
+            (int) s_Xs.size()
         );
     }
 
@@ -346,12 +350,12 @@ float Editor::EvaluateZCurveSegment(
 
     // f(t) = c5*t^5 + c4*t^4 + c3*t^3 + c2*t^2 + c1*t + c0
     return
-        p_Key[2] * s_T * s_T * s_T * s_T * s_T +
-        p_Key[3] * s_T * s_T * s_T * s_T +
-        p_Key[4] * s_T * s_T * s_T +
-        p_Key[5] * s_T * s_T +
-        p_Key[6] * s_T +
-        p_Key[7];
+            p_Key[2] * s_T * s_T * s_T * s_T * s_T +
+            p_Key[3] * s_T * s_T * s_T * s_T +
+            p_Key[4] * s_T * s_T * s_T +
+            p_Key[5] * s_T * s_T +
+            p_Key[6] * s_T +
+            p_Key[7];
 }
 
 std::string Editor::FormatZCurveForClipboard(ZCurve* p_Curve, void* p_Data, const IArrayType* p_ArrayType) {
