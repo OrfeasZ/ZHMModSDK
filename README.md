@@ -15,7 +15,7 @@ it to support basic entity, AI, and item manipulation.
 ## Usage (mod loader & mods)
 
 1. Download the latest version of the mod loader and the mods by
-   going [here](https://github.com/OrfeasZ/ZHMModSDK/releases/latest), and downloading `ZHMModSDK-Release.zip`. This zip
+   going [here](https://github.com/OrfeasZ/ZHMModSDK/releases), and downloading `ZHMModSDK-Release.zip`. This zip
    file contains the mod loader and a few sample mods.
 
 2. Extract the contents of the `ZHMModSDK-Release.zip` archive to `<drive>:\Path\To\HITMAN3\Retail`, where
@@ -169,3 +169,4 @@ to the `[sdk]` section of your `mods.ini` file (but don't ask for help when it d
 
 If you'd like to contribute to the SDK, feel free to open a pull request or an issue. If you're not sure where to start,
 check out the [issues](https://github.com/OrfeasZ/ZHMModSDK/issues) tab.
+
