@@ -337,8 +337,7 @@ void TitaniumBullets::OnDrawMenu() {
         ImGui::SetTooltip("Replicates SMF TitaniumBullets by patching AmmoConfig in pro.repo");
     }
 
-    ImGui::SameLine();
-    if (ImGui::SmallButton("Debug")) {
+    if (ImGui::Button("Debug")) {
         m_DebugWindowActive = !m_DebugWindowActive;
     }
 }
