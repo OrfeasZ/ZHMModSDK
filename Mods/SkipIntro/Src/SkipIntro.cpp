@@ -15,9 +15,9 @@ DEFINE_PLUGIN_DETOUR(SkipIntro, ZString*, ZEngineAppCommon_GetBootScene, ZEngine
         return HookResult<ZString*>(HookAction::Continue());
     }
 
-    const ZString& s_ScenePath = (*Globals::ComponentManager)->m_pApplication->GetOption("SCENE_FILE");
+    result = (*Globals::ComponentManager)->m_pApplication->GetOption("SCENE_FILE");
 
-    if (s_ScenePath == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
+    if (result == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
         result = "assembly:/_PRO/Scenes/Frontend/MainMenu.entity";
     }
 
