@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ZEntity.h"
+#include "TCheatProtect.h"
 
 class ZCharacterStateMachineCoordinator;
 class ZCharacterScheduler;
@@ -34,8 +35,10 @@ public:
     uint32 m_nMaxRPGAmmo; // 0x170
     uint32 m_nMaxShotgunAmmo; // 0x174
     uint32 m_nMaxTranqAmmo; // 0x178
-    uint32 m_nMaxPistolLightAmmo; // 0x17C
-    uint32 m_nMaxShotgunBeanbagAmmo; // 0x180
+    uint32 m_nMaxEmeticAmmo; // 0x17C
+    uint32 m_nMaxPistolLightAmmo; // 0x180
+    uint32 m_nMaxShotgunBeanbagAmmo; // 0x184
+    TCheatProtect<uint32> m_nAmmoInPocket[static_cast<size_t>(eAmmoType::eUnknownAmmoType)]; // 0x188
 };
 
 class ZCharacterSubcontrollerContainer : public ZEntityImpl //Size: 0x1E0
