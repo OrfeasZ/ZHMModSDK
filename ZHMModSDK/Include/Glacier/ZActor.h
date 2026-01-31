@@ -5,10 +5,10 @@
 #include "ZPrimitives.h"
 #include "ZHM5BaseCharacter.h"
 #include "ZResource.h"
-#include "ZHM5GridManager.h"
 #include "TSet.h"
 #include "ZItem.h"
 #include "ZCollision.h"
+#include "ZGrid.h"
 
 #include <Logging.h>
 
@@ -191,11 +191,15 @@ public:
     TEntityRef<ZAIVisionConfigurationEntity> m_AgentVisionConfiguration; // 0x4C0
     TEntityRef<ZHTNDomainEntity> m_DomainConfig; // 0x4D0
     bool m_bDisableBumpAnimations; // 0x4E0
-    PAD(0x3F); // 0x4E1
+    PAD(0x17); // 0x4E1
+    ZKnowledge* m_pKnowledge; // 0x4F8
+    PAD(0x20); // 0x500
     ZActorInventoryHandler* m_pInventoryHandler; // 0x520
     PAD(0xAC0); // 0x528
     TEntityRef<ZGlobalOutfitKit> m_rOutfit; //0xFE8
-    PAD(0xB0); // 0xFF8
+    PAD(0x20); // 0xFF8
+    float32 m_fCurrentHitPoints; // 0x1018
+    PAD(0x8C);
     ZAnimatedActor* m_pAnimatedActor; // 0x10A8
     PAD(0xB8);
     bool m_bActorActivated : 1; // 0x1168
