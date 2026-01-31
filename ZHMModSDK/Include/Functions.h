@@ -51,6 +51,7 @@ class ZWorldInventory;
 class IItemBase;
 class ZStashPointEntity;
 class ZTimeOfDayManager;
+class ZHM5Health;
 
 namespace bfx {
     class AreaHandle;
@@ -240,4 +241,10 @@ public:
     static EngineFunction<uint32(
         const ZRepositoryID& id, const TArray<ZRepositoryID>& modifierIds
     )>* ZItemConfigDescriptor_GetHashCode;
+
+    static EngineFunction<void(ZHM5CrippleBox* th)>* ZHM5CrippleBox_UpdateFlags;
+    static EngineFunction<void(TEntityRef<ZHitman5> rHitman, bool bDefaultFlags)>* ZHM5CrippleBox_SetDataOnHitman;
+
+    static EngineFunction<float32(const ZHM5Health* th)>* ZHM5Health_GetHP;
+    static EngineFunction<float32(const ZHM5Health* th)>* ZHM5Health_GetMaxHitpoints;
 };
