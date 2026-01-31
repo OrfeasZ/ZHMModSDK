@@ -398,6 +398,13 @@ public:
 
 class ZFabricColliderBaseEntity;
 
+class ZHM5Health {
+public:
+    PAD(0x228);
+    TCheatProtect<float> m_fHitPoints; // 0x228
+    TCheatProtect<float> m_fMaxHitPoints; // 0x238
+};
+
 class ZHitman5 :
         public ZHM5BaseCharacter,
         public IFutureCameraState, // 720
