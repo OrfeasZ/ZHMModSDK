@@ -1,6 +1,7 @@
 #include "Editor.h"
 
 #include <numbers>
+#include <algorithm>
 
 #include "Hooks.h"
 #include "Logging.h"
@@ -852,7 +853,7 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
                             ? atan2f(-s_Trans.YAxis.z, s_Trans.ZAxis.z) * c_RAD2DEG
                             : atan2f(s_Trans.ZAxis.y, s_Trans.YAxis.y) * c_RAD2DEG;
 
-    float s_RotationY = asinf(min(max(-1.f, s_Trans.XAxis.z), 1.f)) * c_RAD2DEG;
+    float s_RotationY = asinf(std::min(std::max(-1.f, s_Trans.XAxis.z), 1.f)) * c_RAD2DEG;
 
     float s_RotationZ = abs(s_Trans.XAxis.z) < 0.9999999f
                             ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG

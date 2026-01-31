@@ -356,7 +356,7 @@ void Editor::DrawLibrary() {
             const float s_ItemSize = 80.0f;
             const float s_ItemSpacing = 10.0f;
             const float s_WindowWidth = ImGui::GetContentRegionAvail().x;
-            const int s_ColumnsCount = max(1, (int)((s_WindowWidth + s_ItemSpacing) / (s_ItemSize + s_ItemSpacing)));
+            const int s_ColumnsCount = std::max(1, (int)((s_WindowWidth + s_ItemSpacing) / (s_ItemSize + s_ItemSpacing)));
 
             ImGui::Columns(s_ColumnsCount, nullptr, false);
 

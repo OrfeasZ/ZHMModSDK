@@ -30,6 +30,12 @@ CPMAddPackage("gh:OrfeasZ/ZHMTools@4.0.0")
 #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
 add_subdirectory(External/implot)
 
+# Less pollute-y windows headers
+add_compile_definitions(
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+)
+
 # Core modules.
 add_subdirectory(ZHMModSDK)
 add_subdirectory(DirectInputProxy)

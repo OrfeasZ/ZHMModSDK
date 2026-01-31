@@ -1,6 +1,7 @@
 #include "DebugMod.h"
 
 #include <numbers>
+#include <algorithm>
 
 #include <Glacier/ZCameraEntity.h>
 
@@ -74,7 +75,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
                                              ? atan2f(-s_HitmanTrans.YAxis.z, s_HitmanTrans.ZAxis.z) * c_RAD2DEG
                                              : atan2f(s_HitmanTrans.ZAxis.y, s_HitmanTrans.YAxis.y) * c_RAD2DEG;
 
-                    double s_RotationY = asinf(min(max(-1.f, s_HitmanTrans.XAxis.z), 1.f)) * c_RAD2DEG;
+                    double s_RotationY = asinf(std::min(std::max(-1.f, s_HitmanTrans.XAxis.z), 1.f)) * c_RAD2DEG;
 
                     double s_RotationZ = abs(s_HitmanTrans.XAxis.z) < 0.9999999f
                                              ? atan2f(-s_HitmanTrans.XAxis.y, s_HitmanTrans.XAxis.x) * c_RAD2DEG
@@ -133,7 +134,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
                                          ? atan2f(-s_CameraTrans.YAxis.z, s_CameraTrans.ZAxis.z) * c_RAD2DEG
                                          : atan2f(s_CameraTrans.ZAxis.y, s_CameraTrans.YAxis.y) * c_RAD2DEG;
 
-                double s_RotationY = asinf(min(max(-1.f, s_CameraTrans.XAxis.z), 1.f)) * c_RAD2DEG;
+                double s_RotationY = asinf(std::min(std::max(-1.f, s_CameraTrans.XAxis.z), 1.f)) * c_RAD2DEG;
 
                 double s_RotationZ = abs(s_CameraTrans.XAxis.z) < 0.9999999f
                                          ? atan2f(-s_CameraTrans.XAxis.y, s_CameraTrans.XAxis.x) * c_RAD2DEG

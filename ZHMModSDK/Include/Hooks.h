@@ -1,8 +1,5 @@
 #pragma once
 
-#include <Windows.h>
-#include <directx/d3d12.h>
-
 #include "Common.h"
 #include "Hook.h"
 
@@ -15,6 +12,9 @@
 #include <Glacier/ZLevelManager.h>
 #include <Glacier/ZResource.h>
 #include <Glacier/ZInventory.h>
+
+#include <Windows.h>
+#include <directx/d3d12.h>
 
 #include "Scaleform.h"
 
