@@ -66,10 +66,16 @@ private:
 private:
     bool m_DebugMenuActive = false;
     bool m_PositionsMenuActive = false;
+
+    bool m_RenderPlayerHealth = false;
+    bool m_RenderPlayerOutfitHitPoints = false;
+
     bool m_RenderActorBoxes = false;
     bool m_RenderActorNames = false;
     bool m_RenderActorRepoIds = false;
     bool m_RenderActorBehaviors = false;
+    bool m_RenderActorHealth = false;
+    bool m_RenderActorOutfitHitPoints = false;
 
     bool m_DrawReasoningGrid = false;
     bool m_ShowVisibility = false;
