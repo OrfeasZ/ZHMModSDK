@@ -16,11 +16,10 @@
 #include <Glacier/ZGameLoopManager.h>
 #include <Glacier/ZKnowledge.h>
 #include <Glacier/ZPathfinder.h>
-#include <Glacier/SReasoningGrid.h>
-#include <Glacier/ZGridManager.h>
-#include <Glacier/ZHM5GridManager.h>
 #include <Glacier/ZCameraEntity.h>
 #include <Glacier/ZColor.h>
+#include <Glacier/ZGrid.h>
+#include <Glacier/ZBehavior.h>
 
 #include <Functions.h>
 #include <Globals.h>
