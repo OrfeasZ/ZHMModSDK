@@ -10,4 +10,9 @@ public:
     PAD(0xD0);
 };
 
+class ZKnowledgeService : public IComponentInterface {
+public:
+    TFixedArray<ZKnowledge, 500> m_aKnowledge;
+};
+
 static_assert(sizeof(ZKnowledge) == 256);
