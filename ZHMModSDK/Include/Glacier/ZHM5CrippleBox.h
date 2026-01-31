@@ -10,7 +10,7 @@ public:
 
 class ZHM5CrippleBox : public ZHeroReference, public ISavableEntity {
 public:
-    PAD(0x8);
+    ZHM5CrippleBox* m_pNext; // 0x30
     bool m_bInSequence; // 0x38
     bool m_bAllowBaseMovements; // 0x39
     bool m_bSequenceAllowCamera; // 0x3A
@@ -69,5 +69,9 @@ public:
     bool m_bLimitedAmmo; // 0x6F
     bool m_bOpenLogbook; // 0x70
     bool m_bOpenPauseMenu; // 0x71
-    PAD(0x26);
+    uint64 m_nMovementFlags; // 0x78
+    uint32 m_nLocomotionFlags; // 0x80
+    uint64 m_nCustomFlags; // 0x88
+    bool m_bActivatedByActivationSystem : 1; // 0x90
+    bool m_bActivatedByPinSignal : 1;
 };
