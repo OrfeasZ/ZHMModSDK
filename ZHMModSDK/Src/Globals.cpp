@@ -477,3 +477,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZKnowledgeService*, KnowledgeService
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x3D\x00\x00\x00\x00\x48\x8B\xCF\xE8\x00\x00\x00\x00\x48\x8B\x4B\x60\x48\x8D\x55\x30\x48\x89\x7D\x30\xE8\x00\x00\x00\x00\x48\x8D\x3D",
+    "xxx????xxxx????xxxxxxxxxxxxx????xxx",
+    3,
+    ZOnlineManager*, OnlineManager
+);

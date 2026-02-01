@@ -53,6 +53,7 @@ class ZContractsManager;
 class ZComponentManager;
 class ZUIMapManager;
 class ZKnowledgeService;
+class ZOnlineManager;
 
 namespace bfx {
     class SystemInstance;
@@ -130,4 +131,5 @@ public:
     static ZComponentManager** ComponentManager;
     static ZUIMapManager* UIMapManager;
     static ZKnowledgeService* KnowledgeService;
+    static ZOnlineManager* OnlineManager;
 };
