@@ -15,7 +15,15 @@ class ISceneEntity :
         public IComponentInterface {};
 
 struct SSceneInitParameters {
+    /**
+     * Assembly path of the scene
+     *
+     * Eg:
+     * - `assembly:/_PRO/Scenes/Frontend/MainMenu.entity`
+     * - `assembly:/_pro/scenes/missions/miami/scene_flamingo.entity`
+     */
     ZString m_SceneResource; // 0x00
+
     TArray<ZString> m_aAdditionalBrickResources; // 0x10
     bool m_bStartGame; // 0x28
     bool m_Unk0; // 0x29

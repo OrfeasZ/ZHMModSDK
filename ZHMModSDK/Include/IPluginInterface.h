@@ -22,11 +22,26 @@ private:
     }
 
 public:
+    /** Invoked on the game thread */
     virtual void Init() {}
+
+    /** Invoked on the game thread */
     virtual void OnEngineInitialized() {}
+
+    /** Invoked on the render thread */
     virtual void OnDrawUI(bool p_HasFocus) {}
+
+    /** Invoked on the render thread */
     virtual void OnDraw3D(IRenderer* p_Renderer) {}
+
+    /** Invoked on the render thread */
     virtual void OnDrawMenu() {}
+
+    /**
+     * Draw with a depth buffer active, so drawn objects can be occluded by objects in the scene
+     *
+     * Invoked on the render thread
+     */
     virtual void OnDepthDraw3D(IRenderer* p_Renderer) {}
 
 private:
@@ -183,6 +198,9 @@ typedef int (__cdecl*CompiledSdkAbiVersion_t)();
         return reinterpret_cast<PluginClass*>(GetPluginInterface());\
     }
 
+/**
+ * Note that `PluginClass` cannot be in a namespace (ie: `DEFINE_ZHM_PLUGIN(MyFancyMod::Plugin)` will fail to compile).
+ */
 #define DEFINE_ZHM_PLUGIN(PluginClass) \
     static IPluginInterface* g_ ## PluginClass ## _Instance = nullptr;\
     \

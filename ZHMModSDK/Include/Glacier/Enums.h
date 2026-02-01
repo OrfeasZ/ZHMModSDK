@@ -259,37 +259,212 @@ enum class EVRConfigAnimationMode : int32_t
 	EVRCAM_KeepCurrentMode = 6,
 };
 
+/**
+ * How an entity is highlighted, usually when in instinct-mode (though a few glow types are visible even when not in
+ * instinct)
+ *
+ * You can change an entity's glow type by signaling the `SetGlowType` pin. For example, to highlight an actor as a
+ * target...
+ * @code
+ * ZActor* s_Actor = ...;
+ * s_Actor->m_rCharacter.m_entityRef.SignalInputPin(
+ *     static_cast<uint32_t>(ZHMPin::SetGlowType),
+ *     ZObjectRef::From(ERenderGlowTypes::ERENDERGLOWTYPE_CONTRACT_TARGET)
+ * );
+ * @endcode
+ */
 enum class ERenderGlowTypes : int8_t
 {
+	/**
+	 * No highlight, not even a gray one
+	 */
 	ERENDERGLOWTYPE_NONE = 0,
+
+	/**
+	 * Thick gray outline, like guards have
+	 *
+	 * Looks the same as `ERENDERGLOWTYPE_ENFORCER`
+	 */
 	ERENDERGLOWTYPE_ENEMIES = 1,
+
+	/**
+	 * Solid magenta fill with a cyan outline
+	 *
+	 * Only appears when the player is near the entity
+	 */
 	ERENDERGLOWTYPE_ALLIES = 2,
+
+	/**
+	 * Gray highlight with a thin border
+	 *
+	 * Used by non-crowd NPCs
+	 */
 	ERENDERGLOWTYPE_CIVILIAN = 3,
+
+	/**
+	 * Bright white highlight, does not appear through walls
+	 *
+	 * Used by item pickups
+	 */
 	ERENDERGLOWTYPE_ITEMS = 4,
+
+	/**
+	 * Like `ERENDERGLOWTYPE_ITEMS`, except this is visible through walls
+	 *
+	 * Only appears when the player is near the entity
+	 */
 	ERENDERGLOWTYPE_STASHED_ITEMS = 5,
+
+	/**
+	 * Bright white highlight, does not appear through walls, is visible from a very long distance
+	 *
+	 * Presumably used in places such as stages you can blend-in at (like the Flamingo stage near the entrace of Miami),
+	 * things you can sabotage (like making a fire hydrant leak), etc.
+	 */
 	ERENDERGLOWTYPE_SETPIECE = 6,
+
+	/**
+	 * Bright white highlight, does not appear through walls
+	 *
+	 * Only appears when the player is near the entity
+	 */
 	ERENDERGLOWTYPE_BACKGROUND = 7,
+
+	/**
+	 * Appears red, visible through walls
+	 *
+	 * Used by targets
+	 */
 	ERENDERGLOWTYPE_CONTRACT_TARGET = 8,
+
+	/**
+	 * Looks just like `ERENDERGLOWTYPE_CONTRACT_TARGET`
+	 */
 	ERENDERGLOWTYPE_CONTRACT_TARGET_NON_CRITICAL = 9,
+
+	/**
+	 * Appears blue, like the Constant in Isle of Sgail, or Diana in Mendoza
+	 */
 	ERENDERGLOWTYPE_CONTRACT_TARGET_SPECIAL = 10,
+
+	/**
+	 * Appears purple, like suspects in Freelancer showdowns
+	 */
 	ERENDERGLOWTYPE_CONTRACT_SUSPECT = 11,
+
+	/**
+	 * Green highlight, visible through walls, only visible when the player is nearby
+	 */
 	ERENDERGLOWTYPE_OBJECTIVES = 12,
+
+	/**
+	 * Thick gray outline, like guards have
+	 *
+	 * Looks the same as `ERENDERGLOWTYPE_ENEMIES`
+	 */
 	ERENDERGLOWTYPE_ENFORCER = 13,
+
+	/**
+	 * Orange highlight, used by people you have been compromised by
+	 */
 	ERENDERGLOWTYPE_LTMEMORY = 14,
+
+	/**
+	 * Green highlight, visible through walls
+	 *
+	 * Only appears when the player is nearby and the entity is near the center of the screen
+	 */
 	ERENDERGLOWTYPE_TAGGED = 15,
+
+	/**
+	 * Thick white outline, visible through walls
+	 *
+	 * Only appears when the player is nearby and the entity is near the center of the screen
+	 */
 	ERENDERGLOWTYPE_TAGFOCUS_UNTAGGED = 16,
+
+	/**
+	 * Green fill, thick white outline, visible through walls
+	 *
+	 * Only appears when the player is nearby and the entity is near the center of the screen
+	 */
 	ERENDERGLOWTYPE_TAGFOCUS_TAGGED = 17,
+
+	/**
+	 * White highlight, only appears when the player is very close to the entity
+	 */
 	ERENDERGLOWTYPE_BACKGROUNDUNMASKED = 18,
+
+	/**
+	 * Thick white outline, with no fill
+	 */
 	ERENDERGLOWTYPE_INTERACTION = 19,
+
+	/**
+	 * White fill, thick white outline, visible even outside of instinct-mode
+	 *
+	 * Only appears when the player is nearby, not visible through walls
+	 */
 	ERENDERGLOWTYPE_INTERACTION_SELECTED = 20,
+
+	/**
+	 * Black fill, thick white outline, visible even outside of instinct-mode
+	 *
+	 * Only appears when the player is nearby, not visible through walls
+	 */
 	ERENDERGLOWTYPE_INTERACTION_DESELECTED = 21,
+
+	/**
+	 * Thin white outline, visible even outside of instinct-mode
+	 *
+	 * Only appears when the player is nearby, visible through walls
+	 */
 	ERENDERGLOWTYPE_PLAYER_LVA = 22,
+
+	/**
+	 * Thick red outline, visible even outside of instinct-mode
+	 *
+	 * Only appears when the player is nearby, visible through walls
+	 */
 	ERENDERGLOWTYPE_PLAYER_LVA_SEEN = 23,
+
+	/**
+	 * Green fill with thick green outline, visible even outside of instinct-mode
+	 *
+	 * Only appears when the player is nearby, visible through walls
+	 */
 	ERENDERGLOWTYPE_VS_OPPONENT = 24,
+
+	/**
+	 * White fill with white outline
+	 *
+	 * Only appears when the player is nearby, not visible through walls, and only when the entity is near the center of
+	 * the screen
+	 */
 	ERENDERGLOWTYPE_TRAVERSAL = 25,
+
+	/**
+	 * Seemingly no effect
+	 */
 	ERENDERGLOWTYPE_EMISSIVE_UI = 26,
+
+	/**
+	 * Seemingly no effect
+	 */
 	ERENDERGLOWTYPE_EMISSIVE_UI_IGNORE_DEPTH = 27,
+
+	/**
+	 * Entity appears solid black, even outside of instinct-mode
+	 *
+	 * Not visible through walls
+	 */
 	ERENDERGLOWTYPE_OPPONENT = 28,
+
+	/**
+	 * Light-blue fill with light-blue outline, visible even outside of instinct-mode
+	 *
+	 * Only appears when the player is very close by, and only when the entity is near the center of the screen
+	 */
 	ERENDERGLOWTYPE_CAMERA = 29,
 };
 
