@@ -3,6 +3,9 @@
 #include "ZPrimitives.h"
 
 template <typename T>
+class TCheatProtect;
+
+template <typename T>
 class TCheatProtect {
 public:
     struct SStorage {
@@ -18,4 +21,10 @@ public:
     };
 
     SStorage m_Storage;
+};
+
+template <>
+class TCheatProtect<ZString> {
+public:
+    ZString m_sScrambledString;
 };
