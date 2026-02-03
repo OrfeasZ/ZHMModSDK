@@ -5,6 +5,7 @@
 #include "ZPrimitives.h"
 #include "ZCollision.h"
 #include "ZOutfit.h"
+#include "TCheatProtect.h"
 
 class IFutureCameraState :
         public IComponentInterface {
@@ -398,6 +399,13 @@ public:
 
 class ZFabricColliderBaseEntity;
 
+class ZHM5Health {
+public:
+    PAD(0x228);
+    TCheatProtect<float> m_fHitPoints; // 0x228
+    TCheatProtect<float> m_fMaxHitPoints; // 0x238
+};
+
 class ZHitman5 :
         public ZHM5BaseCharacter,
         public IFutureCameraState, // 720
@@ -444,7 +452,9 @@ public:
     ZRuntimeResourceID m_SeasonOneHead3; // 0x990
     ZRuntimeResourceID m_SeasonOneHead4; // 0x998
     ZRuntimeResourceID m_SeasonOneHead5; // 0x9A0
-    PAD(0x4F0); // 0x9A8
+    PAD(0x4C8); // 0x9A8
+    ZHM5Health* m_pHealth; // 0xE70
+    PAD(0x20); // 0xE78
     bool m_bIsInvincible; // 0xE98
     PAD(0x7); // 0xE99
     TEntityRef<ZHeroGuideController> m_pGuideController; // 0xEA0
@@ -457,7 +467,11 @@ public:
     TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0xFB0
     int32 m_nOutfitCharset; // 0xFC0
     int32 m_nOutfitVariation; // 0xFC4
-    PAD(0x370); // 0xFC8
+    PAD(0x210); // 0xFC8
+    uint64 m_nMovementFlags; // 0x11D8
+    uint32 m_nLocomotionFlag; // 0x11E0
+    uint64 m_nCustomFlags; // 0x11E8
+    PAD(0x148); // 0x11F0
     TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1338
     PAD(0xA8); // 0x1318
 };

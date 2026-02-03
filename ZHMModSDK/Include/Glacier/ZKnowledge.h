@@ -1,25 +1,18 @@
 #pragma once
 
-#include "ZPrimitives.h"
-#include "TArray.h"
+#include "Common.h"
+#include "ZGrid.h"
 
-class ZKnowledge {};
-
-struct SBehaviorBase {
-    ECompiledBehaviorType eBehaviorType;
-};
-
-class ZBehaviorService {
+class ZKnowledge {
 public:
-    virtual ~ZBehaviorService() = 0;
-
-    struct SBehaviorState {
-        PAD(0xA0); // 0x0
-        SBehaviorBase* m_pCurrentBehavior; // 0xA0
-        PAD(0x50); // 0xA8
-    };
-
-    TFixedArray<SBehaviorState, 500> m_aBehaviorStates;
+    PAD(0x20);
+    ZGridNodeRef m_actorGridNode; // 0x20
+    PAD(0xD0);
 };
 
-static_assert(sizeof(ZBehaviorService::SBehaviorState) == 248);
+class ZKnowledgeService : public IComponentInterface {
+public:
+    TFixedArray<ZKnowledge, 500> m_aKnowledge;
+};
+
+static_assert(sizeof(ZKnowledge) == 256);

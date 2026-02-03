@@ -60,10 +60,8 @@ void World::OnDrawUI(const bool p_HasFocus) {
 }
 
 void World::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
-    const float s_GameTimeMultiplier = m_IsTimeMultiplierEnabled ? m_GameTimeMultiplier : 1.0f;
-
-    if (Globals::GameTimeManager->m_fGameTimeMultiplier != s_GameTimeMultiplier) {
-        Globals::GameTimeManager->m_fGameTimeMultiplier = s_GameTimeMultiplier;
+    if (m_IsTimeMultiplierEnabled && Globals::GameTimeManager->m_fGameTimeMultiplier != m_GameTimeMultiplier) {
+        Globals::GameTimeManager->m_fGameTimeMultiplier = m_GameTimeMultiplier;
     }
 }
 

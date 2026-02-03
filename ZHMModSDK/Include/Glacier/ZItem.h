@@ -125,7 +125,7 @@ public:
     ZEntityRef m_rFactoryEntity;
     PAD(0x10);
     TEntityRef<ZGeomEntity> m_pGeomEntity; //0x2C0
-    PAD(0x170);
+    PAD(0x1A8);
 };
 
 class IItemWeapon : public IComponentInterface {

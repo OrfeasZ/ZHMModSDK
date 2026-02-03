@@ -105,6 +105,11 @@ public:
     }
 
     [[nodiscard]]
+    uint32_t sizeWithFlags() const {
+        return m_nLength;
+    }
+
+    [[nodiscard]]
     const char* c_str() const {
         return m_pChars;
     }

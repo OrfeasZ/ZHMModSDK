@@ -16,11 +16,10 @@
 #include <Glacier/ZGameLoopManager.h>
 #include <Glacier/ZKnowledge.h>
 #include <Glacier/ZPathfinder.h>
-#include <Glacier/SReasoningGrid.h>
-#include <Glacier/ZGridManager.h>
-#include <Glacier/ZHM5GridManager.h>
 #include <Glacier/ZCameraEntity.h>
 #include <Glacier/ZColor.h>
+#include <Glacier/ZGrid.h>
+#include <Glacier/ZBehavior.h>
 
 #include <Functions.h>
 #include <Globals.h>
@@ -69,11 +68,18 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
+        if (ImGui::CollapsingHeader("Player", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Checkbox("Render Health", &m_RenderPlayerHealth);
+            ImGui::Checkbox("Render Outfit Hit Points", &m_RenderPlayerOutfitHitPoints);
+        }
+
         if (ImGui::CollapsingHeader("Actors", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::Checkbox("Render Actor position boxes", &m_RenderActorBoxes);
-            ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
-            ImGui::Checkbox("Render Actor repository IDs", &m_RenderActorRepoIds);
-            ImGui::Checkbox("Render Actor behaviors", &m_RenderActorBehaviors);
+            ImGui::Checkbox("Render Position Boxes", &m_RenderActorBoxes);
+            ImGui::Checkbox("Render Names", &m_RenderActorNames);
+            ImGui::Checkbox("Render Repository IDs", &m_RenderActorRepoIds);
+            ImGui::Checkbox("Render Behaviors", &m_RenderActorBehaviors);
+            ImGui::Checkbox("Render Health", &m_RenderActorHealth);
+            ImGui::Checkbox("Render Outfit Hit Points", &m_RenderActorOutfitHitPoints);
         }
 
         if (ImGui::CollapsingHeader("Reasoning Grid", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -209,7 +215,78 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
         DrawObstacles(p_Renderer);
     }
 
-    if (m_RenderActorBoxes || m_RenderActorNames || m_RenderActorRepoIds || m_RenderActorBehaviors) {
+    if (m_RenderPlayerHealth || m_RenderPlayerOutfitHitPoints) {
+        const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+        if (!s_CurrentCamera) {
+            return;
+        }
+
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+        if (s_LocalHitman) {
+            auto s_CameraTransform = s_CurrentCamera->GetObjectToWorldMatrix();
+
+            auto* s_SpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
+            auto s_PlayerTransform = s_SpatialEntity->GetObjectToWorldMatrix();
+
+            float4 s_Min, s_Max;
+
+            s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+
+            const float4 s_Center = (s_Min + s_Max) * 0.5f;
+            const float4 s_Extents = (s_Max - s_Min) * 0.5f;
+
+            float4 s_LocalPosition = s_Center + float4(0.f, 0.f, s_Extents.z, 0.f);
+            float4 s_WorldPosition = s_PlayerTransform * s_LocalPosition;
+
+            s_WorldPosition.z -= 0.5f;
+            s_CameraTransform.Trans = s_WorldPosition;
+
+            std::string s_Text;
+
+            if (m_RenderPlayerHealth) {
+                float s_Health = Functions::ZHM5Health_GetHP->Call(s_LocalHitman.m_pInterfaceRef->m_pHealth);
+                char s_Buffer[64];
+
+                snprintf(s_Buffer, sizeof(s_Buffer), "Health: %.0f%%", s_Health);
+
+                s_Text += s_Buffer;
+            }
+
+            if (m_RenderActorOutfitHitPoints) {
+                if (s_Text.length() > 0) {
+                    s_Text += "\n\n";
+                }
+
+                char s_Buffer[64];
+
+                snprintf(
+                    s_Buffer,
+                    sizeof(s_Buffer),
+                    "Hit points: %.0f",
+                    s_LocalHitman.m_pInterfaceRef->m_rOutfitKit.m_pInterfaceRef->m_fHitPoints
+                );
+
+                s_Text += s_Buffer;
+            }
+
+            p_Renderer->DrawText3D(
+                s_Text.c_str(),
+                s_CameraTransform,
+                SVector4(1.f, 1.f, 0.f, 1.f),
+                0.1f,
+                TextAlignment::Center
+            );
+        }
+    }
+
+    if (m_RenderActorBoxes ||
+        m_RenderActorNames ||
+        m_RenderActorRepoIds ||
+        m_RenderActorBehaviors ||
+        m_RenderActorHealth||
+        m_RenderActorOutfitHitPoints) {
         for (size_t i = 0; i < *Globals::NextActorId; ++i) {
             auto* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
 
@@ -276,6 +353,35 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
                         s_Text += CompiledBehaviorTypeToString(s_BehaviorBase->eBehaviorType);
                     }
+                }
+
+                if (m_RenderActorHealth) {
+                    if (s_Text.length() > 0) {
+                        s_Text += "\n\n";
+                    }
+
+                    char s_Buffer[64];
+
+                    snprintf(s_Buffer, sizeof(s_Buffer), "Health: %.0f%%", s_Actor->m_fCurrentHitPoints);
+
+                    s_Text += s_Buffer;
+                }
+
+                if (m_RenderActorOutfitHitPoints) {
+                    if (s_Text.length() > 0) {
+                        s_Text += "\n\n";
+                    }
+
+                    char s_Buffer[64];
+
+                    snprintf(
+                        s_Buffer,
+                        sizeof(s_Buffer),
+                        "Hit points: %.0f",
+                        s_Actor->m_rOutfit.m_pInterfaceRef->m_fHitPoints
+                    );
+
+                    s_Text += s_Buffer;
                 }
 
                 p_Renderer->DrawText3D(

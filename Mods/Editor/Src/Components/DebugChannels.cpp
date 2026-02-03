@@ -95,7 +95,7 @@ void Editor::InitializeDebugChannels() {
     m_DebugChannels.push_back(std::make_pair("Sound", DEBUGCHANNEL_SOUND));
     m_DebugChannels.push_back(std::make_pair("Animation", DEBUGCHANNEL_ANIMATION));
     m_DebugChannels.push_back(std::make_pair("Cloth", DEBUGCHANNEL_CLOTH));
-    m_DebugChannels.push_back(std::make_pair("Sound Paritioning", DEBUGCHANNEL_SOUND_PARTITIONING));
+    m_DebugChannels.push_back(std::make_pair("Sound Partitioning", DEBUGCHANNEL_SOUND_PARTITIONING));
     m_DebugChannels.push_back(std::make_pair("UI", DEBUGCHANNEL_UI));
 
     m_DebugChannelNameToTypeNames["Guides - Cover"].push_back("ZCoverPlane");
@@ -197,7 +197,7 @@ void Editor::InitializeDebugChannels() {
     m_DebugChannelNameToTypeNames["Cloth"].push_back("ZDebugGizmoEntity");
     m_DebugChannelNameToTypeNames["Cloth"].push_back("ZClothWireEntity");
 
-    m_DebugChannelNameToTypeNames["Sound Paritioning"].push_back("ZDebugGizmoEntity");
+    m_DebugChannelNameToTypeNames["Sound Partitioning"].push_back("ZDebugGizmoEntity");
 
     m_DebugChannelNameToTypeNames["UI"].push_back("ZDebugGizmoEntity");
 
