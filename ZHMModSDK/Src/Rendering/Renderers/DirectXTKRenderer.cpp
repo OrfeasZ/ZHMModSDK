@@ -1446,9 +1446,6 @@ void DirectXTKRenderer::DrawText3D(
 
     s_Triangles.reserve(2 * s_PrintableCharacterCount);
 
-    const float s_LineHeight = MDF_FONT::g_LineHeight /
-        static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]);
-
     std::istringstream s_InputStringStream(p_Text);
     std::string s_Line;
     int s_LineIndex = 0;
@@ -1469,7 +1466,7 @@ void DirectXTKRenderer::DrawText3D(
         }
 
         float s_PenX = s_OffsetX;
-        float s_PenY = -(s_LineIndex * s_LineHeight);
+        float s_PenY = -(s_LineIndex * MDF_FONT::g_LineHeight);
 
         const char* p = s_Line.c_str();
 
