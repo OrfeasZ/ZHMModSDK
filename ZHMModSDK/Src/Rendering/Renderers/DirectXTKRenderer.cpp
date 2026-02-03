@@ -28,9 +28,6 @@
 #include "Glacier/ZGameLoopManager.h"
 #include "Glacier/MDF_FONT.h"
 
-#undef min
-#undef max
-
 using namespace Rendering::Renderers;
 
 DirectXTKRenderer::DirectXTKRenderer() {}
