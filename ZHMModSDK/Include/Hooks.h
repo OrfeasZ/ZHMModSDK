@@ -154,6 +154,11 @@ public:
         void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int param_6
     )>* Http_WinHttpCallback;
 
+    /**
+     * Note that the buffer given here is before any HTTP response has been decompressed. If connecting to a server that
+     * serves gzip-compressed responses, you will need to manually detect that and decompress it (such as by using
+     * zlib).
+     */
     static Hook<void(ZHttpResultDynamicObject* th)>* ZHttpResultDynamicObject_OnBufferReady;
 
     static Hook<ZTemplateEntityBlueprintFactory*(

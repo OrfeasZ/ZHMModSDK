@@ -155,7 +155,11 @@ public:
     ZRepositoryID m_rWeaponID; // 0x100
 };
 
-// Size = 0x1410
+/**
+ * An NPC
+ *
+ * Size = 0x1410
+ */
 class ZActor :
         public ZHM5BaseCharacter,
         public ICharacterCollision,
@@ -165,6 +169,9 @@ class ZActor :
         public ISequenceAudioPlayer,
         public ICrowdAIActor {
 public:
+    /**
+     * Get the NPC's name, like "Robert Knox"
+     */
     ZHMSDK_API ZString GetActorName() const;
 
     PAD(0x100); // 0x300
@@ -214,8 +221,22 @@ public:
     bool m_bUnk13 : 1;
     bool m_bUnk14 : 1;
     bool m_bUnk15 : 1;
+
+    /**
+     * Seems to determine whether the actor has a red glow in instinct mode (and probably does other things too?)
+     *
+     * Note that the instinct glow doesn't update immediately upon changing this - certain actions, such as bumping into
+     * an actor, will force it to update its instinct glow. You can use the `SetGlowType` pin to manually update it.
+     */
     bool m_bContractTarget : 1; // 0x116A
+
+    /**
+     * When true, the actor shows up as a target on the map
+     *
+     * Probably does other things too?
+     */
     bool m_bContractTargetLive : 1;
+
     bool m_bContractTargetHidden : 1;
     bool m_bIsNamedNPC : 1;
     bool m_bNude : 1;

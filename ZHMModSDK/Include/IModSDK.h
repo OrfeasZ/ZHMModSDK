@@ -231,6 +231,8 @@ public:
 
     /**
      * Try to get the local Hitman player.
+     *
+     * Note that a player can exist even outside of gameplay. There seems to be a player on the main menu, for instance.
      */
     virtual TEntityRef<ZHitman5> GetLocalPlayer() = 0;
 
