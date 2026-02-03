@@ -246,7 +246,8 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
             std::string s_Text;
 
             if (m_RenderPlayerHealth) {
-                float s_Health = Functions::ZHM5Health_GetHP->Call(s_LocalHitman.m_pInterfaceRef->m_pHealth);
+                const auto s_HM5Health = s_LocalHitman.m_pInterfaceRef->m_pHealth;
+                const auto s_Health = (s_HM5Health->m_fHitPoints / s_HM5Health->m_fMaxHitPoints) * 100.f;
                 char s_Buffer[64];
 
                 snprintf(s_Buffer, sizeof(s_Buffer), "Health: %.0f%%", s_Health);
@@ -285,7 +286,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
         m_RenderActorNames ||
         m_RenderActorRepoIds ||
         m_RenderActorBehaviors ||
-        m_RenderActorHealth||
+        m_RenderActorHealth ||
         m_RenderActorOutfitHitPoints) {
         for (size_t i = 0; i < *Globals::NextActorId; ++i) {
             auto* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
