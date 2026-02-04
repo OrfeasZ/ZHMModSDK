@@ -255,7 +255,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 s_Text += s_Buffer;
             }
 
-            if (m_RenderActorOutfitHitPoints) {
+            if (m_RenderPlayerOutfitHitPoints) {
                 if (s_Text.length() > 0) {
                     s_Text += "\n\n";
                 }
