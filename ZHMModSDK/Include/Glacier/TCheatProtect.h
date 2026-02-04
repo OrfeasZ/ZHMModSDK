@@ -1,16 +1,7 @@
 #pragma once
 
 #include "ZPrimitives.h"
-
-inline uint32_t CalculateFnv1a(const void* p_Data, size_t p_Size) {
-    uint32_t s_Hash = 0x811c9dc5;
-
-    for (size_t i = 0; i < p_Size; ++i) {
-        s_Hash = (s_Hash ^ static_cast<const uint8_t*>(p_Data)[i]) * 0x1000193;
-    }
-
-    return s_Hash;
-}
+#include "Hash.h"
 
 template <typename T>
 class TCheatProtect;
@@ -67,7 +58,9 @@ public:
 
         #if _DEBUG
         const auto s_ExpectedChecksum = s_Checksum->m_nChecksum;
-        const auto s_ActualChecksum = CalculateFnv1a(s_DecryptedStorage, offsetof(SStorage, m_piChecksum));
+        const auto s_ActualChecksum = Hash::Fnv1a(
+            reinterpret_cast<const char*>(s_Decrypted), offsetof(SStorage, m_piChecksum)
+        );
 
         assert(s_ExpectedChecksum == s_ActualChecksum);
         #endif
@@ -87,7 +80,7 @@ public:
         reinterpret_cast<uint8_t*>(&s_Storage)[offsetof(SStorage, m_piChecksum) - 1] = 0;
 
         // Calculate the checksum.
-        const auto s_Checksum = CalculateFnv1a(&s_Storage, offsetof(SStorage, m_piChecksum));
+        const auto s_Checksum = Hash::Fnv1a(&s_Storage, offsetof(SStorage, m_piChecksum));
 
         // Rewrite the checksum value.
         const auto s_ChecksumPtr = GetChecksum();
