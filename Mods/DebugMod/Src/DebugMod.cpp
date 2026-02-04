@@ -69,8 +69,8 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
 
     if (s_Showing) {
         if (ImGui::CollapsingHeader("Player", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::Checkbox("Render Health", &m_RenderPlayerHealth);
-            ImGui::Checkbox("Render Outfit Hit Points", &m_RenderPlayerOutfitHitPoints);
+            ImGui::Checkbox("Render Health###PlayerHealth", &m_RenderPlayerHealth);
+            ImGui::Checkbox("Render Outfit Hit Points###PlayerOutfitHitPoints", &m_RenderPlayerOutfitHitPoints);
         }
 
         if (ImGui::CollapsingHeader("Actors", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -78,8 +78,8 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
             ImGui::Checkbox("Render Names", &m_RenderActorNames);
             ImGui::Checkbox("Render Repository IDs", &m_RenderActorRepoIds);
             ImGui::Checkbox("Render Behaviors", &m_RenderActorBehaviors);
-            ImGui::Checkbox("Render Health", &m_RenderActorHealth);
-            ImGui::Checkbox("Render Outfit Hit Points", &m_RenderActorOutfitHitPoints);
+            ImGui::Checkbox("Render Health###ActorHealth", &m_RenderActorHealth);
+            ImGui::Checkbox("Render Outfit Hit Points###ActorOutfitHitPoints", &m_RenderActorOutfitHitPoints);
         }
 
         if (ImGui::CollapsingHeader("Reasoning Grid", ImGuiTreeNodeFlags_DefaultOpen)) {
