@@ -80,7 +80,9 @@ public:
         reinterpret_cast<uint8_t*>(&s_Storage)[offsetof(SStorage, m_piChecksum) - 1] = 0;
 
         // Calculate the checksum.
-        const auto s_Checksum = Hash::Fnv1a(&s_Storage, offsetof(SStorage, m_piChecksum));
+        const auto s_Checksum = Hash::Fnv1a(
+            reinterpret_cast<const char*>(&s_Storage), offsetof(SStorage, m_piChecksum)
+        );
 
         // Rewrite the checksum value.
         const auto s_ChecksumPtr = GetChecksum();
