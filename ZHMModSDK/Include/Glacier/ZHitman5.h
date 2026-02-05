@@ -72,6 +72,7 @@ public:
     virtual void IIKControllerOwner_unk32() = 0;
     virtual void IIKControllerOwner_unk33() = 0;
     virtual void IIKControllerOwner_unk34() = 0;
+    virtual void IIKControllerOwner_unk35() = 0;
 };
 
 class IControllableCharacter :
