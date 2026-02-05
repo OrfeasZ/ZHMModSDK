@@ -405,7 +405,7 @@ class ZFabricColliderBaseEntity;
 
 class ZHM5Health {
 public:
-    PAD(0x228);
+    PAD(0x228); // 0x0
     TCheatProtect<float> m_fHitPoints; // 0x228
     TCheatProtect<float> m_fMaxHitPoints; // 0x238
 };
