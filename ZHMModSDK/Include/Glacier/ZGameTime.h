@@ -100,7 +100,7 @@ public:
     ZGameTime m_tRealTimeDelta; // 0x40
     float m_fGameTimeMultiplier; // 0x48
     float m_fDebugTimeMultiplier; // 0x4C
-    PAD(0x8); // 0x50
+    bool m_Unk; // 0x50
     ZGameTime m_FrameWait; // 0x58
     ZGameTime m_FrameStep; // 0x60
     ZGameTime m_FrameRemain; // 0x68
