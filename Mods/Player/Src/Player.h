@@ -28,8 +28,20 @@ private:
 
     DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
-    DECLARE_PLUGIN_DETOUR(Player, void, ZSecuritySystemCameraManager_OnFrameUpdate, ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent);
-    DECLARE_PLUGIN_DETOUR(Player, void, ZSecuritySystemCamera_FrameUpdate, ZSecuritySystemCamera* th, const SGameUpdateEvent* const updateEvent);
+    DECLARE_PLUGIN_DETOUR(
+        Player,
+        void,
+        ZSecuritySystemCameraManager_OnFrameUpdate,
+        ZSecuritySystemCameraManager* th,
+        const SGameUpdateEvent& updateEvent
+    );
+    DECLARE_PLUGIN_DETOUR(
+        Player,
+        void,
+        ZSecuritySystemCamera_FrameUpdate,
+        ZSecuritySystemCamera* th,
+        const SGameUpdateEvent& updateEvent
+    );
 
     bool m_PlayerMenuActive = false;
     bool m_IsInvincible = false;

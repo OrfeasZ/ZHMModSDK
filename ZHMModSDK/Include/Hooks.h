@@ -239,8 +239,8 @@ public:
     static Hook<void(ZEntitySceneContext* th, ESceneLoadingStage stage)>* ZEntitySceneContext_SetLoadingStage;
 
     static Hook<void(ZSecuritySystemCameraManager* th, bool bReactionSituations)>* ZSecuritySystemCameraManager_UpdateCameraState;
-    static Hook<void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)>* ZSecuritySystemCameraManager_OnFrameUpdate;
-    static Hook<void(ZSecuritySystemCamera* th, const SGameUpdateEvent* const a2)>* ZSecuritySystemCamera_FrameUpdate;
+    static Hook<void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent& updateEvent)>* ZSecuritySystemCameraManager_OnFrameUpdate;
+    static Hook<void(ZSecuritySystemCamera* th, const SGameUpdateEvent& updateEvent)>* ZSecuritySystemCamera_FrameUpdate;
 
     static Hook<ZEntityRef*(
         ZEntityManager* th,

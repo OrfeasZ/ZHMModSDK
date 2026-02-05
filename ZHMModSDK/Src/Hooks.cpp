@@ -424,14 +424,14 @@ PATTERN_HOOK(
     "\x48\x89\x4C\x24\x08\x55\x41\x56\x48\x8D\xAC\x24\x58\xEE\xFF\xFF",
     "xxxxxxxxxxxxxxxx",
     ZSecuritySystemCameraManager_OnFrameUpdate,
-    void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)
+    void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent& updateEvent)
 );
 
 PATTERN_HOOK(
     "\x40\x55\x41\x56\x48\x8D\x6C\x24\x88",
     "xxxxxxxxx",
     ZSecuritySystemCamera_FrameUpdate,
-    void(ZSecuritySystemCamera* th, const SGameUpdateEvent* const a2)
+    void(ZSecuritySystemCamera* th, const SGameUpdateEvent& updateEvent)
 );
 
 PATTERN_HOOK(

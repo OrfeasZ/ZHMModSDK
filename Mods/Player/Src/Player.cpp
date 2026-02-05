@@ -614,7 +614,7 @@ DEFINE_PLUGIN_DETOUR(
     void,
     ZSecuritySystemCameraManager_OnFrameUpdate,
     ZSecuritySystemCameraManager* th,
-    const SGameUpdateEvent* const updateEvent
+    const SGameUpdateEvent& updateEvent
 ) {
     if (m_IsInvisible) {
         return HookResult<void>(HookAction::Return());
@@ -628,7 +628,7 @@ DEFINE_PLUGIN_DETOUR(
     void,
     ZSecuritySystemCamera_FrameUpdate,
     ZSecuritySystemCamera* th,
-    const SGameUpdateEvent* const updateEvent
+    const SGameUpdateEvent& updateEvent
 ) {
     if (m_IsInvisible) {
         return HookResult<void>(HookAction::Return());
