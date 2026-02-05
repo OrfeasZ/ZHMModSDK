@@ -759,7 +759,7 @@ DEFINE_PLUGIN_DETOUR(Player, bool, ZHM5ItemWeapon_IsFiring, IFirearm* th) {
     if (m_IsRapidFireEnabled) {
         ZHM5ItemWeapon* s_HM5ItemWeapon = static_cast<ZHM5ItemWeapon*>(th);
 
-        s_HM5ItemWeapon->m_tLastShootTime = 0;
+        s_HM5ItemWeapon->m_tLastShootTime = ZGameTime {};
     }
 
     return HookResult<bool>(HookAction::Continue());
