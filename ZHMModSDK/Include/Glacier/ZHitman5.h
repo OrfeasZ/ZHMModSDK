@@ -7,6 +7,9 @@
 #include "ZOutfit.h"
 #include "TCheatProtect.h"
 
+class IFirearm;
+enum class ECustomFlags;
+
 class IFutureCameraState :
         public IComponentInterface {
 public:
@@ -65,7 +68,7 @@ public:
     virtual void IIKControllerOwner_unk28() = 0;
     virtual void IIKControllerOwner_unk29() = 0;
     virtual void IIKControllerOwner_unk30() = 0;
-    virtual void IIKControllerOwner_unk31() = 0;
+    virtual bool IsCustomFlagEnabled(ECustomFlags eCustomFlags) = 0;
     virtual void IIKControllerOwner_unk32() = 0;
     virtual void IIKControllerOwner_unk33() = 0;
     virtual void IIKControllerOwner_unk34() = 0;
@@ -255,7 +258,7 @@ public:
     virtual void ICharacterInventoryState_unk17() = 0;
     virtual void ICharacterInventoryState_unk18() = 0;
     virtual void ICharacterInventoryState_unk19() = 0;
-    virtual void ICharacterInventoryState_unk20() = 0;
+    virtual uint32 GetAmmoInPocketFor(const TEntityRef<IFirearm>& rWeapon) = 0;
     virtual void ICharacterInventoryState_unk21() = 0;
     virtual void ICharacterInventoryState_unk22() = 0;
     virtual void ICharacterInventoryState_unk23() = 0;
