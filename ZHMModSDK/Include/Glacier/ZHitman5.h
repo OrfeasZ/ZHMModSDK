@@ -410,6 +410,18 @@ public:
     TCheatProtect<float> m_fMaxHitPoints; // 0x238
 };
 
+class ZHM5BaseController {
+public:
+    virtual ~ZHM5BaseController() = 0;
+};
+
+class ZHM5WeaponRecoilController : public ZHM5BaseController {
+public:
+    PAD(0x40); // 0x8
+    SVector2 m_vRecoil; // 0x48
+    SVector2 m_vAccumlatedRecoil; // 0x50
+};
+
 class ZHitman5 :
         public ZHM5BaseCharacter,
         public IFutureCameraState, // 720
