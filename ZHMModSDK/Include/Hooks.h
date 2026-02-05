@@ -86,6 +86,12 @@ class ZActorInventoryHandler;
 class ZItemRepositoryKeyEntity;
 class ZGlobalOutfitKit;
 class ZClothBundleEntity;
+class ZHM5ItemWeapon;
+class IFirearm;
+struct SHitInfo;
+class IBaseCharacter;
+class ZHitmanMorphemePostProcessor;
+class ZHM5WeaponRecoilController;
 
 class ZHMSDK_API Hooks {
 public:
@@ -312,4 +318,24 @@ public:
         bool bSpawnedByHitman,
         bool bEnableOutfitModifiers
     )>* ZClothBundleEntity_CreateClothBundle;
+
+    static Hook<void(IFirearm* th, int32_t nBullets)>* ZHM5ItemWeapon_SetBulletsInMagazine;
+
+    static Hook<bool(IBaseCharacter* th, const SHitInfo& hitInfo)>* ZActor_YouGotHit;
+
+    static Hook<void(
+        ZHitmanMorphemePostProcessor* th,
+        float fDeltaTime,
+        const THashMap<int32_t, int32_t, TDefaultHashMapPolicy<int32_t>>& charboneMap,
+        TArrayRef<int32_t> hierarchy
+    )>* ZHitmanMorphemePostProcessor_UpdateWeaponRecoil;
+
+    static Hook<void(
+        ZHM5WeaponRecoilController* th,
+        const TEntityRef<ZHM5ItemWeapon>& rWeapon
+    )>* ZHM5WeaponRecoilController_RecoilWeapon;
+
+    static Hook<bool(ZHM5ItemWeapon* th, bool bMayStartSound)>* ZHM5ItemWeapon_FireProjectiles;
+
+    static Hook<bool(IFirearm* th)>* ZHM5ItemWeapon_IsFiring;
 };

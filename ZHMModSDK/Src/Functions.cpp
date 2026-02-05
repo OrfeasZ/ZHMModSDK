@@ -485,3 +485,17 @@ PATTERN_FUNCTION(
     ZHM5Health_GetMaxHitpoints,
     float32(const ZHM5Health* th)
 );
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x48\x89\x7C\x24\x18\x55\x48\x8B\xEC\x48\x83\xEC\x00\x48\x8B\x41\x20",
+    "xxxxxxxxxxxxxxxxxxxxxx?xxxx",
+    ZCharacterSubcontrollerInventory_GetAmmoInPocketForType,
+    uint32_t(ZCharacterSubcontrollerInventory* th, eAmmoType AmmoType)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x53\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xD9\x48\x8B\x49\x38",
+    "xxxxx????xxxxxxx",
+    ZHM5WeaponControl_GetCrosshairScale,
+    float(ZHM5WeaponControl* th)
+);

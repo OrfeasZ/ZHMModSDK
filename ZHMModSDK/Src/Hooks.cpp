@@ -553,3 +553,46 @@ PATTERN_HOOK(
     TEntityRef<ZClothBundleEntity>* (TEntityRef<ZClothBundleEntity>& result, const SMatrix& mat, ZRepositoryID id,
         int32_t nOutfitVariation, int32_t nOutfitCharset, bool bSpawnedByHitman, bool bEnableOutfitModifiers)
 );
+
+PATTERN_HOOK(
+    "\x48\x8B\xC1\x44\x8B\xC2\x48\x81\xC1",
+    "xxxxxxxxx",
+    ZHM5ItemWeapon_SetBulletsInMagazine,
+    void(IFirearm* th, int32_t nBullets)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8B\x99\x78\x11\x00\x00",
+    "xxxxxxxxx?xxxxxxx",
+    ZActor_YouGotHit,
+    bool(IBaseCharacter* th, const SHitInfo& hitInfo)
+);
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x4C\x89\x48\x20\x4C\x89\x40\x18\xF3\x0F\x11\x48\x10",
+    "xxxxxxxxxxxxxxxx",
+    ZHitmanMorphemePostProcessor_UpdateWeaponRecoil,
+    void(ZHitmanMorphemePostProcessor* th, float fDeltaTime,
+        const THashMap<int32_t, int32_t, TDefaultHashMapPolicy<int32_t>>& charboneMap, TArrayRef<int32_t> hierarchy)
+);
+
+PATTERN_HOOK(
+    "\x40\x53\x48\x83\xEC\x00\x48\x8B\xD9\x0F\x29\x74\x24\x50\x48\x8B\x4A\x08",
+    "xxxxx?xxxxxxxxxxxx",
+    ZHM5WeaponRecoilController_RecoilWeapon,
+    void(ZHM5WeaponRecoilController* th, const TEntityRef<ZHM5ItemWeapon>& rWeapon)
+);
+
+PATTERN_HOOK(
+    "\x88\x54\x24\x10\x55\x53\x56\x57\x41\x54\x41\x55\x41\x57",
+    "xxxxxxxxxxxxxx",
+    ZHM5ItemWeapon_FireProjectiles,
+    bool(ZHM5ItemWeapon* th, bool bMayStartSound)
+);
+
+PATTERN_HOOK(
+    "\x40\x53\x48\x83\xEC\x00\x48\x8B\x01\x48\x8B\xD9\xFF\x90\xE0\x01\x00\x00",
+    "xxxxx?xxxxxxxxxxxx",
+    ZHM5ItemWeapon_IsFiring,
+    bool(IFirearm* th)
+);
