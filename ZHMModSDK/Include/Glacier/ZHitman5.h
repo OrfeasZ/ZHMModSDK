@@ -31,7 +31,7 @@ public:
 };
 
 class IIKControllerOwner :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IIKControllerOwner() {}
     virtual void IIKControllerOwner_unk0() = 0;
