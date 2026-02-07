@@ -626,7 +626,7 @@ DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_IsInfiniteAmmoEnabled = false;
     m_GlobalOutfitKit = {};
 
-    return HookResult<void>(HookAction::Continue());
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(
@@ -637,10 +637,10 @@ DEFINE_PLUGIN_DETOUR(
     const SGameUpdateEvent& updateEvent
 ) {
     if (m_IsInvisible) {
-        return HookResult<void>(HookAction::Return());
+        return { HookAction::Return() };
     }
 
-    return HookResult<void>(HookAction::Continue());
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(
@@ -651,27 +651,27 @@ DEFINE_PLUGIN_DETOUR(
     const SGameUpdateEvent& updateEvent
 ) {
     if (m_IsInvisible) {
-        return HookResult<void>(HookAction::Return());
+        return { HookAction::Return() };
     }
 
-    return HookResult<void>(HookAction::Continue());
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(Player, void, ZHM5ItemWeapon_SetBulletsInMagazine, IFirearm* th, int32_t nBullets) {
     if (!m_IsNoReloadEnabled) {
-        return HookResult<void>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     const auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        return HookResult<void>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     ZHM5ItemWeapon* s_HM5ItemWeapon = static_cast<ZHM5ItemWeapon*>(th);
 
     if (s_HM5ItemWeapon->m_pOwner != s_LocalHitman.m_entityRef) {
-        return HookResult<void>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     if (s_HM5ItemWeapon->m_nBulletsFired == s_HM5ItemWeapon->m_nBulletsToFire) {
@@ -679,7 +679,7 @@ DEFINE_PLUGIN_DETOUR(Player, void, ZHM5ItemWeapon_SetBulletsInMagazine, IFirearm
     }
 
     if (nBullets != 0) {
-        return HookResult<void>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     if (!s_LocalHitman.m_pInterfaceRef->IsInfiniteAmmoEnabled()) {
@@ -708,7 +708,7 @@ DEFINE_PLUGIN_DETOUR(Player, void, ZHM5ItemWeapon_SetBulletsInMagazine, IFirearm
 
     p_Hook->CallOriginal(th, nBullets);
 
-    return HookResult<void>(HookAction::Return());
+    return { HookAction::Return() };
 }
 
 DEFINE_PLUGIN_DETOUR(
@@ -721,10 +721,10 @@ DEFINE_PLUGIN_DETOUR(
     TArrayRef<int32_t> hierarchy
 ) {
     if (m_IsNoRecoilEnabled) {
-        return HookResult<void>(HookAction::Return());
+        return { HookAction::Return() };
     }
 
-    return HookResult<void>(HookAction::Continue());
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(
@@ -735,58 +735,58 @@ DEFINE_PLUGIN_DETOUR(
     const TEntityRef<ZHM5ItemWeapon>& rWeapon
 ) {
     if (!m_IsNoRecoilEnabled) {
-        return HookResult<void>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     p_Hook->CallOriginal(th, rWeapon);
 
     th->m_vRecoil = SVector2(0.f, 0.f);
 
-    return HookResult<void>(HookAction::Return());
+    return { HookAction::Return() };
 }
 
 DEFINE_PLUGIN_DETOUR(Player, bool, ZHM5ItemWeapon_FireProjectiles, ZHM5ItemWeapon* th, bool bMayStartSound) {
     if (!m_IsSuperAccuracyEnabled) {
-        return HookResult<bool>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     const auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        return HookResult<bool>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     if (th->m_pOwner != s_LocalHitman.m_entityRef) {
-        return HookResult<bool>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     bool s_Result = p_Hook->CallOriginal(th, bMayStartSound);
 
     th->m_fPrecisionFactor = 0.f;
 
-    return HookResult<bool>(HookAction::Return(), s_Result);
+    return { HookAction::Return(), s_Result };
 }
 
 DEFINE_PLUGIN_DETOUR(Player, bool, ZHM5ItemWeapon_IsFiring, IFirearm* th) {
     if (!m_IsRapidFireEnabled) {
-        return HookResult<bool>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     const auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        return HookResult<bool>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     ZHM5ItemWeapon* s_HM5ItemWeapon = static_cast<ZHM5ItemWeapon*>(th);
 
     if (s_HM5ItemWeapon->m_pOwner != s_LocalHitman.m_entityRef) {
-        return HookResult<bool>(HookAction::Continue());
+        return { HookAction::Continue() };
     }
 
     s_HM5ItemWeapon->m_tLastShootTime = ZGameTime {};
 
-    return HookResult<bool>(HookAction::Continue());
+    return { HookAction::Continue() };
 }
 
 DEFINE_PLUGIN_DETOUR(Player, bool, ZActor_YouGotHit, IBaseCharacter* th, const SHitInfo& hitInfo) {
@@ -796,7 +796,7 @@ DEFINE_PLUGIN_DETOUR(Player, bool, ZActor_YouGotHit, IBaseCharacter* th, const S
         s_Actor->m_fCurrentHitPoints = 0.f;
     }
 
-    return HookResult<bool>(HookAction::Continue());
+    return { HookAction::Continue() };
 }
 
 DEFINE_ZHM_PLUGIN(Player);
