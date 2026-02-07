@@ -8,7 +8,10 @@
 #include "TCheatProtect.h"
 
 class IFirearm;
-enum class ECustomFlags;
+
+enum class ECustomFlags {
+    eLIMITED_AMMO = 0x2000000
+};
 
 class IFutureCameraState :
         public IComponentInterface {
