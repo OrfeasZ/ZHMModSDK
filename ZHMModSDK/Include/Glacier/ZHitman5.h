@@ -71,7 +71,7 @@ public:
     virtual void IIKControllerOwner_unk28() = 0;
     virtual void IIKControllerOwner_unk29() = 0;
     virtual void IIKControllerOwner_unk30() = 0;
-    virtual bool IsCustomFlagEnabled(ECustomFlags eCustomFlags) = 0;
+    virtual bool IsCustomFlagEnabled(ECustomFlags eCustomFlags) const = 0;
     virtual void IIKControllerOwner_unk32() = 0;
     virtual void IIKControllerOwner_unk33() = 0;
     virtual void IIKControllerOwner_unk34() = 0;
