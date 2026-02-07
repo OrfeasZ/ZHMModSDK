@@ -446,6 +446,10 @@ class ZHitman5 :
         public ICharacterCameraState // 848
 {
 public:
+    bool IsInfiniteAmmoEnabled() const {
+        return !IsCustomFlagEnabled(ECustomFlags::eLIMITED_AMMO);
+    }
+
     PAD(0x3B8); // 0x358
     ZRepositoryID m_InitialOutfitId; // 0x710
     ZEntityRef m_MorphemeEntityID; // 0x720

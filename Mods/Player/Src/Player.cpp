@@ -682,11 +682,7 @@ DEFINE_PLUGIN_DETOUR(Player, void, ZHM5ItemWeapon_SetBulletsInMagazine, IFirearm
         return HookResult<void>(HookAction::Continue());
     }
 
-    const bool s_IsInfiniteAmmoEnabled = !s_LocalHitman.m_pInterfaceRef->IsCustomFlagEnabled(
-        static_cast<ECustomFlags>(0x2000000)
-    );
-
-    if (!s_IsInfiniteAmmoEnabled) {
+    if (!s_LocalHitman.m_pInterfaceRef->IsInfiniteAmmoEnabled()) {
         auto s_Character = s_LocalHitman.m_pInterfaceRef->m_pCharacter.m_pInterfaceRef;
         auto s_Controllers = &s_Character->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
         auto s_Inventory = static_cast<ZCharacterSubcontrollerInventory*>((*s_Controllers)[6].m_pInterfaceRef);
