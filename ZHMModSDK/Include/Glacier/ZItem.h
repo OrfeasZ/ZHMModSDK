@@ -122,11 +122,13 @@ public:
     TEntityRef<ZValueBool> m_rItemCanTurnOn; // 0x2E8
     TEntityRef<ZValueBool> m_rItemCanTurnOff; // 0x2F8
     TEntityRef<IVariationResourceEntity> m_pVariationResource; // 0x308
-    ZEntityRef m_rSpawner;
-    ZEntityRef m_rFactoryEntity;
-    PAD(0x10);
-    TEntityRef<ZGeomEntity> m_pGeomEntity; //0x2C0
-    PAD(0x1A8);
+    ZEntityRef m_rSpawner; // 0x318
+    ZEntityRef m_rFactoryEntity; // 0x320
+    PAD(0x10); // 0x328
+    TEntityRef<ZGeomEntity> m_pGeomEntity; //0x338
+    PAD(0x10); // 0x2D0
+    ZEntityRef m_pOwner; // 0x358
+    PAD(0x190);
 };
 
 class IItemWeapon : public IComponentInterface {
