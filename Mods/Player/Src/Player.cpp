@@ -662,7 +662,17 @@ DEFINE_PLUGIN_DETOUR(Player, void, ZHM5ItemWeapon_SetBulletsInMagazine, IFirearm
         return HookResult<void>(HookAction::Continue());
     }
 
+    const auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+    if (!s_LocalHitman) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
     ZHM5ItemWeapon* s_HM5ItemWeapon = static_cast<ZHM5ItemWeapon*>(th);
+
+    if (s_HM5ItemWeapon->m_pOwner != s_LocalHitman.m_entityRef) {
+        return HookResult<void>(HookAction::Continue());
+    }
 
     if (s_HM5ItemWeapon->m_nBulletsFired == s_HM5ItemWeapon->m_nBulletsToFire) {
         s_HM5ItemWeapon->m_nBulletsFired = 0;
@@ -672,36 +682,32 @@ DEFINE_PLUGIN_DETOUR(Player, void, ZHM5ItemWeapon_SetBulletsInMagazine, IFirearm
         return HookResult<void>(HookAction::Continue());
     }
 
-    const auto s_LocalHitman = SDK()->GetLocalPlayer();
+    const bool s_IsInfiniteAmmoEnabled = !s_LocalHitman.m_pInterfaceRef->IsCustomFlagEnabled(
+        static_cast<ECustomFlags>(0x2000000)
+    );
 
-    if (s_LocalHitman) {
-        const bool s_IsInfiniteAmmoEnabled = !s_LocalHitman.m_pInterfaceRef->IsCustomFlagEnabled(
-            static_cast<ECustomFlags>(0x2000000)
+    if (!s_IsInfiniteAmmoEnabled) {
+        auto s_Character = s_LocalHitman.m_pInterfaceRef->m_pCharacter.m_pInterfaceRef;
+        auto s_Controllers = &s_Character->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
+        auto s_Inventory = static_cast<ZCharacterSubcontrollerInventory*>((*s_Controllers)[6].m_pInterfaceRef);
+
+        const eAmmoType s_AmmoType = th->GetAmmoType();
+
+        uint32 s_AmmoInPocket = Functions::ZCharacterSubcontrollerInventory_GetAmmoInPocketForType->Call(
+            s_Inventory,
+            s_AmmoType
         );
 
-        if (!s_IsInfiniteAmmoEnabled) {
-            auto s_Character = s_LocalHitman.m_pInterfaceRef->m_pCharacter.m_pInterfaceRef;
-            auto s_Controllers = &s_Character->m_rSubcontrollerContainer.m_pInterfaceRef->m_aReferencedControllers;
-            auto s_Inventory = static_cast<ZCharacterSubcontrollerInventory*>((*s_Controllers)[6].m_pInterfaceRef);
+        if (s_AmmoInPocket > 0) {
+            s_AmmoInPocket -= s_HM5ItemWeapon->GetMagazineCapacity();
 
-            const eAmmoType s_AmmoType = th->GetAmmoType();
+            s_Inventory->m_nAmmoInPocket[static_cast<size_t>(s_AmmoType)] = s_AmmoInPocket;
 
-            uint32 s_AmmoInPocket = Functions::ZCharacterSubcontrollerInventory_GetAmmoInPocketForType->Call(
-                s_Inventory,
-                s_AmmoType
-            );
-
-            if (s_AmmoInPocket > 0) {
-                s_AmmoInPocket -= s_HM5ItemWeapon->GetMagazineCapacity();
-
-                s_Inventory->m_nAmmoInPocket[static_cast<size_t>(s_AmmoType)] = s_AmmoInPocket;
-
-                nBullets = s_HM5ItemWeapon->GetMagazineCapacity();
-            }
-        }
-        else {
             nBullets = s_HM5ItemWeapon->GetMagazineCapacity();
         }
+    }
+    else {
+        nBullets = s_HM5ItemWeapon->GetMagazineCapacity();
     }
 
     p_Hook->CallOriginal(th, nBullets);
@@ -748,6 +754,16 @@ DEFINE_PLUGIN_DETOUR(Player, bool, ZHM5ItemWeapon_FireProjectiles, ZHM5ItemWeapo
         return HookResult<bool>(HookAction::Continue());
     }
 
+    const auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+    if (!s_LocalHitman) {
+        return HookResult<bool>(HookAction::Continue());
+    }
+
+    if (th->m_pOwner != s_LocalHitman.m_entityRef) {
+        return HookResult<bool>(HookAction::Continue());
+    }
+
     bool s_Result = p_Hook->CallOriginal(th, bMayStartSound);
 
     th->m_fPrecisionFactor = 0.f;
@@ -756,11 +772,23 @@ DEFINE_PLUGIN_DETOUR(Player, bool, ZHM5ItemWeapon_FireProjectiles, ZHM5ItemWeapo
 }
 
 DEFINE_PLUGIN_DETOUR(Player, bool, ZHM5ItemWeapon_IsFiring, IFirearm* th) {
-    if (m_IsRapidFireEnabled) {
-        ZHM5ItemWeapon* s_HM5ItemWeapon = static_cast<ZHM5ItemWeapon*>(th);
-
-        s_HM5ItemWeapon->m_tLastShootTime = ZGameTime {};
+    if (!m_IsRapidFireEnabled) {
+        return HookResult<bool>(HookAction::Continue());
     }
+
+    const auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+    if (!s_LocalHitman) {
+        return HookResult<bool>(HookAction::Continue());
+    }
+
+    ZHM5ItemWeapon* s_HM5ItemWeapon = static_cast<ZHM5ItemWeapon*>(th);
+
+    if (s_HM5ItemWeapon->m_pOwner != s_LocalHitman.m_entityRef) {
+        return HookResult<bool>(HookAction::Continue());
+    }
+
+    s_HM5ItemWeapon->m_tLastShootTime = ZGameTime {};
 
     return HookResult<bool>(HookAction::Continue());
 }
