@@ -37,10 +37,13 @@ class ZRenderVertexBuffer : public ZRenderGeometryBuffer {};
 
 class ZRenderIndexBuffer : public ZRenderGeometryBuffer {};
 
+class ZRenderMaterialInstance;
 
 class IRenderPrimitive : public TRenderReferencedCountedImpl<IRenderRefCount, false> {
 public:
-    PAD(0x56); // 0x10
+    PAD(0x20); // 0x10
+    TResourcePtr<ZRenderMaterialInstance> m_pMaterial; // 0x30
+    PAD(0x2E); // 0x38
     uint16_t m_BufferDataIndex; // 0x66
 };
 
