@@ -7,6 +7,12 @@
 #include "Reflection.h"
 #include "ZObjectPool.h"
 
+template <class T, bool U>
+class TRenderReferencedCountedImpl : public T {
+public:
+    int32_t m_ReferenceCount;
+};
+
 class ZRenderTexture2D;
 class ZEntityRef;
 
