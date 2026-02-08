@@ -297,7 +297,7 @@ enum class EFX2ShaderType {
 class ZRenderShader {
 public:
     EFX2ShaderType m_eShaderType; // 0x0
-    SRenderConstBufferDesc m_Desc; // 0x0
+    SRenderConstBufferDesc m_Desc; // 0x8
     PAD(0x8); // 0x50
     const uint8_t* m_pByteCode; // 0x58
     uint32 m_nByteCodeSize; // 0x60
