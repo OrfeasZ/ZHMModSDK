@@ -6,6 +6,7 @@
 #include "ZMath.h"
 #include "Reflection.h"
 #include "ZObjectPool.h"
+#include "ZResource.h"
 
 template <class T, bool U>
 class TRenderReferencedCountedImpl : public T {
@@ -237,3 +238,120 @@ public:
 static_assert(offsetof(ZRenderDestination, m_pDevice) == 0x70);
 static_assert(offsetof(ZRenderDestination, m_pTexture2D) == 0xE0);
 static_assert(offsetof(ZRenderDestination, m_pSRV) == 0x188);
+
+class RenderReferencedCountedBaseStub {
+public:
+    virtual ~RenderReferencedCountedBaseStub() = 0;
+};
+
+struct SSemanticStringPair {
+    ZString m_MaterialPropertyName; // 0x0
+    ZString m_ShaderParameterName; // 0x10
+    int32_t m_Unk0; // 0x20
+    bool m_Unk1; // 0x24
+};
+
+enum class ERenderConstBufferType {
+    RENDER_CONST_BUFFER_VECTOR_1D = 1,
+    RENDER_CONST_BUFFER_VECTOR_2D,
+    RENDER_CONST_BUFFER_VECTOR_3D,
+    RENDER_CONST_BUFFER_TRANSFORM_2D,
+    RENDER_CONST_BUFFER_MATRIX_4X4 = 8,
+    RENDER_CONST_BUFFER_TEXTURE_2D,
+    RENDER_CONST_BUFFER_TEXTURE_3D,
+    RENDER_CONST_BUFFER_TEXTURE_CUBE,
+    RENDER_CONST_BUFFER_TEXTURE_CUBE_ARRAY = 13,
+    RENDER_CONST_BUFFER_BUFFER = 15,
+    RENDER_CONST_BUFFER_TEXTURE_2D_ARRAY
+};
+
+struct SRenderConstDesc {
+    ERenderConstBufferType nType; // 0x0
+    ZString Name; // 0x8
+    uint16_t nOffset; // 0x18
+    uint32_t nSize; // 0x1C
+};
+
+struct SRenderTextureDesc : SRenderConstDesc {
+};
+
+struct SRenderConstBufferDesc {
+    PAD(0x10); // 0x0
+    uint32_t nNumConstants; // 0x10
+    uint32_t nNumTextures; // 0x14
+    TArray<SRenderConstDesc> Constants; // 0x18
+    TArray<SRenderTextureDesc> Textures; // 0x30
+};
+
+enum class EFX2ShaderType {
+    FX2_SHADER_TYPE_VERTEX_SHADER,
+    FX2_SHADER_TYPE_PIXEL_SHADER,
+    FX2_SHADER_TYPE_GEOMETRY_SHADER,
+    FX2_SHADER_TYPE_DOMAIN_SHADER,
+    FX2_SHADER_TYPE_HULL_SHADE,
+    FX2_SHADER_TYPE_COMPUTE_SHADER,
+    FX2_SHADER_TYPE_RAYTRACING_SHADER,
+    FX2_SHADER_TYPE_SIZE
+};
+
+class ZRenderShader {
+public:
+    EFX2ShaderType m_eShaderType; // 0x0
+    SRenderConstBufferDesc m_Desc; // 0x0
+    PAD(0x8); // 0x50
+    const uint8_t* m_pByteCode; // 0x58
+    uint32 m_nByteCodeSize; // 0x60
+    ZString m_Name; // 0x68
+};
+
+class ZRenderEffectTechnique;
+
+class ZRenderEffectPass {
+public:
+    virtual ~ZRenderEffectPass() = 0;
+
+    ZRenderEffectTechnique* m_pTechnique; // 0x8
+    ZRenderShader* m_pShader[static_cast<size_t>(EFX2ShaderType::FX2_SHADER_TYPE_SIZE)]; // 0x10
+};
+
+class ZRenderEffect;
+
+class ZRenderEffectTechnique {
+public:
+    virtual ~ZRenderEffectTechnique() = 0;
+
+    TArray<ZRenderEffectPass*> m_Passes; // 0x8
+    ZRenderEffect* m_pEffect; // 0x20
+};
+
+class ZRenderEffect : public TRenderReferencedCountedImpl<RenderReferencedCountedBaseStub, false> {
+public:
+    int32_t m_nId; // 0x10
+    THashMap<ZString, ZRenderEffectTechnique*, TDefaultHashMapPolicy<ZString>> m_Techniques; // 0x18
+    TArray<ZRenderShader*> m_Programs; // 0x38
+    TArray<SSemanticStringPair> m_SemanticStringPairs; // 0x50
+};
+
+struct STextureInfo {
+    ZString Name; // 0x0
+    uint8 nInterpretAs; // 0x10
+    uint8 nDimension; // 0x11
+    uint8 nResourceOffset; // 0x12
+};
+
+class ZRenderMaterialEffectData {
+public:
+    virtual ~ZRenderMaterialEffectData() = 0;
+
+    ZRenderEffect* m_pRenderEffect; // 0x8
+};
+
+class ZRenderMaterialInstance : public TRenderReferencedCountedImpl<RenderReferencedCountedBaseStub, false> {
+public:
+    PAD(0xDA0); // 0x10
+    TMaxArray<STextureInfo, 16> m_TextureInfo; // 0xDB0
+    PAD(0x3C); // 0xF38
+    TResourcePtr<ZRenderMaterialEffectData> m_pEffectData; // 0xF74
+    ZRenderEffect* m_pEffect; // 0xF80
+    ZResourcePtr m_pMaterialDescriptor; // 0xF88
+};
