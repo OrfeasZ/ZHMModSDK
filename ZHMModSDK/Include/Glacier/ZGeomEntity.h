@@ -37,13 +37,13 @@ class ZRenderVertexBuffer : public ZRenderGeometryBuffer {};
 
 class ZRenderIndexBuffer : public ZRenderGeometryBuffer {};
 
-template <class T>
+template <class T, bool U>
 class TRenderReferencedCountedImpl : public T {
 public:
     int32_t m_ReferenceCount;
 };
 
-class IRenderPrimitive : public TRenderReferencedCountedImpl<IRenderRefCount> {
+class IRenderPrimitive : public TRenderReferencedCountedImpl<IRenderRefCount, false> {
 public:
     PAD(0x56); // 0x10
     uint16_t m_BufferDataIndex; // 0x66
