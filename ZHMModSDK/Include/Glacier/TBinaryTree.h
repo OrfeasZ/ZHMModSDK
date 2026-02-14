@@ -140,6 +140,12 @@ public:
         return find(p_Value) != end();
     }
 
+    const_iterator find(const T& p_Value) const {
+        auto* s_Node = find(m_tree.m_pLeftRoot, p_Value);
+
+        return s_Node ? const_iterator(&s_Node->m_data) : end();
+    }
+
     iterator find(const T& p_Value) {
         auto* s_Node = find(m_tree.m_pLeftRoot, p_Value);
 
@@ -147,8 +153,8 @@ public:
     }
 
 private:
-    TBinaryTreeNode<T>* find(TBinaryTreeNode<T>* p_Root, const T& p_Value) {
-        if (!p_Root || p_Root->m_data.first == p_Value) {
+    TBinaryTreeNode<T>* find(TBinaryTreeNode<T>* p_Root, const T& p_Value) const {
+        if (!p_Root || p_Root->m_data == p_Value) {
             return p_Root;
         }
 
