@@ -426,7 +426,7 @@ void Editor::DrawEntityProperties() {
         static char s_OutputPinInput[1024] = {};
 
         if (ImGui::Button(ICON_MD_BOLT "##fireOutputPin")) {
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinInput, true);
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinInput, true);
             s_OutputPinInput[0] = '\0';
         }
 
@@ -435,7 +435,7 @@ void Editor::DrawEntityProperties() {
         if (ImGui::InputText(
             "Out", s_OutputPinInput, IM_ARRAYSIZE(s_OutputPinInput), ImGuiInputTextFlags_EnterReturnsTrue
         )) {
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinInput, true);
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinInput, true);
             s_OutputPinInput[0] = '\0';
         }
 
