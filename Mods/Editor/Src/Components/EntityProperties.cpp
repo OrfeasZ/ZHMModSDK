@@ -416,7 +416,7 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         if (ImGui::InputText(
-            "In", s_InputPinInput, IM_ARRAYSIZE(s_InputPinInput), ImGuiInputTextFlags_EnterReturnsTrue
+            "Input Pin", s_InputPinInput, IM_ARRAYSIZE(s_InputPinInput), ImGuiInputTextFlags_EnterReturnsTrue
         )) {
             OnSignalEntityPin(s_SelectedEntity, s_InputPinInput, false);
             s_InputPinInput[0] = '\0';
@@ -433,7 +433,7 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         if (ImGui::InputText(
-            "Out", s_OutputPinInput, IM_ARRAYSIZE(s_OutputPinInput), ImGuiInputTextFlags_EnterReturnsTrue
+            "Output Pin", s_OutputPinInput, IM_ARRAYSIZE(s_OutputPinInput), ImGuiInputTextFlags_EnterReturnsTrue
         )) {
             OnSignalEntityPin(s_SelectedEntity, s_OutputPinInput, true);
             s_OutputPinInput[0] = '\0';
