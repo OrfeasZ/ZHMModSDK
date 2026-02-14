@@ -406,37 +406,37 @@ void Editor::DrawEntityProperties() {
 
         ImGui::Separator();
 
-        static char s_InputPinInput[1024] = {};
+        static char s_InputPinName[1024] = {};
 
         if (ImGui::Button(ICON_MD_BOLT "##fireInputPin")) {
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinInput, false);
-            s_InputPinInput[0] = '\0';
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false);
+            s_InputPinName[0] = '\0';
         }
 
         ImGui::SameLine(0, 5);
 
         if (ImGui::InputText(
-            "Input Pin", s_InputPinInput, IM_ARRAYSIZE(s_InputPinInput), ImGuiInputTextFlags_EnterReturnsTrue
+            "Input Pin", s_InputPinName, IM_ARRAYSIZE(s_InputPinName), ImGuiInputTextFlags_EnterReturnsTrue
         )) {
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinInput, false);
-            s_InputPinInput[0] = '\0';
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false);
+            s_InputPinName[0] = '\0';
         }
 
 
-        static char s_OutputPinInput[1024] = {};
+        static char s_OutputPinName[1024] = {};
 
         if (ImGui::Button(ICON_MD_BOLT "##fireOutputPin")) {
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinInput, true);
-            s_OutputPinInput[0] = '\0';
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true);
+            s_OutputPinName[0] = '\0';
         }
 
         ImGui::SameLine(0, 5);
 
         if (ImGui::InputText(
-            "Output Pin", s_OutputPinInput, IM_ARRAYSIZE(s_OutputPinInput), ImGuiInputTextFlags_EnterReturnsTrue
+            "Output Pin", s_OutputPinName, IM_ARRAYSIZE(s_OutputPinName), ImGuiInputTextFlags_EnterReturnsTrue
         )) {
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinInput, true);
-            s_OutputPinInput[0] = '\0';
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true);
+            s_OutputPinName[0] = '\0';
         }
 
         ImGui::Separator();
