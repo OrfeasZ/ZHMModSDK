@@ -120,6 +120,8 @@ private:
         const IArrayType* p_ArrayType
     );
 
+    void DrawEntityPinValue(const std::string& p_Id, const std::string& p_TypeName, void* p_Data);
+
     void DrawLibrary();
 
     void DrawSettings(bool p_HasFocus);
@@ -153,8 +155,18 @@ private:
     void OnSetPropertyValue(
         ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value, std::optional<std::string> p_ClientId
     );
-    void OnSignalEntityPin(ZEntityRef p_Entity, const std::string& p_Pin, bool p_Output);
-    void OnSignalEntityPin(ZEntityRef p_Entity, uint32_t p_PinId, bool p_Output);
+    void OnSignalEntityPin(
+        ZEntityRef p_Entity,
+        const std::string& p_Pin,
+        bool p_Output,
+        const ZObjectRef& p_Data = ZObjectRef()
+    );
+    void OnSignalEntityPin(
+        ZEntityRef p_Entity,
+        uint32_t p_PinId,
+        bool p_Output,
+        const ZObjectRef& p_Data = ZObjectRef()
+    );
 
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
@@ -570,6 +582,12 @@ private:
 
     std::mutex m_TaskMutex;
     std::vector<std::function<void()>> m_TaskQueue;
+
+    std::vector<std::pair<std::string, STypeID*>> m_PinDataTypes;
+    STypeID* m_InputPinTypeID = nullptr;
+    void* m_InputPinData = nullptr;
+    STypeID* m_OutputPinTypeID = nullptr;
+    void* m_OutputPinData = nullptr;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

@@ -10,6 +10,10 @@
 #include "Logging.h"
 #include "Glacier/ZPhysics.h"
 #include <ResourceLib_HM3.h>
+#include "Util/ImGuiUtils.h"
+#include "Glacier/SColorRGB.h"
+#include "Glacier/SColorRGBA.h"
+#include "Glacier/ZGameTime.h"
 
 void Editor::DrawEntityProperties() {
     auto s_ImgGuiIO = ImGui::GetIO();
@@ -407,10 +411,27 @@ void Editor::DrawEntityProperties() {
         ImGui::Separator();
 
         static char s_InputPinName[1024] = {};
+        static char s_InputPinTypeName[2048] = {};
 
         if (ImGui::Button(ICON_MD_BOLT "##fireInputPin")) {
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false);
+            ZObjectRef s_ObjectRef;
+
+            if (m_InputPinData) {
+                s_ObjectRef.Assign(m_InputPinTypeID, m_InputPinData);
+            }
+
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, s_ObjectRef);
+
             s_InputPinName[0] = '\0';
+            s_InputPinTypeName[0] = '\0';
+
+            m_InputPinTypeID = nullptr;
+
+            if (m_InputPinData) {
+                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
+
+                m_InputPinData = nullptr;
+            }
         }
 
         ImGui::SameLine(0, 5);
@@ -418,16 +439,105 @@ void Editor::DrawEntityProperties() {
         if (ImGui::InputText(
             "Input Pin", s_InputPinName, IM_ARRAYSIZE(s_InputPinName), ImGuiInputTextFlags_EnterReturnsTrue
         )) {
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false);
+            ZObjectRef s_ObjectRef;
+
+            if (m_InputPinData) {
+                s_ObjectRef.Assign(m_InputPinTypeID, m_InputPinData);
+            }
+
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, s_ObjectRef);
+
             s_InputPinName[0] = '\0';
+            s_InputPinTypeName[0] = '\0';
+
+            m_InputPinTypeID = nullptr;
+
+            if (m_InputPinData) {
+                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
+
+                m_InputPinData = nullptr;
+            }
         }
 
+        ImGui::Text("Data");
+
+        ImGui::Spacing();
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Type");
+        ImGui::SameLine();
+
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "##InputPinTypeNamesPopup",
+            s_InputPinTypeName,
+            sizeof(s_InputPinTypeName),
+            m_PinDataTypes,
+            [](auto& p_Pair) -> const std::string& {
+                return p_Pair.first;
+            },
+            [](auto& p_Pair) -> const std::string& {
+                return p_Pair.first;
+            },
+            [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
+                const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
+                const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
+
+                m_InputPinTypeID = s_TypeID;
+
+                m_InputPinData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+                    s_TypeSize, s_TypeAlignment
+                );
+
+                memset(m_InputPinData, 0, s_TypeSize);
+            },
+            [](auto& p_Pair) -> STypeID* {
+                return p_Pair.second;
+            }
+        );
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Value");
+        ImGui::SameLine();
+
+        if (s_InputPinTypeName[0] == '\0') {
+            static char s_EmptyBuffer[1] = {};
+
+            ImGui::BeginDisabled();
+
+            ImGui::InputText(
+                "##InputPinValue",
+                s_EmptyBuffer,
+                sizeof(s_EmptyBuffer)
+            );
+
+            ImGui::EndDisabled();
+        }
+        else {
+            DrawEntityPinValue("##InputPinValue", s_InputPinTypeName, m_InputPinData);
+        }
 
         static char s_OutputPinName[1024] = {};
+        static char s_OutputPinTypeName[2048] = {};
 
         if (ImGui::Button(ICON_MD_BOLT "##fireOutputPin")) {
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true);
+            ZObjectRef s_ObjectRef;
+
+            if (m_OutputPinData) {
+                s_ObjectRef.Assign(m_OutputPinTypeID, m_OutputPinData);
+            }
+
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, s_ObjectRef);
+
             s_OutputPinName[0] = '\0';
+            s_OutputPinTypeName[0] = '\0';
+
+            m_OutputPinTypeID = nullptr;
+
+            if (m_OutputPinData) {
+                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
+
+                m_OutputPinData = nullptr;
+            }
         }
 
         ImGui::SameLine(0, 5);
@@ -435,8 +545,81 @@ void Editor::DrawEntityProperties() {
         if (ImGui::InputText(
             "Output Pin", s_OutputPinName, IM_ARRAYSIZE(s_OutputPinName), ImGuiInputTextFlags_EnterReturnsTrue
         )) {
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true);
+            ZObjectRef s_ObjectRef;
+
+            if (m_OutputPinData) {
+                s_ObjectRef.Assign(m_OutputPinTypeID, m_OutputPinData);
+            }
+
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, s_ObjectRef);
+
             s_OutputPinName[0] = '\0';
+            s_OutputPinTypeName[0] = '\0';
+
+            m_OutputPinTypeID = nullptr;
+
+            if (m_OutputPinData) {
+                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
+
+                m_OutputPinData = nullptr;
+            }
+        }
+
+        ImGui::Text("Data");
+
+        ImGui::Spacing();
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Type");
+        ImGui::SameLine();
+
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "##OutputPinTypeNamesPopup",
+            s_OutputPinTypeName,
+            sizeof(s_OutputPinTypeName),
+            m_PinDataTypes,
+            [](auto& p_Pair) -> const std::string& {
+                return p_Pair.first;
+            },
+            [](auto& p_Pair) -> const std::string& {
+                return p_Pair.first;
+            },
+            [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
+                const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
+                const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
+
+                m_OutputPinTypeID = s_TypeID;
+
+                m_OutputPinData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+                    s_TypeSize, s_TypeAlignment
+                );
+
+                memset(m_OutputPinData, 0, s_TypeSize);
+            },
+            [](auto& p_Pair) -> STypeID* {
+                return p_Pair.second;
+            }
+        );
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Value");
+        ImGui::SameLine();
+
+        if (s_OutputPinTypeName[0] == '\0') {
+            static char s_EmptyBuffer[1] = {};
+
+            ImGui::BeginDisabled();
+
+            ImGui::InputText(
+                "##OuputPinValue",
+                s_EmptyBuffer,
+                sizeof(s_EmptyBuffer)
+            );
+
+            ImGui::EndDisabled();
+        }
+        else {
+            DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinData);
         }
 
         ImGui::Separator();
@@ -653,4 +836,191 @@ bool Editor::DrawEntityPropertyValue(
     }
 
     return s_IsChanged;
+}
+
+void Editor::DrawEntityPinValue(const std::string& p_Id, const std::string& p_TypeName, void* p_Data) {
+    if (p_TypeName == "bool") {
+        auto s_Value = static_cast<bool*>(p_Data);
+
+        ImGui::Checkbox(p_Id.c_str(), s_Value);
+    }
+    else if (p_TypeName == "uint8") {
+        auto s_Value = static_cast<uint8*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_U8, s_Value);
+    }
+    else if (p_TypeName == "int8") {
+        auto s_Value = static_cast<int8*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_S8, s_Value);
+    }
+    else if (p_TypeName == "uint16") {
+        auto s_Value = static_cast<uint16*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_U16, s_Value);
+    }
+    else if (p_TypeName == "int16") {
+        auto s_Value = static_cast<int16*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_S16, s_Value);
+    }
+    else if (p_TypeName == "uint32") {
+        auto s_Value = static_cast<uint32*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_U32, s_Value);
+    }
+    else if (p_TypeName == "int32") {
+        auto s_Value = static_cast<int32*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_S32, s_Value);
+    }
+    else if (p_TypeName == "uint64") {
+        auto s_Value = static_cast<uint64*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_U64, s_Value);
+    }
+    else if (p_TypeName == "int64") {
+        auto s_Value = static_cast<int64*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_S64, s_Value);
+    }
+    else if (p_TypeName == "float32") {
+        auto s_Value = static_cast<float32*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_Float, s_Value, 0.1f);
+    }
+    else if (p_TypeName == "float64") {
+        auto s_Value = static_cast<float64*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_Double, s_Value, 0.1f);
+    }
+    else if (p_TypeName == "SVector2") {
+        auto s_Value = static_cast<SVector2*>(p_Data);
+
+        ImGui::DragFloat2(p_Id.c_str(), &s_Value->x, 0.1f);
+    }
+    else if (p_TypeName == "SVector3") {
+        auto s_Value = static_cast<SVector3*>(p_Data);
+
+        ImGui::DragFloat3(p_Id.c_str(), &s_Value->x, 0.1f);
+    }
+    else if (p_TypeName == "SVector4") {
+        auto s_Value = static_cast<SVector4*>(p_Data);
+
+        ImGui::DragFloat4(p_Id.c_str(), &s_Value->x, 0.1f);
+    }
+    else if (p_TypeName == "SMatrix43") {
+        auto s_Value = static_cast<SMatrix43*>(p_Data);
+
+        if (m_UseQneTransforms) {
+            auto s_QneTransform = MatrixToQneTransform(*s_Value);
+
+            if (ImGui::DragFloat3((p_Id + "p").c_str(), &s_QneTransform.Position.x, 0.1f)) {
+                const auto s_Matrix = QneTransformToMatrix(s_QneTransform);
+                *s_Value = s_Matrix.ToMatrix43();
+            }
+
+            if (ImGui::DragFloat3((p_Id + "r").c_str(), &s_QneTransform.Rotation.x, 0.1f)) {
+                const auto s_Matrix = QneTransformToMatrix(s_QneTransform);
+                *s_Value = s_Matrix.ToMatrix43();
+            }
+        }
+        else {
+            ImGui::DragFloat3((p_Id + "x").c_str(), &s_Value->XAxis.x, 0.1f);
+            ImGui::DragFloat3((p_Id + "y").c_str(), &s_Value->YAxis.x, 0.1f);
+            ImGui::DragFloat3((p_Id + "z").c_str(), &s_Value->ZAxis.x, 0.1f);
+            ImGui::DragFloat3((p_Id + "t").c_str(), &s_Value->Trans.x, 0.1f);
+        }
+    }
+    else if (p_TypeName == "SColorRGB") {
+        auto s_Value = static_cast<SColorRGB*>(p_Data);
+
+        ImGui::ColorEdit3(p_Id.c_str(), &s_Value->r);
+    }
+    else if (p_TypeName == "SColorRGBA") {
+        auto s_Value = static_cast<SColorRGBA*>(p_Data);
+
+        ImGui::ColorEdit4(p_Id.c_str(), &s_Value->r);
+    }
+    if (p_TypeName == "ZString") {
+        auto* s_String = static_cast<ZString*>(p_Data);
+
+        static char s_StringBuffer[65536] = {};
+
+        if (ImGui::InputText(p_Id.c_str(), s_StringBuffer, sizeof(s_StringBuffer))) {
+            *s_String = ZString(s_StringBuffer);
+        }
+    }
+    else if (p_TypeName == "ZRuntimeResourceID") {
+        auto* s_RuntimeResourceID = static_cast<ZRuntimeResourceID*>(p_Data);
+
+        static char s_StringBuffer[65536] = {};
+
+        if (ImGui::InputText(p_Id.c_str(), s_StringBuffer, sizeof(s_StringBuffer))) {
+            *s_RuntimeResourceID = ZRuntimeResourceID::FromString(s_StringBuffer);
+        }
+    }
+    else if (p_TypeName.starts_with("ZEntityRef")) {
+        auto s_EntityRef = reinterpret_cast<ZEntityRef*>(p_Data);
+
+        static char s_StringBuffer[65536] = {};
+
+        if (ImGui::InputText(p_Id.c_str(), s_StringBuffer, sizeof(s_StringBuffer))) {
+            uint64 s_EntityId = std::strtoull(s_StringBuffer, nullptr, 16);
+
+            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
+            for (const auto& s_Pair : m_CachedEntityTreeMap) {
+                if (s_Pair.first.GetEntity()->GetType()->m_nEntityID == s_EntityId) {
+                    *s_EntityRef = s_Pair.first;
+                    break;
+                }
+            }
+        }
+    }
+    else if (p_TypeName.starts_with("TEntityRef")) {
+        auto s_EntityRef = reinterpret_cast<TEntityRef<void>*>(p_Data);
+
+        static char s_StringBuffer[65536] = {};
+
+        if (ImGui::InputText(p_Id.c_str(), s_StringBuffer, sizeof(s_StringBuffer))) {
+            uint64 s_EntityId = std::strtoull(s_StringBuffer, nullptr, 16);
+
+            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
+            for (const auto& s_Pair : m_CachedEntityTreeMap) {
+                if (s_Pair.first.GetEntity()->GetType()->m_nEntityID == s_EntityId) {
+                    s_EntityRef->m_entityRef = s_Pair.first;
+
+                    std::string s_TypeName = p_TypeName.substr(11, p_TypeName.find(">") - 11);
+                    STypeID* s_TypeID = (*Globals::TypeRegistry)->GetTypeID(s_TypeName);
+                    s_EntityRef->m_pInterfaceRef = s_EntityRef->m_entityRef.QueryInterface(s_TypeID);
+                    break;
+                }
+            }
+        }
+    }
+    else if (p_TypeName == "ZRepositoryID") {
+        auto s_RepositoryId = reinterpret_cast<ZRepositoryID*>(p_Data);
+
+        static char s_StringBuffer[65536] = {};
+
+        if (ImGui::InputText(p_Id.c_str(), s_StringBuffer, sizeof(s_StringBuffer))) {
+            *s_RepositoryId = ZString(s_StringBuffer);
+        }
+    }
+    else if (p_TypeName == "ZGuid") {
+        auto s_Guid = reinterpret_cast<ZGuid*>(p_Data);
+
+        static char s_StringBuffer[65536] = {};
+
+        if (ImGui::InputText(p_Id.c_str(), s_StringBuffer, sizeof(s_StringBuffer))) {
+            *s_Guid = ZString(s_StringBuffer);
+        }
+    }
+    else if (p_TypeName == "ZGameTime") {
+        auto s_Value = static_cast<ZGameTime*>(p_Data);
+
+        ImGui::DragScalar(p_Id.c_str(), ImGuiDataType_S64, &s_Value->m_nTicks);
+    }
 }
