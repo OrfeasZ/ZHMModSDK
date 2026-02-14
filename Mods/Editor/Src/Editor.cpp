@@ -1065,6 +1065,22 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_SortedRoomEntities.clear();
 
+    m_InputPinTypeID = nullptr;
+
+    if (m_InputPinData) {
+        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
+
+        m_InputPinData = nullptr;
+    }
+
+    m_OutputPinTypeID = nullptr;
+
+    if (m_OutputPinData) {
+        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
+
+        m_OutputPinData = nullptr;
+    }
+
     return { HookAction::Continue() };
 }
 
