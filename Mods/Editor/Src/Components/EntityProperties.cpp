@@ -10,6 +10,7 @@
 #include "Logging.h"
 #include "Glacier/ZPhysics.h"
 #include <ResourceLib_HM3.h>
+#include "Glacier/ZRender.h"
 
 void Editor::DrawEntityProperties() {
     auto s_ImgGuiIO = ImGui::GetIO();
@@ -131,6 +132,9 @@ void Editor::DrawEntityProperties() {
 
         ImGui::Separator();
 
+        std::string s_ReferencedTemplateFactoryType;
+        ZRuntimeResourceID s_ReferencedTemplateFactory;
+
         {
             std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
 
@@ -167,7 +171,6 @@ void Editor::DrawEntityProperties() {
 
                     if (s_Iterator2 != m_EntityRefToFactoryRuntimeResourceIDs.end()) {
                         const auto [s_TemplateFactoryRuntimeResourceID, s_ParentTemplateFactoryRuntimeResourceID] = s_Iterator2->second;
-                        std::string s_ReferencedTemplateFactoryType;
 
                         if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "TBLU") {
                             s_ReferencedTemplateFactoryType = "TEMP";
@@ -196,6 +199,8 @@ void Editor::DrawEntityProperties() {
                         else if (s_EntityTreeNode->ReferencedBlueprintFactoryType == "WSGB") {
                             s_ReferencedTemplateFactoryType = "WSGT";
                         }
+
+                        s_ReferencedTemplateFactory = s_TemplateFactoryRuntimeResourceID;
 
                         ImGui::TextUnformatted(
                             fmt::format("{}: {:016X}", s_ReferencedTemplateFactoryType, s_TemplateFactoryRuntimeResourceID.GetID()
@@ -441,6 +446,26 @@ void Editor::DrawEntityProperties() {
 
         ImGui::Separator();
 
+        ZRenderMaterialInstance* s_RenderMaterialInstance = nullptr;
+
+        if (s_ReferencedTemplateFactoryType == "MATT") {
+            TResourcePtr<ZRenderMaterialEntityFactory> s_MaterialEntityResourcePtr;
+
+            Globals::ResourceManager->GetResourcePtr(s_MaterialEntityResourcePtr, s_ReferencedTemplateFactory, 0);
+
+            ZRenderMaterialEntityFactory* s_RenderMaterialEntityFactory = s_MaterialEntityResourcePtr.GetResource();
+
+            TResourcePtr<ZRenderMaterialInstance> s_RenderMaterialInstanceResourcePtr;
+
+            Globals::ResourceManager->GetResourcePtr(
+                s_RenderMaterialInstanceResourcePtr,
+                s_RenderMaterialEntityFactory->m_ridMaterialInstance,
+                0
+            );
+
+            s_RenderMaterialInstance = s_RenderMaterialInstanceResourcePtr.GetResource();
+        }
+
         const auto s_EntityType = s_SelectedEntity->GetType();
 
         if (s_EntityType && s_EntityType->m_pPropertyData) {
@@ -509,7 +534,25 @@ void Editor::DrawEntityProperties() {
                 }
 
                 if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%s", s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName);
+                    const char* s_TypeName = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName;
+
+                    const char* s_ShaderParameterName = nullptr;
+
+                    if (s_RenderMaterialInstance && s_RenderMaterialInstance->m_pEffect) {
+                        for (const auto& s_SemanticStringPair : s_RenderMaterialInstance->m_pEffect->m_SemanticStringPairs) {
+                            if (s_PropertyName == s_SemanticStringPair.m_MaterialPropertyName) {
+                                s_ShaderParameterName = s_SemanticStringPair.m_ShaderParameterName.c_str();
+                                break;
+                            }
+                        }
+                    }
+
+                    if (s_ShaderParameterName) {
+                        ImGui::SetTooltip("%s\n%s", s_TypeName, s_ShaderParameterName);
+                    }
+                    else {
+                        ImGui::SetTooltip("%s", s_TypeName);
+                    }
                 }
 
                 ImGui::PopFont();
