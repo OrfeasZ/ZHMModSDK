@@ -7,6 +7,12 @@
 #include "ZOutfit.h"
 #include "TCheatProtect.h"
 
+class IFirearm;
+
+enum class ECustomFlags {
+    eLIMITED_AMMO = 0x2000000
+};
+
 class IFutureCameraState :
         public IComponentInterface {
 public:
@@ -31,7 +37,7 @@ public:
 };
 
 class IIKControllerOwner :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IIKControllerOwner() {}
     virtual void IIKControllerOwner_unk0() = 0;
@@ -65,10 +71,11 @@ public:
     virtual void IIKControllerOwner_unk28() = 0;
     virtual void IIKControllerOwner_unk29() = 0;
     virtual void IIKControllerOwner_unk30() = 0;
-    virtual void IIKControllerOwner_unk31() = 0;
+    virtual bool IsCustomFlagEnabled(ECustomFlags eCustomFlags) const = 0;
     virtual void IIKControllerOwner_unk32() = 0;
     virtual void IIKControllerOwner_unk33() = 0;
     virtual void IIKControllerOwner_unk34() = 0;
+    virtual void IIKControllerOwner_unk35() = 0;
 };
 
 class IControllableCharacter :
@@ -255,7 +262,7 @@ public:
     virtual void ICharacterInventoryState_unk17() = 0;
     virtual void ICharacterInventoryState_unk18() = 0;
     virtual void ICharacterInventoryState_unk19() = 0;
-    virtual void ICharacterInventoryState_unk20() = 0;
+    virtual uint32 GetAmmoInPocketFor(const TEntityRef<IFirearm>& rWeapon) = 0;
     virtual void ICharacterInventoryState_unk21() = 0;
     virtual void ICharacterInventoryState_unk22() = 0;
     virtual void ICharacterInventoryState_unk23() = 0;
@@ -401,9 +408,21 @@ class ZFabricColliderBaseEntity;
 
 class ZHM5Health {
 public:
-    PAD(0x228);
+    PAD(0x228); // 0x0
     TCheatProtect<float> m_fHitPoints; // 0x228
     TCheatProtect<float> m_fMaxHitPoints; // 0x238
+};
+
+class ZHM5BaseController {
+public:
+    virtual ~ZHM5BaseController() = 0;
+};
+
+class ZHM5WeaponRecoilController : public ZHM5BaseController {
+public:
+    PAD(0x40); // 0x8
+    SVector2 m_vRecoil; // 0x48
+    SVector2 m_vAccumlatedRecoil; // 0x50
 };
 
 class ZHitman5 :
@@ -427,6 +446,10 @@ class ZHitman5 :
         public ICharacterCameraState // 848
 {
 public:
+    bool IsInfiniteAmmoEnabled() const {
+        return !IsCustomFlagEnabled(ECustomFlags::eLIMITED_AMMO);
+    }
+
     PAD(0x3B8); // 0x358
     ZRepositoryID m_InitialOutfitId; // 0x710
     ZEntityRef m_MorphemeEntityID; // 0x720

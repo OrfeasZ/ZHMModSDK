@@ -52,6 +52,7 @@ class IItemBase;
 class ZStashPointEntity;
 class ZTimeOfDayManager;
 class ZHM5Health;
+class ZHM5WeaponControl;
 
 namespace bfx {
     class AreaHandle;
@@ -247,4 +248,10 @@ public:
 
     static EngineFunction<float32(const ZHM5Health* th)>* ZHM5Health_GetHP;
     static EngineFunction<float32(const ZHM5Health* th)>* ZHM5Health_GetMaxHitpoints;
+
+    static EngineFunction<uint32_t(
+        ZCharacterSubcontrollerInventory* th, eAmmoType AmmoType
+    )>* ZCharacterSubcontrollerInventory_GetAmmoInPocketForType;
+
+    static EngineFunction<float(ZHM5WeaponControl* th)>* ZHM5WeaponControl_GetCrosshairScale;
 };

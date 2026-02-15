@@ -4,6 +4,7 @@
 #include "ZSpatialEntity.h"
 #include "ZGeomEntity.h"
 #include "ZHitman5.h"
+#include "ZGameTime.h"
 
 class IItemBase : public IComponentInterface {};
 
@@ -121,17 +122,109 @@ public:
     TEntityRef<ZValueBool> m_rItemCanTurnOn; // 0x2E8
     TEntityRef<ZValueBool> m_rItemCanTurnOff; // 0x2F8
     TEntityRef<IVariationResourceEntity> m_pVariationResource; // 0x308
-    ZEntityRef m_rSpawner;
-    ZEntityRef m_rFactoryEntity;
-    PAD(0x10);
-    TEntityRef<ZGeomEntity> m_pGeomEntity; //0x2C0
-    PAD(0x1A8);
+    ZEntityRef m_rSpawner; // 0x318
+    ZEntityRef m_rFactoryEntity; // 0x320
+    PAD(0x10); // 0x328
+    TEntityRef<ZGeomEntity> m_pGeomEntity; //0x338
+    PAD(0x10); // 0x2D0
+    ZEntityRef m_pOwner; // 0x358
+    PAD(0x190);
 };
 
 class IItemWeapon : public IComponentInterface {
 };
 
+struct SWeaponConfig;
+
 class IFirearm : public IComponentInterface {
+public:
+    virtual ~IFirearm() = 0;
+    virtual void IFirearm_unk5() = 0;
+    virtual void IFirearm_unk6() = 0;
+    virtual void IFirearm_unk7() = 0;
+    virtual void IFirearm_unk8() = 0;
+    virtual void IFirearm_unk9() = 0;
+    virtual void IFirearm_unk10() = 0;
+    virtual void IFirearm_unk11() = 0;
+    virtual void IFirearm_unk12() = 0;
+    virtual void IFirearm_unk13() = 0;
+    virtual void IFirearm_unk14() = 0;
+    virtual void IFirearm_unk15() = 0;
+    virtual void IFirearm_unk16() = 0;
+    virtual const SWeaponConfig& GetWeaponConfig() const = 0;
+    virtual void IFirearm_unk18() = 0;
+    virtual void IFirearm_unk19() = 0;
+    virtual void SetBulletsInMagazine(int32_t nBullets) = 0;
+    virtual uint16_t GetBulletsInMagazine() const = 0;
+    virtual void IFirearm_unk22() = 0;
+    virtual void IFirearm_unk23() = 0;
+    virtual void IFirearm_unk24() = 0;
+    virtual void IFirearm_unk25() = 0;
+    virtual void IFirearm_unk26() = 0;
+    virtual void IFirearm_unk27() = 0;
+    virtual void IFirearm_unk28() = 0;
+    virtual int GetMagazineCapacity() const = 0;
+    virtual eAmmoType GetAmmoType() const = 0;
+    virtual void IFirearm_unk31() = 0;
+    virtual void IFirearm_unk32() = 0;
+    virtual void IFirearm_unk33() = 0;
+    virtual void IFirearm_unk34() = 0;
+    virtual void IFirearm_unk35() = 0;
+    virtual void IFirearm_unk36() = 0;
+    virtual void IFirearm_unk37() = 0;
+    virtual void IFirearm_unk38() = 0;
+    virtual void IFirearm_unk39() = 0;
+    virtual void IFirearm_unk40() = 0;
+    virtual void IFirearm_unk41() = 0;
+    virtual void IFirearm_unk42() = 0;
+    virtual void IFirearm_unk43() = 0;
+    virtual void IFirearm_unk44() = 0;
+    virtual void IFirearm_unk45() = 0;
+    virtual void IFirearm_unk46() = 0;
+    virtual void IFirearm_unk47() = 0;
+    virtual void IFirearm_unk48() = 0;
+    virtual void IFirearm_unk49() = 0;
+    virtual void IFirearm_unk50() = 0;
+    virtual void IFirearm_unk51() = 0;
+    virtual void IFirearm_unk52() = 0;
+    virtual void IFirearm_unk53() = 0;
+    virtual void IFirearm_unk54() = 0;
+    virtual void IFirearm_unk55() = 0;
+    virtual void IFirearm_unk56() = 0;
+    virtual void IFirearm_unk57() = 0;
+    virtual void IFirearm_unk58() = 0;
+    virtual bool IsFiring() const = 0;
+    virtual float GetTimeBetweenBullets() const = 0;
+    virtual void IFirearm_unk61() = 0;
+    virtual void IFirearm_unk62() = 0;
+    virtual void IFirearm_unk63() = 0;
+    virtual void IFirearm_unk64() = 0;
+    virtual void IFirearm_unk65() = 0;
+    virtual void IFirearm_unk66() = 0;
+    virtual void IFirearm_unk67() = 0;
+    virtual void IFirearm_unk68() = 0;
+    virtual void IFirearm_unk69() = 0;
+    virtual void IFirearm_unk70() = 0;
+    virtual void IFirearm_unk71() = 0;
+    virtual void IFirearm_unk72() = 0;
+    virtual void IFirearm_unk73() = 0;
+    virtual void IFirearm_unk74() = 0;
+    virtual void IFirearm_unk75() = 0;
+    virtual void IFirearm_unk76() = 0;
+    virtual void IFirearm_unk77() = 0;
+    virtual void IFirearm_unk78() = 0;
+    virtual void IFirearm_unk79() = 0;
+    virtual void IFirearm_unk80() = 0;
+    virtual void IFirearm_unk81() = 0;
+    virtual void IFirearm_unk82() = 0;
+    virtual void IFirearm_unk83() = 0;
+    virtual void IFirearm_unk84() = 0;
+    virtual void IFirearm_unk85() = 0;
+    virtual void IFirearm_unk86() = 0;
+    virtual void IFirearm_unk87() = 0;
+    virtual void IFirearm_unk88() = 0;
+    virtual void IFirearm_unk89() = 0;
+    virtual void IFirearm_unk90() = 0;
 };
 
 class IParticleEmitterEntity;
@@ -172,7 +265,15 @@ public:
     ZEntityRef m_rSuperSpecialTriggerEffect; // 0x5E0
     TArray<TEntityRef<ZHM5ClipSpawnerEntity>> m_rClipMeshProviders; // 0x5E8
     TArray<TEntityRef<ZManualReloadSettings>> m_aManualReloadSettings; // 0x600
-    PAD(0x398);
+    PAD(0x310); // 0x618
+    uint16 m_nBulletsToFire; // 0x928
+    PAD(0x6); // 0x92A
+    uint16 m_nBulletsFired; // 0x930
+    PAD(0xE); // 0x932
+    ZGameTime m_tLastShootTime; // 0x940
+    float32 m_fTimeBetweenBullets; // 0x948
+    float m_fPrecisionFactor; // 0x94C
+    PAD(0x60);
 };
 
 class ZItemSpawner : public ZSpatialEntity, public IItemOwner, public ISavableEntity //Size: 0x138
