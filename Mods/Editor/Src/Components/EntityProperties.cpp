@@ -488,7 +488,14 @@ void Editor::DrawEntityProperties() {
                     s_TypeSize, s_TypeAlignment
                 );
 
-                memset(m_InputPinData, 0, s_TypeSize);
+                if (std::string(s_InputPinTypeName) == "SMatrix43") {
+                    auto s_Value = static_cast<SMatrix43*>(m_InputPinData);
+
+                    *s_Value = SMatrix43 {};
+                }
+                else {
+                    memset(m_InputPinData, 0, s_TypeSize);
+                }
             },
             [](auto& p_Pair) -> STypeID* {
                 return p_Pair.second;
@@ -594,7 +601,14 @@ void Editor::DrawEntityProperties() {
                     s_TypeSize, s_TypeAlignment
                 );
 
-                memset(m_OutputPinData, 0, s_TypeSize);
+                if (std::string(s_InputPinTypeName) == "SMatrix43") {
+                    auto s_Value = static_cast<SMatrix43*>(m_InputPinData);
+
+                    *s_Value = SMatrix43 {};
+                }
+                else {
+                    memset(m_InputPinData, 0, s_TypeSize);
+                }
             },
             [](auto& p_Pair) -> STypeID* {
                 return p_Pair.second;
