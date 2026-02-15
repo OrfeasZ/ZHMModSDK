@@ -459,10 +459,6 @@ void Editor::DrawEntityProperties() {
             }
         }
 
-        ImGui::Text("Data");
-
-        ImGui::Spacing();
-
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Type");
         ImGui::SameLine();
@@ -575,12 +571,8 @@ void Editor::DrawEntityProperties() {
             }
         }
 
-        ImGui::Text("Data");
-
-        ImGui::Spacing();
-
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Type");
+        ImGui::Text("Type ");
         ImGui::SameLine();
 
         Util::ImGuiUtils::InputWithAutocomplete(
