@@ -504,7 +504,10 @@ void Editor::DrawEntityProperties() {
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Value");
-        ImGui::SameLine();
+
+        if (std::string(s_InputPinTypeName) != "SMatrix43") {
+            ImGui::SameLine();
+        }
 
         if (s_InputPinTypeName[0] == '\0') {
             static char s_EmptyBuffer[1] = {};
@@ -617,7 +620,10 @@ void Editor::DrawEntityProperties() {
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Value");
-        ImGui::SameLine();
+        
+        if (std::string(s_InputPinTypeName) != "SMatrix43") {
+            ImGui::SameLine();
+        }
 
         if (s_OutputPinTypeName[0] == '\0') {
             static char s_EmptyBuffer[1] = {};
