@@ -410,6 +410,21 @@ public:
         return nullptr;
     }
 
+    void* QueryInterface(const STypeID* p_TypeID) const {
+        const auto s_Entity = GetEntity();
+
+        if (!s_Entity || !*Globals::TypeRegistry || !s_Entity->GetType())
+            return nullptr;
+
+        for (const auto& s_Interface : *s_Entity->GetType()->m_pInterfaceData) {
+            if (s_Interface.m_Type == p_TypeID) {
+                return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(m_pObj) + s_Interface.m_nInterfaceOffset);
+            }
+        }
+
+        return nullptr;
+    }
+
     template <class T>
     bool HasInterface() const {
         const auto s_Entity = GetEntity();

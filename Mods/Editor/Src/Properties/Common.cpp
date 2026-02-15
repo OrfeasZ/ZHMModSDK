@@ -20,17 +20,27 @@ void Editor::OnSetPropertyValue(
     m_Server.OnEntityPropertySet(p_Entity, p_PropertyId, std::move(p_ClientId));
 }
 
-void Editor::OnSignalEntityPin(ZEntityRef p_Entity, uint32_t p_PinId, bool p_Output) {
+void Editor::OnSignalEntityPin(
+    ZEntityRef p_Entity,
+    uint32_t p_PinId,
+    bool p_Output,
+    const ZObjectRef& p_Data
+) {
     if (p_Output) {
-        p_Entity.SignalOutputPin(p_PinId);
+        p_Entity.SignalOutputPin(p_PinId, p_Data);
     }
     else {
-        p_Entity.SignalInputPin(p_PinId);
+        p_Entity.SignalInputPin(p_PinId, p_Data);
     }
 }
 
-void Editor::OnSignalEntityPin(ZEntityRef p_Entity, const std::string& p_Pin, bool p_Output) {
-    OnSignalEntityPin(p_Entity, Hash::Crc32(p_Pin.c_str(), p_Pin.size()), p_Output);
+void Editor::OnSignalEntityPin(
+    ZEntityRef p_Entity,
+    const std::string& p_Pin,
+    bool p_Output,
+    const ZObjectRef& p_Data
+) {
+    OnSignalEntityPin(p_Entity, Hash::Crc32(p_Pin.c_str(), p_Pin.size()), p_Output, p_Data);
 }
 
 void Editor::UnsupportedProperty(

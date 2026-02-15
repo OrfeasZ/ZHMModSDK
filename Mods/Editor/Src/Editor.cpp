@@ -268,6 +268,40 @@ void Editor::OnDepthDraw3D(IRenderer* p_Renderer) {
 void Editor::OnEngineInitialized() {
     const ZMemberDelegate<Editor, void(const SGameUpdateEvent&)> s_Delegate(this, &Editor::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
+
+    ZTypeRegistry* s_TypeRegistry = (*Globals::TypeRegistry);
+
+    m_PinDataTypes.push_back(std::make_pair("bool", s_TypeRegistry->GetTypeID("bool")));
+    m_PinDataTypes.push_back(std::make_pair("uint8", s_TypeRegistry->GetTypeID("uint8")));
+    m_PinDataTypes.push_back(std::make_pair("int8", s_TypeRegistry->GetTypeID("int8")));
+    m_PinDataTypes.push_back(std::make_pair("uint16", s_TypeRegistry->GetTypeID("uint16")));
+    m_PinDataTypes.push_back(std::make_pair("int16", s_TypeRegistry->GetTypeID("int16")));
+    m_PinDataTypes.push_back(std::make_pair("uint32", s_TypeRegistry->GetTypeID("uint32")));
+    m_PinDataTypes.push_back(std::make_pair("int32", s_TypeRegistry->GetTypeID("int32")));
+    m_PinDataTypes.push_back(std::make_pair("uint64", s_TypeRegistry->GetTypeID("uint64")));
+    m_PinDataTypes.push_back(std::make_pair("int64", s_TypeRegistry->GetTypeID("int64")));
+    m_PinDataTypes.push_back(std::make_pair("float32", s_TypeRegistry->GetTypeID("float32")));
+    m_PinDataTypes.push_back(std::make_pair("float64", s_TypeRegistry->GetTypeID("float64")));
+    m_PinDataTypes.push_back(std::make_pair("SVector2", s_TypeRegistry->GetTypeID("SVector2")));
+    m_PinDataTypes.push_back(std::make_pair("SVector3", s_TypeRegistry->GetTypeID("SVector3")));
+    m_PinDataTypes.push_back(std::make_pair("SVector4", s_TypeRegistry->GetTypeID("SVector4")));
+    m_PinDataTypes.push_back(std::make_pair("SMatrix43", s_TypeRegistry->GetTypeID("SMatrix43")));
+    m_PinDataTypes.push_back(std::make_pair("SColorRGB", s_TypeRegistry->GetTypeID("SColorRGB")));
+    m_PinDataTypes.push_back(std::make_pair("SColorRGBA", s_TypeRegistry->GetTypeID("SColorRGBA")));
+    m_PinDataTypes.push_back(std::make_pair("ZString", s_TypeRegistry->GetTypeID("ZString")));
+    m_PinDataTypes.push_back(std::make_pair("ZRuntimeResourceID", s_TypeRegistry->GetTypeID("ZRuntimeResourceID")));
+    m_PinDataTypes.push_back(std::make_pair("ZEntityRef", s_TypeRegistry->GetTypeID("ZEntityRef")));
+    m_PinDataTypes.push_back(std::make_pair("ZRepositoryID", s_TypeRegistry->GetTypeID("ZRepositoryID")));
+    m_PinDataTypes.push_back(std::make_pair("ZGuid", s_TypeRegistry->GetTypeID("ZGuid")));
+    m_PinDataTypes.push_back(std::make_pair("ZGameTime", s_TypeRegistry->GetTypeID("ZGameTime")));
+
+    for (const auto& [s_TypeName, s_TypeID] : (*Globals::TypeRegistry)->m_types) {
+        if (s_TypeID->GetTypeInfo()->IsClass()) {
+            if (s_TypeName.StartsWith("TEntityRef<") || s_TypeName.StartsWith("TResourcePtr<")) {
+                m_PinDataTypes.push_back(std::make_pair(s_TypeName.c_str(), s_TypeRegistry->GetTypeID(s_TypeName)));
+            }
+        }
+    }
 }
 
 bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
@@ -1030,6 +1064,22 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_EntityRefToFactoryRuntimeResourceIDs.clear();
 
     m_SortedRoomEntities.clear();
+
+    m_InputPinTypeID = nullptr;
+
+    if (m_InputPinData) {
+        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
+
+        m_InputPinData = nullptr;
+    }
+
+    m_OutputPinTypeID = nullptr;
+
+    if (m_OutputPinData) {
+        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
+
+        m_OutputPinData = nullptr;
+    }
 
     return { HookAction::Continue() };
 }
