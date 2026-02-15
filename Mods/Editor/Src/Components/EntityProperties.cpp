@@ -460,7 +460,7 @@ void Editor::DrawEntityProperties() {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Type");
+        ImGui::Text("Type ");
         ImGui::SameLine();
 
         Util::ImGuiUtils::InputWithAutocomplete(
