@@ -1006,6 +1006,7 @@ void Editor::DrawEntityPinValue(const std::string& p_Id, const std::string& p_Ty
 
                     std::string s_TypeName = p_TypeName.substr(11, p_TypeName.find(">") - 11);
                     STypeID* s_TypeID = (*Globals::TypeRegistry)->GetTypeID(s_TypeName);
+
                     s_EntityRef->m_pInterfaceRef = s_EntityRef->m_entityRef.QueryInterface(s_TypeID);
                     break;
                 }
