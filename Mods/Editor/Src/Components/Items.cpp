@@ -108,35 +108,42 @@ void Editor::DrawItems(bool p_HasFocus) {
         }
 
         ImGui::EndChild();
+
+        const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[s_Selected];
+        const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
+
+        if (!s_Item) {
+            ImGui::PopFont();
+            ImGui::End();
+            ImGui::PopFont();
+
+            return;
+        }
+
         ImGui::SameLine();
 
         ImGui::BeginGroup();
         ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
 
-        const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[s_Selected];
-        const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
-
-        if (s_Item) {
-            if (ImGui::Button("Select In Entity Tree")) {
-                if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
-                    UpdateEntities();
-                }
-
-                OnSelectEntity(s_Action->m_Object, true, std::nullopt);
+        if (ImGui::Button("Select In Entity Tree")) {
+            if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+                UpdateEntities();
             }
 
-            ImGui::BeginDisabled(!s_Item->m_pOwner);
-
-            if (ImGui::Button("Select Owner In Entity Tree")) {
-                if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
-                    UpdateEntities();
-                }
-
-                OnSelectEntity(s_Item->m_pOwner, true, std::nullopt);
-            }
-
-            ImGui::EndDisabled();
+            OnSelectEntity(s_Action->m_Object, true, std::nullopt);
         }
+
+        ImGui::BeginDisabled(!s_Item->m_pOwner);
+
+        if (ImGui::Button("Select Owner In Entity Tree")) {
+            if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+                UpdateEntities();
+            }
+
+            OnSelectEntity(s_Item->m_pOwner, true, std::nullopt);
+        }
+
+        ImGui::EndDisabled();
 
         if (ImGui::Button("Teleport Item To Player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
