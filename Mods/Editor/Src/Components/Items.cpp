@@ -124,6 +124,18 @@ void Editor::DrawItems(bool p_HasFocus) {
 
                 OnSelectEntity(s_Action->m_Object, true, std::nullopt);
             }
+
+            ImGui::BeginDisabled(!s_Item->m_pOwner);
+
+            if (ImGui::Button("Select Owner In Entity Tree")) {
+                if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+                    UpdateEntities();
+                }
+
+                OnSelectEntity(s_Item->m_pOwner, true, std::nullopt);
+            }
+
+            ImGui::EndDisabled();
         }
 
         if (ImGui::Button("Teleport Item To Player")) {
