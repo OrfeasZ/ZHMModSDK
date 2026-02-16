@@ -4,6 +4,7 @@
 
 #include <Glacier/ZAction.h>
 #include <Glacier/ZItem.h>
+#include "Util/StringUtils.h"
 
 void Editor::DrawItems(bool p_HasFocus) {
     if (!p_HasFocus || !m_ItemsMenuActive) {
@@ -25,6 +26,14 @@ void Editor::DrawItems(bool p_HasFocus) {
             return;
         }
 
+        static char s_ItemTitle[2048]{ "" };
+
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Item Title");
+        ImGui::SameLine();
+
+        ImGui::InputText("##ItemName", s_ItemTitle, sizeof(s_ItemTitle));
+
         static size_t s_Selected = 0;
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
@@ -37,8 +46,14 @@ void Editor::DrawItems(bool p_HasFocus) {
             }
 
             const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
+            const ZString& s_ItemTitle2 = s_Item->m_pItemConfigDescriptor->m_sTitle;
+
+            if (!Util::StringUtils::FindSubstringUTF8(s_ItemTitle2.c_str(), s_ItemTitle)) {
+                continue;
+            }
+            
             std::string s_Title = fmt::format(
-                "{} ({:016x})###{}", s_Item->m_pItemConfigDescriptor->m_sTitle.c_str(),
+                "{} ({:016x})###{}", s_ItemTitle2.c_str(),
                 s_Action->m_Object->GetType()->m_nEntityID, i + 1
             );
 
@@ -53,7 +68,7 @@ void Editor::DrawItems(bool p_HasFocus) {
         ImGui::BeginGroup();
         ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
 
-        const ZHM5Action* s_Action = s_Actions[s_Selected];
+        const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[s_Selected];
         const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
 
         if (s_Item) {
