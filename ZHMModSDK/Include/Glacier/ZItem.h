@@ -61,14 +61,14 @@ public:
 class ZVrHandAlignPose;
 
 class ZHM5Item :
-        public ZEntityImpl, // Offset 0x0
-        public IItemBase, // Offset 0x18
-        public IItem, // Offset 0x20
-        public IKeywordHolder, // Offset 0x28
-        public ZUIDataProvider, // Offset 0x30
-        public IAIGameplayConcept, // Offset 0x70
-        public IBoolConditionListener, // Offset 0x78
-        public IColliderController // Offset 0x80
+    public ZEntityImpl, // Offset 0x0
+    public IItemBase, // Offset 0x18
+    public IItem, // Offset 0x20
+    public IKeywordHolder, // Offset 0x28
+    public ZUIDataProvider, // Offset 0x30
+    public IAIGameplayConcept, // Offset 0x70
+    public IBoolConditionListener, // Offset 0x78
+    public IColliderController // Offset 0x80
 {
 public:
     enum class EUseTypes {
@@ -121,11 +121,13 @@ public:
     TEntityRef<ZValueBool> m_rItemCanTurnOn; // 0x2E8
     TEntityRef<ZValueBool> m_rItemCanTurnOff; // 0x2F8
     TEntityRef<IVariationResourceEntity> m_pVariationResource; // 0x308
-    ZEntityRef m_rSpawner;
-    ZEntityRef m_rFactoryEntity;
-    PAD(0x10);
-    TEntityRef<ZGeomEntity> m_pGeomEntity; //0x2C0
-    PAD(0x1A8);
+    ZEntityRef m_rSpawner; // 0x318
+    ZEntityRef m_rFactoryEntity; // 0x320
+    PAD(0x10); // 0x328
+    TEntityRef<ZGeomEntity> m_pGeomEntity; //0x338
+    PAD(0x10); // 0x2D0
+    ZEntityRef m_pOwner; // 0x358
+    PAD(0x190);
 };
 
 class IItemWeapon : public IComponentInterface {

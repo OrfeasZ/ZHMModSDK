@@ -60,6 +60,51 @@ void Editor::DrawItems(bool p_HasFocus) {
             if (ImGui::Selectable(s_ItemLabel.c_str(), s_Selected == i)) {
                 s_Selected = i;
             }
+
+            if (ImGui::IsItemHovered()) {
+                std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
+                if (!m_CachedEntityTreeMap.empty()) {
+                    std::string s_EntityName;
+
+                    if (s_Action->m_Object.GetLogicalParent() &&
+                        s_Action->m_Object.GetLogicalParent().GetLogicalParent()) {
+                        auto s_Iterator = m_CachedEntityTreeMap.find(
+                            s_Action->m_Object.GetLogicalParent().GetLogicalParent()
+                        );
+
+                        if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                            s_EntityName = s_Iterator->second->Name;
+                        }
+                    }
+
+                    std::string s_OwningEntityName;
+
+                    if (s_Item->m_pOwner) {
+                        auto s_Iterator = m_CachedEntityTreeMap.find(s_Item->m_pOwner);
+
+                        if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                            s_OwningEntityName = s_Iterator->second->Name;
+                        }
+
+                        ImGui::SetTooltip(
+                            "%s\nOwning Entity: %s",
+                            s_EntityName.c_str(),
+                            s_OwningEntityName.c_str()
+                        );
+                    }
+                    else {
+                        ImGui::SetTooltip("%s", s_EntityName.c_str());
+                    }
+                }
+                else {
+                    if (s_Item->m_pOwner) {
+                        ImGui::SetTooltip(
+                            fmt::format("Owning Entity: {:016x}", s_Item->m_pOwner->GetType()->m_nEntityID).c_str()
+                        );
+                    }
+                }
+            }
         }
 
         ImGui::EndChild();
