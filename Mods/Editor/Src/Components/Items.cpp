@@ -51,13 +51,13 @@ void Editor::DrawItems(bool p_HasFocus) {
             if (!Util::StringUtils::FindSubstringUTF8(s_ItemTitle2.c_str(), s_ItemTitle)) {
                 continue;
             }
-            
-            std::string s_Title = fmt::format(
+
+            std::string s_ItemLabel = fmt::format(
                 "{} ({:016x})###{}", s_ItemTitle2.c_str(),
                 s_Action->m_Object->GetType()->m_nEntityID, i + 1
             );
 
-            if (ImGui::Selectable(s_Title.c_str(), s_Selected == i)) {
+            if (ImGui::Selectable(s_ItemLabel.c_str(), s_Selected == i)) {
                 s_Selected = i;
             }
         }
