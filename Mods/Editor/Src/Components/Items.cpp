@@ -16,7 +16,6 @@ void Editor::DrawItems(bool p_HasFocus) {
 
     if (s_Showing) {
         const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
-        std::vector<ZHM5Action*> s_Actions;
 
         if (s_Hm5ActionManager->m_Actions.size() == 0) {
             ImGui::PopFont();
@@ -26,20 +25,17 @@ void Editor::DrawItems(bool p_HasFocus) {
             return;
         }
 
-        for (unsigned int i = 0; i < s_Hm5ActionManager->m_Actions.size(); ++i) {
-            ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
-
-            if (s_Action && s_Action->m_eActionType == EActionType::AT_PICKUP) {
-                s_Actions.push_back(s_Action);
-            }
-        }
-
         static size_t s_Selected = 0;
 
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-        for (size_t i = 0; i < s_Actions.size(); i++) {
-            const ZHM5Action* s_Action = s_Actions[i];
+        for (size_t i = 0; i < s_Hm5ActionManager->m_Actions.size(); i++) {
+            const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
+
+            if (!s_Action || s_Action->m_eActionType != EActionType::AT_PICKUP) {
+                continue;
+            }
+
             const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
             std::string s_Title = fmt::format(
                 "{} ({:016x})###{}", s_Item->m_pItemConfigDescriptor->m_sTitle.c_str(),
