@@ -955,6 +955,112 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
     return s_Matrix;
 }
 
+std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
+    if (m_RepositoryResource.m_nResourceIndex.val == -1) {
+        const auto s_ID = ResId<"[assembly:/repository/pro.repo].pc_repo">;
+
+        Globals::ResourceManager->GetResourcePtr(m_RepositoryResource, s_ID, 0);
+    }
+
+    if (m_RepositoryResource.GetResourceInfo().status != RESOURCE_STATUS_VALID) {
+        return "";
+    }
+
+    const auto s_RepositoryData = static_cast<THashMap<
+        ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
+            GetResourceData());
+
+    auto s_Iterator = s_RepositoryData->find(p_RepositoryID);
+
+    if (s_Iterator == s_RepositoryData->end()) {
+        return "";
+    }
+
+    TArray<SDynamicObjectKeyValuePair>* s_Entries = s_Iterator->second.As<TArray<
+        SDynamicObjectKeyValuePair>>();
+
+    ZString s_Title, s_CommonName, s_Name, s_ModifierType, s_Parameter, s_AmmoConfig;
+    TArray<ZString>* s_Tags = nullptr;
+    TArray<ZString>* s_OnlineTraits = nullptr;
+    float s_MagazineSize = 0.f;
+    bool s_IsItem = false;
+    bool s_IsWeapon = false;
+
+    for (auto& s_Entry : *s_Entries) {
+        if (s_Entry.sKey == "Title") {
+            s_Title = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "CommonName") {
+            s_CommonName = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "Name") {
+            s_Name = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "ModifierType") {
+            s_ModifierType = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "Parameter") {
+            s_Parameter = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "AmmoConfig") {
+            s_AmmoConfig = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "Tags") {
+            s_Tags = s_Entry.value.As<TArray<ZString>>();
+        }
+        else if (s_Entry.sKey == "OnlineTraits") {
+            s_OnlineTraits = s_Entry.value.As<TArray<ZString>>();
+        }
+        else if (s_Entry.sKey == "MagazineSize") {
+            s_MagazineSize = *s_Entry.value.As<float>();
+        }
+        else if (s_Entry.sKey == "ItemType") {
+            s_IsItem = true;
+        }
+        else if (s_Entry.sKey == "PrimaryConfiguration") {
+            s_IsWeapon = true;
+        }
+    }
+
+    if (s_IsItem || s_IsWeapon) {
+        return std::string(s_Title.c_str(), s_Title.size());
+    }
+    else if (!s_AmmoConfig.IsEmpty()) {
+        std::string s_Tag;
+
+        if (s_Tags) {
+            s_Tag = std::string((*s_Tags)[0].c_str(), (*s_Tags)[0].size());
+        }
+
+        return std::format("{} / {}", std::to_string(static_cast<uint32_t>(s_MagazineSize)), s_Tag);
+    }
+    else if (s_OnlineTraits) {
+        std::string s_OnlineTraits2;
+
+        for (size_t i = 1; i < (*s_OnlineTraits).size(); ++i) {
+            s_OnlineTraits2 += std::string((*s_OnlineTraits)[i].c_str(), (*s_OnlineTraits)[i].size());
+
+            if (i < (*s_OnlineTraits).size() - 1) {
+                s_OnlineTraits2 += ", ";
+            }
+        }
+
+        return s_OnlineTraits2;
+    }
+    else if (!s_ModifierType.IsEmpty()) {
+        return std::string(s_ModifierType.c_str(), s_ModifierType.size());
+    }
+    else if (!s_Parameter.IsEmpty()) {
+        return std::string(s_Parameter.c_str(), s_Parameter.size());
+    }
+    else if (!s_CommonName.IsEmpty()) {
+        return std::string(s_CommonName.c_str(), s_CommonName.size());
+    }
+    else if (!s_Name.IsEmpty()) {
+        return std::string(s_Name.c_str(), s_Name.size());
+    }
+}
+
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     if (m_SelectionForFreeCameraEditorStyleEntity) {
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();

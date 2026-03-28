@@ -140,6 +140,10 @@ void Editor::ZRepositoryIDProperty(
 
         ImGui::Text("%s", s_RepositoryIdString.c_str());
 
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip(GetNameFromRepository(*s_RepositoryId).c_str());
+        }
+
         if (ImGuiCopyWidget(("RepositoryId_" + p_Id).c_str())) {
             CopyToClipboard(s_RepositoryIdString.c_str());
         }
@@ -156,6 +160,10 @@ void Editor::ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, SProper
         const auto& s_GuidString = s_Guid->ToString();
 
         ImGui::Text("%s", s_GuidString.c_str());
+
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip(GetNameFromRepository(ZRepositoryID(s_GuidString)).c_str());
+        }
 
         if (ImGuiCopyWidget(("Guid_" + p_Id).c_str())) {
             CopyToClipboard(Util::StringUtils::ToLowerCase(s_GuidString.c_str()));

@@ -247,6 +247,8 @@ private:
 
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
+    std::string GetNameFromRepository(const ZRepositoryID& p_RepositoryID);
+
     void DrawItems(bool p_HasFocus);
     void DrawActors(bool p_HasFocus);
     void DrawDebugChannels(bool p_HasFocus);
@@ -588,6 +590,8 @@ private:
     void* m_InputPinData = nullptr;
     STypeID* m_OutputPinTypeID = nullptr;
     void* m_OutputPinData = nullptr;
+
+    TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)
