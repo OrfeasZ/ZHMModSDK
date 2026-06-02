@@ -312,7 +312,7 @@ public:
     static Hook<TEntityRef<ZClothBundleEntity>*(
         TEntityRef<ZClothBundleEntity>& result,
         const SMatrix& mat,
-        ZRepositoryID id,
+        const ZRepositoryID& id,
         int32_t nOutfitVariation,
         int32_t nOutfitCharset,
         bool bSpawnedByHitman,

@@ -550,7 +550,7 @@ PATTERN_HOOK(
     "\x48\x89\x5C\x24\x10\x55\x56\x57\x41\x56\x41\x57\x48\x83\xEC\x00\x8B\x1D",
     "xxxxxxxxxxxxxxx?xx",
     ZClothBundleEntity_CreateClothBundle,
-    TEntityRef<ZClothBundleEntity>* (TEntityRef<ZClothBundleEntity>& result, const SMatrix& mat, ZRepositoryID id,
+    TEntityRef<ZClothBundleEntity>* (TEntityRef<ZClothBundleEntity>& result, const SMatrix& mat, const ZRepositoryID& id,
         int32_t nOutfitVariation, int32_t nOutfitCharset, bool bSpawnedByHitman, bool bEnableOutfitModifiers)
 );
 

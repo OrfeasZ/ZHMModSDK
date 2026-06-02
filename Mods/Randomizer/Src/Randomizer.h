@@ -155,7 +155,7 @@ private:
         ZClothBundleEntity_CreateClothBundle,
         TEntityRef<ZClothBundleEntity>& result,
         const SMatrix& mat,
-        ZRepositoryID id,
+        const ZRepositoryID& id,
         int32_t nOutfitVariation,
         int32_t nOutfitCharset,
         bool bSpawnedByHitman,
