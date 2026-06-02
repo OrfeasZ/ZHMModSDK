@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 # The current version of the SDK.
 set(ZHMMODSDK_VER_MAJOR 4)
 set(ZHMMODSDK_VER_MINOR 0)
-set(ZHMMODSDK_VER_PATCH 0)
+set(ZHMMODSDK_VER_PATCH 1)
 
 # The current version of the SDK ABI.
 # Any change to this is a breaking change.
