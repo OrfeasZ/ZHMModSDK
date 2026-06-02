@@ -385,8 +385,8 @@ CMakeUserPresets.json
 /.wine/
 
 # Auto-generated overlays from cmake/scripts/sync-vcpkg-overlays.sh
-/cmake/vcpkg-ports/fmt/
-/cmake/vcpkg-ports/sentry-native/
+/cmake/vcpkg-ports-cross/fmt/
+/cmake/vcpkg-ports-cross/sentry-native/
 
 /ZHMModSDK/Rust/zhmmodsdk_rs.h
 /ZHMModSDK/Rust/target/

@@ -6,7 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 UPSTREAM=External/vcpkg/ports
-OVERLAY=cmake/vcpkg-ports
+OVERLAY=cmake/vcpkg-ports-cross
 PATCHES=cmake/scripts/overlay-patches
 
 PATCHED_PORTS=(fmt sentry-native)

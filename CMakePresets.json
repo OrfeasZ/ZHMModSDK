@@ -68,6 +68,7 @@
           "type": "FILEPATH"
         },
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg-overlays",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/cmake/vcpkg-ports-cross",
         "VCPKG_TARGET_TRIPLET": "x64-windows-zhm-cross",
         "VCPKG_HOST_TRIPLET": "x64-linux",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/clang-cl.cmake",
