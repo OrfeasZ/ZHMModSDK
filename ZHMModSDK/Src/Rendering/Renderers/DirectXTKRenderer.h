@@ -3,6 +3,7 @@
 #include <directx/d3d12.h>
 #include <dxgi1_4.h>
 #include <memory>
+#include <mutex>
 
 #include <GraphicsMemory.h>
 
@@ -67,8 +68,33 @@ namespace Rendering::Renderers {
         void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
         void OnReset();
         void PostReset();
-        void SetDepthBuffer(ID3D12Resource* p_DepthResource) { m_DepthBufferResource = p_DepthResource; }
-        void ClearDepthBuffer() { m_DepthBufferResource = nullptr; }
+
+        void SetDepthBuffer(ID3D12Resource* p_DepthResource) {
+            std::scoped_lock s_Lock(m_DepthBufferMutex);
+
+            if (m_DepthBufferResource == p_DepthResource) {
+                return;
+            }
+
+            if (m_DepthBufferResource) {
+                m_DepthBufferResource->Release();
+            }
+
+            m_DepthBufferResource = p_DepthResource;
+
+            if (m_DepthBufferResource) {
+                m_DepthBufferResource->AddRef();
+            }
+        }
+
+        void ClearDepthBuffer() {
+            std::scoped_lock s_Lock(m_DepthBufferMutex);
+
+            if (m_DepthBufferResource) {
+                m_DepthBufferResource->Release();
+                m_DepthBufferResource = nullptr;
+            }
+        }
 
     private:
         void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
@@ -76,6 +102,8 @@ namespace Rendering::Renderers {
         void Draw();
         void DepthDraw();
         void WaitForCurrentFrameToFinish() const;
+
+        uint64_t GetTotalDrawCount() const;
 
         bool CompileShaderFromString(
             const std::string& p_ShaderCode, const std::string& p_EntryPoint, const std::string& p_ShaderModel,
@@ -223,6 +251,12 @@ namespace Rendering::Renderers {
 
         // Pointer to the game's depth buffer
         ID3D12Resource* m_DepthBufferResource = nullptr;
+        std::mutex m_DepthBufferMutex;
+
+        // Whether the previous frame's depth pass actually submitted any geometry.
+        bool m_DepthDrewLastFrame = false;
+        uint64_t m_MeshDrawCount = 0;
+        uint64_t m_SpriteDrawCount = 0;
 
         // Our own copy of the depth buffer
         ScopedD3DRef<ID3D12Resource> m_DepthBufferCopy;

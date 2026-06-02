@@ -55,6 +55,11 @@ void DirectXTKRenderer::OnEngineInit() {
 
 void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
+uint64_t DirectXTKRenderer::GetTotalDrawCount() const {
+    return m_TriangleBatch->TotalDrawCalls() + m_LineBatch->TotalDrawCalls()
+        + m_TextBatch->TotalDrawCalls() + m_MeshDrawCount + m_SpriteDrawCount;
+}
+
 void DirectXTKRenderer::Draw() {
     const auto s_BackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -72,19 +77,23 @@ void DirectXTKRenderer::Draw() {
     m_LineBatch->End();
     m_TextBatch->End();
 
-    ID3D12DescriptorHeap* s_Heaps[] = {m_ResourceDescriptors->Heap()};
+    // Only set up the sprite batch when there's 2D text to draw.
+    if (!m_Text2DBuffer.empty()) {
+        ID3D12DescriptorHeap* s_Heaps[] = {m_ResourceDescriptors->Heap()};
 
-    m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
+        m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
 
-    m_SpriteBatch->Begin(m_CommandList);
+        m_SpriteBatch->Begin(m_CommandList);
 
-    for (const auto& s_2DText : m_Text2DBuffer) {
-        DrawText2D(s_2DText);
+        for (const auto& s_2DText : m_Text2DBuffer) {
+            DrawText2D(s_2DText);
+        }
+
+        m_SpriteBatch->End();
+
+        m_SpriteDrawCount += m_Text2DBuffer.size();
+        m_Text2DBuffer.clear();
     }
-
-    m_SpriteBatch->End();
-
-    m_Text2DBuffer.clear();
 }
 
 void DirectXTKRenderer::DepthDraw() {
@@ -95,20 +104,28 @@ void DirectXTKRenderer::DepthDraw() {
 
     bool s_HasDepth = false;
 
-    if (m_DepthBufferResource) {
+    ScopedD3DRef<ID3D12Resource> s_DepthBuffer;
+    {
+        std::scoped_lock s_Lock(m_DepthBufferMutex);
+        s_DepthBuffer = m_DepthBufferResource;
+    }
+
+    if (s_DepthBuffer && m_DepthDrewLastFrame) {
         // Instead of using the game's depth buffer directly, we create our own copy.
         // For some reason, using it directly causes our 3D models to not render correctly
         // on some machines, instead showing weird blocky artifacts.
         ScopedD3DRef<ID3D12Device> s_Device;
         if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) == S_OK) {
-            const D3D12_RESOURCE_DESC s_SrcDesc = m_DepthBufferResource->GetDesc();
+            const D3D12_RESOURCE_DESC s_SrcDesc = s_DepthBuffer->GetDesc();
 
             // Create or recreate our depth buffer copy if dimensions changed
-            if (!m_DepthBufferCopy
-                || m_DepthBufferCopyWidth != s_SrcDesc.Width
+            if (m_DepthBufferCopyWidth != s_SrcDesc.Width
                 || m_DepthBufferCopyHeight != s_SrcDesc.Height) {
                 m_DepthBufferCopy.Reset();
                 m_DepthBufferCopyDsvHeap.Reset();
+
+                m_DepthBufferCopyWidth = static_cast<uint32_t>(s_SrcDesc.Width);
+                m_DepthBufferCopyHeight = s_SrcDesc.Height;
 
                 // Create depth buffer with same format.
                 D3D12_RESOURCE_DESC s_DepthDesc = {};
@@ -164,13 +181,17 @@ void DirectXTKRenderer::DepthDraw() {
                             m_DepthBufferCopyDsvHeap->GetCPUDescriptorHandleForHeapStart()
                         );
 
-                        m_DepthBufferCopyWidth = s_SrcDesc.Width;
-                        m_DepthBufferCopyHeight = s_SrcDesc.Height;
-
                         Logger::Debug(
                             "Created depth buffer copy: {}x{}", m_DepthBufferCopyWidth, m_DepthBufferCopyHeight
                         );
                     }
+                    else {
+                        m_DepthBufferCopy.Reset();
+                        Logger::Warn("Failed to create depth buffer copy DSV heap.");
+                    }
+                }
+                else {
+                    Logger::Warn("Failed to create depth buffer copy resource.");
                 }
             }
 
@@ -180,7 +201,7 @@ void DirectXTKRenderer::DepthDraw() {
                 {
                     D3D12_RESOURCE_BARRIER s_Barriers[2];
                     s_Barriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(
-                        m_DepthBufferResource,
+                        s_DepthBuffer,
                         D3D12_RESOURCE_STATE_DEPTH_WRITE,
                         D3D12_RESOURCE_STATE_COPY_SOURCE
                     );
@@ -194,13 +215,13 @@ void DirectXTKRenderer::DepthDraw() {
                 }
 
                 // Copy the depth buffer
-                m_CommandList->CopyResource(m_DepthBufferCopy, m_DepthBufferResource);
+                m_CommandList->CopyResource(m_DepthBufferCopy, s_DepthBuffer);
 
                 // Transition back.
                 {
                     D3D12_RESOURCE_BARRIER s_Barriers[2];
                     s_Barriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(
-                        m_DepthBufferResource,
+                        s_DepthBuffer,
                         D3D12_RESOURCE_STATE_COPY_SOURCE,
                         D3D12_RESOURCE_STATE_DEPTH_WRITE
                     );
@@ -226,6 +247,8 @@ void DirectXTKRenderer::DepthDraw() {
         m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
     }
 
+    const uint64_t s_DrawCountBefore = GetTotalDrawCount();
+
     m_TriangleBatch->Begin(m_CommandList);
     m_LineBatch->Begin(m_CommandList);
     m_TextBatch->Begin(m_CommandList);
@@ -235,6 +258,8 @@ void DirectXTKRenderer::DepthDraw() {
     m_TriangleBatch->End();
     m_LineBatch->End();
     m_TextBatch->End();
+
+    m_DepthDrewLastFrame = GetTotalDrawCount() != s_DrawCountBefore;
 }
 
 void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
@@ -317,6 +342,8 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     D3D12_RECT s_ScissorRect = {0, 0, static_cast<LONG>(m_WindowWidth), static_cast<LONG>(m_WindowHeight)};
     m_CommandList->RSSetScissorRects(1, &s_ScissorRect);
 
+    const uint64_t s_DrawCountBefore = GetTotalDrawCount();
+
     m_CommandList->BeginEvent(0, L"DebugRender", sizeof(L"DebugRender"));
 
     DepthDraw();
@@ -324,16 +351,22 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
 
     m_CommandList->EndEvent();
 
-    const D3D12_RESOURCE_BARRIER s_PresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-        m_BackBuffers[s_BackBufferIndex],
-        D3D12_RESOURCE_STATE_RENDER_TARGET,
-        D3D12_RESOURCE_STATE_PRESENT
-    );
+    if (GetTotalDrawCount() != s_DrawCountBefore) {
+        const D3D12_RESOURCE_BARRIER s_PresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+            m_BackBuffers[s_BackBufferIndex],
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_PRESENT
+        );
 
-    m_CommandList->ResourceBarrier(1, &s_PresentBarrier);
-    BreakIfFailed(m_CommandList->Close());
+        m_CommandList->ResourceBarrier(1, &s_PresentBarrier);
+        BreakIfFailed(m_CommandList->Close());
 
-    m_CommandQueue->ExecuteCommandLists(1, CommandListCast(&m_CommandList.Ref));
+        m_CommandQueue->ExecuteCommandLists(1, CommandListCast(&m_CommandList.Ref));
+    }
+    else {
+        // Nothing was drawn.
+        BreakIfFailed(m_CommandList->Close());
+    }
 }
 
 void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult) {
@@ -794,6 +827,8 @@ void DirectXTKRenderer::OnReset() {
         s_Frame.FenceValue = m_FenceValue;
 
     m_BackBuffers.clear();
+
+    ClearDepthBuffer();
 
     // Clean up depth buffer copy resources
     m_DepthBufferCopy.Reset();
@@ -1623,6 +1658,8 @@ void DirectXTKRenderer::DrawMesh(
     m_CommandList->IASetIndexBuffer(&s_IndexBufferView);
     m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_CommandList->DrawIndexedInstanced(s_IndexCount, 1, 0, 0, 0);
+
+    ++m_MeshDrawCount;
 }
 
 bool DirectXTKRenderer::IsPointInsideViewFrustum(const SVector3& p_Point) const {
