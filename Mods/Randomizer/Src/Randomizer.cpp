@@ -1110,6 +1110,10 @@ void Randomizer::LoadRepositoryProps() {
             TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
                 SDynamicObjectKeyValuePair>>();
 
+            if (!s_Entries) {
+                continue;
+            }
+
             ZString s_Id, s_Title, s_CommonName, s_Name, s_InventoryCategoryIcon;
             std::string s_FinalName;
             bool s_IsItem = false;
@@ -1212,6 +1216,10 @@ void Randomizer::LoadRepositoryOutfits() {
         for (const auto& [s_RepositoryID, s_DynamicObject] : *s_RepositoryData) {
             TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
                 SDynamicObjectKeyValuePair>>();
+
+            if (!s_Entries) {
+                continue;
+            }
 
             ZString s_Id, s_CommonName;
             std::string s_FinalName;
