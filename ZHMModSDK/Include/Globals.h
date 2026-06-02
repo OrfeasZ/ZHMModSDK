@@ -28,7 +28,7 @@ class ZHM5InputManager;
 class ZContentKitManager;
 class ZHM5ActionManager;
 class ZBehaviorService;
-class SPrimitiveBufferData;
+struct SPrimitiveBufferData;
 class IGameMode;
 class IEngineMode;
 class ZInputActionManager;

@@ -1,0 +1,9 @@
+{
+    "name": "directx-dxc",
+    "version-date": "2025-02-20",
+    "port-version": 99,
+    "description": "Cross-build override: exposes the host's native dxc (from PATH) as DXC.EXE plus the headers from the upstream Linux release.",
+    "homepage": "https://github.com/microsoft/DirectXShaderCompiler",
+    "license": "LLVM-exception AND NCSA",
+    "supports": "x64 & windows"
+}

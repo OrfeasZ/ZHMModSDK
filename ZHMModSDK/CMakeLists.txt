@@ -44,7 +44,6 @@ add_library(ZHMModSDK SHARED
         ${CMAKE_CURRENT_BINARY_DIR}/ZHMModSDK.rc
 )
 
-# Set up Rust helper library.
 include(FetchContent)
 FetchContent_Declare(
         Corrosion
@@ -52,7 +51,10 @@ FetchContent_Declare(
         GIT_TAG v0.5.2
 )
 
-set(Rust_TOOLCHAIN nightly)
+if (NOT ZHM_RUST_NO_RUSTUP)
+        set(Rust_TOOLCHAIN nightly)
+endif ()
+
 set(Rust_CARGO_TARGET x86_64-pc-windows-msvc)
 FetchContent_MakeAvailable(Corrosion)
 

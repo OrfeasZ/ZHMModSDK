@@ -57,7 +57,7 @@ class ZCppEntityBlueprintFactory;
 class IEntityFactory;
 class ZEntityType;
 class ZTemplateEntityBlueprintFactory;
-class STemplateEntityBlueprint;
+struct STemplateEntityBlueprint;
 class ZResourcePending;
 class ZPlayerRegistry;
 class ZHitman5;

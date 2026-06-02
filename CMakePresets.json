@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "configurePresets": [
     {
       "name": "base",
@@ -45,6 +45,53 @@
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded"
       },
       "inherits": [ "base" ]
+    },
+    {
+      "name": "cross-base",
+      "hidden": true,
+      "displayName": "Cross-compilation from Linux to Windows",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/_build/${presetName}",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/_install/${presetName}",
+        "CMAKE_TOOLCHAIN_FILE": {
+          "value": "${sourceDir}/External/vcpkg/scripts/buildsystems/vcpkg.cmake",
+          "type": "FILEPATH"
+        },
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/vcpkg-overlays",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-zhm-cross",
+        "VCPKG_HOST_TRIPLET": "x64-linux",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/clang-cl.cmake",
+        "VCPKG_INSTALL_OPTIONS": "--allow-unsupported",
+        "VCPKG_APPLOCAL_DEPS": "OFF",
+        "CMAKE_POLICY_DEFAULT_CMP0091": "NEW",
+        "ZHM_RUST_NO_RUSTUP": "ON"
+      }
+    },
+    {
+      "name": "x64-Debug-Cross",
+      "inherits": [ "cross-base" ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDebug"
+      }
+    },
+    {
+      "name": "x64-Release-Cross",
+      "inherits": [ "cross-base" ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded"
+      }
     }
   ]
 }

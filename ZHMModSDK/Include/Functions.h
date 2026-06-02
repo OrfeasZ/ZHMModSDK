@@ -39,7 +39,7 @@ class IItem;
 class ZSetpieceEntity;
 struct SExternalReferences;
 class ZTemplateEntityFactory;
-class STemplateEntityFactory;
+struct STemplateEntityFactory;
 class ZTemplateInstaller;
 class ZTemplateBlueprintInstaller;
 class ZResourcePending;

@@ -8,7 +8,7 @@
 
 #include <cassert>
 
-class STypeID;
+struct STypeID;
 class ZString;
 struct SDynamicObjectKeyValuePair;
 
