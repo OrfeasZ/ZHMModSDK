@@ -141,6 +141,7 @@ private:
 
     void DrawSettings(bool p_HasFocus);
 
+    bool HasVisibleChildren(std::shared_ptr<EntityTreeNode> p_Node) const;
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTree();
     void FilterEntityTree();

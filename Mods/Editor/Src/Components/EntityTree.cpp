@@ -432,6 +432,19 @@ void Editor::ReparentDynamicOutfitEntities(
     }
 }
 
+bool Editor::HasVisibleChildren(std::shared_ptr<EntityTreeNode> p_Node) const
+{
+    return !p_Node->Children.empty() && (m_FilteredEntityTreeNodes.empty() ||
+        std::any_of(
+            p_Node->Children.begin(),
+            p_Node->Children.end(),
+            [this](const auto& s_Child) {
+                return m_FilteredEntityTreeNodes.contains(s_Child.second.get());
+            }
+        )
+    );
+}
+
 void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     if (!p_Node) return;
 
@@ -455,7 +468,8 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     ImGuiTreeNodeFlags s_Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
             ImGuiTreeNodeFlags_SpanAvailWidth;
 
-    if (p_Node->Children.empty()) {
+    const bool bHasVisibleChildren = HasVisibleChildren(p_Node);
+    if (!bHasVisibleChildren) {
         s_Flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
     }
 
@@ -517,8 +531,11 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     }
 
     if (s_Open) {
-        for (const auto& s_Child : p_Node->Children) {
-            RenderEntity(s_Child.second);
+        if (bHasVisibleChildren)
+        {
+            for (const auto& s_Child : p_Node->Children) {
+                RenderEntity(s_Child.second);
+            }
         }
 
         if (!(s_Flags & ImGuiTreeNodeFlags_NoTreePushOnOpen)) {
@@ -748,6 +765,43 @@ void Editor::DrawEntityTree() {
             std::shared_lock lock(m_CachedEntityTreeMutex);
 
             if (m_CachedEntityTree) {
+                if (ImGui::Button(ICON_MD_FILE_DOWNLOAD " Export entity tree")) {
+                    std::fstream s_FileOut;
+                    s_FileOut.open("entity_tree.txt", std::ios_base::out);
+
+                    if (s_FileOut.is_open()) {
+                        const bool bFilteredTree = !m_EntityIdSearchInput.empty() ||
+                            !m_EntityTypeSearchInput.empty() ||
+                            !m_EntityNameSearchInput.empty() ||
+                            m_EntityViewMode != EntityViewMode::All;
+
+                        typedef std::function<void(std::shared_ptr<EntityTreeNode>, uint32_t)> OutputNodeFunc;
+                        static const OutputNodeFunc OutputNode = [&](std::shared_ptr<EntityTreeNode> p_Node, uint32_t p_ParentDepth)
+                        {
+                            if (!p_Node) return;
+                            if (bFilteredTree && !m_FilteredEntityTreeNodes.contains(p_Node.get())) return;
+
+                            bool bHasVisibleChildren = HasVisibleChildren(p_Node);
+
+                            const std::string s_Prefix = p_ParentDepth != 0
+                                ? std::string(p_ParentDepth * 2, ' ') + (bHasVisibleChildren ? "> " : "- ")
+                                : "";
+                            s_FileOut << s_Prefix << p_Node->Name << std::endl;
+
+                            if (!bHasVisibleChildren) return;
+
+                            for (const auto& s_Child : p_Node->Children)
+                                OutputNode(s_Child.second, p_ParentDepth + 1);
+                        };
+
+                        OutputNode(m_CachedEntityTree, 0);
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip(
+                        "Outputs the current entity tree as a text file (entity_tree.txt - found in the Retail folder of the game)."
+                    );
+
                 RenderEntity(m_CachedEntityTree);
             }
             else {
