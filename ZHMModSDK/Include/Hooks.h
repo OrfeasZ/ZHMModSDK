@@ -92,6 +92,7 @@ struct SHitInfo;
 class IBaseCharacter;
 class ZHitmanMorphemePostProcessor;
 class ZHM5WeaponRecoilController;
+class ZEvergreenCampaignManager;
 
 class ZHMSDK_API Hooks {
 public:
@@ -338,4 +339,8 @@ public:
     static Hook<bool(ZHM5ItemWeapon* th, bool bMayStartSound)>* ZHM5ItemWeapon_FireProjectiles;
 
     static Hook<bool(IFirearm* th)>* ZHM5ItemWeapon_IsFiring;
+
+    static Hook<ZDynamicObject*(ZDynamicObject* th, const ZString& key, const ZDynamicObject& val)>* ZDynamicObject_Set_ZDynamicObject;
+
+    static Hook<ZEvergreenCampaignManager*(ZEvergreenCampaignManager* th)>* ZEvergreenCampaignManager_OnGenerate;
 };

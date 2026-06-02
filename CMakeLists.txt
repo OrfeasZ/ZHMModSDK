@@ -61,6 +61,7 @@ set(MODS
         Outfits
         Randomizer
         World
+        FreelancerSeeder
 )
 
 foreach (MOD IN LISTS MODS)
