@@ -299,15 +299,35 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
 
             ImGui::Checkbox("Draw Gizmos", &m_DrawGizmos);
             
+            ImGui::Indent();
+
+            ImGui::BeginDisabled(!m_DrawGizmos);
+
             if (ImGui::Checkbox("Draw All Gizmos", &m_DrawAllGizmos)) {
                 for (auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToState) {
                     s_IsVisible = m_DrawAllGizmos;
                 }
             }
 
+            ImGui::Checkbox("Draw Gizmos For Selected Entity Only", &m_DrawGizmosForSelectedEntityOnly);
+
+            ImGui::EndDisabled();
+
+            ImGui::Unindent();
+
             ImGui::Separator();
 
             ImGui::Checkbox("Draw Shapes", &m_DrawShapes);
+
+            ImGui::Indent();
+
+            ImGui::BeginDisabled(!m_DrawShapes);
+
+            ImGui::Checkbox("Draw Shapes For Selected Entity Only", &m_DrawShapesForSelectedEntityOnly);
+
+            ImGui::EndDisabled();
+
+            ImGui::Unindent();
 
             for (const auto& pair : m_DebugChannels) {
                 const std::string s_Header = fmt::format(
@@ -357,7 +377,26 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
 }
 
 void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
-    if (!m_DrawGizmos && !m_DrawShapes) {
+    if (!m_DrawGizmos && !m_DrawShapes && !m_DrawGizmosForSelectedEntityOnly && !m_DrawShapesForSelectedEntityOnly) {
+        return;
+    }
+
+    if ((m_DrawGizmosForSelectedEntityOnly || m_DrawShapesForSelectedEntityOnly) && !m_DrawGizmos && !m_DrawShapes) {
+        auto it = m_EntityRefToDebugEntities.find(m_SelectedEntity);
+
+        if (it == m_EntityRefToDebugEntities.end()) {
+            return;
+        }
+
+        for (const auto& s_DebugEntity : it->second) {
+            if (s_DebugEntity->m_HasGizmo) {
+                DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
+            }
+            else {
+                DrawShapes(*s_DebugEntity, p_Renderer);
+            }
+        }
+
         return;
     }
 
@@ -393,16 +432,18 @@ void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
 }
 
 void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
-    if (!m_DrawGizmos) {
+    if (!m_DrawGizmos && !m_DrawGizmosForSelectedEntityOnly) {
         return;
     }
 
-    if (!m_DebugChannelToState[p_GizmoEntity.m_DebugChannel]) {
-        return;
-    }
+    if (m_DrawGizmos) {
+        if (!m_DebugChannelToState[p_GizmoEntity.m_DebugChannel]) {
+            return;
+        }
 
-    if (!m_DebugChannelToTypeNameToState[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
-        return;
+        if (!m_DebugChannelToTypeNameToState[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
+            return;
+        }
     }
 
     if (p_GizmoEntity.m_DebugChannel == EDebugChannel::DEBUGCHANNEL_PARTITIONING &&
@@ -481,16 +522,18 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
 }
 
 void Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer) {
-    if (!m_DrawShapes) {
+    if (!m_DrawShapes && !m_DrawShapesForSelectedEntityOnly) {
         return;
     }
 
-    if (!m_DebugChannelToState[p_DebugEntity.m_DebugChannel]) {
-        return;
-    }
+    if (m_DrawShapes) {
+        if (!m_DebugChannelToState[p_DebugEntity.m_DebugChannel]) {
+            return;
+        }
 
-    if (!m_DebugChannelToTypeNameToState[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
-        return;
+        if (!m_DebugChannelToTypeNameToState[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
+            return;
+        }
     }
 }
 

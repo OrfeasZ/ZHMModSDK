@@ -55,6 +55,16 @@
 // Needed for TaskDialogIndirect
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
+#define G2_EXCEPTION_HANDLER_EXPORT "?G2DefaultRetailExceptionHandler@@YAJPEAU_EXCEPTION_POINTERS@@@Z"
+
+typedef long(*G2DefaultRetailExceptionHandler_t)(EXCEPTION_POINTERS* ExceptionInfo);
+
+G2DefaultRetailExceptionHandler_t GetG2ExceptionHandler() {
+    HMODULE s_Module = GetModuleHandleA(nullptr);
+    if (!s_Module) return nullptr;
+    return (G2DefaultRetailExceptionHandler_t)GetProcAddress(s_Module, G2_EXCEPTION_HANDLER_EXPORT);
+}
+
 #if _DEBUG
 
 #include "DebugConsole.h"
@@ -142,6 +152,10 @@ ModSDK::ModSDK() {
     m_ModuleBase = reinterpret_cast<uintptr_t>(s_Module) + Util::ProcessUtils::GetBaseOfCode(s_Module);
     m_SizeOfCode = Util::ProcessUtils::GetSizeOfCode(s_Module);
     m_ImageSize = Util::ProcessUtils::GetSizeOfImage(s_Module);
+
+    // Check the exception handler can be resolved so we can notify the user if not.
+    if (!GetG2ExceptionHandler())
+        Logger::Warn("Failed to resolve G2DefaultRetailExceptionHandler export. The engine will not generate crash metrics!");
 }
 
 ModSDK::~ModSDK() {
@@ -824,6 +838,20 @@ bool ModSDK::Startup() {
     return true;
 }
 
+// Pass the exception information to the engine so it can generate its own crash metrics.
+sentry_value_t ModSDK_OnCrashCallback(const sentry_ucontext_t* uctx, sentry_value_t event, void* closure) {
+    G2DefaultRetailExceptionHandler_t G2DefaultRetailExceptionHandler = GetG2ExceptionHandler();
+    if (!G2DefaultRetailExceptionHandler)
+    {
+        Logger::Warn("ModSDK_OnCrashCallback - Could not get G2DefaultRetailExceptionHandler");
+        return event;
+    }
+
+    G2DefaultRetailExceptionHandler(const_cast<EXCEPTION_POINTERS*>(&uctx->exception_ptrs));
+
+    return event;
+}
+
 void ModSDK::ThreadedStartup() {
     if (m_EnableSentry.value_or(false)) {
         sentry_options_t* options = sentry_options_new();
@@ -842,7 +870,12 @@ void ModSDK::ThreadedStartup() {
 
         sentry_options_set_release(options, "ZHMModSDK@" ZHMMODSDK_VER);
         sentry_options_set_debug(options, 0);
+        sentry_options_set_on_crash(options, ModSDK_OnCrashCallback, NULL);
         sentry_init(options);
+    }
+    else if (GetG2ExceptionHandler()) {
+        // If sentry is not enabled, default to the engine's exception handler.
+        SetUnhandledExceptionFilter(GetG2ExceptionHandler());
     }
 
     // If the engine is already initialized, inform the mods.

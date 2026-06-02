@@ -679,21 +679,17 @@ void Editor::DrawEntityTree() {
             ICON_MD_SEARCH " Search by type##EntityTypesPopup",
             s_EntityTypeSearchInput,
             sizeof(s_EntityTypeSearchInput),
-            (*Globals::TypeRegistry)->m_types,
-            [](auto& p_Pair) -> std::string {
-                return std::string(p_Pair.first.c_str(), p_Pair.first.size());
+            m_ClassNames,
+            [](const std::string& p_ClassName) -> const std::string& {
+                return p_ClassName;
             },
-            [](auto& p_Pair) -> std::string {
-                return std::string(p_Pair.first.c_str(), p_Pair.first.size());
+            [](const std::string& p_ClassName) -> const std::string& {
+                return p_ClassName;
             },
-            [&](const std::string& typeName, const std::string&, const auto&) {
+            [&](const std::string&, const std::string&, const auto&) {
                 m_EntityTypeSearchInput = s_EntityTypeSearchInput;
 
                 FilterEntityTree();
-            },
-            nullptr,
-            [](auto& p_Pair) {
-                return p_Pair.second->GetTypeInfo() && p_Pair.second->GetTypeInfo()->IsClass();
             }
         );
 

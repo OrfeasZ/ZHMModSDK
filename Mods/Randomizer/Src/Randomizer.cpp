@@ -1110,6 +1110,10 @@ void Randomizer::LoadRepositoryProps() {
             TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
                 SDynamicObjectKeyValuePair>>();
 
+            if (!s_Entries) {
+                continue;
+            }
+
             ZString s_Id, s_Title, s_CommonName, s_Name, s_InventoryCategoryIcon;
             std::string s_FinalName;
             bool s_IsItem = false;
@@ -1212,6 +1216,10 @@ void Randomizer::LoadRepositoryOutfits() {
         for (const auto& [s_RepositoryID, s_DynamicObject] : *s_RepositoryData) {
             TArray<SDynamicObjectKeyValuePair>* s_Entries = s_DynamicObject.As<TArray<
                 SDynamicObjectKeyValuePair>>();
+
+            if (!s_Entries) {
+                continue;
+            }
 
             ZString s_Id, s_CommonName;
             std::string s_FinalName;
@@ -3064,7 +3072,7 @@ DEFINE_PLUGIN_DETOUR(
     ZClothBundleEntity_CreateClothBundle,
     TEntityRef<ZClothBundleEntity>& result,
     const SMatrix& mat,
-    ZRepositoryID id,
+    const ZRepositoryID& id,
     int32_t nOutfitVariation,
     int32_t nOutfitCharset,
     bool bSpawnedByHitman,
@@ -3083,13 +3091,13 @@ DEFINE_PLUGIN_DETOUR(
         m_AreOutfitsFiltered = true;
     }
 
-    id = GetRandomRepositoryId(m_OutfitsToSpawnForClothBundle);
+    const auto s_RandomId = GetRandomRepositoryId(m_OutfitsToSpawnForClothBundle);
 
     ZContentKitManager* s_ContentKitManager = Globals::ContentKitManager;
-    auto s_Iterator = s_ContentKitManager->m_repositoryGlobalOutfitKits.find(id);
+    auto s_Iterator = s_ContentKitManager->m_repositoryGlobalOutfitKits.find(s_RandomId);
 
     if (s_Iterator == s_ContentKitManager->m_repositoryGlobalOutfitKits.end()) {
-        p_Hook->CallOriginal(result, mat, id, nOutfitVariation, nOutfitCharset, bSpawnedByHitman, bEnableOutfitModifiers);
+        p_Hook->CallOriginal(result, mat, s_RandomId, nOutfitVariation, nOutfitCharset, bSpawnedByHitman, bEnableOutfitModifiers);
 
         return HookResult<TEntityRef<ZClothBundleEntity>*>(HookAction::Return(), &result);
     }
@@ -3114,7 +3122,7 @@ DEFINE_PLUGIN_DETOUR(
         }
     }
 
-    p_Hook->CallOriginal(result, mat, id, nOutfitVariation, nOutfitCharset, bSpawnedByHitman, bEnableOutfitModifiers);
+    p_Hook->CallOriginal(result, mat, s_RandomId, nOutfitVariation, nOutfitCharset, bSpawnedByHitman, bEnableOutfitModifiers);
 
     return HookResult<TEntityRef<ZClothBundleEntity>*>(HookAction::Return(), &result);
 }

@@ -15,8 +15,12 @@ bool Editor::SMatrix43Property(
                 fmt::format(
                     "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},"
                     "\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-                    s_QneTransform.Rotation.x, s_QneTransform.Rotation.y, s_QneTransform.Rotation.z,
-                    s_QneTransform.Position.x, s_QneTransform.Position.y, s_QneTransform.Position.z
+                    FormatFloat(s_QneTransform.Rotation.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_QneTransform.Rotation.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_QneTransform.Rotation.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_QneTransform.Position.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_QneTransform.Position.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_QneTransform.Position.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces)
                 )
             );
         }
@@ -51,18 +55,18 @@ bool Editor::SMatrix43Property(
                     "\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
                     "\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}"
                     "}}",
-                    s_Value->XAxis.x,
-                    s_Value->XAxis.y,
-                    s_Value->XAxis.z,
-                    s_Value->YAxis.x,
-                    s_Value->YAxis.y,
-                    s_Value->YAxis.z,
-                    s_Value->ZAxis.x,
-                    s_Value->ZAxis.y,
-                    s_Value->ZAxis.z,
-                    s_Value->Trans.x,
-                    s_Value->Trans.y,
-                    s_Value->Trans.z
+                    FormatFloat(s_Value->XAxis.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->XAxis.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->XAxis.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->YAxis.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->YAxis.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->YAxis.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->ZAxis.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->ZAxis.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->ZAxis.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->Trans.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->Trans.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
+                    FormatFloat(s_Value->Trans.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces)
                 )
             );
         }

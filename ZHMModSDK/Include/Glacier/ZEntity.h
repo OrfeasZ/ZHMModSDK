@@ -11,7 +11,7 @@ class IEntityBlueprintFactory;
 class ZEntityBlueprintFactoryBase;
 class ZEntityType;
 class ZActor;
-class STypeID;
+struct STypeID;
 class ZEntityRef;
 
 class IEntityFactory : public IComponentInterface {

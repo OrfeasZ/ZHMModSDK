@@ -1,1 +1,2 @@
 * text=auto eol=lf
+cmake/scripts/overlay-patches/*.patch -text

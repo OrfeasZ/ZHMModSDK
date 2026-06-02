@@ -104,6 +104,28 @@ void Editor::DrawEntityProperties() {
             SetSettingBool("general", "qne_transforms", m_UseQneTransforms);
         }
 
+        if (ImGui::Checkbox("Round Copied Matrix Values", &m_RoundCopiedMatrixValues)) {
+            SetSettingBool("general", "round_copied_matrix_values", m_RoundCopiedMatrixValues);
+        }
+
+        ImGui::BeginDisabled(!m_RoundCopiedMatrixValues);
+
+        ImGui::AlignTextToFramePadding();
+
+        ImGui::TextUnformatted("Decimal Places");
+
+        ImGui::SameLine();
+
+        ImGui::SetNextItemWidth(150.0f);
+
+        if (ImGui::SliderInt("##DecimalPlaces", &m_CopyDecimalPlaces, 0, 6)) {
+            SetSettingInt("general", "copy_decimal_places", m_CopyDecimalPlaces);
+        }
+
+        ImGui::EndDisabled();
+
+        ImGui::Separator();
+
         if (ImGui::Checkbox("##UseSnap", &m_UseSnap)) {
             SetSettingBool("general", "snap", m_UseSnap);
         }
@@ -439,11 +461,34 @@ void Editor::DrawEntityProperties() {
             }
         }
 
+        auto s_InputPins = GetPins(s_SelectedEntity, false);
+
         ImGui::SameLine(0, 5);
 
-        if (ImGui::InputText(
-            "Input Pin", s_InputPinName, IM_ARRAYSIZE(s_InputPinName), ImGuiInputTextFlags_EnterReturnsTrue
-        )) {
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "Input Pin##InputPinsPopup",
+            s_InputPinName,
+            sizeof(s_InputPinName),
+            s_InputPins,
+            [](const PinInfo& pin) -> std::string {
+                return pin.name;
+            },
+            [](const PinInfo& pin) -> std::string {
+                if (pin.description.empty()) {
+                    return pin.name;
+                }
+
+                return pin.name + " - " + pin.description;
+            },
+            [](const std::string&, const std::string&, const std::string& value) {
+                strcpy_s(s_InputPinName, value.c_str());
+            },
+            [](const PinInfo& pin) -> std::string {
+                return pin.name;
+            }
+        );
+
+        if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
             ZObjectRef s_ObjectRef;
 
             if (m_InputPinData) {
@@ -551,11 +596,34 @@ void Editor::DrawEntityProperties() {
             }
         }
 
+        auto s_OutputPins = GetPins(s_SelectedEntity, true);
+
         ImGui::SameLine(0, 5);
 
-        if (ImGui::InputText(
-            "Output Pin", s_OutputPinName, IM_ARRAYSIZE(s_OutputPinName), ImGuiInputTextFlags_EnterReturnsTrue
-        )) {
+        Util::ImGuiUtils::InputWithAutocomplete(
+            "Output Pin##OutputPinsPopup",
+            s_OutputPinName,
+            sizeof(s_OutputPinName),
+            s_OutputPins,
+            [](const PinInfo& pin) -> std::string {
+                return pin.name;
+            },
+            [](const PinInfo& pin) -> std::string {
+                if (pin.description.empty()) {
+                    return pin.name;
+                }
+
+                return pin.name + " - " + pin.description;
+            },
+            [](const std::string&, const std::string&, const std::string& value) {
+                strcpy_s(s_OutputPinName, value.c_str());
+            },
+            [](const PinInfo& pin) -> std::string {
+                return pin.name;
+            }
+        );
+
+        if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
             ZObjectRef s_ObjectRef;
 
             if (m_OutputPinData) {
@@ -637,6 +705,76 @@ void Editor::DrawEntityProperties() {
         }
         else {
             DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinData);
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::CollapsingHeader("Keywords")) {
+            static char s_KeywordString[2048] = {};
+
+            const float buttonWidth = ImGui::CalcTextSize(ICON_MD_ADD " Add Keyword").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
+
+            ImGui::InputText("##Keyword", s_KeywordString, sizeof(s_KeywordString));
+
+            ImGui::SameLine();
+
+            if (ImGui::Button(ICON_MD_ADD " Add Keyword")) {
+                if (strlen(s_KeywordString) > 0) {
+                    const int32_t s_Keyword = Hash::Fnv1a(s_KeywordString);
+
+                    Functions::ZGameKeywordManager_AddKeyword->Call(
+                        Globals::GameKeywordManager,
+                        s_SelectedEntity,
+                        s_Keyword
+                    );
+
+                    s_KeywordString[0] = '\0';
+                }
+            }
+
+            ImGui::Separator();
+
+            THashSet<int32_t, TDefaultHashSetPolicy<int32_t>> s_Keywords;
+
+            Functions::ZGameKeywordManager_GetKeywords->Call(Globals::GameKeywordManager, s_SelectedEntity, s_Keywords);
+
+            for (const auto s_Keyword : s_Keywords) {
+                ZString s_KeywordString;
+
+                Functions::ZGameKeywordManager_GetKeywordString->Call(
+                    Globals::GameKeywordManager,
+                    s_KeywordString,
+                    s_Keyword
+                );
+
+                ImGui::Text(s_KeywordString.c_str());
+
+                ImGui::SameLine();
+
+                ImGui::PushID(s_Keyword);
+
+                if (ImGui::SmallButton(ICON_MD_CONTENT_COPY)) {
+                    CopyToClipboard(s_KeywordString.c_str());
+                }
+
+                ImGui::SameLine();
+
+                if (ImGui::SmallButton(ICON_MD_DELETE)) {
+                    Functions::ZGameKeywordManager_RemoveKeyword->Call(Globals::GameKeywordManager, s_SelectedEntity, s_Keyword);
+
+                    ImGui::PopID();
+
+                    break;
+                }
+
+                ImGui::PopID();
+
+                if (ImGui::IsItemHovered()) {
+                    ImGui::SetTooltip("Remove");
+                }
+            }
         }
 
         ImGui::Separator();

@@ -19,7 +19,6 @@ find_package(directx-headers CONFIG REQUIRED)
 find_package(libuv CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(simdjson CONFIG REQUIRED)
-find_package(OpenSSL REQUIRED)
 find_package(semver CONFIG REQUIRED)
 find_package(sentry CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
@@ -62,6 +61,7 @@ set(MODS
         Outfits
         Randomizer
         World
+        FreelancerSeeder
 )
 
 foreach (MOD IN LISTS MODS)

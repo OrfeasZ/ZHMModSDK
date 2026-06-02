@@ -17,6 +17,7 @@
 #include "ImGuizmo.h"
 #include "EditorServer.h"
 #include "EntityTreeNode.h"
+#include "NavKit.h"
 
 struct QneTransform {
     SVector3 Position;
@@ -67,7 +68,10 @@ public:
     ZEntityRef FindEntity(EntitySelector p_Selector);
     static std::string GetCollisionHash(auto p_SelectedEntity);
     void FindMeshes(
-        const std::function<void(std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>&, bool p_Done)>&
+        const std::function<void(
+            std::vector<NavKitMeshEntity>&, std::map<std::string, NavKitMatiTextures>&,
+            std::map<std::string, std::vector<std::string>>&, bool
+        )>&
         p_SendEntitiesCallback, const std::function<void()>& p_RebuiltCallback
     );
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindEntitiesByType(
@@ -77,6 +81,7 @@ public:
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
 
     void QueueTask(std::function<void()> p_Task);
+
 private:
     struct DebugEntity {
         std::string m_TypeName;
@@ -90,6 +95,16 @@ private:
         ZResourcePtr m_PrimResourcePtr;
         SVector4 m_Color;
         SMatrix m_Transform;
+    };
+
+    struct PinInfo {
+        std::string name;
+        std::string description;
+    };
+
+    struct PinLists {
+        std::vector<PinInfo> inputPins;
+        std::vector<PinInfo> outputPins;
     };
 
     void SpawnCameras();
@@ -176,12 +191,18 @@ private:
 
     static void ToggleEditorServerEnabled();
     static void FindAlocAndPrimForZGeomEntityNode(
-        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& p_Entities,
-        const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
+        std::vector<NavKitMeshEntity>& p_Entities,
+        const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const
+        std::unordered_map<std::string, std::string>& p_RoomNameToFolderName,
+        std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
+        std::map<std::string, std::vector<std::string>>& p_PrimMatis
     );
     static void FindAlocAndPrimForZPrimitiveProxyEntityNode(
-        std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string, ZEntityRef>>& entities,
-        const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<SInterfaceData>& s_Interfaces, const char*& s_EntityType, const std::unordered_map<std::string, std::string>& roomNameToFolderName
+        std::vector<NavKitMeshEntity>& s_Entities,
+        const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<SInterfaceData>& s_Interfaces, const char*& s_EntityType, const
+        std::unordered_map<std::string, std::string>& roomNameToFolderName,
+        std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
+        std::map<std::string, std::vector<std::string>>& p_PrimMatis
     );
 
     // Properties
@@ -247,6 +268,8 @@ private:
 
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
+    static std::string FormatFloat(float p_Value, bool p_Round, uint32_t p_Decimals);
+
     std::string GetNameFromRepository(const ZRepositoryID& p_RepositoryID);
 
     void DrawItems(bool p_HasFocus);
@@ -305,6 +328,10 @@ private:
     static bool IsActorTarget(ZActor* p_Actor);
 
     void ProcessTasks();
+
+    std::vector<PinInfo> GetPins(ZEntityRef p_EntityRef, bool outputPins);
+
+    std::map<std::string, PinLists> ParsePinsJson(const std::string& p_PinsJson);
 
 private:
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
@@ -439,6 +466,8 @@ private:
     bool m_UseAngleSnap = false;
     bool m_UseScaleSnap = false;
     bool m_UseQneTransforms = false;
+    bool m_RoundCopiedMatrixValues = false;
+    int32_t m_CopyDecimalPlaces = 3;
     double m_SnapValue = 1.0;
     double m_AngleSnapValue = 90.0;
     double m_ScaleSnapValue = 1.0;
@@ -552,6 +581,8 @@ private:
     bool m_DrawAllGizmos = false;
     bool m_DrawShapes = false;
     GizmoEntity* m_SelectedGizmoEntity = nullptr;
+    bool m_DrawGizmosForSelectedEntityOnly = false;
+    bool m_DrawShapesForSelectedEntityOnly = false;
 
     bool m_DrawCoverInvalidOnNPCErrors = true;
     bool m_DrawHeroGuidesSolid = false;
@@ -585,11 +616,14 @@ private:
     std::mutex m_TaskMutex;
     std::vector<std::function<void()>> m_TaskQueue;
 
+    std::map<std::string, PinLists> m_ClassToInputAndOutputPins;
     std::vector<std::pair<std::string, STypeID*>> m_PinDataTypes;
     STypeID* m_InputPinTypeID = nullptr;
     void* m_InputPinData = nullptr;
     STypeID* m_OutputPinTypeID = nullptr;
     void* m_OutputPinData = nullptr;
+
+    std::vector<std::string> m_ClassNames;
 
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
 };

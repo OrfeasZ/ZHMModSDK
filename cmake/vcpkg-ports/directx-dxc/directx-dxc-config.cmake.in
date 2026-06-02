@@ -1,0 +1,11 @@
+get_filename_component(_dxc_root "${CMAKE_CURRENT_LIST_DIR}" PATH)
+get_filename_component(_dxc_root "${_dxc_root}" PATH)
+
+# Cross-build override: only the build-time tool is provided. Runtime
+# imported targets (Microsoft::DirectXShaderCompiler / Microsoft::DXIL) are
+# intentionally omitted because we ship no dxcompiler.dll / dxil.dll in the
+# package.
+set(DIRECTX_DXC_TOOL "${_dxc_root}/tools/directx-dxc/DXC.EXE" CACHE PATH "Location of the dxc tool")
+mark_as_advanced(DIRECTX_DXC_TOOL)
+
+unset(_dxc_root)

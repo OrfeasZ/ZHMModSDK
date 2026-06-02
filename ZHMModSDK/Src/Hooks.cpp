@@ -550,7 +550,7 @@ PATTERN_HOOK(
     "\x48\x89\x5C\x24\x10\x55\x56\x57\x41\x56\x41\x57\x48\x83\xEC\x00\x8B\x1D",
     "xxxxxxxxxxxxxxx?xx",
     ZClothBundleEntity_CreateClothBundle,
-    TEntityRef<ZClothBundleEntity>* (TEntityRef<ZClothBundleEntity>& result, const SMatrix& mat, ZRepositoryID id,
+    TEntityRef<ZClothBundleEntity>* (TEntityRef<ZClothBundleEntity>& result, const SMatrix& mat, const ZRepositoryID& id,
         int32_t nOutfitVariation, int32_t nOutfitCharset, bool bSpawnedByHitman, bool bEnableOutfitModifiers)
 );
 
@@ -595,4 +595,18 @@ PATTERN_HOOK(
     "xxxxx?xxxxxxxxxxxx",
     ZHM5ItemWeapon_IsFiring,
     bool(IFirearm* th)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x48\x89\x74\x24\x20\x41\x56\x48\x83\xEC\x00\x4C\x8B\x51\x08",
+    "xxxxxxxxxxxxxxxxxxxx?xxxx",
+    ZDynamicObject_Set_ZDynamicObject,
+    ZDynamicObject*(ZDynamicObject* th, const ZString& key, const ZDynamicObject& val)
+);
+
+PATTERN_HOOK(
+    "\x40\x57\x48\x83\xEC\x00\x48\x89\x74\x24\x68",
+    "xxxxx?xxxxx",
+    ZEvergreenCampaignManager_OnGenerate,
+    ZEvergreenCampaignManager*(ZEvergreenCampaignManager* th)
 );

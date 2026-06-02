@@ -4,7 +4,7 @@
 #include <emmintrin.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
-#include <directxmath.h>
+#include <DirectXMath.h>
 
 struct SViewport {
     uint32_t x;
@@ -301,11 +301,30 @@ struct alignas(16) float4 {
     }
 
     inline static float DotProduct(const float4& v1, const float4& v2) {
+#if defined(__SSE4_1__) || (defined(_MSC_VER) && !defined(__clang__))
         return _mm_cvtss_f32(_mm_dp_ps(v1.m, v2.m, 0x71));
+#else
+        // SSE2 fallback for clang-cl cross builds (no SSE4.1 baseline): sum the
+        // x/y/z lane products into lane 0. Enabling /arch globally is avoided
+        // because it changes simdjson's SIMD implementation selection.
+        const __m128 m = _mm_mul_ps(v1.m, v2.m);
+        __m128 s = _mm_add_ss(m, _mm_shuffle_ps(m, m, _MM_SHUFFLE(1, 1, 1, 1)));
+        s = _mm_add_ss(s, _mm_shuffle_ps(m, m, _MM_SHUFFLE(2, 2, 2, 2)));
+        return _mm_cvtss_f32(s);
+#endif
     }
 
     inline static float4 Dot3(const float4& v1, const float4& v2) {
+#if defined(__SSE4_1__) || (defined(_MSC_VER) && !defined(__clang__))
         return _mm_dp_ps(v1.m, v2.m, 0x7F);
+#else
+        // SSE2 fallback: x/y/z lane products summed and broadcast to all lanes.
+        const __m128 mask = _mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1));
+        const __m128 m = _mm_and_ps(_mm_mul_ps(v1.m, v2.m), mask);
+        __m128 s = _mm_add_ps(m, _mm_shuffle_ps(m, m, _MM_SHUFFLE(2, 3, 0, 1)));
+        s = _mm_add_ps(s, _mm_shuffle_ps(s, s, _MM_SHUFFLE(1, 0, 3, 2)));
+        return s;
+#endif
     }
 
     inline static float Norm(const float4& p_Vec) {

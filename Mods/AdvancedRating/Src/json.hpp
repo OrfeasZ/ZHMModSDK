@@ -16622,18 +16622,21 @@ class serializer
         // erase thousands separator
         if (thousands_sep != '\0')
         {
-            auto* const end = std::remove(number_buffer.begin(),
-                                        number_buffer.begin() + len, thousands_sep);
-            std::fill(end, number_buffer.end(), '\0');
-            JSON_ASSERT((end - number_buffer.begin()) <= len);
-            len = (end - number_buffer.begin());
+            // ZHM local patch: use .data() (raw char*) instead of .begin().
+            // clang-cl's std::array::begin() returns a checked _Array_iterator,
+            // so `auto* const` fails to deduce a pointer.
+            auto* const end = std::remove(number_buffer.data(),
+                                        number_buffer.data() + len, thousands_sep);
+            JSON_ASSERT((end - number_buffer.data()) <= len);
+            len = (end - number_buffer.data());
         }
 
         // convert decimal point to '.'
         if (decimal_point != '\0' && decimal_point != '.')
         {
-            auto* const dec_pos = std::find(number_buffer.begin(), number_buffer.end(), decimal_point);
-            if (dec_pos != number_buffer.end())
+            // ZHM local patch: .data() instead of .begin()/.end() (see above).
+            auto* const dec_pos = std::find(number_buffer.data(), number_buffer.data() + number_buffer.size(), decimal_point);
+            if (dec_pos != number_buffer.data() + number_buffer.size())
             {
                 *dec_pos = '.';
             }

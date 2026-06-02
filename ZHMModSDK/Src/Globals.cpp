@@ -484,3 +484,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZOnlineManager*, OnlineManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x0D\x00\x00\x00\x00\x48\x8B\xD0\xE8\x00\x00\x00\x00\x48\x83\xC4\x00\x5B\xC3\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x40\x53",
+    "xxx????xxxx????xxx?xx???????????xx",
+    3,
+    ZGameKeywordManager*, GameKeywordManager
+);

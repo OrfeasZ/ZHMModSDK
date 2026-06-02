@@ -1223,10 +1223,10 @@ void DirectXTKRenderer::DrawBoundingQuads3D(
     };
 
     auto drawQuad = [&](int i0, int i1, int i2, int i3) {
-        SVector3 v0(s_Corners[i0].m128_f32[0], s_Corners[i0].m128_f32[1], s_Corners[i0].m128_f32[2]);
-        SVector3 v1(s_Corners[i1].m128_f32[0], s_Corners[i1].m128_f32[1], s_Corners[i1].m128_f32[2]);
-        SVector3 v2(s_Corners[i2].m128_f32[0], s_Corners[i2].m128_f32[1], s_Corners[i2].m128_f32[2]);
-        SVector3 v3(s_Corners[i3].m128_f32[0], s_Corners[i3].m128_f32[1], s_Corners[i3].m128_f32[2]);
+        SVector3 v0(DirectX::XMVectorGetX(s_Corners[i0]), DirectX::XMVectorGetY(s_Corners[i0]), DirectX::XMVectorGetZ(s_Corners[i0]));
+        SVector3 v1(DirectX::XMVectorGetX(s_Corners[i1]), DirectX::XMVectorGetY(s_Corners[i1]), DirectX::XMVectorGetZ(s_Corners[i1]));
+        SVector3 v2(DirectX::XMVectorGetX(s_Corners[i2]), DirectX::XMVectorGetY(s_Corners[i2]), DirectX::XMVectorGetZ(s_Corners[i2]));
+        SVector3 v3(DirectX::XMVectorGetX(s_Corners[i3]), DirectX::XMVectorGetY(s_Corners[i3]), DirectX::XMVectorGetZ(s_Corners[i3]));
 
         DrawTriangle3D(v0, p_Color, v1, p_Color, v2, p_Color);
         DrawTriangle3D(v0, p_Color, v2, p_Color, v3, p_Color);

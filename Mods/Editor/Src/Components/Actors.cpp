@@ -91,7 +91,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
             s_ActorCount = Globals::ActorManager->m_activatedActors.size();
         }
 
-        for (int i = 0; i < s_ActorCount; ++i) {
+        std::vector<std::pair<ZActor*, std::u32string>> s_FilteredActors;
+
+        s_FilteredActors.reserve(s_ActorCount);
+
+        for (size_t i = 0; i < s_ActorCount; ++i) {
             ZActor* s_Actor = s_ActorArray[i].m_pInterfaceRef;
 
             if (!s_Actor) {
@@ -173,11 +177,27 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 continue;
             }
 
-            std::string s_ActorName2 = s_Actor->GetActorName().c_str();
+            ZString s_ActorName2 = s_Actor->GetActorName();
 
-            if (!Util::StringUtils::FindSubstringUTF8(s_ActorName2, s_ActorName)) {
+            if (!Util::StringUtils::FindSubstringUTF8(s_ActorName2.c_str(), s_ActorName)) {
                 continue;
             }
+
+            std::u32string s_ActorName3 = Util::StringUtils::UTF8ToUTF32(s_ActorName2.c_str());
+
+            Util::StringUtils::NormalizeUTF32(s_ActorName3, false);
+
+            s_FilteredActors.push_back({ s_Actor, std::move(s_ActorName3) });
+        }
+
+        std::sort(s_FilteredActors.begin(), s_FilteredActors.end(),
+            [](const auto& p_PairA, const auto& p_PairB) {
+                return p_PairA.second < p_PairB.second;
+            }
+        );
+
+        for (size_t i = 0; i < s_FilteredActors.size(); ++i) {
+            ZActor* s_Actor = s_FilteredActors[i].first;
 
             const bool s_IsSelected = m_SelectedActor == s_Actor;
 
@@ -187,6 +207,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 m_ScrollToActor = false;
             }
 
+            std::string s_ActorName2 = s_Actor->GetActorName().c_str();
             std::string s_ActorId = std::format("{}###{}", s_ActorName2, i);
 
             if (ImGui::Selectable(s_ActorId.c_str(), s_IsSelected)) {
@@ -194,7 +215,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     m_SelectedActor = s_Actor;
                     m_GlobalOutfitKit = {};
 
-                    Logger::Info("Selected actor (by list): {}", s_Actor->GetActorName());
+                    Logger::Info("Selected actor (by list): {}", s_ActorName2.c_str());
                 }
             }
         }
@@ -426,7 +447,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                 const ZSpatialEntity* s_ActorSpatialEntity2 = s_Ref.QueryInterface<ZSpatialEntity>();
 
                 const SVector3 s_Temp = s_ActorSpatialEntity->m_mTransform.Trans - s_ActorSpatialEntity2->m_mTransform.
-                        Trans;
+                    Trans;
                 const float s_Distance = sqrt(s_Temp.x * s_Temp.x + s_Temp.y * s_Temp.y + s_Temp.z * s_Temp.z);
 
                 if (s_Distance <= 3.0f) {

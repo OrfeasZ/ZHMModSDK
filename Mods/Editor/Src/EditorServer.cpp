@@ -683,8 +683,9 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
     Logger::Info("Sending Meshes...");
     Plugin()->FindMeshes(
         [p_Socket, p_Loop, s_AnyMeshSentOverall, s_TotalMeshesSent, s_LastLoggedMilestone](
-    const std::vector<std::tuple<std::vector<std::pair<std::string, std::string>>, Quat, std::string, std::string,
-                                 ZEntityRef>>& p_Entities,
+    const std::vector<NavKitMeshEntity>& p_Entities,
+    const std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
+    const std::map<std::string, std::vector<std::string>>& p_PrimMatis,
     const bool p_IsLastMeshBatch
 ) -> void {
             std::ostringstream s_BatchJson;
@@ -697,27 +698,22 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
                     Logger::Info("Meshes sent: {}", *s_TotalMeshesSent);
                     *s_LastLoggedMilestone = currentMilestone;
                 }
-                for (auto& [s_Hashes, s_Quat, s_RoomName, s_FolderName, s_Entity] : p_Entities) {
+                for (auto& [s_AlocHash, s_PrimHash, s_Quat, s_RoomName, s_FolderName, s_Entity] : p_Entities) {
                     if (IsExcludedFromNavMeshExport(s_Entity)) continue;
-                    if (s_Hashes.empty()) {
-                        continue;
+                    if (!s_IsFirstItemInBatch) {
+                        s_BatchJson << ",";
                     }
-                    for (const auto& s_AlocAndPrimHashes : s_Hashes) {
-                        if (!s_IsFirstItemInBatch) {
-                            s_BatchJson << ",";
-                        }
-                        s_IsFirstItemInBatch = false;
-                        s_DidPrepareDataThisBatch = true;
+                    s_IsFirstItemInBatch = false;
+                    s_DidPrepareDataThisBatch = true;
+                    s_BatchJson << "{";
+                    s_BatchJson << write_json("alocHash") << ":" << write_json(s_AlocHash) << ",";
+                    s_BatchJson << write_json("primHash") << ":" << write_json(s_PrimHash) << ",";
+                    s_BatchJson << write_json("roomName") << ":" << write_json(s_RoomName) << ",";
+                    s_BatchJson << write_json("roomFolderName") << ":" << write_json(s_FolderName) << ",";
+                    s_BatchJson << write_json("entity") << ":";
 
-                        s_BatchJson << "{";
-                        s_BatchJson << write_json("alocHash") << ":" << write_json(s_AlocAndPrimHashes.first) << ",";
-                        s_BatchJson << write_json("primHash") << ":" << write_json(s_AlocAndPrimHashes.second) << ",";
-                        s_BatchJson << write_json("roomName") << ":" << write_json(s_RoomName) << ",";
-                        s_BatchJson << write_json("roomFolderName") << ":" << write_json(s_FolderName) << ",";
-                        s_BatchJson << write_json("entity") << ":";
-                        WriteEntityTransforms(s_BatchJson, s_Quat, s_Entity);
-                        s_BatchJson << "}";
-                    }
+                    WriteEntityTransforms(s_BatchJson, s_Quat, s_Entity);
+                    s_BatchJson << "}";
                 }
             }
             if (s_DidPrepareDataThisBatch) {
@@ -748,7 +744,8 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
 
                 p_Loop->defer(
                     [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities,
-                        s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities]() {
+                        s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities,
+                        p_PrimMatis, p_MatiTextures]() {
                         p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
@@ -773,9 +770,49 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
                         p_Socket->send("],\"volumeSpheres\":[", uWS::OpCode::TEXT);
                         SendEntitiesDetails(p_Socket, s_VolumeSphereEntities);
 
+                        p_Socket->send("],\"matis\":[", uWS::OpCode::TEXT);
+                        bool s_FirstMati = true;
+                        for (const auto& [s_MatiHash, s_MatiTextureHashes] : p_MatiTextures) {
+                            if (!s_FirstMati) {
+                                p_Socket->send(",", uWS::OpCode::TEXT);
+                            }
+                            else {
+                                s_FirstMati = false;
+                            }
+                            p_Socket->send("{", uWS::OpCode::TEXT);
+                            p_Socket->send(write_json("hash") + ":" + write_json(s_MatiHash) + ",", uWS::OpCode::TEXT);
+                            p_Socket->send(write_json("diffuse") + ":" + write_json(s_MatiTextureHashes.m_DiffuseTextureHash) + ",", uWS::OpCode::TEXT);
+                            p_Socket->send(write_json("normal") + ":" + write_json(s_MatiTextureHashes.m_NormalTextureHash) + ",", uWS::OpCode::TEXT);
+                            p_Socket->send(write_json("specular") + ":" + write_json(s_MatiTextureHashes.m_SpecularTextureHash), uWS::OpCode::TEXT);
+                            p_Socket->send("}", uWS::OpCode::TEXT);
+                        }
+                        p_Socket->send("],\"primMatis\":[", uWS::OpCode::TEXT);
+                        bool s_FirstPrim = true;
+                        for (const auto& [s_PrimHash, s_Matis] : p_PrimMatis) {
+                            if (!s_FirstPrim) {
+                                p_Socket->send(",", uWS::OpCode::TEXT);
+                            }
+                            else {
+                                s_FirstPrim = false;
+                            }
+                            p_Socket->send("{", uWS::OpCode::TEXT);
+                            p_Socket->send(write_json("primHash") + ":" + write_json(s_PrimHash) + ",", uWS::OpCode::TEXT);
+                            p_Socket->send(write_json("matiHashes") + ":[", uWS::OpCode::TEXT);
+                            s_FirstMati = true;
+                            for (const auto& s_MatiHash : s_Matis) {
+                                if (!s_FirstMati) {
+                                    p_Socket->send(",", uWS::OpCode::TEXT);
+                                }
+                                else {
+                                    s_FirstMati = false;
+                                }
+                                p_Socket->send(write_json(s_MatiHash), uWS::OpCode::TEXT);
+                            }
+                            p_Socket->send("]}", uWS::OpCode::TEXT);
+                        }
                         p_Socket->send("]}", uWS::OpCode::TEXT);
                         p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
-                        Logger::Info("Done sending Entities.");
+                        Logger::Info("Done sending scene.");
                     }
                 );
             }

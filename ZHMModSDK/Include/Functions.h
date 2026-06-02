@@ -39,7 +39,7 @@ class IItem;
 class ZSetpieceEntity;
 struct SExternalReferences;
 class ZTemplateEntityFactory;
-class STemplateEntityFactory;
+struct STemplateEntityFactory;
 class ZTemplateInstaller;
 class ZTemplateBlueprintInstaller;
 class ZResourcePending;
@@ -53,6 +53,7 @@ class ZStashPointEntity;
 class ZTimeOfDayManager;
 class ZHM5Health;
 class ZHM5WeaponControl;
+class ZGameKeywordManager;
 
 namespace bfx {
     class AreaHandle;
@@ -161,7 +162,7 @@ public:
     static EngineFunction<bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateBlueprintInstaller_Install;
 
-    static EngineFunction<ZEntityType*(ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
+    static EngineFunction<ZEntityType*(ZEntityImpl* th, uint32_t nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
 
     static EngineFunction<void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)>*
     ZResourceContainer_AddResourceReferenceInternal;
@@ -200,7 +201,7 @@ public:
     static EngineFunction<uint32(
         ZWorldInventory* th,
         const ZRepositoryID& repId,
-        ZDelegate<void(unsigned int, TEntityRef<IItemBase>)> callback,
+        ZDelegate<void(uint32_t, TEntityRef<IItemBase>)> callback,
         uint64_t entityID,
         bool bLoading,
         const ZEntityRef& rParentSpatial,
@@ -254,4 +255,25 @@ public:
     )>* ZCharacterSubcontrollerInventory_GetAmmoInPocketForType;
 
     static EngineFunction<float(ZHM5WeaponControl* th)>* ZHM5WeaponControl_GetCrosshairScale;
+
+    static EngineFunction<void(
+        ZGameKeywordManager* th,
+        const ZEntityRef& rHolder,
+        const THashSet<int32_t, TDefaultHashSetPolicy<int32_t>>& outKeywords
+    )>* ZGameKeywordManager_GetKeywords;
+    static EngineFunction<ZString*(
+        const ZGameKeywordManager* th,
+        ZString& result,
+        int32 nKeywordID
+    )>* ZGameKeywordManager_GetKeywordString;
+    static EngineFunction<void(
+        ZGameKeywordManager* th,
+        const ZEntityRef& rHolder,
+        int32_t nKeyword
+    )>* ZGameKeywordManager_AddKeyword;
+    static EngineFunction<void(
+        ZGameKeywordManager* th,
+        const ZEntityRef& rHolder,
+        int32_t nKeyword
+    )>* ZGameKeywordManager_RemoveKeyword;
 };

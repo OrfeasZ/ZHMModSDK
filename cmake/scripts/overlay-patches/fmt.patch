@@ -1,0 +1,29 @@
+--- a/portfile.cmake
++++ b/portfile.cmake
+@@ -22,6 +22,15 @@
+ vcpkg_fixup_pkgconfig()
+ vcpkg_copy_pdbs()
+ 
++# clang in MSVC mode (clang-cl) miscompiles fmt's consteval compile-time
++# format-string checks ("call to consteval function ... is not a constant
++# expression") even for valid literal format strings, which breaks every
++# consumer that includes spdlog/fmt under the Linux->Windows cross build. Force
++# fmt's runtime checks there. Native MSVC, GCC and non-MSVC clang are untouched.
++vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/fmt/base.h"
++    "#if FMT_USE_CONSTEVAL\n#  define FMT_CONSTEVAL consteval"
++    "#if defined(__clang__) && defined(_MSC_VER)\n#  undef FMT_USE_CONSTEVAL\n#  define FMT_USE_CONSTEVAL 0\n#endif\n#if FMT_USE_CONSTEVAL\n#  define FMT_CONSTEVAL consteval")
++
+ if(VCPKG_LIBRARY_LINKAGE STREQUAL dynamic)
+     vcpkg_replace_string("${CURRENT_PACKAGES_DIR}/include/fmt/base.h"
+         "defined(FMT_SHARED)"
+--- a/vcpkg.json
++++ b/vcpkg.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "fmt",
+   "version": "11.0.2",
+-  "port-version": 1,
++  "port-version": 99,
+   "description": "{fmt} is an open-source formatting library providing a fast and safe alternative to C stdio and C++ iostreams.",
+   "homepage": "https://github.com/fmtlib/fmt",
+   "license": "MIT",
