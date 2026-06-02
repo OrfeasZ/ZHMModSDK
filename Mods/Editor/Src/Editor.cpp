@@ -1159,6 +1159,10 @@ std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
         ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
             GetResourceData());
 
+    if (!s_RepositoryData) {
+        return "";
+    }
+
     auto s_Iterator = s_RepositoryData->find(p_RepositoryID);
 
     if (s_Iterator == s_RepositoryData->end()) {
