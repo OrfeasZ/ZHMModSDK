@@ -382,45 +382,43 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
         if (s_ControlsExpanded) {
             ImGui::TextUnformatted("PC Controls");
 
-            ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit);
-
-            if (m_EditorStyleFreecam) {
-                for (auto& [s_Key, s_Description] : m_PcControlsEditorStyle) {
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(s_Key.c_str());
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(s_Description.c_str());
+            if (ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)){
+                if (m_EditorStyleFreecam) {
+                    for (auto& [s_Key, s_Description] : m_PcControlsEditorStyle) {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(s_Key.c_str());
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(s_Description.c_str());
+                    }
                 }
-            }
-            else {
-                for (auto& [s_Key, s_Description] : m_PcControls) {
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(s_Key.c_str());
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(s_Description.c_str());
+                else {
+                    for (auto& [s_Key, s_Description] : m_PcControls) {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(s_Key.c_str());
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(s_Description.c_str());
+                    }
                 }
-            }
 
-            ImGui::EndTable();
+                ImGui::EndTable();
+            }
 
             if (!m_EditorStyleFreecam) {
                 ImGui::TextUnformatted("Controller Controls");
 
-                ImGui::BeginTable(
-                    "FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit
-                );
+                if (ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)){
+                    for (auto& [s_Key, s_Description] : m_ControllerControls) {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(s_Key.c_str());
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted(s_Description.c_str());
+                    }
 
-                for (auto& [s_Key, s_Description] : m_ControllerControls) {
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(s_Key.c_str());
-                    ImGui::TableNextColumn();
-                    ImGui::TextUnformatted(s_Description.c_str());
+                    ImGui::EndTable();
                 }
-
-                ImGui::EndTable();
             }
         }
 
