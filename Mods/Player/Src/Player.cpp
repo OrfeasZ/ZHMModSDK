@@ -538,7 +538,7 @@ bool Player::CreateAICrippleEntity() {
     constexpr auto s_AICrippleEntityFactoryId = ResId<"[modules:/zaicrippleentity.class].pc_entitytype">;
 
     TResourcePtr<ZTemplateEntityFactory> s_AICrippleEntityFactory;
-    Globals::ResourceManager->GetResourcePtr(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId, 0);
+    Globals::ResourceManager->LoadResource(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId);
 
     if (!s_AICrippleEntityFactory) {
         Logger::Error("Resource is not loaded!");
@@ -579,7 +579,7 @@ bool Player::CreateHM5CrippleBoxEntity() {
     constexpr auto s_CrippleBoxFactoryId = ResId<"[modules:/zhm5cripplebox.class].pc_entitytype">;
 
     TResourcePtr<ZTemplateEntityFactory> s_CrippleBoxFactory;
-    Globals::ResourceManager->GetResourcePtr(s_CrippleBoxFactory, s_CrippleBoxFactoryId, 0);
+    Globals::ResourceManager->LoadResource(s_CrippleBoxFactory, s_CrippleBoxFactoryId);
 
     if (!s_CrippleBoxFactory) {
         Logger::Debug("Resource is not loaded.");
