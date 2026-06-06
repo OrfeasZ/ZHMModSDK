@@ -231,6 +231,9 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     std::vector<Quat> s_ParentQuats;
     while (s_Entity->m_eidParent != NULL) {
         const TEntityRef<ZSpatialEntity> s_EidParent = s_Entity->m_eidParent;
+        if (s_Entity == s_EidParent.m_pInterfaceRef) {
+            throw std::runtime_error("Circular reference found!");
+        }
         s_Entity = s_EidParent.m_pInterfaceRef;
         s_ParentQuats.push_back(GetQuatFromProperty(s_EidParent.m_entityRef));
     }
@@ -377,7 +380,17 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
             s_EntityId, s_TbluHashString, s_PrimHash, s_AlocHash
         );
         Quat s_EntityQuat = GetQuatFromProperty(p_Node->Entity);
-        Quat s_ParentQuat = GetParentQuat(p_Node->Entity);
+
+        Quat s_ParentQuat;
+        try {
+            s_ParentQuat = GetParentQuat(p_Node->Entity);
+        } catch (std::runtime_error) {
+            Logger::Error(
+                "Circular reference found! Skipping entity with ID: {} TBLU: {} PRIM: {} ALOC: {}",
+                s_EntityId, s_TbluHashString, s_PrimHash, s_AlocHash
+            );
+            return;
+        }
 
         Quat s_CombinedQuat;
         s_CombinedQuat = s_ParentQuat * s_EntityQuat;
@@ -424,7 +437,15 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
             );
             // s_NavKitMeshHashInfos.emplace_back(s_AlocHash, s_PrimHash);
             Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-            Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+            Quat s_ParentQuat;
+            try {
+                s_ParentQuat =GetParentQuat(s_Node->Entity);
+            } catch (std::runtime_error) {
+                Logger::Error(
+                    "Circular reference found! Skipping entity with ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
+                );
+                return;
+            }
 
             Quat s_CombinedQuat;
             s_CombinedQuat = s_ParentQuat * s_EntityQuat;
@@ -543,7 +564,13 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
         if (const char* s_EntityType = s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName;
             strcmp(s_EntityType, p_EntityType.c_str()) == 0) {
             Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-            Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+            Quat s_ParentQuat;
+            try {
+                s_ParentQuat =GetParentQuat(s_Node->Entity);
+            } catch (std::runtime_error) {
+                Logger::Error( "Circular reference found! Skipping entity." );
+                continue;
+            }
 
             Quat s_CombinedQuat;
             s_CombinedQuat = s_ParentQuat * s_EntityQuat;
