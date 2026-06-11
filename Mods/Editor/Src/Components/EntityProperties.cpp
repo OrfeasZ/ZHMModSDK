@@ -389,8 +389,8 @@ void Editor::DrawEntityProperties() {
 
                 CopyToClipboard(
                     fmt::format(
-                        "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},\"position\":{{\"x\":{},\"y\":{},\"z\":{}}},"
-                        "\"scale\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
+                        "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+                        "\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
                         s_QneTrans.Rotation.x, s_QneTrans.Rotation.y, s_QneTrans.Rotation.z,
                         s_QneTrans.Position.x, s_QneTrans.Position.y, s_QneTrans.Position.z,
                         s_QneTrans.Scale.x, s_QneTrans.Scale.y, s_QneTrans.Scale.z
