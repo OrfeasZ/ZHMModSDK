@@ -157,13 +157,21 @@ public:
         ZObjectRef value; // 0x18
     };
 
+    struct SResourceIDProperty {
+        int32 iEntity; // 0x0
+        uint32 nPropertyID; // 0x4
+        ZRuntimeResourceID id; // 0x8
+    };
+
     STemplateEntityFactory* m_pResourceData; // 0x8
     bool m_bHasCalculatedPropertyValues; // 0x10
     int32 m_rootEntityIndex; // 0x14
     TArray<IEntityFactory*> m_pFactories; // 0x18
     ZRuntimeResourceID m_ridResource; // 0x30
     TResourcePtr<ZTemplateEntityBlueprintFactory> m_blueprintResource; // 0x38
-    PAD(0x90); // 0x40
+    PAD(0x70); // 0x40
+    TArray<SResourceIDProperty> m_resourceIDPropertyValues; // 0xB0
+    PAD(0x8); // 0xC8
     TArray<SDirectlySettableProperty> m_directlySettableProperties; // 0xD0
     TArray<SDirectlySettablePropertyWithSetter> m_directlySettablePropertiesWithSetter; // 0xE8
 };
