@@ -299,10 +299,10 @@ public:
     };
 
     struct SPartitionInfo {
-        uint32_t m_nIndex; // 0
+        int32_t m_nIndex; // 0
         ZString m_sPartitionID; // 8
         EPartitionType m_eType; // 24
-        uint32_t m_patchLevel; // 28
+        int32_t m_patchLevel; // 28
         uint64_t a32; // 32
         uint64_t a40; // 40
         ZString m_sMountPath; // 48
