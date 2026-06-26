@@ -291,7 +291,7 @@ public:
     ZResourceReaderPtr m_pResourceReader;
 };
 
-class IPackageManager : public IComponentInterface {
+class IPackageManager {
 public:
     enum EPartitionType {
         Standard,
@@ -315,7 +315,7 @@ public:
     virtual ~IPackageManager() {}
 
 public:
-    PAD(24);
+    PAD(0x18);
 };
 
 static_assert(sizeof(IPackageManager::SPartitionInfo) == 112);
@@ -323,6 +323,10 @@ static_assert(sizeof(IPackageManager::SPartitionInfo) == 112);
 class ZPackageManagerBase : public IPackageManager {
 public:
     virtual ~ZPackageManagerBase() {}
+    virtual void ZPackageManagerBase_unk1() = 0;
+    virtual void ZPackageManagerBase_unk2() = 0;
+    virtual void ZPackageManagerBase_unk3() = 0;
+    virtual void ZPackageManagerBase_unk4() = 0;
     virtual void ZPackageManagerBase_unk5() = 0;
     virtual void ZPackageManagerBase_unk6() = 0;
     virtual void MountPartitionsForRoots(const TArray<ZResourceID>& roots) = 0;
