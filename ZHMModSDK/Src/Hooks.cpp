@@ -145,8 +145,8 @@ PATTERN_HOOK(
 PATTERN_RELATIVE_CALL_HOOK(
     "\xE8\x00\x00\x00\x00\x48\x8B\x8C\x24\xC0\x01\x00\x00",
     "x????xxxxxxxx",
-    IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo,
-    void*(IPackageManager::SPartitionInfo* th, void* a2, const ZString& a3, int a4, int patchLevel)
+    IPackageManager_SPartitionInfo_SPartitionInfo,
+    void*(IPackageManager::SPartitionInfo* th, int32_t index, ZString partitionID, IPackageManager::EPartitionType type, int32_t patchLevel)
 );
 
 PATTERN_HOOK(
