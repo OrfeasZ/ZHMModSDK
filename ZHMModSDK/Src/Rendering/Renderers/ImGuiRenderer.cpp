@@ -79,8 +79,6 @@ CjkFontPaths FindCjkFontPaths() {
             L"msyh.ttc", // Microsoft YaHei
             L"simhei.ttf",
             L"simsun.ttc",
-            L"msjh.ttc", // Microsoft JhengHei
-            L"Deng.ttf",
         }
     );
 
