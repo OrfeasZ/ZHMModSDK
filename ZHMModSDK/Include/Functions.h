@@ -153,8 +153,10 @@ public:
     ZResourceContainer_AddResourceInternal;
 
     static EngineFunction<void(
-        ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize
+        ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr* pData, uint32_t dataSize
     )>* ZResourceReader_ZResourceReader;
+	
+	static EngineFunction<void(ZResourceReader* th)>* ZResourceReader_Dtor;
 
     static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateInstaller_Install;

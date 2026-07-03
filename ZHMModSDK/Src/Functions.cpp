@@ -268,7 +268,14 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x33\xED\x48\x8D\x05\x00\x00\x00\x00\x89\x69\x08",
     "xxxxxxxxxxxxxxxxxxx?xxxxx????xxx",
     ZResourceReader_ZResourceReader,
-    void(ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize)
+    void(ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr* pData, uint32_t dataSize)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8D\x05\x00\x00\x00\x00\x48\x8B\xD9\x48\x89\x01\x8B\xFA\x48\x83\xC1\x00\xE8\x00\x00\x00\x00\x48\x8D\x4B\x28\xE8\x00\x00\x00\x00\x48\x8B\x4B\x18"
+    "xxxxxxxxx?xxx????xxxxxxxxxxx?x????xxxxx????xxxx",
+	ZResourceReader_Dtor,
+	void(ZResourceReader* th)
 );
 
 PATTERN_VTABLE_FUNCTION(
