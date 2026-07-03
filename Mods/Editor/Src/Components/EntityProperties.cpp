@@ -426,11 +426,11 @@ void Editor::DrawEntityProperties() {
 
                 if (m_CameraActive) {
                     m_CameraActive = false;
-                    Editor::DeactivateCamera();
+                    DeactivateCamera();
                 }
                 else {
                     m_CameraActive = true;
-                    Editor::ActivateCamera(s_Camera);
+                    ActivateCamera(s_Camera);
                 }
             }
         }
