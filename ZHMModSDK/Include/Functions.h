@@ -168,7 +168,7 @@ public:
     ZResourceContainer_AddResourceReferenceInternal;
 
     static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index)>*
-    ZResourceContainer_AcquireReferences;
+    ZResourceContainer_AcquireResourceReferences;
 
     static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
 

@@ -304,7 +304,7 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
         );
     }
 
-    Functions::ZResourceContainer_AcquireReferences->Call(*Globals::ResourceContainer, s_Index);
+    Functions::ZResourceContainer_AcquireResourceReferences->Call(*Globals::ResourceContainer, s_Index);
     WaitForResources();
 
     Logger::Debug("All references loaded! Creating readers and installing resource...");
