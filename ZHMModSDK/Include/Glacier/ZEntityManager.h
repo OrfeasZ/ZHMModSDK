@@ -6,7 +6,7 @@
 
 class ZEntitySceneContext;
 
-class ZEntityManager {
+class ZEntityManager : public IComponentInterface {
 public:
     virtual ~ZEntityManager() {}
 
