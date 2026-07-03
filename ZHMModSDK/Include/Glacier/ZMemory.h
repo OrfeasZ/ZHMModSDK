@@ -23,7 +23,8 @@ public:
     virtual void IPageAllocator_unk5() = 0;
     virtual void IPageAllocator_unk6() = 0;
     virtual void IPageAllocator_unk7() = 0;
-    virtual IAllocator* GetAllocator(void* object) = 0;
+    virtual void IPageAllocator_unk8() = 0;
+    virtual IAllocator* GetAllocator(void* pAddress) = 0;
 };
 
 class ZMemoryManager {
