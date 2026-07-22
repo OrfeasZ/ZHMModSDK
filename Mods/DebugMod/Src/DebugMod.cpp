@@ -553,7 +553,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
     SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
 
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
-    static const float s_Scale = 0.3f;
+    static const float s_Scale = 0.1f;
 
     for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
         ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (
@@ -567,7 +567,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         s_WorldMatrix.Trans = s_TopCenter;
 
         const std::string s_Text = fmt::format(
-            "Entity ID: {:016x}\nObstacle Flags: {:04x}\nPenalty: {}",
+            "Entity ID: {:016x}\nObstacle Flags: 0x{:04X}\nPenalty: {}",
             m_ObstacleToEntityID[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
             s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
             s_PFObstacleInternalDep->m_obstacleDef.m_penalty
