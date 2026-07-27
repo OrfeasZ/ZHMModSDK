@@ -39,7 +39,7 @@ class IItem;
 class ZSetpieceEntity;
 struct SExternalReferences;
 class ZTemplateEntityFactory;
-class STemplateEntityFactory;
+struct STemplateEntityFactory;
 class ZTemplateInstaller;
 class ZTemplateBlueprintInstaller;
 class ZResourcePending;
@@ -49,12 +49,21 @@ class ZUIText;
 class ZActorInventoryHandler;
 class ZWorldInventory;
 class IItemBase;
+class ZStashPointEntity;
+class ZTimeOfDayManager;
+class ZHM5Health;
+class ZHM5WeaponControl;
+class ZGameKeywordManager;
+
+namespace bfx {
+    class AreaHandle;
+}
 
 class ZHMSDK_API Functions {
 public:
     static EngineFunction<void(ZActor* th)>* ZActor_OnOutfitChanged;
     static EngineFunction<void(ZActor* th)>* ZActor_ReviveActor;
-    static EngineFunction<void(ZDynamicObject* th, ZString* a2)>* ZDynamicObject_ToString;
+    static EngineFunction<void(ZDynamicObject* th, ZString& result)>* ZDynamicObject_ToString;
     static EngineFunction<ZDynamicObject*(ZDynamicObject& result, const uint8_t* pData, uint64_t nLength)>* ZJsonDeserializer_Deserialize;
     static EngineFunction<void(ZHM5BaseCharacter* th, bool inMotion)>* ZHM5BaseCharacter_ActivateRagdoll;
     static EngineFunction<void(ZHM5BaseCharacter* th)>* ZHM5BaseCharacter_DeactivateRagdoll;
@@ -144,8 +153,10 @@ public:
     ZResourceContainer_AddResourceInternal;
 
     static EngineFunction<void(
-        ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize
+        ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr* pData, uint32_t dataSize
     )>* ZResourceReader_ZResourceReader;
+	
+	static EngineFunction<void(ZResourceReader* th)>* ZResourceReader_Dtor;
 
     static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateInstaller_Install;
@@ -153,13 +164,13 @@ public:
     static EngineFunction<bool(ZTemplateBlueprintInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateBlueprintInstaller_Install;
 
-    static EngineFunction<ZEntityType*(ZEntityImpl* th, unsigned int nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
+    static EngineFunction<ZEntityType*(ZEntityImpl* th, uint32_t nUniqueMapMask)>* ZEntityImpl_EnsureUniqueType;
 
     static EngineFunction<void(ZResourceContainer* th, ZRuntimeResourceID rid, SResourceReferenceFlags flags)>*
     ZResourceContainer_AddResourceReferenceInternal;
 
     static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index)>*
-    ZResourceContainer_AcquireReferences;
+    ZResourceContainer_AcquireResourceReferences;
 
     static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
 
@@ -179,6 +190,8 @@ public:
         bool bMainWeapon,
         bool bGiveItem
     )>* ZActorInventoryHandler_ItemPickup;
+    static EngineFunction<void(ZActorInventoryHandler* th)>* ZActorInventoryHandler_UpdateAfterAttachChange;
+    static EngineFunction<void(ZActorInventoryHandler* th)>* ZActorInventoryHandler_FinalizePendingItems;
 
     static EngineFunction<uint64_t(
         ZEntityManager* th, ZEntityRef& entityRef, EDynamicEntityType dynamicEntityType, uint8 flags
@@ -190,10 +203,79 @@ public:
     static EngineFunction<uint32(
         ZWorldInventory* th,
         const ZRepositoryID& repId,
-        ZDelegate<void(unsigned int, TEntityRef<IItemBase>)> callback,
+        ZDelegate<void(uint32_t, TEntityRef<IItemBase>)> callback,
         uint64_t entityID,
         bool bLoading,
         const ZEntityRef& rParentSpatial,
         const ZEntityRef& rCreator
     )>* ZWorldInventory_RequestNewItem;
+
+    static EngineFunction<void(
+        ZWorldInventory* th,
+        TEntityRef<IItemBase> rItemInc
+    )>* ZWorldInventory_DestroyItem;
+
+    static EngineFunction<ZResourceIndex*(
+        ZResourceManager* th,
+        ZResourceIndex& result,
+        const ZRuntimeResourceID& ridResource,
+        int32_t nPriority,
+        bool& bOutStartLoading
+    )>* ZResourceManager_GetResourceIndex;
+
+    static EngineFunction<bool(ZResourceContainer* th, uint8 packageId)>* ZResourceContainer_UnmountPackages;
+
+    static EngineFunction<uint16(ZRoomManager* th, const float4& vPointWS)>* ZRoomManager_GetRoomFromPoint;
+
+    static EngineFunction<void(ZStashPointEntity* th)>* ZStashPointEntity_RequestContentLoad;
+    static EngineFunction<void(ZStashPointEntity* th, const ZRepositoryID& id)>* ZStashPointEntity_SpawnOutfit;
+    static EngineFunction<uint32_t(
+        ZStashPointEntity* th,
+        const ZRepositoryID& repId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        bool isContainerItem
+    )>* ZStashPointEntity_SpawnItem;
+
+    static EngineFunction<bool(const ZString& optionName, bool defaultValue)>* GetApplicationOptionBool;
+
+    static EngineFunction<ERegionMask(bfx::AreaHandle* th)>* AreaHandle_GetAreaUsageFlags;
+
+    static EngineFunction<void(ZTimeOfDayManager* th, float32 fNewTime)>* ZTimeOfDayManager_SetTime;
+
+    static EngineFunction<uint32(
+        const ZRepositoryID& id, const TArray<ZRepositoryID>& modifierIds
+    )>* ZItemConfigDescriptor_GetHashCode;
+
+    static EngineFunction<void(ZHM5CrippleBox* th)>* ZHM5CrippleBox_UpdateFlags;
+    static EngineFunction<void(TEntityRef<ZHitman5> rHitman, bool bDefaultFlags)>* ZHM5CrippleBox_SetDataOnHitman;
+
+    static EngineFunction<float32(const ZHM5Health* th)>* ZHM5Health_GetHP;
+    static EngineFunction<float32(const ZHM5Health* th)>* ZHM5Health_GetMaxHitpoints;
+
+    static EngineFunction<uint32_t(
+        ZCharacterSubcontrollerInventory* th, eAmmoType AmmoType
+    )>* ZCharacterSubcontrollerInventory_GetAmmoInPocketForType;
+
+    static EngineFunction<float(ZHM5WeaponControl* th)>* ZHM5WeaponControl_GetCrosshairScale;
+
+    static EngineFunction<void(
+        ZGameKeywordManager* th,
+        const ZEntityRef& rHolder,
+        const THashSet<int32_t, TDefaultHashSetPolicy<int32_t>>& outKeywords
+    )>* ZGameKeywordManager_GetKeywords;
+    static EngineFunction<ZString*(
+        const ZGameKeywordManager* th,
+        ZString& result,
+        int32 nKeywordID
+    )>* ZGameKeywordManager_GetKeywordString;
+    static EngineFunction<void(
+        ZGameKeywordManager* th,
+        const ZEntityRef& rHolder,
+        int32_t nKeyword
+    )>* ZGameKeywordManager_AddKeyword;
+    static EngineFunction<void(
+        ZGameKeywordManager* th,
+        const ZEntityRef& rHolder,
+        int32_t nKeyword
+    )>* ZGameKeywordManager_RemoveKeyword;
 };

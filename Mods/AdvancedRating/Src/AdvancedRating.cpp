@@ -49,23 +49,23 @@ void AdvancedRating::OnDrawUI(bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_WindowExpanded) {
-        ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY);
+        if (ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY)){
+            AcquireSRWLockShared(&m_EventLock);
 
-        AcquireSRWLockShared(&m_EventLock);
+            for (auto& s_Event : m_EventHistory) {
+                auto s_TypeName = s_Event.TypeToString();
 
-        for (auto& s_Event : m_EventHistory) {
-            auto s_TypeName = s_Event.TypeToString();
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(s_TypeName.c_str(), s_TypeName.c_str() + s_TypeName.size());
+                ImGui::TableNextColumn();
+                ImGui::Text("%lld", s_Event.Points);
+            }
 
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(s_TypeName.c_str(), s_TypeName.c_str() + s_TypeName.size());
-            ImGui::TableNextColumn();
-            ImGui::Text("%lld", s_Event.Points);
+            ReleaseSRWLockShared(&m_EventLock);
+
+            ImGui::EndTable();
         }
-
-        ReleaseSRWLockShared(&m_EventLock);
-
-        ImGui::EndTable();
     }
 
     ImGui::PopFont();
@@ -130,7 +130,7 @@ DEFINE_PLUGIN_DETOUR(
     const ZDynamicObject& event
 ) {
     ZString s_EventData;
-    Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), &s_EventData);
+    Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), s_EventData);
 
     Logger::Debug("Achievement Event Sent: {} - {}", eventId, s_EventData);
 

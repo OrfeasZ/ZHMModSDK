@@ -1,8 +1,5 @@
 #pragma once
 
-#include <Windows.h>
-#include <directx/d3d12.h>
-
 #include "Common.h"
 #include "Hook.h"
 
@@ -14,6 +11,10 @@
 #include <Glacier/ZMath.h>
 #include <Glacier/ZLevelManager.h>
 #include <Glacier/ZResource.h>
+#include <Glacier/ZInventory.h>
+
+#include <Windows.h>
+#include <directx/d3d12.h>
 
 #include "Scaleform.h"
 
@@ -56,7 +57,7 @@ class ZCppEntityBlueprintFactory;
 class IEntityFactory;
 class ZEntityType;
 class ZTemplateEntityBlueprintFactory;
-class STemplateEntityBlueprint;
+struct STemplateEntityBlueprint;
 class ZResourcePending;
 class ZPlayerRegistry;
 class ZHitman5;
@@ -74,17 +75,31 @@ enum EPFObstacleClient;
 class ZPFObstacleEntity;
 class ZOnlineVersionConfig;
 struct SExternalReferences;
-class ZLevelManager;
 enum class ESceneLoadingStage;
 class ZSecuritySystemCameraManager;
 class ZSecuritySystemCamera;
 class ZExtendedCppEntityTypeInstaller;
+class ZEngineAppCommon;
+class ZItemSpawner;
+class ZStashPointEntity;
+class ZActorInventoryHandler;
+class ZItemRepositoryKeyEntity;
+class ZGlobalOutfitKit;
+class ZClothBundleEntity;
+class ZHM5ItemWeapon;
+class IFirearm;
+struct SHitInfo;
+class IBaseCharacter;
+class ZHitmanMorphemePostProcessor;
+class ZHM5WeaponRecoilController;
+class ZEvergreenCampaignManager;
 
 class ZHMSDK_API Hooks {
 public:
     static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
-    static Hook<void(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
+    static Hook<bool(ZEntitySceneContext*, SSceneInitParameters& parameters)>* ZEntitySceneContext_LoadScene;
     static Hook<void(ZEntitySceneContext*, bool bFullyUnloadScene)>* ZEntitySceneContext_ClearScene;
+    static Hook<void(ZEntitySceneContext*, bool bResetScene)>* ZEntitySceneContext_CreateScene;
 
     static Hook<void(
         ZUpdateEventContainer*, const ZDelegate<void(const SGameUpdateEvent&)>&, int, EUpdateMode
@@ -118,8 +133,8 @@ public:
 
     static Hook<void(ZKeyboardWindows* th, bool a2)>* ZKeyboardWindows_Update;
 
-    static Hook<void*(IPackageManager::SPartitionInfo* th, void* a2, const ZString& a3, int a4, int patchLevel)>*
-    IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo;
+    static Hook<void*(IPackageManager::SPartitionInfo* th, int32_t index, ZString partitionID, IPackageManager::EPartitionType type, int32_t patchLevel)>*
+        IPackageManager_SPartitionInfo_SPartitionInfo;
 
     static Hook<void(ZGameLoopManager* th, const ZString& a2)>* ZGameLoopManager_ReleasePause;
     static Hook<bool(ZGameUIManagerEntity* th, EGameUIMenu menu, bool force)>* ZGameUIManagerEntity_TryOpenMenu;
@@ -146,6 +161,11 @@ public:
         void* dwContext, void* hInternet, void* param_3, int dwInternetStatus, void* param_5, int param_6
     )>* Http_WinHttpCallback;
 
+    /**
+     * Note that the buffer given here is before any HTTP response has been decompressed. If connecting to a server that
+     * serves gzip-compressed responses, you will need to manually detect that and decompress it (such as by using
+     * zlib).
+     */
     static Hook<void(ZHttpResultDynamicObject* th)>* ZHttpResultDynamicObject_OnBufferReady;
 
     static Hook<ZTemplateEntityBlueprintFactory*(
@@ -228,8 +248,8 @@ public:
     static Hook<void(ZEntitySceneContext* th, ESceneLoadingStage stage)>* ZEntitySceneContext_SetLoadingStage;
 
     static Hook<void(ZSecuritySystemCameraManager* th, bool bReactionSituations)>* ZSecuritySystemCameraManager_UpdateCameraState;
-    static Hook<void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent* const updateEvent)>* ZSecuritySystemCameraManager_OnFrameUpdate;
-    static Hook<void(ZSecuritySystemCamera* th, const SGameUpdateEvent* const a2)>* ZSecuritySystemCamera_FrameUpdate;
+    static Hook<void(ZSecuritySystemCameraManager* th, const SGameUpdateEvent& updateEvent)>* ZSecuritySystemCameraManager_OnFrameUpdate;
+    static Hook<void(ZSecuritySystemCamera* th, const SGameUpdateEvent& updateEvent)>* ZSecuritySystemCamera_FrameUpdate;
 
     static Hook<ZEntityRef*(
         ZEntityManager* th,
@@ -257,4 +277,72 @@ public:
         Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
         const char* msg
     )>* Scaleform_GFx_AS3_MovieRoot_Output;
+
+    static Hook<ZString*(ZEngineAppCommon* th, ZString& result)>* ZEngineAppCommon_GetBootScene;
+
+    static Hook<void(ZLevelManager* th)>* ZLevelManager_StartGame;
+
+    static Hook<void(ZItemSpawner* th)>* ZItemSpawner_RequestContentLoad;
+
+    static Hook<ZCharacterSubcontrollerInventory::SCreateItem*(
+        ZCharacterSubcontrollerInventory* th,
+        ZRepositoryID& repId,
+        const ZString& sOnlineInstanceId,
+        const TArray<ZRepositoryID>& instanceModifiersToApply,
+        ZCharacterSubcontrollerInventory::ECreateItemType createItemType
+    )>* ZCharacterSubcontrollerInventory_CreateItem;
+
+    static Hook<bool(
+        ZActorInventoryHandler* th, ZRepositoryID& id
+    )>* ZActorInventoryHandler_RequestItem;
+    static Hook<void(
+        ZActorInventoryHandler* th,
+        TArray<TEntityRef<ZItemRepositoryKeyEntity>>& rInventoryKeys,
+        TEntityRef<ZItemRepositoryKeyEntity>& rWeaponKey,
+        TEntityRef<ZItemRepositoryKeyEntity>& rGrenadeKey
+    )>* ZActorInventoryHandler_StartItemStreamIn;
+    static Hook<TEntityRef<ZItemRepositoryKeyEntity>* (ZActor* th, TEntityRef<ZItemRepositoryKeyEntity>& result)>* ZActor_GetWeaponKey;
+
+    static Hook<void(
+        ZHitman5* th, TEntityRef<ZGlobalOutfitKit> rOutfitKit, int32_t nCharset, int32_t nVariation,
+        bool bEnableOutfitModifiers, bool bIgnoreOutifChange
+    )>* ZHitman5_SetOutfit;
+
+    static Hook<void(
+        ZActor* th, TEntityRef<ZGlobalOutfitKit> rOutfit, int32_t charset, int32_t variation, bool bNude
+    )>* ZActor_SetOutfit;
+
+    static Hook<TEntityRef<ZClothBundleEntity>*(
+        TEntityRef<ZClothBundleEntity>& result,
+        const SMatrix& mat,
+        const ZRepositoryID& id,
+        int32_t nOutfitVariation,
+        int32_t nOutfitCharset,
+        bool bSpawnedByHitman,
+        bool bEnableOutfitModifiers
+    )>* ZClothBundleEntity_CreateClothBundle;
+
+    static Hook<void(IFirearm* th, int32_t nBullets)>* ZHM5ItemWeapon_SetBulletsInMagazine;
+
+    static Hook<bool(IBaseCharacter* th, const SHitInfo& hitInfo)>* ZActor_YouGotHit;
+
+    static Hook<void(
+        ZHitmanMorphemePostProcessor* th,
+        float fDeltaTime,
+        const THashMap<int32_t, int32_t, TDefaultHashMapPolicy<int32_t>>& charboneMap,
+        TArrayRef<int32_t> hierarchy
+    )>* ZHitmanMorphemePostProcessor_UpdateWeaponRecoil;
+
+    static Hook<void(
+        ZHM5WeaponRecoilController* th,
+        const TEntityRef<ZHM5ItemWeapon>& rWeapon
+    )>* ZHM5WeaponRecoilController_RecoilWeapon;
+
+    static Hook<bool(ZHM5ItemWeapon* th, bool bMayStartSound)>* ZHM5ItemWeapon_FireProjectiles;
+
+    static Hook<bool(IFirearm* th)>* ZHM5ItemWeapon_IsFiring;
+
+    static Hook<ZDynamicObject*(ZDynamicObject* th, const ZString& key, const ZDynamicObject& val)>* ZDynamicObject_Set_ZDynamicObject;
+
+    static Hook<ZEvergreenCampaignManager*(ZEvergreenCampaignManager* th)>* ZEvergreenCampaignManager_OnGenerate;
 };

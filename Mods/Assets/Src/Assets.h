@@ -17,7 +17,7 @@ private:
     DECLARE_PLUGIN_DETOUR(Assets, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     static void SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool p_AddToWorld);
-    static void SpawnNonRepositoryProp(const std::string& p_PropAssemblyPath);
+    static void SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResourceID);
     static void SpawnActor(
         const std::string& p_ActorName, const ZRepositoryID& p_RepositoryID,
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharacterSetIndex,
@@ -30,12 +30,11 @@ private:
     );
 
     void LoadRepositoryProps();
-    std::string ConvertDynamicObjectValueToString(const ZDynamicObject& p_DynamicObject);
 
     bool m_AssetsMenuActive = false;
 
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
-    std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps; // RepoId -> Title/Common Name
+    std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps;
 
     const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
 };

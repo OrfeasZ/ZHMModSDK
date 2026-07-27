@@ -2,6 +2,8 @@
 
 #include "ZMath.h"
 #include "TArray.h"
+#include "ZBitArray.h"
+#include "ZPathfinder.h"
 
 struct SGWaypoint {
     union {
@@ -22,19 +24,6 @@ struct SGWaypoint {
     float4 vPos;
     unsigned int nVisionDataOffset;
     short nLayerIndex;
-};
-
-class ZBitArray {
-public:
-    bool Get(unsigned int nBitIndex) const {
-        const unsigned int byteIndex = nBitIndex >> 3;
-        const unsigned int bitOffset = nBitIndex & 7;
-
-        return (1 << bitOffset) & m_aBytes[byteIndex];
-    }
-
-    TArray<uint8> m_aBytes;
-    uint32 m_nSize;
 };
 
 struct SGProperties {
@@ -132,4 +121,85 @@ struct SReasoningGrid {
     uint32 m_nNodeCount;
     TArray<uint8> m_pVisibilityData;
     ZBitArray m_deadEndData;
+};
+
+class ZGridNodeRef {
+public:
+    ZGridNodeRef(unsigned short nNodeIndex) {
+        m_nNodeIndex = nNodeIndex;
+        m_nRoomID = -1;
+        m_pNode = (*Globals::ActiveGrid)->GetNode(nNodeIndex);
+    }
+
+    bool CheckVisibility(const ZGridNodeRef& pOther, bool bLow, bool bCheckDoors) const {
+        if (!m_pNode || !pOther.m_pNode) {
+            return false;
+        }
+
+        unsigned int fromNodeIndex = m_nNodeIndex;
+        unsigned int toNodeIndex = pOther.m_nNodeIndex;
+
+        if (bLow) {
+            return (*Globals::ActiveGrid)->HasVisibilityLow(fromNodeIndex, toNodeIndex);
+        }
+
+        return (*Globals::ActiveGrid)->HasVisibilityHigh(fromNodeIndex, toNodeIndex);
+    }
+
+    const SGWaypoint* GetNode() const {
+        return m_pNode;
+    }
+
+    const SGWaypoint* m_pNode;
+    uint16 m_nNodeIndex;
+    uint16 m_nRoomID;
+};
+
+class ZHM5GridManager : public IComponentInterface {
+public:
+    PAD(0x40);
+    ZPFLocation m_HitmanPFLocation; // 0x48
+    ZGridNodeRef m_HitmanNode; //0x68
+};
+
+class ZGridManager : public IComponentInterface {
+public:
+    float4 CellToPosition(int x, int y, float z, const SGProperties& properties) const {
+        float4 result;
+
+        result.x = static_cast<float>(x) * properties.fGridSpacing + properties.vMin.x;
+        result.y = static_cast<float>(y) * properties.fGridSpacing + properties.vMin.y;
+        result.z = z;
+
+        return result;
+    }
+
+    float4 GetCellUpperLeft(const float4& vPosition, const SGProperties& properties) const {
+        const SGCellCoords cellCoordinates = (*Globals::ActiveGrid)->CalculateCoordinates(vPosition);
+
+        return CellToPosition(cellCoordinates.x, cellCoordinates.y, vPosition.z, properties);
+    }
+
+    unsigned int GetHeatmapColorFromRating(float fRating) {
+        if (fRating < 0.0f) {
+            return 0xFF000000;
+        }
+
+        if (fRating > 1.0f) {
+            return 0xFFFFFFFF;
+        }
+
+        if (fRating < 0.5f) {
+            int color = static_cast<int>((fRating * 2.0f) * 255.0f);
+            color = std::clamp(color, 0, 255);
+
+            return ((color << 8) - 0xFFFF01);
+        }
+        else {
+            int color = static_cast<int>((1.0f - (fRating - 0.5f) * 2.0f) * 255.0f);
+            color = std::clamp(color, 0, 255);
+
+            return color - 0xFF0100;
+        }
+    }
 };

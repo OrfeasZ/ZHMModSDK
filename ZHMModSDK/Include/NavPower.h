@@ -108,11 +108,11 @@ namespace NavPower {
             uint32_t m_kdTreeBytes;
             uint32_t m_linkRecordBytes = 0;
             uint32_t m_totalBytes;
-            float m_buildScale = 2.0;
-            float m_voxSize = 0.1;
-            float m_radius = 0.2;
-            float m_stepHeight = 0.3;
-            float m_height = 1.8; // Human Height
+            float m_buildScale = 2.0f;
+            float m_voxSize = 0.1f;
+            float m_radius = 0.2f;
+            float m_stepHeight = 0.3f;
+            float m_height = 1.8f; // Human Height
             BBox m_bbox;
             Axis m_buildUpAxis = Axis::Z;
             // In NAVPs from Hitman WoA the padding isn't just 0x00
@@ -302,15 +302,35 @@ namespace NavPower {
         uint32_t m_splitAxis;
     };
 
-    class NavMesh {
+    class NavGraph {
     public:
-        Binary::Header* m_hdr;
-        Binary::SectionHeader* m_sectHdr;
-        Binary::NavSetHeader* m_setHdr;
-        Binary::NavGraphHeader* m_graphHdr;
+        Binary::NavGraphHeader* m_hdr;
         std::vector<Area> m_areas;
         Binary::KDTreeData* m_kdTreeData;
         Binary::KDNode* m_rootKDNode;
+
+        NavGraph() {};
+        NavGraph(uintptr_t& p_data) { read(p_data); };
+
+        void read(uintptr_t& p_data);
+    };
+
+    class Section {
+    public:
+        Binary::SectionHeader* m_hdr;
+        Binary::NavSetHeader* m_setHdr;
+        std::vector<NavGraph> m_aNavGraphs;
+
+        Section() {};
+        Section(uintptr_t& p_data) { read(p_data); };
+
+        void read(uintptr_t& p_data);
+    };
+
+    class NavMesh {
+    public:
+        Binary::Header* m_hdr;
+        std::vector<Section> m_aSections;
 
         NavMesh() {};
         NavMesh(uintptr_t p_data, uint32_t p_filesize) { read(p_data, p_filesize); };

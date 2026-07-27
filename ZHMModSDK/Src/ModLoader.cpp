@@ -352,6 +352,8 @@ void ModLoader::UnloadMod(const std::string& p_Name) {
             ++it;
     }
 
+    ModSDK::GetInstance()->OnModUnloading(s_Name, s_ModMapIt->second.PluginInterface);
+
     delete s_ModMapIt->second.PluginInterface;
     delete s_ModMapIt->second.Settings;
     FreeLibrary(s_ModMapIt->second.Module);

@@ -8,3 +8,9 @@ public:
 };
 
 class ZItemRepositoryKeyEntity : public ZRepositoryKeyEntity {};
+
+class ZRepositoryItemEntity :
+    public ZEntityImpl {
+public:
+    ZRepositoryID m_sId;
+};

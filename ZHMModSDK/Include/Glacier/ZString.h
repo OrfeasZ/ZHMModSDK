@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string_view>
-#include <minmax.h>
 #include <ostream>
+#include <algorithm>
 
 #include "Common.h"
 
@@ -105,12 +105,21 @@ public:
     }
 
     [[nodiscard]]
+    uint32_t sizeWithFlags() const {
+        return m_nLength;
+    }
+
+    [[nodiscard]]
     const char* c_str() const {
         return m_pChars;
     }
 
+    char operator[](int64_t p_Index) const {
+        return m_pChars[p_Index];
+    }
+
     bool operator<(const ZString& p_Other) const {
-        return strncmp(c_str(), p_Other.c_str(), min(size(), p_Other.size())) >> 31;
+        return strncmp(c_str(), p_Other.c_str(), std::min(size(), p_Other.size())) >> 31;
     }
 
     bool operator==(const ZString& p_Other) const {
@@ -118,6 +127,10 @@ public:
             return false;
 
         return strncmp(c_str(), p_Other.c_str(), size()) == 0;
+    }
+
+    bool IsEmpty() const {
+        return size() == 0;
     }
 
     [[nodiscard]]

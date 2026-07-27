@@ -81,7 +81,7 @@ namespace Hash {
         uint32_t s_Hash = 0xFFFFFFFF;
 
         while (p_Length--) {
-            s_Hash = g_Crc32Table[*p_Data ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
+            s_Hash = g_Crc32Table[static_cast<uint8_t>(*p_Data) ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
             p_Data++;
         }
 
@@ -92,7 +92,7 @@ namespace Hash {
         uint32_t s_Hash = 0xFFFFFFFF;
 
         while (*p_Data) {
-            s_Hash = g_Crc32Table[*p_Data ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
+            s_Hash = g_Crc32Table[static_cast<uint8_t>(*p_Data) ^ (s_Hash & 0xFF)] ^ (s_Hash >> 8);
             p_Data++;
         }
 
@@ -103,7 +103,7 @@ namespace Hash {
         uint32_t s_Hash = 0x811c9dc5;
 
         while (p_Length--) {
-            s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
+            s_Hash = (s_Hash ^ static_cast<uint8_t>(*p_Data)) * 0x1000193;
             p_Data++;
         }
 
@@ -114,7 +114,7 @@ namespace Hash {
         uint32_t s_Hash = 0x811c9dc5;
 
         while (*p_Data) {
-            s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
+            s_Hash = (s_Hash ^ static_cast<uint8_t>(*p_Data)) * 0x1000193;
             p_Data++;
         }
 
@@ -125,7 +125,7 @@ namespace Hash {
         uint32_t s_Hash = 0x811c9dc5;
 
         while (p_Length--) {
-            s_Hash = (s_Hash ^ ::tolower(*p_Data)) * 0x1000193;
+            s_Hash = (s_Hash ^ static_cast<uint8_t>(::tolower(*p_Data))) * 0x1000193;
             p_Data++;
         }
 
@@ -136,7 +136,7 @@ namespace Hash {
         uint32_t s_Hash = 0x811c9dc5;
 
         while (*p_Data) {
-            s_Hash = (s_Hash ^ ::tolower(*p_Data)) * 0x1000193;
+            s_Hash = (s_Hash ^ static_cast<uint8_t>(::tolower(*p_Data))) * 0x1000193;
             p_Data++;
         }
 
@@ -147,7 +147,7 @@ namespace Hash {
         uint64_t s_Hash = 0x811c9dc5;
 
         while (p_Length--) {
-            s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
+            s_Hash = (s_Hash ^ static_cast<uint8_t>(*p_Data)) * 0x1000193;
             p_Data++;
         }
 
@@ -158,7 +158,7 @@ namespace Hash {
         uint64_t s_Hash = 0x811c9dc5;
 
         while (*p_Data) {
-            s_Hash = (s_Hash ^ *p_Data) * 0x1000193;
+            s_Hash = (s_Hash ^ static_cast<uint8_t>(*p_Data)) * 0x1000193;
             p_Data++;
         }
 
@@ -169,7 +169,7 @@ namespace Hash {
         uint64_t s_Hash = 0x811c9dc5;
 
         while (p_Length--) {
-            s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
+            s_Hash = (s_Hash ^ static_cast<uint8_t>(::tolower(*p_Data))) * 0x1000193;
             p_Data++;
         }
 
@@ -180,7 +180,7 @@ namespace Hash {
         uint64_t s_Hash = 0x811c9dc5;
 
         while (*p_Data) {
-            s_Hash = (s_Hash ^ tolower(*p_Data)) * 0x1000193;
+            s_Hash = (s_Hash ^ static_cast<uint8_t>(::tolower(*p_Data))) * 0x1000193;
             p_Data++;
         }
 
@@ -383,5 +383,17 @@ namespace Hash {
         }
 
         return MD5Hash {a0, b0, c0, d0};
+    }
+
+    constexpr uint64_t Pointer(const void* p) {
+        if (!p) {
+            return 0;
+        }
+
+        const uint64_t s_Address = reinterpret_cast<uint64_t>(p);
+        const uint32_t s_Low = static_cast<uint32_t>(s_Address);
+        const uint32_t s_High = static_cast<uint32_t>(s_Address >> 32);
+
+        return static_cast<uint64_t>(s_Low * 0x13285CD7 - s_High * 0x61C88647);
     }
 }

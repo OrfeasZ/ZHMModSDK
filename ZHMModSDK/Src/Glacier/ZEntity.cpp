@@ -8,7 +8,7 @@ void ZEntityRef::SetLogicalParent(ZEntityRef entityRef) {
     ZEntityType* s_EntityType = Functions::ZEntityImpl_EnsureUniqueType->Call(s_Entity, 0);
 
     s_EntityType->m_nLogicalParentEntityOffset =
-        reinterpret_cast<uintptr_t>(entityRef.m_pEntity) - reinterpret_cast<uintptr_t>(m_pEntity);
+        reinterpret_cast<uintptr_t>(entityRef.m_pObj) - reinterpret_cast<uintptr_t>(m_pObj);
 }
 
 bool ZEntityRef::SetProperty(uint32_t p_PropertyId, const ZObjectRef& p_Value, bool p_InvokeChangeHandlers) {

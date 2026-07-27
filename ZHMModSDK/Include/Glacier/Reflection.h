@@ -2,20 +2,12 @@
 
 #include "ZPrimitives.h"
 #include "CompileReflection.h"
+#include "TArray.h"
 
-class STypeID;
+struct STypeID;
+struct IType;
 class ZString;
-class IType;
 class ZObjectRef;
-
-class IComponentInterface {
-public:
-    virtual ~IComponentInterface() = 0;
-    virtual ZObjectRef* GetVariantRef(ZObjectRef& result) = 0;
-    virtual int AddRef() = 0;
-    virtual int Release() = 0;
-    virtual void* QueryInterface(STypeID* iid) = 0;
-};
 
 enum ETypeInfoFlags : uint16_t {
     TIF_Entity     = 0x01,
@@ -29,91 +21,64 @@ enum ETypeInfoFlags : uint16_t {
     TIF_Primitive  = 0x400
 };
 
-class STypeFunctions {
-public:
-    void (*construct)(void*);
-    void (*copyConstruct)(void*, const void*);
-    void (*destruct)(void*);
-    void (*assign)(void*, void*);
-    bool (*equal)(void*, void*);
-    bool (*smaller)(void*, void*);
-    void (*minus)(void*, void*, void*);
-    void (*plus)(void*, void*, void*);
-    void (*mult)(void*, void*, void*);
-    void (*div)(void*, void*, void*);
+struct STypeFunctions {
+    void(*placementConstruct)(void*);
+    void(*placementCopyConstruct)(void*, const void*);
+    void(*destruct)(void*);
+    void(*assign)(void*, const void*);
+    bool(*equal)(const void*, const void*);
+    bool(*smaller)(const void*, const void*);
+    void(*minus)(const void*, const void*, void*);
+    void(*plus)(const void*, const void*, void*);
+    void(*mult)(const void*, const void*, void*);
+    void(*div)(const void*, const void*, void*);
 };
 
-class IType {
-public:
-    inline bool isEntity() const {
+struct IType {
+    bool IsEntity() const {
         return m_nTypeInfoFlags & TIF_Entity;
     }
 
-    inline bool isResource() const {
+    bool IsResource() const {
         return m_nTypeInfoFlags & TIF_Resource;
     }
 
-    inline bool isClass() const {
+    bool IsClass() const {
         return m_nTypeInfoFlags & TIF_Class;
     }
 
-    inline bool isEnum() const {
+    bool IsEnum() const {
         return m_nTypeInfoFlags & TIF_Enum;
     }
 
-    inline bool isContainer() const {
+    bool IsContainer() const {
         return m_nTypeInfoFlags & TIF_Container;
     }
 
-    inline bool isArray() const {
+    bool IsArray() const {
         return m_nTypeInfoFlags & TIF_Array;
     }
 
-    inline bool isFixedArray() const {
+    bool IsFixedArray() const {
         return m_nTypeInfoFlags & TIF_FixedArray;
     }
 
-    inline bool isMap() const {
+    bool IsMap() const {
         return m_nTypeInfoFlags & TIF_Map;
     }
 
-    inline bool isPrimitive() const {
+    bool IsPrimitive() const {
         return m_nTypeInfoFlags & TIF_Primitive;
     }
 
-public:
-    STypeFunctions* m_pTypeFunctions;
+    const STypeFunctions* m_pTypeFunctions;
     uint16_t m_nTypeSize;
-    uint16_t m_nTypeAlignment;
+    uint8_t m_nTypeAlignment;
     uint16_t m_nTypeInfoFlags;
-    char* m_pTypeName;
-    STypeID* m_pTypeID;
+    const char* pszTypeName;
+    STypeID* typeID;
     bool (*fromString)(void*, IType*, const ZString&);
-    uint32_t (*toString)(void*, IType*, char*, uint32_t, const ZString&);
-};
-
-class ZGenericMemberFunctionTarget;
-
-struct TGenericMemberFunctionPtr {
-    void (*__pfn)(ZGenericMemberFunctionTarget*);
-    int64 __delta;
-};
-
-class ZPinFunctor {
-public:
-    void (*pfInvoke)(TGenericMemberFunctionPtr, ZGenericMemberFunctionTarget*, const ZObjectRef*, uint32);
-    TGenericMemberFunctionPtr func;
-};
-
-struct SPinInfo {
-    ZPinFunctor m_functor;
-    uint32 m_nExtraData;
-};
-
-class SInputPinEntry {
-public:
-    uint32 m_nPinID;
-    SPinInfo m_InputPinInfo;
+    uint32_t(*toString)(void*, IType*, char*, uint32_t, const ZString&);
 };
 
 enum EPropertyInfoFlags {
@@ -125,93 +90,124 @@ enum EPropertyInfoFlags {
     E_WEAK_REFERENCE    = 32
 };
 
-class ZClassProperty {
+struct SPropertyInfo {
+    STypeID* m_Type;
+    int64_t m_nExtraData;
+    uint32_t m_Flags;
+    void (*m_PropertySetCallBack)(void*, void*, uint64_t, bool);
+    void (*m_PropetyGetter)(void*, void*, uint64_t);
+};
+
+struct SNamedPropertyInfo {
+    const char* m_pszPropertyName;
+    uint32 m_nPropertyID;
+    SPropertyInfo m_propertyInfo;
+};
+
+struct SDelegateBaseInvoker {
+    uint32 argCount;
+    ZObjectRef(*pfInvoke)(void*, const TArrayRef<ZObjectRef>*);
+    STypeID* retType;
+    STypeID* a0Type;
+};
+
+class ZGenericMemberFunctionTarget;
+
+class TGenericMemberFunctionPtr {
 public:
-    const char* m_pName;
-    uint32_t m_nPropertyID;
-    STypeID* m_pType;
+    void (*__pfn)(ZGenericMemberFunctionTarget*);
+    int64 __delta;
+};
+
+class ZConstructorInfo {
+public:
+    TGenericMemberFunctionPtr m_mfp;
+    const SDelegateBaseInvoker* m_pInvokeData;
+};
+
+struct SBaseClassInfo {
+    STypeID* m_Type;
     uint64_t m_nOffset;
-    EPropertyInfoFlags m_nFlags;
-    void (*set)(void*, void*, uint64_t, bool);
-    void (*get)(void*, void*, uint64_t);
 };
 
-class ZClassConstructorInfo {
+class ZPinFunctor {
 public:
-    uint64_t m_nArgumentCount;
-    void (*m_fUnk0x8)();
-    STypeID* m_pReturnType;
-    STypeID* m_pArgType;
+    void (*pfInvoke)(TGenericMemberFunctionPtr, ZGenericMemberFunctionTarget*, const ZObjectRef*, uint32);
+    TGenericMemberFunctionPtr func;
 };
 
-class ZClassConstructor {
-public:
-    void (*construct)(void*);
-    PAD(8);
-    ZClassConstructorInfo* m_pInfo;
+struct SPinInfo {
+    ZPinFunctor m_functor;
+    uint32_t m_nExtraData;
 };
 
-class ZClassComponent {
-public:
-    STypeID* m_pType;
-    uint64_t m_nOffset;
+struct SInputPinEntry {
+    uint32_t m_nPinID;
+    SPinInfo m_InputPinInfo;
 };
 
-class IClassType :
-        public IType {
-public:
-    uint16_t m_nPropertyCount;
-    uint16_t m_nConstructorCount;
-    uint16_t m_nBaseClassCount;
-    uint16_t m_nInterfaceCount;
-    uint16_t m_nInputCount;
-    ZClassProperty* m_pProperties;
-    ZClassConstructor* m_pConstructors;
-    ZClassComponent* m_pBaseClasses;
-    ZClassComponent* m_pInterfaces;
-    SInputPinEntry* m_pInputs;
+struct SComponentMapEntry {
+    STypeID* type;
+    uint64_t nOffset;
 };
 
-class ZEnumEntry {
-public:
-    char* m_pName;
-    int32_t m_nValue;
+struct IClassType {
+    IType type;
+    uint16 m_nProperties;
+    uint16 m_nConstructors;
+    uint16 m_nBaseClasses;
+    uint16 m_nInterfaces;
+    uint16 m_nInputPins;
+    const SNamedPropertyInfo* m_pProperties;
+    const ZConstructorInfo* m_pConstructors;
+    const SBaseClassInfo* m_pBaseClasses;
+    const SComponentMapEntry* m_pInterfaces;
+    const SInputPinEntry* m_pInputPins;
 };
 
-class SArrayFunctions {
+class IEnumType {
 public:
+    struct SEnumItem {
+        const char* szName;
+        int32_t nValue;
+    };
+
+    IType type;
+    TArrayRef<const SEnumItem> items;
+};
+
+struct SContainerTypeVTable {
     void* (*begin)(void*);
     void* (*end)(void*);
     void* (*next)(void*, void*);
-    size_t (*size)(void*);
-    // TODO: There's more shit here. Map it out.
+    uint32_t(*getSize)(void*);
+    void (*setDeserializedElement)(void*, ZObjectRef, int32_t);
+    void (*clear)(void*);
+    void (*reserve)(void*, uint32_t);
 };
 
-class STypeID {
-public:
-    inline IType* typeInfo() const {
-        if (m_nFlags == 1 || (!m_pType && m_pSource))
+struct IContainerType {
+    IType type;
+    STypeID* elementType;
+    SContainerTypeVTable* pVTab;
+};
+
+struct IArrayType {
+    IContainerType containerType;
+    void (*setSize)(void*, uint32_t);
+};
+
+struct STypeID {
+    IType* GetTypeInfo() const {
+        if (m_nFlags == 1 || (!m_pType && m_pSource)) {
             return m_pSource->m_pType;
+        }
 
         return m_pType;
     }
 
-public:
     uint16_t m_nFlags;
     uint16_t m_nTypeNum;
     IType* m_pType;
     STypeID* m_pSource;
-};
-
-class IArrayType :
-        public IType {
-public:
-    inline size_t fixedArraySize() const {
-        return m_nTypeSize / m_pArrayElementType->typeInfo()->m_nTypeSize;
-    }
-
-public:
-    STypeID* m_pArrayElementType;
-    SArrayFunctions* m_pArrayFunctions;
-    void (*resize)(void*, size_t);
 };

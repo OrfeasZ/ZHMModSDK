@@ -19,7 +19,7 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xF1\x0F\x57\xC0\x48\xB8\x00\x00\x00\x00\x00\x00\x00\x00\xB9",
     "xxxxxxxxxxxxxx?xxxxxxxx????????x",
     ZDynamicObject_ToString,
-    void(ZDynamicObject*, ZString*)
+    void(ZDynamicObject*, ZString&)
 );
 
 PATTERN_FUNCTION(
@@ -268,7 +268,14 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x33\xED\x48\x8D\x05\x00\x00\x00\x00\x89\x69\x08",
     "xxxxxxxxxxxxxxxxxxx?xxxxx????xxx",
     ZResourceReader_ZResourceReader,
-    void(ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize)
+    void(ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr* pData, uint32_t dataSize)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8D\x05\x00\x00\x00\x00\x48\x8B\xD9\x48\x89\x01\x8B\xFA\x48\x83\xC1\x00\xE8\x00\x00\x00\x00\x48\x8D\x4B\x28\xE8\x00\x00\x00\x00\x48\x8B\x4B\x18",
+    "xxxxxxxxx?xxx????xxxxxxxxxxx?x????xxxxx????xxxx",
+	ZResourceReader_Dtor,
+	void(ZResourceReader* th)
 );
 
 PATTERN_VTABLE_FUNCTION(
@@ -291,7 +298,7 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x48\x8B\x41\x08\x8B\xF2",
     "xxxxxxxxxxxxxx?xxxxxx",
     ZEntityImpl_EnsureUniqueType,
-    ZEntityType* (ZEntityImpl* th, unsigned int nUniqueMapMask)
+    ZEntityType* (ZEntityImpl* th, uint32_t nUniqueMapMask)
 );
 
 PATTERN_FUNCTION(
@@ -304,7 +311,7 @@ PATTERN_FUNCTION(
 PATTERN_FUNCTION(
     "\x48\x8B\xC4\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x89\x58\x10\x4C\x89\x60\xF0",
     "xxxxxxx????xxxxxxxx",
-    ZResourceContainer_AcquireReferences,
+    ZResourceContainer_AcquireResourceReferences,
     void(ZResourceContainer* th, ZResourceIndex index)
 );
 
@@ -345,6 +352,20 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
+    "\x40\x53\x56\x57\x48\x83\xEC\x00\x48\x8B\xD9\x33\xFF",
+    "xxxxxxx?xxxxx",
+    ZActorInventoryHandler_UpdateAfterAttachChange,
+    void(ZActorInventoryHandler* th)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x57\x41\x57\x48\x83\xEC\x00\x48\x8B\x51\x18",
+    "xxxxxxx?xxxx",
+    ZActorInventoryHandler_FinalizePendingItems,
+    void(ZActorInventoryHandler* th)
+);
+
+PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x48\x8B\x02\x4C\x8B\xD1",
     "xxxxxxxxxxxxxx?xxxxxx",
     ZEntityManager_GenerateDynamicObjectID,
@@ -362,6 +383,154 @@ PATTERN_FUNCTION(
     "\x4C\x8B\xDC\x49\x89\x6B\x08",
     "xxxxxxx",
     ZWorldInventory_RequestNewItem,
-    uint32(ZWorldInventory* th, const ZRepositoryID& repId, ZDelegate<void(unsigned int, TEntityRef<IItemBase>)> callback,
+    uint32(ZWorldInventory* th, const ZRepositoryID& repId, ZDelegate<void(uint32_t, TEntityRef<IItemBase>)> callback,
         uint64_t entityID, bool bLoading, const ZEntityRef& rParentSpatial, const ZEntityRef& rCreator)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x20\x48\x89\x54\x24\x10\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x83\xEC\x00\x4C\x8B\xE9",
+    "xxxxxxxxxxxxxxxxxxxxxxxx?xxx",
+    ZWorldInventory_DestroyItem,
+    void(ZWorldInventory* th, TEntityRef<IItemBase> rItemInc)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x53\x56\x41\x54\x41\x55\x41\x57\x48\x83\xEC\x00\x48\x8B\x84\x24\x80\x00\x00\x00",
+    "xxxxxxxxxxxx?xxxxxxxx",
+    ZResourceManager_GetResourceIndex,
+    ZResourceIndex* (ZResourceManager* th, ZResourceIndex& result, const ZRuntimeResourceID& ridResource,
+        int32_t nPriority, bool& bOutStartLoading)
+);
+
+PATTERN_RELATIVE_FUNCTION(
+    "\xE8\x00\x00\x00\x00\x84\xC0\x74\x00\x8B\xD7\x48\x8B\xCB\xE8\x00\x00\x00\x00\xB0",
+    "x????xxx?xxxxxx????x",
+    ZResourceContainer_UnmountPackages,
+    bool(ZResourceContainer* th, uint8 packageId)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x83\xEC\x00\x48\x8B\xEA\x48\x8B\xF1\x33\xDB",
+    "xxxxxxxxxxxxxxxxxxxxxxxxx?xxxxxxxx",
+    ZRoomManager_GetRoomFromPoint,
+    uint16(ZRoomManager* th, const float4& vPointWS)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x55\x56\x41\x57\x48\x8D\x6C\x24\xB9\x48\x81\xEC\x00\x00\x00\x00\x45\x33\xFF",
+    "xxxxxxxxxxxxx????xxx",
+    ZStashPointEntity_RequestContentLoad,
+    void(ZStashPointEntity* th)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x57\x48\x83\xEC\x00\x48\x8B\xDA\x48\x8B\xF9\xB2",
+    "xxxxxxxxx?xxxxxxx",
+    ZStashPointEntity_SpawnOutfit,
+    void(ZStashPointEntity* th, const ZRepositoryID& id)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x6C\x24\x20\x56\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x05",
+    "xxxxxxxxxxxxx????xxx",
+    ZStashPointEntity_SpawnItem,
+    uint32_t(ZStashPointEntity* th, const ZRepositoryID& repId, const TArray<ZRepositoryID>& instanceModifiersToApply, bool isContainerItem)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x0F\xB6\xF2\x48\x8B\xD9\xE8",
+    "xxxxxxxxxxxxxx?xxxxxxx",
+    GetApplicationOptionBool,
+    bool(const ZString&, bool)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8B\x1D\x00\x00\x00\x00\x48\x8B\xF9\x48\x8B\x5B\x70\x48\x85\xDB\x74\x00\x48\x8B\xCB\xFF\x15\x00\x00\x00\x00\x48\x8B\x07\x48\x85\xC0\x74\x00\x48\x8B\x08",
+    "xxxxxxxxx?xxx????xxxxxxxxxxx?xxxxx????xxxxxxx?xxx",
+    AreaHandle_GetAreaUsageFlags,
+    ERegionMask(bfx::AreaHandle* th)
+);
+
+PATTERN_FUNCTION(
+    "\x41\x56\x48\x83\xEC\x00\x0F\x29\x74\x24\x20\x4C\x8B\xF1",
+    "xxxxx?xxxxxxxx",
+    ZTimeOfDayManager_SetTime,
+    void(ZTimeOfDayManager* th, float32 fNewTime)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x57\x0F\xB6\x01",
+    "xxxxx",
+    ZItemConfigDescriptor_GetHashCode,
+    uint32(const ZRepositoryID& id, const TArray<ZRepositoryID>& modifierIds)
+);
+
+PATTERN_FUNCTION(
+    "\x33\xC0\x80\x79\x3C",
+    "xxxxx",
+    ZHM5CrippleBox_UpdateFlags,
+    void(ZHM5CrippleBox* th)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x53\x41\x56\x41\x57\x48\x83\xEC\x00\x4C\x8B\x79\x08",
+    "xxxxxxxxx?xxxx",
+    ZHM5CrippleBox_SetDataOnHitman,
+    void(TEntityRef<ZHitman5> rHitman, bool bDefaultFlags)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x7C\x24\x10\x55\x48\x8B\xEC\x48\x83\xEC\x00\x0F\x10\x89\x28\x02\x00\x00\x0F\x11\x4D\xF0\x44\x0F\xB6\x45\xFE\x44\x0F\xB6\x5D\xF4\x66\x0F\x6F\xC1\x66\x41\x0F\x7E\xC9\x66\x0F\x73\xD8\x00\x66\x0F\x7E\xC2\x66\x0F\x73\xD9\x00\x66\x0F\x7E\xC8\x41\x8D\x0C\x11\x32\xC1\x0F\xB6\x4D\xFA\x88\x45\xF8\x41\x8D\x04\x09\x32\xD0\x88\x55\xF9\x0F\xB6\x55\xFB\x41\x8D\x04\x11\x32\xC8\x88\x4D\xFA\x0F\xB6\x4D\xFC\x41\x8D\x04\x09\x32\xD0\x88\x55\xFB\x0F\xB6\x55\xFD\x41\x8D\x04\x11\x32\xC8\x43\x8D\x04\x01\x32\xD0\x88\x4D\xFC\x0F\xB6\x4D\xFF\x88\x55\xFD\x0F\xB6\x55\xF2\x41\x8D\x04\x09\x41\x32\xC9\x44\x32\xC0\x88\x4D\xFF\x0F\xB6\x4D\xF1\x44\x88\x45\xFE\x48\x8B\x7D\xF8\x0F\xB6\x1F\x8D\x04\x0B\x44\x32\xC8\x8D\x04\x13\x32\xC8\x45\x0F\xB6\xD1\x88\x4D\xF1\x41\x81\xF2\x00\x00\x00\x00\x44\x88\x4D\xF0\x44\x0F\xB6\xC9\x0F\xB6\x4D\xF3\x8D\x04\x0B\x32\xD0\x42\x8D\x04\x1B\x32\xC8\x44\x0F\xB6\xC2\x88\x4D\xF3\x88\x55\xF2\x0F\xB6\xD1\x41\x69\xC2\x00\x00\x00\x00\x41\x33\xC1\x44\x0F\xB6\x4D\xF6\x69\xC8\x00\x00\x00\x00\x41\x33\xC8\x44\x0F\xB6\x45\xF5\x69\xC1\x00\x00\x00\x00\x33\xC2\x69\xC8\x00\x00\x00\x00\x42\x8D\x04\x03\x0F\xB6\xC0\x33\xC8\x42\x8D\x04\x0B\x41\x33\xCB\x0F\xB6\xC0\x69\xD1\x00\x00\x00\x00\x33\xD0\x41\x33\xD0\x69\xCA\x00\x00\x00\x00\x0F\xB6\x55\xF7\x8D\x04\x13\xF3\x0F\x10\x45\xF0",
+    "xxxxxxxxxxxxxxxxx?xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx?xxxxxxxx?xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx????xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx????xxxxxxxxxx????xxxxxxxxxx????xxxx????xxxxxxxxxxxxxxxxxxxxx????xxxxxxx????xxxxxxxxxxxx",
+    ZHM5Health_GetHP,
+    float32(const ZHM5Health* th)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x7C\x24\x10\x55\x48\x8B\xEC\x48\x83\xEC\x00\x0F\x10\x89\x38\x02\x00\x00",
+    "xxxxxxxxxxxxxxxxx?xxxxxxx",
+    ZHM5Health_GetMaxHitpoints,
+    float32(const ZHM5Health* th)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x48\x89\x7C\x24\x18\x55\x48\x8B\xEC\x48\x83\xEC\x00\x48\x8B\x41\x20",
+    "xxxxxxxxxxxxxxxxxxxxxx?xxxx",
+    ZCharacterSubcontrollerInventory_GetAmmoInPocketForType,
+    uint32_t(ZCharacterSubcontrollerInventory* th, eAmmoType AmmoType)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x53\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xD9\x48\x8B\x49\x38",
+    "xxxxx????xxxxxxx",
+    ZHM5WeaponControl_GetCrosshairScale,
+    float(ZHM5WeaponControl* th)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x57\x48\x83\xEC\x00\x48\x8B\xF9\x49\x8B\xE8\x48\x8B\x0A",
+    "xxxxxxxxxxxxxx?xxxxxxxxx",
+    ZGameKeywordManager_GetKeywords,
+    void(ZGameKeywordManager* th, const ZEntityRef& rHolder, const THashSet<int32_t, TDefaultHashSetPolicy<int32_t>>& outKeywords)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8B\x79\x28\x45\x8B\xD0",
+    "xxxxxxxxx?xxxxxxx",
+    ZGameKeywordManager_GetKeywordString,
+    ZString* (const ZGameKeywordManager* th, ZString& result, int32 nKeywordID)
+);
+
+PATTERN_FUNCTION(
+    "\x44\x89\x44\x24\x18\x55\x56\x57\x41\x54\x48\x8B\xEC",
+    "xxxxxxxxxxxxx",
+    ZGameKeywordManager_AddKeyword,
+    void(ZGameKeywordManager* th, const ZEntityRef& rHolder, int32_t nKeyword)
+);
+
+PATTERN_FUNCTION(
+    "\x44\x89\x44\x24\x18\x55\x53\x41\x56",
+    "xxxxxxxxx",
+    ZGameKeywordManager_RemoveKeyword,
+    void(ZGameKeywordManager* th, const ZEntityRef& rHolder, int32_t nKeyword)
 );

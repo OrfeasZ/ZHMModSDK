@@ -10,6 +10,7 @@
 #include <ResourceLib_HM3.h>
 #include <simdjson.h>
 #include <filesystem>
+#include <Util/ResourceUtils.h>
 
 static void WaitForResources() {
     while (!Globals::ResourceManager->DoneLoading()) {
@@ -110,6 +111,117 @@ void ModSDK::MountChunk(uint32_t p_ChunkIndex) {
     Logger::Debug("All requested chunks have been mounted.");
 }
 
+void ModSDK::UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) {
+    if (!IsChunkMounted(p_ChunkIndex)) {
+        return;
+    }
+
+    ZPackageManagerBase* s_PackageManagerBase = *Globals::PackageManager;
+    uint32_t s_ParentChunkIndex = -1;
+    bool s_UnmountParentChunk = false;
+    bool s_IsPartitionFound = false;
+
+    for (auto& s_PartitionInfo : s_PackageManagerBase->m_aPartitionInfos) {
+        if (s_PartitionInfo->m_nIndex == p_ChunkIndex) {
+            s_IsPartitionFound = true;
+
+            if (s_PartitionInfo->m_pParent) {
+                s_ParentChunkIndex = s_PartitionInfo->m_pParent->m_nIndex;
+                s_UnmountParentChunk = true;
+            }
+
+            break;
+        }
+    }
+
+    if (!s_IsPartitionFound) {
+        Logger::Error("Can't unmount chunk {}: no matching partition found!", p_ChunkIndex);
+        return;
+    }
+
+    if (s_ParentChunkIndex != -1) {
+        for (auto& s_PartitionInfo : s_PackageManagerBase->m_aPartitionInfos) {
+            if (s_PartitionInfo->m_nIndex == p_ChunkIndex) {
+                continue;
+            }
+
+            if (!s_PartitionInfo->m_pParent) {
+                continue;
+            }
+
+            if (s_PartitionInfo->m_pParent->m_nIndex != s_ParentChunkIndex) {
+                continue;
+            }
+
+            if (IsChunkMounted(s_PartitionInfo->m_nIndex)) {
+                s_UnmountParentChunk = false;
+                break;
+            }
+        }
+    }
+
+    ZResourceContainer* s_ResourceContainer = *Globals::ResourceContainer;
+    uint8_t s_PackageId = 0;
+
+    for (size_t i = 0; i < s_ResourceContainer->m_MountedPackages.size(); ++i) {
+        const ZString& s_MountedPackage = s_ResourceContainer->m_MountedPackages[i];
+        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_MountedPackage);
+
+        if (!s_ChunkIndex) {
+            continue;
+        }
+
+        if (s_UnmountParentChunk) {
+            if (s_ChunkIndex == s_ParentChunkIndex) {
+                s_PackageId = i;
+                break;
+            }
+        }
+        else if (s_ChunkIndex == p_ChunkIndex) {
+            s_PackageId = i;
+            break;
+        }
+    }
+
+    std::unordered_set<uint32_t> s_ChunksToRemount;
+
+    if (p_RemountChunksBelow) {
+        for (size_t i = s_PackageId; i < s_ResourceContainer->m_MountedPackages.size(); ++i) {
+            const ZString& s_MountedPackage = s_ResourceContainer->m_MountedPackages[i];
+            auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_MountedPackage);
+
+            if (!s_ChunkIndex) {
+                continue;
+            }
+
+            if (s_ChunkIndex == p_ChunkIndex) {
+                continue;
+            }
+
+            s_ChunksToRemount.insert(*s_ChunkIndex);
+        }
+    }
+
+    for (size_t i = 0; i < s_ResourceContainer->m_firstPackageIndexPerMountedPartition.size(); ++i) {
+        if (s_ResourceContainer->m_firstPackageIndexPerMountedPartition[i] == s_PackageId) {
+            s_PackageManagerBase->UnmountPartitions(i);
+            break;
+        }
+    }
+
+    if (p_RemountChunksBelow) {
+        for (uint32_t s_ChunkIndex : s_ChunksToRemount) {
+            MountChunk(s_ChunkIndex);
+        }
+    }
+
+    Logger::Info(
+        "Unmounted chunk {}{}",
+        p_ChunkIndex,
+        p_RemountChunksBelow ? " and remounted chunks below" : ""
+    );
+}
+
 const TArray<uint32_t>& ModSDK::GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) {
     if (m_ResourceIdToChunkMap.empty()) {
         LoadResourceChunkMap();
@@ -131,6 +243,12 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
 
     const std::string s_ResIdStr {std::string_view(s_JsonMsg["hash_value"])};
     const auto s_ResId = ZRuntimeResourceID::FromString(s_ResIdStr);
+
+    std::string_view s_TypeStr = std::string_view(s_JsonMsg["hash_resource_type"]);
+
+    uint32_t s_Type =
+        (static_cast<uint32_t>(static_cast<uint8_t>(s_TypeStr[0])) << 24) | (static_cast<uint32_t>(static_cast<uint8_t>(s_TypeStr[1])) << 16)
+        | (static_cast<uint32_t>(static_cast<uint8_t>(s_TypeStr[2])) << 8) | (static_cast<uint32_t>(static_cast<uint8_t>(s_TypeStr[3])));
 
     Logger::Debug("Loading resource {}...", s_ResId);
 
@@ -178,12 +296,13 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
     }
 
     auto& s_ResInfo = (*Globals::ResourceContainer)->m_resources[s_Index.val];
-    s_ResInfo.refCount = 99; // TODO: Fix.
-    s_ResInfo.firstReferenceIndex = (*Globals::ResourceContainer)->m_references.size();
-    s_ResInfo.numReferences = s_References.size();
+    s_ResInfo.dataOffset = 0;
     s_ResInfo.dataSize = p_ResourceMem->DataSize;
     s_ResInfo.compressedDataSize = p_ResourceMem->DataSize;
-    s_ResInfo.dataOffset = 0;
+    s_ResInfo.refCount = 2; // One reference held by the output TResourcePtr, one by ZResourcePending during installation.
+    s_ResInfo.firstReferenceIndex = (*Globals::ResourceContainer)->m_references.size();
+    s_ResInfo.numReferences = s_References.size();
+    s_ResInfo.resourceType = s_Type;
 
     for (const auto& [s_RefId, s_RefFlags] : s_References) {
         Logger::Debug("Adding reference {} -> {} (flags = {:x}).", s_ResId, s_RefId, s_RefFlags.flags);
@@ -192,7 +311,7 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
         );
     }
 
-    Functions::ZResourceContainer_AcquireReferences->Call(*Globals::ResourceContainer, s_Index);
+    Functions::ZResourceContainer_AcquireResourceReferences->Call(*Globals::ResourceContainer, s_Index);
     WaitForResources();
 
     Logger::Debug("All references loaded! Creating readers and installing resource...");
@@ -206,7 +325,7 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
 
     s_Buffer->m_pData = const_cast<void*>(p_ResourceMem->ResourceData);
     s_Buffer->m_nSize = p_ResourceMem->DataSize;
-    s_Buffer->m_iRefCount = 69;
+    s_Buffer->m_iRefCount = 1;
     s_Buffer->m_nCapacity = p_ResourceMem->DataSize;
     s_Buffer->m_bOwnsDataPtr = false;
 
@@ -219,7 +338,7 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
 
     Functions::ZResourceReader_ZResourceReader->Call(
         s_Reader,
-        &s_Index,
+        s_Index,
         &s_DataPtr,
         p_ResourceMem->DataSize
     );
@@ -227,14 +346,16 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
     ZResourcePending s_Pending {};
     s_Pending.m_pResource.m_nResourceIndex = s_Index.val;
     s_Pending.m_pResourceReader.m_pObject = s_Reader;
+    s_Pending.m_pResourceReader.m_pObject->m_iRefCount = 1;
 
     // Increment m_nNumProcessing by 1 because installing will set the
     // resource status to valid, which will decrement m_nNumProcessing.
     InterlockedIncrement(&Globals::ResourceManager->m_nNumProcessing);
     p_Install(&s_Pending);
 
-    // TODO: Free s_Reader, s_Buffer, etc.
     WaitForResources();
+
+    Functions::ZResourceReader_Dtor->Call(s_Reader);
 
     return std::make_tuple(s_Index, s_ResId);
 }
@@ -283,8 +404,15 @@ bool ModSDK::LoadQnEntity(
 
     auto [s_TbluIndex, s_TbluId] = LoadResourceFromBIN1(
         s_ResourceTbluMem, s_BlueprintMetaJson,
-        [](ZResourcePending* r) { Functions::ZTemplateBlueprintInstaller_Install->Call(nullptr, r); }
-    );
+        [&p_BlueprintFactoryOut, s_ResourceTbluMem](ZResourcePending* r) {
+        const bool s_IsInstalled = Functions::ZTemplateBlueprintInstaller_Install->Call(nullptr, r);
+
+        if (s_IsInstalled) {
+            p_BlueprintFactoryOut.m_nResourceIndex.val = r->m_pResource.m_nResourceIndex.val;
+        }
+
+        HM3_GetGeneratorForResource("TBLU")->FreeResourceMem(s_ResourceTbluMem);
+    });
 
     Logger::Debug("TBLU rid = {}, index = {}", s_TbluId, s_TbluIndex.val);
 
@@ -292,24 +420,17 @@ bool ModSDK::LoadQnEntity(
 
     auto [s_TempIndex, s_TempId] = LoadResourceFromBIN1(
         s_ResourceTempMem, s_FactoryMetaJson,
-        [](ZResourcePending* r) { Functions::ZTemplateInstaller_Install->Call(nullptr, r); }
-    );
+        [&p_FactoryOut, s_ResourceTempMem](ZResourcePending* r) {
+        const bool s_IsInstalled = Functions::ZTemplateInstaller_Install->Call(nullptr, r);
+
+        if (s_IsInstalled) {
+            p_FactoryOut.m_nResourceIndex.val = r->m_pResource.m_nResourceIndex.val;
+        }
+
+        HM3_GetGeneratorForResource("TEMP")->FreeResourceMem(s_ResourceTempMem);
+    });
 
     Logger::Debug("TEMP rid = {}, index = {}", s_TempId, s_TempIndex.val);
-
-    Globals::ResourceManager->GetResourcePtr(p_BlueprintFactoryOut, s_TbluId, 0);
-
-    if (!p_BlueprintFactoryOut) {
-        Logger::Error("Could not get created TBLU resource.");
-        return false;
-    }
-
-    Globals::ResourceManager->GetResourcePtr(p_FactoryOut, s_TempId, 0);
-
-    if (!p_FactoryOut) {
-        Logger::Error("Could not get created TEMP resource.");
-        return false;
-    }
 
     return true;
 }

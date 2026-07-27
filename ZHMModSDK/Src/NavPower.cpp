@@ -79,47 +79,39 @@ namespace NavPower {
         return SVector3(x, y, z);
     }
 
-    void NavMesh::read(uintptr_t p_data, uint32_t p_filesize) {
+    void NavGraph::read(uintptr_t& p_data)
+    {
         uintptr_t s_startPointer = p_data;
-        uintptr_t s_endPointer {};
+        uintptr_t s_endPointer{};
 
-        m_hdr = (Binary::Header*) p_data;
-        p_data += sizeof(Binary::Header);
-
-        m_sectHdr = (Binary::SectionHeader*) p_data;
-        p_data += sizeof(Binary::SectionHeader);
-
-        m_setHdr = (Binary::NavSetHeader*) p_data;
-        p_data += sizeof(Binary::NavSetHeader);
-
-        m_graphHdr = (Binary::NavGraphHeader*) p_data;
+        m_hdr = (Binary::NavGraphHeader*)p_data;
         p_data += sizeof(Binary::NavGraphHeader);
 
-        FixAreaPointers(p_data - sizeof(Binary::NavGraphHeader), m_graphHdr->m_areaBytes);
+        FixAreaPointers(p_data - sizeof(Binary::NavGraphHeader), m_hdr->m_areaBytes);
 
-        s_endPointer = p_data + m_graphHdr->m_areaBytes;
+        s_endPointer = p_data + m_hdr->m_areaBytes;
         while (p_data < s_endPointer) {
-            Area s_area {};
-            s_area.m_area = (Binary::Area*) p_data;
+            Area s_area{};
+            s_area.m_area = (Binary::Area*)p_data;
             p_data += sizeof(Binary::Area);
 
             for (uint32_t i = 0; i < s_area.m_area->m_flags.GetNumEdges(); ++i) {
-                s_area.m_edges.push_back((Binary::Edge*) p_data);
+                s_area.m_edges.push_back((Binary::Edge*)p_data);
                 p_data += sizeof(Binary::Edge);
             }
 
             m_areas.push_back(s_area);
         }
-        m_kdTreeData = (Binary::KDTreeData*) p_data;
+
+        m_kdTreeData = (Binary::KDTreeData*)p_data;
         p_data += sizeof(Binary::KDTreeData);
 
-        m_rootKDNode = (Binary::KDNode*) p_data;
+        m_rootKDNode = (Binary::KDNode*)p_data;
 
-        // This is just for filesize sanity checking
         s_endPointer = p_data + m_kdTreeData->m_size;
         while (p_data < s_endPointer) {
-            Binary::KDNode* s_KDNode = (Binary::KDNode*) p_data;
-            Binary::KDLeaf* s_KDLeaf = (Binary::KDLeaf*) p_data;
+            Binary::KDNode* s_KDNode = (Binary::KDNode*)p_data;
+            Binary::KDLeaf* s_KDLeaf = (Binary::KDLeaf*)p_data;
 
             if (s_KDNode->IsLeaf())
                 p_data += sizeof(Binary::KDLeaf);
@@ -127,9 +119,42 @@ namespace NavPower {
                 p_data += sizeof(Binary::KDNode);
         }
 
-        // Sanity check
-        if ((p_data - s_startPointer) != p_filesize) {
-            printf("[WARNING] What we read does not equal filesize!\n");
+        if ((p_data - s_startPointer) != m_hdr->m_totalBytes) {
+            printf("[WARNING] NavGraph - What we read does not match the total bytes!\n");
+        }
+    }
+
+    void Section::read(uintptr_t& p_data) {
+        m_hdr = (Binary::SectionHeader*)p_data;
+        p_data += sizeof(Binary::SectionHeader);
+
+        if (m_hdr->m_size == 0) return;
+
+        // Sectionheader->m_size excludes the header.
+        uintptr_t s_startPointer = p_data;
+        uintptr_t s_endPointer{};
+
+        m_setHdr = (Binary::NavSetHeader*)p_data;
+        p_data += sizeof(Binary::NavSetHeader);
+
+        for (uint32_t i = 0; i < m_setHdr->m_numGraphs; ++i) {
+            m_aNavGraphs.push_back(NavGraph(p_data));
+        }
+
+        if ((p_data - s_startPointer) != m_hdr->m_size) {
+            printf("[WARNING] Section - What we read does not match the section size!\n");
+        }
+    }
+
+    void NavMesh::read(uintptr_t p_data, uint32_t p_filesize) {
+        uintptr_t s_startPointer = p_data;
+
+        m_hdr = (Binary::Header*)p_data;
+        p_data += sizeof(Binary::Header);
+
+        // Read Sections
+        while ((p_data - s_startPointer) != p_filesize) {
+            m_aSections.push_back(Section(p_data));
         }
     }
 } // namespace NavPower

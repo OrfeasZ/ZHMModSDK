@@ -39,7 +39,7 @@ class ZCameraEntity :
 {
 public:
     SMatrix GetViewMatrix() {
-        return GetWorldMatrix().Inverse();
+        return GetObjectToWorldMatrix().Inverse();
     }
 };
 

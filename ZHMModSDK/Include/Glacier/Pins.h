@@ -1511,7 +1511,24 @@ enum class ZHMPin {
     SetCinemaMode                         = -635959245,
     SetCinemaModeHighFramerate            = 1934358366,
     SetCrosshair                          = 351444829,
+
+    /**
+     * Set how an entity is highlighted, usually when in instinct-mode (though a few glow types are visible even when
+     * not in instinct)
+     *
+     * Takes a parameter of type `ERenderGlowTypes`
+     *
+     * Example, making an actor appear like a target (giving them a red highlight):
+     * @code
+     * ZActor* s_Actor = ...;
+     * s_Actor->m_rCharacter.m_entityRef.SignalInputPin(
+     *     static_cast<uint32_t>(ZHMPin::SetGlowType),
+     *     ZObjectRef::From(ERenderGlowTypes::ERENDERGLOWTYPE_CONTRACT_TARGET)
+     * );
+     * @endcode
+     */
     SetGlowType                           = -1058268134,
+
     SetIActor                             = 1178330814,
     SetImageRID                           = 395925583,
     SetLength                             = -1696003619,

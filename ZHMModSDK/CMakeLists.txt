@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 # The current version of the SDK.
 set(ZHMMODSDK_VER_MAJOR 4)
 set(ZHMMODSDK_VER_MINOR 0)
-set(ZHMMODSDK_VER_PATCH 0)
+set(ZHMMODSDK_VER_PATCH 2)
 
 # The current version of the SDK ABI.
 # Any change to this is a breaking change.
@@ -44,7 +44,6 @@ add_library(ZHMModSDK SHARED
         ${CMAKE_CURRENT_BINARY_DIR}/ZHMModSDK.rc
 )
 
-# Set up Rust helper library.
 include(FetchContent)
 FetchContent_Declare(
         Corrosion
@@ -52,7 +51,10 @@ FetchContent_Declare(
         GIT_TAG v0.5.2
 )
 
-set(Rust_TOOLCHAIN nightly)
+if (NOT ZHM_RUST_NO_RUSTUP)
+        set(Rust_TOOLCHAIN nightly)
+endif ()
+
 set(Rust_CARGO_TARGET x86_64-pc-windows-msvc)
 FetchContent_MakeAvailable(Corrosion)
 
@@ -114,6 +116,7 @@ target_link_libraries(ZHMModSDK PUBLIC
         sentry::sentry
         zhmmodsdk_rs
         ResourceLib_HM3
+        implot
 )
 
 install(TARGETS ZHMModSDK

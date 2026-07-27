@@ -1,17 +1,17 @@
 #pragma once
 
-#include "ZActor.h"
 #include "ZHM5BaseCharacter.h"
 #include "ZPhysics.h"
 #include "ZPrimitives.h"
+#include "ZCollision.h"
+#include "ZOutfit.h"
+#include "TCheatProtect.h"
 
-/*
-class ZHitman5
-{
-public:
-    PAD(0x710);
-    ZRepositoryID m_InitialOutfitId;
-};*/
+class IFirearm;
+
+enum class ECustomFlags {
+    eLIMITED_AMMO = 0x2000000
+};
 
 class IFutureCameraState :
         public IComponentInterface {
@@ -37,7 +37,7 @@ public:
 };
 
 class IIKControllerOwner :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IIKControllerOwner() {}
     virtual void IIKControllerOwner_unk0() = 0;
@@ -71,10 +71,11 @@ public:
     virtual void IIKControllerOwner_unk28() = 0;
     virtual void IIKControllerOwner_unk29() = 0;
     virtual void IIKControllerOwner_unk30() = 0;
-    virtual void IIKControllerOwner_unk31() = 0;
+    virtual bool IsCustomFlagEnabled(ECustomFlags eCustomFlags) const = 0;
     virtual void IIKControllerOwner_unk32() = 0;
     virtual void IIKControllerOwner_unk33() = 0;
     virtual void IIKControllerOwner_unk34() = 0;
+    virtual void IIKControllerOwner_unk35() = 0;
 };
 
 class IControllableCharacter :
@@ -261,7 +262,7 @@ public:
     virtual void ICharacterInventoryState_unk17() = 0;
     virtual void ICharacterInventoryState_unk18() = 0;
     virtual void ICharacterInventoryState_unk19() = 0;
-    virtual void ICharacterInventoryState_unk20() = 0;
+    virtual uint32 GetAmmoInPocketFor(const TEntityRef<IFirearm>& rWeapon) = 0;
     virtual void ICharacterInventoryState_unk21() = 0;
     virtual void ICharacterInventoryState_unk22() = 0;
     virtual void ICharacterInventoryState_unk23() = 0;
@@ -405,6 +406,25 @@ public:
 
 class ZFabricColliderBaseEntity;
 
+class ZHM5Health {
+public:
+    PAD(0x228); // 0x0
+    TCheatProtect<float> m_fHitPoints; // 0x228
+    TCheatProtect<float> m_fMaxHitPoints; // 0x238
+};
+
+class ZHM5BaseController {
+public:
+    virtual ~ZHM5BaseController() = 0;
+};
+
+class ZHM5WeaponRecoilController : public ZHM5BaseController {
+public:
+    PAD(0x40); // 0x8
+    SVector2 m_vRecoil; // 0x48
+    SVector2 m_vAccumlatedRecoil; // 0x50
+};
+
 class ZHitman5 :
         public ZHM5BaseCharacter,
         public IFutureCameraState, // 720
@@ -426,6 +446,10 @@ class ZHitman5 :
         public ICharacterCameraState // 848
 {
 public:
+    bool IsInfiniteAmmoEnabled() const {
+        return !IsCustomFlagEnabled(ECustomFlags::eLIMITED_AMMO);
+    }
+
     PAD(0x3B8); // 0x358
     ZRepositoryID m_InitialOutfitId; // 0x710
     ZEntityRef m_MorphemeEntityID; // 0x720
@@ -451,7 +475,9 @@ public:
     ZRuntimeResourceID m_SeasonOneHead3; // 0x990
     ZRuntimeResourceID m_SeasonOneHead4; // 0x998
     ZRuntimeResourceID m_SeasonOneHead5; // 0x9A0
-    PAD(0x4F0); // 0x9A8
+    PAD(0x4C8); // 0x9A8
+    ZHM5Health* m_pHealth; // 0xE70
+    PAD(0x20); // 0xE78
     bool m_bIsInvincible; // 0xE98
     PAD(0x7); // 0xE99
     TEntityRef<ZHeroGuideController> m_pGuideController; // 0xEA0
@@ -464,7 +490,11 @@ public:
     TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0xFB0
     int32 m_nOutfitCharset; // 0xFC0
     int32 m_nOutfitVariation; // 0xFC4
-    PAD(0x370); // 0xFC8
+    PAD(0x210); // 0xFC8
+    uint64 m_nMovementFlags; // 0x11D8
+    uint32 m_nLocomotionFlag; // 0x11E0
+    uint64 m_nCustomFlags; // 0x11E8
+    PAD(0x148); // 0x11F0
     TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1338
     PAD(0xA8); // 0x1318
 };

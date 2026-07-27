@@ -55,6 +55,16 @@
 // Needed for TaskDialogIndirect
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
+#define G2_EXCEPTION_HANDLER_EXPORT "?G2DefaultRetailExceptionHandler@@YAJPEAU_EXCEPTION_POINTERS@@@Z"
+
+typedef long(*G2DefaultRetailExceptionHandler_t)(EXCEPTION_POINTERS* ExceptionInfo);
+
+G2DefaultRetailExceptionHandler_t GetG2ExceptionHandler() {
+    HMODULE s_Module = GetModuleHandleA(nullptr);
+    if (!s_Module) return nullptr;
+    return (G2DefaultRetailExceptionHandler_t)GetProcAddress(s_Module, G2_EXCEPTION_HANDLER_EXPORT);
+}
+
 #if _DEBUG
 
 #include "DebugConsole.h"
@@ -142,6 +152,10 @@ ModSDK::ModSDK() {
     m_ModuleBase = reinterpret_cast<uintptr_t>(s_Module) + Util::ProcessUtils::GetBaseOfCode(s_Module);
     m_SizeOfCode = Util::ProcessUtils::GetSizeOfCode(s_Module);
     m_ImageSize = Util::ProcessUtils::GetSizeOfImage(s_Module);
+
+    // Check the exception handler can be resolved so we can notify the user if not.
+    if (!GetG2ExceptionHandler())
+        Logger::Warn("Failed to resolve G2DefaultRetailExceptionHandler export. The engine will not generate crash metrics!");
 }
 
 ModSDK::~ModSDK() {
@@ -255,7 +269,7 @@ void ModSDK::LoadConfiguration() {
     // now we can read the file
     s_File.read(s_Ini);
 
-    for (auto& s_Mod: s_Ini) {
+    for (auto& s_Mod : s_Ini) {
         // We are looking for the sdk entry.
         if (Util::StringUtils::ToLowerCase(s_Mod.first) != "sdk")
             continue;
@@ -274,7 +288,8 @@ void ModSDK::LoadConfiguration() {
             // Try to parse its value as a uint8_t.
             try {
                 m_ConsoleScanCode = std::stoul(s_Mod.second.get("console_key"), nullptr, 0);
-            } catch (const std::exception&) {
+            }
+            catch (const std::exception&) {
                 Logger::Error("Could not parse console key value from mod.ini. Using default value.");
             }
         }
@@ -283,7 +298,8 @@ void ModSDK::LoadConfiguration() {
             // Try to parse its value as a uint8_t.
             try {
                 m_UiToggleScanCode = std::stoul(s_Mod.second.get("ui_toggle_key"), nullptr, 0);
-            } catch (const std::exception&) {
+            }
+            catch (const std::exception&) {
                 Logger::Error("Could not parse ui_toggle_key value from mod.ini. Using default value.");
             }
         }
@@ -432,9 +448,10 @@ std::pair<uint32_t, std::string> ModSDK::RequestLatestVersion() {
                 s_Response.append(s_Buffer.get(), s_BytesRead);
             }
         }
-    } while (s_ResponseSize > 0);
+    }
+    while (s_ResponseSize > 0);
 
-    return { s_StatusCode, s_Response };
+    return {s_StatusCode, s_Response};
 }
 
 void ModSDK::ShowVersionNotice(const std::string& p_Version) {
@@ -450,7 +467,7 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
     std::wstring s_WideContent(s_ContentSize, 0);
     MultiByteToWideChar(CP_UTF8, 0, s_ContentStr.c_str(), -1, s_WideContent.data(), s_ContentSize);
 
-    TASKDIALOGCONFIG s_Config = { 0 };
+    TASKDIALOGCONFIG s_Config = {0};
     s_Config.cbSize = sizeof(s_Config);
     s_Config.hInstance = GetModuleHandle(nullptr);
     s_Config.dwFlags = TDF_ENABLE_HYPERLINKS | TDF_USE_COMMAND_LINKS;
@@ -461,9 +478,9 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
     s_Config.pszContent = s_WideContent.c_str();
 
     TASKDIALOG_BUTTON s_Buttons[] = {
-        { 1337, L"Download update\nUpdate must be manually applied after being downloaded." },
-        { 1338, L"View update notes\nOpen a page with the update notes for the new version." },
-        { 1339, L"Ignore this version\nSkip this update and further update notifications for this version." },
+        {1337, L"Download update\nUpdate must be manually applied after being downloaded."},
+        {1338, L"View update notes\nOpen a page with the update notes for the new version."},
+        {1339, L"Ignore this version\nSkip this update and further update notifications for this version."},
     };
 
     s_Config.pButtons = s_Buttons;
@@ -483,7 +500,8 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
         if (type == TDN_DESTROYED) {
             delete s_CallbackData;
             return S_OK;
-        } else if (type == TDN_BUTTON_CLICKED) {
+        }
+        else if (type == TDN_BUTTON_CLICKED) {
             if (wParam == 1337) {
                 const auto s_DownloadURL = std::format(
                     "https://github.com/OrfeasZ/ZHMModSDK/releases/download/{}/ZHMModSDK-Release.zip",
@@ -491,14 +509,16 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
                 );
 
                 ShellExecuteA(nullptr, "open", s_DownloadURL.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-            } else if (wParam == 1338) {
+            }
+            else if (wParam == 1338) {
                 const auto s_ReleaseURL = std::format(
                     "https://github.com/OrfeasZ/ZHMModSDK/releases/tag/{}",
                     s_CallbackData->Version
                 );
 
                 ShellExecuteA(nullptr, "open", s_ReleaseURL.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-            } else if (wParam == 1339) {
+            }
+            else if (wParam == 1339) {
                 // Ignore this version.
                 ModSDK::GetInstance()->SkipVersionUpdate(s_CallbackData->Version);
             }
@@ -531,7 +551,8 @@ bool ModSDK::CheckForUpdates() const {
     try {
         Logger::Info("Checking for updates...");
         s_VersionCheckResult = RequestLatestVersion();
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         Logger::Error("Could not check for updates: {}", e.what());
         return false;
     }
@@ -567,13 +588,16 @@ bool ModSDK::CheckForUpdates() const {
             Logger::Info("A new version of the Mod SDK is available: {}.", s_LatestVersion);
             ShowVersionNotice(std::string(s_LatestVersion));
             return true;
-        } else {
+        }
+        else {
             Logger::Info("Mod SDK is up to date.");
             return false;
         }
-    } catch (const simdjson::simdjson_error& e) {
+    }
+    catch (const simdjson::simdjson_error& e) {
         Logger::Error("Could not parse JSON response: {}", e.what());
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         Logger::Error("An error occurred while checking for updates: {}", e.what());
     }
 
@@ -585,7 +609,8 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
     if (p_Args.size() == 1) {
         if (p_Args[0] == "unloadall") {
             ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
-        } else if (p_Args[0] == "reloadall") {
+        }
+        else if (p_Args[0] == "reloadall") {
             ModSDK::GetInstance()->GetModLoader()->ReloadAllMods();
         }
     }
@@ -593,11 +618,14 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
     if (p_Args.size() == 2) {
         if (p_Args[0] == "load") {
             ModSDK::GetInstance()->GetModLoader()->LoadMod(p_Args[1].c_str(), true);
-        } else if (p_Args[0] == "unload") {
+        }
+        else if (p_Args[0] == "unload") {
             ModSDK::GetInstance()->GetModLoader()->UnloadMod(p_Args[1].c_str());
-        } else if (p_Args[0] == "reload") {
+        }
+        else if (p_Args[0] == "reload") {
             ModSDK::GetInstance()->GetModLoader()->ReloadMod(p_Args[1].c_str());
-        } else if (p_Args[0] == "config") {
+        }
+        else if (p_Args[0] == "config") {
             ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
 
             if (!s_Command)
@@ -646,11 +674,13 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
                             return Logger::Error(
                                 "[ZConfigCommand] Invalid input (float), not all characters provided were processed."
                             );
-                    } catch (const std::invalid_argument&) {
+                    }
+                    catch (const std::invalid_argument&) {
                         return Logger::Error(
                             "[ZConfigCommand] Invalid input (float), input does not represent a float."
                         );
-                    } catch (const std::out_of_range&) {
+                    }
+                    catch (const std::out_of_range&) {
                         return Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
                     }
                     break;
@@ -665,11 +695,13 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
                             );
                         if (value > (std::numeric_limits<unsigned int>::max)())
                             return Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
-                    } catch (const std::invalid_argument&) {
+                    }
+                    catch (const std::invalid_argument&) {
                         return Logger::Error(
                             "[ZConfigCommand] Invalid input (integer), input does not represent a integer."
                         );
-                    } catch (const std::out_of_range&) {
+                    }
+                    catch (const std::out_of_range&) {
                         return Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
                     }
                     break;
@@ -751,7 +783,7 @@ bool ModSDK::Startup() {
     m_D3D12Hooks->Startup();
 
     // Patch mutex creation to allow multiple instances.
-    uint8_t s_NopBytes[84] = { 0x90 };
+    uint8_t s_NopBytes[84] = {0x90};
     memset(s_NopBytes, 0x90, 84);
     if (!PatchCode(
         "\x4C\x8D\x05\x00\x00\x00\x00\xBA\x00\x00\x00\x00\x33\xC9\xFF\x15",
@@ -806,6 +838,20 @@ bool ModSDK::Startup() {
     return true;
 }
 
+// Pass the exception information to the engine so it can generate its own crash metrics.
+sentry_value_t ModSDK_OnCrashCallback(const sentry_ucontext_t* uctx, sentry_value_t event, void* closure) {
+    G2DefaultRetailExceptionHandler_t G2DefaultRetailExceptionHandler = GetG2ExceptionHandler();
+    if (!G2DefaultRetailExceptionHandler)
+    {
+        Logger::Warn("ModSDK_OnCrashCallback - Could not get G2DefaultRetailExceptionHandler");
+        return event;
+    }
+
+    G2DefaultRetailExceptionHandler(const_cast<EXCEPTION_POINTERS*>(&uctx->exception_ptrs));
+
+    return event;
+}
+
 void ModSDK::ThreadedStartup() {
     if (m_EnableSentry.value_or(false)) {
         sentry_options_t* options = sentry_options_new();
@@ -824,7 +870,12 @@ void ModSDK::ThreadedStartup() {
 
         sentry_options_set_release(options, "ZHMModSDK@" ZHMMODSDK_VER);
         sentry_options_set_debug(options, 0);
+        sentry_options_set_on_crash(options, ModSDK_OnCrashCallback, NULL);
         sentry_init(options);
+    }
+    else if (GetG2ExceptionHandler()) {
+        // If sentry is not enabled, default to the engine's exception handler.
+        SetUnhandledExceptionFilter(GetG2ExceptionHandler());
     }
 
     // If the engine is already initialized, inform the mods.
@@ -835,7 +886,7 @@ void ModSDK::ThreadedStartup() {
 void ModSDK::OnDrawMenu() const {
     m_ModLoader->LockRead();
 
-    for (auto& s_Mod: m_ModLoader->GetLoadedMods()) {
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods()) {
         s_Mod->OnDrawMenu();
     }
 
@@ -917,7 +968,7 @@ void ModSDK::OnDrawUI(bool p_HasFocus) {
 
     m_ModLoader->LockRead();
 
-    for (auto& s_Mod: m_ModLoader->GetLoadedMods())
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods())
         s_Mod->OnDrawUI(p_HasFocus);
 
     m_ModLoader->UnlockRead();
@@ -930,7 +981,7 @@ void ModSDK::OnDraw3D() const {
     const bool s_IsDistanceCullingEnabled = m_DirectXTKRenderer->IsDistanceCullingEnabled();
     const float s_MaxDrawDistance = m_DirectXTKRenderer->GetMaxDrawDistance();
 
-    for (auto& s_Mod: m_ModLoader->GetLoadedMods()) {
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods()) {
         s_Mod->OnDraw3D(m_DirectXTKRenderer.get());
 
         m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsFrustumCullingEnabled);
@@ -948,7 +999,7 @@ void ModSDK::OnDepthDraw3D() const {
     const bool s_IsDistanceCullingEnabled = m_DirectXTKRenderer->IsDistanceCullingEnabled();
     const float s_MaxDrawDistance = m_DirectXTKRenderer->GetMaxDrawDistance();
 
-    for (auto& s_Mod: m_ModLoader->GetLoadedMods()) {
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods()) {
         s_Mod->OnDepthDraw3D(m_DirectXTKRenderer.get());
 
         m_DirectXTKRenderer->SetFrustumCullingEnabled(s_IsFrustumCullingEnabled);
@@ -967,6 +1018,10 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
         p_Mod->OnEngineInitialized();
 
     Logger::Info("Mod {} successfully loaded.", p_Name);
+}
+
+void ModSDK::OnModUnloading(const std::string& p_Name, IPluginInterface* p_Mod) {
+    p_Mod->CleanupUI();
 }
 
 void ModSDK::OnModUnloaded(const std::string& p_Name) {}
@@ -1137,7 +1192,7 @@ void ModSDK::OnEngineInit() {
 
     m_ModLoader->LockRead();
 
-    for (auto& s_Mod: m_ModLoader->GetLoadedMods())
+    for (auto& s_Mod : m_ModLoader->GetLoadedMods())
         s_Mod->OnEngineInitialized();
 
     m_ModLoader->UnlockRead();
@@ -1247,6 +1302,10 @@ ImFont* ModSDK::GetImGuiBlackFont() {
     return m_ImguiRenderer->GetFontBlack();
 }
 
+ImPlotContext* ModSDK::GetImPlotContext() {
+    return ImPlot::GetCurrentContext();
+}
+
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name) {
     std::string s_Name;
     if (TryGetPinName(p_PinId, s_Name)) {
@@ -1273,7 +1332,7 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
 
     if (s_Size.x == 0 && s_Size.y == 0) {
         const auto s_Desc = p_RT->m_pTexture2D->m_pResource->GetDesc();
-        s_Size = { static_cast<float>(s_Desc.Width), static_cast<float>(s_Desc.Height) };
+        s_Size = {static_cast<float>(s_Desc.Width), static_cast<float>(s_Desc.Height)};
     }
 
     const auto s_HandleIncrementSize = Globals::RenderManager->m_pDevice->m_pDevice->GetDescriptorHandleIncrementSize(
@@ -1282,7 +1341,7 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
 
     D3D12_GPU_DESCRIPTOR_HANDLE s_Handle {};
     s_Handle.ptr = Globals::RenderManager->m_pDevice->m_pFrameHeapCBVSRVUAV->GetGPUDescriptorHandleForHeapStart().ptr +
-                   (p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
+            (p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
 
     ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_SetGameDescriptorHeap, nullptr);
     ImGui::Image(s_Handle.ptr, s_Size);
@@ -1422,7 +1481,8 @@ int64_t ModSDK::GetPluginSettingInt(
 
     try {
         return std::stoll(s_Value);
-    } catch (const std::exception&) {
+    }
+    catch (const std::exception&) {
         return p_DefaultValue;
     }
 }
@@ -1447,7 +1507,8 @@ uint64_t ModSDK::GetPluginSettingUInt(
 
     try {
         return std::stoull(s_Value);
-    } catch (const std::exception&) {
+    }
+    catch (const std::exception&) {
         return p_DefaultValue;
     }
 }
@@ -1472,7 +1533,8 @@ double ModSDK::GetPluginSettingDouble(
 
     try {
         return std::stod(s_Value);
-    } catch (const std::exception&) {
+    }
+    catch (const std::exception&) {
         return p_DefaultValue;
     }
 }
@@ -1497,9 +1559,11 @@ bool ModSDK::GetPluginSettingBool(
 
     if (s_Value == "true" || s_Value == "1" || s_Value == "yes" || s_Value == "on" || s_Value == "y") {
         return true;
-    } else if (s_Value == "false" || s_Value == "0" || s_Value == "no" || s_Value == "off" || s_Value == "n") {
+    }
+    else if (s_Value == "false" || s_Value == "0" || s_Value == "no" || s_Value == "off" || s_Value == "n") {
         return false;
-    } else {
+    }
+    else {
         return p_DefaultValue;
     }
 }
@@ -1617,7 +1681,8 @@ void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Si
         // If engine is initialized, allocate the normal way.
         p_Target->m_nLength = p_Size;
         p_Target->m_pChars = Functions::ZStringCollection_Allocate->Call(p_Str, p_Size)->m_pDataStart;
-    } else {
+    }
+    else {
         // Otherwise, allocate ourselves and make the game think it's a static allocation.
         // This will leak memory, but best we can do for now before the engine is initialized.
         auto* s_String = new char[p_Size + 1] {};
@@ -1671,7 +1736,7 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS
     Options->Flags |= EOS_PF_LOADING_IN_EDITOR | EOS_PF_DISABLE_OVERLAY;
     #endif
 
-    return { HookAction::Continue() };
+    return {HookAction::Continue()};
 }
 
 void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback) {
@@ -1751,42 +1816,42 @@ DEFINE_DETOUR_WITH_CONTEXT(
     uint32_t a5,
     bool bCaptureOnly
 ) {
-    if (dsv && *dsv && m_DirectXTKRenderer) {
-        m_DirectXTKRenderer->SetDsvIndex((*Globals::D3D12ObjectPools)->DepthStencilViews.IndexOf(*dsv) + 1);
+    if (dsv && *dsv && m_DirectXTKRenderer && (*dsv)->m_pTexture && (*dsv)->m_pTexture->m_pResource) {
+        m_DirectXTKRenderer->SetDepthBuffer((*dsv)->m_pTexture->m_pResource);
     }
 
-    return { HookAction::Continue() };
+    return {HookAction::Continue()};
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(
     ModSDK,
-    void,
+    bool,
     OnLoadScene,
     ZEntitySceneContext* th,
     SSceneInitParameters& p_Parameters
 ) {
     if (m_DirectXTKRenderer) {
-        m_DirectXTKRenderer->ClearDsvIndex();
+        m_DirectXTKRenderer->ClearDepthBuffer();
     }
 
     static bool s_BypassedOnce = false;
 
     if ((p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity" ||
-         p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
+        p_Parameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") && !s_BypassedOnce) {
         s_BypassedOnce = true;
         if (!m_AutoLoadScene.empty()) {
             p_Parameters.m_SceneResource = m_AutoLoadScene;
         }
     }
-    return { HookAction::Continue() };
+    return {HookAction::Continue()};
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     if (m_DirectXTKRenderer) {
-        m_DirectXTKRenderer->ClearDsvIndex();
+        m_DirectXTKRenderer->ClearDepthBuffer();
     }
 
-    return { HookAction::Continue() };
+    return {HookAction::Continue()};
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(

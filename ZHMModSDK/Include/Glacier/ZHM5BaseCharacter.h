@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ZEntity.h"
+#include "ZMorpheme.h"
+#include "ZLinkedEntity.h"
 
 class ZRagdollHandler;
 
@@ -97,5 +99,9 @@ public:
     PAD(0x10); // 0x50
     ZRagdollHandler* m_pRagdollHandler; // 0x60
     ZEntityRef m_EventConsumerCollection; // 0x68
-    PAD(0x260);
+    PAD(0x10); // 0x70
+    TEntityRef<IMorphemeEntity> m_pMorphemeEntity; // 0x80
+    PAD(0x30); // 0x90
+    TEntityRef<ZLinkedEntity> m_pGeomLinkedEntityInterface; // 0xC0
+    PAD(0x200); // 0xD0
 };

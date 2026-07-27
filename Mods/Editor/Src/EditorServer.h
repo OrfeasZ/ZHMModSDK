@@ -44,7 +44,7 @@ public:
     static bool GetEnabled();
 
 private:
-    static void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);
+    static void OnMessage(WebSocket* p_Socket, std::string_view p_Message, uWS::Loop* p_Loop) noexcept(false);
 
     static void SendWelcome(WebSocket* p_Socket);
     static void SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
@@ -54,7 +54,7 @@ private:
         WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
     );
     static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
-    static void SendAlocPfBoxesAndSeedPointEntityList(WebSocket* p_Socket);
+    static void SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop);
     static bool SendEntitiesDetails(
         WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities
     );
@@ -64,8 +64,8 @@ private:
     static void WriteRotation(std::ostream& p_Stream, double p_Yaw, double p_Pitch, double p_Roll);
     static void WriteQuat(std::ostream& p_Stream, double p_x, double p_y, double p_z, double p_w);
     static void WriteTransform(std::ostream& p_Stream, SMatrix p_Transform);
-    static void WritePropertyName(std::ostream& p_Stream, ZEntityProperty* p_Property);
-    static void WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, ZEntityProperty* p_Property);
+    static void WritePropertyName(std::ostream& p_Stream, SPropertyData* p_Property);
+    static void WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SPropertyData* p_Property);
 
 public:
     static EntitySelector ReadEntitySelector(simdjson::ondemand::value p_Selector);
@@ -78,7 +78,7 @@ public:
 
 private:
     void PublishEvent(const std::string& p_Event, std::optional<std::string> p_IgnoreClient);
-    static bool IsPropertyValueTrue(const ZEntityProperty* s_Property, const ZEntityRef& p_Entity);
+    static bool IsPropertyValueTrue(const SPropertyData* s_Property, const ZEntityRef& p_Entity);
     static bool IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity);
 
 private:
@@ -87,5 +87,5 @@ private:
     uWS::Loop* m_Loop;
     std::vector<SocketUserData*> m_SocketUserDatas;
     std::jthread m_ServerThread;
-    static bool m_Enabled;
+    static std::atomic<bool> m_Enabled;
 };

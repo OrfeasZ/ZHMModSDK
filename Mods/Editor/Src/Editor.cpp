@@ -1,6 +1,8 @@
 #include "Editor.h"
 
 #include <numbers>
+#include <algorithm>
+#include <future>
 
 #include "Hooks.h"
 #include "Logging.h"
@@ -30,6 +32,7 @@
 #include <ResourceLib_HM3.h>
 
 #include "Util/StringUtils.h"
+#include "Util/HttpUtils.h"
 
 Editor::Editor() {
     // Disable ZTemplateEntityBlueprintFactory freeing its associated data.
@@ -123,6 +126,8 @@ void Editor::Init() {
     m_UseScaleSnap = GetSettingBool("general", "scale_snap", true);
     m_ScaleSnapValue = GetSettingDouble("general", "scale_snap_value", 1.0);
     m_UseQneTransforms = GetSettingBool("general", "qne_transforms", false);
+    m_RoundCopiedMatrixValues = GetSettingBool("general", "round_copied_matrix_values", false);
+    m_CopyDecimalPlaces = GetSettingInt("general", "copy_decimal_places", 3);
     m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
 }
 
@@ -197,6 +202,10 @@ void Editor::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS")) {
         m_DebugChannelsMenuActive = !m_DebugChannelsMenuActive;
     }
+
+    if (ImGui::Button(ICON_MD_MEETING_ROOM " ROOMS")) {
+        m_RoomsMenuActive = !m_RoomsMenuActive;
+    }
 }
 
 void Editor::ToggleEditorServerEnabled() {
@@ -263,6 +272,59 @@ void Editor::OnDepthDraw3D(IRenderer* p_Renderer) {
 void Editor::OnEngineInitialized() {
     const ZMemberDelegate<Editor, void(const SGameUpdateEvent&)> s_Delegate(this, &Editor::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
+
+    ZTypeRegistry* s_TypeRegistry = (*Globals::TypeRegistry);
+
+    m_PinDataTypes.push_back(std::make_pair("bool", s_TypeRegistry->GetTypeID("bool")));
+    m_PinDataTypes.push_back(std::make_pair("uint8", s_TypeRegistry->GetTypeID("uint8")));
+    m_PinDataTypes.push_back(std::make_pair("int8", s_TypeRegistry->GetTypeID("int8")));
+    m_PinDataTypes.push_back(std::make_pair("uint16", s_TypeRegistry->GetTypeID("uint16")));
+    m_PinDataTypes.push_back(std::make_pair("int16", s_TypeRegistry->GetTypeID("int16")));
+    m_PinDataTypes.push_back(std::make_pair("uint32", s_TypeRegistry->GetTypeID("uint32")));
+    m_PinDataTypes.push_back(std::make_pair("int32", s_TypeRegistry->GetTypeID("int32")));
+    m_PinDataTypes.push_back(std::make_pair("uint64", s_TypeRegistry->GetTypeID("uint64")));
+    m_PinDataTypes.push_back(std::make_pair("int64", s_TypeRegistry->GetTypeID("int64")));
+    m_PinDataTypes.push_back(std::make_pair("float32", s_TypeRegistry->GetTypeID("float32")));
+    m_PinDataTypes.push_back(std::make_pair("float64", s_TypeRegistry->GetTypeID("float64")));
+    m_PinDataTypes.push_back(std::make_pair("SVector2", s_TypeRegistry->GetTypeID("SVector2")));
+    m_PinDataTypes.push_back(std::make_pair("SVector3", s_TypeRegistry->GetTypeID("SVector3")));
+    m_PinDataTypes.push_back(std::make_pair("SVector4", s_TypeRegistry->GetTypeID("SVector4")));
+    m_PinDataTypes.push_back(std::make_pair("SMatrix43", s_TypeRegistry->GetTypeID("SMatrix43")));
+    m_PinDataTypes.push_back(std::make_pair("SColorRGB", s_TypeRegistry->GetTypeID("SColorRGB")));
+    m_PinDataTypes.push_back(std::make_pair("SColorRGBA", s_TypeRegistry->GetTypeID("SColorRGBA")));
+    m_PinDataTypes.push_back(std::make_pair("ZString", s_TypeRegistry->GetTypeID("ZString")));
+    m_PinDataTypes.push_back(std::make_pair("ZRuntimeResourceID", s_TypeRegistry->GetTypeID("ZRuntimeResourceID")));
+    m_PinDataTypes.push_back(std::make_pair("ZEntityRef", s_TypeRegistry->GetTypeID("ZEntityRef")));
+    m_PinDataTypes.push_back(std::make_pair("ZRepositoryID", s_TypeRegistry->GetTypeID("ZRepositoryID")));
+    m_PinDataTypes.push_back(std::make_pair("ZGuid", s_TypeRegistry->GetTypeID("ZGuid")));
+    m_PinDataTypes.push_back(std::make_pair("ZGameTime", s_TypeRegistry->GetTypeID("ZGameTime")));
+
+    for (const auto& [s_TypeName, s_TypeID] : (*Globals::TypeRegistry)->m_types) {
+        if (s_TypeID->GetTypeInfo()->IsClass()) {
+            if (s_TypeName.StartsWith("TEntityRef<") || s_TypeName.StartsWith("TResourcePtr<")) {
+                m_PinDataTypes.push_back(std::make_pair(s_TypeName.c_str(), s_TypeRegistry->GetTypeID(s_TypeName)));
+            }
+        }
+    }
+
+    for (const auto& [s_TypeName, s_TypeID] : (*Globals::TypeRegistry)->m_types) {
+        if (s_TypeID->GetTypeInfo()->IsClass()) {
+            m_ClassNames.push_back(std::string(s_TypeName.c_str(), s_TypeName.size()));
+        }
+    }
+
+    std::sort(
+        m_ClassNames.begin(),
+        m_ClassNames.end(),
+        [](const std::string& a, const std::string& b) {
+            return std::lexicographical_compare(
+                a.begin(), a.end(),
+                b.begin(), b.end(),
+                [](char ac, char bc) {
+                    return std::tolower(ac) < std::tolower(bc);
+                });
+        }
+    );
 }
 
 bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
@@ -273,12 +335,16 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
 
     const auto s_Result = ImGui::ButtonEx(
         (std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(),
-        { 20, 20 },
+        { m_CopyWidgetButtonSize, m_CopyWidgetButtonSize },
         ImGuiButtonFlags_AlignTextBaseLine
     );
 
     ImGui::SetWindowFontScale(1.0);
     ImGui::PopStyleVar(2);
+
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Copy to clipboard");
+    }
 
     return s_Result;
 }
@@ -292,12 +358,13 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         DrawEntityProperties();
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracer();
-
-        DrawItems(p_HasFocus);
-        DrawActors(p_HasFocus);
-        DrawDebugChannels(p_HasFocus);
         //DrawLibrary();
     }
+
+    DrawItems(p_HasFocus);
+    DrawActors(p_HasFocus);
+    DrawDebugChannels(p_HasFocus);
+    DrawRooms(p_HasFocus);
 
     if (m_EditorCameraRT && m_EditorCamera) {
         ImGui::Begin("RT Texture");
@@ -305,8 +372,8 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         const auto s_RT = reinterpret_cast<ZRenderDestination*>(m_EditorCameraRT.m_pInterfaceRef->
             GetRenderDestination());
 
-        m_EditorCameraRT.m_ref.SetProperty("m_bVisible", true);
-        m_EditorCamera.m_ref.SetProperty("m_bVisible", true);
+        m_EditorCameraRT.m_entityRef.SetProperty("m_bVisible", true);
+        m_EditorCamera.m_entityRef.SetProperty("m_bVisible", true);
 
         if (s_RT)
             SDK()->ImGuiGameRenderTarget(s_RT);
@@ -356,6 +423,7 @@ void Editor::DrawSettings(const bool p_HasFocus) {
 }
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
+    ProcessTasks();
     if (m_TrackCamActive) {
         if (!*Globals::ApplicationEngineWin32)
             return;
@@ -380,22 +448,28 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         //SpawnCameras();
     }
 
-    m_EntityDestructionMutex.lock();
+    std::lock_guard lock(m_EntityDestructionMutex);
 
-    while (!m_EntitiesToDestroy.empty()) {
-        auto [s_Entity, s_ClientId] = m_EntitiesToDestroy.back();
+    for (const auto& [s_Entity, s_ClientId] : m_EntitiesToDestroy) {
         DestroyEntityInternal(s_Entity, s_ClientId);
-        m_EntitiesToDestroy.pop_back();
     }
 
-    m_EntityDestructionMutex.unlock();
+    m_EntitiesToDestroy.clear();
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
-        std::vector<ZEntityRef> s_EntitiesToAdd; {
+        std::vector<ZEntityRef> s_EntitiesToAdd;
+        
+        {
             std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
 
             if (!m_PendingDynamicEntities.empty()) {
-                s_EntitiesToAdd.swap(m_PendingDynamicEntities);
+                s_EntitiesToAdd.reserve(m_PendingDynamicEntities.size());
+
+                for (const auto& ref : m_PendingDynamicEntities) {
+                    s_EntitiesToAdd.push_back(ref);
+                }
+
+                m_PendingDynamicEntities.clear();
             }
         }
 
@@ -407,8 +481,226 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             if (m_ReparentDynamicOutfitEntities) {
                 ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
             }
+
+            {
+                std::scoped_lock s_ScopedLock(m_DebugEntitiesMutex);
+
+                if (!m_EntityRefToDebugEntities.empty()) {
+                    for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
+                        auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
+
+                        if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                            GetDebugEntities(s_Iterator->second);
+                        }
+                    }
+                }
+            }
         }
     }
+
+    if (m_RemoveItemFromInventory) {
+        if (!m_ItemToRemove) {
+            m_RemoveItemFromInventory = false;
+            return;
+        }
+
+        const bool s_IsMainWeapon = m_SelectedActor->m_pInventoryHandler->m_rMainWeapon == m_ItemToRemove;
+
+        m_SelectedActor->ReleaseItem(m_ItemToRemove, false);
+
+        Functions::ZWorldInventory_DestroyItem->Call(
+            Globals::WorldInventory,
+            TEntityRef<IItemBase>(m_ItemToRemove.m_entityRef)
+        );
+
+        if (s_IsMainWeapon && m_SelectedActor->m_pInventoryHandler->m_aInventory.size() > 0) {
+            m_SelectedActor->m_pInventoryHandler->m_rMainWeapon = TEntityRef<ZHM5ItemWeapon>(
+                m_SelectedActor->m_pInventoryHandler->m_aInventory[0].m_entityRef
+            );
+        }
+
+        m_ItemToRemove = {};
+        m_RemoveItemFromInventory = false;
+    }
+
+    static std::future<std::map<std::string, PinLists>> s_DownloadFuture;
+    static bool s_DownloadStarted = false;
+    static bool s_DownloadCompleted = false;
+
+    if (m_ClassToInputAndOutputPins.empty() && !s_DownloadStarted) {
+        const std::string s_PinsUrl =
+            "https://raw.githubusercontent.com/glacier-modding/glaciermodding.org"
+            "/refs/heads/main/docs/modding/hitman/guides/pins.json";
+
+        s_DownloadFuture = std::async(
+            std::launch::async, [this, s_PinsUrl]() {
+                std::string jsonContent = Util::HttpUtils::DownloadFromUrl(s_PinsUrl);
+
+                if (!jsonContent.empty()) {
+                    return ParsePinsJson(jsonContent);
+                }
+
+                return std::map<std::string, PinLists>();
+            }
+        );
+
+        s_DownloadStarted = true;
+    }
+
+    if (s_DownloadStarted && !s_DownloadCompleted) {
+        if (s_DownloadFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            m_ClassToInputAndOutputPins = s_DownloadFuture.get();
+            s_DownloadCompleted = true;
+            Logger::Debug("Pin list download complete! Loaded {} classes.", m_ClassToInputAndOutputPins.size());
+        }
+    }
+}
+
+void Editor::ProcessTasks() {
+    std::vector<std::function<void()>> tasksToRun;
+
+    {
+        std::lock_guard lock(m_TaskMutex);
+        if (m_TaskQueue.empty()) {
+            return;
+        }
+        tasksToRun.swap(m_TaskQueue);
+    }
+
+    for (const auto& task : tasksToRun) {
+        task();
+    }
+}
+
+void Editor::QueueTask(std::function<void()> p_Task) {
+    std::lock_guard lock(m_TaskMutex);
+    m_TaskQueue.push_back(std::move(p_Task));
+}
+
+std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool outputPins) {
+    std::vector<PinInfo> s_Result;
+
+    if (!p_EntityRef || !p_EntityRef->GetType()->m_pInterfaceData) {
+        return s_Result;
+    }
+
+    TArray<SInterfaceData>* s_Interfaces = p_EntityRef->GetType()->m_pInterfaceData;
+
+    std::unordered_set<std::string> s_PinNames;
+
+    for (const SInterfaceData& s_InterfaceData : *s_Interfaces)
+    {
+        const IType* s_TypeInfo = s_InterfaceData.m_Type->GetTypeInfo();
+
+        if (!s_TypeInfo) {
+            continue;
+        }
+
+        const std::string s_ClassName = Util::StringUtils::ToLowerCase(s_TypeInfo->pszTypeName);
+
+        auto s_Iterator = m_ClassToInputAndOutputPins.find(s_ClassName);
+
+        if (s_Iterator == m_ClassToInputAndOutputPins.end()) {
+            continue;
+        }
+
+        const auto& s_Pins = outputPins ? s_Iterator->second.outputPins : s_Iterator->second.inputPins;
+
+        for (const auto& s_Pin : s_Pins) {
+            if (s_PinNames.insert(s_Pin.name).second) {
+                s_Result.push_back(s_Pin);
+            }
+        }
+    }
+
+    std::sort(
+        s_Result.begin(),
+        s_Result.end(),
+        [](const PinInfo& p_A, const PinInfo& p_B) {
+            return p_A.name < p_B.name;
+        }
+    );
+
+    return s_Result;
+}
+
+std::map<std::string, Editor::PinLists> Editor::ParsePinsJson(const std::string& p_PinsJson) {
+    std::map<std::string, PinLists> result;
+
+    simdjson::ondemand::parser parser;
+    simdjson::padded_string json = simdjson::padded_string(p_PinsJson);
+
+    simdjson::ondemand::document doc = parser.iterate(json);
+    simdjson::ondemand::array entries = doc.get_array();
+
+    for (auto entry : entries)
+    {
+        std::string_view path = entry["path"].get_string();
+
+        // extract class name
+        std::string className;
+        {
+            size_t start = path.find('/');
+            size_t end = path.find(".class");
+
+            if (start != std::string_view::npos && end != std::string_view::npos && end > start)
+                className = std::string(path.substr(start + 1, end - start - 1));
+        }
+
+        if (className.empty())
+            continue;
+
+        auto& pins = result[className];
+
+        // INPUT PINS
+        simdjson::ondemand::array inputPins = entry["in"].get_array();
+
+        for (auto pinEntry : inputPins)
+        {
+            std::string_view pinName = pinEntry["pin"].get_string();
+            std::string_view description = pinEntry["description"].get_string();
+
+            pins.inputPins.push_back({
+                std::string(pinName),
+                std::string(description)
+                });
+        }
+
+        // OUTPUT PINS
+        simdjson::ondemand::array outputPins = entry["out"].get_array();
+
+        for (auto pinEntry : outputPins)
+        {
+            std::string_view pinName = pinEntry["pin"].get_string();
+            std::string_view description = pinEntry["description"].get_string();
+
+            pins.outputPins.push_back({
+                std::string(pinName),
+                std::string(description)
+                });
+        }
+    }
+
+    for (auto& [className, pins] : result)
+    {
+        std::sort(
+            pins.inputPins.begin(),
+            pins.inputPins.end(),
+            [](const PinInfo& a, const PinInfo& b) {
+                return a.name < b.name;
+            }
+        );
+
+        std::sort(
+            pins.outputPins.begin(),
+            pins.outputPins.end(),
+            [](const PinInfo& a, const PinInfo& b) {
+                return a.name < b.name;
+            }
+        );
+    }
+
+    return result;
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
@@ -459,15 +751,15 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
 
     if (p_FirstClick) {
         if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
-            const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaces;
+            const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaceData;
             Logger::Trace(
                 "Hit entity of type '{}' with id '{:x}'.",
-                s_Interfaces[0].m_pTypeId->typeInfo()->m_pTypeName,
-                s_RayOutput.m_pBlockingSpatialEntity.m_ref->GetType()->m_nEntityId
+                s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
+                s_RayOutput.m_pBlockingSpatialEntity.m_entityRef->GetType()->m_nEntityID
             );
 
             const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-            ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_ref;
+            ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_entityRef;
 
             for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
@@ -671,7 +963,7 @@ void Editor::SpawnCameras() {
         m_EditorData,
         "SDKCam",
         s_CameraRTFactory,
-        s_Scene.m_ref,
+        s_Scene.m_entityRef,
         s_ExternalRefs,
         -1
     );
@@ -679,13 +971,13 @@ void Editor::SpawnCameras() {
     Logger::Debug("Spawned editor data entity!");
 
     if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedb6fc4f5626ea); idx != -1) {
-        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pEntity, idx)) {
+        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pObj, idx)) {
             m_EditorCamera = TEntityRef<ZCameraEntity>(s_Ent);
         }
     }
 
     if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedbf5a41eb9c48); idx != -1) {
-        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pEntity, idx)) {
+        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pObj, idx)) {
             m_EditorCameraRT = TEntityRef<ZRenderDestinationTextureEntity>(s_Ent);
         }
     }
@@ -697,7 +989,7 @@ void Editor::SpawnCameras() {
 
     // If we have a current camera, move the editor camera to its position.
     if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call()) {
-        m_EditorCamera.m_pInterfaceRef->SetWorldMatrix(s_CurrentCamera->GetWorldMatrix());
+        m_EditorCamera.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(s_CurrentCamera->GetObjectToWorldMatrix());
     }
 }
 
@@ -776,7 +1068,7 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
                             ? atan2f(-s_Trans.YAxis.z, s_Trans.ZAxis.z) * c_RAD2DEG
                             : atan2f(s_Trans.ZAxis.y, s_Trans.YAxis.y) * c_RAD2DEG;
 
-    float s_RotationY = asinf(min(max(-1.f, s_Trans.XAxis.z), 1.f)) * c_RAD2DEG;
+    float s_RotationY = asinf(std::min(std::max(-1.f, s_Trans.XAxis.z), 1.f)) * c_RAD2DEG;
 
     float s_RotationZ = abs(s_Trans.XAxis.z) < 0.9999999f
                             ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
@@ -844,7 +1136,125 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
     return s_Matrix;
 }
 
-DEFINE_PLUGIN_DETOUR(Editor, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
+std::string Editor::FormatFloat(float p_Value, bool p_Round, uint32_t p_Decimals) {
+    if (p_Round) {
+        return fmt::format("{:.{}f}", p_Value, p_Decimals);
+    }
+
+    return fmt::format("{}", p_Value);
+}
+
+std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
+    if (m_RepositoryResource.m_nResourceIndex.val == -1) {
+        const auto s_ID = ResId<"[assembly:/repository/pro.repo].pc_repo">;
+
+        Globals::ResourceManager->GetResourcePtr(m_RepositoryResource, s_ID, 0);
+    }
+
+    if (m_RepositoryResource.GetResourceInfo().status != RESOURCE_STATUS_VALID) {
+        return "";
+    }
+
+    const auto s_RepositoryData = static_cast<THashMap<
+        ZRepositoryID, ZDynamicObject, TDefaultHashMapPolicy<ZRepositoryID>>*>(m_RepositoryResource.
+            GetResourceData());
+
+    if (!s_RepositoryData) {
+        return "";
+    }
+
+    auto s_Iterator = s_RepositoryData->find(p_RepositoryID);
+
+    if (s_Iterator == s_RepositoryData->end()) {
+        return "";
+    }
+
+    TArray<SDynamicObjectKeyValuePair>* s_Entries = s_Iterator->second.As<TArray<
+        SDynamicObjectKeyValuePair>>();
+
+    ZString s_Title, s_CommonName, s_Name, s_ModifierType, s_Parameter, s_AmmoConfig;
+    TArray<ZString>* s_Tags = nullptr;
+    TArray<ZString>* s_OnlineTraits = nullptr;
+    float s_MagazineSize = 0.f;
+    bool s_IsItem = false;
+    bool s_IsWeapon = false;
+
+    for (auto& s_Entry : *s_Entries) {
+        if (s_Entry.sKey == "Title") {
+            s_Title = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "CommonName") {
+            s_CommonName = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "Name") {
+            s_Name = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "ModifierType") {
+            s_ModifierType = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "Parameter") {
+            s_Parameter = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "AmmoConfig") {
+            s_AmmoConfig = *s_Entry.value.As<ZString>();
+        }
+        else if (s_Entry.sKey == "Tags") {
+            s_Tags = s_Entry.value.As<TArray<ZString>>();
+        }
+        else if (s_Entry.sKey == "OnlineTraits") {
+            s_OnlineTraits = s_Entry.value.As<TArray<ZString>>();
+        }
+        else if (s_Entry.sKey == "MagazineSize") {
+            s_MagazineSize = *s_Entry.value.As<float>();
+        }
+        else if (s_Entry.sKey == "ItemType") {
+            s_IsItem = true;
+        }
+        else if (s_Entry.sKey == "PrimaryConfiguration") {
+            s_IsWeapon = true;
+        }
+    }
+
+    if (s_IsItem || s_IsWeapon) {
+        return std::string(s_Title.c_str(), s_Title.size());
+    }
+    else if (!s_AmmoConfig.IsEmpty()) {
+        std::string s_Tag;
+
+        if (s_Tags) {
+            s_Tag = std::string((*s_Tags)[0].c_str(), (*s_Tags)[0].size());
+        }
+
+        return std::format("{} / {}", std::to_string(static_cast<uint32_t>(s_MagazineSize)), s_Tag);
+    }
+    else if (s_OnlineTraits) {
+        std::string s_OnlineTraits2;
+
+        for (size_t i = 1; i < (*s_OnlineTraits).size(); ++i) {
+            s_OnlineTraits2 += std::string((*s_OnlineTraits)[i].c_str(), (*s_OnlineTraits)[i].size());
+
+            if (i < (*s_OnlineTraits).size() - 1) {
+                s_OnlineTraits2 += ", ";
+            }
+        }
+
+        return s_OnlineTraits2;
+    }
+    else if (!s_ModifierType.IsEmpty()) {
+        return std::string(s_ModifierType.c_str(), s_ModifierType.size());
+    }
+    else if (!s_Parameter.IsEmpty()) {
+        return std::string(s_Parameter.c_str(), s_Parameter.size());
+    }
+    else if (!s_CommonName.IsEmpty()) {
+        return std::string(s_CommonName.c_str(), s_CommonName.size());
+    }
+    else if (!s_Name.IsEmpty()) {
+        return std::string(s_Name.c_str(), s_Name.size());
+    }
+}
+
+DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
     if (m_SelectionForFreeCameraEditorStyleEntity) {
         m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
     }
@@ -936,11 +1346,14 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_TrackCamActive = false;
     }
 
-    m_CurrentlySelectedActor = nullptr;
+    m_SelectedActor = nullptr;
+    m_GlobalOutfitKit = {};
 
     m_SelectedGizmoEntity = nullptr;
+    m_DrawGizmosForSelectedEntityOnly = false;
+    m_DrawShapesForSelectedEntityOnly = false;
 
-    m_DebugEntities.clear();
+    m_EntityRefToDebugEntities.clear();
 
     if (m_EditorData) {
         m_EditorCamera = {};
@@ -950,6 +1363,24 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     }
 
     m_EntityRefToFactoryRuntimeResourceIDs.clear();
+
+    m_SortedRoomEntities.clear();
+
+    m_InputPinTypeID = nullptr;
+
+    if (m_InputPinData) {
+        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
+
+        m_InputPinData = nullptr;
+    }
+
+    m_OutputPinTypeID = nullptr;
+
+    if (m_OutputPinData) {
+        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
+
+        m_OutputPinData = nullptr;
+    }
 
     return { HookAction::Continue() };
 }
@@ -1028,9 +1459,11 @@ DEFINE_PLUGIN_DETOUR(
         } {
             std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
 
-            m_EntityRefToFactoryRuntimeResourceIDs[s_SubEntity] = {
-                s_SubEntityFactoryRuntimeResourceID, th->m_ridResource
-            };
+            if (!m_EntityRefToFactoryRuntimeResourceIDs.contains(s_SubEntity)) {
+                m_EntityRefToFactoryRuntimeResourceIDs[s_SubEntity] = {
+                    s_SubEntityFactoryRuntimeResourceID, th->m_ridResource
+                };
+            }
         }
     }
 
@@ -1072,7 +1505,9 @@ DEFINE_PLUGIN_DETOUR(
     }
 
     const auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[index.val];
-    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid; {
+    const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid;
+    
+    {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
         auto s_Iterator = m_RuntimeResourceIDToExtendedCppEntityFactory.find(s_RuntimeResourceID);
 

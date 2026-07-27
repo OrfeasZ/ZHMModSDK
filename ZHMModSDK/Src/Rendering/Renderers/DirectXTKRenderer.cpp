@@ -28,9 +28,6 @@
 #include "Glacier/ZGameLoopManager.h"
 #include "Glacier/MDF_FONT.h"
 
-#undef min
-#undef max
-
 using namespace Rendering::Renderers;
 
 DirectXTKRenderer::DirectXTKRenderer() {}
@@ -58,6 +55,11 @@ void DirectXTKRenderer::OnEngineInit() {
 
 void DirectXTKRenderer::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
+uint64_t DirectXTKRenderer::GetTotalDrawCount() const {
+    return m_TriangleBatch->TotalDrawCalls() + m_LineBatch->TotalDrawCalls()
+        + m_TextBatch->TotalDrawCalls() + m_MeshDrawCount + m_SpriteDrawCount;
+}
+
 void DirectXTKRenderer::Draw() {
     const auto s_BackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -75,19 +77,23 @@ void DirectXTKRenderer::Draw() {
     m_LineBatch->End();
     m_TextBatch->End();
 
-    ID3D12DescriptorHeap* s_Heaps[] = {m_ResourceDescriptors->Heap()};
+    // Only set up the sprite batch when there's 2D text to draw.
+    if (!m_Text2DBuffer.empty()) {
+        ID3D12DescriptorHeap* s_Heaps[] = {m_ResourceDescriptors->Heap()};
 
-    m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
+        m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
 
-    m_SpriteBatch->Begin(m_CommandList);
+        m_SpriteBatch->Begin(m_CommandList);
 
-    for (const auto& s_2DText : m_Text2DBuffer) {
-        DrawText2D(s_2DText);
+        for (const auto& s_2DText : m_Text2DBuffer) {
+            DrawText2D(s_2DText);
+        }
+
+        m_SpriteBatch->End();
+
+        m_SpriteDrawCount += m_Text2DBuffer.size();
+        m_Text2DBuffer.clear();
     }
-
-    m_SpriteBatch->End();
-
-    m_Text2DBuffer.clear();
 }
 
 void DirectXTKRenderer::DepthDraw() {
@@ -96,11 +102,152 @@ void DirectXTKRenderer::DepthDraw() {
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
     const CD3DX12_CPU_DESCRIPTOR_HANDLE s_RtvDescriptor(s_RtvHandle, s_BackBufferIndex, m_RtvDescriptorSize);
 
-    const auto s_DsvHandle = Globals::RenderManager->m_pDevice->m_pDescriptorHeapDSV->
-                                                     GetCPUDescriptorHandleForHeapStart();
-    const CD3DX12_CPU_DESCRIPTOR_HANDLE s_DsvDescriptor(s_DsvHandle, *m_DsvIndex, m_DsvDescriptorSize);
+    bool s_HasDepth = false;
 
-    m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
+    ScopedD3DRef<ID3D12Resource> s_DepthBuffer;
+    {
+        std::scoped_lock s_Lock(m_DepthBufferMutex);
+        s_DepthBuffer = m_DepthBufferResource;
+    }
+
+    if (s_DepthBuffer && m_DepthDrewLastFrame) {
+        // Instead of using the game's depth buffer directly, we create our own copy.
+        // For some reason, using it directly causes our 3D models to not render correctly
+        // on some machines, instead showing weird blocky artifacts.
+        ScopedD3DRef<ID3D12Device> s_Device;
+        if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) == S_OK) {
+            const D3D12_RESOURCE_DESC s_SrcDesc = s_DepthBuffer->GetDesc();
+
+            // Create or recreate our depth buffer copy if dimensions changed
+            if (m_DepthBufferCopyWidth != s_SrcDesc.Width
+                || m_DepthBufferCopyHeight != s_SrcDesc.Height) {
+                m_DepthBufferCopy.Reset();
+                m_DepthBufferCopyDsvHeap.Reset();
+
+                m_DepthBufferCopyWidth = static_cast<uint32_t>(s_SrcDesc.Width);
+                m_DepthBufferCopyHeight = s_SrcDesc.Height;
+
+                // Create depth buffer with same format.
+                D3D12_RESOURCE_DESC s_DepthDesc = {};
+                s_DepthDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+                s_DepthDesc.Width = s_SrcDesc.Width;
+                s_DepthDesc.Height = s_SrcDesc.Height;
+                s_DepthDesc.DepthOrArraySize = 1;
+                s_DepthDesc.MipLevels = 1;
+                s_DepthDesc.Format = s_SrcDesc.Format;
+                s_DepthDesc.SampleDesc.Count = 1;
+                s_DepthDesc.SampleDesc.Quality = 0;
+                s_DepthDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+                s_DepthDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+                D3D12_CLEAR_VALUE s_ClearValue = {};
+                s_ClearValue.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+                s_ClearValue.DepthStencil.Depth = 0.0f; // Reverse-Z: 0 is far
+                s_ClearValue.DepthStencil.Stencil = 0;
+
+                const CD3DX12_HEAP_PROPERTIES s_HeapProps(D3D12_HEAP_TYPE_DEFAULT);
+
+                if (SUCCEEDED(
+                    s_Device->CreateCommittedResource(
+                        &s_HeapProps,
+                        D3D12_HEAP_FLAG_NONE,
+                        &s_DepthDesc,
+                        D3D12_RESOURCE_STATE_COPY_DEST,
+                        &s_ClearValue,
+                        IID_PPV_ARGS(m_DepthBufferCopy.ReleaseAndGetPtr())
+                    )
+                )) {
+                    // Create DSV heap for our copy
+                    D3D12_DESCRIPTOR_HEAP_DESC s_DsvHeapDesc = {};
+                    s_DsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+                    s_DsvHeapDesc.NumDescriptors = 1;
+                    s_DsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+                    if (SUCCEEDED(
+                        s_Device->CreateDescriptorHeap(
+                            &s_DsvHeapDesc,
+                            IID_PPV_ARGS(m_DepthBufferCopyDsvHeap.ReleaseAndGetPtr())
+                        )
+                    )) {
+                        // Create DSV for our copy
+                        D3D12_DEPTH_STENCIL_VIEW_DESC s_DsvViewDesc = {};
+                        s_DsvViewDesc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+                        s_DsvViewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+                        s_DsvViewDesc.Texture2D.MipSlice = 0;
+
+                        s_Device->CreateDepthStencilView(
+                            m_DepthBufferCopy,
+                            &s_DsvViewDesc,
+                            m_DepthBufferCopyDsvHeap->GetCPUDescriptorHandleForHeapStart()
+                        );
+
+                        Logger::Debug(
+                            "Created depth buffer copy: {}x{}", m_DepthBufferCopyWidth, m_DepthBufferCopyHeight
+                        );
+                    }
+                    else {
+                        m_DepthBufferCopy.Reset();
+                        Logger::Warn("Failed to create depth buffer copy DSV heap.");
+                    }
+                }
+                else {
+                    Logger::Warn("Failed to create depth buffer copy resource.");
+                }
+            }
+
+            // Copy the game's depth buffer
+            if (m_DepthBufferCopy && m_DepthBufferCopyDsvHeap) {
+                // Transition resources to the appropriate read / write states
+                {
+                    D3D12_RESOURCE_BARRIER s_Barriers[2];
+                    s_Barriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(
+                        s_DepthBuffer,
+                        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+                        D3D12_RESOURCE_STATE_COPY_SOURCE
+                    );
+                    s_Barriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(
+                        m_DepthBufferCopy,
+                        D3D12_RESOURCE_STATE_DEPTH_READ,
+                        D3D12_RESOURCE_STATE_COPY_DEST
+                    );
+
+                    m_CommandList->ResourceBarrier(2, s_Barriers);
+                }
+
+                // Copy the depth buffer
+                m_CommandList->CopyResource(m_DepthBufferCopy, s_DepthBuffer);
+
+                // Transition back.
+                {
+                    D3D12_RESOURCE_BARRIER s_Barriers[2];
+                    s_Barriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(
+                        s_DepthBuffer,
+                        D3D12_RESOURCE_STATE_COPY_SOURCE,
+                        D3D12_RESOURCE_STATE_DEPTH_WRITE
+                    );
+                    s_Barriers[1] = CD3DX12_RESOURCE_BARRIER::Transition(
+                        m_DepthBufferCopy,
+                        D3D12_RESOURCE_STATE_COPY_DEST,
+                        D3D12_RESOURCE_STATE_DEPTH_READ
+                    );
+
+                    m_CommandList->ResourceBarrier(2, s_Barriers);
+                }
+
+                // Use our depth buffer copy for rendering
+                const auto s_DsvDescriptor = m_DepthBufferCopyDsvHeap->GetCPUDescriptorHandleForHeapStart();
+                m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, &s_DsvDescriptor);
+                s_HasDepth = true;
+            }
+        }
+    }
+
+    if (!s_HasDepth) {
+        // Fall back to depth-less rendering
+        m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, false, nullptr);
+    }
+
+    const uint64_t s_DrawCountBefore = GetTotalDrawCount();
 
     m_TriangleBatch->Begin(m_CommandList);
     m_LineBatch->Begin(m_CommandList);
@@ -111,6 +258,8 @@ void DirectXTKRenderer::DepthDraw() {
     m_TriangleBatch->End();
     m_LineBatch->End();
     m_TextBatch->End();
+
+    m_DepthDrewLastFrame = GetTotalDrawCount() != s_DrawCountBefore;
 }
 
 void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
@@ -193,26 +342,31 @@ void DirectXTKRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     D3D12_RECT s_ScissorRect = {0, 0, static_cast<LONG>(m_WindowWidth), static_cast<LONG>(m_WindowHeight)};
     m_CommandList->RSSetScissorRects(1, &s_ScissorRect);
 
+    const uint64_t s_DrawCountBefore = GetTotalDrawCount();
+
     m_CommandList->BeginEvent(0, L"DebugRender", sizeof(L"DebugRender"));
 
-    if (m_DsvIndex.has_value()) {
-        DepthDraw();
-    }
-
+    DepthDraw();
     Draw();
 
     m_CommandList->EndEvent();
 
-    const D3D12_RESOURCE_BARRIER s_PresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
-        m_BackBuffers[s_BackBufferIndex],
-        D3D12_RESOURCE_STATE_RENDER_TARGET,
-        D3D12_RESOURCE_STATE_PRESENT
-    );
+    if (GetTotalDrawCount() != s_DrawCountBefore) {
+        const D3D12_RESOURCE_BARRIER s_PresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+            m_BackBuffers[s_BackBufferIndex],
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_PRESENT
+        );
 
-    m_CommandList->ResourceBarrier(1, &s_PresentBarrier);
-    BreakIfFailed(m_CommandList->Close());
+        m_CommandList->ResourceBarrier(1, &s_PresentBarrier);
+        BreakIfFailed(m_CommandList->Close());
 
-    m_CommandQueue->ExecuteCommandLists(1, CommandListCast(&m_CommandList.Ref));
+        m_CommandQueue->ExecuteCommandLists(1, CommandListCast(&m_CommandList.Ref));
+    }
+    else {
+        // Nothing was drawn.
+        BreakIfFailed(m_CommandList->Close());
+    }
 }
 
 void DirectXTKRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult) {
@@ -418,6 +572,8 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
         if (!CreateFontDistanceFieldTexture()) {
             return false;
         }
+
+        MDF_FONT::Initialize();
 
         m_CommonStates = std::make_unique<DirectX::CommonStates>(s_Device.Ref);
 
@@ -671,6 +827,14 @@ void DirectXTKRenderer::OnReset() {
         s_Frame.FenceValue = m_FenceValue;
 
     m_BackBuffers.clear();
+
+    ClearDepthBuffer();
+
+    // Clean up depth buffer copy resources
+    m_DepthBufferCopy.Reset();
+    m_DepthBufferCopyDsvHeap.Reset();
+    m_DepthBufferCopyWidth = 0;
+    m_DepthBufferCopyHeight = 0;
 }
 
 void DirectXTKRenderer::PostReset() {
@@ -780,7 +944,7 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
         D3D12_RESOURCE_DIMENSION_TEXTURE2D,
         0,
         1024,
-        384,
+        512,
         1,
         1,
         DXGI_FORMAT_R8_UNORM,
@@ -808,7 +972,7 @@ bool DirectXTKRenderer::CreateFontDistanceFieldTexture() {
     D3D12_SUBRESOURCE_DATA s_InitData = {};
     s_InitData.pData = MDF_FONT::g_DistanceField;
     s_InitData.RowPitch = 1024;
-    s_InitData.SlicePitch = 1024 * 384;
+    s_InitData.SlicePitch = 1024 * 512;
 
     s_Upload.Upload(m_FontDistanceFieldTexture.Ref, 0, &s_InitData, 1);
 
@@ -879,7 +1043,7 @@ bool DirectXTKRenderer::ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_W
     if (!s_CurrentCamera)
         return false;
 
-    auto s_CameraTrans = s_CurrentCamera->GetWorldMatrix();
+    auto s_CameraTrans = s_CurrentCamera->GetObjectToWorldMatrix();
 
     auto s_ScreenPos = DirectX::SimpleMath::Vector3(
         (2.0f * p_ScreenPos.x) / m_WindowWidth - 1.0f, 1.0f - (2.0f * p_ScreenPos.y) / m_WindowHeight, 1.f
@@ -1094,10 +1258,10 @@ void DirectXTKRenderer::DrawBoundingQuads3D(
     };
 
     auto drawQuad = [&](int i0, int i1, int i2, int i3) {
-        SVector3 v0(s_Corners[i0].m128_f32[0], s_Corners[i0].m128_f32[1], s_Corners[i0].m128_f32[2]);
-        SVector3 v1(s_Corners[i1].m128_f32[0], s_Corners[i1].m128_f32[1], s_Corners[i1].m128_f32[2]);
-        SVector3 v2(s_Corners[i2].m128_f32[0], s_Corners[i2].m128_f32[1], s_Corners[i2].m128_f32[2]);
-        SVector3 v3(s_Corners[i3].m128_f32[0], s_Corners[i3].m128_f32[1], s_Corners[i3].m128_f32[2]);
+        SVector3 v0(DirectX::XMVectorGetX(s_Corners[i0]), DirectX::XMVectorGetY(s_Corners[i0]), DirectX::XMVectorGetZ(s_Corners[i0]));
+        SVector3 v1(DirectX::XMVectorGetX(s_Corners[i1]), DirectX::XMVectorGetY(s_Corners[i1]), DirectX::XMVectorGetZ(s_Corners[i1]));
+        SVector3 v2(DirectX::XMVectorGetX(s_Corners[i2]), DirectX::XMVectorGetY(s_Corners[i2]), DirectX::XMVectorGetZ(s_Corners[i2]));
+        SVector3 v3(DirectX::XMVectorGetX(s_Corners[i3]), DirectX::XMVectorGetY(s_Corners[i3]), DirectX::XMVectorGetZ(s_Corners[i3]));
 
         DrawTriangle3D(v0, p_Color, v1, p_Color, v2, p_Color);
         DrawTriangle3D(v0, p_Color, v2, p_Color, v3, p_Color);
@@ -1259,32 +1423,28 @@ void DirectXTKRenderer::DrawText2D(const Text2D& p_Text2D) {
 
 void DirectXTKRenderer::DrawText3D(
     const char* p_Text, const SMatrix& p_Transform,
-    const SVector4& p_Color, const float p_Scale,
-    const TextAlignment p_HorizontalAlignment, const TextAlignment p_VerticalAlignment,
-    const bool p_IsCameraTransform
+    const SVector4& p_Color, float p_Scale,
+    TextAlignment p_HorizontalAlignment, TextAlignment p_VerticalAlignment,
+    bool p_IsCameraTransform
 ) {
     if (m_IsFrustumCullingEnabled &&
         !IsPointInsideViewFrustum(p_Transform.Trans)) {
         return;
     }
 
-    int s_TextLength = -1;
+    int s_TextLength = 0;
 
-    do {
-        ++s_TextLength;
-    }
-    while (p_Text[s_TextLength] != '\0');
-
-    if (s_TextLength > 255) {
-        s_TextLength = 255;
+    while (p_Text[s_TextLength] && s_TextLength < 255) {
+        s_TextLength++;
     }
 
     int s_PrintableCharacterCount = 0;
+    const char* p = p_Text;
 
-    for (int i = 0; i < s_TextLength; ++i) {
-        unsigned char c = static_cast<unsigned char>(p_Text[i]);
+    while (*p) {
+        uint32_t cp = MDF_FONT::DecodeUTF8(p);
 
-        if (c >= 33 && c <= 126) {
+        if (MDF_FONT::HasGlyph(cp)) {
             ++s_PrintableCharacterCount;
         }
     }
@@ -1296,45 +1456,34 @@ void DirectXTKRenderer::DrawText3D(
     float s_OffsetY = 0.f;
 
     if (p_VerticalAlignment == TextAlignment::Middle) {
-        s_OffsetY = (s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY) * -0.5f;
+        s_OffsetY = -(s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY) * 0.5f;
     }
     else if (p_VerticalAlignment == TextAlignment::Bottom) {
-        s_OffsetY = (s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY) * -1.f;
+        s_OffsetY = -(s_TextBoundingBox.m_fMaxY - s_TextBoundingBox.m_fMinY);
     }
 
-    const float4 s_Translate = float4(0.f, 0.f, s_OffsetY * p_Scale, 1.f);
-    const float4 s_Scale2 = float4(p_Scale, p_Scale, p_Scale, 1.f);
-    const SMatrix s_OffsetMatrix = SMatrix::ScaleTranslate(s_Scale2, s_Translate);
+    const float4 s_Translate = float4(0.f, s_OffsetY * p_Scale, 0.f, 1.f);
+    const float4 s_Scale = float4(p_Scale, p_Scale, p_Scale, 1.f);
+    const SMatrix s_OffsetMatrix = SMatrix::ScaleTranslate(s_Scale, s_Translate);
 
-    SMatrix s_Transform = p_Transform;
+    SMatrix s_FinalTransform = p_Transform;
 
     if (p_IsCameraTransform) {
-        std::swap(s_Transform.YAxis, s_Transform.ZAxis);
+        std::swap(s_FinalTransform.YAxis, s_FinalTransform.ZAxis);
     }
 
-    const SMatrix s_Transform2 = s_Transform.AffineMultiply(s_OffsetMatrix);
+    s_FinalTransform = s_FinalTransform.AffineMultiply(s_OffsetMatrix);
 
-    const unsigned int s_VertexCount = 2 * s_PrintableCharacterCount;
     std::vector<Triangle> s_Triangles;
 
-    s_Triangles.reserve(s_VertexCount);
+    s_Triangles.reserve(2 * s_PrintableCharacterCount);
 
-    static const float s_LineHeight =
-    (MDF_FONT::ComputeLineHeightFromMetrics() /
-        static_cast<float>(MDF_FONT::g_FontHeader.m_anTexRes[1]));
-
-    std::string s_Text(p_Text);
+    std::istringstream s_InputStringStream(p_Text);
     std::string s_Line;
-    std::istringstream s_InputStringStream(s_Text);
     int s_LineIndex = 0;
 
-    while (std::getline(s_InputStringStream, s_Line)) {
-        if (s_Line.empty()) {
-            ++s_LineIndex;
-
-            continue;
-        }
-
+    while (std::getline(s_InputStringStream, s_Line))
+    {
         MDF_FONT::STextBoundingBox s_TextBoundingBox2;
 
         MDF_FONT::CalcBoundingBox(s_TextBoundingBox2, s_Line.c_str());
@@ -1342,82 +1491,75 @@ void DirectXTKRenderer::DrawText3D(
         float s_OffsetX = 0.f;
 
         if (p_HorizontalAlignment == TextAlignment::Center) {
-            s_OffsetX = (s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX) * -0.5f;
+            s_OffsetX = -(s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX) * 0.5f;
         }
         else if (p_HorizontalAlignment == TextAlignment::Right) {
-            s_OffsetX = (s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX) * -1.f;
+            s_OffsetX = -(s_TextBoundingBox2.m_fMaxX - s_TextBoundingBox2.m_fMinX);
         }
 
         float s_PenX = s_OffsetX;
-        float s_PenY = -(s_LineIndex * s_LineHeight);
+        float s_PenY = -(s_LineIndex * MDF_FONT::g_LineHeight);
 
-        for (size_t i = 0; i < s_Line.size(); ++i) {
-            const unsigned char c = static_cast<unsigned char>(s_Line[i]);
+        const char* p = s_Line.c_str();
 
-            if (c == ' ') {
-                s_PenX += MDF_FONT::GetAdvanceWidth(c);
+        while (*p) {
+            uint32_t s_Codepoint = MDF_FONT::DecodeUTF8(p);
 
+            if (s_Codepoint == ' ') {
+                s_PenX += MDF_FONT::GetAdvanceWidth(s_Codepoint);
                 continue;
             }
 
-            if (c < 33 || c > 126) {
+            if (!MDF_FONT::HasGlyph(s_Codepoint)) {
                 continue;
             }
 
-            static const float s_Scale = 1.f;
             float s_Vertices[8];
             float s_TextureCoordinates[8];
 
-            MDF_FONT::RenderQuad(
-                static_cast<unsigned int>(c), s_Scale, s_PenX, s_PenY, s_Vertices, s_TextureCoordinates
-            );
+            MDF_FONT::RenderQuad(s_Codepoint, 1.0f, s_PenX, s_PenY, s_Vertices, s_TextureCoordinates);
 
             float4 s_BottomLeft = float4(s_Vertices[0], 0.f, s_Vertices[1], 1.f);
             float4 s_BottomRight = float4(s_Vertices[2], 0.f, s_Vertices[3], 1.f);
             float4 s_TopRight = float4(s_Vertices[4], 0.f, s_Vertices[5], 1.f);
             float4 s_TopLeft = float4(s_Vertices[6], 0.f, s_Vertices[7], 1.f);
 
-            s_BottomLeft = s_Transform2.WVectorTransform(s_BottomLeft);
-            s_BottomRight = s_Transform2.WVectorTransform(s_BottomRight);
-            s_TopRight = s_Transform2.WVectorTransform(s_TopRight);
-            s_TopLeft = s_Transform2.WVectorTransform(s_TopLeft);
+            s_BottomLeft = s_FinalTransform.WVectorTransform(s_BottomLeft);
+            s_BottomRight = s_FinalTransform.WVectorTransform(s_BottomRight);
+            s_TopRight = s_FinalTransform.WVectorTransform(s_TopRight);
+            s_TopLeft = s_FinalTransform.WVectorTransform(s_TopLeft);
 
             Triangle& s_Triangle1 = s_Triangles.emplace_back();
             Triangle& s_Triangle2 = s_Triangles.emplace_back();
 
-            s_Triangle1.vertexPosition1 = SVector3 {s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z};
-            s_Triangle1.vertexPosition2 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
-            s_Triangle1.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
+            s_Triangle1.vertexPosition1 = {s_BottomLeft.x, s_BottomLeft.y, s_BottomLeft.z};
+            s_Triangle1.vertexPosition2 = {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle1.vertexPosition3 = {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
-            s_Triangle2.vertexPosition1 = SVector3 {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
-            s_Triangle2.vertexPosition2 = SVector3 {s_TopRight.x, s_TopRight.y, s_TopRight.z};
-            s_Triangle2.vertexPosition3 = SVector3 {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
+            s_Triangle2.vertexPosition1 = {s_BottomRight.x, s_BottomRight.y, s_BottomRight.z};
+            s_Triangle2.vertexPosition2 = {s_TopRight.x, s_TopRight.y, s_TopRight.z};
+            s_Triangle2.vertexPosition3 = {s_TopLeft.x, s_TopLeft.y, s_TopLeft.z};
 
-            s_Triangle1.vertexColor1 = p_Color;
-            s_Triangle1.vertexColor2 = p_Color;
-            s_Triangle1.vertexColor3 = p_Color;
+            s_Triangle1.vertexColor1 = s_Triangle1.vertexColor2 = s_Triangle1.vertexColor3 = p_Color;
+            s_Triangle2.vertexColor1 = s_Triangle2.vertexColor2 = s_Triangle2.vertexColor3 = p_Color;
 
-            s_Triangle2.vertexColor1 = p_Color;
-            s_Triangle2.vertexColor2 = p_Color;
-            s_Triangle2.vertexColor3 = p_Color;
+            s_Triangle1.textureCoordinates1 = { s_TextureCoordinates[0], s_TextureCoordinates[1] };
+            s_Triangle1.textureCoordinates2 = { s_TextureCoordinates[2], s_TextureCoordinates[3] };
+            s_Triangle1.textureCoordinates3 = { s_TextureCoordinates[6], s_TextureCoordinates[7] };
 
-            s_Triangle1.textureCoordinates1 = SVector2 {s_TextureCoordinates[0], s_TextureCoordinates[1]};
-            s_Triangle1.textureCoordinates2 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
-            s_Triangle1.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
-
-            s_Triangle2.textureCoordinates1 = SVector2 {s_TextureCoordinates[2], s_TextureCoordinates[3]};
-            s_Triangle2.textureCoordinates2 = SVector2 {s_TextureCoordinates[4], s_TextureCoordinates[5]};
-            s_Triangle2.textureCoordinates3 = SVector2 {s_TextureCoordinates[6], s_TextureCoordinates[7]};
+            s_Triangle2.textureCoordinates1 = { s_TextureCoordinates[2], s_TextureCoordinates[3] };
+            s_Triangle2.textureCoordinates2 = { s_TextureCoordinates[4], s_TextureCoordinates[5] };
+            s_Triangle2.textureCoordinates3 = { s_TextureCoordinates[6], s_TextureCoordinates[7] };
         }
 
-        ++s_LineIndex;
+        s_LineIndex++;
     }
 
-    for (size_t i = 0; i < s_Triangles.size(); ++i) {
+    for (auto& s_Triangle : s_Triangles) {
         DrawTriangle3D(
-            s_Triangles[i].vertexPosition1, s_Triangles[i].vertexColor1, s_Triangles[i].textureCoordinates1,
-            s_Triangles[i].vertexPosition2, s_Triangles[i].vertexColor2, s_Triangles[i].textureCoordinates2,
-            s_Triangles[i].vertexPosition3, s_Triangles[i].vertexColor3, s_Triangles[i].textureCoordinates3
+            s_Triangle.vertexPosition1, s_Triangle.vertexColor1, s_Triangle.textureCoordinates1,
+            s_Triangle.vertexPosition2, s_Triangle.vertexColor2, s_Triangle.textureCoordinates2,
+            s_Triangle.vertexPosition3, s_Triangle.vertexColor3, s_Triangle.textureCoordinates3
         );
     }
 }
@@ -1516,6 +1658,8 @@ void DirectXTKRenderer::DrawMesh(
     m_CommandList->IASetIndexBuffer(&s_IndexBufferView);
     m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_CommandList->DrawIndexedInstanced(s_IndexCount, 1, 0, 0, 0);
+
+    ++m_MeshDrawCount;
 }
 
 bool DirectXTKRenderer::IsPointInsideViewFrustum(const SVector3& p_Point) const {

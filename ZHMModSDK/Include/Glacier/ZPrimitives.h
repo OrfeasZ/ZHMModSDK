@@ -25,6 +25,8 @@ public:
         Parentheses,
     };
 
+    ZGuid() = default;
+
     ZGuid(const ZString& p_Data, GuidFormat p_Format = GuidFormat::Dashes) {
         FromString(p_Data, p_Format);
     }
@@ -183,6 +185,10 @@ public:
         );
     }
 
+    ZHMSDK_API bool IsEmpty() const {
+        return m_nHigh == ZGuid::Empty.m_nHigh && m_nLow == ZGuid::Empty.m_nLow;
+    }
+
 public:
     union {
         struct {
@@ -197,11 +203,15 @@ public:
             uint64_t m_nLow;
         };
     };
+
+    static const ZGuid Empty;
 };
 
 class ZRepositoryID :
         public ZGuid {
 public:
+    ZRepositoryID() = default;
+
     ZRepositoryID(const ZString& p_Data, GuidFormat p_Format = GuidFormat::Dashes) :
         ZGuid(p_Data, p_Format) {}
 
@@ -214,6 +224,13 @@ public:
 
     void operator=(const char* p_Data) {
         FromString(ZString::AllocateFromCStr(p_Data), GuidFormat::Dashes);
+    }
+};
+
+template <>
+struct std::hash<ZRepositoryID> {
+    size_t operator()(const ZRepositoryID& p_Id) const noexcept {
+        return static_cast<size_t>(p_Id.GetHashCode());
     }
 };
 

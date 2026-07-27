@@ -8,6 +8,7 @@
 #include "THashMap.h"
 #include "TSharedPointer.h"
 #include "ZSharedPointerTarget.h"
+#include "THashSet.h"
 
 class ZRuntimeResourceID;
 
@@ -114,13 +115,42 @@ public:
     TArray<SResourceReferenceInfo> m_references;
     THashMap<ZRuntimeResourceID, ZResourceIndex, TDefaultHashMapPolicy<ZRuntimeResourceID>> m_indices;
     TArray<ZString> m_MountedPackages;
-    TArray<ZResourceIndex> m_aUnknown;
+    TArray<uint32_t> m_firstResourceIndexPerPackage;
+    TArray<uint32_t> m_firstReferenceIndexPerPackage;
+    TArray<uint8_t> m_firstPackageIndexPerMountedPartition;
+    uint8_t m_firstDynamicPackageIndex;
+    uint8_t m_firstBaseLanguagePackageIndex;
+    THashSet<ZRuntimeResourceID, TDefaultHashSetPolicy<ZRuntimeResourceID>> m_dynamicResources;
 };
 
 static_assert(sizeof(ZResourceContainer::SResourceInfo) == 64);
 
 class ZResourcePtr {
 public:
+    ZResourcePtr() {
+        m_nResourceIndex.val = -1;
+    }
+
+    ZResourcePtr(const ZResourcePtr& p_Other) {
+        m_nResourceIndex = p_Other.m_nResourceIndex;
+
+        if (m_nResourceIndex.val != -1) {
+            auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
+
+            InterlockedIncrement(&s_ResourceInfo.refCount);
+        }
+    }
+
+    ZResourcePtr(ZResourceIndex p_ResourceIndex) {
+        m_nResourceIndex = p_ResourceIndex;
+
+        if (m_nResourceIndex.val != -1) {
+            auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[m_nResourceIndex.val];
+
+            InterlockedIncrement(&s_ResourceInfo.refCount);
+        }
+    }
+
     ZHMSDK_API ~ZResourcePtr();
 
 public:
@@ -198,7 +228,7 @@ public:
     virtual void ZResourceManager_unk28() = 0;
     virtual void ZResourceManager_unk29() = 0;
     virtual void ZResourceManager_unk30() = 0;
-    virtual void ZResourceManager_unk31() = 0;
+    virtual ZMutex& GetMutex() const = 0;
     virtual void ZResourceManager_unk32() = 0;
     virtual void ZResourceManager_unk33() = 0;
     virtual void ZResourceManager_unk34() = 0;
@@ -228,6 +258,8 @@ public:
 public:
     PAD(420);
     volatile LONG m_nNumProcessing; // 428 (0x1AC)
+    PAD(0x128);
+    THashSet<ZResourceIndex, TDefaultHashSetPolicy<ZResourceIndex>> m_pendingUninstalls; // 0x2D8
 };
 
 class ZResourceDataBuffer : public ZSharedPointerTarget {
@@ -259,7 +291,7 @@ public:
     ZResourceReaderPtr m_pResourceReader;
 };
 
-class IPackageManager : public IComponentInterface {
+class IPackageManager {
 public:
     enum EPartitionType {
         Standard,
@@ -267,10 +299,10 @@ public:
     };
 
     struct SPartitionInfo {
-        uint32_t m_nIndex; // 0
+        int32_t m_nIndex; // 0
         ZString m_sPartitionID; // 8
         EPartitionType m_eType; // 24
-        uint32_t m_patchLevel; // 28
+        int32_t m_patchLevel; // 28
         uint64_t a32; // 32
         uint64_t a40; // 40
         ZString m_sMountPath; // 48
@@ -283,7 +315,7 @@ public:
     virtual ~IPackageManager() {}
 
 public:
-    PAD(24);
+    PAD(0x18);
 };
 
 static_assert(sizeof(IPackageManager::SPartitionInfo) == 112);
@@ -291,6 +323,10 @@ static_assert(sizeof(IPackageManager::SPartitionInfo) == 112);
 class ZPackageManagerBase : public IPackageManager {
 public:
     virtual ~ZPackageManagerBase() {}
+    virtual void ZPackageManagerBase_unk1() = 0;
+    virtual void ZPackageManagerBase_unk2() = 0;
+    virtual void ZPackageManagerBase_unk3() = 0;
+    virtual void ZPackageManagerBase_unk4() = 0;
     virtual void ZPackageManagerBase_unk5() = 0;
     virtual void ZPackageManagerBase_unk6() = 0;
     virtual void MountPartitionsForRoots(const TArray<ZResourceID>& roots) = 0;
@@ -298,7 +334,7 @@ public:
     virtual void ZPackageManagerBase_unk9() = 0;
     virtual void ZPackageManagerBase_unk10() = 0;
     virtual void ZPackageManagerBase_unk11() = 0;
-    virtual void ZPackageManagerBase_unk12() = 0;
+    virtual void UnmountPartitions(uint8_t p_FirstPackageIndex) = 0;
     virtual void ZPackageManagerBase_unk13() = 0;
     virtual void ZPackageManagerBase_unk14() = 0;
     virtual void ZPackageManagerBase_unk15() = 0;

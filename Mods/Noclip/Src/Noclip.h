@@ -18,6 +18,10 @@ public:
 
 private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
+
+    void TogglePlayerMovement();
+    bool CreateHM5CrippleBoxEntity();
+
     DECLARE_PLUGIN_DETOUR(Noclip, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
 private:
@@ -29,6 +33,8 @@ private:
     ZInputAction m_LeftAction;
     ZInputAction m_RightAction;
     ZInputAction m_FastAction;
+
+    ZEntityRef m_HM5CrippleBoxEntity;
 };
 
 DECLARE_ZHM_PLUGIN(Noclip)

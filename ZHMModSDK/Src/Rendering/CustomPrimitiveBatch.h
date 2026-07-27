@@ -67,6 +67,10 @@ public:
     CustomPrimitiveBatch(CustomPrimitiveBatch const&) = delete;
     CustomPrimitiveBatch& operator=(CustomPrimitiveBatch const&) = delete;
 
+    uint64_t TotalDrawCalls() const {
+        return m_TotalDrawCalls;
+    }
+
     void Begin(ID3D12GraphicsCommandList* p_CommandList) {
         if (m_InBeginEndPair) {
             throw std::logic_error("Cannot nest Begin calls");
@@ -114,6 +118,8 @@ public:
         }
 
         assert(p_MappedVertices != nullptr);
+
+        ++m_TotalDrawCalls;
 
         const bool s_WrapIndexBuffer = m_IndexCount + p_IndexCount > m_MaxIndices;
         const bool s_WrapVertexBuffer = m_VertexCount + p_VertexCount > m_MaxVertices;
@@ -286,4 +292,6 @@ private:
 
     size_t m_BaseIndex;
     size_t m_BaseVertex;
+
+    uint64_t m_TotalDrawCalls = 0;
 };

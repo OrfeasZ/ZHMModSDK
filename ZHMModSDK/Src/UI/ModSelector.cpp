@@ -26,6 +26,13 @@ void ModSelector::UpdateAvailableMods(
     for (auto& s_Mod : p_Mods)
         m_AvailableMods.push_back({s_Mod, p_ActiveMods.contains(Util::StringUtils::ToLowerCase(s_Mod))});
 
+    // Sort by name.
+    std::ranges::sort(
+        m_AvailableMods, [](const auto& a, const auto& b) {
+            return Util::StringUtils::ToLowerCase(a.Name) < Util::StringUtils::ToLowerCase(b.Name);
+        }
+    );
+
     // If there are no active mods then set this flag which will make it
     // so the mod selector is shown automatically when a user launches the game.
     if (p_ActiveMods.empty())

@@ -62,6 +62,7 @@ private:
 
 public:
     void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
+    void OnModUnloading(const std::string& p_Name, IPluginInterface* p_Mod);
     void OnModUnloaded(const std::string& p_Name);
     void OnEngineInit();
     void OnDrawUI(bool p_HasFocus);
@@ -115,6 +116,7 @@ public:
     ImFont* GetImGuiMediumFont() override;
     ImFont* GetImGuiBoldFont() override;
     ImFont* GetImGuiBlackFont() override;
+    ImPlotContext* GetImPlotContext() override;
     bool GetPinName(int32_t p_PinId, ZString& p_Name) override;
     bool WorldToScreen(const SVector3& p_WorldPos, SVector2& p_Out) override;
     bool ScreenToWorld(const SVector2& p_ScreenPos, SVector3& p_WorldPosOut, SVector3& p_DirectionOut) override;
@@ -213,7 +215,7 @@ private:
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
 
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     DECLARE_DETOUR_WITH_CONTEXT(
@@ -228,10 +230,15 @@ private:
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     );
 
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state);
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage);
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, ZLevelManager_SetGameState, ZLevelManager* th, ZLevelManager::EGameState state
+    );
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, ZEntitySceneContext_SetLoadingStage, ZEntitySceneContext* th, ESceneLoadingStage stage
+    );
 
-    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
+    DECLARE_DETOUR_WITH_CONTEXT(
+        ModSDK, void, Scaleform_GFx_AS3_MovieRoot_Output,
         Scaleform::GFx::AS3::MovieRoot* th,
         Scaleform::GFx::AS3::FlashUI::OutputMessageType type,
         const char* msg
@@ -257,6 +264,7 @@ public:
 
     bool IsChunkMounted(uint32_t p_ChunkIndex) override;
     void MountChunk(uint32_t p_ChunkIndex) override;
+    void UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) override;
     const TArray<uint32_t>& GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) override;
 
 private:

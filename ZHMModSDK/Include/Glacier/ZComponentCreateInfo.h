@@ -1,6 +1,7 @@
 #pragma once
 
-struct ZComponentCreateInfo {
+class ZComponentCreateInfo {
+public:
     struct SArgumentInfo {
         STypeID* m_type;
         const void* m_pData;

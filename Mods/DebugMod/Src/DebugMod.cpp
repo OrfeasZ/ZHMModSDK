@@ -16,11 +16,10 @@
 #include <Glacier/ZGameLoopManager.h>
 #include <Glacier/ZKnowledge.h>
 #include <Glacier/ZPathfinder.h>
-#include <Glacier/SReasoningGrid.h>
-#include <Glacier/ZGridManager.h>
-#include <Glacier/ZHM5GridManager.h>
 #include <Glacier/ZCameraEntity.h>
 #include <Glacier/ZColor.h>
+#include <Glacier/ZGrid.h>
+#include <Glacier/ZBehavior.h>
 
 #include <Functions.h>
 #include <Globals.h>
@@ -45,7 +44,7 @@ void DebugMod::OnEngineInitialized() {
 void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
 void DebugMod::OnDrawMenu() {
-    if (ImGui::Button(ICON_MD_BUILD " DEBUG MENU")) {
+    if (ImGui::Button(ICON_MD_BUILD " DEBUG")) {
         m_DebugMenuActive = !m_DebugMenuActive;
     }
 
@@ -65,15 +64,22 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("DEBUG MENU", &m_DebugMenuActive);
+    const auto s_Showing = ImGui::Begin("DEBUG", &m_DebugMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
+        if (ImGui::CollapsingHeader("Player", ImGuiTreeNodeFlags_DefaultOpen)) {
+            ImGui::Checkbox("Render Health###PlayerHealth", &m_RenderPlayerHealth);
+            ImGui::Checkbox("Render Outfit Hit Points###PlayerOutfitHitPoints", &m_RenderPlayerOutfitHitPoints);
+        }
+
         if (ImGui::CollapsingHeader("Actors", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::Checkbox("Render Actor position boxes", &m_RenderActorBoxes);
-            ImGui::Checkbox("Render Actor names", &m_RenderActorNames);
-            ImGui::Checkbox("Render Actor repository IDs", &m_RenderActorRepoIds);
-            ImGui::Checkbox("Render Actor behaviors", &m_RenderActorBehaviors);
+            ImGui::Checkbox("Render Position Boxes", &m_RenderActorBoxes);
+            ImGui::Checkbox("Render Names", &m_RenderActorNames);
+            ImGui::Checkbox("Render Repository IDs", &m_RenderActorRepoIds);
+            ImGui::Checkbox("Render Behaviors", &m_RenderActorBehaviors);
+            ImGui::Checkbox("Render Health###ActorHealth", &m_RenderActorHealth);
+            ImGui::Checkbox("Render Outfit Hit Points###ActorOutfitHitPoints", &m_RenderActorOutfitHitPoints);
         }
 
         if (ImGui::CollapsingHeader("Reasoning Grid", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -90,63 +96,8 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
 
         if (ImGui::CollapsingHeader("Guide Path Finder", ImGuiTreeNodeFlags_DefaultOpen)) {
             if (ImGui::Checkbox("Draw Nav Mesh", &m_DrawNavMesh)) {
-                if (m_NavMesh.m_areas.size() == 0) {
-                    static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
-                    static const SVector4 s_AdjacentLineColor = SVector4(1.f, 1.f, 1.f, 1.f);
-
-                    const uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_NavPowerResources[0]
-                        .m_pNavpowerResource);
-                    const uint32_t s_NavpDataSize = Globals::Pathfinder->m_NavPowerResources[0].m_nNavpowerResourceSize;
-
-                    m_NavpData.resize(s_NavpDataSize);
-
-                    std::memcpy(m_NavpData.data(), reinterpret_cast<void*>(s_NavpData), s_NavpDataSize);
-
-                    m_NavMesh.read(reinterpret_cast<uintptr_t>(m_NavpData.data()), s_NavpDataSize);
-
-                    m_Vertices.resize(m_NavMesh.m_areas.size());
-                    m_Indices.resize(m_NavMesh.m_areas.size());
-                    m_NavMeshLines.reserve(m_NavMesh.m_areas.size() * 3);
-                    m_NavMeshConnectivityLines.reserve(m_NavMesh.m_areas.size() * 3);
-
-                    std::map<NavPower::Binary::Area*, uint32_t> s_AreaPointerToIndexMap = GetAreaPointerToIndexMap();
-
-                    for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
-                        const size_t s_VertexCount = m_NavMesh.m_areas[i].m_edges.size();
-
-                        m_Vertices[i].reserve(s_VertexCount);
-
-                        const SVector3 s_Centroid = m_NavMesh.m_areas[i].CalculateCentroid();
-
-                        for (size_t j = 0; j < s_VertexCount; ++j) {
-                            m_Vertices[i].push_back(m_NavMesh.m_areas[i].m_edges[j]->m_pos);
-
-                            const size_t s_NextIndex = (j + 1) % s_VertexCount;
-                            Line& s_Line = m_NavMeshLines.emplace_back();
-
-                            s_Line.start = m_NavMesh.m_areas[i].m_edges[j]->m_pos;
-                            s_Line.startColor = s_LineColor;
-
-                            s_Line.end = m_NavMesh.m_areas[i].m_edges[s_NextIndex]->m_pos;
-                            s_Line.endColor = s_LineColor;
-
-                            NavPower::Binary::Area* s_AdjArea = m_NavMesh.m_areas[i].m_edges[j]->m_pAdjArea;
-
-                            if (s_AdjArea) {
-                                const uint32_t s_AdjacentAreaIndex = s_AreaPointerToIndexMap[s_AdjArea];
-                                NavPower::Area& s_AdjacentArea = m_NavMesh.m_areas[s_AdjacentAreaIndex - 1];
-                                const SVector3 s_AdjacentCentroid = s_AdjacentArea.CalculateCentroid();
-
-                                Line& s_ConnLine = m_NavMeshConnectivityLines.emplace_back();
-                                s_ConnLine.start = s_Centroid;
-                                s_ConnLine.startColor = s_AdjacentLineColor;
-                                s_ConnLine.end = s_AdjacentCentroid;
-                                s_ConnLine.endColor = s_AdjacentLineColor;
-                            }
-                        }
-
-                        VertexTriangluation(m_Vertices[i], m_Indices[i]);
-                    }
+                if (m_Areas.size() == 0) {
+                    BuildNavMeshRenderData();
                 }
             }
 
@@ -209,15 +160,87 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
         DrawObstacles(p_Renderer);
     }
 
-    if (m_RenderActorBoxes || m_RenderActorNames || m_RenderActorRepoIds || m_RenderActorBehaviors) {
+    if (m_RenderPlayerHealth || m_RenderPlayerOutfitHitPoints) {
+        const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+        if (!s_CurrentCamera) {
+            return;
+        }
+
+        auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+        if (s_LocalHitman) {
+            auto s_CameraTransform = s_CurrentCamera->GetObjectToWorldMatrix();
+
+            auto* s_SpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
+            auto s_PlayerTransform = s_SpatialEntity->GetObjectToWorldMatrix();
+
+            float4 s_Min, s_Max;
+
+            s_SpatialEntity->CalculateBounds(s_Min, s_Max, 1, 0);
+
+            const float4 s_Center = (s_Min + s_Max) * 0.5f;
+            const float4 s_Extents = (s_Max - s_Min) * 0.5f;
+
+            float4 s_LocalPosition = s_Center + float4(0.f, 0.f, s_Extents.z, 0.f);
+            float4 s_WorldPosition = s_PlayerTransform * s_LocalPosition;
+
+            s_WorldPosition.z -= 0.5f;
+            s_CameraTransform.Trans = s_WorldPosition;
+
+            std::string s_Text;
+
+            if (m_RenderPlayerHealth) {
+                const auto s_HM5Health = s_LocalHitman.m_pInterfaceRef->m_pHealth;
+                const auto s_Health = (s_HM5Health->m_fHitPoints / s_HM5Health->m_fMaxHitPoints) * 100.f;
+                char s_Buffer[64];
+
+                snprintf(s_Buffer, sizeof(s_Buffer), "Health: %.0f%%", s_Health);
+
+                s_Text += s_Buffer;
+            }
+
+            if (m_RenderPlayerOutfitHitPoints) {
+                if (s_Text.length() > 0) {
+                    s_Text += "\n\n";
+                }
+
+                char s_Buffer[64];
+
+                snprintf(
+                    s_Buffer,
+                    sizeof(s_Buffer),
+                    "Hit points: %.0f",
+                    s_LocalHitman.m_pInterfaceRef->m_rOutfitKit.m_pInterfaceRef->m_fHitPoints
+                );
+
+                s_Text += s_Buffer;
+            }
+
+            p_Renderer->DrawText3D(
+                s_Text.c_str(),
+                s_CameraTransform,
+                SVector4(1.f, 1.f, 0.f, 1.f),
+                0.1f,
+                TextAlignment::Center
+            );
+        }
+    }
+
+    if (m_RenderActorBoxes ||
+        m_RenderActorNames ||
+        m_RenderActorRepoIds ||
+        m_RenderActorBehaviors ||
+        m_RenderActorHealth ||
+        m_RenderActorOutfitHitPoints) {
         for (size_t i = 0; i < *Globals::NextActorId; ++i) {
-            auto* s_Actor = Globals::ActorManager->m_aActiveActors[i].m_pInterfaceRef;
+            auto* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
 
             ZEntityRef s_Ref;
             s_Actor->GetID(s_Ref);
 
             auto* s_SpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
-            auto s_ActorTransform = s_SpatialEntity->GetWorldMatrix();
+            auto s_ActorTransform = s_SpatialEntity->GetObjectToWorldMatrix();
 
             float4 s_Min, s_Max;
 
@@ -238,7 +261,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                     return;
                 }
 
-                auto s_CameraTransform = s_CurrentCamera->GetWorldMatrix();
+                auto s_CameraTransform = s_CurrentCamera->GetObjectToWorldMatrix();
 
                 const float4 s_Center = (s_Min + s_Max) * 0.5f;
                 const float4 s_Extents = (s_Max - s_Min) * 0.5f;
@@ -252,7 +275,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 std::string s_Text;
 
                 if (m_RenderActorNames) {
-                    s_Text += s_Actor->m_sActorName.c_str();
+                    s_Text += s_Actor->GetActorName().c_str();
                 }
 
                 if (m_RenderActorRepoIds) {
@@ -266,19 +289,45 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 }
 
                 if (m_RenderActorBehaviors) {
-                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aKnowledgeData[i].
-                            m_pCurrentBehavior;
+                    const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aBehaviorStates[i].
+                        m_pCurrentBehavior;
 
                     if (s_BehaviorBase) {
-                        const ECompiledBehaviorType s_CompiledBehaviorType = static_cast<ECompiledBehaviorType>(
-                            s_BehaviorBase->m_Type);
-
                         if (s_Text.length() > 0) {
                             s_Text += "\n\n";
                         }
 
-                        s_Text += CompiledBehaviorTypeToString(s_CompiledBehaviorType);
+                        s_Text += CompiledBehaviorTypeToString(s_BehaviorBase->eBehaviorType);
                     }
+                }
+
+                if (m_RenderActorHealth) {
+                    if (s_Text.length() > 0) {
+                        s_Text += "\n\n";
+                    }
+
+                    char s_Buffer[64];
+
+                    snprintf(s_Buffer, sizeof(s_Buffer), "Health: %.0f%%", s_Actor->m_fCurrentHitPoints);
+
+                    s_Text += s_Buffer;
+                }
+
+                if (m_RenderActorOutfitHitPoints) {
+                    if (s_Text.length() > 0) {
+                        s_Text += "\n\n";
+                    }
+
+                    char s_Buffer[64];
+
+                    snprintf(
+                        s_Buffer,
+                        sizeof(s_Buffer),
+                        "Hit points: %.0f",
+                        s_Actor->m_rOutfit.m_pInterfaceRef->m_fHitPoints
+                    );
+
+                    s_Text += s_Buffer;
                 }
 
                 p_Renderer->DrawText3D(
@@ -375,7 +424,7 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
 
         p_Renderer->SetDistanceCullingEnabled(true);
 
-        SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+        SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
         const size_t s_WaypointCount = s_ReasoningGrid->m_WaypointList.size();
 
         static const SVector4 s_Color = SVector4(0.f, 0.f, 0.f, 1.f);
@@ -401,8 +450,8 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
     static const SVector4 s_YellowTriangleColor = SVector4(1.f, 1.f, 0.f, 0.49804f);
 
     if (m_DrawPlannerAreasSolid) {
-        for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
-            if (m_ColorizeAreaUsageFlags && m_NavMesh.m_areas[i].m_area->m_usageFlags ==
+        for (size_t i = 0; i < m_Areas.size(); ++i) {
+            if (m_ColorizeAreaUsageFlags && m_Areas[i]->m_area->m_usageFlags ==
                 NavPower::AreaUsageFlags::AREA_STEPS) {
                 p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_YellowTriangleColor);
             }
@@ -436,13 +485,13 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
             return;
         }
 
-        SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+        SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
 
         static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
         static const float s_Scale = 0.2f;
 
-        for (size_t i = 0; i < m_NavMesh.m_areas.size(); ++i) {
-            SVector3 s_WorldPosition = m_NavMesh.m_areas[i].m_area->m_pos;
+        for (size_t i = 0; i < m_Areas.size(); ++i) {
+            SVector3 s_WorldPosition = m_Areas[i]->m_area->m_pos;
 
             const DirectX::XMVECTOR s_WorldPosition2 = DirectX::XMVectorSet(
                 s_WorldPosition.x, s_WorldPosition.y, s_WorldPosition.z, 1.0f
@@ -453,10 +502,10 @@ void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
 
             std::string s_Text;
 
-            if (!m_NavMesh.m_areas[i].m_area->m_flags.IsImpassable() || m_NavMesh.m_areas[i].m_area->m_flags.
+            if (!m_Areas[i]->m_area->m_flags.IsImpassable() || m_Areas[i]->m_area->m_flags.
                 ApplyObCostWhenFlagsDontMatch()) {
-                const uint32_t obCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetObCostMult();
-                const uint32_t staticCostMult = m_NavMesh.m_areas[i].m_area->m_flags.GetStaticCostMult();
+                const uint32_t obCostMult = m_Areas[i]->m_area->m_flags.GetObCostMult();
+                const uint32_t staticCostMult = m_Areas[i]->m_area->m_flags.GetStaticCostMult();
                 const uint32_t costMult = obCostMult > staticCostMult ? obCostMult : staticCostMult;
 
                 s_Text = std::to_string(costMult);
@@ -501,15 +550,15 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         return;
     }
 
-    SMatrix s_WorldMatrix = s_CurrentCamera->GetWorldMatrix();
+    SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
 
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
-    static const float s_Scale = 0.3f;
+    static const float s_Scale = 0.1f;
 
     for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
         ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (
-            ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*) (s_ObstacleManagerDeprecated->m_obstacles[i].
-                                                                    m_internal.GetTarget());
+            ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*)(s_ObstacleManagerDeprecated->m_obstacles[i].
+                m_internal.GetTarget());
         const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
         const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
         float4 s_TopCenter = s_Transform.Trans + s_Transform.ZAxis * (s_HalfSize.z + 0.5f);
@@ -518,8 +567,8 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         s_WorldMatrix.Trans = s_TopCenter;
 
         const std::string s_Text = fmt::format(
-            "Entity ID: {:016x}\nObstacle Flags: {:04x}\nPenalty: {}",
-            m_ObstaclesToEntityIDs[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
+            "Entity ID: {:016x}\nObstacle Flags: 0x{:04X}\nPenalty: {}",
+            m_ObstacleToEntityID[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
             s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
             s_PFObstacleInternalDep->m_obstacleDef.m_penalty
         );
@@ -782,12 +831,79 @@ void DebugMod::GenerateVerticesForNeighborConnectionLines() {
     }
 }
 
+void DebugMod::BuildNavMeshRenderData() {
+    static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
+    static const SVector4 s_AdjacentLineColor = SVector4(1.f, 1.f, 1.f, 1.f);
+
+    const uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_aLoadedNavMeshes[0]
+        .m_pNavpowerResource);
+    const uint32_t s_NavpDataSize = Globals::Pathfinder->m_aLoadedNavMeshes[0].m_nNavpowerResourceSize;
+
+    m_NavpData.resize(s_NavpDataSize);
+
+    std::memcpy(m_NavpData.data(), reinterpret_cast<void*>(s_NavpData), s_NavpDataSize);
+
+    m_NavMesh.read(reinterpret_cast<uintptr_t>(m_NavpData.data()), s_NavpDataSize);
+
+    for (auto& section : m_NavMesh.m_aSections) {
+        for (auto& graph : section.m_aNavGraphs) {
+            for (auto& area : graph.m_areas) {
+                m_Areas.push_back(&area);
+            }
+        }
+    }
+
+    m_Vertices.resize(m_Areas.size());
+    m_Indices.resize(m_Areas.size());
+    m_NavMeshLines.reserve(m_Areas.size() * 3);
+    m_NavMeshConnectivityLines.reserve(m_Areas.size() * 3);
+
+    std::map<NavPower::Binary::Area*, uint32_t> s_AreaPointerToIndexMap = GetAreaPointerToIndexMap();
+
+    for (size_t i = 0; i < m_Areas.size(); ++i) {
+        const size_t s_VertexCount = m_Areas[i]->m_edges.size();
+
+        m_Vertices[i].reserve(s_VertexCount);
+
+        const SVector3 s_Centroid = m_Areas[i]->CalculateCentroid();
+
+        for (size_t j = 0; j < s_VertexCount; ++j) {
+            m_Vertices[i].push_back(m_Areas[i]->m_edges[j]->m_pos);
+
+            const size_t s_NextIndex = (j + 1) % s_VertexCount;
+            Line& s_Line = m_NavMeshLines.emplace_back();
+
+            s_Line.start = m_Areas[i]->m_edges[j]->m_pos;
+            s_Line.startColor = s_LineColor;
+
+            s_Line.end = m_Areas[i]->m_edges[s_NextIndex]->m_pos;
+            s_Line.endColor = s_LineColor;
+
+            NavPower::Binary::Area* s_AdjArea = m_Areas[i]->m_edges[j]->m_pAdjArea;
+
+            if (s_AdjArea) {
+                const uint32_t s_AdjacentAreaIndex = s_AreaPointerToIndexMap[s_AdjArea];
+                NavPower::Area& s_AdjacentArea = *m_Areas[s_AdjacentAreaIndex - 1];
+                const SVector3 s_AdjacentCentroid = s_AdjacentArea.CalculateCentroid();
+
+                Line& s_ConnLine = m_NavMeshConnectivityLines.emplace_back();
+                s_ConnLine.start = s_Centroid;
+                s_ConnLine.startColor = s_AdjacentLineColor;
+                s_ConnLine.end = s_AdjacentCentroid;
+                s_ConnLine.endColor = s_AdjacentLineColor;
+            }
+        }
+
+        VertexTriangluation(m_Vertices[i], m_Indices[i]);
+    }
+}
+
 std::map<NavPower::Binary::Area*, uint32_t> DebugMod::GetAreaPointerToIndexMap() {
     std::map<NavPower::Binary::Area*, uint32_t> s_AreaPointerToIndexMap;
     uint32_t s_AreaIndex = 1;
 
-    for (NavPower::Area area : m_NavMesh.m_areas) {
-        s_AreaPointerToIndexMap.emplace(area.m_area, s_AreaIndex);
+    for (NavPower::Area* area : m_Areas) {
+        s_AreaPointerToIndexMap.emplace(area->m_area, s_AreaIndex);
 
         s_AreaIndex++;
     }
@@ -830,9 +946,9 @@ bool DebugMod::IsInTriangle(
 ) {
     // Test to see if it is within an infinite prism that the triangle outlines.
     const bool within_tri_prisim = AreOnSameSide(point, triangle1, triangle2, triangle3) && AreOnSameSide(
-                point, triangle2, triangle1, triangle3
-            )
-            && AreOnSameSide(point, triangle3, triangle1, triangle2);
+        point, triangle2, triangle1, triangle3
+    )
+        && AreOnSameSide(point, triangle3, triangle1, triangle2);
 
     // If it isn't it will never be on the triangle
     if (!within_tri_prisim) {
@@ -1030,11 +1146,11 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
         case ECompiledBehaviorType::BT_ConditionedConfiguredSpeak: return "BT_ConditionedConfiguredSpeak";
         case ECompiledBehaviorType::BT_ConditionedConfiguredAct: return "BT_ConditionedConfiguredAct";
         case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionAckSoundDef: return
-                    "BT_SpeakCustomOrDefaultDistractionAckSoundDef";
+            "BT_SpeakCustomOrDefaultDistractionAckSoundDef";
         case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef: return
-                    "BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef";
+            "BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef";
         case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionStndSoundDef: return
-                    "BT_SpeakCustomOrDefaultDistractionStndSoundDef";
+            "BT_SpeakCustomOrDefaultDistractionStndSoundDef";
         case ECompiledBehaviorType::BT_Pickup: return "BT_Pickup";
         case ECompiledBehaviorType::BT_Drop: return "BT_Drop";
         case ECompiledBehaviorType::BT_PlayConversation: return "BT_PlayConversation";
@@ -1108,7 +1224,7 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
         case ECompiledBehaviorType::BT_MoveToRandomNeighbourNodeAiming: return "BT_MoveToRandomNeighbourNodeAiming";
         case ECompiledBehaviorType::BT_MoveToAndPlayCombatPositionAct: return "BT_MoveToAndPlayCombatPositionAct";
         case ECompiledBehaviorType::BT_MoveToAimingAndPlayCombatPositionAct: return
-                    "BT_MoveToAimingAndPlayCombatPositionAct";
+            "BT_MoveToAimingAndPlayCombatPositionAct";
         case ECompiledBehaviorType::BT_PlayJumpyReaction: return "BT_PlayJumpyReaction";
         case ECompiledBehaviorType::BT_JumpyInvestigation: return "BT_JumpyInvestigation";
         case ECompiledBehaviorType::BT_AgitatedPatrol: return "BT_AgitatedPatrol";
@@ -1176,25 +1292,25 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
         case ECompiledBehaviorType::BT_StopDynamicEnforcer: return "BT_StopDynamicEnforcer";
         case ECompiledBehaviorType::BT_StartRangeBasedDynamicEnforcer: return "BT_StartRangeBasedDynamicEnforcer";
         case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcerForLocation: return
-                    "BT_StopRangeBasedDynamicEnforcerForLocation";
+            "BT_StopRangeBasedDynamicEnforcerForLocation";
         case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcer: return "BT_StopRangeBasedDynamicEnforcer";
         case ECompiledBehaviorType::BT_SetDistracted: return "BT_SetDistracted";
         case ECompiledBehaviorType::BT_IgnoreAllDistractionsExceptTheNewest: return
-                    "BT_IgnoreAllDistractionsExceptTheNewest";
+            "BT_IgnoreAllDistractionsExceptTheNewest";
         case ECompiledBehaviorType::BT_IgnoreDistractions: return "BT_IgnoreDistractions";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyWillReact: return "BT_PerceptibleEntityNotifyWillReact";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyReacted: return "BT_PerceptibleEntityNotifyReacted";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigating: return
-                    "BT_PerceptibleEntityNotifyInvestigating";
+            "BT_PerceptibleEntityNotifyInvestigating";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigated: return
-                    "BT_PerceptibleEntityNotifyInvestigated";
+            "BT_PerceptibleEntityNotifyInvestigated";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyTerminate: return "BT_PerceptibleEntityNotifyTerminate";
         case ECompiledBehaviorType::BT_LeaveDistractionAssistantRole: return "BT_LeaveDistractionAssistantRole";
         case ECompiledBehaviorType::BT_LeaveDistractionAssitingGuardRole: return "BT_LeaveDistractionAssitingGuardRole";
         case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceOverRadio: return
-                    "BT_RequestSuitcaseAssistanceOverRadio";
+            "BT_RequestSuitcaseAssistanceOverRadio";
         case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceFaceToFace: return
-                    "BT_RequestSuitcaseAssistanceFaceToFace";
+            "BT_RequestSuitcaseAssistanceFaceToFace";
         case ECompiledBehaviorType::BT_ExpireArrestReasons: return "BT_ExpireArrestReasons";
         case ECompiledBehaviorType::BT_SetDialogSwitch_NPCID: return "BT_SetDialogSwitch_NPCID";
         case ECompiledBehaviorType::BT_InfectedAssignToFollowPlayer: return "BT_InfectedAssignToFollowPlayer";
@@ -1206,8 +1322,8 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
     }
 }
 
-DEFINE_PLUGIN_DETOUR(DebugMod, void, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
-    return HookResult<void>(HookAction::Continue());
+DEFINE_PLUGIN_DETOUR(DebugMod, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
+    return HookResult<bool>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
@@ -1227,11 +1343,12 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool
     m_DrawObstacles = false;
     m_NavMesh = {};
     m_NavpData.clear();
+    m_Areas.clear();
     m_Vertices.clear();
     m_Indices.clear();
     m_NavMeshLines.clear();
     m_NavMeshConnectivityLines.clear();
-    m_ObstaclesToEntityIDs.clear();
+    m_ObstacleToEntityID.clear();
 
     return HookResult<void>(HookAction::Continue());
 }
@@ -1242,7 +1359,7 @@ DEFINE_PLUGIN_DETOUR(
 ) {
     p_Hook->CallOriginal(th, nObstacleBlockageFlags, bEnabled, forceUpdate);
 
-    m_ObstaclesToEntityIDs[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityId;
+    m_ObstacleToEntityID[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityID;
 
     return HookResult<void>(HookAction::Return());
 }

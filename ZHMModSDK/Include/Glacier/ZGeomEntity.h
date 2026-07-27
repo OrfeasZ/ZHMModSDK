@@ -37,15 +37,13 @@ class ZRenderVertexBuffer : public ZRenderGeometryBuffer {};
 
 class ZRenderIndexBuffer : public ZRenderGeometryBuffer {};
 
-template <class T>
-class TRenderReferencedCountedImpl : public T {
-public:
-    int32_t m_ReferenceCount;
-};
+class ZRenderMaterialInstance;
 
-class IRenderPrimitive : public TRenderReferencedCountedImpl<IRenderRefCount> {
+class IRenderPrimitive : public TRenderReferencedCountedImpl<IRenderRefCount, false> {
 public:
-    PAD(0x56); // 0x10
+    PAD(0x20); // 0x10
+    TResourcePtr<ZRenderMaterialInstance> m_pMaterial; // 0x30
+    PAD(0x2E); // 0x38
     uint16_t m_BufferDataIndex; // 0x66
 };
 
@@ -98,6 +96,7 @@ public:
     ZResourcePtr m_ResourceID; // 0x188
     SVector3 m_PrimitiveScale; // 0x190
     ESeamFixMode m_eSeamFix; // 0x19C
+    PAD(0x10);
 };
 
 static_assert(sizeof(ZRenderableEntity) == 0xD0);

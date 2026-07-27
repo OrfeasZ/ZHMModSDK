@@ -81,8 +81,7 @@ public:
     TArray<TPair<ZString, ZString>> m_queryArgs;
 };
 
-class SHttpRequestBehavior {
-public:
+struct SHttpRequestBehavior {
     void (*unk0)();
     void (*unk1)();
     void (*unk2)();
