@@ -466,7 +466,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     const auto s_IsSelected = s_Entity == m_SelectedEntity;
 
     ImGuiTreeNodeFlags s_Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
-            ImGuiTreeNodeFlags_SpanAvailWidth;
+        ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DrawLinesToNodes;
 
     const bool bHasVisibleChildren = HasVisibleChildren(p_Node);
     if (!bHasVisibleChildren) {
