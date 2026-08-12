@@ -168,10 +168,10 @@ void Editor::DrawEntityProperties() {
 
             if (s_Iterator != m_CachedEntityTreeMap.end()) {
                 const std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
-                const std::string s_EntityName = s_EntityTreeNode->Name.substr(
-                    0,
-                    s_EntityTreeNode->Name.find_last_of(" (") - 1
-                );
+
+                const size_t s_Position = s_EntityTreeNode->Name.rfind(" (");
+                const std::string s_EntityName =
+                    s_Position != std::string::npos ? s_EntityTreeNode->Name.substr(0, s_Position) : s_EntityTreeNode->Name;
 
                 ImGui::TextUnformatted(fmt::format("Entity Name: {}", s_EntityName).c_str());
 
