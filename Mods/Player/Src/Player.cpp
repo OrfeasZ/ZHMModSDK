@@ -53,7 +53,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("PLAYER", &m_PlayerMenuActive);
+    const auto s_Showing = ImGui::Begin(ICON_MD_MAN " PLAYER", &m_PlayerMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
