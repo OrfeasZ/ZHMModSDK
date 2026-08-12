@@ -17,7 +17,7 @@ struct EntityTreeNode {
     std::string ReferencedBlueprintFactoryType;
     ZEntityRef Entity;
     std::multimap<std::string, std::shared_ptr<EntityTreeNode>, EntityNameCompare> Children;
-    std::vector<std::shared_ptr<EntityTreeNode>> Parents;
+    std::weak_ptr<EntityTreeNode> Parent;
     bool IsDynamicEntity;
     std::atomic<bool> IsPendingDeletion = false;
 

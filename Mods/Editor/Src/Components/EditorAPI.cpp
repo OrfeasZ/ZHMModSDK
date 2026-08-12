@@ -256,7 +256,7 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
 std::pair<std::string, std::string> Editor::FindRoomForEntity(const ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& roomNameToFolderName) {
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-    //ZEntityRef entityRef = p_Entity.GetLogicalParent();
+    // ZEntityRef entityRef = p_Entity.GetLogicalParent();
     auto entityRef = p_Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_entityRef;
 
     // Climb up the parent hierarchy until we find a room entity
@@ -267,8 +267,8 @@ std::pair<std::string, std::string> Editor::FindRoomForEntity(const ZEntityRef p
         }
         entityRef = entityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_entityRef;
     }
-    //No room has been found, either dynamic entity or non tied to a room (see Miami for ex). Default to top logical parent
-    return std::make_pair(m_CachedEntityTreeMap.at(p_Entity)->Parents.back()->Name, "No_Room");
+    // No room has been found, either dynamic entity or non tied to a room (see Miami for ex). Default to the entity's parent.
+    return std::make_pair(m_CachedEntityTreeMap.at(p_Entity)->Parent.lock()->Name, "No_Room");
 }
 
 void Editor::FindAlocAndPrimForZGeomEntityNode(
