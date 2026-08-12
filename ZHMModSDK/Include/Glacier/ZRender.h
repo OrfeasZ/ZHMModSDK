@@ -16,7 +16,10 @@ public:
 
 class ZRenderTexture2D;
 class ZEntityRef;
-
+class ZRenderInputLayout;
+class ZRenderDepthStencilState;
+class ZRenderBlendState;
+class ZRenderRasterizerState;
 class ZRenderTargetView;
 class ZRenderUnorderedAccessView;
 
@@ -48,11 +51,19 @@ static_assert(offsetof(ZRenderShaderResourceView, m_nHeapDescriptorIndex) == 0x1
 static_assert(offsetof(ZRenderShaderResourceView, m_Handle) == 0x38);
 
 struct SD3D12ObjectPools {
-    PAD(0x5b0);
-    TObjectPool<ZRenderTargetView> RenderTargetViews;
-    TObjectPool<ZRenderDepthStencilView> DepthStencilViews;
-    TObjectPool<ZRenderShaderResourceView> ShaderResourceViews;
-    TObjectPool<ZRenderUnorderedAccessView> UnorderedAccessViews;
+    PAD(0xD0); //0x0
+    TObjectPool<ZRenderInputLayout> RenderInputLayouts; // 0xD0
+    PAD(0x50); //0x150
+    TObjectPool<ZRenderDepthStencilState> RenderDepthStencilStates; // 0x1A0
+    PAD(0x50); //0x220
+    TObjectPool<ZRenderBlendState> RenderBlendStates; // 0x270
+    PAD(0x50); //0x2F0
+    TObjectPool<ZRenderRasterizerState> RenderRasterizerStates; // 0x340
+    PAD(0x1F0); //0x3C0
+    TObjectPool<ZRenderTargetView> RenderTargetViews; // 0x5B0
+    TObjectPool<ZRenderDepthStencilView> RenderDepthStencilViews; // 0x630
+    TObjectPool<ZRenderShaderResourceView> RenderShaderResourceViews; // 0x6B0
+    TObjectPool<ZRenderUnorderedAccessView> RenderUnorderedAccessViews; // 0x730
 };
 
 class ZRenderSharedResources {
@@ -73,7 +84,7 @@ public:
 };
 
 class IRenderDestinationEntity :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ZEntityRef* GetSource() = 0;
     virtual void IRenderDestinationEntity_unk6() = 0;
@@ -106,16 +117,27 @@ public:
 
 class ZRenderSwapChain {
 public:
-    virtual ~ZRenderSwapChain();
+    virtual ~ZRenderSwapChain() = 0;
 
 public:
     IDXGIFactory1* m_pFactory;
     IDXGISwapChain* m_pSwapChain;
 };
 
-struct slConstants {
-    char structTypeUuid[16];
+struct StructType {
+    uint32_t data1;
+    uint16_t data2;
+    uint16_t data3;
+    uint8_t  data4[8];
+};
+
+struct BaseStructure {
+    BaseStructure* next;
+    StructType structType;
     size_t structVersion;
+};
+
+struct slConstants : BaseStructure {
     SMatrix44 cameraViewToClip;
     SMatrix44 clipToCameraView;
     SMatrix44 clipToLensClip;
@@ -137,7 +159,6 @@ struct slConstants {
     bool cameraMotionIncluded;
     bool motionVectors3D;
     bool reset;
-    bool renderingGameFrames;
     bool orthographicProjection;
     bool motionVectorsDilated;
     bool motionVectorsJittered;
@@ -152,8 +173,8 @@ public:
     virtual ~ZRenderDevice() = 0;
 
 public:
-    PAD(0x400); // 0x08
-    slConstants m_Constants; // 0x408
+    PAD(0x3F8); // 0x08
+    slConstants m_Constants; // 0x400
     PAD(0x104E0); // 0x5C8
     ZRenderSwapChain* m_pSwapChain; // 0x10AA8, look for ZRenderSwapChain constructor
     PAD(0x08); // 0x10A18
@@ -174,7 +195,7 @@ public:
     // 0x327B818, look for "m_pFrameHeapCBVSRVUAV" string, argument to the left of it
 };
 
-static_assert(offsetof(ZRenderDevice, m_Constants) == 0x408);
+static_assert(offsetof(ZRenderDevice, m_Constants) == 0x400);
 static_assert(offsetof(ZRenderDevice, m_pSwapChain) == 0x10AA8);
 static_assert(offsetof(ZRenderDevice, m_pCommandQueue) == 0x30FA848);
 static_assert(offsetof(ZRenderDevice, m_pDescriptorHeapDSV) == 0x327B7A0);
@@ -292,7 +313,7 @@ enum class EFX2ShaderType {
     FX2_SHADER_TYPE_PIXEL_SHADER,
     FX2_SHADER_TYPE_GEOMETRY_SHADER,
     FX2_SHADER_TYPE_DOMAIN_SHADER,
-    FX2_SHADER_TYPE_HULL_SHADE,
+    FX2_SHADER_TYPE_HULL_SHADER,
     FX2_SHADER_TYPE_COMPUTE_SHADER,
     FX2_SHADER_TYPE_RAYTRACING_SHADER,
     FX2_SHADER_TYPE_SIZE

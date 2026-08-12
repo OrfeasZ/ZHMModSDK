@@ -290,7 +290,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
                 if (m_RenderActorBehaviors) {
                     const SBehaviorBase* s_BehaviorBase = Globals::BehaviorService->m_aBehaviorStates[i].
-                            m_pCurrentBehavior;
+                        m_pCurrentBehavior;
 
                     if (s_BehaviorBase) {
                         if (s_Text.length() > 0) {
@@ -553,12 +553,12 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
     SMatrix s_WorldMatrix = s_CurrentCamera->GetObjectToWorldMatrix();
 
     static const SVector4 s_Color = SVector4(1.f, 1.f, 1.f, 1.f);
-    static const float s_Scale = 0.3f;
+    static const float s_Scale = 0.1f;
 
     for (size_t i = 0; i < s_ObstacleManagerDeprecated->m_obstacles.size(); ++i) {
         ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep* s_PFObstacleInternalDep = (
-            ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*) (s_ObstacleManagerDeprecated->m_obstacles[i].
-                                                                    m_internal.GetTarget());
+            ZPFObstacleManagerDeprecated::ZPFObstacleInternalDep*)(s_ObstacleManagerDeprecated->m_obstacles[i].
+                m_internal.GetTarget());
         const SMatrix s_Transform = s_ObstacleManagerDeprecated->m_obstacles[i].GetTransform();
         const float4 s_HalfSize = s_ObstacleManagerDeprecated->m_obstacles[i].GetHalfSize();
         float4 s_TopCenter = s_Transform.Trans + s_Transform.ZAxis * (s_HalfSize.z + 0.5f);
@@ -567,8 +567,8 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
         s_WorldMatrix.Trans = s_TopCenter;
 
         const std::string s_Text = fmt::format(
-            "Entity ID: {:016x}\nObstacle Flags: {:04x}\nPenalty: {}",
-            m_ObstaclesToEntityIDs[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
+            "Entity ID: {:016x}\nObstacle Flags: 0x{:04X}\nPenalty: {}",
+            m_ObstacleToEntityID[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
             s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
             s_PFObstacleInternalDep->m_obstacleDef.m_penalty
         );
@@ -835,9 +835,9 @@ void DebugMod::BuildNavMeshRenderData() {
     static const SVector4 s_LineColor = SVector4(0.f, 1.f, 0.f, 1.f);
     static const SVector4 s_AdjacentLineColor = SVector4(1.f, 1.f, 1.f, 1.f);
 
-    const uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_NavPowerResources[0]
+    const uintptr_t s_NavpData = reinterpret_cast<uintptr_t>(Globals::Pathfinder->m_aLoadedNavMeshes[0]
         .m_pNavpowerResource);
-    const uint32_t s_NavpDataSize = Globals::Pathfinder->m_NavPowerResources[0].m_nNavpowerResourceSize;
+    const uint32_t s_NavpDataSize = Globals::Pathfinder->m_aLoadedNavMeshes[0].m_nNavpowerResourceSize;
 
     m_NavpData.resize(s_NavpDataSize);
 
@@ -857,7 +857,7 @@ void DebugMod::BuildNavMeshRenderData() {
     m_Indices.resize(m_Areas.size());
     m_NavMeshLines.reserve(m_Areas.size() * 3);
     m_NavMeshConnectivityLines.reserve(m_Areas.size() * 3);
-    
+
     std::map<NavPower::Binary::Area*, uint32_t> s_AreaPointerToIndexMap = GetAreaPointerToIndexMap();
 
     for (size_t i = 0; i < m_Areas.size(); ++i) {
@@ -946,9 +946,9 @@ bool DebugMod::IsInTriangle(
 ) {
     // Test to see if it is within an infinite prism that the triangle outlines.
     const bool within_tri_prisim = AreOnSameSide(point, triangle1, triangle2, triangle3) && AreOnSameSide(
-                point, triangle2, triangle1, triangle3
-            )
-            && AreOnSameSide(point, triangle3, triangle1, triangle2);
+        point, triangle2, triangle1, triangle3
+    )
+        && AreOnSameSide(point, triangle3, triangle1, triangle2);
 
     // If it isn't it will never be on the triangle
     if (!within_tri_prisim) {
@@ -1146,11 +1146,11 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
         case ECompiledBehaviorType::BT_ConditionedConfiguredSpeak: return "BT_ConditionedConfiguredSpeak";
         case ECompiledBehaviorType::BT_ConditionedConfiguredAct: return "BT_ConditionedConfiguredAct";
         case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionAckSoundDef: return
-                    "BT_SpeakCustomOrDefaultDistractionAckSoundDef";
+            "BT_SpeakCustomOrDefaultDistractionAckSoundDef";
         case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef: return
-                    "BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef";
+            "BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef";
         case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionStndSoundDef: return
-                    "BT_SpeakCustomOrDefaultDistractionStndSoundDef";
+            "BT_SpeakCustomOrDefaultDistractionStndSoundDef";
         case ECompiledBehaviorType::BT_Pickup: return "BT_Pickup";
         case ECompiledBehaviorType::BT_Drop: return "BT_Drop";
         case ECompiledBehaviorType::BT_PlayConversation: return "BT_PlayConversation";
@@ -1224,7 +1224,7 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
         case ECompiledBehaviorType::BT_MoveToRandomNeighbourNodeAiming: return "BT_MoveToRandomNeighbourNodeAiming";
         case ECompiledBehaviorType::BT_MoveToAndPlayCombatPositionAct: return "BT_MoveToAndPlayCombatPositionAct";
         case ECompiledBehaviorType::BT_MoveToAimingAndPlayCombatPositionAct: return
-                    "BT_MoveToAimingAndPlayCombatPositionAct";
+            "BT_MoveToAimingAndPlayCombatPositionAct";
         case ECompiledBehaviorType::BT_PlayJumpyReaction: return "BT_PlayJumpyReaction";
         case ECompiledBehaviorType::BT_JumpyInvestigation: return "BT_JumpyInvestigation";
         case ECompiledBehaviorType::BT_AgitatedPatrol: return "BT_AgitatedPatrol";
@@ -1292,25 +1292,25 @@ const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type)
         case ECompiledBehaviorType::BT_StopDynamicEnforcer: return "BT_StopDynamicEnforcer";
         case ECompiledBehaviorType::BT_StartRangeBasedDynamicEnforcer: return "BT_StartRangeBasedDynamicEnforcer";
         case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcerForLocation: return
-                    "BT_StopRangeBasedDynamicEnforcerForLocation";
+            "BT_StopRangeBasedDynamicEnforcerForLocation";
         case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcer: return "BT_StopRangeBasedDynamicEnforcer";
         case ECompiledBehaviorType::BT_SetDistracted: return "BT_SetDistracted";
         case ECompiledBehaviorType::BT_IgnoreAllDistractionsExceptTheNewest: return
-                    "BT_IgnoreAllDistractionsExceptTheNewest";
+            "BT_IgnoreAllDistractionsExceptTheNewest";
         case ECompiledBehaviorType::BT_IgnoreDistractions: return "BT_IgnoreDistractions";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyWillReact: return "BT_PerceptibleEntityNotifyWillReact";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyReacted: return "BT_PerceptibleEntityNotifyReacted";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigating: return
-                    "BT_PerceptibleEntityNotifyInvestigating";
+            "BT_PerceptibleEntityNotifyInvestigating";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigated: return
-                    "BT_PerceptibleEntityNotifyInvestigated";
+            "BT_PerceptibleEntityNotifyInvestigated";
         case ECompiledBehaviorType::BT_PerceptibleEntityNotifyTerminate: return "BT_PerceptibleEntityNotifyTerminate";
         case ECompiledBehaviorType::BT_LeaveDistractionAssistantRole: return "BT_LeaveDistractionAssistantRole";
         case ECompiledBehaviorType::BT_LeaveDistractionAssitingGuardRole: return "BT_LeaveDistractionAssitingGuardRole";
         case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceOverRadio: return
-                    "BT_RequestSuitcaseAssistanceOverRadio";
+            "BT_RequestSuitcaseAssistanceOverRadio";
         case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceFaceToFace: return
-                    "BT_RequestSuitcaseAssistanceFaceToFace";
+            "BT_RequestSuitcaseAssistanceFaceToFace";
         case ECompiledBehaviorType::BT_ExpireArrestReasons: return "BT_ExpireArrestReasons";
         case ECompiledBehaviorType::BT_SetDialogSwitch_NPCID: return "BT_SetDialogSwitch_NPCID";
         case ECompiledBehaviorType::BT_InfectedAssignToFollowPlayer: return "BT_InfectedAssignToFollowPlayer";
@@ -1348,7 +1348,7 @@ DEFINE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool
     m_Indices.clear();
     m_NavMeshLines.clear();
     m_NavMeshConnectivityLines.clear();
-    m_ObstaclesToEntityIDs.clear();
+    m_ObstacleToEntityID.clear();
 
     return HookResult<void>(HookAction::Continue());
 }
@@ -1359,7 +1359,7 @@ DEFINE_PLUGIN_DETOUR(
 ) {
     p_Hook->CallOriginal(th, nObstacleBlockageFlags, bEnabled, forceUpdate);
 
-    m_ObstaclesToEntityIDs[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityID;
+    m_ObstacleToEntityID[th->m_obstacle.m_internal.GetTarget()] = th->GetType()->m_nEntityID;
 
     return HookResult<void>(HookAction::Return());
 }

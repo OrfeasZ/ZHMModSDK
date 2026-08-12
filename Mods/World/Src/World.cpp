@@ -35,7 +35,12 @@ void World::OnDrawUI(const bool p_HasFocus) {
         ImGui::Text("Game Time Multiplier");
         ImGui::SameLine();
 
-        ImGui::Checkbox("##EnableGameTimeMultiplier", &m_IsTimeMultiplierEnabled);
+        if (ImGui::Checkbox("##EnableGameTimeMultiplier", &m_IsTimeMultiplierEnabled)) {
+            if (!m_IsTimeMultiplierEnabled) {
+                Globals::GameTimeManager->m_fGameTimeMultiplier = 1.0f;
+            }
+        }
+
         ImGui::SameLine();
 
         ImGui::BeginDisabled(!m_IsTimeMultiplierEnabled);

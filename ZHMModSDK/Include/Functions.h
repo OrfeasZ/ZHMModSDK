@@ -153,8 +153,10 @@ public:
     ZResourceContainer_AddResourceInternal;
 
     static EngineFunction<void(
-        ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize
+        ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr* pData, uint32_t dataSize
     )>* ZResourceReader_ZResourceReader;
+	
+	static EngineFunction<void(ZResourceReader* th)>* ZResourceReader_Dtor;
 
     static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateInstaller_Install;
@@ -168,7 +170,7 @@ public:
     ZResourceContainer_AddResourceReferenceInternal;
 
     static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index)>*
-    ZResourceContainer_AcquireReferences;
+    ZResourceContainer_AcquireResourceReferences;
 
     static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
 

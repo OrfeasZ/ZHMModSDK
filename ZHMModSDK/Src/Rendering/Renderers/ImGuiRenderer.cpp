@@ -138,7 +138,7 @@ void ImGuiRenderer::SetupStyles() {
     s_Style.ItemSpacing = ImVec2(10.f, 6.f);
     s_Style.ItemInnerSpacing = ImVec2(10.f, 10.f);
     s_Style.TouchExtraPadding = ImVec2(0.f, 0.f);
-    s_Style.IndentSpacing = 10.f;
+    s_Style.IndentSpacing = 34.f;
     s_Style.ScrollbarSize = 12.f;
     s_Style.GrabMinSize = 12.f;
 
