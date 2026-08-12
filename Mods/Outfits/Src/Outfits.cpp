@@ -331,7 +331,7 @@ void Outfits::BuildSceneNamesToRuntimeResourceIds() {
         ZResourceDataBuffer* s_DataBuffer = s_JsonResourceReader->m_pResourceData.m_pObject;
 
         if (!s_DataBuffer || !s_DataBuffer->m_pData) {
-            Logger::Error("{:016x} JSON resource has no data buffer!", s_JsonReferenceInfo.rid.GetID());
+            Logger::Error("[Outfits] {:016x} JSON resource has no data buffer!", s_JsonReferenceInfo.rid.GetID());
 
             continue;
         }
@@ -347,7 +347,7 @@ void Outfits::BuildSceneNamesToRuntimeResourceIds() {
         auto s_ParseErrorCode = s_Document.error();
 
         if (s_ParseErrorCode) {
-            Logger::Error("Failed to parse JSON: {}!", simdjson::error_message(s_ParseErrorCode));
+            Logger::Error("[Outfits] Failed to parse JSON: {}!", simdjson::error_message(s_ParseErrorCode));
 
             continue;
         }
@@ -372,7 +372,7 @@ void Outfits::BuildSceneNamesToRuntimeResourceIds() {
 
         if (!s_TextFound) {
             Logger::Error(
-                "Missing UI text for location key: {} (Runtime Resource ID: {:016x})!",
+                "[Outfits] Missing UI text for location key: {} (Runtime Resource ID: {:016x})!",
                 s_LocationKey2,
                 s_JsonReferenceInfo.rid.GetID()
             );
@@ -412,7 +412,7 @@ void Outfits::BuildSceneToOutfitBrickRuntimeResourceIds(const std::string& p_Sce
         }
     }
     else {
-        Logger::Warn("No outfit reference found in dependency tree for scene: {}", p_SceneRuntimeResourceId);
+        Logger::Warn("[Outfits] No outfit reference found in dependency tree for scene: {}", p_SceneRuntimeResourceId);
     }
 }
 
@@ -422,7 +422,7 @@ void Outfits::BuildChunkIndexToResourcePackageCount() {
     const std::filesystem::path s_RuntimeDirectory = GetRuntimeDirectory();
 
     if (!std::filesystem::exists(s_RuntimeDirectory)) {
-        Logger::Error("Runtime directory not found: {}", s_RuntimeDirectory.string());
+        Logger::Error("[Outfits] Runtime directory not found: {}", s_RuntimeDirectory.string());
         return;
     }
 
@@ -521,7 +521,7 @@ bool Outfits::LoadBrick(
     Globals::ResourceManager->LoadResource(p_ResourcePtr, p_BrickRuntimeResourceId);
 
     if (!p_ResourcePtr) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Outfits] Resource is not loaded.");
 
         return false;
     }
@@ -529,7 +529,7 @@ bool Outfits::LoadBrick(
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Outfits] Scene not loaded.");
         return false;
     }
 
@@ -547,7 +547,7 @@ bool Outfits::LoadBrick(
     );
 
     if (!p_EntityRef) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Outfits] Failed to spawn entity.");
         return false;
     }
 
@@ -575,7 +575,7 @@ void Outfits::LoadOutfits(const std::string& p_SceneName, const ZRuntimeResource
     Globals::ResourceManager->LoadResource(s_ResourcePtr, p_OutfitBrickRuntimeResourceId);
 
     if (!s_ResourcePtr) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Outfits] Resource is not loaded.");
 
         return;
     }
@@ -583,7 +583,7 @@ void Outfits::LoadOutfits(const std::string& p_SceneName, const ZRuntimeResource
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Outfits] Scene not loaded.");
         return;
     }
 
@@ -603,7 +603,7 @@ void Outfits::LoadOutfits(const std::string& p_SceneName, const ZRuntimeResource
     );
 
     if (!s_EntityRef) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Outfits] Failed to spawn entity.");
         return;
     }
 
@@ -656,7 +656,7 @@ void Outfits::LoadOutfits(const ZRuntimeResourceID& p_OutfitBrickRuntimeResource
         m_SelectedOutfitBricks.insert(p_OutfitBrickRuntimeResourceId);
     }
 
-    Logger::Error("Failed to load outfit brick!");
+    Logger::Error("[Outfits] Failed to load outfit brick!");
 }
 
 void Outfits::UnloadOutfits(const std::unordered_set<std::string>& p_Scenes) {

@@ -376,7 +376,7 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
         p_PrimMatis[s_PrimHash] = s_PrimMatis;
 
         Logger::Debug(
-            "Found ALOC. ID: {} TBLU: {} PRIM: {} ALOC: {}",
+            "[Editor] Found ALOC. ID: {} TBLU: {} PRIM: {} ALOC: {}",
             s_EntityId, s_TbluHashString, s_PrimHash, s_AlocHash
         );
         Quat s_EntityQuat = GetQuatFromProperty(p_Node->Entity);
@@ -386,7 +386,7 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
             s_ParentQuat = GetParentQuat(p_Node->Entity);
         } catch (std::runtime_error) {
             Logger::Error(
-                "Circular reference found! Skipping entity with ID: {} TBLU: {} PRIM: {} ALOC: {}",
+                "[Editor] Circular reference found! Skipping entity with ID: {} TBLU: {} PRIM: {} ALOC: {}",
                 s_EntityId, s_TbluHashString, s_PrimHash, s_AlocHash
             );
             return;
@@ -433,7 +433,7 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
         }
         if (!s_Skip) {
             Logger::Debug(
-                "Found ALOC. ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
+                "[Editor] Found ALOC. ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
             );
             // s_NavKitMeshHashInfos.emplace_back(s_AlocHash, s_PrimHash);
             Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
@@ -442,7 +442,7 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
                 s_ParentQuat =GetParentQuat(s_Node->Entity);
             } catch (std::runtime_error) {
                 Logger::Error(
-                    "Circular reference found! Skipping entity with ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
+                    "[Editor] Circular reference found! Skipping entity with ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
                 );
                 return;
             }
@@ -543,7 +543,7 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
     }
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> entities;
 
-    Logger::Info("Getting {} Entities.", p_EntityType);
+    Logger::Info("[Editor] Getting {} Entities.", p_EntityType);
     // Create a queue and add the root to it.
     std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
     s_NodeQueue.push(m_CachedEntityTree);
@@ -568,7 +568,7 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
             try {
                 s_ParentQuat =GetParentQuat(s_Node->Entity);
             } catch (std::runtime_error) {
-                Logger::Error( "Circular reference found! Skipping entity." );
+                Logger::Error("[Editor] Circular reference found! Skipping entity." );
                 continue;
             }
 
@@ -644,11 +644,11 @@ void Editor::SpawnQnEntity(
     );
 
     if (!s_SpawnedEnt) {
-        throw std::runtime_error("Could not spawn entity.");
+        throw std::runtime_error("[Editor] Could not spawn entity.");
     }
 
     Logger::Info(
-        "Spawned entity from rid {} with id {}!", s_Factory.GetResourceInfo().rid,
+        "[Editor] Spawned entity from rid {} with id {}!", s_Factory.GetResourceInfo().rid,
         s_SpawnedEnt->GetType()->m_nEntityID
     );
 

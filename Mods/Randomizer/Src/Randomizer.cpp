@@ -37,7 +37,7 @@ Randomizer::Randomizer() {
         sizeof(s_Nop),
         0
     )) {
-        Logger::Error("Could not patch ZTemplateEntityFactory brick data freeing.");
+        Logger::Error("[Randomizer] Could not patch ZTemplateEntityFactory brick data freeing.");
     }
 }
 
@@ -2021,7 +2021,7 @@ void Randomizer::BuildSceneNamesToRuntimeResourceIds() {
         ZResourceDataBuffer* s_DataBuffer = s_JsonResourceReader->m_pResourceData.m_pObject;
 
         if (!s_DataBuffer || !s_DataBuffer->m_pData) {
-            Logger::Error("{:016x} JSON resource has no data buffer!", s_JsonReferenceInfo.rid.GetID());
+            Logger::Error("[Randomizer] {:016x} JSON resource has no data buffer!", s_JsonReferenceInfo.rid.GetID());
 
             continue;
         }
@@ -2037,7 +2037,7 @@ void Randomizer::BuildSceneNamesToRuntimeResourceIds() {
         auto s_ParseErrorCode = s_Document.error();
 
         if (s_ParseErrorCode) {
-            Logger::Error("Failed to parse JSON: {}!", simdjson::error_message(s_ParseErrorCode));
+            Logger::Error("[Randomizer] Failed to parse JSON: {}!", simdjson::error_message(s_ParseErrorCode));
 
             continue;
         }
@@ -2062,7 +2062,7 @@ void Randomizer::BuildSceneNamesToRuntimeResourceIds() {
 
         if (!s_TextFound) {
             Logger::Error(
-                "Missing UI text for location key: {} (Runtime Resource ID: {:016x})!",
+                "[Randomizer] Missing UI text for location key: {} (Runtime Resource ID: {:016x})!",
                 s_LocationKey2,
                 s_JsonReferenceInfo.rid.GetID()
             );
@@ -2102,7 +2102,7 @@ void Randomizer::BuildSceneToOutfitBrickRuntimeResourceIds(const std::string& p_
         }
     }
     else {
-        Logger::Warn("No outfit reference found in dependency tree for scene: {}", p_SceneRuntimeResourceId);
+        Logger::Warn("[Randomizer] No outfit reference found in dependency tree for scene: {}", p_SceneRuntimeResourceId);
     }
 }
 
@@ -2112,7 +2112,7 @@ void Randomizer::BuildChunkIndexToResourcePackageCount() {
     const std::filesystem::path s_RuntimeDirectory = GetRuntimeDirectory();
 
     if (!std::filesystem::exists(s_RuntimeDirectory)) {
-        Logger::Error("Runtime directory not found: {}", s_RuntimeDirectory.string());
+        Logger::Error("[Randomizer] Runtime directory not found: {}", s_RuntimeDirectory.string());
         return;
     }
 
@@ -2211,12 +2211,12 @@ bool Randomizer::LoadBrick(
     Globals::ResourceManager->LoadResource(p_ResourcePtr, p_BrickRuntimeResourceId);
 
     while (!Globals::ResourceManager->DoneLoading()) {
-        Logger::Debug("Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
+        Logger::Debug("[Randomizer] Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
         Globals::ResourceManager->Update(true);
     }
 
     if (!p_ResourcePtr) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Randomizer] Resource is not loaded.");
 
         return false;
     }
@@ -2224,7 +2224,7 @@ bool Randomizer::LoadBrick(
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Randomizer] Scene not loaded.");
         return false;
     }
 
@@ -2242,12 +2242,12 @@ bool Randomizer::LoadBrick(
     );
 
     if (!p_EntityRef) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Randomizer] Failed to spawn entity.");
         return false;
     }
 
     while (!p_ResourcePtr.GetResource()->m_blueprintResource.GetResource()->AreAllResourcesReady(p_EntityRef.m_pObj)) {
-        Logger::Debug("Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
+        Logger::Debug("[Randomizer] Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
         Globals::ResourceManager->Update(true);
     }
 
@@ -2271,7 +2271,7 @@ void Randomizer::LoadOutfits(const ZRuntimeResourceID& p_OutfitsBrickRuntimeReso
     Globals::ResourceManager->LoadResource(s_ResourcePtr, p_OutfitsBrickRuntimeResourceId);
 
     if (!s_ResourcePtr) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Randomizer] Resource is not loaded.");
 
         return;
     }
@@ -2279,7 +2279,7 @@ void Randomizer::LoadOutfits(const ZRuntimeResourceID& p_OutfitsBrickRuntimeReso
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Randomizer] Scene not loaded.");
         return;
     }
 
@@ -2299,7 +2299,7 @@ void Randomizer::LoadOutfits(const ZRuntimeResourceID& p_OutfitsBrickRuntimeReso
     );
 
     if (!s_EntityRef) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Randomizer] Failed to spawn entity.");
         return;
     }
 

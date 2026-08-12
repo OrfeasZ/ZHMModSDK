@@ -392,19 +392,19 @@ void Player::EquipOutfit(
     ZGlobalOutfitKit* s_GlobalOutfitKit = p_GlobalOutfitKit.m_pInterfaceRef;
 
     if (!s_GlobalOutfitKit) {
-        Logger::Error("Couldn't equip outfit - global outfit kit is null!");
+        Logger::Error("[Player] Couldn't equip outfit - global outfit kit is null!");
         return;
     }
 
     if (p_CharSetIndex >= s_GlobalOutfitKit->m_aCharSets.size()) {
-        Logger::Error("Couldn't equip outfit - charset index isn't valid!");
+        Logger::Error("[Player] Couldn't equip outfit - charset index isn't valid!");
         return;
     }
 
     ZOutfitVariationCollection* s_Collection = s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef;
 
     if (!s_Collection) {
-        Logger::Error("Couldn't equip outfit - outvit variation collection is null!");
+        Logger::Error("[Player] Couldn't equip outfit - outvit variation collection is null!");
         return;
     }
 
@@ -414,7 +414,7 @@ void Player::EquipOutfit(
         auto* s_HeroType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_HeroA)];
 
         if (!s_HeroType->m_pInterfaceRef) {
-            Logger::Error("Couldn't equip outfit - hero character type is null!");
+            Logger::Error("[Player] Couldn't equip outfit - hero character type is null!");
             return;
         }
 
@@ -497,7 +497,7 @@ void Player::ToggleInfiniteAmmo() {
         auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman) {
-            Logger::Debug("Local player is not alive.");
+            Logger::Debug("[Player] Local player is not alive.");
 
             return;
         }
@@ -530,7 +530,7 @@ bool Player::CreateAICrippleEntity() {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Error("Scene not loaded!");
+        Logger::Error("[Player] Scene not loaded!");
 
         return false;
     }
@@ -541,7 +541,7 @@ bool Player::CreateAICrippleEntity() {
     Globals::ResourceManager->LoadResource(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId);
 
     if (!s_AICrippleEntityFactory) {
-        Logger::Error("Resource is not loaded!");
+        Logger::Error("[Player] Resource is not loaded!");
 
         return false;
     }
@@ -559,7 +559,7 @@ bool Player::CreateAICrippleEntity() {
     );
 
     if (!m_AICrippleEntity) {
-        Logger::Error("Failed to spawn AI Cripple Entity entity!");
+        Logger::Error("[Player] Failed to spawn AI Cripple Entity entity!");
 
         return false;
     }
@@ -571,7 +571,7 @@ bool Player::CreateHM5CrippleBoxEntity() {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Player] Scene not loaded.");
 
         return false;
     }
@@ -582,7 +582,7 @@ bool Player::CreateHM5CrippleBoxEntity() {
     Globals::ResourceManager->LoadResource(s_CrippleBoxFactory, s_CrippleBoxFactoryId);
 
     if (!s_CrippleBoxFactory) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Player] Resource is not loaded.");
 
         return false;
     }
@@ -600,7 +600,7 @@ bool Player::CreateHM5CrippleBoxEntity() {
     );
 
     if (!m_HM5CrippleBoxEntity) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Player] Failed to spawn entity.");
 
         return false;
     }

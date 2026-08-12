@@ -14,13 +14,13 @@ DebugCheckKeyEntityEnabler::~DebugCheckKeyEntityEnabler() {
     if (!SDK()->PatchCode(
         "\x83\x3D\x00\x00\x00\x00\x00\x0F\x94\xC1\x40\x84\xFF", "xx?????xxxxxx", &code, sizeof(code), 6
     )) {
-        Logger::Error("Could not patch ZDebugCheckKeyEntity::FrameUpdate.");
+        Logger::Error("[DebugCheckKeyEntityEnabler] Could not patch ZDebugCheckKeyEntity::FrameUpdate.");
     }
 
     if (!SDK()->PatchCode(
         "\x80\x7B\x19\x00\x0F\x84\x00\x00\x00\x00\x84\xC9", "xxx?xx????xx", &code, sizeof(code2), 3
     )) {
-        Logger::Error("Could not patch ZDebugCheckKeyEntity::FrameUpdate.");
+        Logger::Error("[DebugCheckKeyEntityEnabler] Could not patch ZDebugCheckKeyEntity::FrameUpdate.");
     }
 }
 
@@ -31,13 +31,13 @@ void DebugCheckKeyEntityEnabler::Init() {
     if (!SDK()->PatchCode(
         "\x83\x3D\x00\x00\x00\x00\x00\x0F\x94\xC1\x40\x84\xFF", "xx?????xxxxxx", &code, sizeof(code), 6
     )) {
-        Logger::Error("Could not patch ZDebugCheckKeyEntity::FrameUpdate.");
+        Logger::Error("[DebugCheckKeyEntityEnabler] Could not patch ZDebugCheckKeyEntity::FrameUpdate.");
     }
 
     if (!SDK()->PatchCode(
         "\x80\x7B\x19\x00\x0F\x84\x00\x00\x00\x00\x84\xC9", "xxx?xx????xx", &code2, sizeof(code2), 3
     )) {
-        Logger::Error("Could not patch ZDebugCheckKeyEntity::FrameUpdate.");
+        Logger::Error("[DebugCheckKeyEntityEnabler] Could not patch ZDebugCheckKeyEntity::FrameUpdate.");
     }
 }
 

@@ -497,7 +497,7 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
         static_cast<ZRenderPrimitiveResource*>(p_GizmoEntity.m_PrimResourcePtr.GetResourceData());
 
     if (!s_pRenderPrimitiveResource) {
-        Logger::Error("PRIM of {:016x} gizmo isn't installed!", p_GizmoEntity.m_RuntimeResourceID.GetID());
+        Logger::Error("[Editor] PRIM of {:016x} gizmo isn't installed!", p_GizmoEntity.m_RuntimeResourceID.GetID());
         return;
     }
 
@@ -1357,7 +1357,7 @@ void Editor::AddGizmoEntity(
     else {
         const uint64_t s_EntityId = p_EntityRef.GetEntity()->GetType()->m_nEntityID;
 
-        Logger::Error("Hash of gizmo is missing for entity with {:016x} id and {} type!", s_EntityId, p_TypeName);
+        Logger::Error("[Editor] Hash of gizmo is missing for entity with {:016x} id and {} type!", s_EntityId, p_TypeName);
     }
 }
 
@@ -1496,7 +1496,7 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
 
     if (!s_HitGizmo) {
         if (m_raycastLogging)
-            Logger::Debug("RaycastGizmos found no hits.");
+            Logger::Debug("[Editor] RaycastGizmos found no hits.");
 
         m_SelectedGizmoEntity = nullptr;
 
@@ -1507,7 +1507,7 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
 
     if (m_raycastLogging)
     {
-        Logger::Debug("RaycastGizmos hit gizmo '{}' (channel {}) at distance {}",
+        Logger::Debug("[Editor] RaycastGizmos hit gizmo '{}' (channel {}) at distance {}",
             m_SelectedGizmoEntity->m_TypeName, static_cast<int>(m_SelectedGizmoEntity->m_DebugChannel), s_ClosestDistance);
     }
 
@@ -1518,7 +1518,7 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
         const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
         if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
-            Logger::Debug("Found gizmo entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
+            Logger::Debug("[Editor] Found gizmo entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
             m_SelectedBrickIndex = i;
             break;
         }
@@ -1529,7 +1529,7 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
         const auto& s_Interfaces = *s_Type.m_pInterfaceData;
 
         Logger::Trace(
-            "Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
+            "[Editor] Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
             s_Type.m_nEntityID
         );
     }

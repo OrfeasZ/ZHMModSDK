@@ -132,7 +132,7 @@ DEFINE_PLUGIN_DETOUR(
     ZString s_EventData;
     Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), s_EventData);
 
-    Logger::Debug("Achievement event sent: {} - {}", eventId, s_EventData);
+    Logger::Debug("[AdvancedRating] Achievement event sent: {} - {}", eventId, s_EventData);
 
     auto s_JsonEvent = nlohmann::json::parse(s_EventData.c_str(), s_EventData.c_str() + s_EventData.size());
 

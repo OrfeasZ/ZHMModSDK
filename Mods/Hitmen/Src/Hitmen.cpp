@@ -48,7 +48,7 @@ void Hitmen::OnEngineInitialized()
     SteamDatagramErrMsg s_ErrorMessage;
     if (!GameNetworkingSockets_Init(nullptr, s_ErrorMessage))
     {
-        Logger::Error("Could not initialize game networking sockets. Error: {}", s_ErrorMessage);
+        Logger::Error("[Hitmen] Could not initialize game networking sockets. Error: {}", s_ErrorMessage);
         return;
     }
 
@@ -85,7 +85,7 @@ void Hitmen::StartServer(uint16_t p_Port)
 
     if (m_ServerSocket == k_HSteamListenSocket_Invalid)
     {
-        Logger::Error("Failed to start server.");
+        Logger::Error("[Hitmen] Failed to start server.");
         return;
     }
 
@@ -93,11 +93,11 @@ void Hitmen::StartServer(uint16_t p_Port)
 
     if (m_PollGroup == k_HSteamNetPollGroup_Invalid)
     {
-        Logger::Error("Failed to create poll group.");
+        Logger::Error("[Hitmen] Failed to create poll group.");
         return;
     }
 
-    Logger::Info("Hitmen server started on port {}.", p_Port);
+    Logger::Info("[Hitmen] Hitmen server started on port {}.", p_Port);
     m_IsServer = true;
 }
 
@@ -113,7 +113,7 @@ void Hitmen::Connect(const std::string& p_Address, uint16_t p_Port)
 
     if (!s_Addr.ParseString((p_Address + ":" + std::to_string(p_Port)).c_str()))
     {
-        Logger::Error("Invalid address specified.");
+        Logger::Error("[Hitmen] Invalid address specified.");
         return;
     }
 
@@ -124,14 +124,14 @@ void Hitmen::Connect(const std::string& p_Address, uint16_t p_Port)
 
     if (m_ClientConnection == k_HSteamNetConnection_Invalid)
     {
-        Logger::Error("Could not create client connection.");
+        Logger::Error("[Hitmen] Could not create client connection.");
         return;
     }
 }
 
 void Hitmen::OnServerStatus(SteamNetConnectionStatusChangedCallback_t* p_Info)
 {
-    Logger::Debug("Server connection status changed: {}", static_cast<int>(p_Info->m_info.m_eState));
+    Logger::Debug("[Hitmen] Server connection status changed: {}", static_cast<int>(p_Info->m_info.m_eState));
 
     switch (p_Info->m_info.m_eState)
     {
@@ -140,14 +140,14 @@ void Hitmen::OnServerStatus(SteamNetConnectionStatusChangedCallback_t* p_Info)
             if (m_Sockets->AcceptConnection(p_Info->m_hConn) != k_EResultOK)
             {
                 m_Sockets->CloseConnection(p_Info->m_hConn, 0, nullptr, false);
-                Logger::Warn("Can't accept connection.  (It was already closed?)");
+                Logger::Warn("[Hitmen] Can't accept connection.  (It was already closed?)");
                 break;
             }
 
             if (!m_Sockets->SetConnectionPollGroup(p_Info->m_hConn, m_PollGroup))
             {
                 m_Sockets->CloseConnection(p_Info->m_hConn, 0, nullptr, false);
-                Logger::Warn("Failed to set client connection poll group.");
+                Logger::Warn("[Hitmen] Failed to set client connection poll group.");
                 break;
             }
 
@@ -162,7 +162,7 @@ void Hitmen::OnServerStatus(SteamNetConnectionStatusChangedCallback_t* p_Info)
 
 void Hitmen::OnClientStatus(SteamNetConnectionStatusChangedCallback_t* p_Info)
 {
-    Logger::Debug("Client connection status changed: {}", static_cast<int>(p_Info->m_info.m_eState));
+    Logger::Debug("[Hitmen] Client connection status changed: {}", static_cast<int>(p_Info->m_info.m_eState));
 
     switch (p_Info->m_info.m_eState)
     {
@@ -189,7 +189,7 @@ void Hitmen::UpdateServer()
 
     if (s_MsgCount < 0)
     {
-        Logger::Error("Server error.");
+        Logger::Error("[Hitmen] Server error.");
         return;
     }
 
@@ -197,7 +197,7 @@ void Hitmen::UpdateServer()
     {
         const auto s_Msg = s_Msgs[i];
 
-        //Logger::Debug("Got message with {} bytes.", s_Msg->m_cbSize);
+        //Logger::Debug("[Hitmen] Got message with {} bytes.", s_Msg->m_cbSize);
 
         // TODO: This is extremely incredibly unsafe
         BinaryStreamReader s_Reader(s_Msg->m_pData, s_Msg->m_cbSize);
@@ -225,7 +225,7 @@ void Hitmen::UpdateClient()
 
     if (s_MsgCount < 0)
     {
-        Logger::Error("Client error.");
+        Logger::Error("[Hitmen] Client error.");
         return;
     }
 
@@ -233,7 +233,7 @@ void Hitmen::UpdateClient()
     {
         const auto s_Msg = s_Msgs[i];
 
-        //Logger::Debug("Got message with {} bytes.", s_Msg->m_cbSize);
+        //Logger::Debug("[Hitmen] Got message with {} bytes.", s_Msg->m_cbSize);
 
         // TODO: This is extremely incredibly unsafe
         BinaryStreamReader s_Reader(s_Msg->m_pData, s_Msg->m_cbSize);
@@ -407,7 +407,7 @@ void Hitmen::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
             if (m_OtherHitman)
             {
                 Logger::Debug(
-					"Found other hitman {} (base {}) and our hitman {} (base {}).",
+					"[Hitmen] Found other hitman {} (base {}) and our hitman {} (base {}).",
                     fmt::ptr(m_OtherHitman.QueryInterface<ZHitman5>()),
                     fmt::ptr(m_OtherHitman.GetEntity()),
                     fmt::ptr(m_OurHitman.QueryInterface<ZHitman5>()),
@@ -478,39 +478,39 @@ void Hitmen::OnDrawMenu()
             };
              */
 
-            Logger::Debug(">>>> [{}] {}", i, fmt::ptr(&s_Data));
-            Logger::Debug("[{}] player id = {}", i, s_Data.m_nPlayerId);
-            Logger::Debug("[{}] counter = {}", i, s_Data.m_Controller.m_nUnkCounter);
-            Logger::Debug("[{}] flags 0x18 = {:08X}", i, s_Data.m_Controller.m_nFlags0x10);
-            Logger::Debug("[{}] raknet replica = {}", i, fmt::ptr(s_Data.m_Controller.m_pRakNetReplica));
-            Logger::Debug("[{}] flags 0x28 = {:08X}", i, s_Data.m_Controller.m_nFlags0x20);
-            Logger::Debug("[{}] flags 0x30 = {}", i, fmt::ptr(s_Data.m_Controller.m_nFlags0x28));
-            Logger::Debug("[{}] is local player = {}", i, s_Data.m_Controller.m_bLocalPlayer);
-            Logger::Debug("[{}] flags 0x3C = {:08X}", i, s_Data.m_Controller.m_nFlags0x34);
-            Logger::Debug("[{}] flags 0x40 = {:08X}", i, s_Data.m_Controller.m_nFlags0x38);
-            Logger::Debug("[{}] flags 0x44 = {:08X}", i, s_Data.m_Controller.m_nFlags0x3C);
-            Logger::Debug("[{}] flags 0x48 = {:04X}", i, s_Data.m_Controller.m_nFlags0x40);
-            Logger::Debug("[{}] connected = {}", i, s_Data.m_Controller.m_bConnectedToMultiplayer);
-            Logger::Debug("[{}] net player = {}", i, fmt::ptr(s_Data.m_Controller.m_pNetPlayer));
-            Logger::Debug("[{}] character id = {}", i, s_Data.m_Controller.m_SelectedCharacterId.ToString());
-            Logger::Debug("[{}] string 0x68 = {}", i, s_Data.m_Controller.m_sUnk0x60);
-            Logger::Debug("[{}] flags 0x78 = {:08X}", i, s_Data.m_Controller.m_nFlags0x70);
-            Logger::Debug("[{}] outfit id = {}", i, s_Data.m_Controller.m_OutfitId.ToString());
-            Logger::Debug("[{}] player session id (?) = {}", i, s_Data.m_Controller.s_sSessionId);
-            Logger::Debug("[{}] flags 0xA0 = {:08X}", i, s_Data.m_Controller.m_nFlags0x98);
-            Logger::Debug("[{}] hitman entity = {}", i, fmt::ptr(s_Data.m_Controller.m_HitmanEntity.GetEntity()));
-            Logger::Debug("[{}] entity vtables = {}", i, fmt::ptr(s_Data.m_Controller.m_pEntityVtables));
-            Logger::Debug("[{}] unk 0xB8 = {}", i, fmt::ptr(s_Data.m_Controller.m_unk0xB0));
-            Logger::Debug("[{}] unk 0xC0 = {}", i, fmt::ptr(s_Data.m_Controller.m_unk0xB8));
-            Logger::Debug("[{}] unk 0xC8 = {}", i, fmt::ptr(s_Data.m_Controller.m_unk0xC0));
+            Logger::Debug("[Hitmen] >>>> [{}] {}", i, fmt::ptr(&s_Data));
+            Logger::Debug("[Hitmen] [{}] player id = {}", i, s_Data.m_nPlayerId);
+            Logger::Debug("[Hitmen] [{}] counter = {}", i, s_Data.m_Controller.m_nUnkCounter);
+            Logger::Debug("[Hitmen] [{}] flags 0x18 = {:08X}", i, s_Data.m_Controller.m_nFlags0x10);
+            Logger::Debug("[Hitmen] [{}] raknet replica = {}", i, fmt::ptr(s_Data.m_Controller.m_pRakNetReplica));
+            Logger::Debug("[Hitmen] [{}] flags 0x28 = {:08X}", i, s_Data.m_Controller.m_nFlags0x20);
+            Logger::Debug("[Hitmen] [{}] flags 0x30 = {}", i, fmt::ptr(s_Data.m_Controller.m_nFlags0x28));
+            Logger::Debug("[Hitmen] [{}] is local player = {}", i, s_Data.m_Controller.m_bLocalPlayer);
+            Logger::Debug("[Hitmen] [{}] flags 0x3C = {:08X}", i, s_Data.m_Controller.m_nFlags0x34);
+            Logger::Debug("[Hitmen] [{}] flags 0x40 = {:08X}", i, s_Data.m_Controller.m_nFlags0x38);
+            Logger::Debug("[Hitmen] [{}] flags 0x44 = {:08X}", i, s_Data.m_Controller.m_nFlags0x3C);
+            Logger::Debug("[Hitmen] [{}] flags 0x48 = {:04X}", i, s_Data.m_Controller.m_nFlags0x40);
+            Logger::Debug("[Hitmen] [{}] connected = {}", i, s_Data.m_Controller.m_bConnectedToMultiplayer);
+            Logger::Debug("[Hitmen] [{}] net player = {}", i, fmt::ptr(s_Data.m_Controller.m_pNetPlayer));
+            Logger::Debug("[Hitmen] [{}] character id = {}", i, s_Data.m_Controller.m_SelectedCharacterId.ToString());
+            Logger::Debug("[Hitmen] [{}] string 0x68 = {}", i, s_Data.m_Controller.m_sUnk0x60);
+            Logger::Debug("[Hitmen] [{}] flags 0x78 = {:08X}", i, s_Data.m_Controller.m_nFlags0x70);
+            Logger::Debug("[Hitmen] [{}] outfit id = {}", i, s_Data.m_Controller.m_OutfitId.ToString());
+            Logger::Debug("[Hitmen] [{}] player session id (?) = {}", i, s_Data.m_Controller.s_sSessionId);
+            Logger::Debug("[Hitmen] [{}] flags 0xA0 = {:08X}", i, s_Data.m_Controller.m_nFlags0x98);
+            Logger::Debug("[Hitmen] [{}] hitman entity = {}", i, fmt::ptr(s_Data.m_Controller.m_HitmanEntity.GetEntity()));
+            Logger::Debug("[Hitmen] [{}] entity vtables = {}", i, fmt::ptr(s_Data.m_Controller.m_pEntityVtables));
+            Logger::Debug("[Hitmen] [{}] unk 0xB8 = {}", i, fmt::ptr(s_Data.m_Controller.m_unk0xB0));
+            Logger::Debug("[Hitmen] [{}] unk 0xC0 = {}", i, fmt::ptr(s_Data.m_Controller.m_unk0xB8));
+            Logger::Debug("[Hitmen] [{}] unk 0xC8 = {}", i, fmt::ptr(s_Data.m_Controller.m_unk0xC0));
 
         }
 
-        Logger::Debug("Local player data: {}", fmt::ptr(Globals::PlayerRegistry->m_pLocalPlayer));
+        Logger::Debug("[Hitmen] Local player data: {}", fmt::ptr(Globals::PlayerRegistry->m_pLocalPlayer));
 
         auto s_LocalHitman = SDK()->GetLocalPlayer();
 
-        Logger::Debug("Local player: {} (base {})", fmt::ptr(s_LocalHitman.m_pInterfaceRef), fmt::ptr(s_LocalHitman.m_ref.GetEntity()));
+        Logger::Debug("[Hitmen] Local player: {} (base {})", fmt::ptr(s_LocalHitman.m_pInterfaceRef), fmt::ptr(s_LocalHitman.m_ref.GetEntity()));
 
 
     }

@@ -41,7 +41,7 @@ std::vector<std::shared_ptr<LibraryItem>> ParseHashesJson(const std::string& p_H
     }
     catch (const std::exception& e) {
         // Log error but don't crash
-        Logger::Error("Failed to parse hashes JSON: {}", e.what());
+        Logger::Error("[Editor] Failed to parse hashes JSON: {}", e.what());
     }
 
     // Create a tree using BFS.
@@ -174,7 +174,7 @@ void Editor::DrawLibrary() {
         if (s_DownloadFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             s_LibraryItems = s_DownloadFuture.get();
             s_DownloadCompleted = true;
-            Logger::Debug("Hashlist download complete! Loaded {} items.", s_LibraryItems.size());
+            Logger::Debug("[Editor] Hashlist download complete! Loaded {} items.", s_LibraryItems.size());
         }
     }
 

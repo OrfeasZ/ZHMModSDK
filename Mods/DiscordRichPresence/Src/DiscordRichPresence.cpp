@@ -50,7 +50,7 @@ void DiscordRichPresence::Init() {
     );
 
     if (s_DiscordCreateResult != discord::Result::Ok) {
-        Logger::Error("Discord init failed with result: {}", static_cast<int>(s_DiscordCreateResult));
+        Logger::Error("[DiscordRichPresence] Discord init failed with result: {}", static_cast<int>(s_DiscordCreateResult));
         m_DiscordCore = nullptr;
         return;
     }
@@ -115,9 +115,9 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
 
     SSceneInitParameters& s_SceneInitParameters = Globals::Hitman5Module->m_pEntitySceneContext->m_SceneInitParameters;
 
-    Logger::Trace("Scene: {}", s_SceneInitParameters.m_SceneResource);
-    Logger::Trace("Codename: {}", s_SceneInitParameters.m_CodeNameHint);
-    Logger::Trace("Type: {}", s_SceneInitParameters.m_Type);
+    Logger::Trace("[DiscordRichPresence] Scene: {}", s_SceneInitParameters.m_SceneResource);
+    Logger::Trace("[DiscordRichPresence] Codename: {}", s_SceneInitParameters.m_CodeNameHint);
+    Logger::Trace("[DiscordRichPresence] Type: {}", s_SceneInitParameters.m_Type);
 
     ZString s_Location;
     ZString s_Title;
@@ -142,7 +142,7 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
         else {
             s_Location = "ERR_UNKNOWN_LOCATION";
 
-            Logger::Error("Missing UI text for location key: {}!", s_LocationKey);
+            Logger::Error("[DiscordRichPresence] Missing UI text for location key: {}!", s_LocationKey);
         }
 
         auto* s_Entries = Globals::ContractsManager->m_contractContext.m_contractData.As<TArray<SDynamicObjectKeyValuePair>>();
@@ -179,7 +179,7 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
                         else {
                             s_Title = "ERR_UNKNOWN_MISSION";
 
-                            Logger::Error("Missing UI text for title key: {}!", s_TitleKey->c_str());
+                            Logger::Error("[DiscordRichPresence] Missing UI text for title key: {}!", s_TitleKey->c_str());
                         }
 
                         break;
@@ -227,7 +227,7 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
 
     m_DiscordCore->ActivityManager().UpdateActivity(
         activity, [](discord::Result p_Result) {
-        Logger::Trace("Activity manager push completed with result: {}", static_cast<int>(p_Result));
+        Logger::Trace("[DiscordRichPresence] Activity manager push completed with result: {}", static_cast<int>(p_Result));
     }
     );
 

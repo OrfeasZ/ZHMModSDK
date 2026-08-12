@@ -22,11 +22,11 @@ int FreelancerSeeder::GenerateRandomSeed() {
 }
 
 DEFINE_PLUGIN_DETOUR(FreelancerSeeder,  ZEvergreenCampaignManager*, ZEvergreenCampaignManager_OnGenerate, ZEvergreenCampaignManager* th) {
-    Logger::Info("A new Freelancer campaign is being generated with seed: {}.", th->m_rSeed.m_entityRef.GetProperty<int>("m_nValue").Get());
+    Logger::Info("[FreelancerSeeder] A new Freelancer campaign is being generated with seed: {}.", th->m_rSeed.m_entityRef.GetProperty<int>("m_nValue").Get());
 
     if (m_EnableCustomSeed) {
         th->m_rSeed.m_entityRef.SignalInputPin("SetValue", ZObjectRef::From(m_Seed));
-        Logger::Info("Freelancer seed overridden to: {}", th->m_rSeed.m_entityRef.GetProperty<int>("m_nValue").Get());
+        Logger::Info("[FreelancerSeeder] Freelancer seed overridden to: {}", th->m_rSeed.m_entityRef.GetProperty<int>("m_nValue").Get());
     }
     else {
         m_Seed = th->m_rSeed.m_entityRef.GetProperty<int>("m_nValue").Get();

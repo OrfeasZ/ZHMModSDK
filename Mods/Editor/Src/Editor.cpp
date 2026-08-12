@@ -46,7 +46,7 @@ Editor::Editor() {
         sizeof(s_Nop),
         0
     )) {
-        Logger::Error("Could not patch ZTemplateEntityBlueprintFactory data freeing.");
+        Logger::Error("[Editor] Could not patch ZTemplateEntityBlueprintFactory data freeing.");
     }
 
     if (!SDK()->PatchCode(
@@ -56,25 +56,25 @@ Editor::Editor() {
         sizeof(s_Nop),
         0
     )) {
-        Logger::Error("Could not patch ZTemplateEntityBlueprintFactory brick data freeing.");
+        Logger::Error("[Editor] Could not patch ZTemplateEntityBlueprintFactory brick data freeing.");
     }
 
     // Initialize Winsock and create the Qne socket and relevant things.
     WSADATA s_Ws;
     if (WSAStartup(MAKEWORD(2, 2), &s_Ws) != 0) {
-        Logger::Error("WSAStartup failed: %d", WSAGetLastError());
+        Logger::Error("[Editor] WSAStartup failed: %d", WSAGetLastError());
         return;
     }
 
     if ((m_QneSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
-        Logger::Error("Could not create socket: %d", WSAGetLastError());
+        Logger::Error("[Editor] Could not create socket: %d", WSAGetLastError());
         return;
     }
 
     // Make socket non-blocking.
     u_long s_NonBlocking = 1;
     if (ioctlsocket(m_QneSocket, FIONBIO, &s_NonBlocking) != 0) {
-        Logger::Error("Could not make socket non-blocking: %d", WSAGetLastError());
+        Logger::Error("[Editor] Could not make socket non-blocking: %d", WSAGetLastError());
         return;
     }
 
@@ -147,7 +147,7 @@ void Editor::OnDrawMenu() {
                 if (s_Brick.runtimeResourceID != ResId<"[assembly:/_sdk/editor/editor_data.brick].pc_entitytype">)
                     continue;
 
-                Logger::Debug("Found editor_data brick.");
+                Logger::Debug("[Editor] Found editor_data brick.");
 
                 const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.GetBlueprintFactory());
 
@@ -155,13 +155,13 @@ void Editor::OnDrawMenu() {
 
                 if (s_Index != -1)
                 {
-                    Logger::Debug("Found RT at index {}.", s_Index);
+                    Logger::Debug("[Editor] Found RT at index {}.", s_Index);
                     m_CameraRT = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
 
                     const auto s_CameraRTEntity = m_CameraRT.QueryInterface<ZRenderDestinationTextureEntity>();
                     const auto s_RT = reinterpret_cast<ZRenderDestination*>(s_CameraRTEntity->GetRenderDestination());
 
-                    Logger::Debug("RTEntity = {} RT = {}", fmt::ptr(s_CameraRTEntity), fmt::ptr(s_RT));
+                    Logger::Debug("[Editor] RTEntity = {} RT = {}", fmt::ptr(s_CameraRTEntity), fmt::ptr(s_RT));
 
                     const auto s_Camera = Functions::GetCurrentCamera->Call();
 
@@ -172,7 +172,7 @@ void Editor::OnDrawMenu() {
 
                     for (auto& s_Client : *s_CameraRTEntity->GetClients())
                     {
-                        Logger::Debug("RT client = {} {:x} {}", fmt::ptr(s_Client.GetEntity()), s_Client->GetType()->m_nEntityId, (*s_Client->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName);
+                        Logger::Debug("[Editor] RT client = {} {:x} {}", fmt::ptr(s_Client.GetEntity()), s_Client->GetType()->m_nEntityId, (*s_Client->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName);
                     }
                 }
 
@@ -180,10 +180,10 @@ void Editor::OnDrawMenu() {
 
                 if (s_CameraIndex != -1)
                 {
-                    Logger::Debug("Found Cam at index {}.", s_CameraIndex);
+                    Logger::Debug("[Editor] Found Cam at index {}.", s_CameraIndex);
                     m_Camera = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_CameraIndex);
 
-                    Logger::Debug("CamEntity = {}", fmt::ptr(m_Camera.GetEntity()));
+                    Logger::Debug("[Editor] CamEntity = {}", fmt::ptr(m_Camera.GetEntity()));
                 }
 
                 break;
@@ -429,7 +429,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             return;
 
         if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
-            Logger::Debug("Creating free camera.");
+            Logger::Debug("[Editor] Creating free camera.");
             Functions::ZEngineAppCommon_CreateFreeCameraAndControl->Call(
                 &(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon
             );
@@ -550,7 +550,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         if (s_DownloadFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             m_ClassToInputAndOutputPins = s_DownloadFuture.get();
             s_DownloadCompleted = true;
-            Logger::Debug("Pin list download complete! Loaded {} classes.", m_ClassToInputAndOutputPins.size());
+            Logger::Debug("[Editor] Pin list download complete! Loaded {} classes.", m_ClassToInputAndOutputPins.size());
         }
     }
 }
@@ -717,7 +717,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     float4 s_To = s_From + (s_DirectionVec * 200.f);
 
     if (!*Globals::CollisionManager) {
-        Logger::Error("Collision manager not found.");
+        Logger::Error("[Editor] Collision manager not found.");
         return;
     }
 
@@ -729,18 +729,18 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     ZRayQueryOutput s_RayOutput{};
 
     if (m_raycastLogging) {
-        Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
+        Logger::Debug("[Editor] RayCasting from {} to {}.", s_From, s_To);
     }
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {
         if (m_raycastLogging) {
-            Logger::Error("Raycast failed.");
+            Logger::Error("[Editor] Raycast failed.");
         }
         return;
     }
 
     if (m_raycastLogging) {
-        Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
+        Logger::Debug("[Editor] Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
     }
 
     m_From = s_From;
@@ -752,7 +752,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
         if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
             const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaceData;
             Logger::Trace(
-                "Hit entity of type '{}' with id '{:x}'.",
+                "[Editor] Hit entity of type '{}' with id '{:x}'.",
                 s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
                 s_RayOutput.m_pBlockingSpatialEntity.m_entityRef->GetType()->m_nEntityID
             );
@@ -764,7 +764,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
                 if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
-                    Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
+                    Logger::Debug("[Editor] Found entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
                     m_SelectedBrickIndex = i;
                     break;
                 }
@@ -944,7 +944,7 @@ void Editor::SpawnCameras() {
 }
 )";
 
-    Logger::Debug("Spawning editor data entity.");
+    Logger::Debug("[Editor] Spawning editor data entity.");
 
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
@@ -952,7 +952,7 @@ void Editor::SpawnCameras() {
     TResourcePtr<ZTemplateEntityBlueprintFactory> s_CameraRTBpFactory;
 
     if (!SDK()->LoadQnEntity(s_EditorDataJson, s_CameraRTBpFactory, s_CameraRTFactory)) {
-        Logger::Error("Failed to load editor data entity.");
+        Logger::Error("[Editor] Failed to load editor data entity.");
         return;
     }
 
@@ -967,7 +967,7 @@ void Editor::SpawnCameras() {
         -1
     );
 
-    Logger::Debug("Spawned editor data entity!");
+    Logger::Debug("[Editor] Spawned editor data entity!");
 
     if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedb6fc4f5626ea); idx != -1) {
         if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pObj, idx)) {
@@ -982,7 +982,7 @@ void Editor::SpawnCameras() {
     }
 
     if (!m_EditorCamera || !m_EditorCameraRT) {
-        Logger::Error("Failed to get editor camera or render destination texture entity.");
+        Logger::Error("[Editor] Failed to get editor camera or render destination texture entity.");
         return;
     }
 
@@ -1308,7 +1308,7 @@ DEFINE_PLUGIN_DETOUR(
     STemplateEntityBlueprint* pTemplateEntityBlueprint,
     ZResourcePending& ResourcePending
 ) {
-    //Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
+    //Logger::Debug("[Editor] Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
     //auto s_Result = p_Hook->CallOriginal(th, pTemplateEntityBlueprint, ResourcePending);
     //return HookResult(HookAction::Return(), s_Result);
     return { HookAction::Continue() };

@@ -95,7 +95,7 @@ FreeCam::~FreeCam() {
                 Globals::InputManager
             )) {
                 Logger::Debug(
-                    "Got local hitman entity and input control! Enabling input. {} {}", fmt::ptr(s_InputControl),
+                    "[FreeCam] Got local hitman entity and input control! Enabling input. {} {}", fmt::ptr(s_InputControl),
                     fmt::ptr(s_LocalHitman.m_pInterfaceRef)
                 );
                 s_InputControl->m_bActive = true;
@@ -125,10 +125,10 @@ void FreeCam::OnEngineInitialized() {
             "TogglePauseGame=tap(kb,f8);};";
 
     if (ZInputActionManager::AddBindings(binds)) {
-        Logger::Debug("Successfully added bindings.");
+        Logger::Debug("[FreeCam] Successfully added bindings.");
     }
     else {
-        Logger::Debug("Failed to add bindings.");
+        Logger::Debug("[FreeCam] Failed to add bindings.");
     }
 }
 
@@ -137,7 +137,7 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         return;
 
     if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
-        Logger::Debug("Creating free camera.");
+        Logger::Debug("[FreeCam] Creating free camera.");
         Functions::ZEngineAppCommon_CreateFreeCameraAndControl->Call(&(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon);
 
         // If freecam was active we need to toggle.
@@ -233,7 +233,7 @@ void FreeCam::EnableFreecam() {
     const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
     s_Camera.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(s_CurrentCamera->GetObjectToWorldMatrix());
 
-    Logger::Debug("Camera trans: {}", fmt::ptr(&s_Camera.m_pInterfaceRef->m_mTransform.Trans));
+    Logger::Debug("[FreeCam] Camera trans: {}", fmt::ptr(&s_Camera.m_pInterfaceRef->m_mTransform.Trans));
 
     s_RenderDest.m_pInterfaceRef->SetSource(&s_Camera.m_entityRef);
 
@@ -255,7 +255,7 @@ void FreeCam::DisableFreecam() {
 
         if (s_InputControl) {
             Logger::Debug(
-                "Got local hitman entity and input control! Enabling input. {} {}", fmt::ptr(s_InputControl),
+                "[FreeCam] Got local hitman entity and input control! Enabling input. {} {}", fmt::ptr(s_InputControl),
                 fmt::ptr(s_LocalHitman.m_pInterfaceRef)
             );
             s_InputControl->m_bActive = true;
@@ -308,7 +308,7 @@ bool FreeCam::GetFreeCameraRayCastClosestHitQueryOutput(ZRayQueryOutput& p_RayOu
     float4 s_To = s_WorldMatrix.Trans + s_InvertedDirection * 500.f;
 
     if (!*Globals::CollisionManager) {
-        Logger::Error("Collision manager not found.");
+        Logger::Error("[FreeCam] Collision manager not found.");
 
         return false;
     }
@@ -319,7 +319,7 @@ bool FreeCam::GetFreeCameraRayCastClosestHitQueryOutput(ZRayQueryOutput& p_RayOu
     };
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &p_RayOutput)) {
-        Logger::Error("Raycast failed.");
+        Logger::Error("[FreeCam] Raycast failed.");
 
         return false;
     }

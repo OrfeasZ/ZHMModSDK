@@ -267,7 +267,7 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        Logger::Debug("No local hitman");
+        Logger::Debug("[Assets] No local hitman");
         return;
     }
 
@@ -290,7 +290,7 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Assets] Scene not loaded.");
         return;
     }
 
@@ -302,10 +302,10 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
     Globals::ResourceManager->GetResourcePtr(s_Resource2, s_ID2, 0);
 
-    Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex.val, fmt::ptr(s_Resource.GetResource()));
+    Logger::Debug("[Assets] Resource: {} {}", s_Resource.m_nResourceIndex.val, fmt::ptr(s_Resource.GetResource()));
 
     if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Assets] Resource is not loaded.");
         return;
     }
 
@@ -333,12 +333,12 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     );
 
     if (!s_NewEntity) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Assets] Failed to spawn entity.");
         return;
     }
 
     if (!s_NewEntity2) {
-        Logger::Debug("Failed to spawn entity2.");
+        Logger::Debug("[Assets] Failed to spawn entity2.");
         return;
     }
 
@@ -359,7 +359,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Assets] Scene not loaded.");
         return;
     }
 
@@ -367,7 +367,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
     Globals::ResourceManager->GetResourcePtr(s_Resource, s_PropRuntimeResourceID, 0);
 
     if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Assets] Resource is not loaded.");
         return;
     }
 
@@ -385,7 +385,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
     );
 
     if (!s_NewEntity) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Assets] Failed to spawn entity.");
         return;
     }
 
@@ -394,7 +394,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        Logger::Debug("No local hitman.");
+        Logger::Debug("[Assets] No local hitman.");
         return;
     }
 
@@ -415,7 +415,7 @@ void Assets::SpawnActor(
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Assets] Scene not loaded.");
         return;
     }
 
@@ -426,7 +426,7 @@ void Assets::SpawnActor(
     Globals::ResourceManager->GetResourcePtr(s_Resource, s_RuntimeResourceId, 0);
 
     if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Assets] Resource is not loaded.");
         return;
     }
 
@@ -444,14 +444,14 @@ void Assets::SpawnActor(
     );
 
     if (!s_NewEntity) {
-        Logger::Debug("Could not spawn entity.");
+        Logger::Debug("[Assets] Could not spawn entity.");
         return;
     }
 
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        Logger::Debug("No local hitman.");
+        Logger::Debug("[Assets] No local hitman.");
         return;
     }
 
@@ -490,26 +490,26 @@ void Assets::EquipOutfit(
     ZActor* p_Actor
 ) {
     if (!p_Actor) {
-        Logger::Error("Couldn't equip outfit - actor is null!");
+        Logger::Error("[Assets] Couldn't equip outfit - actor is null!");
         return;
     }
 
     ZGlobalOutfitKit* s_GlobalOutfitKit = p_GlobalOutfitKit.m_pInterfaceRef;
 
     if (!s_GlobalOutfitKit) {
-        Logger::Error("Couldn't equip outfit - global outfit kit is null!");
+        Logger::Error("[Assets] Couldn't equip outfit - global outfit kit is null!");
         return;
     }
 
     if (p_CharSetIndex >= s_GlobalOutfitKit->m_aCharSets.size()) {
-        Logger::Error("Couldn't equip outfit - charset index isn't valid!");
+        Logger::Error("[Assets] Couldn't equip outfit - charset index isn't valid!");
         return;
     }
 
     ZOutfitVariationCollection* s_Collection = s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef;
 
     if (!s_Collection) {
-        Logger::Error("Couldn't equip outfit - outvit variation collection is null!");
+        Logger::Error("[Assets] Couldn't equip outfit - outvit variation collection is null!");
         return;
     }
 
@@ -519,7 +519,7 @@ void Assets::EquipOutfit(
         auto* s_ActorType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
 
         if (!s_ActorType->m_pInterfaceRef) {
-            Logger::Error("Couldn't equip outfit - actor character type is null!");
+            Logger::Error("[Assets] Couldn't equip outfit - actor character type is null!");
             return;
         }
 

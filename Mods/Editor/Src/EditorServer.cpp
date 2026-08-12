@@ -35,7 +35,7 @@ EditorServer::EditorServer() {
                     .compression = uWS::DISABLED,
                     .maxPayloadLength = 100 * 1024 * 1024,
                     .open = [this, s_Loop](WebSocket* p_Socket) {
-                        Logger::Debug("New editor connection established.");
+                        Logger::Debug("[Editor] New editor connection established.");
 
                         const auto s_ClientId = m_LastClientId++;
                         const auto s_ClientIdStr = std::to_string(s_ClientId);
@@ -44,25 +44,25 @@ EditorServer::EditorServer() {
                         m_SocketUserDatas.push_back(p_Socket->getUserData());
                     },
                     .message = [&](WebSocket* p_Socket, std::string_view p_Message, uWS::OpCode p_OpCode) {
-                        Logger::Trace("Socket message received: {}", p_Message);
+                        Logger::Trace("[Editor] Socket message received: {}", p_Message);
 
                         try {
                             if (m_Enabled) {
                                 OnMessage(p_Socket, p_Message, s_Loop);
                             }
                             else {
-                                Logger::Info("EditorServer disabled, ignoring message.");
+                                Logger::Info("[Editor] EditorServer disabled, ignoring message.");
                             }
                         }
                         catch (const std::exception& e) {
                             Logger::Error(
-                                "Failed to handle editor message with error: {}\nMessage was: {}", e.what(), p_Message
+                                "[Editor] Failed to handle editor message with error: {}\nMessage was: {}", e.what(), p_Message
                             );
                             SendError(p_Socket, e.what(), std::nullopt);
                         }
                     },
                     .close = [this](WebSocket* p_Socket, int p_Code, std::string_view p_Message) {
-                        Logger::Debug("Editor connection closed with code '{}' and message: {}", p_Code, p_Message);
+                        Logger::Debug("[Editor] Editor connection closed with code '{}' and message: {}", p_Code, p_Message);
 
                         auto s_Data = p_Socket->getUserData();
                         m_SocketUserDatas.erase(
@@ -76,11 +76,11 @@ EditorServer::EditorServer() {
             s_App->listen(
                 c_EditorHost, c_EditorPort, [](auto* p_Socket) {
                     if (p_Socket) {
-                        Logger::Info("Editor server listening on {}:{}", c_EditorHost, c_EditorPort);
+                        Logger::Info("[Editor] Editor server listening on {}:{}", c_EditorHost, c_EditorPort);
                     }
                     else {
                         Logger::Error(
-                            "Editor server failed to listen on {}:{}. Is another program using this port?",
+                            "[Editor] Editor server failed to listen on {}:{}. Is another program using this port?",
                             c_EditorHost,
                             c_EditorPort
                         );
@@ -121,7 +121,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
     simdjson::ondemand::document s_JsonMsg = s_Parser.iterate(s_Json);
 
     const std::string_view s_Type = s_JsonMsg["type"];
-    Logger::Trace("Editor message type: {}", s_Type);
+    Logger::Trace("[Editor] Editor message type: {}", s_Type);
 
     std::optional<int64_t> s_MessageId;
 
@@ -236,7 +236,7 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
 
 void EditorServer::SendWelcome(EditorServer::WebSocket* p_Socket) {
     Logger::Info(
-        "Client with identifier '{}' connected to the editor server. Sending welcome message.",
+        "[Editor] Client with identifier '{}' connected to the editor server. Sending welcome message.",
         p_Socket->getUserData()->Identifier
     );
 
@@ -257,7 +257,7 @@ void EditorServer::SendWelcome(EditorServer::WebSocket* p_Socket) {
 
 void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping SendHitmanEntity.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping SendHitmanEntity.");
         return;
     }
 
@@ -286,7 +286,7 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> 
 
 void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping SendCameraEntity.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping SendCameraEntity.");
         return;
     }
     const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
@@ -335,7 +335,7 @@ void EditorServer::SendError(
 
 void EditorServer::OnEntitySelected(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnEntitySelected.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnEntitySelected.");
         return;
     }
     if (!m_Loop) {
@@ -370,7 +370,7 @@ void EditorServer::OnEntitySelected(ZEntityRef p_Entity, std::optional<std::stri
 
 void EditorServer::OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnEntityTransformChanged.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityTransformChanged.");
         return;
     }
     if (!m_Loop) {
@@ -400,7 +400,7 @@ void EditorServer::OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<s
 
 void EditorServer::OnEntityNameChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnEntityNameChanged.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityNameChanged.");
         return;
     }
     if (!m_Loop) {
@@ -432,7 +432,7 @@ void EditorServer::OnEntityPropertySet(
     ZEntityRef p_Entity, uint32_t p_PropertyId, std::optional<std::string> p_ByClient
 ) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnEntityPropertySet.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityPropertySet.");
         return;
     }
     if (!m_Loop) {
@@ -501,7 +501,7 @@ void EditorServer::OnEntityPropertySet(
 
 void EditorServer::OnEntitySpawned(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnEntitySpawned.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnEntitySpawned.");
         return;
     }
     if (!m_Loop) {
@@ -531,7 +531,7 @@ void EditorServer::OnEntitySpawned(ZEntityRef p_Entity, std::optional<std::strin
 
 void EditorServer::OnEntityDestroying(uint64_t p_EntityId, std::optional<std::string> p_ByClient) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnEntityDestroying.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityDestroying.");
         return;
     }
     if (!m_Loop) {
@@ -560,7 +560,7 @@ void EditorServer::OnEntityDestroying(uint64_t p_EntityId, std::optional<std::st
 
 void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnSceneLoading.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnSceneLoading.");
         return;
     }
     if (!m_Loop) {
@@ -604,7 +604,7 @@ void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<
 
 void EditorServer::OnSceneClearing(bool p_FullyUnloadScene) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnSceneClearing.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnSceneClearing.");
         return;
     }
     if (!m_Loop) {
@@ -633,7 +633,7 @@ void EditorServer::OnSceneClearing(bool p_FullyUnloadScene) {
 
 void EditorServer::OnEntityTreeRebuilt() {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping OnEntityTreeRebuilt.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityTreeRebuilt.");
         return;
     }
     if (!m_Loop) {
@@ -660,10 +660,10 @@ void EditorServer::OnEntityTreeRebuilt() {
 void EditorServer::SetEnabled(bool p_Enabled) {
     m_Enabled = p_Enabled;
     if (p_Enabled) {
-        Logger::Info("Enabling EditorServer");
+        Logger::Info("[Editor] Enabling EditorServer");
     }
     else {
-        Logger::Info("Disabling EditorServer");
+        Logger::Info("[Editor] Disabling EditorServer");
     }
 }
 
@@ -680,7 +680,7 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
     auto s_AnyMeshSentOverall = std::make_shared<bool>(false);
     auto s_TotalMeshesSent = std::make_shared<int>(0);
     auto s_LastLoggedMilestone = std::make_shared<int>(0);
-    Logger::Info("Sending Meshes...");
+    Logger::Info("[Editor] Sending Meshes...");
     Plugin()->FindMeshes(
         [p_Socket, p_Loop, s_AnyMeshSentOverall, s_TotalMeshesSent, s_LastLoggedMilestone](
     const std::vector<NavKitMeshEntity>& p_Entities,
@@ -695,7 +695,7 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
                 *s_TotalMeshesSent += p_Entities.size();
                 const int currentMilestone = *s_TotalMeshesSent / 1000;
                 if (currentMilestone > *s_LastLoggedMilestone) {
-                    Logger::Info("Meshes sent: {}", *s_TotalMeshesSent);
+                    Logger::Info("[Editor] Meshes sent: {}", *s_TotalMeshesSent);
                     *s_LastLoggedMilestone = currentMilestone;
                 }
                 for (auto& [s_AlocHash, s_PrimHash, s_Quat, s_RoomName, s_FolderName, s_Entity] : p_Entities) {
@@ -812,7 +812,7 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
                         }
                         p_Socket->send("]}", uWS::OpCode::TEXT);
                         p_Socket->send("Done sending entities.", uWS::OpCode::TEXT);
-                        Logger::Info("Done sending scene.");
+                        Logger::Info("[Editor] Done sending scene.");
                     }
                 );
             }
@@ -832,7 +832,7 @@ void EditorServer::SendEntityList(
     EditorServer::WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
 ) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping SendEntityList.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping SendEntityList.");
         return;
     }
     std::ostringstream s_EventStream;
@@ -911,7 +911,7 @@ void EditorServer::SendEntityList(
 
 void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId) {
     if (!m_Enabled) {
-        Logger::Info("EditorServer disabled. Skipping SendEntityDetails.");
+        Logger::Info("[Editor] EditorServer disabled. Skipping SendEntityDetails.");
         return;
     }
     if (!p_Entity) {
@@ -1195,7 +1195,7 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
         p_Stream << "null";
         return;
     }
-    Logger::Debug("Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityID);
+    Logger::Debug("[Editor] Sending entity details for entity id: '{}'", p_Entity->GetType()->m_nEntityID);
 
     p_Stream << "{";
 
@@ -1523,7 +1523,7 @@ std::vector<EntitySelector> EditorServer::ReadPrimEntitySelectors(simdjson::onde
     std::vector<EntitySelector> s_EntitySelectors;
     for (const std::string_view s_PrimStringView : p_Selector) {
         const auto s_PrimString = std::string {s_PrimStringView};
-        Logger::Info("Reading PrimEntitySelector for hash: '{}'", s_PrimString);
+        Logger::Info("[Editor] Reading PrimEntitySelector for hash: '{}'", s_PrimString);
 
         s_EntitySelectors.push_back(
             {

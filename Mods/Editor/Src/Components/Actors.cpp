@@ -215,7 +215,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     m_SelectedActor = s_Actor;
                     m_GlobalOutfitKit = {};
 
-                    Logger::Info("Selected actor (by list): {}", s_ActorName2.c_str());
+                    Logger::Info("[Editor] Selected actor (by list): {}", s_ActorName2.c_str());
                 }
             }
         }
@@ -701,26 +701,26 @@ void Editor::EquipOutfit(
     ZActor* p_Actor
 ) {
     if (!p_Actor) {
-        Logger::Error("Couldn't equip outfit - actor is null!");
+        Logger::Error("[Editor] Couldn't equip outfit - actor is null!");
         return;
     }
 
     ZGlobalOutfitKit* s_GlobalOutfitKit = p_GlobalOutfitKit.m_pInterfaceRef;
 
     if (!s_GlobalOutfitKit) {
-        Logger::Error("Couldn't equip outfit - global outfit kit is null!");
+        Logger::Error("[Editor] Couldn't equip outfit - global outfit kit is null!");
         return;
     }
 
     if (p_CharSetIndex >= s_GlobalOutfitKit->m_aCharSets.size()) {
-        Logger::Error("Couldn't equip outfit - charset index isn't valid!");
+        Logger::Error("[Editor] Couldn't equip outfit - charset index isn't valid!");
         return;
     }
 
     ZOutfitVariationCollection* s_Collection = s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef;
 
     if (!s_Collection) {
-        Logger::Error("Couldn't equip outfit - outvit variation collection is null!");
+        Logger::Error("[Editor] Couldn't equip outfit - outvit variation collection is null!");
         return;
     }
 
@@ -730,7 +730,7 @@ void Editor::EquipOutfit(
         auto* s_ActorType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
 
         if (!s_ActorType->m_pInterfaceRef) {
-            Logger::Error("Couldn't equip outfit - actor character type is null!");
+            Logger::Error("[Editor] Couldn't equip outfit - actor character type is null!");
             return;
         }
 
