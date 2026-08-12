@@ -14,8 +14,8 @@ void Editor::DrawRoomsWindow(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_IsWindowExpanded) {
-        if (!m_CachedEntityTree) {
-            if (ImGui::Button("Get rooms")) {
+        if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+            if (ImGui::Button("Build entity tree")) {
                 UpdateEntities();
             }
 
