@@ -322,8 +322,8 @@ void Editor::OnEngineInitialized() {
                 b.begin(), b.end(),
                 [](char ac, char bc) {
                     return std::tolower(ac) < std::tolower(bc);
-                });
-        }
+            });
+    }
     );
 }
 
@@ -403,7 +403,7 @@ void Editor::DrawSettings(const bool p_HasFocus) {
         ImGui::Spacing();
         ImGui::Text("Entity Highlight Mode");
 
-        const int s_EntityHighlightMode = static_cast<int>(m_EntityHighlightMode);
+        const int32_t s_EntityHighlightMode = static_cast<int32_t>(m_EntityHighlightMode);
 
         if (ImGui::RadioButton("Lines", s_EntityHighlightMode == 0)) {
             m_EntityHighlightMode = EntityHighlightMode::Lines;
@@ -458,7 +458,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         std::vector<ZEntityRef> s_EntitiesToAdd;
-        
+
         {
             std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
 
@@ -529,8 +529,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
     if (m_ClassToInputAndOutputPins.empty() && !s_DownloadStarted) {
         const std::string s_PinsUrl =
-            "https://raw.githubusercontent.com/glacier-modding/glaciermodding.org"
-            "/refs/heads/main/docs/modding/hitman/guides/pins.json";
+            "https://github.com/glacier-modding/Hitman-Hashes/releases/latest/download/pins.json";
 
         s_DownloadFuture = std::async(
             std::launch::async, [this, s_PinsUrl]() {
@@ -541,7 +540,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
                 }
 
                 return std::map<std::string, PinLists>();
-            }
+        }
         );
 
         s_DownloadStarted = true;
@@ -618,7 +617,7 @@ std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool output
         s_Result.end(),
         [](const PinInfo& p_A, const PinInfo& p_B) {
             return p_A.name < p_B.name;
-        }
+    }
     );
 
     return s_Result;
@@ -688,7 +687,7 @@ std::map<std::string, Editor::PinLists> Editor::ParsePinsJson(const std::string&
             pins.inputPins.end(),
             [](const PinInfo& a, const PinInfo& b) {
                 return a.name < b.name;
-            }
+        }
         );
 
         std::sort(
@@ -696,7 +695,7 @@ std::map<std::string, Editor::PinLists> Editor::ParsePinsJson(const std::string&
             pins.outputPins.end(),
             [](const PinInfo& a, const PinInfo& b) {
                 return a.name < b.name;
-            }
+        }
         );
     }
 
@@ -722,12 +721,12 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
         return;
     }
 
-    ZRayQueryInput s_RayInput {
+    ZRayQueryInput s_RayInput{
         .m_vFrom = s_From,
         .m_vTo = s_To,
     };
 
-    ZRayQueryOutput s_RayOutput {};
+    ZRayQueryOutput s_RayOutput{};
 
     if (m_raycastLogging) {
         Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
@@ -778,7 +777,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
 
 void Editor::SpawnCameras() {
     static const std::string s_EditorDataJson =
-            R"(
+        R"(
 {
     "tempHash": "00644fe9eb9feff5",
     "tbluHash": "005474211f99b411",
@@ -1033,14 +1032,14 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
     const auto n44 = 1.0f;
 
     const auto det =
-            n41 * (n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34
-                   - n12 * n23 * n34) + n42
-            * (n11 * n23 * n34 - n11 * n24 * n33 + n14 * n21 * n33 - n13 * n21 * n34 + n13 * n24 * n31
-               - n14 * n23 * n31) + n43
-            * (n11 * n24 * n32 - n11 * n22 * n34 - n14 * n21 * n32 + n12 * n21 * n34 + n14 * n22 * n31
-               - n12 * n24 * n31) + n44
-            * (-n13 * n22 * n31 - n11 * n23 * n32 + n11 * n22 * n33 + n13 * n21 * n32 - n12 * n21 * n33
-               + n12 * n23 * n31);
+        n41 * (n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34
+            - n12 * n23 * n34) + n42
+        * (n11 * n23 * n34 - n11 * n24 * n33 + n14 * n21 * n33 - n13 * n21 * n34 + n13 * n24 * n31
+            - n14 * n23 * n31) + n43
+        * (n11 * n24 * n32 - n11 * n22 * n34 - n14 * n21 * n32 + n12 * n21 * n34 + n14 * n22 * n31
+            - n12 * n24 * n31) + n44
+        * (-n13 * n22 * n31 - n11 * n23 * n32 + n11 * n22 * n33 + n13 * n21 * n32 - n12 * n21 * n33
+            + n12 * n23 * n31);
 
     auto sx = n11 * n11 + n21 * n21 + n31 * n31;
     const auto sy = n12 * n12 + n22 * n22 + n32 * n32;
@@ -1065,16 +1064,16 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
     s_Trans.ZAxis.z *= inv_sz;
 
     float s_RotationX = abs(s_Trans.XAxis.z) < 0.9999999f
-                            ? atan2f(-s_Trans.YAxis.z, s_Trans.ZAxis.z) * c_RAD2DEG
-                            : atan2f(s_Trans.ZAxis.y, s_Trans.YAxis.y) * c_RAD2DEG;
+        ? atan2f(-s_Trans.YAxis.z, s_Trans.ZAxis.z) * c_RAD2DEG
+        : atan2f(s_Trans.ZAxis.y, s_Trans.YAxis.y) * c_RAD2DEG;
 
     float s_RotationY = asinf(std::min(std::max(-1.f, s_Trans.XAxis.z), 1.f)) * c_RAD2DEG;
 
     float s_RotationZ = abs(s_Trans.XAxis.z) < 0.9999999f
-                            ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
-                            : 0.f;
+        ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
+        : 0.f;
 
-    return QneTransform {
+    return QneTransform{
         .Position = { n41, n42, n43 },
         .Rotation = { s_RotationX, s_RotationY, s_RotationZ },
         .Scale = { sx, sy, sz },
@@ -1266,7 +1265,7 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneI
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
 
-    for (auto& s_Entity: m_SpawnedEntities | std::views::values) {
+    for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
     }
 
@@ -1286,7 +1285,7 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneI
 
     std::vector<std::string> s_Bricks;
 
-    for (auto& s_Brick: p_Parameters.m_aAdditionalBrickResources) {
+    for (auto& s_Brick : p_Parameters.m_aAdditionalBrickResources) {
         s_Bricks.push_back(s_Brick.c_str());
     }
 
@@ -1327,7 +1326,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
 
-    for (auto& s_Entity: m_SpawnedEntities | std::views::values) {
+    for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
     }
 
@@ -1388,7 +1387,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data) {
     //if (entity == m_SelectedEntity)
     {
-        m_FiredInputPins[pinId] = PinFireInfo {
+        m_FiredInputPins[pinId] = PinFireInfo{
             .m_FireTime = std::chrono::system_clock::now(),
         };
     }
@@ -1399,7 +1398,7 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data) {
     //if (entity == m_SelectedEntity)
     {
-        m_FiredOutputPins[pinId] = PinFireInfo {
+        m_FiredOutputPins[pinId] = PinFireInfo{
             .m_FireTime = std::chrono::system_clock::now(),
         };
     }
@@ -1426,12 +1425,15 @@ DEFINE_PLUGIN_DETOUR(
 
         if (s_SubEntityFactory->IsTemplateEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZTemplateEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsAspectEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAspectEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZAspectEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        } else if (s_SubEntityFactory->IsCppEntityFactory()) {
+        }
+        else if (s_SubEntityFactory->IsCppEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZCppEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        } else if (s_SubEntityFactory->IsExtendedCppEntityFactory()) {
+        }
+        else if (s_SubEntityFactory->IsExtendedCppEntityFactory()) {
             ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory = static_cast<ZExtendedCppEntityFactory*>(
                 s_SubEntityFactory);
 
@@ -1441,21 +1443,26 @@ DEFINE_PLUGIN_DETOUR(
             if (s_Iterator != m_ExtendedCppEntityFactoryToRuntimeResourceID.end()) {
                 s_SubEntityFactoryRuntimeResourceID = s_Iterator->second;
             }
-        } else if (s_SubEntityFactory->IsUIControlEntityFactory()) {
+        }
+        else if (s_SubEntityFactory->IsUIControlEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZUIControlEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsRenderMaterialEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsRenderMaterialEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZRenderMaterialEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsBehaviorTreeEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsBehaviorTreeEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZBehaviorTreeEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsAudioSwitchEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAudioSwitchEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioSwitchEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsAudioStateEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAudioStateEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioStateEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
+                m_ridResource;
         } {
             std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
 
@@ -1482,7 +1489,7 @@ DEFINE_PLUGIN_DETOUR(
     bool s_Result = p_Hook->CallOriginal(th, ResourcePending);
 
     ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory =
-            static_cast<ZExtendedCppEntityFactory*>(ResourcePending.m_pResource.GetResourceData());
+        static_cast<ZExtendedCppEntityFactory*>(ResourcePending.m_pResource.GetResourceData());
     const ZRuntimeResourceID s_RuntimeResourceID = ResourcePending.m_pResource.GetResourceInfo().rid; {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
 
@@ -1506,7 +1513,7 @@ DEFINE_PLUGIN_DETOUR(
 
     const auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[index.val];
     const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid;
-    
+
     {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
         auto s_Iterator = m_RuntimeResourceIDToExtendedCppEntityFactory.find(s_RuntimeResourceID);
