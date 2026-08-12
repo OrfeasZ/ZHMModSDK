@@ -265,14 +265,16 @@ void Editor::DrawEntityProperties() {
                         }
                     }
                     else {
-                        ImGui::TextUnformatted(
-                            fmt::format("{}: {:016X}", s_EntityTreeNode->ReferencedBlueprintFactoryType, s_EntityTreeNode->ReferencedBlueprintFactory.GetID()
-                            ).c_str());
+						if (!s_EntityTreeNode->ReferencedBlueprintFactoryType.empty()) {
+							ImGui::TextUnformatted(
+								fmt::format("{}: {:016X}", s_EntityTreeNode->ReferencedBlueprintFactoryType, s_EntityTreeNode->ReferencedBlueprintFactory.GetID()
+								).c_str());
 
-                        if (ImGuiCopyWidget("ReferencedBlueprintFactory")) {
-                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
-                        }
-
+							if (ImGuiCopyWidget("ReferencedBlueprintFactory")) {
+								CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
+							}
+						}
+						
                         ImGui::TextUnformatted(fmt::format(
                             "Contained in {}: {:016X}",
                             s_EntityTreeNode->BlueprintFactoryType,

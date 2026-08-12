@@ -74,148 +74,231 @@ void Editor::UpdateEntityTree(
         const bool s_IsAspectEntityBlueprintFactory = s_CurrentFactory->IsAspectEntityBlueprintFactory();
 
         // Go through each of its sub-entities and create nodes for them.
-        for (int i = 0; i < s_SubEntityCount; ++i) {
-            const ZEntityRef s_SubEntity = s_CurrentFactory->GetSubEntity(s_CurrentRoot.m_pObj, i);
-            const auto s_SubEntityFactory = s_CurrentFactory->GetSubEntityBlueprint(i);
+		if (s_SubEntityCount > 0) {
+			for (int i = 0; i < s_SubEntityCount; ++i) {
+				const ZEntityRef s_SubEntity = s_CurrentFactory->GetSubEntity(s_CurrentRoot.m_pObj, i);
+				const auto s_SubEntityFactory = s_CurrentFactory->GetSubEntityBlueprint(i);
 
-            if (!s_SubEntity.GetEntity() || !s_SubEntity->GetType()) {
-                continue;
-            }
+				if (!s_SubEntity.GetEntity() || !s_SubEntity->GetType()) {
+					continue;
+				}
 
-            // Skip the root entity of the referenced factory
-            if (p_NodeMap.contains(s_SubEntity)) {
-                /**
-                 * Enqueue sub-entities of the referenced factory to ensure they are processed
-                 * even when the root entity is skipped
-                 */
-                s_NodeQueue.emplace(s_SubEntityFactory, s_SubEntity);
+				// Skip the root entity of the referenced factory
+				if (p_NodeMap.contains(s_SubEntity)) {
+					/**
+					 * Enqueue sub-entities of the referenced factory to ensure they are processed
+					 * even when the root entity is skipped
+					 */
+					if (s_SubEntityFactory && s_SubEntityFactory->GetSubEntitiesCount() > 0) {
+						s_NodeQueue.emplace(s_SubEntityFactory, s_SubEntity);
+					}
 
-                continue;
-            }
+					continue;
+				}
 
-            const auto s_SubEntityId = s_SubEntity->GetType()->m_nEntityID;
-            std::string s_EntityName = "<No name>";
+				const auto s_SubEntityID = s_SubEntity->GetType()->m_nEntityID;
+				std::string s_EntityName = "<No name>";
 
-            // If our current factory is a template factory, we can get the name of the entity from it.
-            if (s_IsTemplateEntityBlueprintFactory) {
-                const auto s_TemplateBpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_CurrentFactory);
+				// If our current factory is a template factory, we can get the name of the entity from it.
+				if (s_IsTemplateEntityBlueprintFactory) {
+					const auto s_TemplateBpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_CurrentFactory);
 
-                if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
-                    s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[i].entityName;
-                }
-            }
-            else if (s_IsAspectEntityBlueprintFactory) {
-                const auto s_AspectEntityBlueprintFactory = reinterpret_cast<ZAspectEntityBlueprintFactory*>(
-                    s_CurrentFactory);
-                const uint32_t s_AspectIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].m_nAspectIdx;
-                const uint32_t s_SubEntityIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].
-                    m_nSubentityIdx;
-                const auto s_TemplateBpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(
-                    s_AspectEntityBlueprintFactory->m_aBlueprintFactories[s_AspectIndex]
-                );
+					if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
+						s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[i].entityName;
+					}
+				}
+				else if (s_IsAspectEntityBlueprintFactory) {
+					const auto s_AspectEntityBlueprintFactory = reinterpret_cast<ZAspectEntityBlueprintFactory*>(
+						s_CurrentFactory);
+					const uint32_t s_AspectIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].m_nAspectIdx;
+					const uint32_t s_SubEntityIndex = s_AspectEntityBlueprintFactory->m_aSubEntitiesLookUp[i].
+						m_nSubentityIdx;
+					const auto s_TemplateBpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(
+						s_AspectEntityBlueprintFactory->m_aBlueprintFactories[s_AspectIndex]
+					);
 
-                if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
-                    s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[s_SubEntityIndex].
-                        entityName;
-                }
-            }
+					if (s_TemplateBpFactory->m_pTemplateEntityBlueprint) {
+						s_EntityName = s_TemplateBpFactory->m_pTemplateEntityBlueprint->subEntities[s_SubEntityIndex].
+							entityName;
+					}
+				}
 
-            if (const auto s_Name = m_EntityNames.find(s_SubEntity); s_Name != m_EntityNames.end()) {
-                s_EntityName = s_Name->second;
-            }
+				if (const auto s_Name = m_EntityNames.find(s_SubEntity); s_Name != m_EntityNames.end()) {
+					s_EntityName = s_Name->second;
+				}
 
-            const uint64_t s_BaseKey = s_SubEntityId & 0xFFFFFFFFFFFC000F;
-            const bool s_IsEntityIDGenerated = p_AreEntitiesDynamic && Globals::EntityManager->m_DynamicEntityIdToCount.
-                contains(s_BaseKey);
+				const uint64_t s_BaseKey = s_SubEntityID & 0xFFFFFFFFFFFC000F;
+				const bool s_IsEntityIDGenerated = p_AreEntitiesDynamic && Globals::EntityManager->m_DynamicEntityIdToCount.
+					contains(s_BaseKey);
 
-            // Format a human-readable name for the entity.
-            const auto s_EntityTypeName = (*s_SubEntity->GetType()->m_pInterfaceData)[0].m_Type->GetTypeInfo()->
-                pszTypeName;
-            const auto s_EntityHumanName = fmt::format(
-                "{} ({:016x}){}",
-                s_EntityName,
-                s_SubEntityId,
-                p_AreEntitiesDynamic ? (s_IsEntityIDGenerated ? " **" : " *") : ""
-            );
+				// Format a human-readable name for the entity.
+				const auto s_EntityTypeName = (*s_SubEntity->GetType()->m_pInterfaceData)[0].m_Type->GetTypeInfo()->
+					pszTypeName;
+				const auto s_EntityHumanName = fmt::format(
+					"{} ({:016x}){}",
+					s_EntityName,
+					s_SubEntityID,
+					p_AreEntitiesDynamic ? (s_IsEntityIDGenerated ? " **" : " *") : ""
+				);
 
-            std::string s_ReferencedBlueprintFactoryType;
+				std::string s_ReferencedBlueprintFactoryType;
 
-            if (s_SubEntityFactory->IsTemplateEntityBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "TBLU";
-            }
-            else if (s_SubEntityFactory->IsAspectEntityBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "ASEB";
-            }
-            else if (s_SubEntityFactory->IsCppEntityBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "CBLU";
-            }
-            else if (s_SubEntityFactory->IsExtendedCppEntityBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "ECPB";
-            }
-            else if (s_SubEntityFactory->IsUIControlBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "UICB";
-            }
-            else if (s_SubEntityFactory->IsRenderMaterialEntityBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "MATB";
-            }
-            else if (s_SubEntityFactory->IsBehaviorTreeEntityBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "AIBB";
-            }
-            else if (s_SubEntityFactory->IsAudioSwitchBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "WSWB";
-            }
-            else if (s_SubEntityFactory->IsAudioStateBlueprintFactory()) {
-                s_ReferencedBlueprintFactoryType = "WSGB";
-            }
+				if (s_SubEntityFactory->IsTemplateEntityBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "TBLU";
+				}
+				else if (s_SubEntityFactory->IsAspectEntityBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "ASEB";
+				}
+				else if (s_SubEntityFactory->IsCppEntityBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "CBLU";
+				}
+				else if (s_SubEntityFactory->IsExtendedCppEntityBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "ECPB";
+				}
+				else if (s_SubEntityFactory->IsUIControlBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "UICB";
+				}
+				else if (s_SubEntityFactory->IsRenderMaterialEntityBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "MATB";
+				}
+				else if (s_SubEntityFactory->IsBehaviorTreeEntityBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "AIBB";
+				}
+				else if (s_SubEntityFactory->IsAudioSwitchBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "WSWB";
+				}
+				else if (s_SubEntityFactory->IsAudioStateBlueprintFactory()) {
+					s_ReferencedBlueprintFactoryType = "WSGB";
+				}
 
-            // Add the node to the map.
-            const auto s_SubEntityNode = std::make_shared<EntityTreeNode>(
-                s_EntityHumanName,
-                s_EntityTypeName,
-                s_SubEntityId,
-                s_CurrentFactory->m_ridResource,
-                s_IsTemplateEntityBlueprintFactory ? "TBLU" : "ASEB",
-                s_SubEntityFactory->m_ridResource,
-                s_ReferencedBlueprintFactoryType,
-                s_SubEntity,
-                p_AreEntitiesDynamic
-            );
+				// Add the node to the map.
+				const auto s_SubEntityNode = std::make_shared<EntityTreeNode>(
+					s_EntityHumanName,
+					s_EntityTypeName,
+					s_SubEntityID,
+					s_CurrentFactory->m_ridResource,
+					s_IsTemplateEntityBlueprintFactory ? "TBLU" : "ASEB",
+					s_SubEntityFactory->m_ridResource,
+					s_ReferencedBlueprintFactoryType,
+					s_SubEntity,
+					p_AreEntitiesDynamic
+				);
 
-            const auto s_LogicalParent = s_SubEntity.GetLogicalParent();
+				const auto s_LogicalParent = s_SubEntity.GetLogicalParent();
 
-            if (s_LogicalParent) {
-                auto s_ParentNode = p_NodeMap.find(s_LogicalParent);
+				if (s_LogicalParent) {
+					auto s_ParentNode = p_NodeMap.find(s_LogicalParent);
 
-                if (s_ParentNode != p_NodeMap.end()) {
-                    // If we have already seen the logical parent of this sub-entity, add it to the parent's children.
-                    if (p_AreEntitiesDynamic && s_ParentNode->second == s_SceneNode) {
-                        s_DynamicEntitiesNode->Children.insert({s_EntityHumanName, s_SubEntityNode});
-                        s_SubEntityNode->Parent = s_DynamicEntitiesNode;
-                    }
-                    else {
-                        s_ParentNode->second->Children.insert({s_EntityHumanName, s_SubEntityNode});
-                        s_SubEntityNode->Parent = s_ParentNode->second;
-                    }
-                }
-                else {
-                    // Otherwise, add it to the parentless nodes queue.
-                    s_ParentlessNodes.push(s_SubEntityNode);
-                }
-            }
-            else {
-                // If it has no logical parent, add it to the parentless nodes queue.
-                s_ParentlessNodes.push(s_SubEntityNode);
-            }
+					if (s_ParentNode != p_NodeMap.end()) {
+						// If we have already seen the logical parent of this sub-entity, add it to the parent's children.
+						if (p_AreEntitiesDynamic && s_ParentNode->second == s_SceneNode) {
+							s_DynamicEntitiesNode->Children.insert({s_EntityHumanName, s_SubEntityNode});
+							s_SubEntityNode->Parent = s_DynamicEntitiesNode;
+						}
+						else {
+							s_ParentNode->second->Children.insert({s_EntityHumanName, s_SubEntityNode});
+							s_SubEntityNode->Parent = s_ParentNode->second;
+						}
+					}
+					else {
+						// Otherwise, add it to the parentless nodes queue.
+						s_ParentlessNodes.push(s_SubEntityNode);
+					}
+				}
+				else {
+					// If it has no logical parent, add it to the parentless nodes queue.
+					s_ParentlessNodes.push(s_SubEntityNode);
+				}
 
-            // If the sub-entity has a factory with more sub-entities, add it to the queue.
-            if (s_SubEntityFactory && s_SubEntityFactory->GetSubEntitiesCount() > 0) {
-                s_NodeQueue.emplace(s_SubEntityFactory, s_SubEntity);
-            }
+				// If the sub-entity has a factory with more sub-entities, add it to the queue.
+				if (s_SubEntityFactory && s_SubEntityFactory->GetSubEntitiesCount() > 0) {
+					s_NodeQueue.emplace(s_SubEntityFactory, s_SubEntity);
+				}
 
-            p_NodeMap[s_SubEntity] = s_SubEntityNode;
-        }
-    }
+				p_NodeMap[s_SubEntity] = s_SubEntityNode;
+			}
+		} else if (p_AreEntitiesDynamic) {
+			if (p_NodeMap.contains(s_CurrentRoot)) {
+				continue;
+			}
 
+			const auto s_SubEntityID = s_CurrentRoot->GetType()->m_nEntityID;
+			const uint64_t s_BaseKey = s_SubEntityID & 0xFFFFFFFFFFFC000F;
+			const bool s_IsEntityIDGenerated = p_AreEntitiesDynamic && Globals::EntityManager->m_DynamicEntityIdToCount.
+				contains(s_BaseKey);
+
+			// Format a human-readable name for the entity.
+			const auto s_EntityTypeName = (*s_CurrentRoot->GetType()->m_pInterfaceData)[0].m_Type->GetTypeInfo()->pszTypeName;
+			const auto s_EntityHumanName = fmt::format(
+				"{} ({:016x}{}){}", s_EntityTypeName, s_SubEntityID, "", p_AreEntitiesDynamic ? (s_IsEntityIDGenerated ? " **" : " *") : ""
+			);
+			
+			std::string s_BlueprintFactoryType;
+
+			if (s_CurrentFactory->IsTemplateEntityBlueprintFactory()) {
+				s_BlueprintFactoryType = "TBLU";
+			}
+			else if (s_CurrentFactory->IsAspectEntityBlueprintFactory()) {
+				s_BlueprintFactoryType = "ASEB";
+			}
+			else if (s_CurrentFactory->IsCppEntityBlueprintFactory()) {
+				s_BlueprintFactoryType = "CBLU";
+			}
+			else if (s_CurrentFactory->IsExtendedCppEntityBlueprintFactory()) {
+				s_BlueprintFactoryType = "ECPB";
+			}
+			else if (s_CurrentFactory->IsUIControlBlueprintFactory()) {
+				s_BlueprintFactoryType = "UICB";
+			}
+			else if (s_CurrentFactory->IsRenderMaterialEntityBlueprintFactory()) {
+				s_BlueprintFactoryType = "MATB";
+			}
+			else if (s_CurrentFactory->IsBehaviorTreeEntityBlueprintFactory()) {
+				s_BlueprintFactoryType = "AIBB";
+			}
+			else if (s_CurrentFactory->IsAudioSwitchBlueprintFactory()) {
+				s_BlueprintFactoryType = "WSWB";
+			}
+			else if (s_CurrentFactory->IsAudioStateBlueprintFactory()) {
+				s_BlueprintFactoryType = "WSGB";
+			}
+
+			// Add the node to the map.
+			const auto s_SubEntityNode = std::make_shared<EntityTreeNode>(
+				s_EntityHumanName, s_EntityTypeName, s_SubEntityID, s_CurrentFactory->m_ridResource, s_BlueprintFactoryType, -1, "",
+				s_CurrentRoot, p_AreEntitiesDynamic
+			);
+
+			const auto s_LogicalParent = s_CurrentRoot.GetLogicalParent();
+
+			if (s_LogicalParent) {
+				auto s_ParentNode = p_NodeMap.find(s_LogicalParent);
+
+				if (s_ParentNode != p_NodeMap.end()) {
+					// If we have already seen the logical parent of this sub-entity, add it to the parent's children.
+					if (p_AreEntitiesDynamic && s_ParentNode->second == s_SceneNode) {
+						s_DynamicEntitiesNode->Children.insert({s_EntityHumanName, s_SubEntityNode});
+						s_SubEntityNode->Parent = s_DynamicEntitiesNode;
+					}
+					else {
+						s_ParentNode->second->Children.insert({s_EntityHumanName, s_SubEntityNode});
+						s_SubEntityNode->Parent = s_ParentNode->second;
+					}
+				}
+				else {
+					// Otherwise, add it to the parentless nodes queue.
+					s_ParentlessNodes.push(s_SubEntityNode);
+				}
+			}
+			else {
+				// If it has no logical parent, add it to the parentless nodes queue.
+				s_ParentlessNodes.push(s_SubEntityNode);
+			}
+
+			p_NodeMap[s_CurrentRoot] = s_SubEntityNode;
+		}
+	}
+	
     // Go through the nodes and assign any remaining children to their parents.
     while (!s_ParentlessNodes.empty()) {
         const auto s_Node = s_ParentlessNodes.front();
