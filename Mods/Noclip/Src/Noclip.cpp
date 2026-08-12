@@ -56,7 +56,7 @@ void Noclip::Init() {
 }
 
 void Noclip::OnDrawMenu() {
-    if (ImGui::Checkbox(ICON_MD_SELF_IMPROVEMENT " Noclip", &m_NoclipEnabled)) {
+    if (ImGui::Checkbox(ICON_MD_SELF_IMPROVEMENT " NOCLIP", &m_NoclipEnabled)) {
         if (m_NoclipEnabled) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 if (const auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>())

@@ -46,7 +46,7 @@ void FreelancerSeeder::OnDrawUI(bool p_HasFocus) {
     if (p_HasFocus && m_ShowSettings) {
         const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
         ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.15f, viewportSize.y * 0.11f), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin(ICON_MD_ECO " Freelance Seeder", &m_ShowSettings)) {
+        if (ImGui::Begin(ICON_MD_ECO " Freelancer seeder", &m_ShowSettings)) {
             ImGui::Checkbox("Enable custom seed", &m_EnableCustomSeed);
 
             ImGuiInputTextFlags s_SeedFlags = ImGuiInputTextFlags_CharsDecimal;

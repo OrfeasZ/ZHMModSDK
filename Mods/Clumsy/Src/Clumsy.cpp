@@ -46,7 +46,7 @@ void Clumsy::Init() {
 void Clumsy::OnDrawUI(bool p_HasFocus) {
     if (m_ShowBrickWarning) {
         ImGui::PushFont(SDK()->GetImGuiBlackFont());
-        const auto s_Expanded = ImGui::Begin(ICON_MD_WARNING " Clumsy Warning", &m_ShowBrickWarning);
+        const auto s_Expanded = ImGui::Begin(ICON_MD_WARNING " Clumsy warning", &m_ShowBrickWarning);
         ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
         if (s_Expanded) {

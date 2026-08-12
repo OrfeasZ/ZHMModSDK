@@ -73,10 +73,10 @@ class ZChildNetworkActEntity;
 class ZCompositeEntity;
 
 void Editor::InitializeDebugChannels() {
-    m_DebugChannels.push_back(std::make_pair("Guides - Cover", DEBUGCHANNEL_GUIDES_COVER));
-    m_DebugChannels.push_back(std::make_pair("Guides - Ladders", DEBUGCHANNEL_GUIDES_LADDERS));
-    m_DebugChannels.push_back(std::make_pair("Guides - Windows", DEBUGCHANNEL_GUIDES_WINDOWS));
-    m_DebugChannels.push_back(std::make_pair("Guides - Path Finder", DEBUGCHANNEL_GUIDES_PATHFINDER));
+    m_DebugChannels.push_back(std::make_pair("Guides - cover", DEBUGCHANNEL_GUIDES_COVER));
+    m_DebugChannels.push_back(std::make_pair("Guides - ladders", DEBUGCHANNEL_GUIDES_LADDERS));
+    m_DebugChannels.push_back(std::make_pair("Guides - windows", DEBUGCHANNEL_GUIDES_WINDOWS));
+    m_DebugChannels.push_back(std::make_pair("Guides - pathfinder", DEBUGCHANNEL_GUIDES_PATHFINDER));
     m_DebugChannels.push_back(std::make_pair("Default", DEBUGCHANNEL_DEFAULT));
     m_DebugChannels.push_back(std::make_pair("Light", DEBUGCHANNEL_LIGHT));
     m_DebugChannels.push_back(std::make_pair("Particles", DEBUGCHANNEL_PARTICLES));
@@ -86,27 +86,27 @@ void Editor::InitializeDebugChannels() {
     m_DebugChannels.push_back(std::make_pair("Physics", DEBUGCHANNEL_PHYSICS));
     m_DebugChannels.push_back(std::make_pair("Hero", DEBUGCHANNEL_HERO));
     m_DebugChannels.push_back(std::make_pair("AI", DEBUGCHANNEL_AI));
-    m_DebugChannels.push_back(std::make_pair("AI Situation", DEBUGCHANNEL_AI_SITUATION));
-    m_DebugChannels.push_back(std::make_pair("AI Area", DEBUGCHANNEL_AI_AREA));
-    m_DebugChannels.push_back(std::make_pair("NPC Locomotion", DEBUGCHANNEL_NPC_LOCOMOTION));
+    m_DebugChannels.push_back(std::make_pair("AI situation", DEBUGCHANNEL_AI_SITUATION));
+    m_DebugChannels.push_back(std::make_pair("AI area", DEBUGCHANNEL_AI_AREA));
+    m_DebugChannels.push_back(std::make_pair("NPC locomotion", DEBUGCHANNEL_NPC_LOCOMOTION));
     m_DebugChannels.push_back(std::make_pair("Game", DEBUGCHANNEL_GAME));
     m_DebugChannels.push_back(std::make_pair("Alignment", DEBUGCHANNEL_ALIGNMENT));
     m_DebugChannels.push_back(std::make_pair("Engine", DEBUGCHANNEL_ENGINE));
     m_DebugChannels.push_back(std::make_pair("Sound", DEBUGCHANNEL_SOUND));
     m_DebugChannels.push_back(std::make_pair("Animation", DEBUGCHANNEL_ANIMATION));
     m_DebugChannels.push_back(std::make_pair("Cloth", DEBUGCHANNEL_CLOTH));
-    m_DebugChannels.push_back(std::make_pair("Sound Partitioning", DEBUGCHANNEL_SOUND_PARTITIONING));
+    m_DebugChannels.push_back(std::make_pair("Sound partitioning", DEBUGCHANNEL_SOUND_PARTITIONING));
     m_DebugChannels.push_back(std::make_pair("UI", DEBUGCHANNEL_UI));
 
-    m_DebugChannelNameToTypeNames["Guides - Cover"].push_back("ZCoverPlane");
+    m_DebugChannelNameToTypeNames["Guides - cover"].push_back("ZCoverPlane");
 
-    m_DebugChannelNameToTypeNames["Guides - Ladders"].push_back("ZGuideLadder");
+    m_DebugChannelNameToTypeNames["Guides - ladders"].push_back("ZGuideLadder");
 
-    m_DebugChannelNameToTypeNames["Guides - Windows"].push_back("ZGuideWindow");
+    m_DebugChannelNameToTypeNames["Guides - windows"].push_back("ZGuideWindow");
 
-    m_DebugChannelNameToTypeNames["Guides - Path Finder"].push_back("ZPFBoxEntity");
-    m_DebugChannelNameToTypeNames["Guides - Path Finder"].push_back("ZPFObstacleEntity");
-    m_DebugChannelNameToTypeNames["Guides - Path Finder"].push_back("ZPFSeedPoint");
+    m_DebugChannelNameToTypeNames["Guides - pathfinder"].push_back("ZPFBoxEntity");
+    m_DebugChannelNameToTypeNames["Guides - pathfinder"].push_back("ZPFObstacleEntity");
+    m_DebugChannelNameToTypeNames["Guides - pathfinder"].push_back("ZPFSeedPoint");
 
     m_DebugChannelNameToTypeNames["Default"].push_back("ZDebugGizmoEntity");
     m_DebugChannelNameToTypeNames["Default"].push_back("ZPureWaveModifierEntity");
@@ -167,9 +167,9 @@ void Editor::InitializeDebugChannels() {
     m_DebugChannelNameToTypeNames["AI"].push_back("ZWaypointEntity");
     m_DebugChannelNameToTypeNames["AI"].push_back("ZPatrolBehaviorEntity");
 
-    m_DebugChannelNameToTypeNames["AI Situation"].push_back("ZDebugGizmoEntity");
+    m_DebugChannelNameToTypeNames["AI situation"].push_back("ZDebugGizmoEntity");
 
-    m_DebugChannelNameToTypeNames["AI Area"].push_back("ZDebugGizmoEntity");
+    m_DebugChannelNameToTypeNames["AI area"].push_back("ZDebugGizmoEntity");
 
     m_DebugChannelNameToTypeNames["Game"].push_back("ZDebugGizmoEntity");
     m_DebugChannelNameToTypeNames["Game"].push_back("ZPostfilterAreaBoxEntity");
@@ -197,7 +197,7 @@ void Editor::InitializeDebugChannels() {
     m_DebugChannelNameToTypeNames["Cloth"].push_back("ZDebugGizmoEntity");
     m_DebugChannelNameToTypeNames["Cloth"].push_back("ZClothWireEntity");
 
-    m_DebugChannelNameToTypeNames["Sound Partitioning"].push_back("ZDebugGizmoEntity");
+    m_DebugChannelNameToTypeNames["Sound partitioning"].push_back("ZDebugGizmoEntity");
 
     m_DebugChannelNameToTypeNames["UI"].push_back("ZDebugGizmoEntity");
 
@@ -283,7 +283,7 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("DEBUG CHANNELS", &m_DebugChannelsMenuActive);
+    const auto s_Showing = ImGui::Begin("Debug channels", &m_DebugChannelsMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
@@ -293,23 +293,23 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
         }
 
         if (!m_EntityRefToDebugEntities.empty()) {
-            ImGui::Text("Debug Entity Count: %zu", m_EntityRefToDebugEntities.size());
+            ImGui::Text("Debug entity count: %zu", m_EntityRefToDebugEntities.size());
 
             ImGui::Separator();
 
-            ImGui::Checkbox("Draw Gizmos", &m_DrawGizmos);
+            ImGui::Checkbox("Draw gizmos", &m_DrawGizmos);
             
             ImGui::Indent();
 
             ImGui::BeginDisabled(!m_DrawGizmos);
 
-            if (ImGui::Checkbox("Draw All Gizmos", &m_DrawAllGizmos)) {
+            if (ImGui::Checkbox("Draw all gizmos", &m_DrawAllGizmos)) {
                 for (auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToState) {
                     s_IsVisible = m_DrawAllGizmos;
                 }
             }
 
-            ImGui::Checkbox("Draw Gizmos For Selected Entity Only", &m_DrawGizmosForSelectedEntityOnly);
+            ImGui::Checkbox("Draw gizmos for selected entity only", &m_DrawGizmosForSelectedEntityOnly);
 
             ImGui::EndDisabled();
 
@@ -317,13 +317,13 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
 
             ImGui::Separator();
 
-            ImGui::Checkbox("Draw Shapes", &m_DrawShapes);
+            ImGui::Checkbox("Draw shapes", &m_DrawShapes);
 
             ImGui::Indent();
 
             ImGui::BeginDisabled(!m_DrawShapes);
 
-            ImGui::Checkbox("Draw Shapes For Selected Entity Only", &m_DrawShapesForSelectedEntityOnly);
+            ImGui::Checkbox("Draw shapes for selected entity only", &m_DrawShapesForSelectedEntityOnly);
 
             ImGui::EndDisabled();
 
@@ -339,7 +339,7 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
                 if (ImGui::CollapsingHeader(s_Header.c_str())) {
                     bool& s_DrawGizmos = m_DebugChannelToState[pair.second];
 
-                    ImGui::Checkbox(fmt::format("Draw Gizmos##{}", pair.first).c_str(), &s_DrawGizmos);
+                    ImGui::Checkbox(fmt::format("Draw gizmos##{}", pair.first).c_str(), &s_DrawGizmos);
 
                     ImGui::Separator();
 
@@ -361,7 +361,7 @@ void Editor::DrawDebugChannels(bool p_HasFocus) {
             }
         }
         else {
-            if (ImGui::Button("Get Debug Entities")) {
+            if (ImGui::Button("Get debug entities")) {
                 if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                     UpdateEntities();
                 }

@@ -49,8 +49,8 @@ FreeCam::FreeCam() :
         {"Space + W/S", "Move camera on axis"},
         {"Shift", "Increase camera speed"},
         {"F9", "Kill NPC"},
-        {"Ctrl + F6", "Teleport Hitman"},
-        {"F8", "Pause/Resume game"},
+        {"Ctrl + F6", "Teleport hitman"},
+        {"F8", "Pause/resume game"},
     };
 
     m_PcControlsEditorStyle = {
@@ -333,7 +333,7 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
         ImGui::SetNextWindowPos(s_Center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
         ImGui::PushFont(SDK()->GetImGuiBlackFont());
-        const auto s_MenuExpanded = ImGui::Begin(ICON_MD_PHOTO_CAMERA " FreeCam", &m_MenuVisible);
+        const auto s_MenuExpanded = ImGui::Begin(ICON_MD_PHOTO_CAMERA " Freecam", &m_MenuVisible);
         ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
         if (s_MenuExpanded) {
@@ -376,11 +376,11 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
 
     if (m_ControlsVisible) {
         ImGui::PushFont(SDK()->GetImGuiBlackFont());
-        const auto s_ControlsExpanded = ImGui::Begin(ICON_MD_PHOTO_CAMERA " FreeCam Controls", &m_ControlsVisible);
+        const auto s_ControlsExpanded = ImGui::Begin(ICON_MD_PHOTO_CAMERA " FreeCam controls", &m_ControlsVisible);
         ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
         if (s_ControlsExpanded) {
-            ImGui::TextUnformatted("PC Controls");
+            ImGui::TextUnformatted("PC controls");
 
             if (ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)){
                 if (m_EditorStyleFreecam) {
@@ -406,7 +406,7 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
             }
 
             if (!m_EditorStyleFreecam) {
-                ImGui::TextUnformatted("Controller Controls");
+                ImGui::TextUnformatted("Controller controls");
 
                 if (ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)){
                     for (auto& [s_Key, s_Description] : m_ControllerControls) {

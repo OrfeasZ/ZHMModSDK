@@ -407,7 +407,7 @@ void Hitmen::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
             if (m_OtherHitman)
             {
                 Logger::Debug(
-        "Found other hitman {} (base {}) and our hitman {} (base {}).",
+					"Found other hitman {} (base {}) and our hitman {} (base {}).",
                     fmt::ptr(m_OtherHitman.QueryInterface<ZHitman5>()),
                     fmt::ptr(m_OtherHitman.GetEntity()),
                     fmt::ptr(m_OurHitman.QueryInterface<ZHitman5>()),
@@ -439,7 +439,7 @@ void Hitmen::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent)
 
 void Hitmen::OnDrawMenu()
 {
-    if (ImGui::Button("Player Registry"))
+    if (ImGui::Button("Player registry"))
     {
         for (int i = 0; i < 4; ++i)
         {
@@ -527,11 +527,11 @@ void Hitmen::OnDrawUI(bool p_HasFocus)
 
     if (m_ShowServerWindow)
     {
-        if (ImGui::Begin("Host Hitmen Server", &m_ShowServerWindow))
+        if (ImGui::Begin("Host hitmen server", &m_ShowServerWindow))
         {
-            ImGui::Text("Server Port = 6969");
+            ImGui::Text("Server port = 6969");
 
-            if (ImGui::Button("Start Server"))
+            if (ImGui::Button("Start server"))
             {
                 StartServer(6969);
                 m_ShowServerWindow = false;
@@ -543,12 +543,12 @@ void Hitmen::OnDrawUI(bool p_HasFocus)
 
     if (m_ShowClientWindow)
     {
-        if (ImGui::Begin("Connect to Hitmen Server", &m_ShowClientWindow))
+        if (ImGui::Begin("Connect to hitmen server", &m_ShowClientWindow))
         {
-            ImGui::Text("Server Port = 6969");
+            ImGui::Text("Server port = 6969");
 
             static char s_ServerAddr[1024] = {};
-            ImGui::InputText("Server Address", s_ServerAddr, IM_ARRAYSIZE(s_ServerAddr));
+            ImGui::InputText("Server address", s_ServerAddr, IM_ARRAYSIZE(s_ServerAddr));
 
             if (ImGui::Button("Connect"))
             {

@@ -56,12 +56,12 @@ void Editor::UpdateEntityTree(
 
     const auto s_SceneEntity = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene.m_entityRef;
     const std::shared_ptr<EntityTreeNode> s_SceneNode = p_NodeMap[s_SceneEntity];
-    const std::shared_ptr<EntityTreeNode> s_UnparentedEntitiesNode = s_SceneNode->Children.find("Unparented Entities")->
+    const std::shared_ptr<EntityTreeNode> s_UnparentedEntitiesNode = s_SceneNode->Children.find("Unparented entities")->
         second;
     std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode;
 
     if (p_AreEntitiesDynamic) {
-        s_DynamicEntitiesNode = s_SceneNode->Children.find("Dynamic Entities")->second;
+        s_DynamicEntitiesNode = s_SceneNode->Children.find("Dynamic entities")->second;
     }
 
     while (!s_NodeQueue.empty()) {
@@ -94,7 +94,7 @@ void Editor::UpdateEntityTree(
             }
 
             const auto s_SubEntityId = s_SubEntity->GetType()->m_nEntityID;
-            std::string s_EntityName = "<noname>";
+            std::string s_EntityName = "<No name>";
 
             // If our current factory is a template factory, we can get the name of the entity from it.
             if (s_IsTemplateEntityBlueprintFactory) {
@@ -254,7 +254,7 @@ void Editor::UpdateEntityTree(
             s_Node->Parents.push_back(s_DynamicEntitiesNode);
         }
         else {
-            // Otherwise, add it to the "Unparented Entities" node.
+            // Otherwise, add it to the "Unparented entities" node.
             s_UnparentedEntitiesNode->Children.insert({s_Node->Name, s_Node});
             s_Node->Parents.push_back(s_UnparentedEntitiesNode);
         }
@@ -306,7 +306,7 @@ void Editor::UpdateEntities() {
 
     // Create the root scene node.
     auto s_SceneNode = std::make_shared<EntityTreeNode>(
-        "Scene Root",
+        "Scene root",
         (*s_SceneEnt->GetType()->m_pInterfaceData)[0].m_Type->GetTypeInfo()->pszTypeName,
         s_SceneEnt->GetType()->m_nEntityID,
         s_SceneBlueprintFactory->m_ridResource,
@@ -317,7 +317,7 @@ void Editor::UpdateEntities() {
     );
 
     auto s_UnparentedEntitiesNode = std::make_shared<EntityTreeNode>(
-        "Unparented Entities",
+        "Unparented entities",
         "",
         -1,
         -1,
@@ -354,7 +354,7 @@ void Editor::AddDynamicEntitiesToEntityTree(
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
 ) {
     auto s_DynamicEntitiesNode = std::make_shared<EntityTreeNode>(
-        "Dynamic Entities",
+        "Dynamic entities",
         "",
         -1,
         -1,
@@ -390,7 +390,7 @@ void Editor::ReparentDynamicOutfitEntities(
 ) {
     const auto s_SceneEntity = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene.m_entityRef;
     const std::shared_ptr<EntityTreeNode> s_SceneNode = p_NodeMap[s_SceneEntity];
-    const std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode = s_SceneNode->Children.find("Dynamic Entities")->
+    const std::shared_ptr<EntityTreeNode> s_DynamicEntitiesNode = s_SceneNode->Children.find("Dynamic entities")->
         second;
 
     std::vector<std::pair<std::shared_ptr<EntityTreeNode>, std::shared_ptr<EntityTreeNode>>> s_NodesToReparent;
@@ -710,7 +710,7 @@ void Editor::DrawEntityTree() {
             }
         );
 
-        if (ImGui::BeginCombo("Entity View Mode", m_EntityViewModes[m_EntityViewMode].c_str())) {
+        if (ImGui::BeginCombo("Entity view mode", m_EntityViewModes[m_EntityViewMode].c_str())) {
             for (int i = 0; i < m_EntityViewModes.size(); ++i) {
                 const bool s_IsSelected = m_EntityViewMode == static_cast<EntityViewMode>(i);
 
@@ -728,7 +728,7 @@ void Editor::DrawEntityTree() {
             ImGui::EndCombo();
         }
 
-        if (ImGui::Button(ICON_MD_CLEAR " Clear Filters")) {
+        if (ImGui::Button(ICON_MD_CLEAR " Clear filters")) {
             m_EntityIdSearchInput.clear();
             m_EntityTypeSearchInput.clear();
             m_EntityNameSearchInput.clear();

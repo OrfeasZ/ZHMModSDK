@@ -389,19 +389,19 @@ void Editor::DrawSettings(const bool p_HasFocus) {
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
-    if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " EDITOR", &m_SettingsVisible)) {
+    if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " Editor", &m_SettingsVisible)) {
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y), ImGuiCond_FirstUseEver);
 
-        if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS "  SHOW EDITOR WINDOWS", &m_EditorWindowsVisible)) {
+        if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS " Show editor windows", &m_EditorWindowsVisible)) {
             SetSettingBool("general", "editor_windows_visible", m_EditorWindowsVisible);
         }
         bool s_ServerEnabled = m_Server.GetEnabled();
-        if (ImGui::Checkbox(ICON_MD_TERMINAL "  ENABLE EDITOR SERVER", &s_ServerEnabled)) {
+        if (ImGui::Checkbox(ICON_MD_TERMINAL " Enable editor server", &s_ServerEnabled)) {
             ToggleEditorServerEnabled();
         }
 
         ImGui::Spacing();
-        ImGui::Text("Entity Highlight Mode");
+        ImGui::Text("Entity highlight mode");
 
         const int32_t s_EntityHighlightMode = static_cast<int32_t>(m_EntityHighlightMode);
 
@@ -411,7 +411,7 @@ void Editor::DrawSettings(const bool p_HasFocus) {
 
         ImGui::SameLine();
 
-        if (ImGui::RadioButton("Lines and Rectangles", s_EntityHighlightMode == 1)) {
+        if (ImGui::RadioButton("Lines and rectangles", s_EntityHighlightMode == 1)) {
             m_EntityHighlightMode = EntityHighlightMode::LinesAndTriangles;
         }
 

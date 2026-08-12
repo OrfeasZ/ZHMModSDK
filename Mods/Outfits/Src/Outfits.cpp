@@ -37,7 +37,7 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("OUTFITS", &m_OutfitsMenuActive);
+    const auto s_Showing = ImGui::Begin("Outfits", &m_OutfitsMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
@@ -47,7 +47,7 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::BeginDisabled(m_IsGlobalDataSeason2BrickLoaded);
 
-        if (ImGui::Checkbox("Season 2 Global Outfits", &m_IsGlobalDataSeason2BrickLoaded)) {
+        if (ImGui::Checkbox("Season 2 global outfits", &m_IsGlobalDataSeason2BrickLoaded)) {
             if (m_IsGlobalDataSeason2BrickLoaded) {
                 m_LoadedGlobalOutfitBricks.erase(
                     ResId<"[assembly:/_pro/scenes/bricks/globaldata_s2.brick].pc_entitytype">
@@ -69,7 +69,7 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::BeginDisabled(m_IsGlobalDataSeason3BrickLoaded);
 
-        if (ImGui::Checkbox("Season 3 Global Outfits", &m_IsGlobalDataSeason3BrickLoaded)) {
+        if (ImGui::Checkbox("Season 3 global outfits", &m_IsGlobalDataSeason3BrickLoaded)) {
             if (m_IsGlobalDataSeason3BrickLoaded) {
                 m_LoadedGlobalOutfitBricks.erase(
                     ResId<"[assembly:/_pro/scenes/bricks/globaldata_s3.brick].pc_entitytype">
@@ -124,7 +124,7 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
         static char s_BrickResourceId[2048]{ "" };
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Brick Resource ID");
+        ImGui::Text("Brick resource ID");
         ImGui::SameLine();
 
         ImGui::SetNextItemWidth(-1);
@@ -135,7 +135,7 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
             sizeof(s_BrickResourceId)
         );
 
-        ImGui::TextUnformatted("Outfit Bricks:");
+        ImGui::TextUnformatted("Outfit bricks:");
         ImGui::BeginChild("OutfitBrickList", ImVec2(0, 250), true, ImGuiWindowFlags_HorizontalScrollbar);
 
         for (const auto& [s_OutfitBrickRuntimeResourceId, _] : m_AdditionalLoadedOutfitBricks) {
@@ -162,7 +162,7 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::Spacing();
 
-        if (ImGui::Button("Load/Unload Outfits")) {
+        if (ImGui::Button("Load/unload outfits")) {
             if (m_ChunkIndexToResourcePackageCount.empty()) {
                 BuildChunkIndexToResourcePackageCount();
             }
@@ -259,7 +259,7 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
         }
 
         if (m_ShowResourcePackageLimitPopup && !m_ResourcePackageLimitPopupOpened) {
-            ImGui::OpenPopup("Resource Package Limit Exceeded");
+            ImGui::OpenPopup("Resource package limit exceeded");
 
             m_ResourcePackageLimitPopupOpened = true;
         }
@@ -270,7 +270,7 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
         ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, ImVec4(0, 0, 0, 0));
 
         if (ImGui::BeginPopupModal(
-            "Resource Package Limit Exceeded",
+            "Resource package limit exceeded",
             nullptr,
             ImGuiWindowFlags_AlwaysAutoResize
         )) {

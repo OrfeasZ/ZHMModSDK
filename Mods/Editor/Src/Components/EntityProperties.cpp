@@ -21,7 +21,7 @@ void Editor::DrawEntityProperties() {
 
     ImGui::SetNextWindowPos({ s_ImgGuiIO.DisplaySize.x - 500, 110 }, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize({ 500, s_ImgGuiIO.DisplaySize.y - 110 }, ImGuiCond_FirstUseEver);
-    ImGui::Begin(ICON_MD_TUNE " Entity Properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Begin(ICON_MD_TUNE " Entity properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
         m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
@@ -41,7 +41,7 @@ void Editor::DrawEntityProperties() {
         }
 
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select Logical Parent");
+            ImGui::SetTooltip("Select logical parent");
 
         ImGui::SameLine(0, 5);
 
@@ -50,7 +50,7 @@ void Editor::DrawEntityProperties() {
         }
 
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select Owning Entity (Brick)");
+            ImGui::SetTooltip("Select owning entity (brick)");
 
         ImGui::SameLine(0, 5);
 
@@ -73,7 +73,7 @@ void Editor::DrawEntityProperties() {
             }
 
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Destroy Entity");
+                ImGui::SetTooltip("Destroy entity");
         }
 
         ZActor* s_Actor = s_SelectedEntity.QueryInterface<ZActor>();
@@ -91,20 +91,20 @@ void Editor::DrawEntityProperties() {
             }
 
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Select In Actors Menu");
+                ImGui::SetTooltip("Select in actors menu");
             }
         }
 
         static bool s_LocalTransform = false;
-        ImGui::Checkbox("Local Transforms", &s_LocalTransform);
+        ImGui::Checkbox("Local transforms", &s_LocalTransform);
 
         ImGui::SameLine(0, 20);
 
-        if (ImGui::Checkbox("QNE Transforms", &m_UseQneTransforms)) {
+        if (ImGui::Checkbox("QNE transforms", &m_UseQneTransforms)) {
             SetSettingBool("general", "qne_transforms", m_UseQneTransforms);
         }
 
-        if (ImGui::Checkbox("Round Copied Matrix Values", &m_RoundCopiedMatrixValues)) {
+        if (ImGui::Checkbox("Round copied matrix values", &m_RoundCopiedMatrixValues)) {
             SetSettingBool("general", "round_copied_matrix_values", m_RoundCopiedMatrixValues);
         }
 
@@ -112,7 +112,7 @@ void Editor::DrawEntityProperties() {
 
         ImGui::AlignTextToFramePadding();
 
-        ImGui::TextUnformatted("Decimal Places");
+        ImGui::TextUnformatted("Decimal places");
 
         ImGui::SameLine();
 
@@ -142,7 +142,7 @@ void Editor::DrawEntityProperties() {
 
         ImGui::SameLine();
 
-        if (ImGui::InputDouble("Angle Snap", &m_AngleSnapValue)) {
+        if (ImGui::InputDouble("Angle snap", &m_AngleSnapValue)) {
             SetSettingDouble("general", "angle_snap_value", m_AngleSnapValue);
         }
 
@@ -152,7 +152,7 @@ void Editor::DrawEntityProperties() {
 
         ImGui::SameLine();
 
-        if (ImGui::InputDouble("Scale Snap", &m_ScaleSnapValue)) {
+        if (ImGui::InputDouble("Scale snap", &m_ScaleSnapValue)) {
             SetSettingDouble("general", "scale_snap_value", m_ScaleSnapValue);
         }
 
@@ -173,7 +173,7 @@ void Editor::DrawEntityProperties() {
                 const std::string s_EntityName =
                     s_Position != std::string::npos ? s_EntityTreeNode->Name.substr(0, s_Position) : s_EntityTreeNode->Name;
 
-                ImGui::TextUnformatted(fmt::format("Entity Name: {}", s_EntityName).c_str());
+                ImGui::TextUnformatted(fmt::format("Entity name: {}", s_EntityName).c_str());
 
                 if (ImGuiCopyWidget("EntityName")) {
                     CopyToClipboard(s_EntityName);
@@ -185,7 +185,7 @@ void Editor::DrawEntityProperties() {
                     CopyToClipboard(fmt::format("{:016x}", s_EntityTreeNode->EntityId));
                 }
 
-                ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_EntityTreeNode->EntityType).c_str());
+                ImGui::TextUnformatted(fmt::format("Entity type: {}", s_EntityTreeNode->EntityType).c_str());
 
                 if (ImGuiCopyWidget("EntityType")) {
                     CopyToClipboard(s_EntityTreeNode->EntityType);
@@ -305,7 +305,7 @@ void Editor::DrawEntityProperties() {
         }
 
         if (const auto s_Spatial = s_SelectedEntity.QueryInterface<ZSpatialEntity>()) {
-            ImGui::TextUnformatted("Entity Transform");
+            ImGui::TextUnformatted("Entity transform");
 
             auto s_Trans = s_Spatial->GetObjectToWorldMatrix();
 
@@ -397,7 +397,7 @@ void Editor::DrawEntityProperties() {
                 );
             }
 
-            if (ImGui::Button(ICON_MD_PERSON_PIN " Move to Hitman")) {
+            if (ImGui::Button(ICON_MD_PERSON_PIN " Move to hitman")) {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                     auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
@@ -407,7 +407,7 @@ void Editor::DrawEntityProperties() {
 
             ImGui::SameLine();
 
-            if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move Hitman to")) {
+            if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move hitman to")) {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                     auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
@@ -419,7 +419,7 @@ void Editor::DrawEntityProperties() {
         }
 
         if (const auto s_CameraEntity = s_SelectedEntity.QueryInterface<ZCameraEntity>()) {
-            if (ImGui::Button(ICON_MD_CAMERA "Toggle Camera")) {
+            if (ImGui::Button(ICON_MD_CAMERA "Toggle camera")) {
                 ZEntityRef s_EntRef;
                 auto s_Camera = s_CameraEntity->GetID(s_EntRef);
 
@@ -465,7 +465,7 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         Util::ImGuiUtils::InputWithAutocomplete(
-            "Input Pin##InputPinsPopup",
+            "Input pin##InputPinsPopup",
             s_InputPinName,
             sizeof(s_InputPinName),
             s_InputPins,
@@ -600,7 +600,7 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         Util::ImGuiUtils::InputWithAutocomplete(
-            "Output Pin##OutputPinsPopup",
+            "Output pin##OutputPinsPopup",
             s_OutputPinName,
             sizeof(s_OutputPinName),
             s_OutputPins,
@@ -711,7 +711,7 @@ void Editor::DrawEntityProperties() {
         if (ImGui::CollapsingHeader("Keywords")) {
             static char s_KeywordString[2048] = {};
 
-            const float buttonWidth = ImGui::CalcTextSize(ICON_MD_ADD " Add Keyword").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+            const float buttonWidth = ImGui::CalcTextSize(ICON_MD_ADD " Add keyword").x + ImGui::GetStyle().FramePadding.x * 2.0f;
 
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
 
@@ -719,7 +719,7 @@ void Editor::DrawEntityProperties() {
 
             ImGui::SameLine();
 
-            if (ImGui::Button(ICON_MD_ADD " Add Keyword")) {
+            if (ImGui::Button(ICON_MD_ADD " Add keyword")) {
                 if (strlen(s_KeywordString) > 0) {
                     const int32_t s_Keyword = Hash::Fnv1a(s_KeywordString);
 

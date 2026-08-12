@@ -215,14 +215,14 @@ void CenteredText(const char* p_Text) {
 }
 
 void OnlineTools::OnDrawMenu() {
-    if (ImGui::Button(ICON_MD_PUBLIC " OnlineTools"))
+    if (ImGui::Button(ICON_MD_PUBLIC " ONLINE TOOLS"))
         m_ShowSettings = !m_ShowSettings;
 }
 
 void OnlineTools::SettingsMenu() {
     const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
     ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.23f, viewportSize.y * 0.35f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin(ICON_MD_PUBLIC " OnlineTools", &m_ShowSettings)) {
+    if (ImGui::Begin(ICON_MD_PUBLIC " Online tools", &m_ShowSettings)) {
 
         // Online Settings
         ImGui::SeparatorText("Settings");
@@ -234,28 +234,28 @@ void OnlineTools::SettingsMenu() {
                 "Use http:// instead of https://. Useful if the server you're connecting to is local or doesn't support secure connections."
             );
 
-        if (ImGui::Checkbox("Always Send Authorization Header", &m_AlwaysSendAuth))
+        if (ImGui::Checkbox("Always send authorization header", &m_AlwaysSendAuth))
             UpdateHeaders();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip(
                 "Always send a token that can identify you to the server. This is only required if the server is not using HTTPS and is not a trusted domain (i.e. one ran by IO Interactive)."
             );
 
-        if (ImGui::Checkbox("Bypass SSL Certificate Pinning", &m_CertPinBypass))
+        if (ImGui::Checkbox("Bypass SSL certificate pinning", &m_CertPinBypass))
             SaveCertPin();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip(
                 "Allows you to decrypt SSL traffic between the game and a server if you use a proxy."
             );
 
-        if (ImGui::Checkbox("Enable Online Dynamic Resources", &m_EnableDynRes))
+        if (ImGui::Checkbox("Enable online dynamic resources", &m_EnableDynRes))
             UpdateEnableDynRes();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip(
                 "Enables loading dynamic resources packages, necessary for Peacock localisation"
             );
 
-        if (ImGui::Checkbox("Make Dynamic Resources Optional", &m_OptionalDynRes))
+        if (ImGui::Checkbox("Make dynamic resources optional", &m_OptionalDynRes))
             UpdateDynRes();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip(
@@ -331,14 +331,14 @@ void OnlineTools::SettingsMenu() {
             }
         }
 
-        if (ImGui::Button(ICON_MD_ADD " Add Domain")) {
+        if (ImGui::Button(ICON_MD_ADD " Add domain")) {
             m_Domains.push_back("localhost");
             SaveDomains();
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("Add a new domain.");
 
         ImGui::SameLine();
-        if (ImGui::Button(ICON_MD_RESTORE " Restore to Official"))
+        if (ImGui::Button(ICON_MD_RESTORE " Restore to official"))
             Functions::ZConfigCommand_ExecuteCommand->Call("online_VersionConfigDomain", "config.hitman.io");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip(
@@ -357,8 +357,8 @@ void OnlineTools::SettingsMenu() {
 void OnlineTools::HelpMenu() {
     const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
     ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.2f, viewportSize.y * 0.24f), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin(ICON_MD_PUBLIC " OnlineTools - Help", &m_ShowHelp)) {
-        ImGui::SeparatorText("Quick Start");
+    if (ImGui::Begin(ICON_MD_PUBLIC " Online tools - help", &m_ShowHelp)) {
+        ImGui::SeparatorText("Quick start");
 
         ImGui::TextWrapped(
             "%s",
@@ -382,7 +382,7 @@ void OnlineTools::HelpMenu() {
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("This will reset all your currently saved domains!");
 
-        ImGui::SeparatorText("Menu Overview");
+        ImGui::SeparatorText("Menu overview");
         ImGui::TextWrapped(
             "%s",
             "All the buttons, checkboxes, and text inputs on the main OnlineTools menu have tooltips. Hover over them to see what they/to do."

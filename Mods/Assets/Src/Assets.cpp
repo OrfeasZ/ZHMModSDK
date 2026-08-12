@@ -32,7 +32,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("ASSETS", &m_AssetsMenuActive);
+    const auto s_Showing = ImGui::Begin("Assets", &m_AssetsMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
@@ -52,12 +52,12 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         static int s_WorldInventoryButton = 1;
         static char s_ActorName[2048] {};
 
-        ImGui::Text("Repository Props");
+        ImGui::Text("Repository props");
 
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Prop Title");
+        ImGui::Text("Prop title");
         ImGui::SameLine();
 
         Util::ImGuiUtils::InputWithAutocomplete(
@@ -74,18 +74,18 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             }
         );
 
-        if (ImGui::RadioButton("Add To World", s_WorldInventoryButton == 1)) {
+        if (ImGui::RadioButton("Add to world", s_WorldInventoryButton == 1)) {
             s_WorldInventoryButton = 1;
         }
 
         ImGui::SameLine();
 
-        if (ImGui::RadioButton("Add To Inventory", s_WorldInventoryButton == 2)) {
+        if (ImGui::RadioButton("Add to inventory", s_WorldInventoryButton == 2)) {
             s_WorldInventoryButton = 2;
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Number Of Props To Spawn");
+        ImGui::Text("Number of props to spawn");
         ImGui::SameLine();
 
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
@@ -94,25 +94,25 @@ void Assets::OnDrawUI(bool p_HasFocus) {
 
         ImGui::Separator();
 
-        ImGui::Text("Non Repository Props");
+        ImGui::Text("Non repository props");
 
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Prop Assembly Path");
+        ImGui::Text("Prop assembly path");
         ImGui::SameLine();
 
         ImGui::InputText("##PropResourceID", s_PropResourceId, sizeof(s_PropResourceId));
         ImGui::SameLine();
 
-        if (ImGui::Button("Spawn Prop")) {
+        if (ImGui::Button("Spawn prop")) {
             for (size_t i = 0; i < s_NonRepositoryPropSpawnCount; ++i) {
                 SpawnNonRepositoryProp(ZRuntimeResourceID::FromString(s_PropResourceId));
             }
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Number Of Props To Spawn");
+        ImGui::Text("Number of props to spawn");
         ImGui::SameLine();
 
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
@@ -125,7 +125,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Actor Name");
+        ImGui::Text("Actor name");
         ImGui::SameLine();
 
         ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
@@ -167,7 +167,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         );
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Character Set Index");
+        ImGui::Text("Character set index");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(s_CurrentCharacterSetIndex).data())) {
@@ -185,7 +185,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
@@ -201,7 +201,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Outfit Variation");
+        ImGui::Text("Outfit variation");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
@@ -237,14 +237,14 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Number Of Props To Spawn");
+        ImGui::Text("Number of props to spawn");
         ImGui::SameLine();
 
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
 
         ImGui::InputInt("##ActorSpawnCount", &s_ActorSpawnCount);
 
-        if (ImGui::Button("Spawn Actor")) {
+        if (ImGui::Button("Spawn actor")) {
             for (size_t i = 0; i < s_ActorSpawnCount; ++i) {
                 SpawnActor(
                     s_ActorName,

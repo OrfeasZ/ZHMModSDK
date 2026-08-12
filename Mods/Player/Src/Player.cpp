@@ -53,31 +53,31 @@ void Player::OnDrawUI(const bool p_HasFocus) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin(ICON_MD_MAN " PLAYER", &m_PlayerMenuActive);
+    const auto s_Showing = ImGui::Begin(ICON_MD_MAN " Player", &m_PlayerMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
-        if (ImGui::Checkbox("Is Invincible", &m_IsInvincible)) {
+        if (ImGui::Checkbox("Is invincible", &m_IsInvincible)) {
             ToggleInvincibility();
         }
 
-        if (ImGui::Checkbox("Is Invisible", &m_IsInvisible)) {
+        if (ImGui::Checkbox("Is invisible", &m_IsInvisible)) {
             ToggleInvisibility();
         }
 
-        if (ImGui::Checkbox("Infinite Ammo", &m_IsInfiniteAmmoEnabled)) {
+        if (ImGui::Checkbox("Infinite ammo", &m_IsInfiniteAmmoEnabled)) {
             ToggleInfiniteAmmo();
         }
 
-        ImGui::Checkbox("No Reload", &m_IsNoReloadEnabled);
+        ImGui::Checkbox("No reload", &m_IsNoReloadEnabled);
 
-        ImGui::Checkbox("No Recoil", &m_IsNoRecoilEnabled);
+        ImGui::Checkbox("No recoil", &m_IsNoRecoilEnabled);
 
-        ImGui::Checkbox("Super Accuracy", &m_IsSuperAccuracyEnabled);
+        ImGui::Checkbox("Super accuracy", &m_IsSuperAccuracyEnabled);
 
-        ImGui::Checkbox("RapidFire", &m_IsRapidFireEnabled);
+        ImGui::Checkbox("Rapid fire", &m_IsRapidFireEnabled);
 
-        ImGui::Checkbox("One Hit Kill", &m_IsOneHitKillEnabled);
+        ImGui::Checkbox("One hit kill", &m_IsOneHitKillEnabled);
 
         static char s_OutfitName[2048] { "" };
         static uint8_t s_CurrentCharacterSetIndex = 0;
@@ -139,7 +139,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Character Set Index");
+        ImGui::Text("Character set index");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(s_CurrentCharacterSetIndex).data())) {
@@ -165,7 +165,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
@@ -191,7 +191,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Outfit Variation");
+        ImGui::Text("Outfit variation");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
@@ -234,18 +234,18 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         if (m_GlobalOutfitKit) {
-            ImGui::Checkbox("Weapons Allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
-            ImGui::Checkbox("Authority Figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
+            ImGui::Checkbox("Weapons allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
+            ImGui::Checkbox("Authority figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
         }
 
         ImGui::Separator();
 
-        ImGui::Text("Get Actor's Outfit");
+        ImGui::Text("Get actor's outfit");
 
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentCharSetCharacterType2.data())) {
@@ -261,7 +261,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Actor Name");
+        ImGui::Text("Actor name");
         ImGui::SameLine();
 
         static char s_ActorName[2048]{ "" };
@@ -296,7 +296,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         ImGui::Separator();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType3", s_CurrentCharSetCharacterType3.data())) {
@@ -311,7 +311,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
-        if (ImGui::Button("Get Nearest Actor's Outfit")) {
+        if (ImGui::Button("Get nearest actor's outfit")) {
             const ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
             for (int i = 0; i < *Globals::NextActorId; ++i) {
@@ -342,7 +342,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::Separator();
 
-        if (ImGui::Button("Teleport All Items To Player")) {
+        if (ImGui::Button("Teleport all items to player")) {
             auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
             const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
 
@@ -359,7 +359,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Teleport All Actors To Player")) {
+        if (ImGui::Button("Teleport all actors to player")) {
             const auto s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
             for (size_t i = 0; i < *Globals::NextActorId; ++i) {

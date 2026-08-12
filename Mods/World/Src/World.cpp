@@ -27,12 +27,12 @@ void World::OnDrawUI(const bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("WORLD", &m_WorldMenuActive);
+    const auto s_Showing = ImGui::Begin("World", &m_WorldMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Game Time Multiplier");
+        ImGui::Text("Game time multiplier");
         ImGui::SameLine();
 
         if (ImGui::Checkbox("##EnableGameTimeMultiplier", &m_IsTimeMultiplierEnabled)) {

@@ -489,7 +489,7 @@ private:
 
     EntityViewMode m_EntityViewMode = EntityViewMode::All;
     EntityViewMode m_LastEntityViewMode = EntityViewMode::All;
-    const std::vector<std::string> m_EntityViewModes = { "All", "Scenes/Bricks", "Dynamic Entities" };
+    const std::vector<std::string> m_EntityViewModes = { "All", "Scenes/bricks", "Dynamic entities" };
 
     std::string m_EntityIdSearchInput;
     std::string m_EntityTypeSearchInput;

@@ -12,7 +12,7 @@ void Editor::DrawItems(bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("ITEMS", &m_ItemsMenuActive);
+    const auto s_Showing = ImGui::Begin("Items", &m_ItemsMenuActive);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_Showing) {
@@ -29,7 +29,7 @@ void Editor::DrawItems(bool p_HasFocus) {
         static char s_ItemTitle[2048]{ "" };
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Item Title");
+        ImGui::Text("Item title");
         ImGui::SameLine();
 
         ImGui::InputText("##ItemName", s_ItemTitle, sizeof(s_ItemTitle));
@@ -88,7 +88,7 @@ void Editor::DrawItems(bool p_HasFocus) {
                         }
 
                         ImGui::SetTooltip(
-                            "%s\nOwning Entity: %s",
+                            "%s\nOwning entity: %s",
                             s_EntityName.c_str(),
                             s_OwningEntityName.c_str()
                         );
@@ -100,7 +100,7 @@ void Editor::DrawItems(bool p_HasFocus) {
                 else {
                     if (s_Item->m_pOwner) {
                         ImGui::SetTooltip(
-                            fmt::format("Owning Entity: {:016x}", s_Item->m_pOwner->GetType()->m_nEntityID).c_str()
+                            fmt::format("Owning entity: {:016x}", s_Item->m_pOwner->GetType()->m_nEntityID).c_str()
                         );
                     }
                 }
@@ -125,7 +125,7 @@ void Editor::DrawItems(bool p_HasFocus) {
         ImGui::BeginGroup();
         ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
 
-        if (ImGui::Button("Select In Entity Tree")) {
+        if (ImGui::Button("Select in entity tree")) {
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                 UpdateEntities();
             }
@@ -135,7 +135,7 @@ void Editor::DrawItems(bool p_HasFocus) {
 
         ImGui::BeginDisabled(!s_Item->m_pOwner);
 
-        if (ImGui::Button("Select Owner In Entity Tree")) {
+        if (ImGui::Button("Select owner in entity tree")) {
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                 UpdateEntities();
             }
@@ -145,7 +145,7 @@ void Editor::DrawItems(bool p_HasFocus) {
 
         ImGui::EndDisabled();
 
-        if (ImGui::Button("Teleport Item To Player")) {
+        if (ImGui::Button("Teleport item to player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 s_Item->m_rGeomentity.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(
@@ -154,7 +154,7 @@ void Editor::DrawItems(bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Teleport Player To Item")) {
+        if (ImGui::Button("Teleport player to item")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 s_HitmanSpatial->SetObjectToWorldMatrixFromEditor(

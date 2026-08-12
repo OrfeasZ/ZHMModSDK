@@ -14,17 +14,17 @@
 #include "Util/StringUtils.h"
 
 const std::unordered_map<std::string, std::string> DiscordRichPresence::m_TypeToGameMode = {
-    {"sniper", "Sniper Assassin"},
-    {"usercreated", "Contracts Mode"},
-    {"creation", "Contracts Mode"},
-    {"featured", "Featured Contract"},
+    {"sniper", "Sniper assassin"},
+    {"usercreated", "Contracts mode"},
+    {"creation", "Contracts mode"},
+    {"featured", "Featured contract"},
     {"mission", "Mission"},
     {"flashback", "Mission"},
     {"tutorial", "Mission"},
     {"campaign", "Mission"},
     {"escalation", "Escalation"},
-    {"elusive", "Elusive Target"},
-    {"arcade", "Elusive Target Arcade"},
+    {"elusive", "Elusive target"},
+    {"arcade", "Elusive target arcade"},
     {"evergreen", "Freelancer"},
 };
 
@@ -83,8 +83,8 @@ std::string DiscordRichPresence::GetActivityImageKey(
     std::string p_Location,
     std::string p_Title
 ) {
-    if (p_GameMode == "Mission" || p_GameMode == "Sniper Assassin" ||
-        p_GameMode == "Elusive Target" || p_GameMode == "Elusive Target Arcade") {
+    if (p_GameMode == "Mission" || p_GameMode == "Sniper assassin" ||
+        p_GameMode == "Elusive target" || p_GameMode == "Elusive target arcade") {
         if (const size_t s_Position = p_Title.rfind(" - Level"); s_Position != std::string::npos) {
             p_Title.erase(s_Position);
         }
@@ -98,8 +98,8 @@ std::string DiscordRichPresence::GetActivityImageKey(
         }
 
         const char* s_Prefix =
-            p_GameMode == "Elusive Target" ? "elusive-" :
-            p_GameMode == "Elusive Target Arcade" ? "arcade-" :
+            p_GameMode == "Elusive target" ? "elusive-" :
+            p_GameMode == "Elusive target arcade" ? "arcade-" :
             "mission-";
 
         return std::string(s_Prefix) + NormalizeAssetKey(std::move(p_Title));
@@ -191,17 +191,17 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
         }
     }
     else if (s_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
-        s_Location = "In Startup Screen";
+        s_Location = "In startup screen";
     }
     else if (s_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity") {
-        s_Location = "In Main Menu";
+        s_Location = "In main menu";
     }
 
     std::string s_Action;
     std::string s_Details;
     std::string s_ImageKey;
 
-    if (s_Location == "In Startup Screen" || s_Location == "In Main Menu") {
+    if (s_Location == "In startup screen" || s_Location == "In main menu") {
         s_Action = s_Location;
         s_ImageKey = "logo";
     }
@@ -227,7 +227,7 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
 
     m_DiscordCore->ActivityManager().UpdateActivity(
         activity, [](discord::Result p_Result) {
-        Logger::Trace("Activity Manager push completed with result: {}", static_cast<int>(p_Result));
+        Logger::Trace("Activity manager push completed with result: {}", static_cast<int>(p_Result));
     }
     );
 

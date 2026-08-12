@@ -64,49 +64,49 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
 	}
 
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	const auto s_Showing = ImGui::Begin("DEBUG", &m_DebugMenuActive);
+	const auto s_Showing = ImGui::Begin("Debug", &m_DebugMenuActive);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
 	if (s_Showing) {
 		if (ImGui::CollapsingHeader("Player", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ImGui::Checkbox("Render Health###PlayerHealth", &m_RenderPlayerHealth);
-			ImGui::Checkbox("Render Outfit Hit Points###PlayerOutfitHitPoints", &m_RenderPlayerOutfitHitPoints);
+			ImGui::Checkbox("Render health###PlayerHealth", &m_RenderPlayerHealth);
+			ImGui::Checkbox("Render outfit hit points###PlayerOutfitHitPoints", &m_RenderPlayerOutfitHitPoints);
 		}
 
 		if (ImGui::CollapsingHeader("Actors", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ImGui::Checkbox("Render Position Boxes", &m_RenderActorBoxes);
-			ImGui::Checkbox("Render Names", &m_RenderActorNames);
-			ImGui::Checkbox("Render Repository IDs", &m_RenderActorRepoIds);
-			ImGui::Checkbox("Render Behaviors", &m_RenderActorBehaviors);
-			ImGui::Checkbox("Render Health###ActorHealth", &m_RenderActorHealth);
-			ImGui::Checkbox("Render Outfit Hit Points###ActorOutfitHitPoints", &m_RenderActorOutfitHitPoints);
+			ImGui::Checkbox("Render position boxes", &m_RenderActorBoxes);
+			ImGui::Checkbox("Render names", &m_RenderActorNames);
+			ImGui::Checkbox("Render repository IDs", &m_RenderActorRepoIds);
+			ImGui::Checkbox("Render behaviors", &m_RenderActorBehaviors);
+			ImGui::Checkbox("Render health###ActorHealth", &m_RenderActorHealth);
+			ImGui::Checkbox("Render outfit hit points###ActorOutfitHitPoints", &m_RenderActorOutfitHitPoints);
 		}
 
-		if (ImGui::CollapsingHeader("Reasoning Grid", ImGuiTreeNodeFlags_DefaultOpen)) {
-			if (ImGui::Checkbox("Draw Reasoning Grid", &m_DrawReasoningGrid)) {
+		if (ImGui::CollapsingHeader("Reasoning grid", ImGuiTreeNodeFlags_DefaultOpen)) {
+			if (ImGui::Checkbox("Draw reasoning grid", &m_DrawReasoningGrid)) {
 				if (m_Triangles.size() == 0) {
 					GenerateReasoningGridVertices();
 				}
 			}
 
-			ImGui::Checkbox("Show Visibility", &m_ShowVisibility);
-			ImGui::Checkbox("Show Layers", &m_ShowLayers);
-			ImGui::Checkbox("Show Indices", &m_ShowIndices);
+			ImGui::Checkbox("Show visibility", &m_ShowVisibility);
+			ImGui::Checkbox("Show layers", &m_ShowLayers);
+			ImGui::Checkbox("Show indices", &m_ShowIndices);
 		}
 
-		if (ImGui::CollapsingHeader("Guide Path Finder", ImGuiTreeNodeFlags_DefaultOpen)) {
-			if (ImGui::Checkbox("Draw Nav Mesh", &m_DrawNavMesh)) {
+		if (ImGui::CollapsingHeader("Guide path finder", ImGuiTreeNodeFlags_DefaultOpen)) {
+			if (ImGui::Checkbox("Draw nav mesh", &m_DrawNavMesh)) {
 				if (m_Areas.size() == 0) {
 					BuildNavMeshRenderData();
 				}
 			}
 
-			ImGui::Checkbox("Draw Planner Areas", &m_DrawPlannerAreas);
-			ImGui::Checkbox("Draw Planner Areas Solid", &m_DrawPlannerAreasSolid);
-			ImGui::Checkbox("Colorize Area Usage Flags", &m_ColorizeAreaUsageFlags);
-			ImGui::Checkbox("Draw Obstacles", &m_DrawObstacles);
-			ImGui::Checkbox("Draw Planner Connectivity", &m_DrawDrawPlannerConnectivity);
-			ImGui::Checkbox("Draw Area Penalty Multipliers", &m_DrawAreaPenaltyMults);
+			ImGui::Checkbox("Draw planner areas", &m_DrawPlannerAreas);
+			ImGui::Checkbox("Draw planner areas solid", &m_DrawPlannerAreasSolid);
+			ImGui::Checkbox("Colorize area usage flags", &m_ColorizeAreaUsageFlags);
+			ImGui::Checkbox("Draw obstacles", &m_DrawObstacles);
+			ImGui::Checkbox("Draw planner connectivity", &m_DrawDrawPlannerConnectivity);
+			ImGui::Checkbox("Draw area penalty multipliers", &m_DrawAreaPenaltyMults);
 		}
 	}
 
@@ -573,7 +573,7 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
 		}
 
 		s_Text += fmt::format(
-			"Obstacle Flags: 0x{:04X}\nPenalty: {}",
+			"Obstacle flags: 0x{:04X}\nPenalty: {}",
 			s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
 			s_PFObstacleInternalDep->m_obstacleDef.m_penalty
 		);
@@ -1122,208 +1122,208 @@ void DebugMod::VertexTriangluation(const std::vector<SVector3>& vertices, std::v
 
 const char* DebugMod::CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type) {
 	switch (p_Type) {
-		case ECompiledBehaviorType::BT_ConditionScope: return "BT_ConditionScope";
-		case ECompiledBehaviorType::BT_Random: return "BT_Random";
-		case ECompiledBehaviorType::BT_Match: return "BT_Match";
-		case ECompiledBehaviorType::BT_Sequence: return "BT_Sequence";
-		case ECompiledBehaviorType::BT_Dummy: return "BT_Dummy";
-		case ECompiledBehaviorType::BT_Dummy2: return "BT_Dummy2";
-		case ECompiledBehaviorType::BT_Error: return "BT_Error";
-		case ECompiledBehaviorType::BT_Wait: return "BT_Wait";
-		case ECompiledBehaviorType::BT_WaitForStanding: return "BT_WaitForStanding";
-		case ECompiledBehaviorType::BT_WaitBasedOnDistanceToTarget: return "BT_WaitBasedOnDistanceToTarget";
-		case ECompiledBehaviorType::BT_WaitForItemHandled: return "BT_WaitForItemHandled";
-		case ECompiledBehaviorType::BT_AbandonOrder: return "BT_AbandonOrder";
-		case ECompiledBehaviorType::BT_CompleteOrder: return "BT_CompleteOrder";
-		case ECompiledBehaviorType::BT_PlayAct: return "BT_PlayAct";
-		case ECompiledBehaviorType::BT_ConfiguredAct: return "BT_ConfiguredAct";
-		case ECompiledBehaviorType::BT_PlayReaction: return "BT_PlayReaction";
-		case ECompiledBehaviorType::BT_SimpleReaction: return "BT_SimpleReaction";
-		case ECompiledBehaviorType::BT_SituationAct: return "BT_SituationAct";
-		case ECompiledBehaviorType::BT_SituationApproach: return "BT_SituationApproach";
-		case ECompiledBehaviorType::BT_SituationGetHelp: return "BT_SituationGetHelp";
-		case ECompiledBehaviorType::BT_SituationFace: return "BT_SituationFace";
-		case ECompiledBehaviorType::BT_SituationConversation: return "BT_SituationConversation";
-		case ECompiledBehaviorType::BT_Holster: return "BT_Holster";
-		case ECompiledBehaviorType::BT_SpeakWait: return "BT_SpeakWait";
-		case ECompiledBehaviorType::BT_SpeakWaitWithFallbackIfAlone: return "BT_SpeakWaitWithFallbackIfAlone";
-		case ECompiledBehaviorType::BT_ConfiguredSpeak: return "BT_ConfiguredSpeak";
-		case ECompiledBehaviorType::BT_ConditionedConfiguredSpeak: return "BT_ConditionedConfiguredSpeak";
-		case ECompiledBehaviorType::BT_ConditionedConfiguredAct: return "BT_ConditionedConfiguredAct";
+		case ECompiledBehaviorType::BT_ConditionScope: return "Condition scope";
+		case ECompiledBehaviorType::BT_Random: return "Random";
+		case ECompiledBehaviorType::BT_Match: return "Match";
+		case ECompiledBehaviorType::BT_Sequence: return "Sequence";
+		case ECompiledBehaviorType::BT_Dummy: return "Dummy";
+		case ECompiledBehaviorType::BT_Dummy2: return "Dummy2";
+		case ECompiledBehaviorType::BT_Error: return "Error";
+		case ECompiledBehaviorType::BT_Wait: return "Wait";
+		case ECompiledBehaviorType::BT_WaitForStanding: return "Wait for standing";
+		case ECompiledBehaviorType::BT_WaitBasedOnDistanceToTarget: return "Wait based on distance to target";
+		case ECompiledBehaviorType::BT_WaitForItemHandled: return "Wait for item handled";
+		case ECompiledBehaviorType::BT_AbandonOrder: return "Abandon order";
+		case ECompiledBehaviorType::BT_CompleteOrder: return "Complete order";
+		case ECompiledBehaviorType::BT_PlayAct: return "Play act";
+		case ECompiledBehaviorType::BT_ConfiguredAct: return "Configured act";
+		case ECompiledBehaviorType::BT_PlayReaction: return "Play reaction";
+		case ECompiledBehaviorType::BT_SimpleReaction: return "Simple reaction";
+		case ECompiledBehaviorType::BT_SituationAct: return "Situation act";
+		case ECompiledBehaviorType::BT_SituationApproach: return "Situation approach";
+		case ECompiledBehaviorType::BT_SituationGetHelp: return "Situation get help";
+		case ECompiledBehaviorType::BT_SituationFace: return "Situation face";
+		case ECompiledBehaviorType::BT_SituationConversation: return "Situation conversation";
+		case ECompiledBehaviorType::BT_Holster: return "Holster";
+		case ECompiledBehaviorType::BT_SpeakWait: return "Speak wait";
+		case ECompiledBehaviorType::BT_SpeakWaitWithFallbackIfAlone: return "Speak wait with fallback if alone";
+		case ECompiledBehaviorType::BT_ConfiguredSpeak: return "Configured speak";
+		case ECompiledBehaviorType::BT_ConditionedConfiguredSpeak: return "Conditioned configured speak";
+		case ECompiledBehaviorType::BT_ConditionedConfiguredAct: return "Conditioned configured act";
 		case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionAckSoundDef: return
-			"BT_SpeakCustomOrDefaultDistractionAckSoundDef";
+			"Speak custom or default distraction acknowledgment sound definition";
 		case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef: return
-			"BT_SpeakCustomOrDefaultDistractionInvestigationSoundDef";
+			"Speak custom or default distraction investigation sound definition";
 		case ECompiledBehaviorType::BT_SpeakCustomOrDefaultDistractionStndSoundDef: return
-			"BT_SpeakCustomOrDefaultDistractionStndSoundDef";
-		case ECompiledBehaviorType::BT_Pickup: return "BT_Pickup";
-		case ECompiledBehaviorType::BT_Drop: return "BT_Drop";
-		case ECompiledBehaviorType::BT_PlayConversation: return "BT_PlayConversation";
-		case ECompiledBehaviorType::BT_PlayAnimation: return "BT_PlayAnimation";
-		case ECompiledBehaviorType::BT_MoveToLocation: return "BT_MoveToLocation";
-		case ECompiledBehaviorType::BT_MoveToTargetKnownPosition: return "BT_MoveToTargetKnownPosition";
-		case ECompiledBehaviorType::BT_MoveToTargetActualPosition: return "BT_MoveToTargetActualPosition";
-		case ECompiledBehaviorType::BT_MoveToInteraction: return "BT_MoveToInteraction";
-		case ECompiledBehaviorType::BT_MoveToNPC: return "BT_MoveToNPC";
-		case ECompiledBehaviorType::BT_FollowTargetKnownPosition: return "BT_FollowTargetKnownPosition";
-		case ECompiledBehaviorType::BT_FollowTargetActualPosition: return "BT_FollowTargetActualPosition";
-		case ECompiledBehaviorType::BT_PickUpItem: return "BT_PickUpItem";
-		case ECompiledBehaviorType::BT_GrabItem: return "BT_GrabItem";
-		case ECompiledBehaviorType::BT_PutDownItem: return "BT_PutDownItem";
-		case ECompiledBehaviorType::BT_Search: return "BT_Search";
-		case ECompiledBehaviorType::BT_LimitedSearch: return "BT_LimitedSearch";
-		case ECompiledBehaviorType::BT_MoveTo: return "BT_MoveTo";
-		case ECompiledBehaviorType::BT_Reposition: return "BT_Reposition";
-		case ECompiledBehaviorType::BT_SituationMoveTo: return "BT_SituationMoveTo";
-		case ECompiledBehaviorType::BT_FormationMove: return "BT_FormationMove";
-		case ECompiledBehaviorType::BT_SituationJumpTo: return "BT_SituationJumpTo";
-		case ECompiledBehaviorType::BT_AmbientWalk: return "BT_AmbientWalk";
-		case ECompiledBehaviorType::BT_AmbientStand: return "BT_AmbientStand";
-		case ECompiledBehaviorType::BT_CrowdAmbientStand: return "BT_CrowdAmbientStand";
-		case ECompiledBehaviorType::BT_AmbientItemUse: return "BT_AmbientItemUse";
-		case ECompiledBehaviorType::BT_AmbientLook: return "BT_AmbientLook";
-		case ECompiledBehaviorType::BT_Act: return "BT_Act";
-		case ECompiledBehaviorType::BT_Patrol: return "BT_Patrol";
-		case ECompiledBehaviorType::BT_MoveToPosition: return "BT_MoveToPosition";
-		case ECompiledBehaviorType::BT_AlertedStand: return "BT_AlertedStand";
-		case ECompiledBehaviorType::BT_AlertedDebug: return "BT_AlertedDebug";
-		case ECompiledBehaviorType::BT_AttentionToPerson: return "BT_AttentionToPerson";
-		case ECompiledBehaviorType::BT_StunnedByFlashGrenade: return "BT_StunnedByFlashGrenade";
-		case ECompiledBehaviorType::BT_CuriousIdle: return "BT_CuriousIdle";
-		case ECompiledBehaviorType::BT_InvestigateWeapon: return "BT_InvestigateWeapon";
-		case ECompiledBehaviorType::BT_DeliverWeapon: return "BT_DeliverWeapon";
-		case ECompiledBehaviorType::BT_RecoverUnconscious: return "BT_RecoverUnconscious";
-		case ECompiledBehaviorType::BT_GetOutfit: return "BT_GetOutfit";
-		case ECompiledBehaviorType::BT_RadioCall: return "BT_RadioCall";
-		case ECompiledBehaviorType::BT_EscortOut: return "BT_EscortOut";
-		case ECompiledBehaviorType::BT_StashItem: return "BT_StashItem";
-		case ECompiledBehaviorType::BT_CautiousSearchPosition: return "BT_CautiousSearchPosition";
-		case ECompiledBehaviorType::BT_LockdownWarning: return "BT_LockdownWarning";
-		case ECompiledBehaviorType::BT_WakeUpUnconscious: return "BT_WakeUpUnconscious";
-		case ECompiledBehaviorType::BT_DeadBodyInvestigate: return "BT_DeadBodyInvestigate";
-		case ECompiledBehaviorType::BT_GuardDeadBody: return "BT_GuardDeadBody";
-		case ECompiledBehaviorType::BT_DragDeadBody: return "BT_DragDeadBody";
-		case ECompiledBehaviorType::BT_CuriousBystander: return "BT_CuriousBystander";
-		case ECompiledBehaviorType::BT_DeadBodyBystander: return "BT_DeadBodyBystander";
-		case ECompiledBehaviorType::BT_StandOffArrest: return "BT_StandOffArrest";
-		case ECompiledBehaviorType::BT_StandOffReposition: return "BT_StandOffReposition";
-		case ECompiledBehaviorType::BT_StandAndAim: return "BT_StandAndAim";
-		case ECompiledBehaviorType::BT_CloseCombat: return "BT_CloseCombat";
-		case ECompiledBehaviorType::BT_MoveToCloseCombat: return "BT_MoveToCloseCombat";
-		case ECompiledBehaviorType::BT_MoveAwayFromCloseCombat: return "BT_MoveAwayFromCloseCombat";
-		case ECompiledBehaviorType::BT_CoverFightSeasonTwo: return "BT_CoverFightSeasonTwo";
-		case ECompiledBehaviorType::BT_ShootFromPosition: return "BT_ShootFromPosition";
-		case ECompiledBehaviorType::BT_StandAndShoot: return "BT_StandAndShoot";
-		case ECompiledBehaviorType::BT_CheckLastPosition: return "BT_CheckLastPosition";
-		case ECompiledBehaviorType::BT_ProtoSearchIdle: return "BT_ProtoSearchIdle";
-		case ECompiledBehaviorType::BT_ProtoApproachSearchArea: return "BT_ProtoApproachSearchArea";
-		case ECompiledBehaviorType::BT_ProtoSearchPosition: return "BT_ProtoSearchPosition";
-		case ECompiledBehaviorType::BT_ShootTarget: return "BT_ShootTarget";
-		case ECompiledBehaviorType::BT_TriggerAlarm: return "BT_TriggerAlarm";
-		case ECompiledBehaviorType::BT_MoveInCover: return "BT_MoveInCover";
-		case ECompiledBehaviorType::BT_MoveToCover: return "BT_MoveToCover";
-		case ECompiledBehaviorType::BT_HomeAttackOrigin: return "BT_HomeAttackOrigin";
-		case ECompiledBehaviorType::BT_Shoot: return "BT_Shoot";
-		case ECompiledBehaviorType::BT_Aim: return "BT_Aim";
-		case ECompiledBehaviorType::BT_MoveToRandomNeighbourNode: return "BT_MoveToRandomNeighbourNode";
-		case ECompiledBehaviorType::BT_MoveToRandomNeighbourNodeAiming: return "BT_MoveToRandomNeighbourNodeAiming";
-		case ECompiledBehaviorType::BT_MoveToAndPlayCombatPositionAct: return "BT_MoveToAndPlayCombatPositionAct";
+			"Speak custom or default distraction standdown sound definition";
+		case ECompiledBehaviorType::BT_Pickup: return "Pickup";
+		case ECompiledBehaviorType::BT_Drop: return "Drop";
+		case ECompiledBehaviorType::BT_PlayConversation: return "Play conversation";
+		case ECompiledBehaviorType::BT_PlayAnimation: return "Play animation";
+		case ECompiledBehaviorType::BT_MoveToLocation: return "Move to location";
+		case ECompiledBehaviorType::BT_MoveToTargetKnownPosition: return "Move to target known position";
+		case ECompiledBehaviorType::BT_MoveToTargetActualPosition: return "Move to target actual position";
+		case ECompiledBehaviorType::BT_MoveToInteraction: return "Move to interaction";
+		case ECompiledBehaviorType::BT_MoveToNPC: return "Move to NPC";
+		case ECompiledBehaviorType::BT_FollowTargetKnownPosition: return "Follow target known position";
+		case ECompiledBehaviorType::BT_FollowTargetActualPosition: return "Follow target actual position";
+		case ECompiledBehaviorType::BT_PickUpItem: return "Pick ip item";
+		case ECompiledBehaviorType::BT_GrabItem: return "Grab item";
+		case ECompiledBehaviorType::BT_PutDownItem: return "Put down item";
+		case ECompiledBehaviorType::BT_Search: return "Search";
+		case ECompiledBehaviorType::BT_LimitedSearch: return "Limited search";
+		case ECompiledBehaviorType::BT_MoveTo: return "Move to";
+		case ECompiledBehaviorType::BT_Reposition: return "Reposition";
+		case ECompiledBehaviorType::BT_SituationMoveTo: return "Situation move to";
+		case ECompiledBehaviorType::BT_FormationMove: return "Formation move";
+		case ECompiledBehaviorType::BT_SituationJumpTo: return "Situation jump to";
+		case ECompiledBehaviorType::BT_AmbientWalk: return "Ambient walk";
+		case ECompiledBehaviorType::BT_AmbientStand: return "Ambient stand";
+		case ECompiledBehaviorType::BT_CrowdAmbientStand: return "Crowd ambient stand";
+		case ECompiledBehaviorType::BT_AmbientItemUse: return "Ambient item use";
+		case ECompiledBehaviorType::BT_AmbientLook: return "Ambient look";
+		case ECompiledBehaviorType::BT_Act: return "Act";
+		case ECompiledBehaviorType::BT_Patrol: return "Patrol";
+		case ECompiledBehaviorType::BT_MoveToPosition: return "Move to position";
+		case ECompiledBehaviorType::BT_AlertedStand: return "Alerted stand";
+		case ECompiledBehaviorType::BT_AlertedDebug: return "Alerted debug";
+		case ECompiledBehaviorType::BT_AttentionToPerson: return "Attention to person";
+		case ECompiledBehaviorType::BT_StunnedByFlashGrenade: return "Stunned by flash grenade";
+		case ECompiledBehaviorType::BT_CuriousIdle: return "Curious idle";
+		case ECompiledBehaviorType::BT_InvestigateWeapon: return "Investigate weapon";
+		case ECompiledBehaviorType::BT_DeliverWeapon: return "Deliver weapon";
+		case ECompiledBehaviorType::BT_RecoverUnconscious: return "Recover unconscious";
+		case ECompiledBehaviorType::BT_GetOutfit: return "Get outfit";
+		case ECompiledBehaviorType::BT_RadioCall: return "Radio call";
+		case ECompiledBehaviorType::BT_EscortOut: return "Escort out";
+		case ECompiledBehaviorType::BT_StashItem: return "Stash item";
+		case ECompiledBehaviorType::BT_CautiousSearchPosition: return "Cautious search position";
+		case ECompiledBehaviorType::BT_LockdownWarning: return "Lockdown warning";
+		case ECompiledBehaviorType::BT_WakeUpUnconscious: return "Wake up unconscious";
+		case ECompiledBehaviorType::BT_DeadBodyInvestigate: return "Dead body investigate";
+		case ECompiledBehaviorType::BT_GuardDeadBody: return "Guard dead body";
+		case ECompiledBehaviorType::BT_DragDeadBody: return "Drag dead body";
+		case ECompiledBehaviorType::BT_CuriousBystander: return "Curious bystander";
+		case ECompiledBehaviorType::BT_DeadBodyBystander: return "Dead body bystander";
+		case ECompiledBehaviorType::BT_StandOffArrest: return "Stand off arrest";
+		case ECompiledBehaviorType::BT_StandOffReposition: return "Stand off reposition";
+		case ECompiledBehaviorType::BT_StandAndAim: return "Stand and aim";
+		case ECompiledBehaviorType::BT_CloseCombat: return "Close combat";
+		case ECompiledBehaviorType::BT_MoveToCloseCombat: return "Move to close combat";
+		case ECompiledBehaviorType::BT_MoveAwayFromCloseCombat: return "Move away from close combat";
+		case ECompiledBehaviorType::BT_CoverFightSeasonTwo: return "Cover fight season two";
+		case ECompiledBehaviorType::BT_ShootFromPosition: return "Shoot from position";
+		case ECompiledBehaviorType::BT_StandAndShoot: return "Stand and shoot";
+		case ECompiledBehaviorType::BT_CheckLastPosition: return "Check last position";
+		case ECompiledBehaviorType::BT_ProtoSearchIdle: return "Proto search idle";
+		case ECompiledBehaviorType::BT_ProtoApproachSearchArea: return "Proto approach search area";
+		case ECompiledBehaviorType::BT_ProtoSearchPosition: return "Proto search position";
+		case ECompiledBehaviorType::BT_ShootTarget: return "Shoot target";
+		case ECompiledBehaviorType::BT_TriggerAlarm: return "Trigger alarm";
+		case ECompiledBehaviorType::BT_MoveInCover: return "Move in cover";
+		case ECompiledBehaviorType::BT_MoveToCover: return "Move to cover";
+		case ECompiledBehaviorType::BT_HomeAttackOrigin: return "Home attack origin";
+		case ECompiledBehaviorType::BT_Shoot: return "Shoot";
+		case ECompiledBehaviorType::BT_Aim: return "Aim";
+		case ECompiledBehaviorType::BT_MoveToRandomNeighbourNode: return "Move to random neighbour node";
+		case ECompiledBehaviorType::BT_MoveToRandomNeighbourNodeAiming: return "Move to random neighbour node aiming";
+		case ECompiledBehaviorType::BT_MoveToAndPlayCombatPositionAct: return "Move to and play combat position act";
 		case ECompiledBehaviorType::BT_MoveToAimingAndPlayCombatPositionAct: return
-			"BT_MoveToAimingAndPlayCombatPositionAct";
-		case ECompiledBehaviorType::BT_PlayJumpyReaction: return "BT_PlayJumpyReaction";
-		case ECompiledBehaviorType::BT_JumpyInvestigation: return "BT_JumpyInvestigation";
-		case ECompiledBehaviorType::BT_AgitatedPatrol: return "BT_AgitatedPatrol";
-		case ECompiledBehaviorType::BT_AgitatedGuard: return "BT_AgitatedGuard";
-		case ECompiledBehaviorType::BT_HeroEscort: return "BT_HeroEscort";
-		case ECompiledBehaviorType::BT_Escort: return "BT_Escort";
-		case ECompiledBehaviorType::BT_ControlledFormationMove: return "BT_ControlledFormationMove";
-		case ECompiledBehaviorType::BT_EscortSearch: return "BT_EscortSearch";
-		case ECompiledBehaviorType::BT_LeadEscort: return "BT_LeadEscort";
-		case ECompiledBehaviorType::BT_LeadEscort2: return "BT_LeadEscort2";
-		case ECompiledBehaviorType::BT_AimReaction: return "BT_AimReaction";
-		case ECompiledBehaviorType::BT_FollowHitman: return "BT_FollowHitman";
-		case ECompiledBehaviorType::BT_RideTheLightning: return "BT_RideTheLightning";
-		case ECompiledBehaviorType::BT_Scared: return "BT_Scared";
-		case ECompiledBehaviorType::BT_Flee: return "BT_Flee";
-		case ECompiledBehaviorType::BT_AgitatedBystander: return "BT_AgitatedBystander";
-		case ECompiledBehaviorType::BT_SentryFrisk: return "BT_SentryFrisk";
-		case ECompiledBehaviorType::BT_SentryIdle: return "BT_SentryIdle";
-		case ECompiledBehaviorType::BT_SentryWarning: return "BT_SentryWarning";
-		case ECompiledBehaviorType::BT_SentryCheckItem: return "BT_SentryCheckItem";
-		case ECompiledBehaviorType::BT_VIPScared: return "BT_VIPScared";
-		case ECompiledBehaviorType::BT_VIPSafeRoomTrespasser: return "BT_VIPSafeRoomTrespasser";
-		case ECompiledBehaviorType::BT_DefendVIP: return "BT_DefendVIP";
-		case ECompiledBehaviorType::BT_CautiousVIP: return "BT_CautiousVIP";
-		case ECompiledBehaviorType::BT_CautiousGuardVIP: return "BT_CautiousGuardVIP";
-		case ECompiledBehaviorType::BT_InfectedConfused: return "BT_InfectedConfused";
-		case ECompiledBehaviorType::BT_EnterInfected: return "BT_EnterInfected";
-		case ECompiledBehaviorType::BT_CureInfected: return "BT_CureInfected";
-		case ECompiledBehaviorType::BT_SickActInfected: return "BT_SickActInfected";
-		case ECompiledBehaviorType::BT_Smart: return "BT_Smart";
-		case ECompiledBehaviorType::BT_Controlled: return "BT_Controlled";
-		case ECompiledBehaviorType::BT_SpeakTest: return "BT_SpeakTest";
-		case ECompiledBehaviorType::BT_Conversation: return "BT_Conversation";
-		case ECompiledBehaviorType::BT_RunToHelp: return "BT_RunToHelp";
-		case ECompiledBehaviorType::BT_WaitForDialog: return "BT_WaitForDialog";
-		case ECompiledBehaviorType::BT_WaitForConfiguredAct: return "BT_WaitForConfiguredAct";
-		case ECompiledBehaviorType::BT_TestFlashbangGrenadeThrow: return "BT_TestFlashbangGrenadeThrow";
-		case ECompiledBehaviorType::BT_BEHAVIORS_END: return "BT_BEHAVIORS_END";
-		case ECompiledBehaviorType::BT_RenewEvent: return "BT_RenewEvent";
-		case ECompiledBehaviorType::BT_ExpireEvent: return "BT_ExpireEvent";
-		case ECompiledBehaviorType::BT_ExpireEvents: return "BT_ExpireEvents";
-		case ECompiledBehaviorType::BT_SetEventHandled: return "BT_SetEventHandled";
-		case ECompiledBehaviorType::BT_RenewSharedEvent: return "BT_RenewSharedEvent";
-		case ECompiledBehaviorType::BT_ExpireSharedEvent: return "BT_ExpireSharedEvent";
-		case ECompiledBehaviorType::BT_ExpireAllEvents: return "BT_ExpireAllEvents";
-		case ECompiledBehaviorType::BT_CreateOrJoinSituation: return "BT_CreateOrJoinSituation";
-		case ECompiledBehaviorType::BT_JoinSituation: return "BT_JoinSituation";
-		case ECompiledBehaviorType::BT_ForceActorToJoinSituation: return "BT_ForceActorToJoinSituation";
-		case ECompiledBehaviorType::BT_JoinSituationWithActor: return "BT_JoinSituationWithActor";
-		case ECompiledBehaviorType::BT_LeaveSituation: return "BT_LeaveSituation";
-		case ECompiledBehaviorType::BT_Escalate: return "BT_Escalate";
-		case ECompiledBehaviorType::BT_GotoPhase: return "BT_GotoPhase";
-		case ECompiledBehaviorType::BT_RenewGoal: return "BT_RenewGoal";
-		case ECompiledBehaviorType::BT_ExpireGoal: return "BT_ExpireGoal";
-		case ECompiledBehaviorType::BT_RenewGoalOf: return "BT_RenewGoalOf";
-		case ECompiledBehaviorType::BT_ExpireGoalOf: return "BT_ExpireGoalOf";
-		case ECompiledBehaviorType::BT_SetTension: return "BT_SetTension";
-		case ECompiledBehaviorType::BT_TriggerSpotted: return "BT_TriggerSpotted";
-		case ECompiledBehaviorType::BT_CopyKnownLocation: return "BT_CopyKnownLocation";
-		case ECompiledBehaviorType::BT_UpdateKnownLocation: return "BT_UpdateKnownLocation";
-		case ECompiledBehaviorType::BT_TransferKnownObjectPositions: return "BT_TransferKnownObjectPositions";
-		case ECompiledBehaviorType::BT_WitnessAttack: return "BT_WitnessAttack";
-		case ECompiledBehaviorType::BT_Speak: return "BT_Speak";
-		case ECompiledBehaviorType::BT_StartDynamicEnforcer: return "BT_StartDynamicEnforcer";
-		case ECompiledBehaviorType::BT_StopDynamicEnforcer: return "BT_StopDynamicEnforcer";
-		case ECompiledBehaviorType::BT_StartRangeBasedDynamicEnforcer: return "BT_StartRangeBasedDynamicEnforcer";
+			"Move to aiming and play combat position act";
+		case ECompiledBehaviorType::BT_PlayJumpyReaction: return "Play jumpy reaction";
+		case ECompiledBehaviorType::BT_JumpyInvestigation: return "Jumpy investigation";
+		case ECompiledBehaviorType::BT_AgitatedPatrol: return "Agitated patrol";
+		case ECompiledBehaviorType::BT_AgitatedGuard: return "Agitated guard";
+		case ECompiledBehaviorType::BT_HeroEscort: return "Hero escort";
+		case ECompiledBehaviorType::BT_Escort: return "Escort";
+		case ECompiledBehaviorType::BT_ControlledFormationMove: return "Controlled formation move";
+		case ECompiledBehaviorType::BT_EscortSearch: return "Escort search";
+		case ECompiledBehaviorType::BT_LeadEscort: return "Lead escort";
+		case ECompiledBehaviorType::BT_LeadEscort2: return "Lead escort 2";
+		case ECompiledBehaviorType::BT_AimReaction: return "Aim reaction";
+		case ECompiledBehaviorType::BT_FollowHitman: return "Follow hitman";
+		case ECompiledBehaviorType::BT_RideTheLightning: return "Ride the lightning";
+		case ECompiledBehaviorType::BT_Scared: return "Scared";
+		case ECompiledBehaviorType::BT_Flee: return "Flee";
+		case ECompiledBehaviorType::BT_AgitatedBystander: return "Agitated bystander";
+		case ECompiledBehaviorType::BT_SentryFrisk: return "Sentry frisk";
+		case ECompiledBehaviorType::BT_SentryIdle: return "Sentry idle";
+		case ECompiledBehaviorType::BT_SentryWarning: return "Sentry warning";
+		case ECompiledBehaviorType::BT_SentryCheckItem: return "Sentry check item";
+		case ECompiledBehaviorType::BT_VIPScared: return "VIP scared";
+		case ECompiledBehaviorType::BT_VIPSafeRoomTrespasser: return "VIP safe room trespasser";
+		case ECompiledBehaviorType::BT_DefendVIP: return "Defend VIP";
+		case ECompiledBehaviorType::BT_CautiousVIP: return "Cautious VIP";
+		case ECompiledBehaviorType::BT_CautiousGuardVIP: return "Cautious guard VIP";
+		case ECompiledBehaviorType::BT_InfectedConfused: return "Infected confused";
+		case ECompiledBehaviorType::BT_EnterInfected: return "Enter infected";
+		case ECompiledBehaviorType::BT_CureInfected: return "Cure infected";
+		case ECompiledBehaviorType::BT_SickActInfected: return "Sick act infected";
+		case ECompiledBehaviorType::BT_Smart: return "Smart";
+		case ECompiledBehaviorType::BT_Controlled: return "Controlled";
+		case ECompiledBehaviorType::BT_SpeakTest: return "Speak test";
+		case ECompiledBehaviorType::BT_Conversation: return "Conversation";
+		case ECompiledBehaviorType::BT_RunToHelp: return "Run to help";
+		case ECompiledBehaviorType::BT_WaitForDialog: return "Wait for dialog";
+		case ECompiledBehaviorType::BT_WaitForConfiguredAct: return "Wait for configured act";
+		case ECompiledBehaviorType::BT_TestFlashbangGrenadeThrow: return "Test flashbang grenade throw";
+		case ECompiledBehaviorType::BT_BEHAVIORS_END: return "Behaviors end";
+		case ECompiledBehaviorType::BT_RenewEvent: return "Renew event";
+		case ECompiledBehaviorType::BT_ExpireEvent: return "Expire event";
+		case ECompiledBehaviorType::BT_ExpireEvents: return "Expire events";
+		case ECompiledBehaviorType::BT_SetEventHandled: return "Set event handled";
+		case ECompiledBehaviorType::BT_RenewSharedEvent: return "Renew shared event";
+		case ECompiledBehaviorType::BT_ExpireSharedEvent: return "Expire shared event";
+		case ECompiledBehaviorType::BT_ExpireAllEvents: return "Expire all events";
+		case ECompiledBehaviorType::BT_CreateOrJoinSituation: return "Create or join situation";
+		case ECompiledBehaviorType::BT_JoinSituation: return "Join situation";
+		case ECompiledBehaviorType::BT_ForceActorToJoinSituation: return "Force actor to join situation";
+		case ECompiledBehaviorType::BT_JoinSituationWithActor: return "Join situation with actor";
+		case ECompiledBehaviorType::BT_LeaveSituation: return "Leave situation";
+		case ECompiledBehaviorType::BT_Escalate: return "Escalate";
+		case ECompiledBehaviorType::BT_GotoPhase: return "Goto phase";
+		case ECompiledBehaviorType::BT_RenewGoal: return "Renew goal";
+		case ECompiledBehaviorType::BT_ExpireGoal: return "Expire goal";
+		case ECompiledBehaviorType::BT_RenewGoalOf: return "Renew goal of";
+		case ECompiledBehaviorType::BT_ExpireGoalOf: return "Expire goal of";
+		case ECompiledBehaviorType::BT_SetTension: return "Set tension";
+		case ECompiledBehaviorType::BT_TriggerSpotted: return "Trigger spotted";
+		case ECompiledBehaviorType::BT_CopyKnownLocation: return "Copy known location";
+		case ECompiledBehaviorType::BT_UpdateKnownLocation: return "Update known location";
+		case ECompiledBehaviorType::BT_TransferKnownObjectPositions: return "Transfer known object positions";
+		case ECompiledBehaviorType::BT_WitnessAttack: return "Witness attack";
+		case ECompiledBehaviorType::BT_Speak: return "Speak";
+		case ECompiledBehaviorType::BT_StartDynamicEnforcer: return "Start dynamic enforcer";
+		case ECompiledBehaviorType::BT_StopDynamicEnforcer: return "Stop dynamic enforcer";
+		case ECompiledBehaviorType::BT_StartRangeBasedDynamicEnforcer: return "Start range-based dynamic enforcer";
 		case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcerForLocation: return
-			"BT_StopRangeBasedDynamicEnforcerForLocation";
-		case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcer: return "BT_StopRangeBasedDynamicEnforcer";
-		case ECompiledBehaviorType::BT_SetDistracted: return "BT_SetDistracted";
+			"Stop range-based dynamic rnforcer for location";
+		case ECompiledBehaviorType::BT_StopRangeBasedDynamicEnforcer: return "Stop range-based dynamic enforcer";
+		case ECompiledBehaviorType::BT_SetDistracted: return "Set distracted";
 		case ECompiledBehaviorType::BT_IgnoreAllDistractionsExceptTheNewest: return
-			"BT_IgnoreAllDistractionsExceptTheNewest";
-		case ECompiledBehaviorType::BT_IgnoreDistractions: return "BT_IgnoreDistractions";
-		case ECompiledBehaviorType::BT_PerceptibleEntityNotifyWillReact: return "BT_PerceptibleEntityNotifyWillReact";
-		case ECompiledBehaviorType::BT_PerceptibleEntityNotifyReacted: return "BT_PerceptibleEntityNotifyReacted";
+			"Ignore all distractions except the newest";
+		case ECompiledBehaviorType::BT_IgnoreDistractions: return "Ignore distractions";
+		case ECompiledBehaviorType::BT_PerceptibleEntityNotifyWillReact: return "Perceptible entity notify will react";
+		case ECompiledBehaviorType::BT_PerceptibleEntityNotifyReacted: return "Perceptible entity notify reacted";
 		case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigating: return
-			"BT_PerceptibleEntityNotifyInvestigating";
+			"Perceptible entity notify investigating";
 		case ECompiledBehaviorType::BT_PerceptibleEntityNotifyInvestigated: return
-			"BT_PerceptibleEntityNotifyInvestigated";
-		case ECompiledBehaviorType::BT_PerceptibleEntityNotifyTerminate: return "BT_PerceptibleEntityNotifyTerminate";
-		case ECompiledBehaviorType::BT_LeaveDistractionAssistantRole: return "BT_LeaveDistractionAssistantRole";
-		case ECompiledBehaviorType::BT_LeaveDistractionAssitingGuardRole: return "BT_LeaveDistractionAssitingGuardRole";
+			"Perceptible entity notify investigated";
+		case ECompiledBehaviorType::BT_PerceptibleEntityNotifyTerminate: return "Perceptible entity notify terminate";
+		case ECompiledBehaviorType::BT_LeaveDistractionAssistantRole: return "Leave distraction assistant role";
+		case ECompiledBehaviorType::BT_LeaveDistractionAssitingGuardRole: return "Leave distraction assiting guard role";
 		case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceOverRadio: return
-			"BT_RequestSuitcaseAssistanceOverRadio";
+			"Request suitcase assistance over radio";
 		case ECompiledBehaviorType::BT_RequestSuitcaseAssistanceFaceToFace: return
-			"BT_RequestSuitcaseAssistanceFaceToFace";
-		case ECompiledBehaviorType::BT_ExpireArrestReasons: return "BT_ExpireArrestReasons";
-		case ECompiledBehaviorType::BT_SetDialogSwitch_NPCID: return "BT_SetDialogSwitch_NPCID";
-		case ECompiledBehaviorType::BT_InfectedAssignToFollowPlayer: return "BT_InfectedAssignToFollowPlayer";
-		case ECompiledBehaviorType::BT_InfectedRemoveFromFollowPlayer: return "BT_InfectedRemoveFromFollowPlayer";
-		case ECompiledBehaviorType::BT_Log: return "BT_Log";
-		case ECompiledBehaviorType::BT_COMMANDS_END: return "BT_COMMANDS_END";
-		case ECompiledBehaviorType::BT_Invalid: return "BT_Invalid";
-		default: return "<unknown>";
+			"Request suitcase assistance face to face";
+		case ECompiledBehaviorType::BT_ExpireArrestReasons: return "Expire arrest reasons";
+		case ECompiledBehaviorType::BT_SetDialogSwitch_NPCID: return "Set dialog switch NPC ID";
+		case ECompiledBehaviorType::BT_InfectedAssignToFollowPlayer: return "Infected assign to follow player";
+		case ECompiledBehaviorType::BT_InfectedRemoveFromFollowPlayer: return "Infected remove from follow player";
+		case ECompiledBehaviorType::BT_Log: return "Log";
+		case ECompiledBehaviorType::BT_COMMANDS_END: return "Commands end";
+		case ECompiledBehaviorType::BT_Invalid: return "Invalid";
+		default: return "<Unknown>";
 	}
 }
 
