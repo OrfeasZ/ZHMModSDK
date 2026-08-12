@@ -19,13 +19,13 @@
 void Editor::DrawEntityProperties() {
     auto s_ImgGuiIO = ImGui::GetIO();
 
-    ImGui::SetNextWindowPos({s_ImgGuiIO.DisplaySize.x - 500, 110}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({500, s_ImgGuiIO.DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos({ s_ImgGuiIO.DisplaySize.x - 500, 110 }, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ 500, s_ImgGuiIO.DisplaySize.y - 110 }, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_TUNE " Entity Properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
     if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
         m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
-    ) {
+        ) {
         ImGui::End();
 
         return;
@@ -392,8 +392,7 @@ void Editor::DrawEntityProperties() {
                         "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},"
                         "\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
                         s_QneTrans.Rotation.x, s_QneTrans.Rotation.y, s_QneTrans.Rotation.z,
-                        s_QneTrans.Position.x, s_QneTrans.Position.y, s_QneTrans.Position.z,
-                        s_QneTrans.Scale.x, s_QneTrans.Scale.y, s_QneTrans.Scale.z
+                        s_QneTrans.Position.x, s_QneTrans.Position.y, s_QneTrans.Position.z
                     )
                 );
             }
@@ -472,20 +471,20 @@ void Editor::DrawEntityProperties() {
             s_InputPins,
             [](const PinInfo& pin) -> std::string {
                 return pin.name;
-            },
+        },
             [](const PinInfo& pin) -> std::string {
                 if (pin.description.empty()) {
                     return pin.name;
                 }
 
                 return pin.name + " - " + pin.description;
-            },
+        },
             [](const std::string&, const std::string&, const std::string& value) {
                 strcpy_s(s_InputPinName, value.c_str());
-            },
+        },
             [](const PinInfo& pin) -> std::string {
                 return pin.name;
-            }
+        }
         );
 
         if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
@@ -520,10 +519,10 @@ void Editor::DrawEntityProperties() {
             m_PinDataTypes,
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-            },
+        },
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-            },
+        },
             [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
                 const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
                 const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
@@ -542,10 +541,10 @@ void Editor::DrawEntityProperties() {
                 else {
                     memset(m_InputPinData, 0, s_TypeSize);
                 }
-            },
+        },
             [](auto& p_Pair) -> STypeID* {
                 return p_Pair.second;
-            }
+        }
         );
 
         ImGui::AlignTextToFramePadding();
@@ -607,20 +606,20 @@ void Editor::DrawEntityProperties() {
             s_OutputPins,
             [](const PinInfo& pin) -> std::string {
                 return pin.name;
-            },
+        },
             [](const PinInfo& pin) -> std::string {
                 if (pin.description.empty()) {
                     return pin.name;
                 }
 
                 return pin.name + " - " + pin.description;
-            },
+        },
             [](const std::string&, const std::string&, const std::string& value) {
                 strcpy_s(s_OutputPinName, value.c_str());
-            },
+        },
             [](const PinInfo& pin) -> std::string {
                 return pin.name;
-            }
+        }
         );
 
         if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
@@ -655,10 +654,10 @@ void Editor::DrawEntityProperties() {
             m_PinDataTypes,
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-            },
+        },
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-            },
+        },
             [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
                 const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
                 const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
@@ -677,15 +676,15 @@ void Editor::DrawEntityProperties() {
                 else {
                     memset(m_InputPinData, 0, s_TypeSize);
                 }
-            },
+        },
             [](auto& p_Pair) -> STypeID* {
                 return p_Pair.second;
-            }
+        }
         );
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Value");
-        
+
         if (std::string(s_InputPinTypeName) != "SMatrix43") {
             ImGui::SameLine();
         }
