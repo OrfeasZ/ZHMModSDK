@@ -566,9 +566,14 @@ void DebugMod::DrawObstacles(IRenderer* p_Renderer) {
 
 		s_WorldMatrix.Trans = s_TopCenter;
 
-		const std::string s_Text = fmt::format(
-			"Entity ID: {:016x}\nObstacle Flags: 0x{:04X}\nPenalty: {}",
-			m_ObstacleToEntityID[s_ObstacleManagerDeprecated->m_obstacles[i].m_internal.GetTarget()],
+		std::string s_Text;
+
+		if (const auto it = m_ObstacleToEntityID.find(s_PFObstacleInternalDep); it != m_ObstacleToEntityID.end()) {
+			s_Text += fmt::format("Entity ID: {:016X}\n", it->second);
+		}
+
+		s_Text += fmt::format(
+			"Obstacle Flags: 0x{:04X}\nPenalty: {}",
 			s_PFObstacleInternalDep->m_obstacleDef.m_blockageFlags,
 			s_PFObstacleInternalDep->m_obstacleDef.m_penalty
 		);
