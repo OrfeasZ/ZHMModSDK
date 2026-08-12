@@ -192,19 +192,19 @@ void Editor::OnDrawMenu() {
     }*/
 
     if (ImGui::Button(ICON_MD_TUNE " ITEMS")) {
-        m_ItemsMenuActive = !m_ItemsMenuActive;
+        m_ShowItemsWindow = !m_ShowItemsWindow;
     }
 
     if (ImGui::Button(ICON_MD_PEOPLE " ACTORS")) {
-        m_ActorsMenuActive = !m_ActorsMenuActive;
+        m_ShowActorsWindow = !m_ShowActorsWindow;
     }
 
     if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS")) {
-        m_DebugChannelsMenuActive = !m_DebugChannelsMenuActive;
+        m_ShowDebugChannelsWindow = !m_ShowDebugChannelsWindow;
     }
 
     if (ImGui::Button(ICON_MD_MEETING_ROOM " ROOMS")) {
-        m_RoomsMenuActive = !m_RoomsMenuActive;
+        m_ShowRoomsWindow = !m_ShowRoomsWindow;
     }
 }
 
@@ -351,20 +351,20 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
 
 void Editor::OnDrawUI(bool p_HasFocus) {
     auto s_ImgGuiIO = ImGui::GetIO();
-    DrawSettings(p_HasFocus);
+    DrawSettingsWindow(p_HasFocus);
 
     if (m_EditorWindowsVisible) {
-        DrawEntityTree();
-        DrawEntityProperties();
+        DrawEntityTreeWindow();
+        DrawEntityPropertiesWindow();
         DrawEntityManipulator(p_HasFocus);
-        //DrawPinTracer();
-        //DrawLibrary();
+        //DrawPinTracerWindow();
+        //DrawLibraryWindow();
     }
 
-    DrawItems(p_HasFocus);
-    DrawActors(p_HasFocus);
-    DrawDebugChannels(p_HasFocus);
-    DrawRooms(p_HasFocus);
+    DrawItemsWindow(p_HasFocus);
+    DrawActorsWindow(p_HasFocus);
+    DrawDebugChannelsWindow(p_HasFocus);
+    DrawRoomsWindow(p_HasFocus);
 
     if (m_EditorCameraRT && m_EditorCamera) {
         ImGui::Begin("RT Texture");
@@ -382,7 +382,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
     }
 }
 
-void Editor::DrawSettings(const bool p_HasFocus) {
+void Editor::DrawSettingsWindow(const bool p_HasFocus) {
     if (!m_SettingsVisible || !p_HasFocus) {
         return;
     }

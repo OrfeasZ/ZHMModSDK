@@ -39,14 +39,14 @@ DEFINE_PLUGIN_DETOUR(FreelancerSeeder,  ZEvergreenCampaignManager*, ZEvergreenCa
 
 void FreelancerSeeder::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_ECO " FL SEED"))
-        m_ShowSettings = !m_ShowSettings;
+        m_ShowSettingsWindow = !m_ShowSettingsWindow;
 }
 
 void FreelancerSeeder::OnDrawUI(bool p_HasFocus) {
-    if (p_HasFocus && m_ShowSettings) {
+    if (p_HasFocus && m_ShowSettingsWindow) {
         const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
         ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.15f, viewportSize.y * 0.11f), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin(ICON_MD_ECO " Freelancer seeder", &m_ShowSettings)) {
+        if (ImGui::Begin(ICON_MD_ECO " Freelancer seeder", &m_ShowSettingsWindow)) {
             ImGui::Checkbox("Enable custom seed", &m_EnableCustomSeed);
 
             ImGuiInputTextFlags s_SeedFlags = ImGuiInputTextFlags_CharsDecimal;

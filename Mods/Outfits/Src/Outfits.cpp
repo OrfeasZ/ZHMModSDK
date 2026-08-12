@@ -23,12 +23,12 @@ void Outfits::Init() {
 
 void Outfits::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_MAN " OUTFITS")) {
-        m_OutfitsMenuActive = !m_OutfitsMenuActive;
+        m_ShowOutfitsWindow = !m_ShowOutfitsWindow;
     }
 }
 
 void Outfits::OnDrawUI(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_OutfitsMenuActive) {
+    if (!p_HasFocus || !m_ShowOutfitsWindow) {
         return;
     }
 
@@ -37,10 +37,10 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Outfits", &m_OutfitsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Outfits", &m_ShowOutfitsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         if (m_Scenes.empty()) {
             BuildSceneNamesToRuntimeResourceIds();
         }

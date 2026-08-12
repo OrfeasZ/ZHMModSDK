@@ -4,16 +4,16 @@
 
 #include "Util/StringUtils.h"
 
-void Editor::DrawRooms(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_RoomsMenuActive) {
+void Editor::DrawRoomsWindow(const bool p_HasFocus) {
+    if (!p_HasFocus || !m_ShowRoomsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Rooms", &m_RoomsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Rooms", &m_ShowRoomsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing && p_HasFocus) {
+    if (s_IsWindowExpanded) {
         if (!m_CachedEntityTree) {
             if (ImGui::Button("Get rooms")) {
                 UpdateEntities();

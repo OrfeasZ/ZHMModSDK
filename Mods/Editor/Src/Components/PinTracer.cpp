@@ -2,7 +2,7 @@
 
 #include "IconsMaterialDesign.h"
 
-void Editor::DrawPinTracer() {
+void Editor::DrawPinTracerWindow() {
     auto s_ImgGuiIO = ImGui::GetIO();
 
     ImGui::SetNextWindowPos({s_ImgGuiIO.DisplaySize.x - 400, 710});

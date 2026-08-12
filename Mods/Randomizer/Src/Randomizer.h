@@ -165,7 +165,7 @@ private:
     bool m_IsRandomizerEnabled = true;
     bool m_IsRandomizerAllowedForScene = true;
 
-    bool m_RandomizerMenuActive = false;
+    bool m_ShowRandomizerWindow = false;
 
     bool m_RandomizeProps = true;
     bool m_RandomizeOutfits = true;

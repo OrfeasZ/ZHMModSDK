@@ -22,20 +22,20 @@ void Assets::Init() {
 
 void Assets::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_TUNE " ASSETS")) {
-        m_AssetsMenuActive = !m_AssetsMenuActive;
+        m_ShowAssetsWindow = !m_ShowAssetsWindow;
     }
 }
 
 void Assets::OnDrawUI(bool p_HasFocus) {
-    if (!p_HasFocus || !m_AssetsMenuActive) {
+    if (!p_HasFocus || !m_ShowAssetsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Assets", &m_AssetsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Assets", &m_ShowAssetsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         if (m_RepositoryProps.size() == 0) {
             LoadRepositoryProps();
         }

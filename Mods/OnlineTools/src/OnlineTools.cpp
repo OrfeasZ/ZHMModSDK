@@ -219,7 +219,7 @@ void OnlineTools::OnDrawMenu() {
         m_ShowSettings = !m_ShowSettings;
 }
 
-void OnlineTools::SettingsMenu() {
+void OnlineTools::DrawSettingsWindow() {
     const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
     ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.23f, viewportSize.y * 0.35f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(ICON_MD_PUBLIC " Online tools", &m_ShowSettings)) {
@@ -354,7 +354,7 @@ void OnlineTools::SettingsMenu() {
     ImGui::End();
 }
 
-void OnlineTools::HelpMenu() {
+void OnlineTools::DrawHelpWindow() {
     const ImVec2 viewportSize = ImGui::GetMainViewport()->Size;
     ImGui::SetNextWindowSize(ImVec2(viewportSize.x * 0.2f, viewportSize.y * 0.24f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(ICON_MD_PUBLIC " Online tools - help", &m_ShowHelp)) {
@@ -382,10 +382,10 @@ void OnlineTools::HelpMenu() {
         }
         if (ImGui::IsItemHovered()) ImGui::SetTooltip("This will reset all your currently saved domains!");
 
-        ImGui::SeparatorText("Menu overview");
+        ImGui::SeparatorText("Window overview");
         ImGui::TextWrapped(
             "%s",
-            "All the buttons, checkboxes, and text inputs on the main OnlineTools menu have tooltips. Hover over them to see what they/to do."
+            "All the buttons, checkboxes, and text inputs on the main OnlineTools window have tooltips. Hover over them to see what they/to do."
         );
     }
 
@@ -394,8 +394,8 @@ void OnlineTools::HelpMenu() {
 
 void OnlineTools::OnDrawUI(bool p_HasFocus) {
     if (p_HasFocus) {
-        if (m_ShowSettings) SettingsMenu();
-        if (m_ShowHelp) HelpMenu();
+        if (m_ShowSettings) DrawSettingsWindow();
+        if (m_ShowHelp) DrawHelpWindow();
     }
 }
 

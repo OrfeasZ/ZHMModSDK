@@ -138,7 +138,7 @@ std::vector<std::shared_ptr<LibraryItem>> ParseHashesJson(const std::string& p_H
     return s_RootItems;
 }
 
-void Editor::DrawLibrary() {
+void Editor::DrawLibraryWindow() {
     static std::vector<std::shared_ptr<LibraryItem>> s_LibraryItems;
     static std::future<std::vector<std::shared_ptr<LibraryItem>>> s_DownloadFuture;
     static std::shared_ptr<LibraryItem> s_SelectedItem;

@@ -18,7 +18,7 @@ private:
     int m_Seed = 0;
     char m_SeedInput[12] = "0";
     bool m_EnableCustomSeed = false;
-    bool m_ShowSettings = false;
+    bool m_ShowSettingsWindow = false;
 };
 
 DEFINE_ZHM_PLUGIN(FreelancerSeeder)

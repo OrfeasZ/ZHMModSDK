@@ -39,12 +39,12 @@ void Player::Init() {
 
 void Player::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_MAN " PLAYER")) {
-        m_PlayerMenuActive = !m_PlayerMenuActive;
+        m_ShowPlayerWindow = !m_ShowPlayerWindow;
     }
 }
 
 void Player::OnDrawUI(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_PlayerMenuActive) {
+    if (!p_HasFocus || !m_ShowPlayerWindow) {
         return;
     }
 
@@ -53,10 +53,10 @@ void Player::OnDrawUI(const bool p_HasFocus) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin(ICON_MD_MAN " Player", &m_PlayerMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin(ICON_MD_MAN " Player", &m_ShowPlayerWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         if (ImGui::Checkbox("Is invincible", &m_IsInvincible)) {
             ToggleInvincibility();
         }

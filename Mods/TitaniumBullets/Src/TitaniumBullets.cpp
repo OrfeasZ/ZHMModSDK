@@ -318,7 +318,6 @@ void TitaniumBullets::RestoreRepositoryPatch() {
 }
 
 void TitaniumBullets::OnDrawMenu() {
-    // Add menu checkbox
     if (ImGui::Checkbox(ICON_MD_SHIELD " TITANIUM BULLETS", &m_Enabled)) {
         SetSettingBool("TitaniumBullets", "Enabled", m_Enabled);
 
@@ -338,20 +337,20 @@ void TitaniumBullets::OnDrawMenu() {
     }
 
     if (ImGui::Button("TITANIUM BULLETS DEBUG")) {
-        m_DebugWindowActive = !m_DebugWindowActive;
+        m_ShowDebugWindow = !m_ShowDebugWindow;
     }
 }
 
 void TitaniumBullets::OnDrawUI(const bool p_HasFocus) {
-    if (!m_DebugWindowActive || !p_HasFocus) {
+    if (!m_ShowDebugWindow || !p_HasFocus) {
         return;
     }
     
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Titanium bullets debug", &m_DebugWindowActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Titanium bullets debug", &m_ShowDebugWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
     
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         ImGui::Text("Enabled: %s", m_Enabled ? "Yes" : "No");
         ImGui::Text("Patch applied: %s", m_PatchApplied ? "Yes" : "No");
         ImGui::Text("Repo patched: %u", m_RepoEntriesPatched);

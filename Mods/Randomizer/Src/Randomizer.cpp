@@ -119,20 +119,20 @@ void Randomizer::Init() {
 
 void Randomizer::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_MAN " RANDOMIZER")) {
-        m_RandomizerMenuActive = !m_RandomizerMenuActive;
+        m_ShowRandomizerWindow = !m_ShowRandomizerWindow;
     }
 }
 
 void Randomizer::OnDrawUI(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_RandomizerMenuActive) {
+    if (!p_HasFocus || !m_ShowRandomizerWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Randomizer", &m_RandomizerMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Randomizer", &m_ShowRandomizerWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         if (m_Scenes.empty()) {
             BuildSceneNamesToRuntimeResourceIds();
 

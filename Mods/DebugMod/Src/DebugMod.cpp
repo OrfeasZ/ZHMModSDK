@@ -45,11 +45,11 @@ void DebugMod::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {}
 
 void DebugMod::OnDrawMenu() {
 	if (ImGui::Button(ICON_MD_BUILD " DEBUG")) {
-		m_DebugMenuActive = !m_DebugMenuActive;
+		m_ShowDebugWindow = !m_ShowDebugWindow;
 	}
 
 	if (ImGui::Button(ICON_MD_PLACE " POSITIONS")) {
-		m_PositionsMenuActive = !m_PositionsMenuActive;
+		m_ShowPositionsWindow = !m_ShowPositionsWindow;
 	}
 }
 
@@ -59,15 +59,15 @@ void DebugMod::OnDrawUI(bool p_HasFocus) {
 }
 
 void DebugMod::DrawOptions(const bool p_HasFocus) {
-	if (!p_HasFocus || !m_DebugMenuActive) {
+	if (!p_HasFocus || !m_ShowDebugWindow) {
 		return;
 	}
 
 	ImGui::PushFont(SDK()->GetImGuiBlackFont());
-	const auto s_Showing = ImGui::Begin("Debug", &m_DebugMenuActive);
+	const auto s_IsWindowExpanded = ImGui::Begin("Debug", &m_ShowDebugWindow);
 	ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-	if (s_Showing) {
+	if (s_IsWindowExpanded) {
 		if (ImGui::CollapsingHeader("Player", ImGuiTreeNodeFlags_DefaultOpen)) {
 			ImGui::Checkbox("Render health###PlayerHealth", &m_RenderPlayerHealth);
 			ImGui::Checkbox("Render outfit hit points###PlayerOutfitHitPoints", &m_RenderPlayerOutfitHitPoints);

@@ -6,19 +6,18 @@
 #include <Glacier/ZCameraEntity.h>
 
 void DebugMod::DrawPositionBox(bool p_HasFocus) {
-    if (!p_HasFocus || !m_PositionsMenuActive) {
+    if (!p_HasFocus || !m_ShowPositionsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Positions", &m_PositionsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Positions", &m_ShowPositionsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         SMatrix s_HitmanTrans;
         SMatrix s_CameraTrans;
-
-        // Enable Hitman input.
+		
         if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
             auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
@@ -150,6 +149,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
             }
         }
     }
+	
     ImGui::PopFont();
     ImGui::End();
     ImGui::PopFont();

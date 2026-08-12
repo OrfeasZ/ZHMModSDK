@@ -738,7 +738,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
     return false;
 }
 
-void Editor::DrawEntityTree() {
+void Editor::DrawEntityTreeWindow() {
     ImGui::SetNextWindowPos({0, 110}, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize({615, ImGui::GetIO().DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
     ImGui::Begin(ICON_MD_CATEGORY " Entities", nullptr, ImGuiWindowFlags_HorizontalScrollbar);

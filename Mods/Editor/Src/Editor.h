@@ -116,7 +116,7 @@ private:
     void DrawEntityManipulator(bool p_HasFocus);
     void DrawEntityAABB(IRenderer* p_Renderer);
 
-    void DrawEntityProperties();
+    void DrawEntityPropertiesWindow();
     bool DrawEntityPropertyValue(
         const std::string& p_Id,
         const std::string& p_PropertyName,
@@ -137,13 +137,13 @@ private:
 
     void DrawEntityPinValue(const std::string& p_Id, const std::string& p_TypeName, void* p_Data);
 
-    void DrawLibrary();
+    void DrawLibraryWindow();
 
-    void DrawSettings(bool p_HasFocus);
+    void DrawSettingsWindow(bool p_HasFocus);
 
     bool HasVisibleChildren(std::shared_ptr<EntityTreeNode> p_Node) const;
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
-    void DrawEntityTree();
+    void DrawEntityTreeWindow();
     void FilterEntityTree();
     bool FilterEntityTree(EntityTreeNode* p_Node);
     void UpdateEntities();
@@ -186,7 +186,7 @@ private:
 
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
-    void DrawPinTracer();
+    void DrawPinTracerWindow();
 
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
@@ -273,10 +273,10 @@ private:
 
     std::string GetNameFromRepository(const ZRepositoryID& p_RepositoryID);
 
-    void DrawItems(bool p_HasFocus);
-    void DrawActors(bool p_HasFocus);
-    void DrawDebugChannels(bool p_HasFocus);
-    void DrawRooms(bool p_HasFocus);
+    void DrawItemsWindow(bool p_HasFocus);
+    void DrawActorsWindow(bool p_HasFocus);
+    void DrawDebugChannelsWindow(bool p_HasFocus);
+    void DrawRoomsWindow(bool p_HasFocus);
 
     static void EquipOutfit(
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharSetIndex,
@@ -535,14 +535,14 @@ private:
 
     EditorServer m_Server;
 
-    bool m_ItemsMenuActive = false;
-    bool m_ActorsMenuActive = false;
-    bool m_DebugChannelsMenuActive = false;
-    bool m_RoomsMenuActive = false;
+    bool m_ShowItemsWindow = false;
+    bool m_ShowActorsWindow = false;
+    bool m_ShowDebugChannelsWindow = false;
+    bool m_ShowRoomsWindow = false;
 
     ZActor* m_SelectedActor = nullptr;
     TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
-    const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
+    const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
     bool m_ShowAliveActors = false;
     bool m_ShowCivilians = true;
     bool m_ShowGuards = true;
@@ -574,7 +574,7 @@ private:
     std::unordered_map<std::string, std::vector<std::string>> m_DebugChannelNameToTypeNames;
     std::unordered_map<EDebugChannel, uint32> m_DebugChannelToDebugEntityCount;
     std::unordered_map<EDebugChannel, std::unordered_map<std::string, uint32_t>>
-    m_DebugChannelToTypeNameToDebugEntityCount;
+        m_DebugChannelToTypeNameToDebugEntityCount;
     std::unordered_map<EDebugChannel, bool> m_DebugChannelToState;
     std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToState;
     std::vector<STypeID*> m_DebugEntityTypeIds;

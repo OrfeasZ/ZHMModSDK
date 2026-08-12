@@ -6,16 +6,16 @@
 #include <Glacier/ZItem.h>
 #include "Util/StringUtils.h"
 
-void Editor::DrawItems(bool p_HasFocus) {
-    if (!p_HasFocus || !m_ItemsMenuActive) {
+void Editor::DrawItemsWindow(bool p_HasFocus) {
+    if (!p_HasFocus || !m_ShowItemsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Items", &m_ItemsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Items", &m_ShowItemsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
 
         if (s_Hm5ActionManager->m_Actions.size() == 0) {

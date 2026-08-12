@@ -13,7 +13,7 @@ public:
 private:
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
-    bool m_WorldMenuActive = false;
+    bool m_ShowWorldWindow = false;
     bool m_IsTimeMultiplierEnabled = false;
 
     float m_GameTimeMultiplier = 1.f;

@@ -18,16 +18,16 @@
 
 #undef min
 
-void Editor::DrawActors(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_ActorsMenuActive) {
+void Editor::DrawActorsWindow(const bool p_HasFocus) {
+    if (!p_HasFocus || !m_ShowActorsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Actors", &m_ActorsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Actors", &m_ShowActorsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing && p_HasFocus) {
+    if (s_IsWindowExpanded) {
         if (!Globals::ActorManager) {
             return;
         }

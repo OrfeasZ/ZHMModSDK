@@ -16,7 +16,7 @@
 #include "Glacier/SColorRGBA.h"
 #include "Glacier/ZGameTime.h"
 
-void Editor::DrawEntityProperties() {
+void Editor::DrawEntityPropertiesWindow() {
     auto s_ImgGuiIO = ImGui::GetIO();
 
     ImGui::SetNextWindowPos({ s_ImgGuiIO.DisplaySize.x - 500, 110 }, ImGuiCond_FirstUseEver);
@@ -91,7 +91,7 @@ void Editor::DrawEntityProperties() {
             }
 
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Select in actors menu");
+                ImGui::SetTooltip("Select in actors window");
             }
         }
 

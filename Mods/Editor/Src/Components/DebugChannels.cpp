@@ -277,16 +277,16 @@ void Editor::InitializeDebugEntityTypeIDs() {
     m_DebugEntityTypeIds[DebugEntityTypeName::ClothWireEntity] = s_TypeRegistry->GetTypeID("ZClothWireEntity");
 }
 
-void Editor::DrawDebugChannels(bool p_HasFocus) {
-    if (!p_HasFocus || !m_DebugChannelsMenuActive) {
+void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
+    if (!p_HasFocus || !m_ShowDebugChannelsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Debug channels", &m_DebugChannelsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Debug channels", &m_ShowDebugChannelsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         if (m_DebugChannels.empty()) {
             InitializeDebugChannels();
             InitializeDebugEntityTypeIDs();
