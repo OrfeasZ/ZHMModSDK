@@ -1,3 +1,4 @@
+#include <complex.h>
 #include <Editor.h>
 #include <functional>
 
@@ -230,6 +231,9 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     std::vector<Quat> s_ParentQuats;
     while (s_Entity->m_eidParent != NULL) {
         const TEntityRef<ZSpatialEntity> s_EidParent = s_Entity->m_eidParent;
+        if (s_Entity == s_EidParent.m_pInterfaceRef) {
+            throw std::runtime_error("Circular reference found!");
+        }
         s_Entity = s_EidParent.m_pInterfaceRef;
         s_ParentQuats.push_back(GetQuatFromProperty(s_EidParent.m_entityRef));
     }
@@ -287,16 +291,15 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
         }
     }
     const ZGeomEntity* s_GeomEntity = p_Node->Entity.QueryInterface<ZGeomEntity>();
-    std::string s_EntityId = std::format("{:016x}", p_Node->Entity->GetType()->m_nEntityID);
-    std::string s_TbluHashString =
-        std::format("<{:08X}{:08X}>", p_Node->BlueprintFactory.m_IDHigh, p_Node->BlueprintFactory.m_IDLow);
-    const auto s_PrimResourceInfo =
-        (*Globals::ResourceContainer)-> m_resources[s_GeomEntity->m_ResourceID.m_nResourceIndex.val];
-    const auto s_PrimResourceId = s_PrimResourceInfo.rid.GetID();
-    std::string s_PrimHash {std::format("{:016X}", s_PrimResourceId)};
-
     if (ZResourceIndex s_GeomEntityResourceIndex(s_GeomEntity->m_ResourceID.m_nResourceIndex);
         s_GeomEntityResourceIndex.val != -1) {
+        std::string s_EntityId = std::format("{:016x}", p_Node->Entity->GetType()->m_nEntityID);
+        std::string s_TbluHashString =
+            std::format("<{:08X}{:08X}>", p_Node->BlueprintFactory.m_IDHigh, p_Node->BlueprintFactory.m_IDLow);
+        const auto s_PrimResourceInfo =
+            (*Globals::ResourceContainer)-> m_resources[s_GeomEntityResourceIndex.val];
+        const auto s_PrimResourceId = s_PrimResourceInfo.rid.GetID();
+        std::string s_PrimHash {std::format("{:016X}", s_PrimResourceId)};
         TArray<unsigned char> s_Flags;
         TArray<ZResourceIndex> s_Indices;
         std::vector<std::string> s_MatiTextures;
@@ -319,51 +322,52 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
             std::string s_DiffuseTexturePropertyName;
             std::string s_NormalTexturePropertyName;
             std::string s_SpecularTexturePropertyName;
-
-            for (const auto& s_SemanticStringPair : s_RenderMaterialInstance->m_pEffect->m_SemanticStringPairs) {
-                if (s_SemanticStringPair.m_ShaderParameterName == "mapDiffuse" ) {
-                    s_DiffuseTexturePropertyName = s_SemanticStringPair.m_MaterialPropertyName;
-                }
-                if (s_SemanticStringPair.m_ShaderParameterName == "mapNormal") {
-                    s_NormalTexturePropertyName = s_SemanticStringPair.m_MaterialPropertyName;
-                }
-                if (s_SemanticStringPair.m_ShaderParameterName == "mapSpecular") {
-                    s_SpecularTexturePropertyName = s_SemanticStringPair.m_MaterialPropertyName;
-                }
-            }
-
             NavKitMatiTextures s_MeshMatiTextures = NavKitMatiTextures();
-            if (!s_RenderMaterialInstance->m_TextureInfo.empty()) {
-                uint32_t s_NormalTextureReferenceIndex = -1;
-                uint32_t s_SpecularTextureReferenceIndex = -1;
-                uint32_t s_DiffuseTextureReferenceIndex = -1;
-                const ZResourceContainer::SResourceInfo& s_MaterialInstanceResourceInfo = s_MatiResource.GetResourceInfo();
+            if (s_RenderMaterialInstance) {
+                for (const auto& s_SemanticStringPair : s_RenderMaterialInstance->m_pEffect->m_SemanticStringPairs) {
+                    if (s_SemanticStringPair.m_ShaderParameterName == "mapDiffuse" ) {
+                        s_DiffuseTexturePropertyName = s_SemanticStringPair.m_MaterialPropertyName;
+                    }
+                    if (s_SemanticStringPair.m_ShaderParameterName == "mapNormal") {
+                        s_NormalTexturePropertyName = s_SemanticStringPair.m_MaterialPropertyName;
+                    }
+                    if (s_SemanticStringPair.m_ShaderParameterName == "mapSpecular") {
+                        s_SpecularTexturePropertyName = s_SemanticStringPair.m_MaterialPropertyName;
+                    }
+                }
 
-                for (const auto& s_TextureInfo : s_RenderMaterialInstance->m_TextureInfo) {
-                    if (s_TextureInfo.Name == s_DiffuseTexturePropertyName || s_TextureInfo.Name == "mapTexture2D_01") {
-                        s_DiffuseTextureReferenceIndex = s_TextureInfo.nResourceOffset;
+                if (!s_RenderMaterialInstance->m_TextureInfo.empty()) {
+                    uint32_t s_NormalTextureReferenceIndex = -1;
+                    uint32_t s_SpecularTextureReferenceIndex = -1;
+                    uint32_t s_DiffuseTextureReferenceIndex = -1;
+                    const ZResourceContainer::SResourceInfo& s_MaterialInstanceResourceInfo = s_MatiResource.GetResourceInfo();
+
+                    for (const auto& s_TextureInfo : s_RenderMaterialInstance->m_TextureInfo) {
+                        if (s_TextureInfo.Name == s_DiffuseTexturePropertyName || s_TextureInfo.Name == "mapTexture2D_01") {
+                            s_DiffuseTextureReferenceIndex = s_TextureInfo.nResourceOffset;
+                        }
+                        else if (s_TextureInfo.Name == s_NormalTexturePropertyName || s_TextureInfo.Name == "mapTexture2DNormal_01") {
+                            s_NormalTextureReferenceIndex = s_TextureInfo.nResourceOffset;
+                        }
+                        else if (s_TextureInfo.Name == s_SpecularTexturePropertyName || s_TextureInfo.Name == "mapTexture2D_03") {
+                            s_SpecularTextureReferenceIndex = s_TextureInfo.nResourceOffset;
+                        }
                     }
-                    else if (s_TextureInfo.Name == s_NormalTexturePropertyName || s_TextureInfo.Name == "mapTexture2DNormal_01") {
-                        s_NormalTextureReferenceIndex = s_TextureInfo.nResourceOffset;
+                    if (s_DiffuseTextureReferenceIndex != -1) {
+                        const uint32_t s_DiffuseTextureResourceIndex = (*Globals::ResourceContainer)->m_references[s_MaterialInstanceResourceInfo.firstReferenceIndex + s_DiffuseTextureReferenceIndex].index;
+                        const ZRuntimeResourceID s_DiffuseTextureRuntimeResourceID = (*Globals::ResourceContainer)->m_resources[s_DiffuseTextureResourceIndex].rid;
+                        s_MeshMatiTextures.m_DiffuseTextureHash = std::format("{:016X}", s_DiffuseTextureRuntimeResourceID.GetID());
                     }
-                    else if (s_TextureInfo.Name == s_SpecularTexturePropertyName || s_TextureInfo.Name == "mapTexture2D_03") {
-                        s_SpecularTextureReferenceIndex = s_TextureInfo.nResourceOffset;
+                    if (s_NormalTextureReferenceIndex != -1) {
+                        const uint32_t s_NormalTextureResourceIndex = (*Globals::ResourceContainer)->m_references[s_MaterialInstanceResourceInfo.firstReferenceIndex + s_NormalTextureReferenceIndex].index;
+                        const ZRuntimeResourceID s_NormalTextureRuntimeResourceID = (*Globals::ResourceContainer)->m_resources[s_NormalTextureResourceIndex].rid;
+                        s_MeshMatiTextures.m_NormalTextureHash = std::format("{:016X}", s_NormalTextureRuntimeResourceID.GetID());
                     }
-                }
-                if (s_DiffuseTextureReferenceIndex != -1) {
-                    const uint32_t s_DiffuseTextureResourceIndex = (*Globals::ResourceContainer)->m_references[s_MaterialInstanceResourceInfo.firstReferenceIndex + s_DiffuseTextureReferenceIndex].index;
-                    const ZRuntimeResourceID s_DiffuseTextureRuntimeResourceID = (*Globals::ResourceContainer)->m_resources[s_DiffuseTextureResourceIndex].rid;
-                    s_MeshMatiTextures.m_DiffuseTextureHash = std::format("{:016X}", s_DiffuseTextureRuntimeResourceID.GetID());
-                }
-                if (s_NormalTextureReferenceIndex != -1) {
-                    const uint32_t s_NormalTextureResourceIndex = (*Globals::ResourceContainer)->m_references[s_MaterialInstanceResourceInfo.firstReferenceIndex + s_NormalTextureReferenceIndex].index;
-                    const ZRuntimeResourceID s_NormalTextureRuntimeResourceID = (*Globals::ResourceContainer)->m_resources[s_NormalTextureResourceIndex].rid;
-                    s_MeshMatiTextures.m_NormalTextureHash = std::format("{:016X}", s_NormalTextureRuntimeResourceID.GetID());
-                }
-                if (s_SpecularTextureReferenceIndex != -1) {
-                    const uint32_t s_SpecularTextureResourceIndex = (*Globals::ResourceContainer)->m_references[s_MaterialInstanceResourceInfo.firstReferenceIndex + s_SpecularTextureReferenceIndex].index;
-                    const ZRuntimeResourceID s_SpecularTextureRuntimeResourceID = (*Globals::ResourceContainer)->m_resources[s_SpecularTextureResourceIndex].rid;
-                    s_MeshMatiTextures.m_SpecularTextureHash = std::format("{:016X}", s_SpecularTextureRuntimeResourceID.GetID());
+                    if (s_SpecularTextureReferenceIndex != -1) {
+                        const uint32_t s_SpecularTextureResourceIndex = (*Globals::ResourceContainer)->m_references[s_MaterialInstanceResourceInfo.firstReferenceIndex + s_SpecularTextureReferenceIndex].index;
+                        const ZRuntimeResourceID s_SpecularTextureRuntimeResourceID = (*Globals::ResourceContainer)->m_resources[s_SpecularTextureResourceIndex].rid;
+                        s_MeshMatiTextures.m_SpecularTextureHash = std::format("{:016X}", s_SpecularTextureRuntimeResourceID.GetID());
+                    }
                 }
             }
             p_MatiTextures[s_MatiHash] = s_MeshMatiTextures;
@@ -376,7 +380,17 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
             s_EntityId, s_TbluHashString, s_PrimHash, s_AlocHash
         );
         Quat s_EntityQuat = GetQuatFromProperty(p_Node->Entity);
-        Quat s_ParentQuat = GetParentQuat(p_Node->Entity);
+
+        Quat s_ParentQuat;
+        try {
+            s_ParentQuat = GetParentQuat(p_Node->Entity);
+        } catch (std::runtime_error) {
+            Logger::Error(
+                "Circular reference found! Skipping entity with ID: {} TBLU: {} PRIM: {} ALOC: {}",
+                s_EntityId, s_TbluHashString, s_PrimHash, s_AlocHash
+            );
+            return;
+        }
 
         Quat s_CombinedQuat;
         s_CombinedQuat = s_ParentQuat * s_EntityQuat;
@@ -423,7 +437,15 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
             );
             // s_NavKitMeshHashInfos.emplace_back(s_AlocHash, s_PrimHash);
             Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-            Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+            Quat s_ParentQuat;
+            try {
+                s_ParentQuat =GetParentQuat(s_Node->Entity);
+            } catch (std::runtime_error) {
+                Logger::Error(
+                    "Circular reference found! Skipping entity with ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
+                );
+                return;
+            }
 
             Quat s_CombinedQuat;
             s_CombinedQuat = s_ParentQuat * s_EntityQuat;
@@ -542,7 +564,13 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
         if (const char* s_EntityType = s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName;
             strcmp(s_EntityType, p_EntityType.c_str()) == 0) {
             Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-            Quat s_ParentQuat = GetParentQuat(s_Node->Entity);
+            Quat s_ParentQuat;
+            try {
+                s_ParentQuat =GetParentQuat(s_Node->Entity);
+            } catch (std::runtime_error) {
+                Logger::Error( "Circular reference found! Skipping entity." );
+                continue;
+            }
 
             Quat s_CombinedQuat;
             s_CombinedQuat = s_ParentQuat * s_EntityQuat;
