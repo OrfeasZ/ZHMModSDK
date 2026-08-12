@@ -322,9 +322,9 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-                const SVector3 s_Temp = s_ActorSpatialEntity->m_mTransform.Trans - s_HitmanSpatialEntity->m_mTransform.
+                const SVector3 s_Offset = s_ActorSpatialEntity->m_mTransform.Trans - s_HitmanSpatialEntity->m_mTransform.
                     Trans;
-                const float s_Distance = sqrt(s_Temp.x * s_Temp.x + s_Temp.y * s_Temp.y + s_Temp.z * s_Temp.z);
+                const float s_Distance = sqrt(s_Offset.x * s_Offset.x + s_Offset.y * s_Offset.y + s_Offset.z * s_Offset.z);
 
                 if (s_Distance <= 3.0f) {
                     EquipOutfit(
