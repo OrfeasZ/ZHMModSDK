@@ -26,6 +26,19 @@ class ZFreeCameraControlEditorStyleEntity :
 public:
     TEntityRef<ZSpatialEntity> m_cameraEntity; // 0x20
     bool m_bActive; // 0x30
+    TEntityRef<ZCameraEntity> m_pControlledCameraEntity;
+    bool m_bRotationWasActive;
+    bool m_bObjectHookWasActive;
+    float4 m_vMousePos;
+    float4 m_vLastDragPoint;
+    float4 m_vHookPoint;
+    bool m_bDraggingIsActive;
+    float m_fSpeed;
+    bool m_bZoomToSelectedPivotNextTime;
+    float m_fZoomToPivotDistance;
+    bool m_bPickingWasPermitted;
+    int m_nHookDebugDrawId;
+    bool m_bZoomToSelectionWasActive;
 };
 
 class ZSelectionForFreeCameraEditorStyleEntity :
