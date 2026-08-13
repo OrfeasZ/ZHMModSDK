@@ -581,8 +581,8 @@ bool ModSDK::CheckForUpdates() const {
         const std::string s_LatestVersionStr(s_LatestVersion.substr(1));
 
         // Compare the latest version with the current version.
-        semver::version s_CurrentVersion(SDKVersion());
-        semver::version s_LatestSemver(s_LatestVersionStr);
+        const auto s_CurrentVersion = semver::from_string(SDKVersion());
+	    const auto s_LatestSemver = semver::from_string(s_LatestVersionStr);
 
         if (s_LatestSemver > s_CurrentVersion) {
             Logger::Info("A new version of the Mod SDK is available: {}.", s_LatestVersion);
