@@ -7,6 +7,3 @@
 [submodule "External/IconFontCppHeaders"]
 	path = External/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders.git
-[submodule "External/implot/src"]
-	path = External/implot/src
-	url = https://github.com/epezent/implot.git

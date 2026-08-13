@@ -38,11 +38,11 @@ target_link_libraries(Editor PRIVATE
         ZHMModSDK
         imguizmo::imguizmo
         unofficial::imgui-node-editor::imgui-node-editor
+        implot::implot
         ws2_32
         $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>
         ZLIB::ZLIB
         "${USOCKETS_LIB}"
         simdjson::simdjson
         #	TracyClient
-        implot
 )

@@ -27,7 +27,8 @@
             ]
         },
         "imguizmo",
-        "imgui-node-editor"
+        "imgui-node-editor",
+        "implot"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [
