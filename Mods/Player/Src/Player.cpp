@@ -348,6 +348,10 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
             for (size_t i = 0; i < s_Hm5ActionManager->m_Actions.size(); ++i) {
                 const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
+				
+			    if (!s_Action) {
+				    continue;
+			    }
 
                 if (s_Action->m_eActionType == EActionType::AT_PICKUP) {
                     const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
