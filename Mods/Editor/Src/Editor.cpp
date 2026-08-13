@@ -1347,6 +1347,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_SelectedActor = nullptr;
     m_GlobalOutfitKit = {};
+	
+	m_SelectedAction = nullptr;
 
     m_SelectedGizmoEntity = nullptr;
     m_DrawGizmosForSelectedEntityOnly = false;

@@ -13,6 +13,7 @@
 #include "Glacier/ZFreeCamera.h"
 #include "Glacier/EDebugChannel.h"
 #include "Glacier/ZCurve.h"
+#include "Glacier/ZAction.h"
 
 #include "ImGuizmo.h"
 #include "EditorServer.h"
@@ -567,6 +568,8 @@ private:
     ZEntityRef m_PlayerCam = nullptr;
     TEntityRef<ZCameraEntity> m_TrackCam {};
     TEntityRef<IRenderDestinationEntity> m_RenderDest {};
+	
+	ZHM5Action* m_SelectedAction = nullptr;
 
     std::unordered_map<ZEntityRef, std::vector<std::unique_ptr<DebugEntity>>> m_EntityRefToDebugEntities;
     std::shared_mutex m_DebugEntitiesMutex;

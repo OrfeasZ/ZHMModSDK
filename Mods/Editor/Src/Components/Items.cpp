@@ -2,7 +2,6 @@
 
 #include <format>
 
-#include <Glacier/ZAction.h>
 #include <Glacier/ZItem.h>
 #include "Util/StringUtils.h"
 
@@ -26,7 +25,7 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
             return;
         }
 
-        static char s_ItemTitle[2048]{ "" };
+        static char s_ItemTitle[2048] { "" };
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Item title");
@@ -34,12 +33,10 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
 
         ImGui::InputText("##ItemName", s_ItemTitle, sizeof(s_ItemTitle));
 
-        static size_t s_Selected = 0;
-
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
         for (size_t i = 0; i < s_Hm5ActionManager->m_Actions.size(); i++) {
-            const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
+            ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
 
             if (!s_Action || s_Action->m_eActionType != EActionType::AT_PICKUP) {
                 continue;
@@ -57,8 +54,12 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
                 s_Action->m_Object->GetType()->m_nEntityID, i + 1
             );
 
-            if (ImGui::Selectable(s_ItemLabel.c_str(), s_Selected == i)) {
-                s_Selected = i;
+            const bool s_IsSelected = m_SelectedAction == s_Action;
+
+            if (ImGui::Selectable(s_ItemLabel.c_str(), s_IsSelected)) {
+                if (!s_IsSelected) {
+                    m_SelectedAction = s_Action;
+                }
             }
 
             if (ImGui::IsItemHovered()) {
@@ -109,8 +110,15 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
 
         ImGui::EndChild();
 
-        const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[s_Selected];
-        const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
+        if (!m_SelectedAction) {
+            ImGui::PopFont();
+            ImGui::End();
+            ImGui::PopFont();
+
+            return;
+        }
+
+        const ZHM5Item* s_Item = m_SelectedAction->m_Object.QueryInterface<ZHM5Item>();
 
         if (!s_Item) {
             ImGui::PopFont();
@@ -130,7 +138,7 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
                 UpdateEntities();
             }
 
-            OnSelectEntity(s_Action->m_Object, true, std::nullopt);
+            OnSelectEntity(m_SelectedAction->m_Object, true, std::nullopt);
         }
 
         ImGui::BeginDisabled(!s_Item->m_pOwner);
