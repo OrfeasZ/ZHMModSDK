@@ -71,19 +71,19 @@ public:
     void OnDrawMenu() const;
 
 public:
-    void SetSwapChain(Rendering::D3D12SwapChain* p_SwapChain);
+    void SetSwapChain(IDXGISwapChain3* p_SwapChain);
+    void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
     void OnPresent(IDXGISwapChain3* p_SwapChain);
     void PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult);
-    void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
     void OnReset(IDXGISwapChain3* p_SwapChain);
     void PostReset(IDXGISwapChain3* p_SwapChain);
 
 public:
     std::shared_ptr<ModLoader> GetModLoader() const { return m_ModLoader; }
 
-    #if _DEBUG
+#if _DEBUG
     std::shared_ptr<DebugConsole> GetDebugConsole() const { return m_DebugConsole; }
-    #endif
+#endif
 
     std::shared_ptr<Rendering::Renderers::DirectXTKRenderer> GetDirectXTKRenderer() const {
         return m_DirectXTKRenderer;
@@ -97,13 +97,13 @@ public:
     std::shared_ptr<UI::ModSelector> GetUIModSelector() const { return m_UIModSelector; }
 
     uint8_t GetConsoleScanCode() const { return m_ConsoleScanCode; }
-    uint8_t GetUiToggleScanCode() const { return m_UiToggleScanCode; }
-    bool HasShownUiToggleWarning() const { return m_HasShownUiToggleWarning; }
+    uint8_t GetUIToggleScanCode() const { return m_UIToggleScanCode; }
+    bool HasShownUIToggleWarning() const { return m_HasShownUIToggleWarning.load(std::memory_order_acquire); }
 
-    void SetHasShownUiToggleWarning();
+    void SetHasShownUIToggleWarning();
 
 public:
-    #pragma region IModSDK implementation
+#pragma region IModSDK implementation
 
     void RequestUIFocus() override;
     void ReleaseUIFocus() override;
@@ -130,7 +130,7 @@ public:
         void* p_OriginalCode
     ) override;
 
-    void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = {0, 0}) override;
+    void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) override;
 
     // Plugin settings
     void SetPluginSetting(
@@ -205,12 +205,12 @@ public:
         ImGuiTexture& p_OutImGuiTexture
     ) override;
 
-    #pragma endregion
+#pragma endregion
 
     void AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size);
 
 private:
-    #pragma region Detours
+#pragma region Detours
 
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
@@ -244,16 +244,16 @@ private:
         const char* msg
     );
 
-    #pragma endregion
+#pragma endregion
 
     bool PatchCodeInternal(
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
         void* p_OriginalCode
     );
 
-    void UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback);
+    void UpdateSDKIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback);
 
-    #pragma region ResourceLoading
+#pragma region ResourceLoading
 
 public:
     bool LoadQnEntity(
@@ -274,26 +274,36 @@ private:
 
     void LoadResourceChunkMap();
 
-    #pragma endregion
+#pragma endregion
 
 private:
     static const char* GameStateToString(ZLevelManager::EGameState p_GameState);
     static const char* SceneLoadingStageToString(ESceneLoadingStage p_SceneLoadingStage);
 
+    static void ImDrawCallback_SetGameDescriptorHeap(const ImDrawList* p_DrawList, const ImDrawCmd* p_Command);
+    static void ImDrawCallback_ResetDescriptorHeap(const ImDrawList* p_DrawList, const ImDrawCmd* p_Command);
+
 private:
-    bool m_UiEnabled = true;
+    bool m_UIEnabled = true;
     uint8_t m_ConsoleScanCode = 0x29; // Grave / Tilde key
-    uint8_t m_UiToggleScanCode = 0x57; // F11
-    bool m_HasShownUiToggleWarning = false;
+    uint8_t m_UIToggleScanCode = 0x57; // F11
+    std::atomic<bool> m_HasShownUIToggleWarning = false;
+
     bool m_ForceLoad = false;
+
     std::optional<bool> m_EnableSentry;
+
     uintptr_t m_ModuleBase;
     uint32_t m_SizeOfCode;
     uint32_t m_ImageSize;
+
     std::string m_IgnoredVersion;
-    std::string m_AutoLoadScene;
     bool m_DisableUpdateCheck = false;
+
+    std::string m_AutoLoadScene;
+
     float m_LoadedModsUIScrollOffset = 0;
+
     bool m_IsGameStateLoggingEnabled = false;
     bool m_IsSceneLoadingLoggingEnabled = false;
     bool m_IsScaleformLoggingEnabled = false;
@@ -302,9 +312,9 @@ private:
 
     std::shared_ptr<ModLoader> m_ModLoader {};
 
-    #if _DEBUG
+#if _DEBUG
     std::shared_ptr<DebugConsole> m_DebugConsole {};
-    #endif
+#endif
 
     std::shared_ptr<Rendering::Renderers::DirectXTKRenderer> m_DirectXTKRenderer {};
     std::shared_ptr<Rendering::Renderers::ImGuiRenderer> m_ImguiRenderer {};
