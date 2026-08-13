@@ -2,6 +2,10 @@
 
 #include "ImGuiRenderer.h"
 
+#include <filesystem>
+#include <initializer_list>
+#include <string>
+
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
 
@@ -29,6 +33,125 @@
 
 using namespace Rendering::Renderers;
 
+namespace {
+constexpr float c_ImGuiFontSize = 28.f;
+
+struct CjkFontPaths {
+    std::string Regular;
+    std::string Bold;
+};
+
+std::filesystem::path GetSystemFontsDirectory() {
+    wchar_t s_WindowsDirectory[MAX_PATH] {};
+    const auto s_Length = ::GetWindowsDirectoryW(s_WindowsDirectory, MAX_PATH);
+
+    if (s_Length == 0 || s_Length >= MAX_PATH)
+        return {};
+
+    return std::filesystem::path(s_WindowsDirectory) / L"Fonts";
+}
+
+std::string FindExistingFont(
+    const std::filesystem::path& p_FontsDirectory,
+    std::initializer_list<const wchar_t*> p_Candidates
+) {
+    for (const auto* s_Candidate : p_Candidates) {
+        const auto s_Path = p_FontsDirectory / s_Candidate;
+
+        if (std::filesystem::exists(s_Path))
+            return s_Path.string();
+    }
+
+    return {};
+}
+
+CjkFontPaths FindCjkFontPaths() {
+    const auto s_FontsDirectory = GetSystemFontsDirectory();
+
+    if (s_FontsDirectory.empty())
+        return {};
+
+    CjkFontPaths s_FontPaths {};
+
+    s_FontPaths.Regular = FindExistingFont(
+        s_FontsDirectory,
+        {
+            L"msyh.ttc", // Microsoft YaHei
+            L"simhei.ttf",
+            L"simsun.ttc",
+        }
+    );
+
+    s_FontPaths.Bold = FindExistingFont(
+        s_FontsDirectory,
+        {
+            L"msyhbd.ttc", // Microsoft YaHei Bold
+            L"simhei.ttf",
+            L"msjhbd.ttc",
+            L"Dengb.ttf",
+        }
+    );
+
+    if (s_FontPaths.Bold.empty())
+        s_FontPaths.Bold = s_FontPaths.Regular;
+
+    return s_FontPaths;
+}
+
+const ImWchar* GetChineseGlyphRanges(ImFontAtlas* p_Fonts) {
+    static ImVector<ImWchar> s_Ranges;
+
+    if (s_Ranges.empty()) {
+        static constexpr ImWchar c_ExtraRanges[] = {
+            0x2000, 0x206F, // General Punctuation
+            0x3000, 0x303F, // CJK Symbols and Punctuation
+            0xFF00, 0xFFEF, // Halfwidth and Fullwidth Forms
+            0,
+        };
+
+        ImFontGlyphRangesBuilder s_Builder;
+        s_Builder.AddRanges(p_Fonts->GetGlyphRangesChineseSimplifiedCommon());
+        s_Builder.AddRanges(c_ExtraRanges);
+        s_Builder.BuildRanges(&s_Ranges);
+    }
+
+    return s_Ranges.Data;
+}
+
+void MergeCjkFallback(ImFontAtlas* p_Fonts, const std::string& p_FontPath, const ImWchar* p_Ranges) {
+    if (p_FontPath.empty())
+        return;
+
+    ImFontConfig s_CjkConfig {};
+    s_CjkConfig.MergeMode = true;
+
+    p_Fonts->AddFontFromFileTTF(p_FontPath.c_str(), c_ImGuiFontSize, &s_CjkConfig, p_Ranges);
+}
+
+ImFont* AddSdkFont(
+    ImFontAtlas* p_Fonts,
+    const unsigned int* p_FontData,
+    unsigned int p_FontDataSize,
+    const ImWchar* p_TextRanges,
+    const std::string& p_CjkFontPath,
+    const ImWchar* p_CjkRanges,
+    const ImWchar* p_IconRanges,
+    const ImFontConfig& p_IconsConfig
+) {
+    ImFont* s_Font = p_Fonts->AddFontFromMemoryCompressedTTF(
+        p_FontData, p_FontDataSize, c_ImGuiFontSize, nullptr, p_TextRanges
+    );
+
+    MergeCjkFallback(p_Fonts, p_CjkFontPath, p_CjkRanges);
+    p_Fonts->AddFontFromMemoryCompressedTTF(
+        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, c_ImGuiFontSize,
+        &p_IconsConfig, p_IconRanges
+    );
+
+    return s_Font;
+}
+}
+
 ImGuiRenderer::ImGuiRenderer() {
     QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
     QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
@@ -50,6 +173,7 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.BackendPlatformName = "imgui_impl_win32";
     s_ImGuiIO.BackendRendererName = "imgui_impl_dx12";
     s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+    UpdateKeyboardCodePage();
 
     // Here we merge the material icon glyphs into each of our other fonts.
     ImFontConfig s_IconsConfig {};
@@ -64,43 +188,32 @@ ImGuiRenderer::ImGuiRenderer() {
     };
     static constexpr ImWchar c_IconRanges[] = {ICON_MIN_MD, ICON_MAX_16_MD, 0};
 
-    m_FontLight = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoLight_compressed_data, RobotoLight_compressed_size, 28.f, nullptr, c_TextRanges
-    );
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
-    );
-    s_ImGuiIO.Fonts->Build();
+    const auto s_CjkFontPaths = FindCjkFontPaths();
+    const ImWchar* s_CjkRanges = GetChineseGlyphRanges(s_ImGuiIO.Fonts);
 
-    m_FontRegular = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoRegular_compressed_data, RobotoRegular_compressed_size, 28.f, nullptr, c_TextRanges
+    m_FontLight = AddSdkFont(
+        s_ImGuiIO.Fonts, RobotoLight_compressed_data, RobotoLight_compressed_size, c_TextRanges,
+        s_CjkFontPaths.Regular, s_CjkRanges, c_IconRanges, s_IconsConfig
     );
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
-    );
-    s_ImGuiIO.Fonts->Build();
 
-    m_FontMedium = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoMedium_compressed_data, RobotoMedium_compressed_size, 28.f, nullptr, c_TextRanges
+    m_FontRegular = AddSdkFont(
+        s_ImGuiIO.Fonts, RobotoRegular_compressed_data, RobotoRegular_compressed_size, c_TextRanges,
+        s_CjkFontPaths.Regular, s_CjkRanges, c_IconRanges, s_IconsConfig
     );
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
-    );
-    s_ImGuiIO.Fonts->Build();
 
-    m_FontBold = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoBold_compressed_data, RobotoBold_compressed_size, 28.f, nullptr, c_TextRanges
+    m_FontMedium = AddSdkFont(
+        s_ImGuiIO.Fonts, RobotoMedium_compressed_data, RobotoMedium_compressed_size, c_TextRanges,
+        s_CjkFontPaths.Regular, s_CjkRanges, c_IconRanges, s_IconsConfig
     );
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
-    );
-    s_ImGuiIO.Fonts->Build();
 
-    m_FontBlack = s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        RobotoBlack_compressed_data, RobotoBlack_compressed_size, 28.f, nullptr, c_TextRanges
+    m_FontBold = AddSdkFont(
+        s_ImGuiIO.Fonts, RobotoBold_compressed_data, RobotoBold_compressed_size, c_TextRanges,
+        s_CjkFontPaths.Bold, s_CjkRanges, c_IconRanges, s_IconsConfig
     );
-    s_ImGuiIO.Fonts->AddFontFromMemoryCompressedTTF(
-        MaterialIconsRegular_compressed_data, MaterialIconsRegular_compressed_size, 28.f, &s_IconsConfig, c_IconRanges
+
+    m_FontBlack = AddSdkFont(
+        s_ImGuiIO.Fonts, RobotoBlack_compressed_data, RobotoBlack_compressed_size, c_TextRanges,
+        s_CjkFontPaths.Bold, s_CjkRanges, c_IconRanges, s_IconsConfig
     );
     s_ImGuiIO.Fonts->Build();
 
