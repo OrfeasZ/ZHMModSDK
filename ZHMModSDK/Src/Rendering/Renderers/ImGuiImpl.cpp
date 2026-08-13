@@ -126,7 +126,7 @@ static void ImGui_ImplDX12_SetupRenderState(ImDrawData* draw_data, ID3D12Graphic
     ctx->SetGraphicsRoot32BitConstants(0, 16, &vertex_constant_buffer, 0);
 
     // Setup blend factor
-    const float blend_factor[4] = {0.f, 0.f, 0.f, 0.f};
+    const float blend_factor[4] = { 0.f, 0.f, 0.f, 0.f };
     ctx->OMSetBlendFactor(blend_factor);
 }
 
@@ -195,15 +195,15 @@ void ImGui_ImplDX12_RenderDrawData(
     }
 
     // Upload vertex/index data into a single contiguous GPU buffer
-    void *vtx_resource, *idx_resource;
+    void* vtx_resource, * idx_resource;
     D3D12_RANGE range;
     memset(&range, 0, sizeof(D3D12_RANGE));
     if (fr->VertexBuffer->Map(0, &range, &vtx_resource) != S_OK)
         return;
     if (fr->IndexBuffer->Map(0, &range, &idx_resource) != S_OK)
         return;
-    ImDrawVert* vtx_dst = (ImDrawVert*) vtx_resource;
-    ImDrawIdx* idx_dst = (ImDrawIdx*) idx_resource;
+    ImDrawVert* vtx_dst = (ImDrawVert*)vtx_resource;
+    ImDrawIdx* idx_dst = (ImDrawIdx*)idx_resource;
     for (int n = 0; n < draw_data->CmdListsCount; n++) {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
         memcpy(vtx_dst, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
@@ -245,12 +245,12 @@ void ImGui_ImplDX12_RenderDrawData(
             else {
                 // Apply Scissor, Bind texture, Draw
                 const D3D12_RECT r = {
-                    (LONG) (pcmd->ClipRect.x - clip_off.x), (LONG) (pcmd->ClipRect.y - clip_off.y),
-                    (LONG) (pcmd->ClipRect.z - clip_off.x), (LONG) (pcmd->ClipRect.w - clip_off.y)
+                    (LONG)(pcmd->ClipRect.x - clip_off.x), (LONG)(pcmd->ClipRect.y - clip_off.y),
+                    (LONG)(pcmd->ClipRect.z - clip_off.x), (LONG)(pcmd->ClipRect.w - clip_off.y)
                 };
                 if (r.right > r.left && r.bottom > r.top) {
                     D3D12_GPU_DESCRIPTOR_HANDLE texture_handle = {};
-                    texture_handle.ptr = (UINT64) (intptr_t) pcmd->GetTexID();
+                    texture_handle.ptr = (UINT64)(intptr_t)pcmd->GetTexID();
                     ctx->SetGraphicsRootDescriptorTable(1, texture_handle);
                     ctx->RSSetScissorRects(1, &r);
                     ctx->DrawIndexedInstanced(
@@ -326,11 +326,11 @@ static void ImGui_ImplDX12_CreateFontsTexture() {
         IM_ASSERT(SUCCEEDED(hr));
 
         void* mapped = NULL;
-        D3D12_RANGE range = {0, uploadSize};
+        D3D12_RANGE range = { 0, uploadSize };
         hr = uploadBuffer->Map(0, &range, &mapped);
         IM_ASSERT(SUCCEEDED(hr));
         for (int y = 0; y < height; y++)
-            memcpy((void*) ((uintptr_t) mapped + y * uploadPitch), pixels + y * width * 4, width * 4);
+            memcpy((void*)((uintptr_t)mapped + y * uploadPitch), pixels + y * width * 4, width * 4);
         uploadBuffer->Unmap(0, &range);
 
         D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
@@ -385,7 +385,7 @@ static void ImGui_ImplDX12_CreateFontsTexture() {
         hr = cmdList->Close();
         IM_ASSERT(SUCCEEDED(hr));
 
-        cmdQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*) &cmdList);
+        cmdQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&cmdList);
         hr = cmdQueue->Signal(fence, 1);
         IM_ASSERT(SUCCEEDED(hr));
 
@@ -417,7 +417,7 @@ static void ImGui_ImplDX12_CreateFontsTexture() {
         sizeof(ImTextureID) >= sizeof(g_hFontSrvGpuDescHandle.ptr),
         "Can't pack descriptor handle into TexID, 32-bit not supported yet."
     );
-    io.Fonts->SetTexID((ImTextureID) g_hFontSrvGpuDescHandle.ptr);
+    io.Fonts->SetTexID((ImTextureID)g_hFontSrvGpuDescHandle.ptr);
 }
 
 bool ImGui_ImplDX12_CreateDeviceObjects() {
@@ -469,10 +469,10 @@ bool ImGui_ImplDX12_CreateDeviceObjects() {
         desc.NumStaticSamplers = 1;
         desc.pStaticSamplers = &staticSampler;
         desc.Flags =
-                D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
-                D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
-                D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-                D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+            D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+            D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 
         // Load d3d12.dll and D3D12SerializeRootSignature() function address dynamically to facilitate using with D3D12On7.
         // See if any version of d3d12.dll is already loaded in the process. If so, give preference to that.
@@ -482,7 +482,7 @@ bool ImGui_ImplDX12_CreateDeviceObjects() {
             // (1) the current OS is Windows 7, and
             // (2) there exists a version of d3d12.dll for Windows 7 (D3D12On7) in one of the following directories.
             // See https://github.com/ocornut/imgui/pull/3696 for details.
-            const char* localD3d12Paths[] = {".\\d3d12.dll", ".\\d3d12on7\\d3d12.dll", ".\\12on7\\d3d12.dll"};
+            const char* localD3d12Paths[] = { ".\\d3d12.dll", ".\\d3d12on7\\d3d12.dll", ".\\12on7\\d3d12.dll" };
             // A. current directory, B. used by some games, C. used in Microsoft D3D12On7 sample
             for (int i = 0; i < IM_ARRAYSIZE(localD3d12Paths); i++)
                 if ((d3d12_dll = ::LoadLibraryA(localD3d12Paths[i])) != NULL)
@@ -497,7 +497,7 @@ bool ImGui_ImplDX12_CreateDeviceObjects() {
         }
 
         PFN_D3D12_SERIALIZE_ROOT_SIGNATURE D3D12SerializeRootSignatureFn = (PFN_D3D12_SERIALIZE_ROOT_SIGNATURE)
-                ::GetProcAddress(d3d12_dll, "D3D12SerializeRootSignature");
+            ::GetProcAddress(d3d12_dll, "D3D12SerializeRootSignature");
         if (D3D12SerializeRootSignatureFn == NULL)
             return false;
 
@@ -534,7 +534,7 @@ bool ImGui_ImplDX12_CreateDeviceObjects() {
     // Create the vertex shader
     {
         static const char* vertexShader =
-                "cbuffer vertexBuffer : register(b0) \
+            "cbuffer vertexBuffer : register(b0) \
             {\
             float4x4 ProjectionMatrix; \
             };\
@@ -567,31 +567,31 @@ bool ImGui_ImplDX12_CreateDeviceObjects() {
         ))
             return false;
         // NB: Pass ID3D10Blob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
-        psoDesc.VS = {vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize()};
+        psoDesc.VS = { vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize() };
 
         // Create the input layout
         static D3D12_INPUT_ELEMENT_DESC local_layout[] =
         {
             {
-                "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, (UINT) IM_OFFSETOF(ImDrawVert, pos),
+                "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, static_cast<UINT>(offsetof(ImDrawVert, pos)),
                 D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
             },
             {
-                "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, (UINT) IM_OFFSETOF(ImDrawVert, uv),
+                "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, static_cast<UINT>(offsetof(ImDrawVert, uv)),
                 D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
             },
             {
-                "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, (UINT) IM_OFFSETOF(ImDrawVert, col),
+                "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, static_cast<UINT>(offsetof(ImDrawVert, col)),
                 D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
             },
         };
-        psoDesc.InputLayout = {local_layout, 3};
+        psoDesc.InputLayout = { local_layout, 3 };
     }
 
     // Create the pixel shader
     {
         static const char* pixelShader =
-                "struct PS_INPUT\
+            "struct PS_INPUT\
             {\
             float4 pos : SV_POSITION;\
             float4 col : COLOR0;\
@@ -614,7 +614,7 @@ bool ImGui_ImplDX12_CreateDeviceObjects() {
             return false;
             // NB: Pass ID3D10Blob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
         }
-        psoDesc.PS = {pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize()};
+        psoDesc.PS = { pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize() };
     }
 
     // Create the blending setup
@@ -655,7 +655,7 @@ bool ImGui_ImplDX12_CreateDeviceObjects() {
         desc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
         desc.StencilEnable = false;
         desc.FrontFace.StencilFailOp = desc.FrontFace.StencilDepthFailOp = desc.FrontFace.StencilPassOp =
-                D3D12_STENCIL_OP_KEEP;
+            D3D12_STENCIL_OP_KEEP;
         desc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
         desc.BackFace = desc.FrontFace;
     }
