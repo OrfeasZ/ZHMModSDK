@@ -148,7 +148,7 @@ public:
     ZAchievementManagerSimple_OnEventSent;
 
     static Hook<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
-    static Hook<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
+    static Hook<float(ZInputAction* th, int a2)>* ZInputAction_Analog;
 
     static Hook<void(
         ZEntityManager* th, TArrayRef<ZEntityRef> aEntities, const SExternalReferences& externalRefs,

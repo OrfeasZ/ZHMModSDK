@@ -75,7 +75,7 @@ public:
         ZCameraManager* th, TEntityRef<IRenderDestinationEntity>* result
     )>* ZCameraManager_GetActiveRenderDestinationEntity;
 
-    static EngineFunction<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
+    static EngineFunction<float(ZInputAction* th, int a2)>* ZInputAction_Analog;
     static EngineFunction<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
     //static EngineFunction<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
     static EngineFunction<ZHM5InputControl*(ZHM5InputManager* th)>* ZHM5InputManager_GetInputControlForLocalPlayer;

@@ -204,7 +204,7 @@ PATTERN_HOOK(
     "\x48\x89\x5C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\xDA",
     "xxxxxxxxxx?xx",
     ZInputAction_Analog,
-    double(ZInputAction* th, int a2)
+    float(ZInputAction* th, int a2)
 );
 
 PATTERN_HOOK(
