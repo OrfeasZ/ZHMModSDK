@@ -13,36 +13,48 @@ public:
 };
 
 class ZFreeCameraControlEntity :
-        public ZEntityImpl,
-        public IFreeCameraControl {
+    public ZEntityImpl,
+    public IFreeCameraControl {
 public:
     PAD(0x11); // 0x20
     bool m_bFreezeCamera; // 0x31
 };
 
 class ZFreeCameraControlEditorStyleEntity :
-        public ZEntityImpl,
-        public IFreeCameraControl {
+    public ZEntityImpl,
+    public IFreeCameraControl {
 public:
+    void ZoomCameraToSelection() {
+        TArray<TEntityRef<ZSpatialEntity>> s_SelectedEntities;
+
+        Functions::ZFreeCameraControlEditorStyleEntity_GetSelectedEntities->Call(this, s_SelectedEntities);
+        Functions::ZFreeCameraControlEditorStyleEntity_MoveCameraToSpatialEntities->Call(this, s_SelectedEntities, true);
+
+        float4 s_AABBMin {};
+        float4 s_AABBMax {};
+
+        Functions::ZFreeCameraControlEditorStyleEntity_GetSelectionCenter->Call(this, m_vHookPoint, s_AABBMin, s_AABBMax);
+    }
+
     TEntityRef<ZSpatialEntity> m_cameraEntity; // 0x20
     bool m_bActive; // 0x30
-    TEntityRef<ZCameraEntity> m_pControlledCameraEntity;
-    bool m_bRotationWasActive;
-    bool m_bObjectHookWasActive;
-    float4 m_vMousePos;
-    float4 m_vLastDragPoint;
-    float4 m_vHookPoint;
-    bool m_bDraggingIsActive;
-    float m_fSpeed;
-    bool m_bZoomToSelectedPivotNextTime;
-    float m_fZoomToPivotDistance;
-    bool m_bPickingWasPermitted;
-    int m_nHookDebugDrawId;
-    bool m_bZoomToSelectionWasActive;
+    TEntityRef<ZCameraEntity> m_pControlledCameraEntity; // 0x38
+    bool m_bRotationWasActive; // 0x48
+    bool m_bObjectHookWasActive; // 0x49
+    float4 m_vMousePos; // 0x50
+    float4 m_vLastDragPoint; // 0x60
+    float4 m_vHookPoint; // 0x70
+    bool m_bDraggingIsActive; // 0x80
+    float m_fSpeed; // 0x84
+    bool m_bZoomToSelectedPivotNextTime; // 0x88
+    float m_fZoomToPivotDistance; // 0x8C
+    bool m_bPickingWasPermitted; // 0x90
+    int32 m_nHookDebugDrawId; // 0x94
+    bool m_bZoomToSelectionWasActive; // 0x98
 };
 
 class ZSelectionForFreeCameraEditorStyleEntity :
-        public ZEntityImpl // Offset 0x0
+    public ZEntityImpl // Offset 0x0
 {
 public:
     virtual void Init() = 0;

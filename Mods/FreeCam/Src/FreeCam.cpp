@@ -27,17 +27,24 @@ FreeCam::FreeCam() :
     m_ShouldToggle(false),
     m_FreeCamFrozen(false),
     m_GamePaused(false),
-    m_MoveInFreecam(false),
+    m_MoveInFreeCam(false),
     m_ToggleFreeCamAction("ToggleFreeCamera"),
     m_FreezeFreeCamActionGc("ActivateGameControl0"),
     m_FreezeFreeCamActionKb("KBMInspectNode"),
     m_InstantlyKillNpcAction("InstantKill"),
     m_TeleportMainCharacterAction("Teleport"),
     m_TogglePauseGame("TogglePauseGame"),
+    m_MousePosX("MousePosX"),
+    m_MousePosY("MousePosY"),
+    m_ZoomToSelection("ZoomToSelection"),
+    m_ActivateRotate("ActivateRotate"),
+    m_ActivateObjectHook("ActivateObjectHook"),
+    m_OrbitCamera("OrbitCamera"),
+    m_Zoom("Zoom"),
     m_ShowFreeCamWindow(false),
     m_ShowControlsWindow(false),
-    m_HasToggledFreecamBefore(false),
-    m_EditorStyleFreecam(false) {
+    m_HasToggledFreeCamBefore(false),
+    m_EditorStyleFreeCam(false) {
     m_PcControls = {
         {"K", "Toggle freecam"},
         {"F3", "Lock camera and enable 47 input"},
@@ -106,12 +113,20 @@ FreeCam::~FreeCam() {
 
 void FreeCam::Init() {
     Hooks::ZInputAction_Digital->AddDetour(this, &FreeCam::ZInputAction_Digital);
+
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &FreeCam::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &FreeCam::OnClearScene);
 
-    m_EditorStyleFreecam = GetSettingBool("general", "use_editor_style_freecam", false);
+    Hooks::ZFreeCameraControlEditorStyleEntity_UpdateMovementFromInput->AddDetour(
+        this, &FreeCam::ZFreeCameraControlEditorStyleEntity_UpdateMovementFromInput
+    );
+    Hooks::ZFreeCameraControlEditorStyleEntity_GenerateActionBindingString->AddDetour(
+        this, &FreeCam::ZFreeCameraControlEditorStyleEntity_GenerateActionBindingString
+    );
+
+    m_EditorStyleFreeCam = GetSettingBool("general", "use_editor_style_freecam", false);
     m_GamePaused = GetSettingBool("general", "toggle_pause", false);
-    m_MoveInFreecam = GetSettingBool("general", "move_in_freecam", false);
+    m_MoveInFreeCam = GetSettingBool("general", "move_in_freecam", false);
 }
 
 void FreeCam::OnEngineInitialized() {
@@ -119,10 +134,10 @@ void FreeCam::OnEngineInitialized() {
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 
     const char* binds = "FreeCameraInput={"
-            "ToggleFreeCamera=tap(kb,k);"
-            "Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f6);"
-            "InstantKill=tap(kb,f9);"
-            "TogglePauseGame=tap(kb,f8);};";
+        "ToggleFreeCamera=tap(kb,k);"
+        "Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f6);"
+        "InstantKill=tap(kb,f9);"
+        "TogglePauseGame=tap(kb,f8);};";
 
     if (ZInputActionManager::AddBindings(binds)) {
         Logger::Debug("[FreeCam] Successfully added bindings.");
@@ -146,9 +161,9 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             m_ShouldToggle = true;
     }
 
-    if (m_EditorStyleFreecam) {
+    if (m_EditorStyleFreeCam) {
         (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControlEditorStyle01.m_pInterfaceRef->
-                                            SetActive(m_FreeCamActive);
+            SetActive(m_FreeCamActive);
     }
     else {
         (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->SetActive(
@@ -157,16 +172,16 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     }
 
     if (Functions::ZInputAction_Digital->Call(&m_ToggleFreeCamAction, -1)) {
-        ToggleFreecam();
+        ToggleFreeCam();
     }
 
     if (m_ShouldToggle) {
         m_ShouldToggle = false;
 
         if (m_FreeCamActive)
-            EnableFreecam();
+            EnableFreeCam();
         else
-            DisableFreecam();
+            DisableFreeCam();
     }
 
     // While freecam is active, only enable hitman input when the "freeze camera" button is pressed.
@@ -189,22 +204,22 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         }
 
         const bool s_FreezeFreeCam = Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionGc, -1) ||
-                m_FreeCamFrozen;
+            m_FreeCamFrozen;
 
-        if (m_EditorStyleFreecam) {
+        if (m_EditorStyleFreeCam) {
             (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControlEditorStyle01.m_pInterfaceRef->
-                                                m_bActive = !s_FreezeFreeCam;
+                m_bActive = !s_FreezeFreeCam;
         }
         else {
             (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCameraControl01.m_pInterfaceRef->
-                                                m_bFreezeCamera = s_FreezeFreeCam;
+                m_bFreezeCamera = s_FreezeFreeCam;
         }
 
         if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
             if (auto* s_InputControl = Functions::ZHM5InputManager_GetInputControlForLocalPlayer->Call(
                 Globals::InputManager
             )) {
-                s_InputControl->m_bActive = s_FreezeFreeCam || m_MoveInFreecam;
+                s_InputControl->m_bActive = s_FreezeFreeCam || m_MoveInFreeCam;
             }
         }
     }
@@ -216,13 +231,13 @@ void FreeCam::OnDrawMenu() {
     }
 }
 
-void FreeCam::ToggleFreecam() {
+void FreeCam::ToggleFreeCam() {
     m_FreeCamActive = !m_FreeCamActive;
     m_ShouldToggle = true;
-    m_HasToggledFreecamBefore = true;
+    m_HasToggledFreeCamBefore = true;
 }
 
-void FreeCam::EnableFreecam() {
+void FreeCam::EnableFreeCam() {
     auto s_Camera = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01;
 
     TEntityRef<IRenderDestinationEntity> s_RenderDest;
@@ -241,7 +256,7 @@ void FreeCam::EnableFreecam() {
         Globals::GameTimeManager->m_bPaused = true;
 }
 
-void FreeCam::DisableFreecam() {
+void FreeCam::DisableFreeCam() {
     TEntityRef<IRenderDestinationEntity> s_RenderDest;
     Functions::ZCameraManager_GetActiveRenderDestinationEntity->Call(Globals::CameraManager, &s_RenderDest);
 
@@ -339,17 +354,17 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
         if (s_IsWindowExpanded) {
             bool s_FreeCamActive = m_FreeCamActive;
             if (ImGui::Checkbox(ICON_MD_PHOTO_CAMERA " Enable freecam", &s_FreeCamActive)) {
-                ToggleFreecam();
+                ToggleFreeCam();
             }
 
             ImGui::BeginDisabled(s_FreeCamActive);
-            if (ImGui::Checkbox("Use editor style freecam", &m_EditorStyleFreecam)) {
-                SetSettingBool("general", "use_editor_style_freecam", m_EditorStyleFreecam);
+            if (ImGui::Checkbox("Use editor style freecam", &m_EditorStyleFreeCam)) {
+                SetSettingBool("general", "use_editor_style_freecam", m_EditorStyleFreeCam);
             }
             ImGui::EndDisabled();
 
-            if (ImGui::Checkbox("Move in freecam", &m_MoveInFreecam)) {
-                SetSettingBool("general", "move_in_freecam", m_MoveInFreecam);
+            if (ImGui::Checkbox("Move in freecam", &m_MoveInFreeCam)) {
+                SetSettingBool("general", "move_in_freecam", m_MoveInFreeCam);
             }
 
             if (ImGui::Checkbox("Pause game in freecam", &m_GamePaused)) {
@@ -382,8 +397,8 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
         if (s_ControlsExpanded) {
             ImGui::TextUnformatted("PC controls");
 
-            if (ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)){
-                if (m_EditorStyleFreecam) {
+            if (ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)) {
+                if (m_EditorStyleFreeCam) {
                     for (auto& [s_Key, s_Description] : m_PcControlsEditorStyle) {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -405,10 +420,10 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
                 ImGui::EndTable();
             }
 
-            if (!m_EditorStyleFreecam) {
+            if (!m_EditorStyleFreeCam) {
                 ImGui::TextUnformatted("Controller controls");
 
-                if (ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)){
+                if (ImGui::BeginTable("FreeCamControlsController", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)) {
                     for (auto& [s_Key, s_Description] : m_ControllerControls) {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -428,7 +443,77 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
     }
 }
 
-DEFINE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int a2) {
+void FreeCam::HandleDrag(ZFreeCameraControlEditorStyleEntity* p_FreeCamera, bool bRotationIsActive, bool bObjectHookIsActive, bool bIsOrbitActive) {
+    if (!bRotationIsActive && !bObjectHookIsActive) {
+        p_FreeCamera->m_bDraggingIsActive = false;
+        return;
+    }
+
+    if (!p_FreeCamera->m_bDraggingIsActive) {
+        p_FreeCamera->m_bDraggingIsActive = true;
+    }
+
+    /*
+     * The original implementation uses anaraw(ms,posx/posy) and computes
+     * dragDelta = m_vMousePos - m_vLastDragPoint.
+     *
+     * This implementation uses rel(ms,x/y), so m_vMousePos already contains
+     * per-frame mouse deltas and m_vLastDragPoint is intentionally
+     * unused.
+     */
+    const float s_DeltaX = p_FreeCamera->m_vMousePos.x;
+    const float s_DeltaY = p_FreeCamera->m_vMousePos.y;
+
+    if (s_DeltaX == 0.0f && s_DeltaY == 0.0f) {
+        return;
+    }
+
+    constexpr float c_OrbitSensitivity = 0.003f;
+
+    if (bObjectHookIsActive) {
+        if (!bIsOrbitActive) {
+            Functions::ZCameraUtil_PanCamera->Call(
+                TEntityRef<ICameraEntity>(p_FreeCamera->m_pControlledCameraEntity.m_entityRef),
+                TEntityRef<ZSpatialEntity>(p_FreeCamera->m_pControlledCameraEntity.m_entityRef),
+                { s_DeltaX, s_DeltaY, 0.f, 0.f },
+                p_FreeCamera->m_vHookPoint
+            );
+
+            return;
+        }
+
+        Functions::ZFreeCameraControlEditorStyleEntity_OrbitCamera->Call(
+            p_FreeCamera,
+            float4(s_DeltaX * c_OrbitSensitivity, s_DeltaY * c_OrbitSensitivity, 0.f, 0.f),
+            p_FreeCamera->m_vHookPoint
+        );
+
+        return;
+    }
+
+    if (bIsOrbitActive) {
+        Functions::ZFreeCameraControlEditorStyleEntity_OrbitCamera->Call(
+            p_FreeCamera,
+            float4(s_DeltaX * c_OrbitSensitivity, s_DeltaY * c_OrbitSensitivity, 0.f, 0.f),
+            p_FreeCamera->m_vHookPoint
+        );
+
+        return;
+    }
+
+    if (!p_FreeCamera->m_pControlledCameraEntity) {
+        return;
+    }
+
+    constexpr float c_MouseSensitivity = 0.16f;
+
+    const float s_YawDelta = s_DeltaX * c_MouseSensitivity;
+    const float s_PitchDelta = s_DeltaY * c_MouseSensitivity;
+
+    Functions::ZFreeCameraControlEditorStyleEntity_Rotate->Call(p_FreeCamera, s_YawDelta, s_PitchDelta);
+}
+
+DEFINE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int32_t controllerId) {
     if (!m_FreeCamActive)
         return HookResult<bool>(HookAction::Continue());
 
@@ -440,7 +525,7 @@ DEFINE_PLUGIN_DETOUR(FreeCam, bool, ZInputAction_Digital, ZInputAction* th, int 
 
 DEFINE_PLUGIN_DETOUR(FreeCam, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters&) {
     if (m_FreeCamActive)
-        DisableFreecam();
+        DisableFreeCam();
 
     m_FreeCamActive = false;
     m_ShouldToggle = false;
@@ -450,12 +535,101 @@ DEFINE_PLUGIN_DETOUR(FreeCam, bool, OnLoadScene, ZEntitySceneContext* th, SScene
 
 DEFINE_PLUGIN_DETOUR(FreeCam, void, OnClearScene, ZEntitySceneContext* th, bool) {
     if (m_FreeCamActive)
-        DisableFreecam();
+        DisableFreeCam();
 
     m_FreeCamActive = false;
     m_ShouldToggle = false;
 
     return HookResult<void>(HookAction::Continue());
+}
+
+DEFINE_PLUGIN_DETOUR(
+    FreeCam, void, ZFreeCameraControlEditorStyleEntity_UpdateMovementFromInput, ZFreeCameraControlEditorStyleEntity* th
+) {
+    th->m_vMousePos.x = Functions::ZInputAction_Analog->Call(&m_MousePosX, -1);
+    th->m_vMousePos.y = Functions::ZInputAction_Analog->Call(&m_MousePosY, -1);
+
+    const bool s_ZoomToSelectionActive = Functions::ZInputAction_Digital->Call(&m_ZoomToSelection, -1);
+
+    if (s_ZoomToSelectionActive && !th->m_bZoomToSelectionWasActive) {
+        th->ZoomCameraToSelection();
+    }
+
+    th->m_bZoomToSelectionWasActive = s_ZoomToSelectionActive;
+
+    const bool s_RotationActive = Functions::ZInputAction_Digital->Call(&m_ActivateRotate, -1);
+    const bool s_ObjectHookActive = Functions::ZInputAction_Digital->Call(&m_ActivateObjectHook, -1);
+
+    if ((s_RotationActive && !th->m_bRotationWasActive) ||
+        (s_ObjectHookActive && !th->m_bObjectHookWasActive)) {
+        if (th->m_pControlledCameraEntity) {
+            auto* s_Camera = th->m_pControlledCameraEntity.m_pInterfaceRef;
+
+            th->m_vHookPoint =
+                s_Camera->GetObjectToWorldMatrix().Trans -
+                s_Camera->GetObjectToWorldMatrix().ZAxis * 2.5f;
+        }
+        else {
+            th->m_vHookPoint = {};
+        }
+    }
+
+    th->m_bRotationWasActive = s_RotationActive;
+    th->m_bObjectHookWasActive = s_ObjectHookActive;
+
+    const bool s_OrbitCameraActive = Functions::ZInputAction_Digital->Call(&m_OrbitCamera, -1);
+
+    HandleDrag(
+        th,
+        s_RotationActive,
+        s_ObjectHookActive,
+        s_OrbitCameraActive
+    );
+
+    const float s_Zoom = Functions::ZInputAction_Analog->Call(&m_Zoom, -1);
+
+    if (s_Zoom == 0.f) {
+        return { HookAction::Return() };
+    }
+
+    if (s_RotationActive) {
+        constexpr float s_SpeedMultiplier = 1.8f;
+
+        if (s_Zoom > 0.f) {
+            th->m_fSpeed *= s_SpeedMultiplier;
+        }
+        else {
+            th->m_fSpeed /= s_SpeedMultiplier;
+        }
+
+        th->m_fSpeed = std::clamp(th->m_fSpeed, 0.1f, 100.f);
+    }
+    else {
+        Functions::ZFreeCameraControlEditorStyleEntity_ZoomCamera->Call(th, std::clamp(s_Zoom, -1.f, 1.f));
+    }
+
+    return { HookAction::Return() };
+}
+
+DEFINE_PLUGIN_DETOUR(
+    FreeCam, ZString*, ZFreeCameraControlEditorStyleEntity_GenerateActionBindingString, ZFreeCameraControlEditorStyleEntity* th, ZString& result
+) {
+    result = "FreeCamControlEditorStyle0={"
+        "MousePosX=rel(ms,x);"
+        "MousePosY=rel(ms,y);"
+        "MoveX=+ -hold(kb,right) hold(kb,left) -hold(kb,d) hold(kb,a);"
+        "MoveY=+ -hold(kb,down) hold(kb,up) -hold(kb,s) hold(kb,w);"
+        "MoveZ=+ -hold(kb,pgdn) hold(kb,pgup) -hold(kb,q) hold(kb,e);"
+        "MoveFast=| hold(kb,lshift) hold(kb,rshift);"
+        "Zoom=rel(ms,wheel);"
+        "ZoomPrecision=| hold(kb,lalt) hold(kb,ralt);"
+        "ZoomToSelection= hold(kb,z);"
+        "OrbitCamera=| hold(kb,lalt) hold(kb,ralt);"
+        "ActivateRotate=hold(ms,mb2);"
+        "ActivateObjectHook=hold(ms,mb3);"
+        "};";
+
+    return { HookAction::Return(), &result };
 }
 
 DEFINE_ZHM_PLUGIN(FreeCam);

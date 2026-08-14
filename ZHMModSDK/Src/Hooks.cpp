@@ -197,14 +197,14 @@ PATTERN_HOOK(
     "\x40\x53\x41\x56\x48\x83\xEC\x00\x8B\xDA",
     "xxxxxxx?xx",
     ZInputAction_Digital,
-    bool(ZInputAction* th, int a2)
+    bool(ZInputAction* th, int32_t controllerId)
 );
 
 PATTERN_HOOK(
     "\x48\x89\x5C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\xDA",
     "xxxxxxxxxx?xx",
     ZInputAction_Analog,
-    float(ZInputAction* th, int a2)
+    float(ZInputAction* th, int32_t controllerId)
 );
 
 PATTERN_HOOK(
@@ -610,3 +610,30 @@ PATTERN_HOOK(
     ZEvergreenCampaignManager_OnGenerate,
     ZEvergreenCampaignManager*(ZEvergreenCampaignManager* th)
 );
+PATTERN_HOOK(
+    "\x48\x89\x6C\x24\x20\x56\x48\x83\xEC\x00\x48\x8B\xF1\x48\x89\x7C\x24\x78",
+    "xxxxxxxxx?xxxxxxxx",
+    ZFreeCameraControlEditorStyleEntity_UpdateMovementFromInput,
+    void(ZFreeCameraControlEditorStyleEntity* th)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x48\x89\x54\x24\x10\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xC9\x48\x81\xEC\x00\x00\x00\x00\x33\xDB",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx????xx",
+    ZFreeCameraControlEditorStyleEntity_GenerateActionBindingString,
+    ZString* (ZFreeCameraControlEditorStyleEntity* th, ZString& result)
+);
+
+//PATTERN_HOOK(
+//    "\xE8\x00\x00\x00\x00\x48\x8D\x95\x00\x03\x00\x00",
+//    "x????xxxxxxx",
+//    ZInputTokenStream_ParseToken,
+//    ZInputTokenStream::ZTokenData* (ZInputTokenStream* th, ZInputTokenStream::ZTokenData* result)
+//);
+//
+//PATTERN_HOOK(
+//    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x41\x56\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x8B\x42\x08",
+//    "xxxxxxxxxxxxxxxxxxxxxxx????xxx",
+//    ZInputActionManager_ParseAsignment,
+//    bool(ZInputActionManager* th, ZInputTokenStream* pkStream)
+//);

@@ -77,14 +77,14 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\xDA",
     "xxxxxxxxxx?xx",
     ZInputAction_Analog,
-    float(ZInputAction* th, int a2)
+    float(ZInputAction* th, int32_t controllerId)
 );
 
 PATTERN_FUNCTION(
     "\x40\x53\x41\x56\x48\x83\xEC\x00\x8B\xDA",
     "xxxxxxx?xx",
     ZInputAction_Digital,
-    bool(ZInputAction* th, int a2)
+    bool(ZInputAction* th, int32_t controllerId)
 );
 
 /*
@@ -533,4 +533,53 @@ PATTERN_FUNCTION(
     "xxxxxxxxx",
     ZGameKeywordManager_RemoveKeyword,
     void(ZGameKeywordManager* th, const ZEntityRef& rHolder, int32_t nKeyword)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x8B\xC4\x48\x89\x48\x08\x55\x53\x41\x57",
+    "xxxxxxxxxxx",
+    ZFreeCameraControlEditorStyleEntity_GetSelectedEntities,
+    TArray<TEntityRef<ZSpatialEntity>>* (ZFreeCameraControlEditorStyleEntity* th, TArray<TEntityRef<ZSpatialEntity>>& result)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x55\x53\x57\x48\x8D\xAC\x24\x30\xFF\xFF\xFF",
+    "xxxxxxxxxxxx",
+    ZFreeCameraControlEditorStyleEntity_MoveCameraToSpatialEntities,
+    void(ZFreeCameraControlEditorStyleEntity* th, const TArray<TEntityRef<ZSpatialEntity>>& spatialEntities, bool bAllowZoomToPivot)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xF2\x49\x8B\xD9",
+    "xxxxxxxxxxxxxxxxxxxxxxxxx????xxxxxx",
+    ZFreeCameraControlEditorStyleEntity_GetSelectionCenter,
+    bool(const ZFreeCameraControlEditorStyleEntity* th, const float4& vSelCenter, const float4& vAABBMin, const float4& vAABBMax)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x48\x89\x7C\x24\x18\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xB9\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xD9",
+    "xxxxxxxxxxxxxxxxxxxxxxx????xxx",
+    ZCameraUtil_PanCamera,
+    void(TEntityRef<ICameraEntity> pCamera, TEntityRef<ZSpatialEntity> pCameraSpatial, const float4& vMouseDelta, const float4& vHookPoint)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x8B\xC4\x48\x81\xEC\x00\x00\x00\x00\x44\x0F\x29\x40\xC8\x44\x0F\x29\x48\xB8",
+    "xxxxxx????xxxxxxxxxx",
+    ZFreeCameraControlEditorStyleEntity_OrbitCamera,
+    void(ZFreeCameraControlEditorStyleEntity* th, float4 orbitDelta, float4 orbitCenter)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x8B\xC4\x48\x89\x58\x08\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x59\x40",
+    "xxxxxxxxxxx????xxxx",
+    ZFreeCameraControlEditorStyleEntity_Rotate,
+    void(ZFreeCameraControlEditorStyleEntity* th, float fDeltaH, float fDeltaV)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x57\x48\x83\xEC\x00\x0F\x29\x74\x24\x50",
+    "xxxxxxxxxxxxxx?xxxxx",
+    ZFreeCameraControlEditorStyleEntity_ZoomCamera,
+    void(ZFreeCameraControlEditorStyleEntity* th, float fZoom)
 );
