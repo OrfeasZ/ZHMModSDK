@@ -721,12 +721,12 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
         return;
     }
 
-    ZRayQueryInput s_RayInput{
+    ZRayQueryInput s_RayInput {
         .m_vFrom = s_From,
         .m_vTo = s_To,
     };
 
-    ZRayQueryOutput s_RayOutput{};
+    ZRayQueryOutput s_RayOutput {};
 
     if (m_raycastLogging) {
         Logger::Debug("[Editor] RayCasting from {} to {}.", s_From, s_To);
@@ -1073,7 +1073,7 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
         ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
         : 0.f;
 
-    return QneTransform{
+    return QneTransform {
         .Position = { n41, n42, n43 },
         .Rotation = { s_RotationX, s_RotationY, s_RotationZ },
         .Scale = { sx, sy, sz },
@@ -1326,6 +1326,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree.reset();
 
+    m_OpenEntityTreeNodes.clear();
+
     for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
     }
@@ -1347,8 +1349,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_SelectedActor = nullptr;
     m_GlobalOutfitKit = {};
-	
-	m_SelectedAction = nullptr;
+
+    m_SelectedAction = nullptr;
 
     m_SelectedGizmoEntity = nullptr;
     m_DrawGizmosForSelectedEntityOnly = false;
@@ -1389,7 +1391,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data) {
     //if (entity == m_SelectedEntity)
     {
-        m_FiredInputPins[pinId] = PinFireInfo{
+        m_FiredInputPins[pinId] = PinFireInfo {
             .m_FireTime = std::chrono::system_clock::now(),
         };
     }
@@ -1400,7 +1402,7 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data) {
     //if (entity == m_SelectedEntity)
     {
-        m_FiredOutputPins[pinId] = PinFireInfo{
+        m_FiredOutputPins[pinId] = PinFireInfo {
             .m_FireTime = std::chrono::system_clock::now(),
         };
     }

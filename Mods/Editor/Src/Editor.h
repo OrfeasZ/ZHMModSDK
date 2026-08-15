@@ -520,6 +520,7 @@ private:
     std::shared_mutex m_CachedEntityTreeMutex;
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeMap;
     std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
+    std::unordered_set<EntityTreeNode*> m_OpenEntityTreeNodes;
 
     std::unordered_map<uint64_t, ZEntityRef> m_SpawnedEntities;
     std::unordered_map<ZEntityRef, std::string> m_EntityNames;
