@@ -497,6 +497,7 @@ private:
     std::string m_EntityNameSearchInput;
     std::unordered_set<EntityTreeNode*> m_FilteredEntityTreeNodes;
     std::vector<EntityTreeNode*> m_DirectEntityTreeNodeMatches;
+    size_t m_CurrentEntitySearchResultIndex = 0;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;
@@ -568,8 +569,8 @@ private:
     ZEntityRef m_PlayerCam = nullptr;
     TEntityRef<ZCameraEntity> m_TrackCam {};
     TEntityRef<IRenderDestinationEntity> m_RenderDest {};
-	
-	ZHM5Action* m_SelectedAction = nullptr;
+
+    ZHM5Action* m_SelectedAction = nullptr;
 
     std::unordered_map<ZEntityRef, std::vector<std::unique_ptr<DebugEntity>>> m_EntityRefToDebugEntities;
     std::shared_mutex m_DebugEntitiesMutex;
