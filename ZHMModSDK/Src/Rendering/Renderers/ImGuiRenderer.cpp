@@ -260,11 +260,11 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
 
     m_CommandList->ResourceBarrier(1, &s_RtBarrier);
 
-    const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    const D3D12_CPU_DESCRIPTOR_HANDLE s_RtvDescriptor { s_RtvHandle.ptr + s_BackBufferIndex * m_RtvDescriptorSize };
+    const auto s_RTVHandle = m_RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    const D3D12_CPU_DESCRIPTOR_HANDLE s_RTVDescriptor { s_RTVHandle.ptr + s_BackBufferIndex * m_RTVDescriptorSize };
 
-    m_CommandList->OMSetRenderTargets(1, &s_RtvDescriptor, FALSE, nullptr);
-    m_CommandList->SetDescriptorHeaps(1, &m_SrvDescriptorHeap.m_Ref);
+    m_CommandList->OMSetRenderTargets(1, &s_RTVDescriptor, FALSE, nullptr);
+    m_CommandList->SetDescriptorHeaps(1, &m_SRVDescriptorHeap.m_Ref);
 
     ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList);
 
@@ -309,6 +309,40 @@ void ImGuiRenderer::WaitForCurrentFrameToFinish() const {
     }
 }
 
+void ImGuiRenderer::AllocateSRVDescriptor(
+    D3D12_CPU_DESCRIPTOR_HANDLE* p_OutCpuHandle,
+    D3D12_GPU_DESCRIPTOR_HANDLE* p_OutGpuHandle
+) {
+    UINT s_Index;
+
+    if (!m_FreeSRVDescriptorIndices.empty()) {
+        s_Index = m_FreeSRVDescriptorIndices.back();
+        m_FreeSRVDescriptorIndices.pop_back();
+    }
+    else {
+        s_Index = m_NextSRVDescriptorIndex++;
+    }
+
+    *p_OutCpuHandle = m_SRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    p_OutCpuHandle->ptr += s_Index * m_SRVDescriptorSize;
+
+    *p_OutGpuHandle = m_SRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    p_OutGpuHandle->ptr += s_Index * m_SRVDescriptorSize;
+}
+
+void ImGuiRenderer::FreeSRVDescriptor(
+    D3D12_CPU_DESCRIPTOR_HANDLE p_CpuHandle,
+    D3D12_GPU_DESCRIPTOR_HANDLE
+) {
+    const auto s_HeapStart =
+        m_SRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+    const UINT s_Index =
+        static_cast<UINT>((p_CpuHandle.ptr - s_HeapStart.ptr) / m_SRVDescriptorSize);
+
+    m_FreeSRVDescriptorIndices.push_back(s_Index);
+}
+
 bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     if (m_RendererSetup) {
         return true;
@@ -331,23 +365,23 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     const auto s_BufferCount = s_SwapChainDesc.BufferCount;
 
     {
-        D3D12_DESCRIPTOR_HEAP_DESC s_RtvHeapDesc {};
-        s_RtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-        s_RtvHeapDesc.NumDescriptors = s_BufferCount;
-        s_RtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+        D3D12_DESCRIPTOR_HEAP_DESC s_RTVHeapDesc {};
+        s_RTVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        s_RTVHeapDesc.NumDescriptors = s_BufferCount;
+        s_RTVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-        if (s_Device->CreateDescriptorHeap(&s_RtvHeapDesc, IID_PPV_ARGS(m_RtvDescriptorHeap.ReleaseAndGetPtr())) != S_OK) {
+        if (s_Device->CreateDescriptorHeap(&s_RTVHeapDesc, IID_PPV_ARGS(m_RTVDescriptorHeap.ReleaseAndGetPtr())) != S_OK) {
             return false;
         }
     }
 
     {
-        D3D12_DESCRIPTOR_HEAP_DESC s_SrvHeapDesc {};
-        s_SrvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        s_SrvHeapDesc.NumDescriptors = c_MaxSRVDescriptors;
-        s_SrvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+        D3D12_DESCRIPTOR_HEAP_DESC s_SRVHeapDesc {};
+        s_SRVHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        s_SRVHeapDesc.NumDescriptors = c_MaxSRVDescriptors;
+        s_SRVHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-        if (s_Device->CreateDescriptorHeap(&s_SrvHeapDesc, IID_PPV_ARGS(m_SrvDescriptorHeap.ReleaseAndGetPtr())) != S_OK) {
+        if (s_Device->CreateDescriptorHeap(&s_SRVHeapDesc, IID_PPV_ARGS(m_SRVDescriptorHeap.ReleaseAndGetPtr())) != S_OK) {
             return false;
         }
     }
@@ -366,16 +400,17 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     m_BackBuffers.clear();
     m_BackBuffers.resize(s_BufferCount);
 
-    m_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    m_RTVDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    m_SRVDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-    const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    const auto s_RTVHandle = m_RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
     for (UINT i = 0; i < s_BufferCount; ++i) {
         if (p_SwapChain->GetBuffer(i, IID_PPV_ARGS(m_BackBuffers[i].ReleaseAndGetPtr())) != S_OK) {
             return false;
         }
 
-        const D3D12_CPU_DESCRIPTOR_HANDLE s_Descriptor { s_RtvHandle.ptr + i * m_RtvDescriptorSize };
+        const D3D12_CPU_DESCRIPTOR_HANDLE s_Descriptor { s_RTVHandle.ptr + i * m_RTVDescriptorSize };
 
         s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, s_Descriptor);
     }
@@ -406,9 +441,24 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     s_InitInfo.CommandQueue = m_CommandQueue;
     s_InitInfo.NumFramesInFlight = c_MaxRenderedFrames;
     s_InitInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-    s_InitInfo.SrvDescriptorHeap = m_SrvDescriptorHeap;
-    s_InitInfo.LegacySingleSrvCpuDescriptor = m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    s_InitInfo.LegacySingleSrvGpuDescriptor = m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+    s_InitInfo.SrvDescriptorHeap = m_SRVDescriptorHeap;
+    s_InitInfo.UserData = this;
+
+    s_InitInfo.SrvDescriptorAllocFn = [](
+        ImGui_ImplDX12_InitInfo* p_InitInfo,
+        D3D12_CPU_DESCRIPTOR_HANDLE* p_OutCPUHandle,
+        D3D12_GPU_DESCRIPTOR_HANDLE* p_OutGPUHandle) {
+            auto* s_Renderer = static_cast<ImGuiRenderer*>(p_InitInfo->UserData);
+            s_Renderer->AllocateSRVDescriptor(p_OutCPUHandle, p_OutGPUHandle);
+        };
+
+    s_InitInfo.SrvDescriptorFreeFn = [](
+        ImGui_ImplDX12_InitInfo* p_InitInfo,
+        D3D12_CPU_DESCRIPTOR_HANDLE p_CPUHandle,
+        D3D12_GPU_DESCRIPTOR_HANDLE p_GPUHandle) {
+            auto* s_Renderer = static_cast<ImGuiRenderer*>(p_InitInfo->UserData);
+            s_Renderer->FreeSRVDescriptor(p_CPUHandle, p_GPUHandle);
+        };
 
     if (!ImGui_ImplDX12_Init(&s_InitInfo)) {
         Logger::Error("[ImGuiRenderer] ImGui_ImplDX12_Init failed.");
@@ -449,8 +499,8 @@ void ImGuiRenderer::TeardownRenderer() {
     m_CommandList.Reset();
     m_Fence.Reset();
     m_FenceEvent.Reset();
-    m_RtvDescriptorHeap.Reset();
-    m_SrvDescriptorHeap.Reset();
+    m_RTVDescriptorHeap.Reset();
+    m_SRVDescriptorHeap.Reset();
     m_SwapChain.Reset();
     m_CommandQueue.Reset();
     m_RendererSetup = false;
@@ -491,16 +541,16 @@ void ImGuiRenderer::PostReset(IDXGISwapChain3* p_SwapChain) {
 
     m_BackBuffers.resize(s_SwapChainDesc.BufferCount);
 
-    m_RtvDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    m_RTVDescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-    const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    const auto s_RTVHandle = m_RTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
     for (UINT i = 0; i < m_BackBuffers.size(); ++i) {
         if (p_SwapChain->GetBuffer(i, IID_PPV_ARGS(m_BackBuffers[i].ReleaseAndGetPtr())) != S_OK) {
             return;
         }
 
-        const D3D12_CPU_DESCRIPTOR_HANDLE s_Descriptor { s_RtvHandle.ptr + i * m_RtvDescriptorSize };
+        const D3D12_CPU_DESCRIPTOR_HANDLE s_Descriptor { s_RTVHandle.ptr + i * m_RTVDescriptorSize };
 
         s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, s_Descriptor);
     }
@@ -1010,23 +1060,33 @@ bool ImGuiRenderer::CreateTexture(
     p_OutTexture = std::move(s_Texture);
 
     auto s_TextureDescription = p_OutTexture->GetDesc();
+
     p_OutImGuiTexture.width = static_cast<UINT>(s_TextureDescription.Width);
     p_OutImGuiTexture.height = static_cast<UINT>(s_TextureDescription.Height);
 
-    UINT s_SRVIndex = m_NextSRVIndex++;
-    UINT s_DescriptorSize = s_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    AllocateSRVDescriptor(
+        &p_OutImGuiTexture.srvCPUDescriptor,
+        &p_OutImGuiTexture.srvGPUDescriptor
+    );
 
-    D3D12_CPU_DESCRIPTOR_HANDLE s_CPUHandle = m_SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-    s_CPUHandle.ptr += s_SRVIndex * s_DescriptorSize;
+    DirectX::CreateShaderResourceView(
+        s_Device,
+        p_OutTexture,
+        p_OutImGuiTexture.srvCPUDescriptor
+    );
 
-    D3D12_GPU_DESCRIPTOR_HANDLE s_GPUHandle = m_SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-    s_GPUHandle.ptr += s_SRVIndex * s_DescriptorSize;
+    p_OutImGuiTexture.id = p_OutImGuiTexture.srvGPUDescriptor.ptr;
 
-    DirectX::CreateShaderResourceView(s_Device, p_OutTexture, s_CPUHandle);
+    const auto s_HeapStart = m_SRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+    const auto s_SRVDescriptorIndex =
+        (p_OutImGuiTexture.srvCPUDescriptor.ptr - s_HeapStart.ptr) / m_SRVDescriptorSize;
 
-    p_OutImGuiTexture.id = s_GPUHandle.ptr;
-
-    Logger::Info("Created texture ({}x{}) in SRV slot {}.", s_TextureDescription.Width, s_TextureDescription.Height, m_NextSRVIndex);
+    Logger::Info(
+        "Created texture ({}x{}) in SRV slot {}.",
+        s_TextureDescription.Width,
+        s_TextureDescription.Height,
+        s_SRVDescriptorIndex
+    );
 
     return true;
 }
@@ -1051,7 +1111,7 @@ void ImGuiRenderer::ResetDescriptorHeap() {
         return;
     }
 
-    s_RenderState->CommandList->SetDescriptorHeaps(1, &m_SrvDescriptorHeap.m_Ref);
+    s_RenderState->CommandList->SetDescriptorHeaps(1, &m_SRVDescriptorHeap.m_Ref);
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(

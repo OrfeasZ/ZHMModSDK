@@ -90,6 +90,15 @@ namespace Rendering::Renderers {
         void SetupStyles();
         void WaitForCurrentFrameToFinish() const;
 
+        void AllocateSRVDescriptor(
+            D3D12_CPU_DESCRIPTOR_HANDLE* p_OutCPUHandle,
+            D3D12_GPU_DESCRIPTOR_HANDLE* p_OutGPUHandle
+        );
+        void FreeSRVDescriptor(
+            D3D12_CPU_DESCRIPTOR_HANDLE p_CPUHandle,
+            D3D12_GPU_DESCRIPTOR_HANDLE p_GPUHandle
+        );
+
         // Input plumbing helpers (ported from ZHM's WndProc handler).
         static ImGuiMouseSource GetMouseSourceFromMessageExtraInfo();
         static bool IsVkDown(int p_Vk);
@@ -131,10 +140,13 @@ namespace Rendering::Renderers {
         ScopedD3DRef<ID3D12CommandQueue> m_CommandQueue;
         HWND m_Hwnd = nullptr;
 
-        std::uint32_t m_RtvDescriptorSize = 0;
-        ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
-        ScopedD3DRef<ID3D12DescriptorHeap> m_SrvDescriptorHeap;
-        UINT m_NextSRVIndex = 1;
+        std::uint32_t m_RTVDescriptorSize = 0;
+        ScopedD3DRef<ID3D12DescriptorHeap> m_RTVDescriptorHeap;
+
+        ScopedD3DRef<ID3D12DescriptorHeap> m_SRVDescriptorHeap;
+        UINT m_SRVDescriptorSize = 0;
+        UINT m_NextSRVDescriptorIndex = 0;
+        std::vector<UINT> m_FreeSRVDescriptorIndices;
 
         std::array<FrameContext, c_MaxRenderedFrames> m_FrameContext {};
         std::vector<ScopedD3DRef<ID3D12Resource>> m_BackBuffers;
