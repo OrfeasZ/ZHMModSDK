@@ -245,6 +245,8 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
         WaitForSingleObject(m_FenceEvent.m_Handle, INFINITE);
     }
 
+    ReleaseDeferredResources(s_FrameCtx.m_DeferredResources);
+
     const auto s_BackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
 
     s_FrameCtx.m_CommandAllocator->Reset();
@@ -267,6 +269,9 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     m_CommandList->SetDescriptorHeaps(1, &m_SRVDescriptorHeap.m_Ref);
 
     ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList);
+
+    s_FrameCtx.m_DeferredResources = std::move(m_PendingDeferredResources);
+    m_PendingDeferredResources.clear();
 
     D3D12_RESOURCE_BARRIER s_PresentBarrier {};
     s_PresentBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -343,6 +348,21 @@ void ImGuiRenderer::FreeSRVDescriptor(
     m_FreeSRVDescriptorIndices.push_back(s_Index);
 }
 
+void ImGuiRenderer::ReleaseDeferredResources(
+    std::vector<DeferredResource>& p_Resources
+) {
+    for (auto& s_Resource : p_Resources) {
+        if (s_Resource.m_ImGuiTexture.id) {
+            FreeSRVDescriptor(
+                s_Resource.m_ImGuiTexture.srvCPUDescriptor,
+                s_Resource.m_ImGuiTexture.srvGPUDescriptor
+            );
+        }
+    }
+
+    p_Resources.clear();
+}
+
 bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     if (m_RendererSetup) {
         return true;
@@ -387,14 +407,14 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     }
 
     for (UINT i = 0; i < c_MaxRenderedFrames; ++i) {
-        auto& s_Frame = m_FrameContext[i];
+        auto& s_FrameCtx = m_FrameContext[i];
 
-        if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(s_Frame.m_CommandAllocator.ReleaseAndGetPtr()))
+        if (s_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(s_FrameCtx.m_CommandAllocator.ReleaseAndGetPtr()))
             != S_OK) {
             return false;
         }
 
-        s_Frame.m_FenceValue.store(0);
+        s_FrameCtx.m_FenceValue.store(0);
     }
 
     m_BackBuffers.clear();
@@ -493,6 +513,13 @@ void ImGuiRenderer::TeardownRenderer() {
     }
 
     WaitForCurrentFrameToFinish();
+
+    for (auto& s_FrameCtx : m_FrameContext) {
+        ReleaseDeferredResources(s_FrameCtx.m_DeferredResources);
+    }
+
+    ReleaseDeferredResources(m_PendingDeferredResources);
+
     ImGui_ImplDX12_Shutdown();
 
     m_BackBuffers.clear();
@@ -513,9 +540,13 @@ void ImGuiRenderer::OnReset(IDXGISwapChain3* p_SwapChain) {
 
     WaitForCurrentFrameToFinish();
 
-    for (auto& s_Frame : m_FrameContext) {
-        s_Frame.m_FenceValue.store(m_FenceValue.load(std::memory_order_acquire));
+    for (auto& s_FrameCtx : m_FrameContext) {
+        ReleaseDeferredResources(s_FrameCtx.m_DeferredResources);
+
+        s_FrameCtx.m_FenceValue.store(m_FenceValue.load(std::memory_order_acquire));
     }
+
+    ReleaseDeferredResources(m_PendingDeferredResources);
 
     m_BackBuffers.clear();
 
@@ -1018,6 +1049,81 @@ bool ImGuiRenderer::CreateWICTextureFromFile(
         p_OutTexture,
         p_OutImGuiTexture
     );
+}
+
+bool ImGuiRenderer::CreateImGuiTextureSRV(ID3D12Resource* p_Texture, ImGuiTexture& p_OutImGuiTexture) {
+    if (!p_Texture) {
+        return false;
+    }
+
+    if (!m_RendererSetup) {
+        Logger::Error("Failed to create texture - ImGui renderer is not set up!");
+
+        return false;
+    }
+
+    ScopedD3DRef<ID3D12Device> s_Device;
+
+    if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK) {
+        Logger::Error("Failed to retrieve D3D12 device from swap chain in CreateImGuiTexture!");
+
+        return false;
+    }
+
+    const auto s_Description = p_Texture->GetDesc();
+
+    p_OutImGuiTexture.width = static_cast<UINT>(s_Description.Width);
+    p_OutImGuiTexture.height = s_Description.Height;
+
+    AllocateSRVDescriptor(
+        &p_OutImGuiTexture.srvCPUDescriptor,
+        &p_OutImGuiTexture.srvGPUDescriptor
+    );
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC s_SRVDescription {};
+    s_SRVDescription.Format = s_Description.Format;
+    s_SRVDescription.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    s_SRVDescription.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    s_SRVDescription.Texture2D.MostDetailedMip = 0;
+    s_SRVDescription.Texture2D.MipLevels = s_Description.MipLevels;
+    s_SRVDescription.Texture2D.PlaneSlice = 0;
+    s_SRVDescription.Texture2D.ResourceMinLODClamp = 0.f;
+
+    s_Device->CreateShaderResourceView(
+        p_Texture,
+        &s_SRVDescription,
+        p_OutImGuiTexture.srvCPUDescriptor
+    );
+
+    p_OutImGuiTexture.id = p_OutImGuiTexture.srvGPUDescriptor.ptr;
+
+    return true;
+}
+
+void ImGuiRenderer::DestroyImGuiTextureSRV(ImGuiTexture& p_Texture) {
+    if (!p_Texture.id) {
+        return;
+    }
+
+    m_PendingDeferredResources.push_back({
+        .m_Texture = {},
+        .m_ImGuiTexture = p_Texture
+    });
+
+    p_Texture = {};
+}
+
+void ImGuiRenderer::DestroyImGuiTexture(ScopedD3DRef<ID3D12Resource>& p_Texture, ImGuiTexture& p_ImGuiTexture) {
+    if (!p_Texture && !p_ImGuiTexture.id) {
+        return;
+    }
+
+    m_PendingDeferredResources.push_back({
+        std::move(p_Texture),
+        p_ImGuiTexture
+    });
+
+    p_ImGuiTexture = {};
 }
 
 bool ImGuiRenderer::CreateTexture(

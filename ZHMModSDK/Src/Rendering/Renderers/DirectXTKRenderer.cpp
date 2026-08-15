@@ -256,6 +256,7 @@ void DirectXTKRenderer::PostReset(IDXGISwapChain3* p_SwapChain) {
     const D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
     m_SpriteBatch->SetViewport(s_Viewport);
 }
+
 void DirectXTKRenderer::Draw() {
     const auto s_BackBufferIndex = m_SwapChain->GetCurrentBackBufferIndex();
     const auto s_RtvHandle = m_RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();

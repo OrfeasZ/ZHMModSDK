@@ -1670,6 +1670,21 @@ bool ModSDK::CreateWICTextureFromFile(
     return m_ImguiRenderer->CreateWICTextureFromFile(p_FilePath, p_OutTexture, p_OutImGuiTexture);
 }
 
+bool ModSDK::CreateImGuiTextureSRV(ID3D12Resource* p_Texture, ImGuiTexture& p_OutImGuiTexture) {
+    return m_ImguiRenderer->CreateImGuiTextureSRV(p_Texture, p_OutImGuiTexture);
+}
+
+void ModSDK::DestroyImGuiTextureSRV(ImGuiTexture& p_Texture) {
+    return m_ImguiRenderer->DestroyImGuiTextureSRV(p_Texture);
+}
+
+void ModSDK::DestroyImGuiTexture(
+    ScopedD3DRef<ID3D12Resource>& p_Texture,
+    ImGuiTexture& p_ImGuiTexture
+) {
+    m_ImguiRenderer->DestroyImGuiTexture(p_Texture, p_ImGuiTexture);
+}
+
 void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size) {
     if (Globals::Hitman5Module->IsEngineInitialized()) {
         // If engine is initialized, allocate the normal way.

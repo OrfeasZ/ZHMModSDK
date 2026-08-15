@@ -205,6 +205,15 @@ public:
         ImGuiTexture& p_OutImGuiTexture
     ) override;
 
+    bool CreateImGuiTextureSRV(ID3D12Resource* p_Texture, ImGuiTexture& p_OutImGuiTexture) override;
+
+    void DestroyImGuiTextureSRV(ImGuiTexture& p_Texture) override;
+
+    void DestroyImGuiTexture(
+        ScopedD3DRef<ID3D12Resource>& p_Texture,
+        ImGuiTexture& p_ImGuiTexture
+    ) override;
+
 #pragma endregion
 
     void AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size);

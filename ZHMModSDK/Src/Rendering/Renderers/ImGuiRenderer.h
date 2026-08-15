@@ -19,9 +19,16 @@ struct ImFont;
 namespace Rendering::Renderers {
     class ImGuiRenderer {
     public:
+        struct DeferredResource {
+            ScopedD3DRef<ID3D12Resource> m_Texture;
+            ImGuiTexture m_ImGuiTexture;
+        };
+
         struct FrameContext {
             ScopedD3DRef<ID3D12CommandAllocator> m_CommandAllocator;
             std::atomic<std::uint64_t> m_FenceValue { 0 };
+
+            std::vector<DeferredResource> m_DeferredResources;
         };
 
         ImGuiRenderer();
@@ -80,6 +87,14 @@ namespace Rendering::Renderers {
             ImGuiTexture& p_OutImGuiTexture
         );
 
+        bool CreateImGuiTextureSRV(ID3D12Resource* p_Texture, ImGuiTexture& p_OutImGuiTexture);
+        void DestroyImGuiTextureSRV(ImGuiTexture& p_Texture);
+
+        void DestroyImGuiTexture(
+            ScopedD3DRef<ID3D12Resource>& p_Texture,
+            ImGuiTexture& p_ImGuiTexture
+        );
+
         void SetGameDescriptorHeap();
         void ResetDescriptorHeap();
 
@@ -98,6 +113,8 @@ namespace Rendering::Renderers {
             D3D12_CPU_DESCRIPTOR_HANDLE p_CPUHandle,
             D3D12_GPU_DESCRIPTOR_HANDLE p_GPUHandle
         );
+
+        void ReleaseDeferredResources(std::vector<DeferredResource>& p_Resources);
 
         // Input plumbing helpers (ported from ZHM's WndProc handler).
         static ImGuiMouseSource GetMouseSourceFromMessageExtraInfo();
@@ -157,6 +174,8 @@ namespace Rendering::Renderers {
 
         std::atomic<std::uint32_t> m_FrameCounter { 0 };
         std::atomic<std::uint64_t> m_FenceValue { 0 };
+
+        std::vector<DeferredResource> m_PendingDeferredResources;
 
         std::int64_t m_Time = 0;
         std::int64_t m_TicksPerSecond = 0;
