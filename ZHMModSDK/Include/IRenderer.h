@@ -46,6 +46,9 @@ struct ImGuiTexture {
     ImTextureID id = 0;
     UINT width = 0;
     UINT height = 0;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE srvCPUDescriptor {};
+    D3D12_GPU_DESCRIPTOR_HANDLE srvGPUDescriptor {};
 };
 
 class IRenderer {
