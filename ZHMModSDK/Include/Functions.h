@@ -56,6 +56,7 @@ class ZHM5WeaponControl;
 class ZGameKeywordManager;
 class ZFreeCameraControlEditorStyleEntity;
 class ICameraEntity;
+class ZRenderableEntity;
 
 namespace bfx {
     class AreaHandle;
@@ -319,4 +320,6 @@ public:
     static EngineFunction<void(
         ZFreeCameraControlEditorStyleEntity* th,
         float fZoom)>* ZFreeCameraControlEditorStyleEntity_ZoomCamera;
+
+    static EngineFunction<bool(ZRenderableEntity* th)>* ZRenderableEntity_IsVisible;
 };

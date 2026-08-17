@@ -28,7 +28,13 @@
         },
         "imguizmo",
         "imgui-node-editor",
-        "implot"
+        "implot",
+        {
+            "name": "directxtex",
+            "features": [
+                "dx12"
+            ]
+        }
     ],
     "vcpkg-configuration": {
         "overlay-ports": [
