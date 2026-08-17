@@ -40,7 +40,7 @@ void Editor::DrawRoomsWindow(const bool p_HasFocus) {
             s_CurrentRoomEntity->GetID(s_CurrentRoomEntityRef);
 
             auto s_Iterator = m_CachedEntityTreeMap.find(s_CurrentRoomEntityRef);
-            
+
             if (s_Iterator != m_CachedEntityTreeMap.end()) {
                 std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
 
@@ -88,7 +88,7 @@ void Editor::DrawRoomsWindow(const bool p_HasFocus) {
         ImGui::Checkbox("Show only visible rooms", &m_ShowOnlyVisibleRooms);
         ImGui::Checkbox("Show only visible gates", &m_ShowOnlyVisibleGates);
 
-        static char s_RoomName[2048]{ "" };
+        static char s_RoomName[2048] { "" };
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Room name");
@@ -96,7 +96,7 @@ void Editor::DrawRoomsWindow(const bool p_HasFocus) {
 
         ImGui::InputText("##RoomName", s_RoomName, sizeof(s_RoomName));
 
-        static char s_GateName[2048]{ "" };
+        static char s_GateName[2048] { "" };
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Gate name");
@@ -162,7 +162,7 @@ void Editor::DrawRoomsWindow(const bool p_HasFocus) {
 
             std::shared_ptr<EntityTreeNode> s_RoomEntityTreeNode = s_Iterator->second;
 
-            if (!Util::StringUtils::FindSubstringUTF8(s_RoomEntityTreeNode->Name, s_RoomName)) {
+            if (!Util::StringUtils::FindSubstring(s_RoomEntityTreeNode->Name, s_RoomName)) {
                 continue;
             }
 
@@ -241,7 +241,7 @@ void Editor::DrawRoomsWindow(const bool p_HasFocus) {
 
                         std::shared_ptr<EntityTreeNode> s_GateEntityTreeNode = s_Iterator->second;
 
-                        if (!Util::StringUtils::FindSubstringUTF8(s_GateEntityTreeNode->Name, s_GateName)) {
+                        if (!Util::StringUtils::FindSubstring(s_GateEntityTreeNode->Name, s_GateName)) {
                             continue;
                         }
 
