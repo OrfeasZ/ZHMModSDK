@@ -322,7 +322,7 @@ private:
         const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
         const SMatrix& p_Transform = SMatrix()
     );
-    void DeleteDebugEntity(const ZEntityRef p_EntityRef);
+    void DeleteDebugEntities(const std::shared_ptr<EntityTreeNode>& p_RootNode);
     EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
     bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
@@ -533,8 +533,6 @@ private:
     std::unordered_set<ZEntityRef> m_DynamicEntities;
     std::mutex m_PendingDynamicEntitiesMutex;
     std::unordered_set<ZEntityRef> m_PendingDynamicEntities;
-    std::mutex m_PendingNodeDeletionsMutex;
-    std::vector<std::weak_ptr<EntityTreeNode>> m_PendingNodeDeletions;
 
     EditorServer m_Server;
 
@@ -586,7 +584,7 @@ private:
     bool m_DrawGizmos = true;
     bool m_DrawAllGizmos = false;
     bool m_DrawShapes = false;
-    GizmoEntity* m_SelectedGizmoEntity = nullptr;
+    ZEntityRef m_SelectedGizmoEntity = nullptr;
     bool m_DrawGizmosForSelectedEntityOnly = false;
     bool m_DrawShapesForSelectedEntityOnly = false;
 

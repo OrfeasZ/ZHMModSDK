@@ -482,16 +482,19 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
                 ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
             }
 
+            bool s_HasDebugEntities;
+
             {
-                std::scoped_lock s_ScopedLock(m_DebugEntitiesMutex);
+                std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+                s_HasDebugEntities = !m_EntityRefToDebugEntities.empty();
+            }
 
-                if (!m_EntityRefToDebugEntities.empty()) {
-                    for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
-                        auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
+            if (s_HasDebugEntities) {
+                for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
+                    auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
 
-                        if (s_Iterator != m_CachedEntityTreeMap.end()) {
-                            GetDebugEntities(s_Iterator->second);
-                        }
+                    if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                        GetDebugEntities(s_Iterator->second);
                     }
                 }
             }

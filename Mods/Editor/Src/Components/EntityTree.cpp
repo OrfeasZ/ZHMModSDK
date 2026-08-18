@@ -1208,6 +1208,10 @@ void Editor::DestroyEntityNodeInternal(
         if (m_SelectedEntity == p_NodeToRemove->Entity) {
             m_SelectedEntity = {};
         }
+
+        if (m_SelectedGizmoEntity == p_NodeToRemove->Entity) {
+            m_SelectedGizmoEntity = {};
+        }
     }
 
     // If a child of this node is selected, deselect it (non-recursive).
@@ -1276,17 +1280,15 @@ DEFINE_PLUGIN_DETOUR(
 
     {
         std::scoped_lock lock(m_DynamicEntitiesMutex);
-
         m_DynamicEntities.insert(result);
     }
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         std::scoped_lock lock(m_PendingDynamicEntitiesMutex);
-
         m_PendingDynamicEntities.insert(result);
     }
 
-    return HookResult<ZEntityRef*>(HookAction::Return(), s_EntityRef);
+    return { HookAction::Return(), s_EntityRef };
 }
 
 DEFINE_PLUGIN_DETOUR(
@@ -1299,6 +1301,10 @@ DEFINE_PLUGIN_DETOUR(
 ) {
     if (m_SelectedEntity == entityRef) {
         m_SelectedEntity = nullptr;
+    }
+
+    if (m_SelectedGizmoEntity == entityRef) {
+        m_SelectedGizmoEntity = nullptr;
     }
 
     std::shared_ptr<EntityTreeNode> s_NodeToRemove;
@@ -1318,7 +1324,7 @@ DEFINE_PLUGIN_DETOUR(
     if (s_NodeToRemove) {
         s_NodeToRemove->IsPendingDeletion = true;
 
-        DeleteDebugEntity(s_NodeToRemove->Entity);
+        DeleteDebugEntities(s_NodeToRemove);
         DestroyEntityNodeInternal(s_NodeToRemove, std::nullopt);
     }
 
@@ -1334,7 +1340,5 @@ DEFINE_PLUGIN_DETOUR(
 
     m_EntityRefToFactoryRuntimeResourceIDs.erase(entityRef);
 
-    p_Hook->CallOriginal(th, entityRef, externalRefs);
-
-    return HookResult<void>(HookAction::Return());
+    return { HookAction::Continue() };
 }
