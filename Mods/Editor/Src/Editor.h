@@ -357,13 +357,13 @@ private:
     );
 
     bool ExportAllBoxReflectionCubemaps(
-        const std::filesystem::path& p_OutputPath,
+        const std::filesystem::path& p_OutputFolder,
         bool p_Diffuse
     );
     static bool ExportBoxReflectionCubemap(
         ID3D12Resource* p_Resource,
         uint32_t p_CubeIndex,
-        const std::filesystem::path& p_OutputPath
+        const std::filesystem::path& p_OutputFolder
     );
     static bool GetBoxReflectionTexture(
         ZRenderGraphNodeBoxReflection* p_BoxReflectionGraphNode,
@@ -373,11 +373,11 @@ private:
     );
     std::filesystem::path GetBoxReflectionExportPath(
         const ZRenderGraphNodeBoxReflection* p_BoxReflection,
-        const std::filesystem::path& p_OutputDirectory,
+        const std::filesystem::path& p_OutputFolder,
         bool p_Diffuse
     );
 
-    static bool GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputPath);
+    static bool GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputFolder);
     static size_t CalculateCubemapSize(const DirectX::ScratchImage& p_Image, uint32_t p_CubeIndex);
 
 private:

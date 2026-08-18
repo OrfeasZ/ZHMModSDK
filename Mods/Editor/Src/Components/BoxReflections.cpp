@@ -62,16 +62,16 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
         return;
     }
 
-    static char s_OutputPath[2048] { "" };
+    static char s_OutputFolder[2048] { "" };
 
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Output path");
+    ImGui::Text("Output folder");
     ImGui::SameLine();
 
-    ImGui::InputText("##Output path", s_OutputPath, sizeof(s_OutputPath));
+    ImGui::InputText("##OutputFolder", s_OutputFolder, sizeof(s_OutputFolder));
 
     if (ImGui::Button("Export all cubemaps")) {
-        if (!ExportAllBoxReflectionCubemaps(s_OutputPath, false)) {
+        if (!ExportAllBoxReflectionCubemaps(s_OutputFolder, false)) {
             Logger::Error("[Editor] Failed to export all box reflection cubemaps.");
         }
     }
@@ -79,7 +79,7 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
     ImGui::SameLine();
 
     if (ImGui::Button("Generate box reflection cache resource (BOXC)")) {
-        if (!GenerateBoxReflectionCacheResource(s_OutputPath)) {
+        if (!GenerateBoxReflectionCacheResource(s_OutputFolder)) {
             Logger::Error("[Editor] Failed to generate box reflection cache resource.");
         }
     }
@@ -191,7 +191,7 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
         if (GetBoxReflectionTexture(m_SelectedBoxReflectionGraphNode, false, s_Texture, s_CubeIndex)) {
             const auto s_OutputFilePath = GetBoxReflectionExportPath(
                 m_SelectedBoxReflectionGraphNode,
-                s_OutputPath,
+                s_OutputFolder,
                 false
             );
 
@@ -450,7 +450,7 @@ bool Editor::CreateBoxReflectionFaceTexture(
 }
 
 bool Editor::ExportAllBoxReflectionCubemaps(
-    const std::filesystem::path& p_OutputPath,
+    const std::filesystem::path& p_OutputFolder,
     bool p_Diffuse
 ) {
     const auto s_RenderSharedResources = Globals::RenderManager->m_pSharedResources;
@@ -468,11 +468,11 @@ bool Editor::ExportAllBoxReflectionCubemaps(
         return true;
     }
 
-    const std::filesystem::path s_OutputPath = p_OutputPath.empty()
+    const std::filesystem::path s_OutputFolder = p_OutputFolder.empty()
         ? "box_reflections"
-        : p_OutputPath;
+        : p_OutputFolder;
 
-    std::filesystem::create_directories(s_OutputPath);
+    std::filesystem::create_directories(s_OutputFolder);
 
     const uint32_t s_CubemapsPerChunk =
         s_RenderSharedResources->m_nBoxReflectionMaxCubeMaps /
@@ -501,7 +501,7 @@ bool Editor::ExportAllBoxReflectionCubemaps(
 
         const auto s_Path = GetBoxReflectionExportPath(
             s_BoxReflections[i],
-            p_OutputPath,
+            s_OutputFolder,
             p_Diffuse
         );
 
@@ -519,16 +519,16 @@ bool Editor::ExportAllBoxReflectionCubemaps(
 bool Editor::ExportBoxReflectionCubemap(
     ID3D12Resource* p_Resource,
     uint32_t p_CubeIndex,
-    const std::filesystem::path& p_OutputPath
+    const std::filesystem::path& p_OutputFolder
 ) {
     if (!p_Resource || !Globals::RenderManager->m_pDevice->m_pCommandQueue) {
         return false;
     }
 
-    const auto s_ParentPath = p_OutputPath.parent_path();
+    const auto s_ParentFolder = p_OutputFolder.parent_path();
 
-    if (!s_ParentPath.empty()) {
-        std::filesystem::create_directories(s_ParentPath);
+    if (!s_ParentFolder.empty()) {
+        std::filesystem::create_directories(s_ParentFolder);
     }
 
     const D3D12_RESOURCE_DESC s_ResourceDesc = p_Resource->GetDesc();
@@ -605,7 +605,7 @@ bool Editor::ExportBoxReflectionCubemap(
         s_CubeImage.GetImageCount(),
         s_CubeImage.GetMetadata(),
         DirectX::DDS_FLAGS_NONE,
-        p_OutputPath.c_str()
+        p_OutputFolder.c_str()
     );
 
     if (FAILED(s_Result)) {
@@ -654,14 +654,12 @@ bool Editor::GetBoxReflectionTexture(
 
 std::filesystem::path Editor::GetBoxReflectionExportPath(
     const ZRenderGraphNodeBoxReflection* p_BoxReflection,
-    const std::filesystem::path& p_OutputDirectory,
+    const std::filesystem::path& p_OutputFolder,
     bool p_Diffuse
 ) {
-    std::filesystem::path s_OutputDirectory = p_OutputDirectory;
-
-    if (s_OutputDirectory.empty()) {
-        s_OutputDirectory = "box_reflections";
-    }
+    const std::filesystem::path s_OutputFolder = p_OutputFolder.empty()
+        ? "box_reflections"
+        : p_OutputFolder;
 
     ZEntityRef s_EntityRef;
     p_BoxReflection->m_pRenderableEntity->GetID(s_EntityRef);
@@ -684,7 +682,7 @@ std::filesystem::path Editor::GetBoxReflectionExportPath(
 
     std::ranges::replace(s_EntityName, ' ', '_');
 
-    return s_OutputDirectory /
+    return s_OutputFolder /
         std::format(
             "{}{}.dds",
             s_EntityName,
@@ -692,7 +690,7 @@ std::filesystem::path Editor::GetBoxReflectionExportPath(
         );
 }
 
-bool Editor::GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputPath) {
+bool Editor::GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputFolder) {
     const auto s_RenderSharedResources = Globals::RenderManager->m_pSharedResources;
     const auto s_RenderGraphManager = Globals::RenderGraphManager;
     const auto s_CommandQueue = Globals::RenderManager->m_pDevice->m_pCommandQueue;
@@ -707,14 +705,14 @@ bool Editor::GenerateBoxReflectionCacheResource(const std::filesystem::path& p_O
         return false;
     }
 
-    const std::filesystem::path s_OutputDirectory = p_OutputPath.empty()
+    const std::filesystem::path s_OutputFolder = p_OutputFolder.empty()
         ? "."
-        : p_OutputPath;
+        : p_OutputFolder;
 
-    std::filesystem::create_directories(s_OutputDirectory);
+    std::filesystem::create_directories(s_OutputFolder);
 
     const auto s_OutputFilePath =
-        s_OutputDirectory / "box_reflections.BOXC";
+        s_OutputFolder / "box_reflections.BOXC";
 
     std::ofstream s_File(s_OutputFilePath, std::ios::binary);
 
