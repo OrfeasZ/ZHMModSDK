@@ -8,6 +8,8 @@
 
 #include <IconsMaterialDesign.h>
 
+#include <imgui_stdlib.h>
+
 #include <Glacier/ZComponent.h>
 
 #include <Logging.h>
@@ -62,16 +64,18 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
         return;
     }
 
-    static char s_OutputFolder[2048] { "" };
-
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Output folder");
     ImGui::SameLine();
 
-    ImGui::InputText("##OutputFolder", s_OutputFolder, sizeof(s_OutputFolder));
+    ImGui::InputText("##OutputFolder", &m_BoxReflectionOutputFolder);
+
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        SetSetting("general", "box_reflection_output_folder", m_BoxReflectionOutputFolder);
+    }
 
     if (ImGui::Button("Export all cubemaps")) {
-        if (!ExportAllBoxReflectionCubemaps(s_OutputFolder, false)) {
+        if (!ExportAllBoxReflectionCubemaps(m_BoxReflectionOutputFolder, false)) {
             Logger::Error("[Editor] Failed to export all box reflection cubemaps.");
         }
     }
@@ -79,7 +83,7 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
     ImGui::SameLine();
 
     if (ImGui::Button("Generate box reflection cache resource (BOXC)")) {
-        if (!GenerateBoxReflectionCacheResource(s_OutputFolder)) {
+        if (!GenerateBoxReflectionCacheResource(m_BoxReflectionOutputFolder)) {
             Logger::Error("[Editor] Failed to generate box reflection cache resource.");
         }
     }
@@ -191,7 +195,7 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
         if (GetBoxReflectionTexture(m_SelectedBoxReflectionGraphNode, false, s_Texture, s_CubeIndex)) {
             const auto s_OutputFilePath = GetBoxReflectionExportPath(
                 m_SelectedBoxReflectionGraphNode,
-                s_OutputFolder,
+                m_BoxReflectionOutputFolder,
                 false
             );
 

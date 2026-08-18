@@ -129,6 +129,8 @@ void Editor::Init() {
     m_RoundCopiedMatrixValues = GetSettingBool("general", "round_copied_matrix_values", false);
     m_CopyDecimalPlaces = GetSettingInt("general", "copy_decimal_places", 3);
     m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
+
+    m_BoxReflectionOutputFolder = GetSetting("general", "box_reflection_output_folder", "").c_str();
 }
 
 void Editor::OnDrawMenu() {

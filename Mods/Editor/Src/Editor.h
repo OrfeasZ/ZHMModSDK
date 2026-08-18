@@ -693,6 +693,8 @@ private:
     BoxReflectionPreview m_BoxReflectionPreview;
 
     bool m_EnableBoxReflectionCache = true;
+
+    std::string m_BoxReflectionOutputFolder;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)
