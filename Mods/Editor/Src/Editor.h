@@ -65,7 +65,7 @@ public:
     void LockEntityTree() { m_CachedEntityTreeMutex.lock_shared(); }
     std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
-    std::string GetEntityName(ZEntityRef p_Entity, bool withID = true);
+    std::string GetEntityName(ZEntityRef p_Entity, bool p_WithID = true);
     ZEntityRef FindEntity(EntitySelector p_Selector);
     static std::string GetCollisionHash(auto p_SelectedEntity);
     void FindMeshes(
@@ -243,7 +243,7 @@ private:
     static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property);
     static Quat GetQuatFromProperty(ZEntityRef p_Entity);
     static Quat GetParentQuat(ZEntityRef p_Entity);
-    std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& roomNameToFolderName);
+    std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& p_RoomNameToFolderName);
 
     bool SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     bool SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);

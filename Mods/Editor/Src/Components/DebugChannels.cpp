@@ -569,7 +569,7 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         return;
     }
 
-    if (p_EntityTreeNode->IsPendingDeletion) {
+    if (p_EntityTreeNode->IsPendingDeletion.load(std::memory_order_acquire)) {
         return;
     }
 

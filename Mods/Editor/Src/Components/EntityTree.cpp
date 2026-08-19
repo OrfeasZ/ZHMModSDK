@@ -483,7 +483,7 @@ void Editor::ReparentDynamicOutfitEntities(
     static STypeID* s_LinkedProxyEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZLinkedProxyEntity");
 
     for (const auto& [_, s_Node] : s_DynamicEntitiesNode->Children) {
-        if (!s_Node->IsPendingDeletion &&
+        if (!s_Node->IsPendingDeletion.load(std::memory_order_acquire) &&
             s_Node->Entity && (
                 s_Node->Entity.QueryInterface<ZClothCharacterEntity>(s_ClothCharacterEntityTypeID) ||
                 s_Node->Entity.QueryInterface<ZLinkedProxyEntity>(s_LinkedProxyEntityTypeID)
@@ -530,6 +530,8 @@ bool Editor::HasVisibleChildren(std::shared_ptr<EntityTreeNode> p_Node) const
 
 void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     if (!p_Node) return;
+
+    const bool s_IsPendingDeletion = p_Node->IsPendingDeletion.load(std::memory_order_acquire);
 
     if (
         (!m_EntityIdSearchInput.empty() ||
@@ -588,7 +590,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         }
     }
 
-    if (p_Node->IsPendingDeletion) {
+    if (s_IsPendingDeletion) {
         m_OpenEntityTreeNodes.erase(p_Node.get());
 
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
@@ -630,7 +632,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         ImGui::SetTooltip("%s", s_EntityType.c_str());
     }
 
-    if (!p_Node->IsPendingDeletion) {
+    if (!s_IsPendingDeletion) {
         if (ImGui::IsItemFocused() && !s_IsSelected) {
             if (ImGui::IsKeyPressed(ImGuiKey_Enter) || ImGui::IsKeyPressed(ImGuiKey_Space))
                 OnSelectEntity(s_Entity, false, std::nullopt);
@@ -653,7 +655,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         }
     }
 
-    if (p_Node->IsPendingDeletion) {
+    if (s_IsPendingDeletion) {
         ImGui::EndDisabled();
         ImGui::PopStyleColor();
     }
@@ -1322,7 +1324,7 @@ DEFINE_PLUGIN_DETOUR(
     }
 
     if (s_NodeToRemove) {
-        s_NodeToRemove->IsPendingDeletion = true;
+        s_NodeToRemove->IsPendingDeletion.store(true, std::memory_order_release);
 
         DeleteDebugEntities(s_NodeToRemove);
         DestroyEntityNodeInternal(s_NodeToRemove, std::nullopt);
