@@ -559,17 +559,9 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
     * in aspect entity and they don't have entity type.
     */
 
-    if (!p_EntityTreeNode) {
-        return;
-    }
-
-    if (p_EntityTreeNode->Entity == m_DynamicEntitiesNodeEntityRef ||
-        p_EntityTreeNode->Entity == m_UnparentedEntitiesNodeEntityRef
-    ) {
-        return;
-    }
-
-    if (p_EntityTreeNode->IsPendingDeletion.load(std::memory_order_acquire)) {
+    if (!p_EntityTreeNode ||
+        IsSpecialEntityTreeNode(p_EntityTreeNode->Entity) ||
+        p_EntityTreeNode->IsPendingDeletion.load(std::memory_order_acquire)) {
         return;
     }
 

@@ -19,7 +19,8 @@ struct EntityTreeNode {
     std::multimap<std::string, std::shared_ptr<EntityTreeNode>, EntityNameCompare> Children;
     std::weak_ptr<EntityTreeNode> Parent;
     bool IsDynamicEntity;
-    std::atomic<bool> IsPendingDeletion = false;
+    std::atomic<bool> IsPendingDeletion { false };
+    bool IsDirectMatch = false;
 
     EntityTreeNode(
         const std::string& p_Name,
@@ -39,5 +40,6 @@ struct EntityTreeNode {
         ReferencedBlueprintFactory(p_ReferencedBlueprintFactory),
         ReferencedBlueprintFactoryType(p_ReferencedBlueprintFactoryType),
         Entity(p_Ref),
-        IsDynamicEntity(p_IsDynamicEntity) {}
+        IsDynamicEntity(p_IsDynamicEntity) {
+    }
 };

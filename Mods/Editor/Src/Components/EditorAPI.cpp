@@ -599,8 +599,7 @@ void Editor::FindMeshes(
 
             // Add children to the queue.
             for (const auto& s_ChildNode : s_Node->Children | std::views::values) {
-                if (s_ChildNode->Entity == m_DynamicEntitiesNodeEntityRef ||
-                    s_ChildNode->Entity == m_UnparentedEntitiesNodeEntityRef ||
+                if (IsSpecialEntityTreeNode(s_ChildNode->Entity) ||
                     s_ChildNode->IsDynamicEntity ||
                     s_ChildNode->IsPendingDeletion.load(std::memory_order_acquire)) {
                     continue;
@@ -636,8 +635,7 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
         // Access the first node in the queue
         auto s_Node = s_NodeQueue.front();
         s_NodeQueue.pop();
-        if (s_Node->Entity == m_DynamicEntitiesNodeEntityRef ||
-            s_Node->Entity == m_UnparentedEntitiesNodeEntityRef ||
+        if (IsSpecialEntityTreeNode(s_Node->Entity) ||
             s_Node->IsDynamicEntity ||
             s_Node->IsPendingDeletion.load(std::memory_order_acquire)) {
             continue;

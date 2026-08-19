@@ -1257,35 +1257,6 @@ std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
-    if (m_SelectionForFreeCameraEditorStyleEntity) {
-        m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
-    }
-
-    m_EntityDestructionMutex.lock();
-    m_EntitiesToDestroy.clear();
-    m_EntityDestructionMutex.unlock();
-
-    m_CachedEntityTreeMutex.lock();
-    m_CachedEntityTree.reset();
-
-    for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
-    }
-
-    m_SpawnedEntities.clear();
-    m_EntityNames.clear();
-    m_CachedEntityTreeMutex.unlock();
-
-    m_FilteredEntityTreeNodes.clear();
-    m_DirectEntityTreeNodeMatches.clear();
-
-    if (m_EditorData) {
-        m_EditorCamera = {};
-        m_EditorCameraRT = {};
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
-        m_EditorData = {};
-    }
-
     std::vector<std::string> s_Bricks;
 
     for (auto& s_Brick : p_Parameters.m_aAdditionalBrickResources) {
@@ -1293,12 +1264,6 @@ DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneI
     }
 
     m_Server.OnSceneLoading(p_Parameters.m_SceneResource.c_str(), s_Bricks);
-
-    if (m_TrackCamActive) {
-        DisableTrackCam();
-
-        m_TrackCamActive = false;
-    }
 
     return { HookAction::Continue() };
 }
@@ -1322,32 +1287,65 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_SelectedEntity = {};
     m_ScrollToEntity = false;
 
-    m_EntityDestructionMutex.lock();
-    m_EntitiesToDestroy.clear();
-    m_EntityDestructionMutex.unlock();
-
-    m_CachedEntityTreeMutex.lock();
-    m_CachedEntityTree.reset();
-
-    m_OpenEntityTreeNodes.clear();
-
-    for (auto& s_Entity : m_SpawnedEntities | std::views::values) {
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
+    {
+        std::scoped_lock s_Lock(m_EntityDestructionMutex);
+        m_EntitiesToDestroy.clear();
     }
 
-    m_SpawnedEntities.clear();
-    m_EntityNames.clear();
-    m_CachedEntityTreeMutex.unlock();
+    ClearFilters();
 
-    m_PendingDynamicEntities.clear();
-    m_DynamicEntities.clear();
+    {
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+        m_CachedEntityTree.reset();
+        m_CachedEntityTreeMap.clear();
+        m_OpenEntityTreeNodes.clear();
+        m_EntityNames.clear();
+    }
+
+    {
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+        m_OpenEntityTreeNodes.clear();
+    }
+
+    std::unordered_map<uint64_t, ZEntityRef> s_SpawnedEntitiesToDestroy;
+    {
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+        s_SpawnedEntitiesToDestroy.swap(m_SpawnedEntities);
+    }
+
+    for (const auto& s_Entity : s_SpawnedEntitiesToDestroy | std::views::values) {
+        if (s_Entity) {
+            Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
+        }
+    }
+
+    {
+        std::scoped_lock s_Lock(m_DynamicEntitiesMutex);
+        m_DynamicEntities.clear();
+    }
+
+    {
+        std::scoped_lock s_Lock(m_PendingDynamicEntitiesMutex);
+        m_PendingDynamicEntities.clear();
+    }
 
     m_Server.OnSceneClearing(p_FullyUnloadScene);
+
+    if (m_SelectionForFreeCameraEditorStyleEntity) {
+        m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
+    }
 
     if (m_TrackCamActive) {
         DisableTrackCam();
 
         m_TrackCamActive = false;
+    }
+
+    if (m_EditorData) {
+        m_EditorCamera = {};
+        m_EditorCameraRT = {};
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
+        m_EditorData = {};
     }
 
     m_SelectedActor = nullptr;
@@ -1359,7 +1357,10 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_DrawGizmosForSelectedEntityOnly = false;
     m_DrawShapesForSelectedEntityOnly = false;
 
-    m_EntityRefToDebugEntities.clear();
+    {
+        std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+        m_EntityRefToDebugEntities.clear();
+    }
 
     if (m_EditorData) {
         m_EditorCamera = {};

@@ -1,6 +1,7 @@
 #include <Editor.h>
 
 #include "imgui_internal.h"
+#include <imgui_stdlib.h>
 
 #include <Glacier/EntityFactory.h>
 #include <Glacier/ZModule.h>
@@ -515,31 +516,36 @@ void Editor::ReparentDynamicOutfitEntities(
     }
 }
 
-bool Editor::HasVisibleChildren(std::shared_ptr<EntityTreeNode> p_Node) const
-{
-    return !p_Node->Children.empty() && (m_FilteredEntityTreeNodes.empty() ||
-        std::any_of(
-            p_Node->Children.begin(),
-            p_Node->Children.end(),
-            [this](const auto& s_Child) {
-                return m_FilteredEntityTreeNodes.contains(s_Child.second.get());
-            }
-        )
+bool Editor::IsSpecialEntityTreeNode(ZEntityRef p_Entity) const {
+    return p_Entity == m_DynamicEntitiesNodeEntityRef || p_Entity == m_UnparentedEntitiesNodeEntityRef;
+}
+
+bool Editor::HasVisibleChildren(const std::shared_ptr<EntityTreeNode>& p_Node) const {
+    if (!p_Node || p_Node->Children.empty()) {
+        return false;
+    }
+
+    if (!m_HasActiveFilters) {
+        return true;
+    }
+
+    return std::any_of(
+        p_Node->Children.begin(),
+        p_Node->Children.end(),
+        [this](const auto& s_Child) {
+            return m_FilteredEntityTreeNodes.contains(s_Child.second.get());
+        }
     );
 }
 
 void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
-    if (!p_Node) return;
+    if (!p_Node) {
+        return;
+    }
 
     const bool s_IsPendingDeletion = p_Node->IsPendingDeletion.load(std::memory_order_acquire);
 
-    if (
-        (!m_EntityIdSearchInput.empty() ||
-            !m_EntityTypeSearchInput.empty() ||
-            !m_EntityNameSearchInput.empty() ||
-            m_EntityViewMode != EntityViewMode::All) &&
-        !m_FilteredEntityTreeNodes.contains(p_Node.get())
-    ) {
+    if (m_HasActiveFilters && !m_FilteredEntityTreeNodes.contains(p_Node.get())) {
         return;
     }
 
@@ -550,8 +556,10 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     const auto s_EntityName = p_Node->Name;
     const auto s_IsSelected = s_Entity == m_SelectedEntity;
 
-    ImGuiTreeNodeFlags s_Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick |
-        ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DrawLinesToNodes;
+    ImGuiTreeNodeFlags s_Flags = ImGuiTreeNodeFlags_OpenOnArrow |
+        ImGuiTreeNodeFlags_OpenOnDoubleClick |
+        ImGuiTreeNodeFlags_SpanAvailWidth |
+        ImGuiTreeNodeFlags_DrawLinesToNodes;
 
     const bool s_HasVisibleChildren = HasVisibleChildren(p_Node);
 
@@ -573,9 +581,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
             s_ShouldExpandNode = true;
         }
-        else if (s_Entity == m_DynamicEntitiesNodeEntityRef ||
-            s_Entity == m_UnparentedEntitiesNodeEntityRef
-        ) {
+        else if (IsSpecialEntityTreeNode(s_Entity)) {
             for (const auto& [_, s_Child] : p_Node->Children) {
                 if (s_Child->Entity == m_SelectedEntity ||
                     (s_Child->Entity && m_SelectedEntity.IsAnyParent(s_Child->Entity))) {
@@ -587,6 +593,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
 
         if (s_ShouldExpandNode) {
             m_OpenEntityTreeNodes.insert(p_Node.get());
+            ImGui::SetNextItemOpen(true);
         }
     }
 
@@ -597,11 +604,9 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         ImGui::BeginDisabled();
     }
 
-    const bool s_IsSearchResult = std::ranges::find(
-        m_DirectEntityTreeNodeMatches, p_Node.get()
-    ) != m_DirectEntityTreeNodeMatches.end();
+    const bool s_IsDirectMatch = m_HasActiveFilters && p_Node->IsDirectMatch && !s_IsPendingDeletion;
 
-    if (s_IsSearchResult) {
+    if (s_IsDirectMatch) {
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorConvertU32ToFloat4(0xFF8AF0FE)); // Tailwind yellow-200
     }
 
@@ -624,7 +629,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         }
     }
 
-    if (s_IsSearchResult) {
+    if (s_IsDirectMatch) {
         ImGui::PopStyleColor();
     }
 
@@ -665,21 +670,28 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
 
 void Editor::FilterEntityTree() {
     m_FilteredEntityTreeNodes.clear();
-    m_DirectEntityTreeNodeMatches.clear();
+    m_TotalMatchCount = 0;
 
     if (!m_CachedEntityTree) {
+        m_HasActiveFilters = false;
+        m_CurrentEntitySearchResultIndex = 0;
         return;
     }
 
-    if (m_EntityIdSearchInput.empty() &&
-        m_EntityTypeSearchInput.empty() &&
-        m_EntityNameSearchInput.empty() &&
-        m_EntityViewMode == EntityViewMode::All &&
-        m_LastEntityViewMode == EntityViewMode::All) {
+    m_HasActiveFilters = !m_EntityIDSearchInput.empty() ||
+        !m_EntityTypeSearchInput.empty() ||
+        !m_EntityNameSearchInput.empty() ||
+        m_EntityViewMode != EntityViewMode::All;
+
+    if (!m_HasActiveFilters) {
+        m_CurrentEntitySearchResultIndex = 0;
+        m_LastEntityViewMode = m_EntityViewMode;
         return;
     }
 
-    FilterEntityTree(m_CachedEntityTree.get());
+    EntityTreeNode* s_SingleMatchNode = nullptr;
+
+    FilterEntityTree(m_CachedEntityTree.get(), s_SingleMatchNode);
 
     if (m_FilteredEntityTreeNodes.empty()) {
         m_FilteredEntityTreeNodes.insert(m_CachedEntityTree.get());
@@ -687,23 +699,21 @@ void Editor::FilterEntityTree() {
 
     m_CurrentEntitySearchResultIndex = 0;
 
-    if (m_DirectEntityTreeNodeMatches.size() == 1) {
-        const EntityTreeNode* s_EntityTreeNode = *m_DirectEntityTreeNodeMatches.begin();
-
-        OnSelectEntity(s_EntityTreeNode->Entity, true, std::nullopt);
+    if (m_TotalMatchCount == 1 && s_SingleMatchNode) {
+        OnSelectEntity(s_SingleMatchNode->Entity, true, std::nullopt);
     }
 
     m_LastEntityViewMode = m_EntityViewMode;
 }
 
-bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
-    if (!p_Node) {
+bool Editor::FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSingleMatchNode) {
+    if (!p_Node || p_Node->IsPendingDeletion.load(std::memory_order_acquire)) {
         return false;
     }
 
     if (m_EntityViewMode == EntityViewMode::ScenesAndBricks &&
-        (p_Node->IsDynamicEntity || p_Node->Entity == m_DynamicEntitiesNodeEntityRef)
-    ) {
+        (p_Node->IsDynamicEntity || p_Node->Entity == m_DynamicEntitiesNodeEntityRef)) {
+        p_Node->IsDirectMatch = false;
         return false;
     }
 
@@ -711,19 +721,16 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
 
     if (m_EntityViewMode == EntityViewMode::All ||
         m_EntityViewMode == EntityViewMode::ScenesAndBricks ||
-        m_EntityViewMode == EntityViewMode::DynamicEntities && p_Node->IsDynamicEntity
-    ) {
+        (m_EntityViewMode == EntityViewMode::DynamicEntities && p_Node->IsDynamicEntity)) {
+
         bool s_MatchesId = true;
         bool s_MatchesType = true;
         bool s_MatchesName = true;
 
-        if (p_Node->Entity != m_DynamicEntitiesNodeEntityRef &&
-            p_Node->Entity != m_UnparentedEntitiesNodeEntityRef
-        ) {
-            if (!m_EntityIdSearchInput.empty()) {
-                const uint64_t id = std::strtoull(m_EntityIdSearchInput.c_str(), nullptr, 16);
-
-                s_MatchesId = p_Node->EntityId == id;
+        if (!IsSpecialEntityTreeNode(p_Node->Entity)) {
+            if (!m_EntityIDSearchInput.empty()) {
+                const uint64_t s_EntityID = std::strtoull(m_EntityIDSearchInput.c_str(), nullptr, 16);
+                s_MatchesId = p_Node->EntityId == s_EntityID;
             }
 
             if (!m_EntityTypeSearchInput.empty()) {
@@ -736,38 +743,79 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node) {
         }
 
         s_Matches = s_MatchesId && s_MatchesType && s_MatchesName;
+
+        // Special root containers match only if explicitly queried by name
+        if (s_Matches && IsSpecialEntityTreeNode(p_Node->Entity)) {
+            if (m_EntityNameSearchInput.empty() ||
+                !Util::StringUtils::FindSubstring(p_Node->Name.c_str(), m_EntityNameSearchInput)) {
+                s_Matches = false;
+            }
+        }
+    }
+
+    p_Node->IsDirectMatch = s_Matches;
+
+    if (s_Matches) {
+        m_TotalMatchCount++;
+        p_OutSingleMatchNode = p_Node;
     }
 
     bool s_ChildMatches = false;
 
-    for (auto& child : p_Node->Children) {
-        if (FilterEntityTree(child.second.get())) {
+    for (auto& [_, child] : p_Node->Children) {
+        if (FilterEntityTree(child.get(), p_OutSingleMatchNode)) {
             s_ChildMatches = true;
-        }
-    }
-
-    if (s_Matches) {
-        if (p_Node->Entity == m_DynamicEntitiesNodeEntityRef ||
-            p_Node->Entity == m_UnparentedEntitiesNodeEntityRef
-        ) {
-            if (!m_EntityNameSearchInput.empty() &&
-                Util::StringUtils::FindSubstring(p_Node->Name.c_str(), m_EntityNameSearchInput)
-            ) {
-                m_DirectEntityTreeNodeMatches.push_back(p_Node);
-            }
-        }
-        else {
-            m_DirectEntityTreeNodeMatches.push_back(p_Node);
         }
     }
 
     if (s_Matches || s_ChildMatches) {
         m_FilteredEntityTreeNodes.insert(p_Node);
-
         return true;
     }
 
     return false;
+}
+
+void Editor::ClearFilters() {
+    std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+
+    m_EntityIDSearchInput.clear();
+    m_EntityTypeSearchInput.clear();
+    m_EntityNameSearchInput.clear();
+
+    m_EntityViewMode = EntityViewMode::All;
+    m_LastEntityViewMode = EntityViewMode::All;
+
+    m_FilteredEntityTreeNodes.clear();
+    m_TotalMatchCount = 0;
+    m_CurrentEntitySearchResultIndex = 0;
+    m_HasActiveFilters = false;
+}
+
+std::shared_ptr<EntityTreeNode> Editor::FindMatchByIndex(
+    const std::shared_ptr<EntityTreeNode>& p_Node,
+    size_t p_TargetIndex,
+    size_t& p_CurrentCounter
+) {
+    if (!p_Node || p_Node->IsPendingDeletion.load(std::memory_order_acquire)) {
+        return nullptr;
+    }
+
+    if (p_Node->IsDirectMatch) {
+        if (p_CurrentCounter == p_TargetIndex) {
+            return p_Node;
+        }
+
+        p_CurrentCounter++;
+    }
+
+    for (const auto& [_, s_Child] : p_Node->Children) {
+        if (auto s_Match = FindMatchByIndex(s_Child, p_TargetIndex, p_CurrentCounter)) {
+            return s_Match;
+        }
+    }
+
+    return nullptr;
 }
 
 void Editor::DrawEntityTreeWindow() {
@@ -785,8 +833,8 @@ void Editor::DrawEntityTreeWindow() {
 
         const std::string s_ResultCount = fmt::format(
             "{} / {}",
-            m_DirectEntityTreeNodeMatches.empty() ? 0 : m_CurrentEntitySearchResultIndex + 1,
-            m_DirectEntityTreeNodeMatches.size()
+            m_TotalMatchCount == 0 ? 0 : m_CurrentEntitySearchResultIndex + 1,
+            m_TotalMatchCount
         );
         const float s_ResultCountWidth = ImGui::CalcTextSize(s_ResultCount.c_str()).x;
 
@@ -803,45 +851,32 @@ void Editor::DrawEntityTreeWindow() {
             s_ClearFiltersButtonWidth +
             s_Style.ItemSpacing.x * 3;
 
-        static char s_EntitySearchInput[17] = {};
-
         ImGui::SetNextItemWidth(s_FilterControlsWidth);
 
         if (ImGui::InputText(
             ICON_MD_SEARCH " Search by ID",
-            s_EntitySearchInput,
-            IM_ARRAYSIZE(s_EntitySearchInput),
+            &m_EntityIDSearchInput,
             ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsHexadecimal |
             ImGuiInputTextFlags_CharsNoBlank
         )) {
-            m_EntityIdSearchInput = s_EntitySearchInput;
-
             FilterEntityTree();
         }
-
-        static char s_EntityNameSearchInput[2048] = {};
 
         ImGui::SetNextItemWidth(s_FilterControlsWidth);
 
         if (ImGui::InputText(
             ICON_MD_SEARCH " Search by name",
-            s_EntityNameSearchInput,
-            IM_ARRAYSIZE(s_EntityNameSearchInput),
+            &m_EntityNameSearchInput,
             ImGuiInputTextFlags_EnterReturnsTrue
         )) {
-            m_EntityNameSearchInput = s_EntityNameSearchInput;
-
             FilterEntityTree();
         }
-
-        static char s_EntityTypeSearchInput[2048] = {};
 
         ImGui::SetNextItemWidth(s_FilterControlsWidth);
 
         Util::ImGuiUtils::InputWithAutocomplete(
             ICON_MD_SEARCH " Search by type##EntityTypesPopup",
-            s_EntityTypeSearchInput,
-            sizeof(s_EntityTypeSearchInput),
+            m_EntityTypeSearchInput,
             m_ClassNames,
             [](const std::string& p_ClassName) -> const std::string& {
                 return p_ClassName;
@@ -850,8 +885,6 @@ void Editor::DrawEntityTreeWindow() {
                 return p_ClassName;
             },
             [&](const std::string&, const std::string&, const auto&) {
-                m_EntityTypeSearchInput = s_EntityTypeSearchInput;
-
                 FilterEntityTree();
             }
         );
@@ -876,20 +909,29 @@ void Editor::DrawEntityTreeWindow() {
             ImGui::EndCombo();
         }
 
-        const bool s_HasSearchResults = !m_DirectEntityTreeNodeMatches.empty();
+        const bool s_HasSearchResults = m_TotalMatchCount > 0;
+
+        // Clamp index in case matches shrank while searching
+        if (s_HasSearchResults && m_CurrentEntitySearchResultIndex >= m_TotalMatchCount) {
+            m_CurrentEntitySearchResultIndex = 0;
+        }
 
         ImGui::BeginDisabled(!s_HasSearchResults);
 
         if (ImGui::Button(ICON_MD_ARROW_BACK " Previous")) {
-            if (m_CurrentEntitySearchResultIndex == 0) {
-                m_CurrentEntitySearchResultIndex = m_DirectEntityTreeNodeMatches.size() - 1;
-            }
-            else {
-                --m_CurrentEntitySearchResultIndex;
-            }
+            if (s_HasSearchResults) {
+                if (m_CurrentEntitySearchResultIndex == 0) {
+                    m_CurrentEntitySearchResultIndex = m_TotalMatchCount - 1;
+                }
+                else {
+                    --m_CurrentEntitySearchResultIndex;
+                }
 
-            const auto s_Node = m_DirectEntityTreeNodeMatches[m_CurrentEntitySearchResultIndex];
-            OnSelectEntity(s_Node->Entity, true, std::nullopt);
+                size_t s_Counter = 0;
+                if (auto s_Node = FindMatchByIndex(m_CachedEntityTree, m_CurrentEntitySearchResultIndex, s_Counter)) {
+                    OnSelectEntity(s_Node->Entity, true, std::nullopt);
+                }
+            }
         }
 
         ImGui::SameLine();
@@ -897,17 +939,20 @@ void Editor::DrawEntityTreeWindow() {
         ImGui::Text(
             "%zu / %zu",
             s_HasSearchResults ? m_CurrentEntitySearchResultIndex + 1 : 0,
-            m_DirectEntityTreeNodeMatches.size()
+            m_TotalMatchCount
         );
 
         ImGui::SameLine();
 
         if (ImGui::Button("Next " ICON_MD_ARROW_FORWARD)) {
-            m_CurrentEntitySearchResultIndex =
-                (m_CurrentEntitySearchResultIndex + 1) % m_DirectEntityTreeNodeMatches.size();
+            if (s_HasSearchResults) {
+                m_CurrentEntitySearchResultIndex = (m_CurrentEntitySearchResultIndex + 1) % m_TotalMatchCount;
 
-            const auto s_Node = m_DirectEntityTreeNodeMatches[m_CurrentEntitySearchResultIndex];
-            OnSelectEntity(s_Node->Entity, true, std::nullopt);
+                size_t s_Counter = 0;
+                if (auto s_Node = FindMatchByIndex(m_CachedEntityTree, m_CurrentEntitySearchResultIndex, s_Counter)) {
+                    OnSelectEntity(s_Node->Entity, true, std::nullopt);
+                }
+            }
         }
 
         ImGui::EndDisabled();
@@ -915,19 +960,7 @@ void Editor::DrawEntityTreeWindow() {
         ImGui::SameLine();
 
         if (ImGui::Button(ICON_MD_CLEAR " Clear filters")) {
-            m_EntityIdSearchInput.clear();
-            m_EntityTypeSearchInput.clear();
-            m_EntityNameSearchInput.clear();
-
-            memset(s_EntitySearchInput, 0, sizeof(s_EntitySearchInput));
-            memset(s_EntityTypeSearchInput, 0, sizeof(s_EntityTypeSearchInput));
-            memset(s_EntityNameSearchInput, 0, sizeof(s_EntityNameSearchInput));
-
-            m_EntityViewMode = EntityViewMode::All;
-            m_LastEntityViewMode = EntityViewMode::All;
-
-            m_FilteredEntityTreeNodes.clear();
-            m_DirectEntityTreeNodeMatches.clear();
+            ClearFilters();
         }
 
         ImGui::Spacing();
@@ -960,43 +993,39 @@ void Editor::DrawEntityTreeWindow() {
 
             ImGui::SameLine();
 
-            if (ImGui::Button(ICON_MD_FILE_DOWNLOAD " Export entity tree")) {
-                std::fstream s_FileOut;
-                s_FileOut.open("entity_tree.txt", std::ios_base::out);
+            if (ImGui::Button(ICON_MD_SAVE_ALT " Export entity tree")) {
+                std::ofstream s_FileOut("entity_tree.txt");
 
                 if (s_FileOut.is_open()) {
-                    const bool s_IsTreeFiltered = !m_EntityIdSearchInput.empty() ||
-                        !m_EntityTypeSearchInput.empty() ||
-                        !m_EntityNameSearchInput.empty() ||
-                        m_EntityViewMode != EntityViewMode::All;
-
-                    using OutputNodeFunc = std::function<void(std::shared_ptr<EntityTreeNode>, uint32_t)>;
-                    const OutputNodeFunc s_OutputNode = [&](std::shared_ptr<EntityTreeNode> p_Node, uint32_t p_ParentDepth) {
-                        if (!p_Node) {
+                    auto s_OutputNode = [&](auto& self, const std::shared_ptr<EntityTreeNode>& p_Node, uint32_t p_Depth) -> void {
+                        if (!p_Node || p_Node->IsPendingDeletion.load(std::memory_order_acquire)) {
                             return;
                         }
 
-                        if (s_IsTreeFiltered && !m_FilteredEntityTreeNodes.contains(p_Node.get())) {
+                        if (m_HasActiveFilters && !m_FilteredEntityTreeNodes.contains(p_Node.get())) {
                             return;
                         }
 
                         const bool s_HasVisibleChildren = HasVisibleChildren(p_Node);
 
-                        const std::string s_Prefix = p_ParentDepth != 0
-                            ? std::string(p_ParentDepth * 2, ' ') + (s_HasVisibleChildren ? "> " : "- ")
+                        const std::string s_Prefix = p_Depth != 0
+                            ? std::string(p_Depth * 2, ' ') + (s_HasVisibleChildren ? "> " : "- ")
                             : "";
+
                         s_FileOut << s_Prefix << p_Node->Name << std::endl;
 
                         if (!s_HasVisibleChildren) {
                             return;
                         }
 
-                        for (const auto& s_Child : p_Node->Children) {
-                            s_OutputNode(s_Child.second, p_ParentDepth + 1);
+                        for (const auto& [_, s_Child] : p_Node->Children) {
+                            self(self, s_Child, p_Depth + 1);
                         }
                         };
 
-                    s_OutputNode(m_CachedEntityTree, 0);
+                    if (m_CachedEntityTree) {
+                        s_OutputNode(s_OutputNode, m_CachedEntityTree, 0);
+                    }
                 }
             }
 
@@ -1008,20 +1037,12 @@ void Editor::DrawEntityTreeWindow() {
 
             ImGui::EndDisabled();
 
-            if (!m_EntityIdSearchInput.empty() ||
-                !m_EntityTypeSearchInput.empty() ||
-                !m_EntityNameSearchInput.empty()) {
-                if (!m_FilteredEntityTreeNodes.empty() &&
-                    m_FilteredEntityTreeNodes.size() == 1 &&
-                    *m_FilteredEntityTreeNodes.begin() == m_CachedEntityTree.get()) {
-                    ImGui::TextColored(ImVec4(1.f, 69.f / 255.f, 69.f / 255.f, 1.f), "No results found.");
-                    ImGui::End();
+            const bool s_HasNoResults = m_HasActiveFilters && (m_TotalMatchCount == 0);
 
-                    return;
-                }
+            if (s_HasNoResults) {
+                ImGui::TextColored(ImVec4(1.0f, 0.27f, 0.27f, 1.0f), "No results found.");
             }
-
-            if (m_CachedEntityTree) {
+            else if (m_CachedEntityTree) {
                 RenderEntity(m_CachedEntityTree);
             }
             else {
@@ -1079,9 +1100,7 @@ void Editor::OnSelectEntity(
 
     m_ScrollToEntity = p_ShouldScrollToEntity && p_Entity.GetEntity() != nullptr;
 
-    if (p_Entity != m_DynamicEntitiesNodeEntityRef &&
-        p_Entity != m_UnparentedEntitiesNodeEntityRef
-    ) {
+    if (!IsSpecialEntityTreeNode(p_Entity)) {
         m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
     }
 
@@ -1114,14 +1133,11 @@ void Editor::OnSelectEntity(
         Globals::Selections->push_back(s_EntityRef);
     }
 
-    if (m_SelectionForFreeCameraEditorStyleEntity) {
-        if (p_Entity != m_DynamicEntitiesNodeEntityRef &&
-            p_Entity != m_UnparentedEntitiesNodeEntityRef) {
-            m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
+    if (m_SelectionForFreeCameraEditorStyleEntity && !IsSpecialEntityTreeNode(p_Entity)) {
+        m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
 
-            if (p_Entity) {
-                m_SelectionForFreeCameraEditorStyleEntity->m_selection.push_back(p_Entity);
-            }
+        if (p_Entity) {
+            m_SelectionForFreeCameraEditorStyleEntity->m_selection.push_back(p_Entity);
         }
     }
 }
@@ -1132,7 +1148,6 @@ void Editor::OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_C
     m_EntityDestructionMutex.unlock();
 }
 
-
 void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
     m_CachedEntityTreeMutex.lock();
 
@@ -1141,6 +1156,10 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
 
     if (m_SelectedEntity == p_Entity) {
         m_SelectedEntity = {};
+    }
+
+    if (m_SelectedGizmoEntity == p_Entity) {
+        m_SelectedGizmoEntity = {};
     }
 
     // Remove from the tree.
@@ -1157,10 +1176,21 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
             s_ChildrenQueue.push(s_Child.second);
         }
 
+        m_OpenEntityTreeNodes.erase(s_NodeToRemove.get());
+        m_FilteredEntityTreeNodes.erase(s_NodeToRemove.get());
+
         while (!s_ChildrenQueue.empty()) {
-            if (m_SelectedEntity == s_ChildrenQueue.front()->Entity) {
+            auto s_CurrentChild = s_ChildrenQueue.front();
+
+            m_OpenEntityTreeNodes.erase(s_CurrentChild.get());
+            m_FilteredEntityTreeNodes.erase(s_CurrentChild.get());
+
+            if (m_SelectedEntity == s_CurrentChild->Entity) {
                 m_SelectedEntity = {};
-                break;
+            }
+
+            if (m_SelectedGizmoEntity == s_CurrentChild->Entity) {
+                m_SelectedGizmoEntity = {};
             }
 
             for (auto& s_Child : s_ChildrenQueue.front()->Children) {
@@ -1199,6 +1229,9 @@ void Editor::DestroyEntityNodeInternal(
 
     std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
 
+    m_OpenEntityTreeNodes.erase(p_NodeToRemove.get());
+    m_FilteredEntityTreeNodes.erase(p_NodeToRemove.get());
+
     if (p_NodeToRemove->Entity) {
         m_CachedEntityTreeMap.erase(p_NodeToRemove->Entity);
         m_EntityNames.erase(p_NodeToRemove->Entity);
@@ -1224,16 +1257,23 @@ void Editor::DestroyEntityNodeInternal(
     }
 
     while (!s_ChildrenQueue.empty()) {
-        if (m_SelectedEntity == s_ChildrenQueue.front()->Entity) {
+        auto s_CurrentChild = s_ChildrenQueue.front();
+        s_ChildrenQueue.pop();
+
+        m_OpenEntityTreeNodes.erase(s_CurrentChild.get());
+        m_FilteredEntityTreeNodes.erase(s_CurrentChild.get());
+
+        if (m_SelectedEntity == s_CurrentChild->Entity) {
             m_SelectedEntity = {};
-            break;
         }
 
-        for (auto& s_Child : s_ChildrenQueue.front()->Children) {
+        if (m_SelectedGizmoEntity == s_CurrentChild->Entity) {
+            m_SelectedGizmoEntity = {};
+        }
+
+        for (auto& s_Child : s_CurrentChild->Children) {
             s_ChildrenQueue.push(s_Child.second);
         }
-
-        s_ChildrenQueue.pop();
     }
 
     if (auto s_Parent = p_NodeToRemove->Parent.lock()) {

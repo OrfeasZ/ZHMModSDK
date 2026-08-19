@@ -142,11 +142,17 @@ private:
 
     void DrawSettingsWindow(bool p_HasFocus);
 
-    bool HasVisibleChildren(std::shared_ptr<EntityTreeNode> p_Node) const;
+    bool HasVisibleChildren(const std::shared_ptr<EntityTreeNode>& p_Node) const;
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
     void DrawEntityTreeWindow();
     void FilterEntityTree();
-    bool FilterEntityTree(EntityTreeNode* p_Node);
+    bool FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSingleMatchNode);
+    void ClearFilters();
+    std::shared_ptr<EntityTreeNode> FindMatchByIndex(
+        const std::shared_ptr<EntityTreeNode>& p_Node,
+        size_t p_TargetIndex,
+        size_t& p_CurrentCounter
+    );
     void UpdateEntities();
     void UpdateEntityTree(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
@@ -160,6 +166,7 @@ private:
     void ReparentDynamicOutfitEntities(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
+    bool IsSpecialEntityTreeNode(ZEntityRef p_Entity) const;
 
     void OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, std::optional<std::string> p_ClientId);
     void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
@@ -492,12 +499,13 @@ private:
     EntityViewMode m_LastEntityViewMode = EntityViewMode::All;
     const std::vector<std::string> m_EntityViewModes = { "All", "Scenes/bricks", "Dynamic entities" };
 
-    std::string m_EntityIdSearchInput;
+    std::string m_EntityIDSearchInput;
     std::string m_EntityTypeSearchInput;
     std::string m_EntityNameSearchInput;
     std::unordered_set<EntityTreeNode*> m_FilteredEntityTreeNodes;
-    std::vector<EntityTreeNode*> m_DirectEntityTreeNodeMatches;
     size_t m_CurrentEntitySearchResultIndex = 0;
+    size_t m_TotalMatchCount = 0;
+    bool m_HasActiveFilters = false;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;
