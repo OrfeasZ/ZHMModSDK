@@ -1037,17 +1037,26 @@ void Editor::DrawEntityTreeWindow() {
 
             ImGui::EndDisabled();
 
-            const bool s_HasNoResults = m_HasActiveFilters && (m_TotalMatchCount == 0);
+            if (ImGui::BeginChild(
+                "EntityTree",
+                ImVec2(0, 0),
+                ImGuiChildFlags_None,
+                ImGuiWindowFlags_HorizontalScrollbar
+            )) {
+                const bool s_HasNoResults = m_HasActiveFilters && (m_TotalMatchCount == 0);
 
-            if (s_HasNoResults) {
-                ImGui::TextColored(ImVec4(1.0f, 0.27f, 0.27f, 1.0f), "No results found.");
+                if (s_HasNoResults) {
+                    ImGui::TextColored(ImVec4(1.0f, 0.27f, 0.27f, 1.0f), "No results found.");
+                }
+                else if (m_CachedEntityTree) {
+                    RenderEntity(m_CachedEntityTree);
+                }
+                else {
+                    ImGui::Text("No entities loaded. Build the entity tree to load them.");
+                }
             }
-            else if (m_CachedEntityTree) {
-                RenderEntity(m_CachedEntityTree);
-            }
-            else {
-                ImGui::Text("No entities loaded. Build the entity tree to load them.");
-            }
+
+            ImGui::EndChild();
         }
 
         /*const std::string s_PreviewLabel = fmt::format(
