@@ -141,4 +141,11 @@ public:
 
     virtual void SetMaxDrawDistance(float p_MaxDrawDistance) = 0;
     virtual float GetMaxDrawDistance() const = 0;
+
+    virtual void DrawSphere3D(
+        const SMatrix& p_Transform,
+        const float4& p_Position,
+        const float4& p_Size,
+        const SVector4& p_Color
+    ) = 0;
 };

@@ -12,6 +12,8 @@
 #include "Glacier/ZRender.h"
 #include "Glacier/MDF_FONT.h"
 #include "Glacier/ZCameraEntity.h"
+#include "Glacier/ZCircleGenerator.h"
+#include "Glacier/ZColor.h"
 
 #include "Hooks.h"
 #include "Logging.h"
@@ -1090,40 +1092,6 @@ void DirectXTKRenderer::DrawBox3D(
         p_Center - s_Right + s_Up - s_Forward,
         p_Center + s_Right + s_Up - s_Forward,
         p_Center + s_Right - s_Up - s_Forward,
-        p_Center + s_Right + s_Up + s_Forward,
-        p_Center - s_Right + s_Up + s_Forward,
-        p_Center - s_Right - s_Up + s_Forward,
-        p_Center + s_Right - s_Up + s_Forward,
-    };
-
-    static constexpr int s_Edges[12][2] = {
-        {0, 1}, {1, 2}, {2, 3}, {3, 0}, // bottom face
-        {4, 5}, {5, 6}, {6, 7}, {7, 4}, // top face
-        {0, 6}, {1, 5}, {2, 4}, {3, 7} // vertical edges
-    };
-
-    for (const auto& s_Edge : s_Edges) {
-        DrawLine3D(s_Corners[s_Edge[0]], s_Corners[s_Edge[1]], p_Color, p_Color);
-    }
-}
-
-void DirectXTKRenderer::DrawBoxWire3D(
-    const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
-) {
-    if (m_IsFrustumCullingEnabled &&
-        !IsOBBInsideViewFrustum(p_Center, p_HalfSize, p_Transform)) {
-        return;
-    }
-
-    const SVector3 s_Right = p_Transform.Right * p_HalfSize.x;
-    const SVector3 s_Forward = -(p_Transform.Backward * p_HalfSize.y);
-    const SVector3 s_Up = p_Transform.ZAxis * p_HalfSize.z;
-
-    const SVector3 s_Corners[8] = {
-        p_Center - s_Right - s_Up - s_Forward,
-        p_Center - s_Right + s_Up - s_Forward,
-        p_Center + s_Right + s_Up - s_Forward,
-        p_Center + s_Right - s_Up - s_Forward,
         p_Center - s_Right - s_Up + s_Forward,
         p_Center - s_Right + s_Up + s_Forward,
         p_Center + s_Right + s_Up + s_Forward,
@@ -1145,6 +1113,40 @@ void DirectXTKRenderer::DrawBoxWire3D(
             s_Corners[s_Face[1]], p_Color,
             s_Corners[s_Face[2]], p_Color
         );
+    }
+}
+
+void DirectXTKRenderer::DrawBoxWire3D(
+    const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
+) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsOBBInsideViewFrustum(p_Center, p_HalfSize, p_Transform)) {
+        return;
+    }
+
+    const SVector3 s_Right = p_Transform.Right * p_HalfSize.x;
+    const SVector3 s_Forward = -(p_Transform.Backward * p_HalfSize.y);
+    const SVector3 s_Up = p_Transform.ZAxis * p_HalfSize.z;
+
+    const SVector3 s_Corners[8] = {
+        p_Center - s_Right - s_Up - s_Forward,
+        p_Center - s_Right + s_Up - s_Forward,
+        p_Center + s_Right + s_Up - s_Forward,
+        p_Center + s_Right - s_Up - s_Forward,
+        p_Center + s_Right + s_Up + s_Forward,
+        p_Center - s_Right + s_Up + s_Forward,
+        p_Center - s_Right - s_Up + s_Forward,
+        p_Center + s_Right - s_Up + s_Forward,
+    };
+
+    static constexpr int s_Edges[12][2] = {
+        {0, 1}, {1, 2}, {2, 3}, {3, 0}, // bottom face
+        {4, 5}, {5, 6}, {6, 7}, {7, 4}, // top face
+        {0, 6}, {1, 5}, {2, 4}, {3, 7} // vertical edges
+    };
+
+    for (const auto& s_Edge : s_Edges) {
+        DrawLine3D(s_Corners[s_Edge[0]], s_Corners[s_Edge[1]], p_Color, p_Color);
     }
 }
 
@@ -1676,6 +1678,188 @@ void DirectXTKRenderer::SetMaxDrawDistance(const float p_MaxDrawDistance) {
 
 float DirectXTKRenderer::GetMaxDrawDistance() const {
     return m_ViewFrustum.GetMaxDrawDistance();
+}
+
+void DirectXTKRenderer::DrawSphere3D(
+    const SMatrix& p_Transform,
+    const float4& p_Position,
+    const float4& p_Size,
+    const SVector4& p_Color
+) {
+    SMatrix s_Transform = p_Transform;
+    s_Transform.Trans = p_Position;
+    s_Transform.Trans.w = 1.f;
+
+    const SColorRGBA s_Color {
+        p_Color.x,
+        p_Color.y,
+        p_Color.z,
+        p_Color.w
+    };
+
+    DrawSphere3DOutlinedShaded(s_Transform, p_Size.x, s_Color.GetAsUInt32(), 48.f, false);
+}
+
+void DirectXTKRenderer::DrawSphere3DOutlinedShaded(
+    const SMatrix& p_Transform,
+    float p_Size,
+    uint32_t p_Color,
+    float p_StepsToACircle,
+    bool p_IsOrthographic
+) {
+    const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+    if (!s_CurrentCamera) {
+        return;
+    }
+
+    constexpr float s_TwoPi = 6.2831855f;
+
+    const uint32_t s_OutlineColor = (p_Color & 0x00FFFFFF) | 0xBB000000;
+    const uint32_t s_ShadeColor = (p_Color & 0x00FFFFFF) | 0x64000000;
+
+    const SMatrix s_CameraTransform = s_CurrentCamera->GetObjectToWorldMatrix();
+
+    const float4 s_CameraPosition = s_CameraTransform.Pos;
+    const float4 s_CameraForward = -s_CameraTransform.Backward;
+    const float4 s_SphereCenter = p_Transform.Trans;
+
+    if (!p_IsOrthographic) {
+        const float4 s_ToCamera = s_CameraPosition - s_SphereCenter;
+        const float s_Distance = s_ToCamera.Length3();
+
+        if (s_Distance > p_Size) {
+            const float4 s_ToCameraNormalized = s_ToCamera / s_Distance;
+
+            const float s_OutlineOffset = (p_Size * p_Size) / s_Distance;
+            const float s_OutlineRadius = std::sqrt(
+                p_Size * p_Size - s_OutlineOffset * s_OutlineOffset
+            );
+
+            const float4 s_OutlineCenter =
+                s_SphereCenter + s_ToCameraNormalized * s_OutlineOffset;
+
+            DrawArc(
+                s_OutlineCenter,
+                s_OutlineRadius,
+                -s_ToCameraNormalized,
+                s_CameraTransform.YAxis,
+                s_OutlineColor,
+                s_TwoPi,
+                p_StepsToACircle
+            );
+        }
+    }
+
+    const float4 s_Axes[] = {
+        p_Transform.XAxis,
+        p_Transform.YAxis,
+        p_Transform.ZAxis
+    };
+
+    for (size_t i = 0; i < 3; ++i) {
+        const float4& s_Normal = s_Axes[i];
+
+        float4 s_StartDirection = float4::CrossProduct(
+            s_Normal,
+            s_CameraForward
+        );
+
+        if (std::abs(s_StartDirection.x) <= 0.0001f &&
+            std::abs(s_StartDirection.y) <= 0.0001f &&
+            std::abs(s_StartDirection.z) <= 0.0001f) {
+            s_StartDirection = float4::CrossProduct(
+                s_Axes[(i + 1) % 3],
+                s_Normal
+            );
+        }
+
+        s_StartDirection.Normalize();
+
+        DrawArcShaded(
+            s_SphereCenter,
+            p_Size,
+            s_Normal,
+            s_StartDirection,
+            p_Color,
+            s_ShadeColor,
+            s_TwoPi,
+            p_StepsToACircle
+        );
+    }
+}
+
+void DirectXTKRenderer::DrawArc(
+    const float4& p_Center,
+    float p_Size,
+    const float4& p_Normal,
+    const float4& p_StartDirection,
+    uint32_t p_Color,
+    float p_Angle,
+    float p_StepsToACircle
+) {
+    const float4 s_Size(p_Size);
+
+    ZCircleGenerator s_CircleGenerator;
+    s_CircleGenerator.Init(
+        p_Center,
+        s_Size,
+        p_Normal,
+        p_StartDirection,
+        p_Angle,
+        p_StepsToACircle
+    );
+
+    const SVector4 s_Color = ZColor::UnpackUnsigned(p_Color);
+
+    while (s_CircleGenerator.MoveNext()) {
+        DrawLine3D(
+            s_CircleGenerator.m_v1,
+            s_CircleGenerator.m_v2,
+            s_Color,
+            s_Color
+        );
+    }
+}
+
+void DirectXTKRenderer::DrawArcShaded(
+    const float4& p_Center,
+    float p_Size,
+    const float4& p_Normal,
+    const float4& p_StartDirection,
+    uint32_t p_Color,
+    uint32_t p_ShadeColor,
+    float p_Angle,
+    float p_StepsToACircle
+) {
+    const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+    if (!s_CurrentCamera) {
+        return;
+    }
+
+    const float4 s_Size(p_Size);
+
+    ZCircleGenerator s_CircleGenerator;
+    s_CircleGenerator.Init(p_Center, s_Size, p_Normal, p_StartDirection, p_Angle, p_StepsToACircle);
+
+    const float4 s_CameraPosition = s_CurrentCamera->GetObjectToWorldMatrix().Pos;
+
+    while (s_CircleGenerator.MoveNext()) {
+        const float4& s_Start = s_CircleGenerator.m_v1;
+        const float4& s_End = s_CircleGenerator.m_v2;
+
+        const float4 s_Direction = s_End - s_Start;
+
+        const float s_Facing = float4::DotProduct(
+            float4::CrossProduct(p_Normal, s_Direction),
+            s_CameraPosition - s_Start
+        );
+
+        const SVector4 s_Color = ZColor::UnpackUnsigned(s_Facing >= 0.f ? p_Color : p_ShadeColor);
+
+        DrawLine3D(s_Start, s_End, s_Color, s_Color);
+    }
 }
 
 AABB DirectXTKRenderer::TransformAABB(const DirectX::SimpleMath::Matrix& p_Transform, const AABB& p_AABB) {

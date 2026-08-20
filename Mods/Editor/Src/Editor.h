@@ -14,6 +14,8 @@
 #include "Glacier/EDebugChannel.h"
 #include "Glacier/ZCurve.h"
 #include "Glacier/ZAction.h"
+#include "Glacier/ZSound.h"
+#include "Glacier/ZSequence.h"
 
 #include "ImGuizmo.h"
 #include "EditorServer.h"
@@ -328,6 +330,8 @@ private:
     void DrawDebugEntities(IRenderer* p_Renderer);
     void DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer);
     void DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer);
+    void DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Renderer);
+    void DrawShapes(ZSequenceEntity* p_SequenceEntity, IRenderer* p_Renderer);
     void GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTreeNode);
     void AddDebugEntity(
         const ZEntityRef p_EntityRef,
@@ -354,6 +358,41 @@ private:
     EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
     bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
+
+    void DrawTrajectoryTrack(
+        IRenderer* p_Renderer,
+        ZTrajectoryTrackBase* p_Track,
+        const SVector4& p_Color,
+        ZEntityRef p_TargetEntity
+    );
+    template <typename TItem, typename EvaluateFn>
+    void DrawTrajectoryItem(
+        IRenderer* p_Renderer,
+        TItem* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        const SVector4& p_Color,
+        ZEntityRef p_TargetEntity,
+        EvaluateFn&& p_EvaluateFn
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZMorphemeTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZAnimationResource* p_AnimationResource,
+        ZEntityRef p_TargetEntity
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZEulerAngleTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZEntityRef p_TargetEntity
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZBezierSplineTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZEntityRef p_TargetEntity
+    );
 
     static bool IsActorTarget(ZActor* p_Actor);
 
@@ -481,6 +520,8 @@ private:
         AudioEmitterSpatialAspect,
         AudioEmitterVolumetricAspect,
         ClothWireEntity,
+        SoundGateEntity,
+        SequenceEntity,
         Count
     };
 
@@ -632,6 +673,8 @@ private:
     bool m_AlwaysDrawDebugBoxForColiValidityCheck = false;
     bool m_DrawPushDebug = false;
     bool m_DrawSafeZones = true;
+
+    bool m_ShowSoundOcclusion = false;
 
     ZEntityRef m_EditorData {};
     TEntityRef<ZCameraEntity> m_EditorCamera {};

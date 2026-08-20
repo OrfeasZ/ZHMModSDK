@@ -4,18 +4,17 @@
 
 class ZColor {
 public:
-    static SVector4 UnpackUnsigned(const unsigned int lPackedVec4) {
-        const unsigned int alpha = (lPackedVec4 >> 24) & 0xFF;
-        const unsigned int blue = (lPackedVec4 >> 16) & 0xFF;
-        const unsigned int green = (lPackedVec4 >> 8) & 0xFF;
-        const unsigned int red = lPackedVec4 & 0xFF;
-        SVector4 result;
+    static SVector4 UnpackUnsigned(const uint32 p_PackedVector4) {
+        const uint32 s_Alpha = (p_PackedVector4 >> 24) & 0xFF;
+        const uint32 s_Blue = (p_PackedVector4 >> 16) & 0xFF;
+        const uint32 s_Green = (p_PackedVector4 >> 8) & 0xFF;
+        const uint32 s_Red = p_PackedVector4 & 0xFF;
 
-        result.x = static_cast<float>(red) / 255.0f;
-        result.y = static_cast<float>(green) / 255.0f;
-        result.z = static_cast<float>(blue) / 255.0f;
-        result.w = static_cast<float>(alpha) / 255.0f;
-
-        return result;
+        return SVector4(
+            static_cast<float>(s_Red) / 255.f,
+            static_cast<float>(s_Green) / 255.f,
+            static_cast<float>(s_Blue) / 255.f,
+            static_cast<float>(s_Alpha) / 255.f
+        );
     }
 };

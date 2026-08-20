@@ -5,6 +5,7 @@
 #include "ZGeomEntity.h"
 #include "ZHitman5.h"
 #include "ZGameTime.h"
+#include "IBoolConditionListener.h"
 
 class IItemBase : public IComponentInterface {};
 
@@ -18,8 +19,6 @@ class ZUIDataProvider {
 public:
     PAD(0x40);
 };
-
-class IBoolConditionListener : public IComponentInterface {};
 
 class IColliderController : public IComponentInterface {};
 
