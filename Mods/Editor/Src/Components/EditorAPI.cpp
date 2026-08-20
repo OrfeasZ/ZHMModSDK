@@ -148,6 +148,8 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
                             s_Resource->GetResourceInfo().rid.m_IDLow
                         );
                     }
+
+                    s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
                     (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
                     if (std::strcmp(s_ResourceName.c_str(), "") != 0 && s_ResourceName.c_str() != nullptr &&
@@ -162,7 +164,7 @@ std::string Editor::GetCollisionHash(auto p_SelectedEntity) {
 }
 
 template <typename T>
-std::unique_ptr<T, AlignedDeleter> Editor::GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property) {
+std::unique_ptr<T, Editor::PropertyDeleter> Editor::GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property) {
     const auto* s_PropertyInfo = p_Property->GetPropertyInfo();
     const auto s_PropertyAddress =
         reinterpret_cast<uintptr_t>(p_Entity.m_pObj) + p_Property->m_nPropertyOffset;
@@ -187,7 +189,10 @@ std::unique_ptr<T, AlignedDeleter> Editor::GetProperty(ZEntityRef p_Entity, cons
         );
     }
 
-    return std::unique_ptr<T, AlignedDeleter>(s_Data, AlignedDeleter());;
+    return std::unique_ptr<T, PropertyDeleter>(
+        s_Data,
+        PropertyDeleter { s_PropertyInfo->m_propertyInfo.m_Type }
+    );
 }
 
 Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {

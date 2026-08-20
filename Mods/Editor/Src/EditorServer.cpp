@@ -985,6 +985,7 @@ bool EditorServer::IsPropertyValueTrue(const SPropertyData* s_Property, const ZE
 
     const auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
 
+    s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
     (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
     if (!s_JsonProperty) {
@@ -1459,6 +1460,7 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SP
         auto* s_EntityData = reinterpret_cast<TEntityRef<ZEntityImpl>*>(s_Data);
 
         if (!s_EntityData || !*s_EntityData) {
+            s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
             (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
             p_Stream << "null" << "}";
             return;
@@ -1501,10 +1503,13 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SP
 
         p_Stream << write_json("type") << ":" << write_json(s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName) << "}}";
 
+        s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
         (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
     }
     else {
         auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
+
+        s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
         (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
 
         if (!s_JsonProperty) {

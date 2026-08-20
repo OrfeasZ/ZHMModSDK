@@ -108,6 +108,27 @@ private:
         std::vector<PinInfo> outputPins;
     };
 
+    struct PropertyDeleter {
+        STypeID* m_Type = nullptr;
+
+        template <typename T>
+        void operator()(T* p_Data) const {
+            if (!p_Data) {
+                return;
+            }
+
+            if (m_Type) {
+                if (const auto* s_TypeInfo = m_Type->GetTypeInfo()) {
+                    if (s_TypeInfo->m_pTypeFunctions) {
+                        s_TypeInfo->m_pTypeFunctions->destruct(p_Data);
+                    }
+                }
+            }
+
+            (*Globals::MemoryManager)->m_pNormalAllocator->Free(p_Data);
+        }
+    };
+
     void SpawnCameras();
     void ActivateCamera(ZEntityRef* m_CameraEntity);
     void DeactivateCamera();
@@ -247,7 +268,7 @@ private:
     bool SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     template <typename T>
-    static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property);
+    static std::unique_ptr<T, PropertyDeleter> GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property);
     static Quat GetQuatFromProperty(ZEntityRef p_Entity);
     static Quat GetParentQuat(ZEntityRef p_Entity);
     std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& p_RoomNameToFolderName);

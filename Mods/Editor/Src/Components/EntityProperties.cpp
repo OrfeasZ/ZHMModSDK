@@ -918,7 +918,7 @@ void Editor::DrawEntityPropertiesWindow() {
 
                 ImGui::Separator();
 
-                // Free the property data.
+                s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
                 (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
             }
         }
