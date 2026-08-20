@@ -1220,7 +1220,8 @@ std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
     if (s_IsItem || s_IsWeapon) {
         return std::string(s_Title.c_str(), s_Title.size());
     }
-    else if (!s_AmmoConfig.IsEmpty()) {
+
+    if (!s_AmmoConfig.IsEmpty()) {
         std::string s_Tag;
 
         if (s_Tags) {
@@ -1229,7 +1230,8 @@ std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
 
         return std::format("{} / {}", std::to_string(static_cast<uint32_t>(s_MagazineSize)), s_Tag);
     }
-    else if (s_OnlineTraits) {
+
+    if (s_OnlineTraits) {
         std::string s_OnlineTraits2;
 
         for (size_t i = 1; i < (*s_OnlineTraits).size(); ++i) {
@@ -1242,18 +1244,24 @@ std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
 
         return s_OnlineTraits2;
     }
-    else if (!s_ModifierType.IsEmpty()) {
+
+    if (!s_ModifierType.IsEmpty()) {
         return std::string(s_ModifierType.c_str(), s_ModifierType.size());
     }
-    else if (!s_Parameter.IsEmpty()) {
+
+    if (!s_Parameter.IsEmpty()) {
         return std::string(s_Parameter.c_str(), s_Parameter.size());
     }
-    else if (!s_CommonName.IsEmpty()) {
+
+    if (!s_CommonName.IsEmpty()) {
         return std::string(s_CommonName.c_str(), s_CommonName.size());
     }
-    else if (!s_Name.IsEmpty()) {
+
+    if (!s_Name.IsEmpty()) {
         return std::string(s_Name.c_str(), s_Name.size());
     }
+
+    return "";
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
