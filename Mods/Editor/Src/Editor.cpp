@@ -1362,8 +1362,6 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_SelectedAction = nullptr;
 
     m_SelectedGizmoEntity = nullptr;
-    m_DrawGizmosForSelectedEntityOnly = false;
-    m_DrawShapesForSelectedEntityOnly = false;
 
     {
         std::scoped_lock s_Lock(m_DebugEntitiesMutex);

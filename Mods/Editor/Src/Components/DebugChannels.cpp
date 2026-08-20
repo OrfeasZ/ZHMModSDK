@@ -203,9 +203,10 @@ void Editor::InitializeDebugChannels() {
 
     m_DebugChannelNameToTypeNames["UI"].push_back("ZDebugGizmoEntity");
 
-    for (const auto& [s_DebugChannelName, s_DebugChannelEnum] : m_DebugChannels) {
+    for (const auto& [s_DebugChannelName, s_DebugChannel] : m_DebugChannels) {
         for (const auto& s_TypeName : m_DebugChannelNameToTypeNames[s_DebugChannelName]) {
-            m_DebugChannelToTypeNameToState[s_DebugChannelEnum][s_TypeName] = true;
+            m_DebugChannelToTypeNameToGizmoState[s_DebugChannel][s_TypeName] = true;
+            m_DebugChannelToTypeNameToShapeState[s_DebugChannel][s_TypeName] = true;
         }
     }
 }
@@ -309,19 +310,30 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
             ImGui::Checkbox("Draw gizmos", &m_DrawGizmos);
 
             ImGui::Indent();
-
             ImGui::BeginDisabled(!m_DrawGizmos);
 
-            if (ImGui::Checkbox("Draw all gizmos", &m_DrawAllGizmos)) {
-                for (auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToState) {
-                    s_IsVisible = m_DrawAllGizmos;
-                }
+            if (ImGui::RadioButton(
+                "Channels/types##Gizmos",
+                m_GizmoDrawMode == DebugDrawMode::SelectedChannelsAndTypes
+            )) {
+                m_GizmoDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
             }
 
-            ImGui::Checkbox("Draw gizmos for selected entity only", &m_DrawGizmosForSelectedEntityOnly);
+            if (ImGui::RadioButton(
+                "Selected entity##Gizmos",
+                m_GizmoDrawMode == DebugDrawMode::SelectedEntity
+            )) {
+                m_GizmoDrawMode = DebugDrawMode::SelectedEntity;
+            }
+
+            if (ImGui::RadioButton(
+                "All##Gizmos",
+                m_GizmoDrawMode == DebugDrawMode::All
+            )) {
+                m_GizmoDrawMode = DebugDrawMode::All;
+            }
 
             ImGui::EndDisabled();
-
             ImGui::Unindent();
 
             ImGui::Separator();
@@ -329,45 +341,125 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
             ImGui::Checkbox("Draw shapes", &m_DrawShapes);
 
             ImGui::Indent();
-
             ImGui::BeginDisabled(!m_DrawShapes);
 
-            ImGui::Checkbox("Draw shapes for selected entity only", &m_DrawShapesForSelectedEntityOnly);
+            if (ImGui::RadioButton(
+                "Channels/types##Shapes",
+                m_ShapeDrawMode == DebugDrawMode::SelectedChannelsAndTypes
+            )) {
+                m_ShapeDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
+            }
+
+            if (ImGui::RadioButton(
+                "Selected entity##Shapes",
+                m_ShapeDrawMode == DebugDrawMode::SelectedEntity
+            )) {
+                m_ShapeDrawMode = DebugDrawMode::SelectedEntity;
+            }
 
             ImGui::EndDisabled();
-
             ImGui::Unindent();
 
-            for (const auto& pair : m_DebugChannels) {
+            const bool s_UseChannelAndTypeNameFilters =
+                (m_DrawGizmos &&
+                 m_GizmoDrawMode == DebugDrawMode::SelectedChannelsAndTypes) ||
+                (m_DrawShapes &&
+                 m_ShapeDrawMode == DebugDrawMode::SelectedChannelsAndTypes);
+
+            ImGui::BeginDisabled(!s_UseChannelAndTypeNameFilters);
+
+            for (const auto& s_Pair : m_DebugChannels) {
                 const std::string s_Header = fmt::format(
                     "{} ({})",
-                    pair.first,
-                    m_DebugChannelToDebugEntityCount[pair.second]
+                    s_Pair.first,
+                    m_DebugChannelToDebugEntityCount[s_Pair.second]
                 );
 
                 if (ImGui::CollapsingHeader(s_Header.c_str())) {
-                    bool& s_DrawGizmos = m_DebugChannelToState[pair.second];
+                    bool& s_DrawGizmos = m_DebugChannelToGizmoState[s_Pair.second];
+                    bool& s_DrawShapes = m_DebugChannelToShapeState[s_Pair.second];
 
-                    ImGui::Checkbox(fmt::format("Draw gizmos##{}", pair.first).c_str(), &s_DrawGizmos);
+                    ImGui::Checkbox(fmt::format("Draw gizmos##{}", s_Pair.first).c_str(), &s_DrawGizmos);
+                    ImGui::Checkbox(fmt::format("Draw shapes##{}", s_Pair.first).c_str(), &s_DrawShapes);
 
                     ImGui::Separator();
 
-                    const auto& s_TypeNameToGizmoCount = m_DebugChannelToTypeNameToDebugEntityCount[pair.second];
-                    auto& s_TypeNameToState = m_DebugChannelToTypeNameToState[pair.second];
+                    const auto& s_TypeNameToDebugEntityCount =
+                        m_DebugChannelToTypeNameToDebugEntityCount[s_Pair.second];
 
-                    for (const auto& s_Pair : s_TypeNameToGizmoCount) {
-                        bool& s_DrawGizmos2 = s_TypeNameToState[s_Pair.first];
-                        const std::string s_Label = fmt::format("{} ({})##{}{}",
-                            s_Pair.first,
-                            s_Pair.second,
-                            pair.first,
-                            s_Pair.first
+                    auto& s_TypeNameToGizmoState =
+                        m_DebugChannelToTypeNameToGizmoState[s_Pair.second];
+
+                    auto& s_TypeNameToShapeState =
+                        m_DebugChannelToTypeNameToShapeState[s_Pair.second];
+
+                    if (ImGui::BeginTable("DebugEntityTypes", 3)) {
+                        const auto s_CenterItem = [](float p_ItemWidth) {
+                            const float s_AvailableWidth = ImGui::GetContentRegionAvail().x;
+
+                            ImGui::SetCursorPosX(
+                                ImGui::GetCursorPosX() + (s_AvailableWidth - p_ItemWidth) * 0.5f
+                            );
+                            };
+
+                        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 220.f);
+                        ImGui::TableSetupColumn(
+                            "Gizmo",
+                            ImGuiTableColumnFlags_WidthFixed,
+                            ImGui::CalcTextSize("Gizmo").x + ImGui::GetStyle().CellPadding.x * 2.f
+                        );
+                        ImGui::TableSetupColumn(
+                            "Shape",
+                            ImGuiTableColumnFlags_WidthFixed,
+                            ImGui::CalcTextSize("Shape").x + ImGui::GetStyle().CellPadding.x * 2.f
                         );
 
-                        ImGui::Checkbox(s_Label.c_str(), &s_DrawGizmos2);
+                        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+
+                        ImGui::TableNextColumn();
+                        s_CenterItem(ImGui::CalcTextSize("Type").x);
+
+                        ImGui::TableNextColumn();
+                        s_CenterItem(ImGui::CalcTextSize("Gizmo").x);
+
+                        ImGui::TableNextColumn();
+                        s_CenterItem(ImGui::CalcTextSize("Shape").x);
+
+                        for (const auto& [s_TypeName, s_Count] : s_TypeNameToDebugEntityCount) {
+                            bool& s_DrawGizmo = s_TypeNameToGizmoState[s_TypeName];
+                            bool& s_DrawShape = s_TypeNameToShapeState[s_TypeName];
+
+                            ImGui::TableNextRow();
+
+                            ImGui::TableNextColumn();
+                            ImGui::AlignTextToFramePadding();
+                            ImGui::Text("%s (%u)", s_TypeName.c_str(), s_Count);
+
+                            ImGui::TableNextColumn();
+                            ImGui::BeginDisabled(!s_DrawGizmos);
+                            s_CenterItem(ImGui::GetFrameHeight());
+                            ImGui::Checkbox(
+                                fmt::format("##Gizmo{}{}", s_Pair.first, s_TypeName).c_str(),
+                                &s_DrawGizmo
+                            );
+                            ImGui::EndDisabled();
+
+                            ImGui::TableNextColumn();
+                            ImGui::BeginDisabled(!s_DrawShapes);
+                            s_CenterItem(ImGui::GetFrameHeight());
+                            ImGui::Checkbox(
+                                fmt::format("##Shape{}{}", s_Pair.first, s_TypeName).c_str(),
+                                &s_DrawShape
+                            );
+                            ImGui::EndDisabled();
+                        }
+
+                        ImGui::EndTable();
                     }
                 }
             }
+
+            ImGui::EndDisabled();
         }
         else {
             if (ImGui::Button("Get debug entities")) {
@@ -386,55 +478,48 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
 }
 
 void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
-    if (!m_DrawGizmos && !m_DrawShapes && !m_DrawGizmosForSelectedEntityOnly && !m_DrawShapesForSelectedEntityOnly) {
+    if (!m_DrawGizmos && !m_DrawShapes) {
         return;
     }
 
     std::scoped_lock s_Lock(m_DebugEntitiesMutex);
 
-    if ((m_DrawGizmosForSelectedEntityOnly || m_DrawShapesForSelectedEntityOnly) && !m_DrawGizmos && !m_DrawShapes) {
-        auto it = m_EntityRefToDebugEntities.find(m_SelectedEntity);
+    const bool s_DrawGizmosForSelectedEntity = m_DrawGizmos && m_GizmoDrawMode == DebugDrawMode::SelectedEntity;
+    const bool s_DrawShapesForSelectedEntity = m_DrawShapes && m_ShapeDrawMode == DebugDrawMode::SelectedEntity;
 
-        if (it == m_EntityRefToDebugEntities.end()) {
-            return;
-        }
-
-        for (const auto& s_DebugEntity : it->second) {
-            if (s_DebugEntity->m_HasGizmo) {
-                DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
-            }
-            else {
-                DrawShapes(*s_DebugEntity, p_Renderer);
-            }
-        }
-
-        return;
-    }
-
-    if (!m_DrawAllGizmos) {
-        bool s_IsAnyDebugChannelEnabled = false;
-
-        for (const auto& [s_DebugChannel, s_IsVisible] : m_DebugChannelToState) {
-            if (s_IsVisible) {
-                s_IsAnyDebugChannelEnabled = true;
-                break;
-            }
-        }
-
-        if (!s_IsAnyDebugChannelEnabled) {
-            return;
-        }
-    }
+    const bool s_DrawOtherGizmos = m_DrawGizmos && m_GizmoDrawMode != DebugDrawMode::SelectedEntity;
+    const bool s_DrawOtherShapes = m_DrawShapes && m_ShapeDrawMode != DebugDrawMode::SelectedEntity;
 
     p_Renderer->SetDistanceCullingEnabled(true);
 
-    for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
-        for (const auto& s_DebugEntity : s_DebugEntities) {
-            if (s_DebugEntity->m_HasGizmo) {
-                DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
+    if (s_DrawGizmosForSelectedEntity || s_DrawShapesForSelectedEntity) {
+        const auto s_Iterator = m_EntityRefToDebugEntities.find(m_SelectedEntity);
+
+        if (s_Iterator != m_EntityRefToDebugEntities.end()) {
+            for (const auto& s_DebugEntity : s_Iterator->second) {
+                if (s_DebugEntity->m_HasGizmo) {
+                    if (s_DrawGizmosForSelectedEntity) {
+                        DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
+                    }
+                }
+                else if (s_DrawShapesForSelectedEntity) {
+                    DrawShapes(*s_DebugEntity, p_Renderer);
+                }
             }
-            else {
-                DrawShapes(*s_DebugEntity, p_Renderer);
+        }
+    }
+
+    if (s_DrawOtherGizmos || s_DrawOtherShapes) {
+        for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
+            for (const auto& s_DebugEntity : s_DebugEntities) {
+                if (s_DebugEntity->m_HasGizmo) {
+                    if (s_DrawOtherGizmos) {
+                        DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
+                    }
+                }
+                else if (s_DrawOtherShapes) {
+                    DrawShapes(*s_DebugEntity, p_Renderer);
+                }
             }
         }
     }
@@ -443,16 +528,16 @@ void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
 }
 
 void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
-    if (!m_DrawGizmos && !m_DrawGizmosForSelectedEntityOnly) {
+    if (!m_DrawGizmos) {
         return;
     }
 
-    if (m_DrawGizmos) {
-        if (!m_DebugChannelToState[p_GizmoEntity.m_DebugChannel]) {
+    if (m_GizmoDrawMode == DebugDrawMode::SelectedChannelsAndTypes) {
+        if (!m_DebugChannelToGizmoState[p_GizmoEntity.m_DebugChannel]) {
             return;
         }
 
-        if (!m_DebugChannelToTypeNameToState[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
+        if (!m_DebugChannelToTypeNameToGizmoState[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
             return;
         }
     }
@@ -533,16 +618,16 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
 }
 
 void Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer) {
-    if (!m_DrawShapes && !m_DrawShapesForSelectedEntityOnly) {
+    if (!m_DrawShapes) {
         return;
     }
 
-    if (m_DrawShapes) {
-        if (!m_DebugChannelToState[p_DebugEntity.m_DebugChannel]) {
+    if (m_ShapeDrawMode == DebugDrawMode::SelectedChannelsAndTypes) {
+        if (!m_DebugChannelToShapeState[p_DebugEntity.m_DebugChannel]) {
             return;
         }
 
-        if (!m_DebugChannelToTypeNameToState[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
+        if (!m_DebugChannelToTypeNameToShapeState[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
             return;
         }
     }
@@ -1467,12 +1552,25 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
 
                 GizmoEntity* s_GizmoEntity = static_cast<GizmoEntity*>(s_DebugEntity.get());
 
-                if (!m_DebugChannelToState[s_GizmoEntity->m_DebugChannel]) {
-                    continue;
-                }
+                switch (m_GizmoDrawMode) {
+                    case DebugDrawMode::SelectedChannelsAndTypes: {
+                        if (!m_DebugChannelToGizmoState[s_GizmoEntity->m_DebugChannel] ||
+                            !m_DebugChannelToTypeNameToGizmoState
+                                [s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
+                            continue;
+                        }
 
-                if (!m_DebugChannelToTypeNameToState[s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
-                    continue;
+                        break;
+                    }
+                    case DebugDrawMode::SelectedEntity: {
+                        if (s_GizmoEntity->m_EntityRef != m_SelectedEntity) {
+                            continue;
+                        }
+
+                        break;
+                    }
+                    case DebugDrawMode::All:
+                        break;
                 }
 
                 ZRenderPrimitiveResource* s_RenderPrimitiveResource = static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());

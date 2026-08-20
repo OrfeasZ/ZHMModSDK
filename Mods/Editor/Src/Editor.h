@@ -484,6 +484,12 @@ private:
         Count
     };
 
+    enum class DebugDrawMode {
+        SelectedChannelsAndTypes,
+        SelectedEntity,
+        All
+    };
+
     bool m_raycastLogging; // Mainly used for the raycasting logs
 
     bool m_CameraActive = false;
@@ -607,15 +613,19 @@ private:
     std::unordered_map<EDebugChannel, uint32> m_DebugChannelToDebugEntityCount;
     std::unordered_map<EDebugChannel, std::unordered_map<std::string, uint32_t>>
         m_DebugChannelToTypeNameToDebugEntityCount;
-    std::unordered_map<EDebugChannel, bool> m_DebugChannelToState;
-    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToState;
+    std::unordered_map<EDebugChannel, bool> m_DebugChannelToGizmoState;
+    std::unordered_map<EDebugChannel, bool> m_DebugChannelToShapeState;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToGizmoState;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToShapeState;
     std::vector<STypeID*> m_DebugEntityTypeIds;
+
     bool m_DrawGizmos = true;
-    bool m_DrawAllGizmos = false;
+    DebugDrawMode m_GizmoDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
+
     bool m_DrawShapes = false;
+    DebugDrawMode m_ShapeDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
+
     ZEntityRef m_SelectedGizmoEntity = nullptr;
-    bool m_DrawGizmosForSelectedEntityOnly = false;
-    bool m_DrawShapesForSelectedEntityOnly = false;
 
     bool m_DrawCoverInvalidOnNPCErrors = true;
     bool m_DrawHeroGuidesSolid = false;
