@@ -951,7 +951,7 @@ bool EditorServer::IsPropertyValueTrue(const SPropertyData* s_Property, const ZE
     auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
     if (s_PropertyInfo->m_propertyInfo.m_Flags & E_HAS_GETTER_SETTER)
-        s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
+        s_PropertyInfo->m_propertyInfo.m_PropertyGetter(
             reinterpret_cast<void*>(s_PropertyAddress),
             s_Data,
             s_PropertyInfo->m_propertyInfo.m_nExtraData
@@ -1422,7 +1422,7 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SP
     auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(s_TypeSize, s_TypeAlignment);
 
     if (s_PropertyInfo->m_propertyInfo.m_Flags & EPropertyInfoFlags::E_HAS_GETTER_SETTER)
-        s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
+        s_PropertyInfo->m_propertyInfo.m_PropertyGetter(
             reinterpret_cast<void*>(s_PropertyAddress),
             s_Data,
             s_PropertyInfo->m_propertyInfo.m_nExtraData
