@@ -583,3 +583,10 @@ PATTERN_FUNCTION(
     ZFreeCameraControlEditorStyleEntity_ZoomCamera,
     void(ZFreeCameraControlEditorStyleEntity* th, float fZoom)
 );
+
+PATTERN_FUNCTION(
+    "\x4C\x8B\x0D\x00\x00\x00\x00\x44\x8B\x81\xC8\x00\x00\x00",
+    "xxx????xxxxxxx",
+    ZRenderableEntity_IsVisible,
+    bool(ZRenderableEntity* th)
+);

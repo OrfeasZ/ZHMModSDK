@@ -18,6 +18,6 @@ public:
     virtual void IApplication_unk11() = 0;
     virtual void IApplication_unk12() = 0;
     virtual void IApplication_unk13() = 0;
-    virtual void IApplication_unk14() = 0;
+    virtual void SetOption(const ZString& sOption, const ZString& sValue) = 0;
     virtual ZString& GetOption(const ZString& sOption) = 0;
 };

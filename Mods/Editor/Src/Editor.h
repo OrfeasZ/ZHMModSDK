@@ -7,7 +7,10 @@
 #include <map>
 #include <shared_mutex>
 
-#include "IPluginInterface.h"
+#include <directx/d3dx12.h>
+
+#include <DirectXTex.h>
+
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 #include "Glacier/ZFreeCamera.h"
@@ -15,6 +18,7 @@
 #include "Glacier/ZCurve.h"
 #include "Glacier/ZAction.h"
 
+#include "IPluginInterface.h"
 #include "ImGuizmo.h"
 #include "EditorServer.h"
 #include "EntityTreeNode.h"
@@ -285,6 +289,7 @@ private:
     void DrawActorsWindow(bool p_HasFocus);
     void DrawDebugChannelsWindow(bool p_HasFocus);
     void DrawRoomsWindow(bool p_HasFocus);
+    void DrawBoxReflectionsWindow(bool p_HasFocus);
 
     static void EquipOutfit(
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharSetIndex,
@@ -341,6 +346,46 @@ private:
     std::vector<PinInfo> GetPins(ZEntityRef p_EntityRef, bool outputPins);
 
     std::map<std::string, PinLists> ParsePinsJson(const std::string& p_PinsJson);
+
+    bool UpdateBoxReflectionPreview(ZRenderGraphNodeBoxReflection* p_BoxReflectionGraphNode);
+    bool UpdateBoxReflectionCubemapPreview(
+        ZRenderTexture2D* p_SourceTexture,
+        uint32_t p_CubeIndex,
+        std::array<ScopedD3DRef<ID3D12Resource>, 6>& p_OutTextures,
+        std::array<ImGuiTexture, 6>& p_OutImGuiTextures
+    );
+    void ClearBoxReflectionPreview();
+    void DrawBoxReflectionCross(const std::array<ImGuiTexture, 6>& p_Textures, float p_FaceSize);
+
+    static bool CreateBoxReflectionFaceTexture(
+        const DirectX::Image& p_Image,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    );
+
+    bool ExportAllBoxReflectionCubemaps(
+        const std::filesystem::path& p_OutputFolder,
+        bool p_Diffuse
+    );
+    static bool ExportBoxReflectionCubemap(
+        ID3D12Resource* p_Resource,
+        uint32_t p_CubeIndex,
+        const std::filesystem::path& p_OutputFolder
+    );
+    static bool GetBoxReflectionTexture(
+        ZRenderGraphNodeBoxReflection* p_BoxReflectionGraphNode,
+        bool p_Diffuse,
+        ZRenderTexture2D*& p_OutTexture,
+        uint32_t& p_OutCubeIndex
+    );
+    std::filesystem::path GetBoxReflectionExportPath(
+        const ZRenderGraphNodeBoxReflection* p_BoxReflection,
+        const std::filesystem::path& p_OutputFolder,
+        bool p_Diffuse
+    );
+
+    static bool GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputFolder);
+    static size_t CalculateCubemapSize(const DirectX::ScratchImage& p_Image, uint32_t p_CubeIndex);
 
 private:
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
@@ -463,6 +508,16 @@ private:
         Count
     };
 
+    struct BoxReflectionPreview {
+        int32_t m_BoxReflectionId = SIZE_MAX;
+
+        std::array<ScopedD3DRef<ID3D12Resource>, 6> m_Textures;
+        std::array<ImGuiTexture, 6> m_ImGuiTextures;
+
+        std::array<ScopedD3DRef<ID3D12Resource>, 6> m_DiffuseTextures;
+        std::array<ImGuiTexture, 6> m_DiffuseImGuiTextures;
+    };
+
     bool m_raycastLogging; // Mainly used for the raycasting logs
 
     bool m_CameraActive = false;
@@ -548,6 +603,7 @@ private:
     bool m_ShowActorsWindow = false;
     bool m_ShowDebugChannelsWindow = false;
     bool m_ShowRoomsWindow = false;
+    bool m_ShowBoxReflectionsWindow = false;
 
     ZActor* m_SelectedActor = nullptr;
     TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
@@ -638,6 +694,13 @@ private:
     std::vector<std::string> m_ClassNames;
 
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
+
+    ZRenderGraphNodeBoxReflection* m_SelectedBoxReflectionGraphNode = nullptr;
+    BoxReflectionPreview m_BoxReflectionPreview;
+
+    bool m_EnableBoxReflectionCache = true;
+
+    std::string m_BoxReflectionOutputFolder;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

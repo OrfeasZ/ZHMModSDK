@@ -8,12 +8,6 @@
 #include "ZObjectPool.h"
 #include "ZResource.h"
 
-template <class T, bool U>
-class TRenderReferencedCountedImpl : public T {
-public:
-    int32_t m_ReferenceCount;
-};
-
 class ZRenderTexture2D;
 class ZEntityRef;
 class ZRenderInputLayout;
@@ -22,6 +16,128 @@ class ZRenderBlendState;
 class ZRenderRasterizerState;
 class ZRenderTargetView;
 class ZRenderUnorderedAccessView;
+class ZRenderableEntity;
+
+enum ERenderFormat : int16 {
+    RENDER_FORMAT_NONE = 0x0,
+    RENDER_FORMAT_UNKNOWN = 0x0,
+    RENDER_FORMAT_R32G32B32A32_TYPELESS = 0x1,
+    RENDER_FORMAT_R32G32B32A32_FLOAT = 0x2,
+    RENDER_FORMAT_R32G32B32A32_UINT = 0x3,
+    RENDER_FORMAT_R32G32B32A32_SINT = 0x4,
+    RENDER_FORMAT_R32G32B32_TYPELESS = 0x5,
+    RENDER_FORMAT_R32G32B32_FLOAT = 0x6,
+    RENDER_FORMAT_R32G32B32_UINT = 0x7,
+    RENDER_FORMAT_R32G32B32_SINT = 0x8,
+    RENDER_FORMAT_R16G16B16A16_TYPELESS = 0x9,
+    RENDER_FORMAT_R16G16B16A16_FLOAT = 0xA,
+    RENDER_FORMAT_R16G16B16A16_UNORM = 0xB,
+    RENDER_FORMAT_R16G16B16A16_UINT = 0xC,
+    RENDER_FORMAT_R16G16B16A16_SNORM = 0xD,
+    RENDER_FORMAT_R16G16B16A16_SINT = 0xE,
+    RENDER_FORMAT_R32G32_TYPELESS = 0xF,
+    RENDER_FORMAT_R32G32_FLOAT = 0x10,
+    RENDER_FORMAT_R32G32_UINT = 0x11,
+    RENDER_FORMAT_R32G32_SINT = 0x12,
+    RENDER_FORMAT_R32G8X24_TYPELESS = 0x13,
+    RENDER_FORMAT_D32_FLOAT_S8X24_UINT = 0x14,
+    RENDER_FORMAT_R32_FLOAT_X8X24_TYPELESS = 0x15,
+    RENDER_FORMAT_X32_TYPELESS_G8X24_UINT = 0x16,
+    RENDER_FORMAT_R10G10B10A2_TYPELESS = 0x17,
+    RENDER_FORMAT_R10G10B10A2_UNORM = 0x18,
+    RENDER_FORMAT_R10G10B10A2_UINT = 0x19,
+    RENDER_FORMAT_R11G11B10_FLOAT = 0x1A,
+    RENDER_FORMAT_R8G8B8A8_TYPELESS = 0x1B,
+    RENDER_FORMAT_R8G8B8A8_UNORM = 0x1C,
+    RENDER_FORMAT_R8G8B8A8_UNORM_SRGB = 0x1D,
+    RENDER_FORMAT_R8G8B8A8_UINT = 0x1E,
+    RENDER_FORMAT_R8G8B8A8_SNORM = 0x1F,
+    RENDER_FORMAT_R8G8B8A8_SINT = 0x20,
+    RENDER_FORMAT_R16G16_TYPELESS = 0x21,
+    RENDER_FORMAT_R16G16_FLOAT = 0x22,
+    RENDER_FORMAT_R16G16_UNORM = 0x23,
+    RENDER_FORMAT_R16G16_UINT = 0x24,
+    RENDER_FORMAT_R16G16_SNORM = 0x25,
+    RENDER_FORMAT_R16G16_SINT = 0x26,
+    RENDER_FORMAT_R32_TYPELESS = 0x27,
+    RENDER_FORMAT_D32_FLOAT = 0x28,
+    RENDER_FORMAT_R32_FLOAT = 0x29,
+    RENDER_FORMAT_R32_UINT = 0x2A,
+    RENDER_FORMAT_R32_SINT = 0x2B,
+    RENDER_FORMAT_R24G8_TYPELESS = 0x2C,
+    RENDER_FORMAT_D24_UNORM_S8_UINT = 0x2D,
+    RENDER_FORMAT_R24_UNORM_X8_TYPELESS = 0x2E,
+    RENDER_FORMAT_X24_TYPELESS_G8_UINT = 0x2F,
+    RENDER_FORMAT_R9G9B9E5_SHAREDEXP = 0x30,
+    RENDER_FORMAT_R8G8_B8G8_UNORM = 0x31,
+    RENDER_FORMAT_G8R8_G8B8_UNORM = 0x32,
+    RENDER_FORMAT_R8G8_TYPELESS = 0x33,
+    RENDER_FORMAT_R8G8_UNORM = 0x34,
+    RENDER_FORMAT_R8G8_UINT = 0x35,
+    RENDER_FORMAT_R8G8_SNORM = 0x36,
+    RENDER_FORMAT_R8G8_SINT = 0x37,
+    RENDER_FORMAT_R16_TYPELESS = 0x38,
+    RENDER_FORMAT_R16_FLOAT = 0x39,
+    RENDER_FORMAT_D16_UNORM = 0x3A,
+    RENDER_FORMAT_R16_UNORM = 0x3B,
+    RENDER_FORMAT_R16_UINT = 0x3C,
+    RENDER_FORMAT_R16_SNORM = 0x3D,
+    RENDER_FORMAT_R16_SINT = 0x3E,
+    RENDER_FORMAT_B5G6R5_UNORM = 0x3F,
+    RENDER_FORMAT_B5G5R5A1_UNORM = 0x40,
+    RENDER_FORMAT_R8_TYPELESS = 0x41,
+    RENDER_FORMAT_R8_UNORM = 0x42,
+    RENDER_FORMAT_R8_UINT = 0x43,
+    RENDER_FORMAT_R8_SNORM = 0x44,
+    RENDER_FORMAT_R8_SINT = 0x45,
+    RENDER_FORMAT_A8_UNORM = 0x46,
+    RENDER_FORMAT_R1_UNORM = 0x47,
+    RENDER_FORMAT_BC1_TYPELESS = 0x48,
+    RENDER_FORMAT_BC1_UNORM = 0x49,
+    RENDER_FORMAT_BC1_UNORM_SRGB = 0x4A,
+    RENDER_FORMAT_BC2_TYPELESS = 0x4B,
+    RENDER_FORMAT_BC2_UNORM = 0x4C,
+    RENDER_FORMAT_BC2_UNORM_SRGB = 0x4D,
+    RENDER_FORMAT_BC3_TYPELESS = 0x4E,
+    RENDER_FORMAT_BC3_UNORM = 0x4F,
+    RENDER_FORMAT_BC3_UNORM_SRGB = 0x50,
+    RENDER_FORMAT_BC4_TYPELESS = 0x51,
+    RENDER_FORMAT_BC4_UNORM = 0x52,
+    RENDER_FORMAT_BC4_SNORM = 0x53,
+    RENDER_FORMAT_BC5_TYPELESS = 0x54,
+    RENDER_FORMAT_BC5_UNORM = 0x55,
+    RENDER_FORMAT_BC5_SNORM = 0x56,
+    RENDER_FORMAT_BC6H_UF16 = 0x57,
+    RENDER_FORMAT_BC6H_SF16 = 0x58,
+    RENDER_FORMAT_BC7_TYPELESS = 0x59,
+    RENDER_FORMAT_BC7_UNORM = 0x5A,
+    RENDER_FORMAT_BC7_UNORM_SRGB = 0x5B,
+    RENDER_FORMAT_R16G16B16_FLOAT = 0x5C,
+    RENDER_FORMAT_INDEX_32 = 0x5D,
+    RENDER_FORMAT_INDEX_16 = 0x5E,
+    RENDER_FORMAT_LE_X2R10G10B10_UNORM = 0x5F,
+    RENDER_FORMAT_LE_X8R8G8B8_UNORM = 0x60,
+    RENDER_FORMAT_X16Y16Z16_SNORM = 0x61,
+    RENDER_FORMAT_B8G8R8A8_UNORM = 0x62,
+    RENDER_FORMAT_B8G8R8A8_UNORM_SRGB = 0x63,
+    NUM_RENDER_FORMATS = 0x64
+};
+
+enum ERenderResourceType {
+    RENDER_RESOURCE_TYPE_TEXTURE2D = 1,
+    RENDER_RESOURCE_TYPE_TEXTURE3D = 2,
+    RENDER_RESOURCE_TYPE_BUFFER = 3
+};
+
+template <typename T, bool B>
+class TRenderReferencedCountedImpl : public T {
+public:
+    int32_t m_ReferenceCount;
+};
+
+template <typename T, ERenderResourceType ResourceType>
+class TRenderResourceImpl : public TRenderReferencedCountedImpl<T, false> {
+};
 
 class ZRenderDepthStencilView {
 public:
@@ -68,8 +184,21 @@ struct SD3D12ObjectPools {
 
 class ZRenderSharedResources {
 public:
-    PAD(0x4680);
-    ZRenderDepthStencilView* m_pDepthStencilView;
+    PAD(0x1A0);
+    ZRenderTexture2D* m_pBoxReflectionCubeTexture[2]; // 0x1A0
+    ZRenderTexture2D* m_pBoxReflectionDiffuseCubeTexture[2]; // 0x1B0
+    ZRenderShaderResourceView* m_pBoxReflectionCubeTextureSRV[2]; // 0x1C0
+    ZRenderShaderResourceView* m_pBoxReflectionDiffuseCubeTextureSRV[2]; // 0x1D0
+    PAD(0x40); // 0x1E0
+    int32_t m_nBoxReflectionCubeRenderTargetChunks; // 0x220
+    PAD(0x449C); // 0x224
+    uint32 m_nBoxReflectionMaxCubeMaps; // 0x46C0
+    uint32 m_nBoxReflectionResolution; // 0x46C4
+    uint32 m_nBoxReflectionRenderResolution; // 0x46C8
+    uint32 m_nBoxReflectionMips; // 0x46CC
+    uint32 m_nBoxReflectionUseBC6; // 0x46D0
+    PAD(0x34DC); // 0x46D4
+    bool m_SplitBoxReflectionCubeRenderTargets; // 0x7BB0
 };
 
 class IRenderRefCount {
@@ -240,12 +369,27 @@ static_assert(offsetof(ZRenderManager, m_pDevice) == 0x14180);
 static_assert(offsetof(ZRenderManager, m_pSharedResources) == 0x14190);
 static_assert(offsetof(ZRenderManager, m_pRenderContext) == 0x14280);
 
-class ZRenderTexture2D {
+struct SRenderTexture2DDesc {
+    uint32 nWidth; // 0x0
+    uint32 nHeight; // 0x4
+    uint32 nMipLevels; // 0x8
+    PAD(0xE); //0xC
+    uint16 nArraySize; // 0x1A
+    ERenderFormat eFormat; // 0x1C
+};
+
+class IRenderResource : public IRenderRefCount {};
+
+class IRenderResourceD3D12 : IRenderResource {};
+
+class ZRenderTexture2D /*: public TRenderResourceImpl<IRenderResourceD3D12, ERenderResourceType::RENDER_RESOURCE_TYPE_TEXTURE2D>*/ {
 public:
     virtual ~ZRenderTexture2D() = 0;
 
 public:
-    ID3D12Resource* m_pResource;
+    ID3D12Resource* m_pResource; // 0x8
+    PAD(0x18); // 0x10
+    SRenderTexture2DDesc m_Description; // 0x28
 };
 
 class ZRenderDestination : public IRenderDestination {
@@ -379,4 +523,97 @@ public:
     TResourcePtr<ZRenderMaterialEffectData> m_pEffectData; // 0xF74
     ZRenderEffect* m_pEffect; // 0xF80
     ZResourcePtr m_pMaterialDescriptor; // 0xF88
+};
+
+class ZVTablePaddingRemover {
+public:
+    virtual ~ZVTablePaddingRemover() = 0;
+};
+
+class ZRenderGraphNode : public ZVTablePaddingRemover {
+public:
+    enum TYPE : uint8 {
+        GEOM = 0,
+        LINKED = 1,
+        PARTICLEEMITTER = 2,
+        SPEEDTREE = 3,
+        SPATIAL = 4,
+        LIGHT = 5,
+        CAMERA = 6,
+        MATERIAL = 7,
+        POSTFILTER = 8,
+        RAIN = 9,
+        RAINMODIFIER = 10,
+        RAINSIMULATION = 11,
+        COMPOSITOR = 12,
+        DESTINATION = 13,
+        SPLITSCREEN = 14,
+        VIDEO_PLAYER = 15,
+        UI = 16,
+        VOLUMELIGHT = 17,
+        FOGBOX = 18,
+        CROWDENTITY = 19,
+        SCATTER = 20,
+        MIRROR = 21,
+        BOXREFLECTION = 22,
+        RENDERGLOBAL = 23,
+        WATERPARAMETERS = 24,
+        ATMOSPHERICSCATTERING = 25,
+        GUIGROUP = 26,
+        TYPE_SIZE = 27,
+        RENDERABLE_TYPE_MASK = 15,
+        RENDERABLE_TYPE_FIRST = 0,
+        RENDERABLE_TYPE_LAST = 3
+    };
+
+    ZRenderableEntity* m_pRenderableEntity; // 0x8
+    PAD(0x8); // 0x10
+    uint32 m_nGridIndex; // 0x18
+    int32 m_Base; // 0x1C
+    uint16 m_nRoomID; // 0x20
+    uint16 m_nRoomIDOverlap[2]; // 0x22
+    PAD(0x2); // 0x26
+    TYPE m_nType; // 0x28
+};
+
+class ZRenderGraphNodeBoxReflection : public ZRenderGraphNode {
+public:
+    PAD(0xC4); // 0x30
+    int32 m_nId; // 0xF4
+};
+
+class IRenderGraphManager : public IComponentInterface {};
+
+class ZRenderGraphManager : public IRenderGraphManager {
+public:
+    PAD(0x578); // 0x8
+    TMaxArray<ZRenderGraphNodeBoxReflection*, 682> m_BoxReflections; // 0x580
+};
+
+class ZRenderBoxReflectionCacheResource {
+public:
+    const uint8_t* GetEntryData(const SVector3& p_Position) {
+        if (m_Entries.size() == 1) {
+            return m_Entries[0].m_pData;
+        }
+
+        for (const SEntry& s_Entry : m_Entries) {
+            if (std::abs(s_Entry.m_Position.x - p_Position.x) <= 0.001f &&
+                std::abs(s_Entry.m_Position.y - p_Position.y) <= 0.001f &&
+                std::abs(s_Entry.m_Position.z - p_Position.z) <= 0.001f) {
+                return s_Entry.m_pData;
+            }
+        }
+
+        return nullptr;
+    }
+
+    struct SEntry {
+        SVector3 m_Position;
+        const uint8_t* m_pData;
+    };
+
+    TArray<SEntry> m_Entries;
+    const uint8_t* m_pResourceData;
+    ZResourceReaderPtr m_pResourceReader;
 };
