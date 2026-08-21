@@ -533,6 +533,7 @@ private:
     size_t m_CurrentEntitySearchResultIndex = 0;
     size_t m_TotalMatchCount = 0;
     bool m_HasActiveFilters = false;
+    bool m_HasActiveSearch = false;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;

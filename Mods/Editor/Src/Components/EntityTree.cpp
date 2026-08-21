@@ -678,9 +678,11 @@ void Editor::FilterEntityTree() {
         return;
     }
 
-    m_HasActiveFilters = !m_EntityIDSearchInput.empty() ||
+    m_HasActiveSearch = !m_EntityIDSearchInput.empty() ||
         !m_EntityTypeSearchInput.empty() ||
-        !m_EntityNameSearchInput.empty() ||
+        !m_EntityNameSearchInput.empty();
+
+    m_HasActiveFilters = m_HasActiveSearch ||
         m_EntityViewMode != EntityViewMode::All;
 
     if (!m_HasActiveFilters) {
@@ -717,20 +719,22 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSing
         return false;
     }
 
+    const bool s_PassesViewMode =
+        m_EntityViewMode == EntityViewMode::All ||
+        m_EntityViewMode == EntityViewMode::ScenesAndBricks ||
+        (m_EntityViewMode == EntityViewMode::DynamicEntities && p_Node->IsDynamicEntity);
+
     bool s_Matches = false;
 
-    if (m_EntityViewMode == EntityViewMode::All ||
-        m_EntityViewMode == EntityViewMode::ScenesAndBricks ||
-        (m_EntityViewMode == EntityViewMode::DynamicEntities && p_Node->IsDynamicEntity)) {
-
-        bool s_MatchesId = true;
+    if (s_PassesViewMode && m_HasActiveSearch) {
+        bool s_MatchesID = true;
         bool s_MatchesType = true;
         bool s_MatchesName = true;
 
         if (!IsSpecialEntityTreeNode(p_Node->Entity)) {
             if (!m_EntityIDSearchInput.empty()) {
                 const uint64_t s_EntityID = std::strtoull(m_EntityIDSearchInput.c_str(), nullptr, 16);
-                s_MatchesId = p_Node->EntityId == s_EntityID;
+                s_MatchesID = p_Node->EntityId == s_EntityID;
             }
 
             if (!m_EntityTypeSearchInput.empty()) {
@@ -742,7 +746,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSing
             s_MatchesName = Util::StringUtils::FindSubstring(p_Node->Name.c_str(), m_EntityNameSearchInput);
         }
 
-        s_Matches = s_MatchesId && s_MatchesType && s_MatchesName;
+        s_Matches = s_MatchesID && s_MatchesType && s_MatchesName;
 
         // Special root containers match only if explicitly queried by name
         if (s_Matches && IsSpecialEntityTreeNode(p_Node->Entity)) {
@@ -768,7 +772,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSing
         }
     }
 
-    if (s_Matches || s_ChildMatches) {
+    if ((!m_HasActiveSearch && s_PassesViewMode) || s_Matches || s_ChildMatches) {
         m_FilteredEntityTreeNodes.insert(p_Node);
         return true;
     }
@@ -1043,7 +1047,7 @@ void Editor::DrawEntityTreeWindow() {
                 ImGuiChildFlags_None,
                 ImGuiWindowFlags_HorizontalScrollbar
             )) {
-                const bool s_HasNoResults = m_HasActiveFilters && (m_TotalMatchCount == 0);
+                const bool s_HasNoResults = m_HasActiveSearch && m_TotalMatchCount == 0;
 
                 if (s_HasNoResults) {
                     ImGui::TextColored(ImVec4(1.0f, 0.27f, 0.27f, 1.0f), "No results found.");
