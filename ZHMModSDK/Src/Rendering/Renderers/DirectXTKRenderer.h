@@ -203,7 +203,7 @@ namespace Rendering::Renderers {
         void DrawSphere3D(
             const SMatrix& p_Transform,
             const float4& p_Position,
-            const float4& p_Size,
+            float p_Size,
             const SVector4& p_Color
         ) override;
 

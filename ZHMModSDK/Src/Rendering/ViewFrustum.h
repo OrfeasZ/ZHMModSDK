@@ -13,11 +13,12 @@ public:
     bool ContainsPoint(const SVector3& p_Point) const;
     bool ContainsAABB(const AABB& p_AABB) const;
     bool ContainsOBB(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const;
+    bool ContainsSphere(const SVector3& p_Center, const float p_Radius) const;
 
     void SetDistanceCullingEnabled(const bool p_Enabled);
     bool IsDistanceCullingEnabled() const;
 
-    void SetMaxDrawDistance(const float p_MaxDrawDistance);
+    void SetMaxDrawDistance(float p_MaxDrawDistance);
     float GetMaxDrawDistance() const;
 
 private:
@@ -29,9 +30,9 @@ private:
     };
 
     SMatrix MatrixPerspectiveFovRH(
-        const float p_FovYDeg, const float p_AspectWByH, const float p_NearZ, const float p_FarZ
+        float p_FovYDeg, float p_AspectWByH, float p_NearZ, float p_FarZ
     );
-    SMatrix MatrixPerspectiveRH(const float p_Width, const float p_Height, const float p_NearZ, const float p_FarZ);
+    SMatrix MatrixPerspectiveRH(float p_Width, float p_Height, float p_NearZ, float p_FarZ);
     void MatrixCreateClipPlanes(float4* p_Planes, const SMatrix& p_ViewProjection);
     void MatrixCreateClipPlanesNormalized(float4* p_Planes, const SMatrix& p_ViewProjection);
 
@@ -42,6 +43,7 @@ private:
         const float4& p_Center,
         const float4& p_HalfSize
     ) const;
+    ContainmentType CheckSphereInsidePlanes(const SVector3& p_Center, float p_Radius) const;
 
     bool m_IsDistanceCullingEnabled = false;
     float m_MaxDrawDistance = 50.f;

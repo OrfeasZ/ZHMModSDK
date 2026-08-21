@@ -100,6 +100,10 @@ bool ViewFrustum::ContainsOBB(const SMatrix& p_Transform, const float4& p_Center
     return CheckOBBInsidePlanes(p_Transform, p_Center, p_HalfSize) != ContainmentType::FullyOutside;
 }
 
+bool ViewFrustum::ContainsSphere(const SVector3& p_Center, const float p_Radius) const {
+    return CheckSphereInsidePlanes(p_Center, p_Radius) != ContainmentType::FullyOutside;
+}
+
 void ViewFrustum::SetDistanceCullingEnabled(const bool p_Enabled) {
     m_IsDistanceCullingEnabled = p_Enabled;
 }
@@ -169,7 +173,7 @@ ViewFrustum::ContainmentType ViewFrustum::CheckAABBInsidePlanes(const AABB& p_AA
 
     return s_IsPartiallyInside ? ContainmentType::PartiallyInside : ContainmentType::FullyInside;
 }
-#include <Logging.h>
+
 ViewFrustum::ContainmentType ViewFrustum::CheckOBBInsidePlanes(
     const SMatrix& p_Transform,
     const float4& p_Center,
@@ -198,15 +202,36 @@ ViewFrustum::ContainmentType ViewFrustum::CheckOBBInsidePlanes(
             std::fabs(s_Normal * s_AxisZ) * p_HalfSize.z;
 
         if (s_Distance - s_Radius > s_Epsilon) {
-            Logger::Info("m_IsDistanceCullingEnabled {} Culled OBB: plane normal ({}, {}, {}) w={} | distance={} radius={} | center=({}, {}, {}) | localSize=({}, {}, {})",
-                m_IsDistanceCullingEnabled,
-        s_Normal.x, s_Normal.y, s_Normal.z, s_Plane.w, s_Distance, s_Radius,
-                p_Center.x, p_Center.y, p_Center.z,
-        p_HalfSize.x, p_HalfSize.y, p_HalfSize.z);
             return ContainmentType::FullyOutside;
         }
 
         if (s_Distance + s_Radius > 0.f) {
+            s_IsPartiallyInside = true;
+        }
+    }
+
+    return s_IsPartiallyInside ? ContainmentType::PartiallyInside : ContainmentType::FullyInside;
+}
+
+ViewFrustum::ContainmentType ViewFrustum::CheckSphereInsidePlanes(const SVector3& p_Center, const float p_Radius) const {
+    bool s_IsPartiallyInside = false;
+
+    for (const auto& s_Plane : m_Planes) {
+        const SVector3 s_Normal = s_Plane;
+
+        const float s_Distance =
+            s_Normal.x * p_Center.x +
+            s_Normal.y * p_Center.y +
+            s_Normal.z * p_Center.z +
+            s_Plane.w;
+
+        constexpr float s_Epsilon = 1.f / 4096.f;
+
+        if (s_Distance - p_Radius > s_Epsilon) {
+            return ContainmentType::FullyOutside;
+        }
+
+        if (s_Distance + p_Radius > 0.f) {
             s_IsPartiallyInside = true;
         }
     }

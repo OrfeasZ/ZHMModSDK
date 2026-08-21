@@ -1666,6 +1666,10 @@ bool DirectXTKRenderer::IsOBBInsideViewFrustum(
     return m_ViewFrustum.ContainsOBB(p_Transform, p_Center, p_HalfSize);
 }
 
+bool DirectXTKRenderer::IsSphereInsideViewFrustum(const SVector3& p_Center, const float p_Radius) const {
+    return m_ViewFrustum.ContainsSphere(p_Center, p_Radius);
+}
+
 void DirectXTKRenderer::SetFrustumCullingEnabled(const bool p_Enabled) {
     m_IsFrustumCullingEnabled = p_Enabled;
 }
@@ -1711,9 +1715,14 @@ float DirectXTKRenderer::GetMaxDrawDistance() const {
 void DirectXTKRenderer::DrawSphere3D(
     const SMatrix& p_Transform,
     const float4& p_Position,
-    const float4& p_Size,
+    float p_Size,
     const SVector4& p_Color
 ) {
+    if (m_IsFrustumCullingEnabled &&
+        !IsSphereInsideViewFrustum(SVector3(p_Position.x, p_Position.y, p_Position.z), p_Size)) {
+        return;
+    }
+
     SMatrix s_Transform = p_Transform;
     s_Transform.Trans = p_Position;
     s_Transform.Trans.w = 1.f;
@@ -1725,7 +1734,7 @@ void DirectXTKRenderer::DrawSphere3D(
         p_Color.w
     };
 
-    DrawSphere3DOutlinedShaded(s_Transform, p_Size.x, s_Color.GetAsUInt32(), 48.f, false);
+    DrawSphere3DOutlinedShaded(s_Transform, p_Size, s_Color.GetAsUInt32(), 48.f, false);
 }
 
 void DirectXTKRenderer::DrawSphere3DOutlinedShaded(
