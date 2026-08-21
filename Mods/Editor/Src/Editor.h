@@ -7,6 +7,8 @@
 #include <map>
 #include <shared_mutex>
 
+#include <SimpleMath.h>
+
 #include "IPluginInterface.h"
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
@@ -98,6 +100,13 @@ private:
         ZResourcePtr m_PrimResourcePtr;
         SVector4 m_Color;
         SMatrix m_Transform;
+    };
+
+    struct RayCastResult {
+        ZEntityRef m_Entity;
+        std::string m_TypeName;
+        EDebugChannel m_DebugChannel;
+        float m_Distance = FLT_MAX;
     };
 
     struct PinInfo {
@@ -357,7 +366,58 @@ private:
     void DeleteDebugEntities(const std::shared_ptr<EntityTreeNode>& p_RootNode);
     EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
-    bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
+
+    bool RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector3& p_Direction);
+    void RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result);
+    void RayCastShapes(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result);
+
+    bool RayCastShape(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZSoundGateEntity* p_SoundGateEntity,
+        float& p_Distance
+    );
+    bool RayCastShape(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZSequenceEntity* p_SequenceEntity,
+        float& p_Distance
+    );
+
+    bool RayCastTrajectoryTrack(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZTrajectoryTrackBase* p_Track,
+        ZEntityRef p_TargetEntity,
+        float& p_Distance
+    );
+    template <typename TItem, typename EvaluateFn>
+    bool RayCastTrajectoryItem(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        TItem* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZEntityRef p_TargetEntity,
+        float& p_Distance,
+        EvaluateFn&& p_EvaluateFn
+    );
+
+    bool RayIntersectsTrajectorySegment(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SVector3& p_Start,
+        const SVector3& p_End,
+        float p_Radius,
+        float& p_Distance
+    );
+    bool RayIntersectsBox(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SMatrix& p_Transform,
+        const SVector3& p_Center,
+        const SVector3& p_Extents,
+        float& p_Distance
+    );
+    bool RayIntersectsSphere(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SVector3& p_Position,
+        float p_Radius,
+        float& p_Distance
+    );
 
     void DrawTrajectoryTrack(
         IRenderer* p_Renderer,
@@ -666,7 +726,7 @@ private:
     bool m_DrawShapes = false;
     DebugDrawMode m_ShapeDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
 
-    ZEntityRef m_SelectedGizmoEntity = nullptr;
+    ZEntityRef m_SelectedDebugEntity = nullptr;
 
     bool m_DrawCoverInvalidOnNPCErrors = true;
     bool m_DrawHeroGuidesSolid = false;

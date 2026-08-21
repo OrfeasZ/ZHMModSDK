@@ -695,7 +695,7 @@ void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Render
 
     const float4 s_Size(
         p_SoundGateEntity->m_vLocalSize.x,
-        0,
+        0.f,
         p_SoundGateEntity->m_vLocalSize.y,
         1.f
     );
@@ -851,32 +851,6 @@ void Editor::DrawTrajectoryItem(
 
     p_Renderer->DrawSphere3D(SMatrix {}, s_StartPosition, 0.05f, SVector4 { 0.0f, 1.0f, 0.0f, 1.0f });
     p_Renderer->DrawSphere3D(SMatrix {}, s_PreviousSamplePosition, 0.05f, SVector4 { 1.0f, 0.0f, 0.0f, 1.0f });
-
-    const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
-
-    if (!s_CurrentCamera) {
-        return;
-    }
-
-    auto s_CameraTransform = s_CurrentCamera->GetObjectToWorldMatrix();
-
-    /*s_CameraTransform.Trans = s_StartPosition;
-
-    p_Renderer->DrawText3D(
-        fmt::format("{:016x}", p_Item->m_pEntityType->m_nEntityID).c_str(),
-        s_CameraTransform,
-        SVector4(1.f, 1.f, 0.f, 1.f),
-        0.2f
-    );
-
-    s_CameraTransform.Trans = s_PreviousSamplePosition;
-
-    p_Renderer->DrawText3D(
-        fmt::format("{:016x}", p_Item->m_pEntityType->m_nEntityID).c_str(),
-        s_CameraTransform,
-        SVector4(1.f, 1.f, 0.f, 1.f),
-        0.2f
-    );*/
 }
 
 SVector3 Editor::EvaluateTrajectoryWorldPosition(
@@ -2152,7 +2126,72 @@ bool Editor::EntityIDMatches(void* p_Interface, const uint64 p_EntityID) {
     return false;
 }
 
-bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction) {
+bool Editor::RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector3& p_Direction) {
+    RayCastResult s_Result;
+
+    RayCastGizmos(p_WorldPosition, p_Direction, s_Result);
+    RayCastShapes(p_WorldPosition, p_Direction, s_Result);
+
+    if (!s_Result.m_Entity) {
+        if (m_raycastLogging) {
+            Logger::Debug("[Editor] RayCastDebugEntities found no hits.");
+        }
+
+        m_SelectedDebugEntity = {};
+
+        return false;
+    }
+
+    m_SelectedDebugEntity = s_Result.m_Entity;
+
+    if (m_raycastLogging) {
+        Logger::Debug(
+            "[Editor] RayCastDebugEntities hit '{}' (channel {}) at distance {}",
+            s_Result.m_TypeName,
+            static_cast<int32_t>(s_Result.m_DebugChannel),
+            s_Result.m_Distance
+        );
+    }
+
+    const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
+
+    for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
+        const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
+
+        if (m_SelectedDebugEntity.IsAnyParent(s_Brick.m_EntityRef)) {
+            Logger::Debug(
+                "[Editor] Found debug entity in brick {} (idx = {}).",
+                s_Brick.m_RuntimeResourceID,
+                i
+            );
+
+            m_SelectedBrickIndex = i;
+            break;
+        }
+    }
+
+    if (m_SelectedDebugEntity.GetEntity() &&
+        m_SelectedDebugEntity.GetEntity()->GetType()) {
+        const auto& s_Type = *m_SelectedDebugEntity.GetEntity()->GetType();
+        const auto& s_Interfaces = *s_Type.m_pInterfaceData;
+
+        Logger::Trace(
+            "[Editor] Hit entity of type '{}' with id '{:x}'.",
+            s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
+            s_Type.m_nEntityID
+        );
+    }
+
+    OnSelectEntity(m_SelectedDebugEntity, true, std::nullopt);
+
+    return true;
+}
+
+void Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result) {
+    if (!m_DrawGizmos) {
+        return;
+    }
+
     DirectX::SimpleMath::Ray s_Ray(
         DirectX::SimpleMath::Vector3(p_WorldPosition.x, p_WorldPosition.y, p_WorldPosition.z),
         DirectX::SimpleMath::Vector3(p_Direction.x, p_Direction.y, p_Direction.z)
@@ -2196,7 +2235,8 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
                         break;
                 }
 
-                ZRenderPrimitiveResource* s_RenderPrimitiveResource = static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());
+                ZRenderPrimitiveResource* s_RenderPrimitiveResource =
+                    static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());
 
                 if (!s_RenderPrimitiveResource) {
                     continue;
@@ -2213,7 +2253,8 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
                 SMatrix s_Transform;
 
                 if (s_GizmoEntity->m_TypeName == "ZActBehaviorEntity") {
-                    const TEntityRef<ZSpatialEntity> s_MoveToTransform = s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
+                    const TEntityRef<ZSpatialEntity> s_MoveToTransform =
+                        s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
 
                     s_Transform = s_MoveToTransform.m_pInterfaceRef->GetObjectToWorldMatrix() * s_GizmoEntity->m_Transform;
                 }
@@ -2223,67 +2264,473 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
                     s_Transform = s_SpatialEntity->GetObjectToWorldMatrix();
                 }
 
-                DirectX::XMMATRIX s_Transform2 = DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));
+                DirectX::XMMATRIX s_Transform2 =
+                    DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));
 
                 s_Box.Transform(s_Box, s_Transform2);
 
                 float s_Distance = 0.f;
 
-                if (s_Ray.Intersects(s_Box, s_Distance)) {
-                    if (s_Distance < s_ClosestDistance && s_Distance <= 200.f) {
-                        s_ClosestDistance = s_Distance;
-                        s_HitEntity = s_GizmoEntity->m_EntityRef;
-                        s_HitEntityTypeName = s_GizmoEntity->m_TypeName;
-                        s_HitEntityDebugChannel = s_GizmoEntity->m_DebugChannel;
-                    }
+                if (s_Ray.Intersects(s_Box, s_Distance) && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
+                    p_Result.m_Distance = s_Distance;
+                    p_Result.m_Entity = s_GizmoEntity->m_EntityRef;
+                    p_Result.m_TypeName = s_GizmoEntity->m_TypeName;
+                    p_Result.m_DebugChannel = s_GizmoEntity->m_DebugChannel;
                 }
             }
         }
     }
+}
 
-    if (!s_HitEntity) {
-        if (m_raycastLogging)
-            Logger::Debug("[Editor] RaycastGizmos found no hits.");
-
-        m_SelectedGizmoEntity = {};
-
-        return false;
+void Editor::RayCastShapes(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result) {
+    if (!m_DrawShapes) {
+        return;
     }
 
-    m_SelectedGizmoEntity = s_HitEntity;
+    DirectX::SimpleMath::Ray s_Ray(
+        DirectX::SimpleMath::Vector3(
+            p_WorldPosition.x,
+            p_WorldPosition.y,
+            p_WorldPosition.z
+        ),
+        DirectX::SimpleMath::Vector3(
+            p_Direction.x,
+            p_Direction.y,
+            p_Direction.z
+        )
+    );
 
-    if (m_raycastLogging) {
-        Logger::Debug(
-            "[Editor] RaycastGizmos hit gizmo '{}' (channel {}) at distance {}",
-            s_HitEntityTypeName,
-            static_cast<int32_t>(s_HitEntityDebugChannel),
-            s_ClosestDistance
-        );
+    std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+
+    for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
+        for (const auto& s_DebugEntity : s_DebugEntities) {
+            if (s_DebugEntity->m_HasGizmo) {
+                continue;
+            }
+
+            switch (m_ShapeDrawMode) {
+                case DebugDrawMode::SelectedChannelsAndTypes: {
+                    if (!m_DebugChannelToShapeState[s_DebugEntity->m_DebugChannel] ||
+                        !m_DebugChannelToTypeNameToShapeState
+                            [s_DebugEntity->m_DebugChannel][s_DebugEntity->m_TypeName]) {
+                        continue;
+                    }
+
+                    break;
+                }
+                case DebugDrawMode::SelectedEntity: {
+                    if (s_DebugEntity->m_EntityRef != m_SelectedEntity) {
+                        continue;
+                    }
+
+                    break;
+                }
+                case DebugDrawMode::All:
+                    break;
+            }
+
+            float s_Distance = FLT_MAX;
+            bool s_Hit = false;
+
+            if (s_DebugEntity->m_TypeName == "ZSoundGateEntity") {
+                auto s_SoundGateEntity = s_DebugEntity->m_EntityRef.QueryInterface<ZSoundGateEntity>(
+                    m_DebugEntityTypeIds[DebugEntityTypeName::SoundGateEntity]
+                );
+
+                if (!s_SoundGateEntity) {
+                    continue;
+                }
+
+                s_Hit = RayCastShape(
+                    s_Ray,
+                    s_SoundGateEntity,
+                    s_Distance
+                );
+            }
+            else if (s_DebugEntity->m_TypeName == "ZSequenceEntity") {
+                auto s_SequenceEntity = s_DebugEntity->m_EntityRef.QueryInterface<ZSequenceEntity>(
+                    m_DebugEntityTypeIds[DebugEntityTypeName::SequenceEntity]
+                );
+
+                if (!s_SequenceEntity) {
+                    continue;
+                }
+
+                s_Hit = RayCastShape(
+                    s_Ray,
+                    s_SequenceEntity,
+                    s_Distance
+                );
+            }
+
+            if (s_Hit && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
+                p_Result.m_Distance = s_Distance;
+                p_Result.m_Entity = s_DebugEntity->m_EntityRef;
+                p_Result.m_TypeName = s_DebugEntity->m_TypeName;
+                p_Result.m_DebugChannel = s_DebugEntity->m_DebugChannel;
+            }
+        }
     }
+}
 
-    const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
+bool Editor::RayCastShape(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    ZSoundGateEntity* p_SoundGateEntity,
+    float& p_Distance
+) {
+    const SMatrix s_WorldMatrix = p_SoundGateEntity->GetObjectToWorldMatrix();
 
-    for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
-        const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
+    const SVector3 s_Center { 0.f, 0.f, 0.f };
 
-        if (m_SelectedGizmoEntity.IsAnyParent(s_Brick.m_EntityRef)) {
-            Logger::Debug("[Editor] Found gizmo entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
-            m_SelectedBrickIndex = i;
-            break;
+    const SVector3 s_Extents {
+        p_SoundGateEntity->m_vLocalSize.x,
+        p_SoundGateEntity->m_fThicknessSource +
+            p_SoundGateEntity->m_fThicknessDestination,
+        p_SoundGateEntity->m_vLocalSize.y
+    };
+
+    return RayIntersectsBox(
+        p_Ray,
+        s_WorldMatrix,
+        s_Center,
+        s_Extents,
+        p_Distance
+    );
+}
+
+bool Editor::RayCastShape(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    ZSequenceEntity* p_SequenceEntity,
+    float& p_Distance
+) {
+    bool s_Hit = false;
+
+    for (const auto& s_Entity : p_SequenceEntity->m_aTracksAndGroups) {
+        ZEntityGroup* s_Group = s_Entity.QueryInterface<ZEntityGroup>();
+
+        if (!s_Group) {
+            continue;
+        }
+
+        for (const auto& s_Entity : s_Group->m_aTracksAndGroups) {
+            ZTrajectoryTrackBase* s_Track =
+                s_Entity.QueryInterface<ZTrajectoryTrackBase>();
+
+            if (!s_Track) {
+                continue;
+            }
+
+            if (RayCastTrajectoryTrack(
+                p_Ray,
+                s_Track,
+                s_Group->m_targetEntity,
+                p_Distance
+            )) {
+                s_Hit = true;
+            }
         }
     }
 
-    if (m_SelectedGizmoEntity.GetEntity() && m_SelectedGizmoEntity.GetEntity()->GetType()) {
-        const auto& s_Type = *m_SelectedGizmoEntity.GetEntity()->GetType();
-        const auto& s_Interfaces = *s_Type.m_pInterfaceData;
+    return s_Hit;
+}
 
-        Logger::Trace(
-            "[Editor] Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
-            s_Type.m_nEntityID
-        );
+bool Editor::RayCastTrajectoryTrack(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    ZTrajectoryTrackBase* p_Track,
+    ZEntityRef p_TargetEntity,
+    float& p_Distance
+) {
+    bool s_Hit = false;
+
+    for (const auto& s_ItemEntity : p_Track->m_aItems) {
+        ZMorphemeTrajectorySource* s_Item =
+            s_ItemEntity.m_entityRef.QueryInterface<ZMorphemeTrajectorySource>();
+
+        if (s_Item) {
+            s_Hit |= RayCastTrajectoryItem(
+                p_Ray,
+                s_Item,
+                p_Track,
+                p_TargetEntity,
+                p_Distance,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(
+                        p_Item,
+                        p_Track,
+                        p_ItemTime,
+                        p_Item->m_pAnimationResource.GetResource(),
+                        p_TargetEntity
+                    );
+                }
+            );
+
+            continue;
+        }
+
+        ZEulerAngleTrajectorySource* s_Item2 =
+            s_ItemEntity.m_entityRef.QueryInterface<ZEulerAngleTrajectorySource>();
+
+        if (s_Item2) {
+            s_Hit |= RayCastTrajectoryItem(
+                p_Ray,
+                s_Item2,
+                p_Track,
+                p_TargetEntity,
+                p_Distance,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(
+                        p_Item,
+                        p_Track,
+                        p_ItemTime,
+                        p_TargetEntity
+                    );
+                }
+            );
+
+            continue;
+        }
+
+        ZBezierSplineTrajectorySource* s_Item3 =
+            s_ItemEntity.m_entityRef.QueryInterface<ZBezierSplineTrajectorySource>();
+
+        if (s_Item3) {
+            s_Hit |= RayCastTrajectoryItem(
+                p_Ray,
+                s_Item3,
+                p_Track,
+                p_TargetEntity,
+                p_Distance,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(
+                        p_Item,
+                        p_Track,
+                        p_ItemTime,
+                        p_TargetEntity
+                    );
+                }
+            );
+        }
     }
 
-    OnSelectEntity(m_SelectedGizmoEntity, true, std::nullopt);
+    return s_Hit;
+}
+
+template <typename TItem, typename EvaluateFn>
+bool Editor::RayCastTrajectoryItem(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    TItem* p_Item,
+    ZTrajectoryTrackBase* p_Track,
+    ZEntityRef p_TargetEntity,
+    float& p_Distance,
+    EvaluateFn&& p_EvaluateFn
+) {
+    static constexpr float s_TrajectoryPickRadius = 0.1f;
+    static constexpr float s_EndpointRadius = 0.1f;
+
+    const ZGameTime s_ItemStart = p_Item->m_startTime;
+    const ZGameTime s_ItemEnd = s_ItemStart + p_Item->m_duration;
+
+    ZGameTime s_SampleTime = s_ItemStart;
+    const ZGameTime s_SampleStep = ZGameTime::FromSeconds(0.02f);
+
+    const SVector3 s_StartPosition = p_EvaluateFn(p_Item, p_Track, s_ItemStart, p_TargetEntity);
+
+    SVector3 s_PreviousSamplePosition = s_StartPosition;
+
+    bool s_Hit = false;
+
+    float s_Distance;
+
+    if (RayIntersectsSphere(
+        p_Ray,
+        s_StartPosition,
+        s_EndpointRadius,
+        s_Distance
+    ) &&
+        s_Distance < p_Distance) {
+        p_Distance = s_Distance;
+        s_Hit = true;
+    }
+
+    while (s_SampleTime < s_ItemEnd) {
+        s_SampleTime = std::min(
+            s_SampleTime + s_SampleStep,
+            s_ItemEnd
+        );
+
+        const SVector3 s_CurrentSamplePosition =
+            p_EvaluateFn(
+                p_Item,
+                p_Track,
+                s_SampleTime,
+                p_TargetEntity
+            );
+
+        if (RayIntersectsTrajectorySegment(
+            p_Ray,
+            s_PreviousSamplePosition,
+            s_CurrentSamplePosition,
+            s_TrajectoryPickRadius,
+            s_Distance
+        ) &&
+            s_Distance < p_Distance) {
+            p_Distance = s_Distance;
+            s_Hit = true;
+        }
+
+        s_PreviousSamplePosition = s_CurrentSamplePosition;
+    }
+
+    if (RayIntersectsSphere(
+        p_Ray,
+        s_PreviousSamplePosition,
+        s_EndpointRadius,
+        s_Distance
+    ) && s_Distance < p_Distance) {
+        p_Distance = s_Distance;
+        s_Hit = true;
+    }
+
+    return s_Hit;
+}
+
+bool Editor::RayIntersectsTrajectorySegment(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    const SVector3& p_Start,
+    const SVector3& p_End,
+    float p_Radius,
+    float& p_Distance
+) {
+    const DirectX::SimpleMath::Vector3 s_RayOrigin = p_Ray.position;
+    const DirectX::SimpleMath::Vector3 s_RayDirection = p_Ray.direction;
+
+    const DirectX::SimpleMath::Vector3 s_Start(p_Start.x, p_Start.y, p_Start.z);
+    const DirectX::SimpleMath::Vector3 s_End(p_End.x, p_End.y, p_End.z);
+
+    const DirectX::SimpleMath::Vector3 s_SegmentDirection = s_End - s_Start;
+    const DirectX::SimpleMath::Vector3 s_Offset = s_RayOrigin - s_Start;
+
+    const float s_A = s_RayDirection.Dot(s_RayDirection);
+    const float s_B = s_RayDirection.Dot(s_SegmentDirection);
+    const float s_C = s_SegmentDirection.Dot(s_SegmentDirection);
+    const float s_D = s_RayDirection.Dot(s_Offset);
+    const float s_E = s_SegmentDirection.Dot(s_Offset);
+
+    if (s_C <= FLT_EPSILON) {
+        return false;
+    }
+
+    const float s_Denominator = s_A * s_C - s_B * s_B;
+
+    float s_RayT;
+    float s_SegmentT;
+
+    if (std::abs(s_Denominator) > FLT_EPSILON) {
+        s_RayT = (s_B * s_E - s_C * s_D) / s_Denominator;
+        s_SegmentT = (s_A * s_E - s_B * s_D) / s_Denominator;
+    }
+    else {
+        s_RayT = 0.f;
+        s_SegmentT = s_E / s_C;
+    }
+
+    s_RayT = std::max(s_RayT, 0.f);
+    s_SegmentT = std::clamp(s_SegmentT, 0.f, 1.f);
+
+    // Recalculate the closest point on the ray after clamping the segment.
+    s_RayT = std::max(
+        (s_B * s_SegmentT - s_D) / s_A,
+        0.f
+    );
+
+    // Recalculate the segment point in case clamping the ray changed it.
+    s_SegmentT = std::clamp(
+        (s_B * s_RayT + s_E) / s_C,
+        0.f,
+        1.f
+    );
+
+    // And one final ray update for the clamped segment point.
+    s_RayT = std::max(
+        (s_B * s_SegmentT - s_D) / s_A,
+        0.f
+    );
+
+    const DirectX::SimpleMath::Vector3 s_ClosestRayPoint =
+        s_RayOrigin + s_RayDirection * s_RayT;
+
+    const DirectX::SimpleMath::Vector3 s_ClosestSegmentPoint =
+        s_Start + s_SegmentDirection * s_SegmentT;
+
+    if (DirectX::SimpleMath::Vector3::DistanceSquared(
+        s_ClosestRayPoint,
+        s_ClosestSegmentPoint
+    ) > p_Radius * p_Radius) {
+        return false;
+    }
+
+    p_Distance = DirectX::SimpleMath::Vector3::Distance(s_RayOrigin, s_ClosestRayPoint);
 
     return true;
+}
+
+bool Editor::RayIntersectsBox(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    const SMatrix& p_Transform,
+    const SVector3& p_Center,
+    const SVector3& p_Extents,
+    float& p_Distance
+) {
+    const DirectX::XMMATRIX s_WorldMatrix = DirectX::XMLoadFloat4x4(
+        reinterpret_cast<const DirectX::XMFLOAT4X4*>(&p_Transform)
+    );
+
+    const DirectX::XMMATRIX s_InverseWorldMatrix = XMMatrixInverse(nullptr, s_WorldMatrix);
+
+    const DirectX::SimpleMath::Vector3 s_LocalPosition =
+        DirectX::SimpleMath::Vector3::Transform(p_Ray.position, s_InverseWorldMatrix);
+
+    const DirectX::SimpleMath::Vector3 s_LocalDirection =
+        DirectX::SimpleMath::Vector3::TransformNormal(p_Ray.direction, s_InverseWorldMatrix);
+
+    const DirectX::SimpleMath::Ray s_LocalRay(s_LocalPosition, s_LocalDirection);
+
+    const DirectX::BoundingBox s_Box(
+        DirectX::SimpleMath::Vector3(p_Center.x, p_Center.y, p_Center.z),
+        DirectX::SimpleMath::Vector3(p_Extents.x, p_Extents.y, p_Extents.z)
+    );
+
+    float s_LocalDistance;
+
+    if (!s_LocalRay.Intersects(s_Box, s_LocalDistance)) {
+        return false;
+    }
+
+    const DirectX::SimpleMath::Vector3 s_LocalHitPosition =
+        s_LocalPosition + s_LocalDirection * s_LocalDistance;
+
+    const DirectX::SimpleMath::Vector3 s_WorldHitPosition =
+        DirectX::SimpleMath::Vector3::Transform(s_LocalHitPosition, s_WorldMatrix);
+
+    p_Distance = DirectX::SimpleMath::Vector3::Distance(p_Ray.position, s_WorldHitPosition);
+
+    return true;
+}
+
+bool Editor::RayIntersectsSphere(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    const SVector3& p_Position,
+    float p_Radius,
+    float& p_Distance
+) {
+    const DirectX::BoundingSphere s_Sphere(
+        DirectX::SimpleMath::Vector3(
+            p_Position.x,
+            p_Position.y,
+            p_Position.z
+        ),
+        p_Radius
+    );
+
+    return p_Ray.Intersects(s_Sphere, p_Distance);
 }

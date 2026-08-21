@@ -710,7 +710,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     SVector3 s_Direction;
     SDK()->ScreenToWorld(p_Pos, s_World, s_Direction);
 
-    if (m_DrawGizmos && RayCastGizmos(s_World, s_Direction)) {
+    if (RayCastDebugEntities(s_World, s_Direction)) {
         return;
     }
 
@@ -1361,7 +1361,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_SelectedAction = nullptr;
 
-    m_SelectedGizmoEntity = nullptr;
+    m_SelectedDebugEntity = nullptr;
 
     {
         std::scoped_lock s_Lock(m_DebugEntitiesMutex);
