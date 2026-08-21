@@ -13,9 +13,9 @@ public:
     bool ContainsPoint(const SVector3& p_Point) const;
     bool ContainsAABB(const AABB& p_AABB) const;
     bool ContainsOBB(const SMatrix& p_Transform, const float4& p_Center, const float4& p_HalfSize) const;
-    bool ContainsSphere(const SVector3& p_Center, const float p_Radius) const;
+    bool ContainsSphere(const SVector3& p_Center, float p_Radius) const;
 
-    void SetDistanceCullingEnabled(const bool p_Enabled);
+    void SetDistanceCullingEnabled(bool p_Enabled);
     bool IsDistanceCullingEnabled() const;
 
     void SetMaxDrawDistance(float p_MaxDrawDistance);

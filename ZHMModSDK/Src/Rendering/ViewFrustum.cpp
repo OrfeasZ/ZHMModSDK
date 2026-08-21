@@ -41,9 +41,7 @@ void ViewFrustum::UpdateClipPlanes(const SMatrix& p_View, const SMatrix& p_Proje
     MatrixCreateClipPlanesNormalized(m_Planes, s_View * s_Projection);
 }
 
-SMatrix ViewFrustum::MatrixPerspectiveFovRH(
-    const float p_FovYDeg, const float p_AspectWByH, const float p_NearZ, const float p_FarZ
-) {
+SMatrix ViewFrustum::MatrixPerspectiveFovRH(float p_FovYDeg, float p_AspectWByH, float p_NearZ, float p_FarZ) {
     const float s_FovYRad = DirectX::XMConvertToRadians(p_FovYDeg);
     const float s_Height = std::tan(s_FovYRad * 0.5f) * (p_NearZ * 2.f);
     const float s_Width = s_Height * p_AspectWByH;
@@ -51,9 +49,7 @@ SMatrix ViewFrustum::MatrixPerspectiveFovRH(
     return MatrixPerspectiveRH(s_Width, s_Height, p_NearZ, p_FarZ);
 }
 
-SMatrix ViewFrustum::MatrixPerspectiveRH(
-    const float p_Width, const float p_Height, const float p_NearZ, const float p_FarZ
-) {
+SMatrix ViewFrustum::MatrixPerspectiveRH(float p_Width, float p_Height, float p_NearZ, float p_FarZ) {
     return SMatrix(
         { (p_NearZ * 2.f) / p_Width, 0.f, 0.f, 0.f },
         { 0.f, (p_NearZ * 2.f) / p_Height, 0.f, 0.f },
@@ -100,11 +96,11 @@ bool ViewFrustum::ContainsOBB(const SMatrix& p_Transform, const float4& p_Center
     return CheckOBBInsidePlanes(p_Transform, p_Center, p_HalfSize) != ContainmentType::FullyOutside;
 }
 
-bool ViewFrustum::ContainsSphere(const SVector3& p_Center, const float p_Radius) const {
+bool ViewFrustum::ContainsSphere(const SVector3& p_Center, float p_Radius) const {
     return CheckSphereInsidePlanes(p_Center, p_Radius) != ContainmentType::FullyOutside;
 }
 
-void ViewFrustum::SetDistanceCullingEnabled(const bool p_Enabled) {
+void ViewFrustum::SetDistanceCullingEnabled(bool p_Enabled) {
     m_IsDistanceCullingEnabled = p_Enabled;
 }
 
@@ -112,7 +108,7 @@ bool ViewFrustum::IsDistanceCullingEnabled() const {
     return m_IsDistanceCullingEnabled;
 }
 
-void ViewFrustum::SetMaxDrawDistance(const float p_MaxDrawDistance) {
+void ViewFrustum::SetMaxDrawDistance(float p_MaxDrawDistance) {
     m_MaxDrawDistance = p_MaxDrawDistance;
 }
 
@@ -213,7 +209,7 @@ ViewFrustum::ContainmentType ViewFrustum::CheckOBBInsidePlanes(
     return s_IsPartiallyInside ? ContainmentType::PartiallyInside : ContainmentType::FullyInside;
 }
 
-ViewFrustum::ContainmentType ViewFrustum::CheckSphereInsidePlanes(const SVector3& p_Center, const float p_Radius) const {
+ViewFrustum::ContainmentType ViewFrustum::CheckSphereInsidePlanes(const SVector3& p_Center, float p_Radius) const {
     bool s_IsPartiallyInside = false;
 
     for (const auto& s_Plane : m_Planes) {

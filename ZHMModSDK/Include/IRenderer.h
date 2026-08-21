@@ -132,7 +132,7 @@ public:
     virtual bool IsOBBInsideViewFrustum(
         const float4& p_Center, const float4& p_HalfSize, const SMatrix& p_Transform
     ) const = 0;
-    virtual bool IsSphereInsideViewFrustum(const SVector3& p_Center, const float p_Radius) const = 0;
+    virtual bool IsSphereInsideViewFrustum(const SVector3& p_Center, float p_Radius) const = 0;
 
     virtual void SetFrustumCullingEnabled(bool p_Enabled) = 0;
     virtual bool IsFrustumCullingEnabled() const = 0;

@@ -1666,11 +1666,11 @@ bool DirectXTKRenderer::IsOBBInsideViewFrustum(
     return m_ViewFrustum.ContainsOBB(p_Transform, p_Center, p_HalfSize);
 }
 
-bool DirectXTKRenderer::IsSphereInsideViewFrustum(const SVector3& p_Center, const float p_Radius) const {
+bool DirectXTKRenderer::IsSphereInsideViewFrustum(const SVector3& p_Center, float p_Radius) const {
     return m_ViewFrustum.ContainsSphere(p_Center, p_Radius);
 }
 
-void DirectXTKRenderer::SetFrustumCullingEnabled(const bool p_Enabled) {
+void DirectXTKRenderer::SetFrustumCullingEnabled(bool p_Enabled) {
     m_IsFrustumCullingEnabled = p_Enabled;
 }
 
@@ -1678,7 +1678,7 @@ bool DirectXTKRenderer::IsFrustumCullingEnabled() const {
     return m_IsFrustumCullingEnabled;
 }
 
-void DirectXTKRenderer::SetDistanceCullingEnabled(const bool p_Enabled) {
+void DirectXTKRenderer::SetDistanceCullingEnabled(bool p_Enabled) {
     if (m_ViewFrustum.IsDistanceCullingEnabled() == p_Enabled) {
         return;
     }
@@ -1695,7 +1695,7 @@ bool DirectXTKRenderer::IsDistanceCullingEnabled() const {
     return m_ViewFrustum.IsDistanceCullingEnabled();
 }
 
-void DirectXTKRenderer::SetMaxDrawDistance(const float p_MaxDrawDistance) {
+void DirectXTKRenderer::SetMaxDrawDistance(float p_MaxDrawDistance) {
     if (m_ViewFrustum.GetMaxDrawDistance() == p_MaxDrawDistance) {
         return;
     }

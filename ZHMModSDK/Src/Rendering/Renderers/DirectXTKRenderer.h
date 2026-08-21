@@ -190,6 +190,7 @@ namespace Rendering::Renderers {
         bool IsOBBInsideViewFrustum(
             const float4& p_Center, const float4& p_HalfSize, const SMatrix& p_Transform
         ) const override;
+        bool IsSphereInsideViewFrustum(const SVector3& p_Center, float p_Radius) const override;
 
         void SetFrustumCullingEnabled(bool p_Enabled) override;
         bool IsFrustumCullingEnabled() const override;
