@@ -1058,6 +1058,9 @@ void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, 
         SVector3(p_Max.x, p_Min.y, p_Max.z),
     };
 
+    const bool s_WasFrustumCullingEnabled = m_IsFrustumCullingEnabled;
+    m_IsFrustumCullingEnabled = false;
+
     DrawLine3D(s_Corners[0], s_Corners[1], p_Color, p_Color);
     DrawLine3D(s_Corners[1], s_Corners[2], p_Color, p_Color);
     DrawLine3D(s_Corners[2], s_Corners[3], p_Color, p_Color);
@@ -1073,6 +1076,8 @@ void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, 
 
     DrawLine3D(s_Corners[2], s_Corners[4], p_Color, p_Color);
     DrawLine3D(s_Corners[3], s_Corners[7], p_Color, p_Color);
+
+    m_IsFrustumCullingEnabled = s_WasFrustumCullingEnabled;
 }
 
 void DirectXTKRenderer::DrawBox3D(
@@ -1107,6 +1112,9 @@ void DirectXTKRenderer::DrawBox3D(
         {3, 2, 6}, {3, 6, 7} // right
     };
 
+    const bool s_WasFrustumCullingEnabled = m_IsFrustumCullingEnabled;
+    m_IsFrustumCullingEnabled = false;
+
     for (const auto& s_Face : s_Faces) {
         DrawTriangle3D(
             s_Corners[s_Face[0]], p_Color,
@@ -1114,6 +1122,8 @@ void DirectXTKRenderer::DrawBox3D(
             s_Corners[s_Face[2]], p_Color
         );
     }
+
+    m_IsFrustumCullingEnabled = s_WasFrustumCullingEnabled;
 }
 
 void DirectXTKRenderer::DrawBoxWire3D(
@@ -1145,9 +1155,14 @@ void DirectXTKRenderer::DrawBoxWire3D(
         {0, 6}, {1, 5}, {2, 4}, {3, 7} // vertical edges
     };
 
+    const bool s_WasFrustumCullingEnabled = m_IsFrustumCullingEnabled;
+    m_IsFrustumCullingEnabled = false;
+
     for (const auto& s_Edge : s_Edges) {
         DrawLine3D(s_Corners[s_Edge[0]], s_Corners[s_Edge[1]], p_Color, p_Color);
     }
+
+    m_IsFrustumCullingEnabled = s_WasFrustumCullingEnabled;
 }
 
 void DirectXTKRenderer::DrawOBB3D(
@@ -1171,6 +1186,9 @@ void DirectXTKRenderer::DrawOBB3D(
         DirectX::XMVector3Transform(DirectX::SimpleMath::Vector3(p_Max.x, p_Min.y, p_Max.z), s_Transform),
     };
 
+    const bool s_WasFrustumCullingEnabled = m_IsFrustumCullingEnabled;
+    m_IsFrustumCullingEnabled = false;
+
     DrawLine3D(s_Corners[0], s_Corners[1], p_Color, p_Color);
     DrawLine3D(s_Corners[1], s_Corners[2], p_Color, p_Color);
     DrawLine3D(s_Corners[2], s_Corners[3], p_Color, p_Color);
@@ -1186,6 +1204,8 @@ void DirectXTKRenderer::DrawOBB3D(
 
     DrawLine3D(s_Corners[2], s_Corners[4], p_Color, p_Color);
     DrawLine3D(s_Corners[3], s_Corners[7], p_Color, p_Color);
+
+    m_IsFrustumCullingEnabled = s_WasFrustumCullingEnabled;
 }
 
 void DirectXTKRenderer::DrawBoundingQuads3D(
@@ -1219,12 +1239,17 @@ void DirectXTKRenderer::DrawBoundingQuads3D(
         DrawTriangle3D(v0, p_Color, v2, p_Color, v3, p_Color);
         };
 
+    const bool s_WasFrustumCullingEnabled = m_IsFrustumCullingEnabled;
+    m_IsFrustumCullingEnabled = false;
+
     drawQuad(0, 1, 2, 3); // Front face
     drawQuad(4, 5, 6, 7); // Back face
     drawQuad(0, 1, 5, 6); // Left face
     drawQuad(2, 3, 7, 4); // Right face
     drawQuad(1, 2, 4, 5); // Top face
     drawQuad(0, 3, 7, 6); // Bottom face
+
+    m_IsFrustumCullingEnabled = s_WasFrustumCullingEnabled;
 }
 
 void DirectXTKRenderer::DrawTriangle3D(
@@ -1572,9 +1597,12 @@ void DirectXTKRenderer::DrawMesh(
     const SVector3 s_Center = (s_pRenderPrimitiveResource->m_vMin + s_pRenderPrimitiveResource->m_vMax) * 0.5f;
     const SVector3 s_Extents = (s_pRenderPrimitiveResource->m_vMax - s_pRenderPrimitiveResource->m_vMin) * 0.5f;
 
-    if (m_IsFrustumCullingEnabled &&
-        !IsOBBInsideViewFrustum(float4(s_Center, 1.f), float4(s_Extents, 1.f), p_Transform)) {
-        return;
+    if (m_IsFrustumCullingEnabled) {
+        const float4 s_WorldCenter = p_Transform.WVectorTransform(float4(s_Center, 1.f));
+
+        if (!IsOBBInsideViewFrustum(s_WorldCenter, float4(s_Extents, 1.f), p_Transform)) {
+            return;
+        }
     }
 
     ScopedD3DRef<ID3D12Device> s_Device;
