@@ -1206,7 +1206,7 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
                 m_SelectedGizmoEntity = {};
             }
 
-            for (auto& s_Child : s_ChildrenQueue.front()->Children) {
+            for (auto& s_Child : s_CurrentChild->Children) {
                 s_ChildrenQueue.push(s_Child.second);
             }
 
