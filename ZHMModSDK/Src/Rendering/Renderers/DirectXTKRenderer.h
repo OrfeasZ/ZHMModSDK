@@ -190,6 +190,7 @@ namespace Rendering::Renderers {
         bool IsOBBInsideViewFrustum(
             const float4& p_Center, const float4& p_HalfSize, const SMatrix& p_Transform
         ) const override;
+        bool IsSphereInsideViewFrustum(const SVector3& p_Center, float p_Radius) const override;
 
         void SetFrustumCullingEnabled(bool p_Enabled) override;
         bool IsFrustumCullingEnabled() const override;
@@ -199,6 +200,42 @@ namespace Rendering::Renderers {
 
         void SetMaxDrawDistance(float p_MaxDrawDistance) override;
         float GetMaxDrawDistance() const override;
+
+        void DrawSphere3D(
+            const SMatrix& p_Transform,
+            const float4& p_Position,
+            float p_Size,
+            const SVector4& p_Color
+        ) override;
+
+        void DrawSphere3DOutlinedShaded(
+            const SMatrix& p_Transform,
+            float p_Size,
+            uint32_t p_Color,
+            float p_StepsToACircle,
+            bool p_IsOrthographic
+        );
+
+        void DrawArc(
+            const float4& p_Center,
+            float p_Size,
+            const float4& p_Normal,
+            const float4& p_StartDirection,
+            uint32_t p_Color,
+            float p_Angle,
+            float p_StepsToACircle
+        );
+
+        void DrawArcShaded(
+            const float4& p_Center,
+            float p_Size,
+            const float4& p_Normal,
+            const float4& p_StartDirection,
+            uint32_t p_Color,
+            uint32_t p_ShadeColor,
+            float p_Angle,
+            float p_StepsToACircle
+        );
 
         static AABB TransformAABB(const DirectX::SimpleMath::Matrix& p_Transform, const AABB& p_AABB);
 

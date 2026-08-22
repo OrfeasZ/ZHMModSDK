@@ -270,7 +270,7 @@ public:
     bool m_bOwnsDataPtr = false;
 };
 
-typedef TSharedPointer<ZResourceDataBuffer> ZResourceDataPtr;
+using ZResourceDataPtr = TSharedPointer<ZResourceDataBuffer>;
 
 class ZResourceReader : public ZSharedPointerTarget {
 public:
@@ -283,7 +283,7 @@ public:
 
 static_assert(sizeof(ZResourceReader) == 88);
 
-typedef TSharedPointer<ZResourceReader> ZResourceReaderPtr;
+using ZResourceReaderPtr = TSharedPointer<ZResourceReader>;
 
 class ZResourcePending {
 public:

@@ -56,6 +56,10 @@ class ZHM5WeaponControl;
 class ZGameKeywordManager;
 class ZFreeCameraControlEditorStyleEntity;
 class ICameraEntity;
+class ZEulerAngleTrajectorySource;
+class ZMorphemeTrajectorySource;
+class ZBezierSplineTrajectorySource;
+class ZGameTime;
 
 namespace bfx {
     class AreaHandle;
@@ -319,4 +323,14 @@ public:
     static EngineFunction<void(
         ZFreeCameraControlEditorStyleEntity* th,
         float fZoom)>* ZFreeCameraControlEditorStyleEntity_ZoomCamera;
+
+    static EngineFunction<SMatrix* (
+        ZEulerAngleTrajectorySource* th, SMatrix* result, ZGameTime& animationTime
+    )>* ZEulerAngleTrajectorySource_GetTrajectoryAtTime;
+    static EngineFunction<SMatrix* (
+        ZMorphemeTrajectorySource* th, SMatrix* result, ZGameTime& animationTime
+    )>* ZMorphemeTrajectorySource_GetTrajectoryAtTime;
+    static EngineFunction<SMatrix* (
+        ZBezierSplineTrajectorySource* th, SMatrix* result, ZGameTime& animationTime
+    )>* ZBezierSplineTrajectorySource_GetTrajectoryAtTime;
 };

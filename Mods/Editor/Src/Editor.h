@@ -7,6 +7,8 @@
 #include <map>
 #include <shared_mutex>
 
+#include <SimpleMath.h>
+
 #include "IPluginInterface.h"
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
@@ -14,6 +16,8 @@
 #include "Glacier/EDebugChannel.h"
 #include "Glacier/ZCurve.h"
 #include "Glacier/ZAction.h"
+#include "Glacier/ZSound.h"
+#include "Glacier/ZSequence.h"
 
 #include "ImGuizmo.h"
 #include "EditorServer.h"
@@ -96,6 +100,13 @@ private:
         ZResourcePtr m_PrimResourcePtr;
         SVector4 m_Color;
         SMatrix m_Transform;
+    };
+
+    struct RayCastResult {
+        ZEntityRef m_Entity;
+        std::string m_TypeName;
+        EDebugChannel m_DebugChannel;
+        float m_Distance = FLT_MAX;
     };
 
     struct PinInfo {
@@ -328,6 +339,8 @@ private:
     void DrawDebugEntities(IRenderer* p_Renderer);
     void DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer);
     void DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer);
+    void DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Renderer);
+    void DrawShapes(ZSequenceEntity* p_SequenceEntity, IRenderer* p_Renderer);
     void GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTreeNode);
     void AddDebugEntity(
         const ZEntityRef p_EntityRef,
@@ -353,7 +366,93 @@ private:
     void DeleteDebugEntities(const std::shared_ptr<EntityTreeNode>& p_RootNode);
     EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
-    bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
+
+    bool RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector3& p_Direction);
+    void RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result);
+    void RayCastShapes(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result);
+
+    bool RayCastShape(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZSoundGateEntity* p_SoundGateEntity,
+        float& p_Distance
+    );
+    bool RayCastShape(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZSequenceEntity* p_SequenceEntity,
+        float& p_Distance
+    );
+
+    bool RayCastTrajectoryTrack(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZTrajectoryTrackBase* p_Track,
+        ZEntityRef p_TargetEntity,
+        float& p_Distance
+    );
+    template <typename TItem, typename EvaluateFn>
+    bool RayCastTrajectoryItem(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        TItem* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZEntityRef p_TargetEntity,
+        float& p_Distance,
+        EvaluateFn&& p_EvaluateFn
+    );
+
+    bool RayIntersectsTrajectorySegment(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SVector3& p_Start,
+        const SVector3& p_End,
+        float p_Radius,
+        float& p_Distance
+    );
+    bool RayIntersectsBox(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SMatrix& p_Transform,
+        const SVector3& p_Center,
+        const SVector3& p_Extents,
+        float& p_Distance
+    );
+    bool RayIntersectsSphere(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SVector3& p_Position,
+        float p_Radius,
+        float& p_Distance
+    );
+
+    void DrawTrajectoryTrack(
+        IRenderer* p_Renderer,
+        ZTrajectoryTrackBase* p_Track,
+        const SVector4& p_Color,
+        ZEntityRef p_TargetEntity
+    );
+    template <typename TItem, typename EvaluateFn>
+    void DrawTrajectoryItem(
+        IRenderer* p_Renderer,
+        TItem* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        const SVector4& p_Color,
+        ZEntityRef p_TargetEntity,
+        EvaluateFn&& p_EvaluateFn
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZMorphemeTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZAnimationResource* p_AnimationResource,
+        ZEntityRef p_TargetEntity
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZEulerAngleTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZEntityRef p_TargetEntity
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZBezierSplineTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZEntityRef p_TargetEntity
+    );
 
     static bool IsActorTarget(ZActor* p_Actor);
 
@@ -481,6 +580,8 @@ private:
         AudioEmitterSpatialAspect,
         AudioEmitterVolumetricAspect,
         ClothWireEntity,
+        SoundGateEntity,
+        SequenceEntity,
         Count
     };
 
@@ -626,13 +727,15 @@ private:
     bool m_DrawShapes = false;
     DebugDrawMode m_ShapeDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
 
-    ZEntityRef m_SelectedGizmoEntity = nullptr;
+    ZEntityRef m_SelectedDebugEntity = nullptr;
 
     bool m_DrawCoverInvalidOnNPCErrors = true;
     bool m_DrawHeroGuidesSolid = false;
     bool m_AlwaysDrawDebugBoxForColiValidityCheck = false;
     bool m_DrawPushDebug = false;
     bool m_DrawSafeZones = true;
+
+    bool m_ShowSoundOcclusion = false;
 
     ZEntityRef m_EditorData {};
     TEntityRef<ZCameraEntity> m_EditorCamera {};
