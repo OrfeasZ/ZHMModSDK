@@ -714,10 +714,10 @@ void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Render
         0.f
     );
 
-    s_WorldMatrix.Trans = s_WorldMatrix.WVectorTransform(s_SourceOffset);
+    const float4 s_SourcePosition = s_WorldMatrix.WVectorTransform(s_SourceOffset);
 
     p_Renderer->DrawBox3D(
-        s_WorldMatrix.Trans,
+        s_SourcePosition,
         s_Size,
         s_WorldMatrix,
         ZColor::UnpackUnsigned(0x3F008000)
@@ -730,10 +730,10 @@ void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Render
         0.f
     );
 
-    s_WorldMatrix.Trans = s_WorldMatrix.WVectorTransform(s_DestinationOffset);
+    const float4 s_DestinationPosition = s_WorldMatrix.WVectorTransform(s_DestinationOffset);
 
     p_Renderer->DrawBox3D(
-        s_WorldMatrix.Trans,
+        s_DestinationPosition,
         s_Size,
         s_WorldMatrix,
         ZColor::UnpackUnsigned(0x3F800080)
