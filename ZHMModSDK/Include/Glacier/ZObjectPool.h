@@ -1,29 +1,8 @@
 #pragma once
 
 #include "ZPrimitives.h"
-
-class ZMutex {
-public:
-    void Lock() {
-        EnterCriticalSection(reinterpret_cast<LPCRITICAL_SECTION>(this));
-    }
-
-    void Unlock() {
-        LeaveCriticalSection(reinterpret_cast<LPCRITICAL_SECTION>(this));
-    }
-
-    uint64_t m_impl[5];
-    uint32_t m_nUniqueID;
-};
-
-template <typename T>
-class ZInfiniteBuffer {
-public:
-    T* m_pData;
-    uint32_t m_nSize;
-    uint32_t m_nActualSize;
-    uint32_t m_nMaxSize;
-};
+#include "ZMutex.h"
+#include "ZInfiniteBuffer.h"
 
 class ZObjectPool {
 public:

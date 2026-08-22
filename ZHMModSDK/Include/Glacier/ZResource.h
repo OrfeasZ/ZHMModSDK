@@ -2,13 +2,14 @@
 
 #include "Globals.h"
 #include "ZPrimitives.h"
-#include "ZObjectPool.h"
 #include "ZResourceID.h"
 #include "TArray.h"
 #include "THashMap.h"
 #include "TSharedPointer.h"
 #include "ZSharedPointerTarget.h"
 #include "THashSet.h"
+#include "ZMutex.h"
+#include "ZInfiniteBuffer.h"
 
 class ZRuntimeResourceID;
 
