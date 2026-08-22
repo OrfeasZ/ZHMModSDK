@@ -26,14 +26,6 @@ struct QneTransform {
     SVector3 Scale;
 };
 
-struct AlignedDeleter {
-    template <typename T>
-    void operator()(T* ptr) const {
-        if (ptr)
-            (*Globals::MemoryManager)->m_pNormalAllocator->Free(ptr);
-    }
-};
-
 class Editor : public IPluginInterface {
 public:
     Editor();
