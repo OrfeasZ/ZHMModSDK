@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "ZVirtualMemory.h"
+#include "ZMemory.h"
 
 template <typename T>
 class ZInfiniteBuffer {
