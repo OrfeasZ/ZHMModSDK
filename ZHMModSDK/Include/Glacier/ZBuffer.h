@@ -111,8 +111,8 @@ private:
 
         IAllocator* s_Allocator = nullptr;
 
-        if (s_MemoryManager->m_pPageAllocator) {
-            s_Allocator = s_MemoryManager->m_pPageAllocator->GetAllocator(m_pData);
+        if (s_MemoryManager->m_pPageAllocator1) {
+            s_Allocator = s_MemoryManager->m_pPageAllocator1->GetAllocator(m_pData);
         }
 
         if (!s_Allocator) {

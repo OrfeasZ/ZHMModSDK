@@ -119,8 +119,8 @@ public:
     static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
     static SD3D12ObjectPools** D3D12ObjectPools;
     static ZProfileServerPageProxyBaseMap* ZProfileServerPageProxyBase_m_aRouteMap;
-    static ZObjectPool* ZVariantPool1;
-    static ZObjectPool* ZVariantPool2;
+    static ZObjectPool* Variant8BytePool;
+    static ZObjectPool* Variant32BytePool;
     static ZPackageManagerBase** PackageManager;
     static ZUIText* UIText;
     static ZWorldInventory* WorldInventory;

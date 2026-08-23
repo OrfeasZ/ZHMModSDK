@@ -22,10 +22,7 @@ public:
 
     ZObjectRef(const ZObjectRef& p_Other) : m_pTypeID(p_Other.m_pTypeID) {
         if (p_Other.m_pTypeID != GetVoidType()) {
-            m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                m_pTypeID->GetTypeInfo()->m_nTypeSize,
-                m_pTypeID->GetTypeInfo()->m_nTypeAlignment
-            );
+            AllocateMemory();
 
             m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(m_pData, p_Other.m_pData);
         }
@@ -44,6 +41,7 @@ public:
     static ZObjectRef From(const T& p_Variant) {
         ZObjectRef s_Obj;
         s_Obj.Replace(p_Variant);
+
         return s_Obj;
     }
 
@@ -54,10 +52,7 @@ public:
         m_pData = nullptr;
 
         if (p_Other.m_pTypeID != GetVoidType()) {
-            m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                m_pTypeID->GetTypeInfo()->m_nTypeSize,
-                m_pTypeID->GetTypeInfo()->m_nTypeAlignment
-            );
+            AllocateMemory();
 
             m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(m_pData, p_Other.m_pData);
         }
@@ -98,53 +93,28 @@ public:
     }
 
     void Clear() {
-        if (!m_pData) {
-            m_pTypeID = GetVoidType();
-            return;
-        }
-
-        if (m_pTypeID->m_nFlags != 2) {
-            m_pTypeID->m_pType->m_pTypeFunctions->destruct(m_pData);
-        }
+        DestroyMemory();
 
         m_pTypeID = GetVoidType();
-
-        if (Globals::ZVariantPool1->m_pData && Globals::ZVariantPool1->BelongsToPool(m_pData)) {
-            // TODO: Fix resource leak.
-            //Globals::ZVariantPool1->Free(m_pData);
-        }
-        else if (Globals::ZVariantPool2->m_pData && Globals::ZVariantPool2->BelongsToPool(m_pData)) {
-            // TODO: Fix resource leak.
-            //Globals::ZVariantPool2->Free(m_pData);
-        }
-        else if (m_pTypeID != GetVoidType()) {
-            (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_pData);
-        }
-
-        m_pData = nullptr;
     }
 
     template <class T>
     void Replace(const T& p_Value) {
-        Clear();
+        DestroyMemory();
 
         m_pTypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
-        m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-            m_pTypeID->GetTypeInfo()->m_nTypeSize,
-            m_pTypeID->GetTypeInfo()->m_nTypeAlignment
-        );
+
+        AllocateMemory();
 
         m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(m_pData, &p_Value);
     }
 
     void Assign(STypeID* p_Type, void* p_Data) {
-        Clear();
+        DestroyMemory();
 
         m_pTypeID = p_Type;
-        m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-            m_pTypeID->GetTypeInfo()->m_nTypeSize,
-            m_pTypeID->GetTypeInfo()->m_nTypeAlignment
-        );
+
+        AllocateMemory();
 
         m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(m_pData, p_Data);
     }
@@ -168,29 +138,75 @@ public:
 
     bool IsEmpty() const {
         return m_pTypeID == nullptr || m_pData == nullptr || Hash::Crc32(m_pTypeID->GetTypeInfo()->pszTypeName) ==
-                ZHMTypeId<void>;
+            ZHMTypeId<void>;
     }
 
     STypeID* GetTypeID() const {
         return m_pTypeID;
     }
 
-    ZObjectRef Clone() const {
-        ZObjectRef s_Obj;
+    void* GetData() const {
+        return m_pData;
+    }
 
-        if (m_pTypeID == GetVoidType()) {
-            return s_Obj;
+    void* AllocateMemory() {
+        uint32_t s_Size;
+
+        if (m_pTypeID->m_nFlags == 2) {
+            s_Size = 8;
+        }
+        else {
+            s_Size = m_pTypeID->GetTypeInfo()->m_nTypeSize;
         }
 
-        s_Obj.m_pTypeID = m_pTypeID;
-        s_Obj.m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-            m_pTypeID->GetTypeInfo()->m_nTypeSize,
-            m_pTypeID->GetTypeInfo()->m_nTypeAlignment
-        );
+        if (s_Size <= 8) {
+            if (Globals::Variant8BytePool && Globals::Variant8BytePool->m_pData) {
+                m_pData = Globals::Variant8BytePool->Alloc();
+            }
+        }
+        else if (s_Size <= 0x20) {
+            if (Globals::Variant32BytePool && Globals::Variant32BytePool->m_pData) {
+                m_pData = Globals::Variant32BytePool->Alloc();
+            }
+        }
 
-        m_pTypeID->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(s_Obj.m_pData, m_pData);
+        if (!m_pData) {
+            const uint32_t s_Alignment = m_pTypeID->m_nFlags == 2
+                ? 8
+                : m_pTypeID->GetTypeInfo()->m_nTypeAlignment;
 
-        return s_Obj;
+            m_pData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
+                s_Size,
+                s_Alignment
+            );
+        }
+
+        return m_pData;
+    }
+
+    void DestroyMemory() {
+        if (!m_pData) {
+            return;
+        }
+
+        // char[INT32_MAX] has type number 21.
+        if (m_pTypeID->m_nTypeNum != 21) {
+            if (m_pTypeID->m_nFlags != 2) {
+                m_pTypeID->GetTypeInfo()->m_pTypeFunctions->destruct(m_pData);
+            }
+
+            if (Globals::Variant8BytePool && Globals::Variant8BytePool->Contains(m_pData)) {
+                Globals::Variant8BytePool->Free(m_pData);
+            }
+            else if (Globals::Variant32BytePool && Globals::Variant32BytePool->Contains(m_pData)) {
+                Globals::Variant32BytePool->Free(m_pData);
+            }
+            else {
+                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_pData);
+            }
+        }
+
+        m_pData = nullptr;
     }
 
 protected:
@@ -200,7 +216,7 @@ protected:
 
 template <class T>
 class ZVariant :
-        public ZObjectRef {
+    public ZObjectRef {
 public:
     ZVariant() {
         Replace(T());
@@ -246,7 +262,7 @@ public:
 
 template <class T>
 class ZVariantRef :
-        public ZObjectRef {
+    public ZObjectRef {
 public:
     ZVariantRef(T* p_Value) {
         m_pTypeID = (*Globals::TypeRegistry)->GetTypeID(ZHMTypeName<T>);
@@ -266,7 +282,7 @@ public:
 };
 
 class ZDynamicObject :
-        public ZObjectRef {
+    public ZObjectRef {
 public:
     [[nodiscard]] bool IsObject() const { return Is<TArray<SDynamicObjectKeyValuePair>>(); }
     [[nodiscard]] bool IsArray() const { return Is<TArray<ZDynamicObject>>(); }
