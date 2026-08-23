@@ -46,6 +46,10 @@ public:
     }
 
     ZObjectRef& operator=(const ZObjectRef& p_Other) {
+        if (this == &p_Other) {
+            return *this;
+        }
+
         Clear();
 
         m_pTypeID = p_Other.m_pTypeID;
