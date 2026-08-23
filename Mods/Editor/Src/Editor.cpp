@@ -579,7 +579,7 @@ void Editor::QueueTask(std::function<void()> p_Task) {
     m_TaskQueue.push_back(std::move(p_Task));
 }
 
-std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool outputPins) {
+std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool p_OutputPins) {
     std::vector<PinInfo> s_Result;
 
     if (!p_EntityRef || !p_EntityRef->GetType()->m_pInterfaceData) {
@@ -606,10 +606,10 @@ std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool output
             continue;
         }
 
-        const auto& s_Pins = outputPins ? s_Iterator->second.outputPins : s_Iterator->second.inputPins;
+        const auto& s_Pins = p_OutputPins ? s_Iterator->second.m_OutputPins : s_Iterator->second.m_InputPins;
 
         for (const auto& s_Pin : s_Pins) {
-            if (s_PinNames.insert(s_Pin.name).second) {
+            if (s_PinNames.insert(s_Pin.m_Name).second) {
                 s_Result.push_back(s_Pin);
             }
         }
@@ -619,90 +619,79 @@ std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool output
         s_Result.begin(),
         s_Result.end(),
         [](const PinInfo& p_A, const PinInfo& p_B) {
-            return p_A.name < p_B.name;
-    }
+            return p_A.m_Name < p_B.m_Name;
+        }
     );
 
     return s_Result;
 }
 
 std::map<std::string, Editor::PinLists> Editor::ParsePinsJson(const std::string& p_PinsJson) {
-    std::map<std::string, PinLists> result;
+    std::map<std::string, PinLists> s_Result;
 
-    simdjson::ondemand::parser parser;
-    simdjson::padded_string json = simdjson::padded_string(p_PinsJson);
+    simdjson::ondemand::parser s_Parser;
+    simdjson::padded_string s_Json = simdjson::padded_string(p_PinsJson);
 
-    simdjson::ondemand::document doc = parser.iterate(json);
-    simdjson::ondemand::array entries = doc.get_array();
+    simdjson::ondemand::document s_Document = s_Parser.iterate(s_Json);
+    simdjson::ondemand::array s_Entries = s_Document.get_array();
 
-    for (auto entry : entries)
-    {
-        std::string_view path = entry["path"].get_string();
+    for (auto s_Entry : s_Entries) {
+        std::string_view s_Path = s_Entry["path"].get_string();
 
-        // extract class name
-        std::string className;
+        std::string s_ClassName;
         {
-            size_t start = path.find('/');
-            size_t end = path.find(".class");
+            size_t s_Start = s_Path.find('/');
+            size_t s_End = s_Path.find(".class");
 
-            if (start != std::string_view::npos && end != std::string_view::npos && end > start)
-                className = std::string(path.substr(start + 1, end - start - 1));
+            if (s_Start != std::string_view::npos && s_End != std::string_view::npos && s_End > s_Start) {
+                s_ClassName = std::string(s_Path.substr(s_Start + 1, s_End - s_Start - 1));
+            }
         }
 
-        if (className.empty())
+        if (s_ClassName.empty()) {
             continue;
-
-        auto& pins = result[className];
-
-        // INPUT PINS
-        simdjson::ondemand::array inputPins = entry["in"].get_array();
-
-        for (auto pinEntry : inputPins)
-        {
-            std::string_view pinName = pinEntry["pin"].get_string();
-            std::string_view description = pinEntry["description"].get_string();
-
-            pins.inputPins.push_back({
-                std::string(pinName),
-                std::string(description)
-                });
         }
 
-        // OUTPUT PINS
-        simdjson::ondemand::array outputPins = entry["out"].get_array();
+        auto& s_Pins = s_Result[s_ClassName];
 
-        for (auto pinEntry : outputPins)
-        {
-            std::string_view pinName = pinEntry["pin"].get_string();
-            std::string_view description = pinEntry["description"].get_string();
+        simdjson::ondemand::array s_InputPins = s_Entry["in"].get_array();
 
-            pins.outputPins.push_back({
-                std::string(pinName),
-                std::string(description)
-                });
+        for (auto s_PinEntry : s_InputPins) {
+            std::string_view s_PinName = s_PinEntry["pin"].get_string();
+            std::string_view s_Description = s_PinEntry["description"].get_string();
+
+            s_Pins.m_InputPins.push_back({ std::string(s_PinName), std::string(s_Description) });
+        }
+
+        simdjson::ondemand::array s_OutputPins = s_Entry["out"].get_array();
+
+        for (auto s_PinEntry : s_OutputPins) {
+            std::string_view s_PinName = s_PinEntry["pin"].get_string();
+            std::string_view s_Description = s_PinEntry["description"].get_string();
+
+            s_Pins.m_OutputPins.push_back({ std::string(s_PinName), std::string(s_Description) });
         }
     }
 
-    for (auto& [className, pins] : result)
-    {
+    for (auto& [s_ClassName, s_Pins] : s_Result) {
         std::sort(
-            pins.inputPins.begin(),
-            pins.inputPins.end(),
-            [](const PinInfo& a, const PinInfo& b) {
-                return a.name < b.name;
-        }
+            s_Pins.m_InputPins.begin(),
+            s_Pins.m_InputPins.end(),
+            [](const PinInfo& p_A, const PinInfo& p_B) {
+                return p_A.m_Name < p_B.m_Name;
+            }
         );
 
         std::sort(
-            pins.outputPins.begin(),
-            pins.outputPins.end(),
-            [](const PinInfo& a, const PinInfo& b) {
-                return a.name < b.name;
-        }
+            s_Pins.m_OutputPins.begin(),
+            s_Pins.m_OutputPins.end(),
+            [](const PinInfo& p_A, const PinInfo& p_B) {
+                return p_A.m_Name < p_B.m_Name;
+            }
         );
     }
 
-    return result;
+    return s_Result;
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
@@ -1379,21 +1368,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_SortedRoomEntities.clear();
 
-    m_InputPinTypeID = nullptr;
-
-    if (m_InputPinData) {
-        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
-
-        m_InputPinData = nullptr;
-    }
-
-    m_OutputPinTypeID = nullptr;
-
-    if (m_OutputPinData) {
-        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
-
-        m_OutputPinData = nullptr;
-    }
+    m_InputPinValue.Clear();
+    m_OutputPinValue.Clear();
 
     return { HookAction::Continue() };
 }

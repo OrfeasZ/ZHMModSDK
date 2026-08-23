@@ -91,13 +91,13 @@ private:
     };
 
     struct PinInfo {
-        std::string name;
-        std::string description;
+        std::string m_Name;
+        std::string m_Description;
     };
 
     struct PinLists {
-        std::vector<PinInfo> inputPins;
-        std::vector<PinInfo> outputPins;
+        std::vector<PinInfo> m_InputPins;
+        std::vector<PinInfo> m_OutputPins;
     };
 
     struct PropertyDeleter {
@@ -351,7 +351,7 @@ private:
 
     void ProcessTasks();
 
-    std::vector<PinInfo> GetPins(ZEntityRef p_EntityRef, bool outputPins);
+    std::vector<PinInfo> GetPins(ZEntityRef p_EntityRef, bool p_OutputPins);
 
     std::map<std::string, PinLists> ParsePinsJson(const std::string& p_PinsJson);
 
@@ -654,10 +654,8 @@ private:
 
     std::map<std::string, PinLists> m_ClassToInputAndOutputPins;
     std::vector<std::pair<std::string, STypeID*>> m_PinDataTypes;
-    STypeID* m_InputPinTypeID = nullptr;
-    void* m_InputPinData = nullptr;
-    STypeID* m_OutputPinTypeID = nullptr;
-    void* m_OutputPinData = nullptr;
+    ZObjectRef m_InputPinValue;
+    ZObjectRef m_OutputPinValue;
 
     std::vector<std::string> m_ClassNames;
 

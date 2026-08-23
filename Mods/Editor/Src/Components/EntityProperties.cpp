@@ -438,25 +438,13 @@ void Editor::DrawEntityPropertiesWindow() {
         static char s_InputPinName[1024] = {};
         static char s_InputPinTypeName[2048] = {};
 
-        if (ImGui::Button(ICON_MD_BOLT "##fireInputPin")) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_InputPinData) {
-                s_ObjectRef.Assign(m_InputPinTypeID, m_InputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, s_ObjectRef);
+        if (ImGui::Button(ICON_MD_BOLT "##FireInputPin")) {
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, m_InputPinValue);
 
             s_InputPinName[0] = '\0';
             s_InputPinTypeName[0] = '\0';
 
-            m_InputPinTypeID = nullptr;
-
-            if (m_InputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
-
-                m_InputPinData = nullptr;
-            }
+            m_InputPinValue.Clear();
         }
 
         auto s_InputPins = GetPins(s_SelectedEntity, false);
@@ -468,43 +456,31 @@ void Editor::DrawEntityPropertiesWindow() {
             s_InputPinName,
             sizeof(s_InputPinName),
             s_InputPins,
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
-        },
-            [](const PinInfo& pin) -> std::string {
-                if (pin.description.empty()) {
-                    return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
+            },
+            [](const PinInfo& s_PinInfo) -> std::string {
+                if (s_PinInfo.m_Description.empty()) {
+                    return s_PinInfo.m_Name;
                 }
 
-                return pin.name + " - " + pin.description;
-        },
-            [](const std::string&, const std::string&, const std::string& value) {
-                strcpy_s(s_InputPinName, value.c_str());
-        },
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
-        }
+                return s_PinInfo.m_Name + " - " + s_PinInfo.m_Description;
+            },
+            [](const std::string&, const std::string&, const std::string& p_Value) {
+                strcpy_s(s_InputPinName, p_Value.c_str());
+            },
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
+            }
         );
 
         if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_InputPinData) {
-                s_ObjectRef.Assign(m_InputPinTypeID, m_InputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, s_ObjectRef);
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, m_InputPinValue);
 
             s_InputPinName[0] = '\0';
             s_InputPinTypeName[0] = '\0';
 
-            m_InputPinTypeID = nullptr;
-
-            if (m_InputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
-
-                m_InputPinData = nullptr;
-            }
+            m_InputPinValue.Clear();
         }
 
         ImGui::AlignTextToFramePadding();
@@ -518,32 +494,26 @@ void Editor::DrawEntityPropertiesWindow() {
             m_PinDataTypes,
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-        },
+            },
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-        },
-            [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
-                const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
-                const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
+            },
+            [&](const std::string&, const std::string& p_TypeName, STypeID* p_TypeID) {
+                m_InputPinValue.Clear();
+                m_InputPinValue.UNSAFE_SetType(p_TypeID);
 
-                m_InputPinTypeID = s_TypeID;
+                void* s_Data = m_InputPinValue.AllocateMemory();
 
-                m_InputPinData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                    s_TypeSize, s_TypeAlignment
-                );
-
-                if (std::string(s_InputPinTypeName) == "SMatrix43") {
-                    auto s_Value = static_cast<SMatrix43*>(m_InputPinData);
-
-                    *s_Value = SMatrix43 {};
+                if (p_TypeName == "SMatrix43") {
+                    *static_cast<SMatrix43*>(s_Data) = SMatrix43 {};
                 }
                 else {
-                    memset(m_InputPinData, 0, s_TypeSize);
+                    memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
                 }
-        },
+            },
             [](auto& p_Pair) -> STypeID* {
                 return p_Pair.second;
-        }
+            }
         );
 
         ImGui::AlignTextToFramePadding();
@@ -567,31 +537,19 @@ void Editor::DrawEntityPropertiesWindow() {
             ImGui::EndDisabled();
         }
         else {
-            DrawEntityPinValue("##InputPinValue", s_InputPinTypeName, m_InputPinData);
+            DrawEntityPinValue("##InputPinValue", s_InputPinTypeName, m_InputPinValue.GetData());
         }
 
         static char s_OutputPinName[1024] = {};
         static char s_OutputPinTypeName[2048] = {};
 
-        if (ImGui::Button(ICON_MD_BOLT "##fireOutputPin")) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_OutputPinData) {
-                s_ObjectRef.Assign(m_OutputPinTypeID, m_OutputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, s_ObjectRef);
+        if (ImGui::Button(ICON_MD_BOLT "##FireOutputPin")) {
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, m_OutputPinValue);
 
             s_OutputPinName[0] = '\0';
             s_OutputPinTypeName[0] = '\0';
 
-            m_OutputPinTypeID = nullptr;
-
-            if (m_OutputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
-
-                m_OutputPinData = nullptr;
-            }
+            m_OutputPinValue.Clear();
         }
 
         auto s_OutputPins = GetPins(s_SelectedEntity, true);
@@ -603,43 +561,31 @@ void Editor::DrawEntityPropertiesWindow() {
             s_OutputPinName,
             sizeof(s_OutputPinName),
             s_OutputPins,
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
-        },
-            [](const PinInfo& pin) -> std::string {
-                if (pin.description.empty()) {
-                    return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
+            },
+            [](const PinInfo& s_PinInfo) -> std::string {
+                if (s_PinInfo.m_Description.empty()) {
+                    return s_PinInfo.m_Name;
                 }
 
-                return pin.name + " - " + pin.description;
-        },
+                return s_PinInfo.m_Name + " - " + s_PinInfo.m_Description;
+            },
             [](const std::string&, const std::string&, const std::string& value) {
                 strcpy_s(s_OutputPinName, value.c_str());
-        },
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
-        }
+            },
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
+            }
         );
 
         if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_OutputPinData) {
-                s_ObjectRef.Assign(m_OutputPinTypeID, m_OutputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, s_ObjectRef);
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, m_OutputPinValue);
 
             s_OutputPinName[0] = '\0';
             s_OutputPinTypeName[0] = '\0';
 
-            m_OutputPinTypeID = nullptr;
-
-            if (m_OutputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
-
-                m_OutputPinData = nullptr;
-            }
+            m_OutputPinValue.Clear();
         }
 
         ImGui::AlignTextToFramePadding();
@@ -653,38 +599,32 @@ void Editor::DrawEntityPropertiesWindow() {
             m_PinDataTypes,
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-        },
+            },
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-        },
-            [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
-                const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
-                const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
+            },
+            [&](const std::string&, const std::string& p_TypeName, STypeID* p_TypeID) {
+                m_OutputPinValue.Clear();
+                m_OutputPinValue.UNSAFE_SetType(p_TypeID);
 
-                m_OutputPinTypeID = s_TypeID;
+                void* s_Data = m_OutputPinValue.AllocateMemory();
 
-                m_OutputPinData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                    s_TypeSize, s_TypeAlignment
-                );
-
-                if (std::string(s_InputPinTypeName) == "SMatrix43") {
-                    auto s_Value = static_cast<SMatrix43*>(m_InputPinData);
-
-                    *s_Value = SMatrix43 {};
+                if (p_TypeName == "SMatrix43") {
+                    *static_cast<SMatrix43*>(s_Data) = SMatrix43 {};
                 }
                 else {
-                    memset(m_InputPinData, 0, s_TypeSize);
+                    memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
                 }
-        },
+            },
             [](auto& p_Pair) -> STypeID* {
                 return p_Pair.second;
-        }
+            }
         );
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Value");
 
-        if (std::string(s_InputPinTypeName) != "SMatrix43") {
+        if (std::string(s_OutputPinTypeName) != "SMatrix43") {
             ImGui::SameLine();
         }
 
@@ -702,7 +642,7 @@ void Editor::DrawEntityPropertiesWindow() {
             ImGui::EndDisabled();
         }
         else {
-            DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinData);
+            DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinValue.GetData());
         }
 
         ImGui::Separator();
