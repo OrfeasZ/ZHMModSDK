@@ -3,6 +3,10 @@
 #include "Functions.h"
 
 STypeID* ZObjectRef::GetVoidType() {
+    if (!Globals::TypeRegistry || !*Globals::TypeRegistry) {
+        return nullptr;
+    }
+
     static STypeID* s_VoidType = (*Globals::TypeRegistry)->GetTypeID("void");
     return s_VoidType;
 }
@@ -24,7 +28,7 @@ bool ZDynamicObject::Set(const ZString& p_Key, const ZDynamicObject& p_Value) {
         }
     }
 
-    s_Values->push_back({p_Key, p_Value});
+    s_Values->push_back({ p_Key, p_Value });
 
     return true;
 }
@@ -94,7 +98,7 @@ ZDynamicObject& ZDynamicObject::operator[](const ZString& p_Key) {
         }
     }
 
-    s_Values->push_back({p_Key, {}});
+    s_Values->push_back({ p_Key, {} });
 
     return s_Values->at(s_Values->size() - 1).value;
 }
