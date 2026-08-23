@@ -18,9 +18,6 @@ bool ZDynamicObject::Set(const ZString& p_Key, const ZDynamicObject& p_Value) {
         return false;
     }
 
-    //Functions::ZDynamicObject_Set->Call(this, p_Key, p_Value);
-
-    // TODO: Fixme. The pool freeing thing is broken.
     for (auto& s_KeyValuePair : *s_Values) {
         if (s_KeyValuePair.sKey == p_Key) {
             s_KeyValuePair.value = p_Value;
