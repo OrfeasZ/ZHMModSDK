@@ -793,6 +793,7 @@ void Editor::ClearFilters() {
     m_FilteredEntityTreeNodes.clear();
     m_TotalMatchCount = 0;
     m_CurrentEntitySearchResultIndex = 0;
+    m_HasActiveSearch = false;
     m_HasActiveFilters = false;
 }
 
