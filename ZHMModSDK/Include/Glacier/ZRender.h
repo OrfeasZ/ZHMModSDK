@@ -6,6 +6,7 @@
 #include "ZMath.h"
 #include "Reflection.h"
 #include "ZObjectPool.h"
+#include "TObjectPool.h"
 #include "ZResource.h"
 
 template <class T, bool U>
