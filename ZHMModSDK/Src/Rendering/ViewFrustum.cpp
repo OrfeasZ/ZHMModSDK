@@ -193,9 +193,9 @@ ViewFrustum::ContainmentType ViewFrustum::CheckOBBInsidePlanes(
             s_Plane.w;
 
         const float s_Radius =
-            std::fabs(s_Normal * s_AxisX) * p_HalfSize.x +
-            std::fabs(s_Normal * s_AxisY) * p_HalfSize.y +
-            std::fabs(s_Normal * s_AxisZ) * p_HalfSize.z;
+            std::fabs(s_Normal.Dot(s_AxisX)) * p_HalfSize.x +
+            std::fabs(s_Normal.Dot(s_AxisY)) * p_HalfSize.y +
+            std::fabs(s_Normal.Dot(s_AxisZ)) * p_HalfSize.z;
 
         if (s_Distance - s_Radius > s_Epsilon) {
             return ContainmentType::FullyOutside;

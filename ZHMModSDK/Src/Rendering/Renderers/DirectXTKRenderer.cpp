@@ -1598,8 +1598,11 @@ void DirectXTKRenderer::DrawMesh(
     const float4& p_TextureScaleBias,
     const SVector4& p_MaterialColor
 ) {
-    const SVector3 s_Center = (s_pRenderPrimitiveResource->m_vMin + s_pRenderPrimitiveResource->m_vMax) * 0.5f;
-    const SVector3 s_Extents = (s_pRenderPrimitiveResource->m_vMax - s_pRenderPrimitiveResource->m_vMin) * 0.5f;
+    const SVector3 s_RawCenter = (s_pRenderPrimitiveResource->m_vMin + s_pRenderPrimitiveResource->m_vMax) * 0.5f;
+    const SVector3 s_RawExtents = (s_pRenderPrimitiveResource->m_vMax - s_pRenderPrimitiveResource->m_vMin) * 0.5f;
+
+    const SVector3 s_Center = s_RawCenter * SVector3(p_PositionScale) + SVector3(p_PositionBias);
+    const SVector3 s_Extents = s_RawExtents * SVector3(p_PositionScale);
 
     if (m_IsFrustumCullingEnabled) {
         const float4 s_WorldCenter = p_Transform.WVectorTransform(float4(s_Center, 1.f));

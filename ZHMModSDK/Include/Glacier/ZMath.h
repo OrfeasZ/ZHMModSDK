@@ -76,9 +76,9 @@ public:
     const bool operator==(const SVector3& p_Other) const {
         return x == p_Other.x && y == p_Other.y && z == p_Other.z;
     }
-
-    float operator*(const SVector3& p_Other) const {
-        return x * p_Other.x + y * p_Other.y + z * p_Other.z;
+	
+    SVector3 operator*(const SVector3& p_Other) const {
+        return SVector3(x * p_Other.x, y * p_Other.y, z * p_Other.z);
     }
 
     SVector3 operator*(const float p_Value) const {
