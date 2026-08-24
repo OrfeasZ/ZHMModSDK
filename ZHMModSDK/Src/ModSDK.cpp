@@ -11,7 +11,6 @@
 #include "IPluginInterface.h"
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
-#include "Util/HashingUtils.h"
 #include "Util/StringUtils.h"
 
 #include "Rendering/Renderers/DirectXTKRenderer.h"
