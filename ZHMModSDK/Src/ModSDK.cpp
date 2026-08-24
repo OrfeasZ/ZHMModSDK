@@ -307,7 +307,7 @@ void ModSDK::LoadConfiguration() {
             m_IgnoredVersion = s_Mod.second.get("ignore_version");
         }
 
-        if (s_Mod.second.has("no_updates_for_me_please")) {
+        if (s_Mod.second.has("disable_update_check")) {
             m_DisableUpdateCheck = true;
         }
 
