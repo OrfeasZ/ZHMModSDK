@@ -42,6 +42,8 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
         ImGui::SetTooltip("Must be enabled before loading a scene to take effect.");
     }
 
+    ImGui::Separator();
+
     if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
         if (ImGui::Button("Build entity tree")) {
             UpdateEntities();
