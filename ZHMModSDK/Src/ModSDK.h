@@ -292,6 +292,8 @@ private:
     static void ImDrawCallback_SetGameDescriptorHeap(const ImDrawList* p_DrawList, const ImDrawCmd* p_Command);
     static void ImDrawCallback_ResetDescriptorHeap(const ImDrawList* p_DrawList, const ImDrawCmd* p_Command);
 
+    static void OnConsoleCommand(void* p_Context, TArray<ZString>& p_Args);
+
 private:
     bool m_UIEnabled = true;
     uint8_t m_ConsoleScanCode = 0x29; // Grave / Tilde key

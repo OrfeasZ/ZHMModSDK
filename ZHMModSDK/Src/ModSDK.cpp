@@ -604,7 +604,7 @@ bool ModSDK::CheckForUpdates() const {
 }
 
 // Built-in console commands
-void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
+void ModSDK::OnConsoleCommand(void* p_Context, TArray<ZString>& p_Args) {
     if (p_Args.size() == 1) {
         if (p_Args[0] == "unloadall") {
             ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
