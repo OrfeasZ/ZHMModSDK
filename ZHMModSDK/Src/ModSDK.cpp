@@ -631,25 +631,25 @@ void ModSDK::OnConsoleCommand(void* p_Context, TArray<ZString>& p_Args) {
                 return Logger::Error("[ZConfigCommand] Invalid command.");
 
             switch (s_Command->GetType()) {
-                case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT:
+                case ZConfigCommand::ECLASSTYPE::ECLASS_FLOAT:
                     return Logger::Info(
                         "[ZConfigCommand] {} - float - {}",
                         p_Args[1],
                         s_Command->As<ZConfigFloat>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_INT:
+                case ZConfigCommand::ECLASSTYPE::ECLASS_INT:
                     return Logger::Info(
                         "[ZConfigCommand] {} - int - {}",
                         p_Args[1],
                         s_Command->As<ZConfigInt>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
+                case ZConfigCommand::ECLASSTYPE::ECLASS_STRING:
                     return Logger::Info(
                         "[ZConfigCommand] {} - string - \"{}\"",
                         p_Args[1],
                         s_Command->As<ZConfigString>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
+                case ZConfigCommand::ECLASSTYPE::ECLASS_UNKNOWN:
                     return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
             }
         }
@@ -665,7 +665,7 @@ void ModSDK::OnConsoleCommand(void* p_Context, TArray<ZString>& p_Args) {
             // Now we validate the input, we technically don't need to do this as it'll be done by the engine function
             // we call. But we do this to provide output to the user.
             switch (s_Command->GetType()) {
-                case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT: {
+                case ZConfigCommand::ECLASSTYPE::ECLASS_FLOAT: {
                     try {
                         size_t pos;
                         static_cast<void>(std::stof(p_Args[2].c_str(), &pos));
@@ -684,7 +684,7 @@ void ModSDK::OnConsoleCommand(void* p_Context, TArray<ZString>& p_Args) {
                     }
                     break;
                 }
-                case ZConfigCommand_ECLASSTYPE::ECLASS_INT: {
+                case ZConfigCommand::ECLASSTYPE::ECLASS_INT: {
                     try {
                         size_t pos;
                         unsigned long value = std::stoul(p_Args[2].c_str(), &pos);
@@ -705,13 +705,13 @@ void ModSDK::OnConsoleCommand(void* p_Context, TArray<ZString>& p_Args) {
                     }
                     break;
                 }
-                case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
+                case ZConfigCommand::ECLASSTYPE::ECLASS_STRING:
                     if (p_Args[2].size() >= 256)
                         return Logger::Error(
                             "[ZConfigCommand] Invalid input (string), maximum length of 255 exceeded."
                         );
                     break;
-                case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
+                case ZConfigCommand::ECLASSTYPE::ECLASS_UNKNOWN:
                     return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
             }
 

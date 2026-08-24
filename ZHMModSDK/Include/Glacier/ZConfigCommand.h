@@ -3,20 +3,20 @@
 #include <cstdint>
 #include "ZString.h"
 
-enum class ZConfigCommand_ECLASSTYPE {
-    ECLASS_FLOAT   = 0,
-    ECLASS_INT     = 1,
-    ECLASS_STRING  = 2,
-    ECLASS_UNKNOWN = 3,
-};
-
 class ZConfigFloat;
 class ZConfigInt;
 class ZConfigString;
 
 class ZConfigCommand {
 public:
-    virtual ZConfigCommand_ECLASSTYPE GetType() = 0;
+    enum class ECLASSTYPE {
+        ECLASS_FLOAT,
+        ECLASS_INT,
+        ECLASS_STRING,
+        ECLASS_UNKNOWN,
+    };
+
+    virtual ECLASSTYPE GetType() = 0;
 
     // Get a pointer to a config command from the command name.
     // Returns 0/nullptr if it does not exist.
@@ -34,18 +34,18 @@ protected:
 
 private:
     template <typename T>
-    static ZConfigCommand_ECLASSTYPE GetClassType() {
+    static ECLASSTYPE GetClassType() {
         if (std::is_same<T, ZConfigFloat>::value) {
-            return ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT;
+            return ECLASSTYPE::ECLASS_FLOAT;
         }
         else if (std::is_same<T, ZConfigInt>::value) {
-            return ZConfigCommand_ECLASSTYPE::ECLASS_INT;
+            return ECLASSTYPE::ECLASS_INT;
         }
         else if (std::is_same<T, ZConfigString>::value) {
-            return ZConfigCommand_ECLASSTYPE::ECLASS_STRING;
+            return ECLASSTYPE::ECLASS_STRING;
         }
 
-        return ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN;
+        return ECLASSTYPE::ECLASS_UNKNOWN;
     }
 };
 
