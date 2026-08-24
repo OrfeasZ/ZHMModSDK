@@ -1236,20 +1236,34 @@ DEFINE_DETOUR_WITH_CONTEXT(
         const bool s_NewFocus = !m_ImGuiHasFocus.load(std::memory_order_relaxed);
         m_ImGuiHasFocus.store(s_NewFocus, std::memory_order_release);
 
+        ZKeyboardWindows* s_KeyboardWindows = static_cast<ZKeyboardWindows*>(
+            Globals::InputDeviceManager->m_devices[4]
+        );
+
         if (s_NewFocus) {
             m_IsImGuiVisible.store(true, std::memory_order_release);
-        }
 
-        if (!s_NewFocus) {
+            if (s_KeyboardWindows->m_pbDigital) {
+                // Clear the keyboard state to prevent held keys from remaining active while ImGui has focus.
+                std::fill_n(
+                    s_KeyboardWindows->m_pbDigital,
+                    s_KeyboardWindows->m_digcount,
+                    false
+                );
+            }
+        }
+        else {
             DWORD s_EventCount = 256;
             DIDEVICEOBJECTDATA s_Buffer[256];
-            ZKeyboardWindows* s_KeyboardWindows = static_cast<ZKeyboardWindows*>(
-                Globals::InputDeviceManager->m_devices[4]
-                );
 
             if (s_KeyboardWindows->dif.m_pDev) {
-                // Prevents buffered events from being processed by the game after imgui is closed
-                s_KeyboardWindows->dif.m_pDev->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), s_Buffer, &s_EventCount, 0);
+                // Prevent buffered events from being processed after ImGui is closed.
+                s_KeyboardWindows->dif.m_pDev->GetDeviceData(
+                    sizeof(DIDEVICEOBJECTDATA),
+                    s_Buffer,
+                    &s_EventCount,
+                    0
+                );
             }
         }
     }
