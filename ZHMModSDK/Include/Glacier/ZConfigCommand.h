@@ -26,7 +26,7 @@ public:
     ZConfigCommand* GetNext() { return m_pNext; }
 
     template <typename T>
-    T* As() { return GetType() == GetEnumForType<T>() ? dynamic_cast<T*>(this) : nullptr; }
+    T* As() { return GetType() == GetEnumForType<T>() ? static_cast<T*>(this) : nullptr; }
 
 protected:
     uint32_t m_iNameHash;
