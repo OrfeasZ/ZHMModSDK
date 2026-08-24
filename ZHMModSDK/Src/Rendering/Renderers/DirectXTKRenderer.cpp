@@ -1081,16 +1081,18 @@ void DirectXTKRenderer::DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, 
 }
 
 void DirectXTKRenderer::DrawBox3D(
-    const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
+    const SVector3& p_Center, const SVector3& p_Size, const SMatrix& p_Transform, const SVector4& p_Color
 ) {
+    const SVector3 s_HalfSize = p_Size * 0.5f;
+
     if (m_IsFrustumCullingEnabled &&
-        !IsOBBInsideViewFrustum(p_Center, p_HalfSize, p_Transform)) {
+        !IsOBBInsideViewFrustum(p_Center, s_HalfSize, p_Transform)) {
         return;
     }
 
-    const SVector3 s_Right = p_Transform.Right * p_HalfSize.x;
-    const SVector3 s_Forward = -(p_Transform.Backward * p_HalfSize.y);
-    const SVector3 s_Up = p_Transform.ZAxis * p_HalfSize.z;
+    const SVector3 s_Right = p_Transform.Right * s_HalfSize.x;
+    const SVector3 s_Forward = -(p_Transform.Backward * s_HalfSize.y);
+    const SVector3 s_Up = p_Transform.ZAxis * s_HalfSize.z;
 
     const SVector3 s_Corners[8] = {
         p_Center - s_Right - s_Up - s_Forward,
@@ -1127,16 +1129,18 @@ void DirectXTKRenderer::DrawBox3D(
 }
 
 void DirectXTKRenderer::DrawBoxWire3D(
-    const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
+    const SVector3& p_Center, const SVector3& p_Size, const SMatrix& p_Transform, const SVector4& p_Color
 ) {
+    const SVector3 s_HalfSize = p_Size * 0.5f;
+
     if (m_IsFrustumCullingEnabled &&
-        !IsOBBInsideViewFrustum(p_Center, p_HalfSize, p_Transform)) {
+        !IsOBBInsideViewFrustum(p_Center, s_HalfSize, p_Transform)) {
         return;
     }
 
-    const SVector3 s_Right = p_Transform.Right * p_HalfSize.x;
-    const SVector3 s_Forward = -(p_Transform.Backward * p_HalfSize.y);
-    const SVector3 s_Up = p_Transform.ZAxis * p_HalfSize.z;
+    const SVector3 s_Right = p_Transform.Right * s_HalfSize.x;
+    const SVector3 s_Forward = -(p_Transform.Backward * s_HalfSize.y);
+    const SVector3 s_Up = p_Transform.ZAxis * s_HalfSize.z;
 
     const SVector3 s_Corners[8] = {
         p_Center - s_Right - s_Up - s_Forward,
