@@ -11,7 +11,6 @@ set(VCPKG_BUILD_ROOT "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")
 include(cmake/get-cpm.cmake)
 
 # Dependencies.
-find_package(7zip CONFIG REQUIRED)
 find_package(directxtk12 CONFIG REQUIRED)
 find_package(minhook CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)

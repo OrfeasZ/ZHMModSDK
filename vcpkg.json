@@ -3,7 +3,6 @@
     "version": "1.0.0",
     "dependencies": [
         "directxtk12",
-        "7zip",
         "spdlog",
         "minhook",
         "lz4",
