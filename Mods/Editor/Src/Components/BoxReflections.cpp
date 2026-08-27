@@ -683,37 +683,20 @@ std::filesystem::path Editor::GetBoxReflectionExportPath(
     const std::filesystem::path& p_OutputFolder,
     bool p_Diffuse
 ) {
-    const std::filesystem::path s_OutputFolder = p_OutputFolder.empty()
-        ? "box_reflections"
-        : p_OutputFolder;
-
-    ZEntityRef s_EntityRef;
-    p_BoxReflection->m_pRenderableEntity->GetID(s_EntityRef);
-
-    std::string s_EntityName;
-
-    {
-        std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
-
-        const auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityRef);
-
-        if (s_Iterator != m_CachedEntityTreeMap.end()) {
-            s_EntityName = s_Iterator->second->Name;
-        }
+    if (!p_BoxReflection ||
+        !p_BoxReflection->m_pRenderableEntity ||
+        !p_BoxReflection->m_pRenderableEntity->m_pEntityType) {
+        return {};
     }
 
-    if (s_EntityName.empty()) {
-        s_EntityName = "box_reflection";
-    }
+    const std::filesystem::path s_OutputFolder =
+        p_OutputFolder.empty() ? "box_reflections" : p_OutputFolder;
 
-    std::ranges::replace(s_EntityName, ' ', '_');
-
-    return s_OutputFolder /
-        std::format(
-            "{}{}.dds",
-            s_EntityName,
-            p_Diffuse ? "_diffuse" : ""
-        );
+    return s_OutputFolder / fmt::format(
+        "{:016x}{}.dds",
+        p_BoxReflection->m_pRenderableEntity->m_pEntityType->m_nEntityID,
+        p_Diffuse ? "_diffuse" : ""
+    );
 }
 
 bool Editor::GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputFolder) {
