@@ -1394,6 +1394,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_OutputPinData = nullptr;
     }
 
+    ClearBoxReflectionPreview();
+
     m_SelectedBoxReflectionGraphNode = nullptr;
 
     return { HookAction::Continue() };
