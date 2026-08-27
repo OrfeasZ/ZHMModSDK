@@ -16,7 +16,11 @@ class IKeywordHolder : public IComponentInterface {};
 
 class ZUIDataProvider {
 public:
-    PAD(0x40);
+    virtual ~ZUIDataProvider() = 0;
+    virtual void ZUIDataProvider_unk0() = 0;
+    virtual void ZUIDataProvider_unk1() = 0;
+
+    PAD(0x38);
 };
 
 class IBoolConditionListener : public IComponentInterface {};
@@ -74,8 +78,8 @@ class ZHM5Item :
 public:
     enum class EUseTypes {
         EUT_CantUse = 0,
-        EUT_Toggle  = 1,
-        EUT_TurnOn  = 2,
+        EUT_Toggle = 1,
+        EUT_TurnOn = 2,
     };
 
     PAD(0x10);
@@ -281,9 +285,9 @@ class ZItemSpawner : public ZSpatialEntity, public IItemOwner, public ISavableEn
 public:
     enum EPhysicsMode {
         EPM_DEFINED_BY_ITEM = 0,
-        EPM_DYNAMIC         = 1,
-        EPM_SLEEPING        = 2,
-        EPM_KINEMATIC       = 3
+        EPM_DYNAMIC = 1,
+        EPM_SLEEPING = 2,
+        EPM_KINEMATIC = 3
     };
 
     PAD(0x40);
@@ -296,4 +300,5 @@ public:
     bool m_bSpawnOnStart; // 0x130
     bool m_bUsePlacementAttach; // 0x131
     bool m_bSetAIPerceptible; // 0x132
+    bool m_bDestroyItemOnKeyChange; // 0x133
 };
