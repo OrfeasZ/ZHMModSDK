@@ -478,7 +478,17 @@ bool Editor::ExportAllBoxReflectionCubemaps(
         ? "box_reflections"
         : p_OutputFolder;
 
-    std::filesystem::create_directories(s_OutputFolder);
+    std::error_code s_ErrorCode;
+    std::filesystem::create_directories(s_OutputFolder, s_ErrorCode);
+
+    if (s_ErrorCode) {
+        Logger::Error(
+            "[Editor] Failed to create box reflection output folder '{}': {}.",
+            s_OutputFolder.string(),
+            s_ErrorCode.message()
+        );
+        return false;
+    }
 
     const uint32_t s_CubemapsPerChunk =
         s_RenderSharedResources->m_nBoxReflectionMaxCubeMaps /
@@ -525,16 +535,26 @@ bool Editor::ExportAllBoxReflectionCubemaps(
 bool Editor::ExportBoxReflectionCubemap(
     ID3D12Resource* p_Resource,
     uint32_t p_CubeIndex,
-    const std::filesystem::path& p_OutputFolder
+    const std::filesystem::path& p_OutputFilePath
 ) {
     if (!p_Resource || !Globals::RenderManager->m_pDevice->m_pCommandQueue) {
         return false;
     }
 
-    const auto s_ParentFolder = p_OutputFolder.parent_path();
+    const auto s_ParentFolder = p_OutputFilePath.parent_path();
 
     if (!s_ParentFolder.empty()) {
-        std::filesystem::create_directories(s_ParentFolder);
+        std::error_code s_ErrorCode;
+        std::filesystem::create_directories(s_ParentFolder, s_ErrorCode);
+
+        if (s_ErrorCode) {
+            Logger::Error(
+                "[Editor] Failed to create box reflection output folder '{}': {}.",
+                s_ParentFolder.string(),
+                s_ErrorCode.message()
+            );
+            return false;
+        }
     }
 
     const D3D12_RESOURCE_DESC s_ResourceDesc = p_Resource->GetDesc();
@@ -715,7 +735,17 @@ bool Editor::GenerateBoxReflectionCacheResource(const std::filesystem::path& p_O
         ? "."
         : p_OutputFolder;
 
-    std::filesystem::create_directories(s_OutputFolder);
+    std::error_code s_ErrorCode;
+    std::filesystem::create_directories(s_OutputFolder, s_ErrorCode);
+
+    if (s_ErrorCode) {
+        Logger::Error(
+            "[Editor] Failed to create box reflection output folder '{}': {}.",
+            s_OutputFolder.string(),
+            s_ErrorCode.message()
+        );
+        return false;
+    }
 
     const auto s_OutputFilePath =
         s_OutputFolder / "box_reflections.BOXC";

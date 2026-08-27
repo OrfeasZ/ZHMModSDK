@@ -363,7 +363,7 @@ private:
     static bool ExportBoxReflectionCubemap(
         ID3D12Resource* p_Resource,
         uint32_t p_CubeIndex,
-        const std::filesystem::path& p_OutputFolder
+        const std::filesystem::path& p_OutputFilePath
     );
     static bool GetBoxReflectionTexture(
         ZRenderGraphNodeBoxReflection* p_BoxReflectionGraphNode,
