@@ -562,8 +562,8 @@ public:
         GUIGROUP = 26,
         TYPE_SIZE = 27,
         RENDERABLE_TYPE_MASK = 15,
-        RENDERABLE_TYPE_FIRST = 0,
-        RENDERABLE_TYPE_LAST = 3
+        RENDERABLE_TYPE_FIRST = GEOM,
+        RENDERABLE_TYPE_LAST = SPEEDTREE
     };
 
     ZRenderableEntity* m_pRenderableEntity; // 0x8
