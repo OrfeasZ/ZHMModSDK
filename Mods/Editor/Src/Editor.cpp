@@ -129,6 +129,8 @@ void Editor::Init() {
     m_RoundCopiedMatrixValues = GetSettingBool("general", "round_copied_matrix_values", false);
     m_CopyDecimalPlaces = GetSettingInt("general", "copy_decimal_places", 3);
     m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
+
+    m_BoxReflectionOutputFolder = GetSetting("general", "box_reflection_output_folder", "").c_str();
 }
 
 void Editor::OnDrawMenu() {
@@ -205,6 +207,10 @@ void Editor::OnDrawMenu() {
 
     if (ImGui::Button(ICON_MD_MEETING_ROOM " ROOMS")) {
         m_ShowRoomsWindow = !m_ShowRoomsWindow;
+    }
+
+    if (ImGui::Button(ICON_MD_VIEW_IN_AR " BOX REFLECTIONS")) {
+        m_ShowBoxReflectionsWindow = !m_ShowBoxReflectionsWindow;
     }
 }
 
@@ -325,6 +331,8 @@ void Editor::OnEngineInitialized() {
             });
     }
     );
+
+    m_EnableBoxReflectionCache = Functions::GetApplicationOptionBool->Call("EnableBoxReflectionCache", true);
 }
 
 bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
@@ -365,6 +373,7 @@ void Editor::OnDrawUI(bool p_HasFocus) {
     DrawActorsWindow(p_HasFocus);
     DrawDebugChannelsWindow(p_HasFocus);
     DrawRoomsWindow(p_HasFocus);
+    DrawBoxReflectionsWindow(p_HasFocus);
 
     if (m_EditorCameraRT && m_EditorCamera) {
         ImGui::Begin("RT Texture");
@@ -1370,6 +1379,10 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_InputPinValue.Clear();
     m_OutputPinValue.Clear();
+
+    ClearBoxReflectionPreview();
+
+    m_SelectedBoxReflectionGraphNode = nullptr;
 
     return { HookAction::Continue() };
 }
