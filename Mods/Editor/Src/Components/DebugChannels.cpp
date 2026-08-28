@@ -5,6 +5,7 @@
 #include "Glacier/ZModule.h"
 #include "Glacier/Enums.h"
 #include "Glacier/SColorRGB.h"
+#include "Glacier/ZColor.h"
 
 #include "Logging.h"
 
@@ -189,10 +190,12 @@ void Editor::InitializeDebugChannels() {
     m_DebugChannelNameToTypeNames["Engine"].push_back("ZTrailShapeEntity");
     m_DebugChannelNameToTypeNames["Engine"].push_back("ZSplineEntity");
     m_DebugChannelNameToTypeNames["Engine"].push_back("ZSplineControlPointEntity");
+    m_DebugChannelNameToTypeNames["Engine"].push_back("ZSequenceEntity");
 
     m_DebugChannelNameToTypeNames["Sound"].push_back("ZDebugGizmoEntity");
     m_DebugChannelNameToTypeNames["Sound"].push_back("ZAudioEmitterSpatialAspect");
     m_DebugChannelNameToTypeNames["Sound"].push_back("ZAudioEmitterVolumetricAspect");
+    m_DebugChannelNameToTypeNames["Sound"].push_back("ZSoundGateEntity");
 
     m_DebugChannelNameToTypeNames["Animation"].push_back("ZDebugGizmoEntity");
 
@@ -278,6 +281,8 @@ void Editor::InitializeDebugEntityTypeIDs() {
     m_DebugEntityTypeIds[DebugEntityTypeName::AudioEmitterSpatialAspect] = s_TypeRegistry->GetTypeID("ZAudioEmitterSpatialAspect");
     m_DebugEntityTypeIds[DebugEntityTypeName::AudioEmitterVolumetricAspect] = s_TypeRegistry->GetTypeID("ZAudioEmitterVolumetricAspect");
     m_DebugEntityTypeIds[DebugEntityTypeName::ClothWireEntity] = s_TypeRegistry->GetTypeID("ZClothWireEntity");
+    m_DebugEntityTypeIds[DebugEntityTypeName::SoundGateEntity] = s_TypeRegistry->GetTypeID("ZSoundGateEntity");
+    m_DebugEntityTypeIds[DebugEntityTypeName::SequenceEntity] = s_TypeRegistry->GetTypeID("ZSequenceEntity");
 }
 
 void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
@@ -402,7 +407,7 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
                             );
                             };
 
-                        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 220.f);
+                        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 400.f);
                         ImGui::TableSetupColumn(
                             "Gizmo",
                             ImGuiTableColumnFlags_WidthFixed,
@@ -418,12 +423,15 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
 
                         ImGui::TableNextColumn();
                         s_CenterItem(ImGui::CalcTextSize("Type").x);
+                        ImGui::TextUnformatted("Type");
 
                         ImGui::TableNextColumn();
                         s_CenterItem(ImGui::CalcTextSize("Gizmo").x);
+                        ImGui::TextUnformatted("Gizmo");
 
                         ImGui::TableNextColumn();
                         s_CenterItem(ImGui::CalcTextSize("Shape").x);
+                        ImGui::TextUnformatted("Shape");
 
                         for (const auto& [s_TypeName, s_Count] : s_TypeNameToDebugEntityCount) {
                             bool& s_DrawGizmo = s_TypeNameToGizmoState[s_TypeName];
@@ -452,6 +460,17 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
                                 &s_DrawShape
                             );
                             ImGui::EndDisabled();
+
+                            if (s_TypeName == "ZSoundGateEntity") {
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
+
+                                ImGui::Indent();
+                                ImGui::BeginDisabled(!s_DrawShapes || !s_DrawShape);
+                                ImGui::Checkbox("Show sound occlusion", &m_ShowSoundOcclusion);
+                                ImGui::EndDisabled();
+                                ImGui::Unindent();
+                            }
                         }
 
                         ImGui::EndTable();
@@ -631,6 +650,372 @@ void Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer)
             return;
         }
     }
+
+    if (p_DebugEntity.m_TypeName == "ZSoundGateEntity") {
+        DrawShapes(
+            p_DebugEntity.m_EntityRef.QueryInterface<ZSoundGateEntity>(
+                m_DebugEntityTypeIds[DebugEntityTypeName::SoundGateEntity]
+            ),
+            p_Renderer
+        );
+    }
+    else if (p_DebugEntity.m_TypeName == "ZSequenceEntity") {
+        DrawShapes(
+            p_DebugEntity.m_EntityRef.QueryInterface<ZSequenceEntity>(
+                m_DebugEntityTypeIds[DebugEntityTypeName::SequenceEntity]
+            ),
+            p_Renderer
+        );
+    }
+}
+
+void Editor::DrawShapes(ZSequenceEntity* p_SequenceEntity, IRenderer* p_Renderer) {
+    static const SVector4 s_CurveColor = SVector4(1, 1, 0, 1);
+
+    for (const auto& s_Entity : p_SequenceEntity->m_aTracksAndGroups) {
+        ZEntityGroup* s_Group = s_Entity.QueryInterface<ZEntityGroup>();
+
+        if (!s_Group) {
+            continue;
+        }
+
+        for (const auto& s_Entity : s_Group->m_aTracksAndGroups) {
+            ZTrajectoryTrackBase* s_Track = s_Entity.QueryInterface<ZTrajectoryTrackBase>();
+
+            if (s_Track) {
+                DrawTrajectoryTrack(p_Renderer, s_Track, s_CurveColor, s_Group->m_targetEntity);
+            }
+        }
+    }
+}
+
+void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Renderer) {
+    SMatrix s_WorldMatrix = p_SoundGateEntity->GetObjectToWorldMatrix();
+    const float4 s_Position = s_WorldMatrix.Trans;
+
+    const float4 s_Size(
+        p_SoundGateEntity->m_vLocalSize.x,
+        0.f,
+        p_SoundGateEntity->m_vLocalSize.y,
+        1.f
+    );
+
+    p_Renderer->DrawBox3D(
+        s_Position,
+        s_Size,
+        s_WorldMatrix,
+        ZColor::UnpackUnsigned(0x3FFF0000)
+    );
+
+    const float4 s_SourceOffset(
+        0.f,
+        -p_SoundGateEntity->m_fThicknessSource,
+        0.f,
+        0.f
+    );
+
+    const float4 s_SourcePosition = s_WorldMatrix.WVectorTransform(s_SourceOffset);
+
+    SMatrix s_SourceMatrix = s_WorldMatrix;
+    s_SourceMatrix.Trans = s_SourcePosition;
+
+    p_Renderer->DrawBox3D(
+        s_SourcePosition,
+        s_Size,
+        s_SourceMatrix,
+        ZColor::UnpackUnsigned(0x3F008000)
+    );
+
+    const float4 s_DestinationOffset(
+        0.f,
+        p_SoundGateEntity->m_fThicknessDestination,
+        0.f,
+        0.f
+    );
+
+    const float4 s_DestinationPosition = s_WorldMatrix.WVectorTransform(s_DestinationOffset);
+
+    SMatrix s_DestinationMatrix = s_WorldMatrix;
+    s_DestinationMatrix.Trans = s_DestinationPosition;
+
+    p_Renderer->DrawBox3D(
+        s_DestinationPosition,
+        s_Size,
+        s_DestinationMatrix,
+        ZColor::UnpackUnsigned(0x3F800080)
+    );
+
+    if (m_ShowSoundOcclusion) {
+        p_Renderer->DrawSphere3D(
+            s_WorldMatrix,
+            s_Position,
+            p_SoundGateEntity->m_fOcclusionMinDistance,
+            ZColor::UnpackUnsigned(0xFF00CD00)
+        );
+
+        p_Renderer->DrawSphere3D(
+            s_WorldMatrix,
+            s_Position,
+            p_SoundGateEntity->m_fOcclusionMaxDistance,
+            ZColor::UnpackUnsigned(0xFF0000FF)
+        );
+    }
+}
+
+void Editor::DrawTrajectoryTrack(
+    IRenderer* p_Renderer,
+    ZTrajectoryTrackBase* p_Track,
+    const SVector4& p_Color,
+    ZEntityRef p_TargetEntity
+) {
+    for (const auto& s_ItemEntity : p_Track->m_aItems) {
+        ZMorphemeTrajectorySource* s_Item = s_ItemEntity.m_entityRef.QueryInterface<ZMorphemeTrajectorySource>();
+
+        if (s_Item) {
+            DrawTrajectoryItem(
+                p_Renderer,
+                s_Item,
+                p_Track,
+                p_Color,
+                p_TargetEntity,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(
+                        p_Item,
+                        p_Track,
+                        p_ItemTime,
+                        p_Item->m_pAnimationResource.GetResource(),
+                        p_TargetEntity
+                    );
+                }
+            );
+
+            continue;
+        }
+
+        ZEulerAngleTrajectorySource* s_Item2 = s_ItemEntity.m_entityRef.QueryInterface<ZEulerAngleTrajectorySource>();
+
+        if (s_Item2) {
+            DrawTrajectoryItem(
+                p_Renderer,
+                s_Item2,
+                p_Track,
+                p_Color,
+                p_TargetEntity,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(p_Item, p_Track, p_ItemTime, p_TargetEntity);
+                }
+            );
+
+            continue;
+        }
+
+        ZBezierSplineTrajectorySource* s_Item3 = s_ItemEntity.m_entityRef.QueryInterface<ZBezierSplineTrajectorySource>();
+
+        if (s_Item3) {
+            DrawTrajectoryItem(
+                p_Renderer,
+                s_Item3,
+                p_Track,
+                p_Color,
+                p_TargetEntity,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(p_Item, p_Track, p_ItemTime, p_TargetEntity);
+                }
+            );
+        }
+    }
+}
+
+template <typename TItem, typename EvaluateFn>
+void Editor::DrawTrajectoryItem(
+    IRenderer* p_Renderer,
+    TItem* p_Item,
+    ZTrajectoryTrackBase* p_Track,
+    const SVector4& p_Color,
+    ZEntityRef p_TargetEntity,
+    EvaluateFn&& p_EvaluateFn
+) {
+    const ZGameTime s_ItemStart = p_Item->m_startTime;
+    const ZGameTime s_ItemDuration = p_Item->m_duration;
+    const ZGameTime s_ItemEnd = s_ItemStart + s_ItemDuration;
+
+    ZGameTime s_SampleTime = s_ItemStart;
+    const ZGameTime s_SampleStep = ZGameTime::FromSeconds(0.02f);
+
+    const SVector3 s_StartPosition = p_EvaluateFn(p_Item, p_Track, s_ItemStart, p_TargetEntity);
+    SVector3 s_PreviousSamplePosition = p_EvaluateFn(p_Item, p_Track, s_SampleTime, p_TargetEntity);
+
+    while (s_SampleTime < s_ItemEnd) {
+        s_SampleTime += s_SampleStep;
+
+        SVector3 s_CurrentSamplePosition = p_EvaluateFn(p_Item, p_Track, s_SampleTime, p_TargetEntity);
+
+        p_Renderer->DrawLine3D(s_PreviousSamplePosition, s_CurrentSamplePosition, p_Color, p_Color);
+
+        s_PreviousSamplePosition = s_CurrentSamplePosition;
+    }
+
+    p_Renderer->DrawSphere3D(SMatrix {}, s_StartPosition, 0.05f, SVector4 { 0.0f, 1.0f, 0.0f, 1.0f });
+    p_Renderer->DrawSphere3D(SMatrix {}, s_PreviousSamplePosition, 0.05f, SVector4 { 1.0f, 0.0f, 0.0f, 1.0f });
+}
+
+SVector3 Editor::EvaluateTrajectoryWorldPosition(
+    ZMorphemeTrajectorySource* p_Item,
+    ZTrajectoryTrackBase* p_Track,
+    ZGameTime p_ItemTime,
+    ZAnimationResource* p_AnimationResource,
+    ZEntityRef p_TargetEntity
+) {
+    ZGameTime s_AnimationTime = p_ItemTime - p_Item->m_startTime;
+
+    SMatrix s_TrajectoryTransform;
+
+    Functions::ZMorphemeTrajectorySource_GetTrajectoryAtTime->Call(p_Item, &s_TrajectoryTransform, s_AnimationTime);
+
+    SMatrix s_WorldTransform;
+
+    switch (p_Item->m_eCoordinateSpace) {
+        case ECoordinateSpace::CSPACE_OBJECT_TO_WORLD:
+            s_WorldTransform = s_TrajectoryTransform;
+            break;
+        case ECoordinateSpace::CSPACE_CHARACTER_RELATIVE: {
+            SMatrix s_StartWorldTransform;
+
+            p_Track->GetStartWorldTransform(s_StartWorldTransform);
+
+            s_WorldTransform = s_TrajectoryTransform * s_StartWorldTransform;
+
+            break;
+        }
+        case ECoordinateSpace::CSPACE_OBJECT_TO_PARENT: {
+            ZSpatialEntity* s_SpatialEntity = p_TargetEntity.QueryInterface<ZSpatialEntity>();
+
+            if (s_SpatialEntity && s_SpatialEntity->m_pTransformParent) {
+                SMatrix s_ParentWorldMatrix = s_SpatialEntity->m_pTransformParent->GetObjectToWorldMatrix();
+
+                s_WorldTransform = s_TrajectoryTransform * s_ParentWorldMatrix;
+            }
+
+            break;
+        }
+        case ECoordinateSpace::CSPACE_SEQUENCE_ORIGIN: {
+            SMatrix s_SequenceOrigin;
+
+            s_WorldTransform = s_TrajectoryTransform * SMatrix(p_AnimationResource->m_sequenceOrigin);
+
+            if (p_Track->m_pSequence.m_pInterfaceRef->m_sequenceOrigin) {
+                auto s_SequenceOriginEntity = p_Track->m_pSequence.m_pInterfaceRef->m_sequenceOrigin;
+                s_SequenceOrigin = s_SequenceOriginEntity.m_pInterfaceRef->GetObjectToWorldMatrix();
+            }
+
+            s_WorldTransform = s_TrajectoryTransform * s_SequenceOrigin;
+
+            break;
+        }
+    }
+
+    return s_WorldTransform.Trans;
+}
+
+SVector3 Editor::EvaluateTrajectoryWorldPosition(
+    ZEulerAngleTrajectorySource* p_Item,
+    ZTrajectoryTrackBase* p_Track,
+    ZGameTime p_ItemTime,
+    ZEntityRef p_TargetEntity
+) {
+    ZGameTime s_LocalTime = p_ItemTime - p_Item->m_startTime;
+    ZGameTime s_NormalizedTime = s_LocalTime / p_Item->m_duration;
+
+    SMatrix s_TrajectoryTransform;
+
+    Functions::ZEulerAngleTrajectorySource_GetTrajectoryAtTime->Call(p_Item, &s_TrajectoryTransform, s_NormalizedTime);
+
+    SMatrix s_WorldTransform;
+
+    switch (p_Item->m_eCoordinateSpace) {
+        case ECoordinateSpace::CSPACE_OBJECT_TO_WORLD:
+            s_WorldTransform = s_TrajectoryTransform;
+            break;
+        case ECoordinateSpace::CSPACE_CHARACTER_RELATIVE: {
+            SMatrix s_StartWorldTransform;
+
+            p_Track->GetStartWorldTransform(s_StartWorldTransform);
+
+            s_WorldTransform = s_TrajectoryTransform * s_StartWorldTransform;
+
+            break;
+        }
+        case ECoordinateSpace::CSPACE_OBJECT_TO_PARENT: {
+            ZSpatialEntity* s_SpatialEntity = p_TargetEntity.QueryInterface<ZSpatialEntity>();
+
+            if (s_SpatialEntity && s_SpatialEntity->m_pTransformParent) {
+                SMatrix s_ParentWorldMatrix = s_SpatialEntity->m_pTransformParent->GetObjectToWorldMatrix();
+
+                s_WorldTransform = s_TrajectoryTransform * s_ParentWorldMatrix;
+            }
+
+            break;
+        }
+        case ECoordinateSpace::CSPACE_SEQUENCE_ORIGIN: {
+            SMatrix s_SequenceOrigin;
+
+            if (p_Track->m_pSequence.m_pInterfaceRef->m_sequenceOrigin) {
+                auto s_SequenceOriginEntity = p_Track->m_pSequence.m_pInterfaceRef->m_sequenceOrigin;
+                s_SequenceOrigin = s_SequenceOriginEntity.m_pInterfaceRef->GetObjectToWorldMatrix();
+            }
+
+            s_WorldTransform = s_TrajectoryTransform * s_SequenceOrigin;
+
+            break;
+        }
+    }
+
+    return s_WorldTransform.Trans;
+}
+
+SVector3 Editor::EvaluateTrajectoryWorldPosition(
+    ZBezierSplineTrajectorySource* p_Item,
+    ZTrajectoryTrackBase* p_Track,
+    ZGameTime p_ItemTime,
+    ZEntityRef p_TargetEntity
+) {
+    ZGameTime s_LocalTime = p_ItemTime - p_Item->m_startTime;
+    ZGameTime s_NormalizedTime = s_LocalTime / p_Item->m_duration;
+
+    SMatrix s_TrajectoryTransform;
+
+    Functions::ZBezierSplineTrajectorySource_GetTrajectoryAtTime->Call(p_Item, &s_TrajectoryTransform, s_NormalizedTime);
+
+    SMatrix s_WorldTransform;
+
+    switch (p_Item->m_eCoordinateSpace) {
+        case ECoordinateSpace::CSPACE_OBJECT_TO_WORLD:
+        case ECoordinateSpace::CSPACE_SEQUENCE_ORIGIN:
+            s_WorldTransform = s_TrajectoryTransform;
+            break;
+        case ECoordinateSpace::CSPACE_CHARACTER_RELATIVE: {
+            SMatrix s_StartWorldTransform;
+
+            p_Track->GetStartWorldTransform(s_StartWorldTransform);
+
+            s_WorldTransform = s_TrajectoryTransform * s_StartWorldTransform;
+
+            break;
+        }
+        case ECoordinateSpace::CSPACE_OBJECT_TO_PARENT: {
+            ZSpatialEntity* s_SpatialEntity = p_TargetEntity.QueryInterface<ZSpatialEntity>();
+
+            if (s_SpatialEntity && s_SpatialEntity->m_pTransformParent) {
+                SMatrix s_ParentWorldMatrix = s_SpatialEntity->m_pTransformParent->GetObjectToWorldMatrix();
+
+                s_WorldTransform = s_TrajectoryTransform * s_ParentWorldMatrix;
+            }
+
+            break;
+        }
+    }
+
+    return s_WorldTransform.Trans;
 }
 
 void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTreeNode) {
@@ -672,45 +1057,76 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::GuideLadder]
     )) {
         if (EntityIDMatches(s_GuideLadder, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZGuideLadder", DEBUGCHANNEL_GUIDES_LADDERS, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZGuideLadder",
+                DEBUGCHANNEL_GUIDES_LADDERS,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_GuideWindow = p_EntityTreeNode->Entity.QueryInterface<ZGuideWindow>(
         m_DebugEntityTypeIds[DebugEntityTypeName::GuideWindow]
     )) {
         if (EntityIDMatches(s_GuideWindow, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZGuideWindow", DEBUGCHANNEL_GUIDES_WINDOWS, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZGuideWindow",
+                DEBUGCHANNEL_GUIDES_WINDOWS,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_PFBoxEntity = p_EntityTreeNode->Entity.QueryInterface<ZPFBoxEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::PFBoxEntity]
     )) {
         if (EntityIDMatches(s_PFBoxEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZPFBoxEntity", DEBUGCHANNEL_GUIDES_PATHFINDER, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZPFBoxEntity",
+                DEBUGCHANNEL_GUIDES_PATHFINDER,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_PFObstacleEntity = p_EntityTreeNode->Entity.QueryInterface<ZPFObstacleEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::PFObstacleEntity]
     )) {
         if (EntityIDMatches(s_PFObstacleEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZPFObstacleEntity", DEBUGCHANNEL_GUIDES_PATHFINDER, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZPFObstacleEntity",
+                DEBUGCHANNEL_GUIDES_PATHFINDER,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_PFSeedPoint = p_EntityTreeNode->Entity.QueryInterface<ZPFSeedPoint>(
         m_DebugEntityTypeIds[DebugEntityTypeName::PFSeedPoint]
     )) {
         if (EntityIDMatches(s_PFSeedPoint, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZPFSeedPoint", DEBUGCHANNEL_GUIDES_PATHFINDER, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZPFSeedPoint",
+                DEBUGCHANNEL_GUIDES_PATHFINDER,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_DebugGizmoEntity = p_EntityTreeNode->Entity.QueryInterface<ZDebugGizmoEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::DebugGizmoEntity]
     )) {
         if (EntityIDMatches(s_DebugGizmoEntity, p_EntityTreeNode->EntityId)) {
-            const ZDebugGizmoEntity_EDrawLayer s_DrawLayer = p_EntityTreeNode->Entity.GetProperty<ZDebugGizmoEntity_EDrawLayer>("m_eDrawLayer").Get();
+            const ZDebugGizmoEntity_EDrawLayer s_DrawLayer =
+                p_EntityTreeNode->Entity.GetProperty<ZDebugGizmoEntity_EDrawLayer>("m_eDrawLayer").Get();
             const EDebugChannel s_DebugChannel = ConvertDrawLayerToDebugChannel(s_DrawLayer);
 
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZDebugGizmoEntity", s_DebugChannel, "m_GizmoGeomRID");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZDebugGizmoEntity",
+                s_DebugChannel,
+                "m_GizmoGeomRID"
+            );
         }
     }
     else if (auto s_PureWaveModifierEntity = p_EntityTreeNode->Entity.QueryInterface<ZPureWaveModifierEntity>(
@@ -719,12 +1135,16 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         if (EntityIDMatches(s_PureWaveModifierEntity, p_EntityTreeNode->EntityId)) {
             const float4 s_DirectionGizmoScale(-3.f, -3.f, 3.f, 0.f);
             const float4 s_DirectionGizmoTranslate(0.f, 0.f, 0.f, 0.f);
-            const SMatrix s_DirectionGizmoTransform = SMatrix::ScaleTranslate(s_DirectionGizmoScale, s_DirectionGizmoTranslate);
+            const SMatrix s_DirectionGizmoTransform = SMatrix::ScaleTranslate(
+                s_DirectionGizmoScale, s_DirectionGizmoTranslate
+            );
 
             const float s_Radius = p_EntityTreeNode->Entity.GetProperty<float>("m_fRadius").Get();
             const float4 s_RadiusGizmoScale(s_Radius, s_Radius, s_Radius, 0.f);
             const float4 s_RadiusGizmoTranslate(0.f, 0.f, 0.f, 0.f);
-            const SMatrix s_RadiusGizmoTransform = SMatrix::ScaleTranslate(s_RadiusGizmoScale, s_RadiusGizmoTranslate);
+            const SMatrix s_RadiusGizmoTransform = SMatrix::ScaleTranslate(
+                s_RadiusGizmoScale, s_RadiusGizmoTranslate
+            );
 
             AddGizmoEntity(
                 p_EntityTreeNode->Entity,
@@ -758,7 +1178,8 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
                 s_TypeName = "ZDarkLightEntity";
             }
 
-            const ILightEntity_ELightType s_LightType = p_EntityTreeNode->Entity.GetProperty<ILightEntity_ELightType>("m_eLightType").Get();
+            const ILightEntity_ELightType s_LightType =
+                p_EntityTreeNode->Entity.GetProperty<ILightEntity_ELightType>("m_eLightType").Get();
 
             switch (s_LightType) {
                 case ILightEntity_ELightType::LT_DIRECTIONAL:
@@ -815,14 +1236,24 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::CubemapProbeEntity]
     )) {
         if (EntityIDMatches(s_CubemapProbeEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZCubemapProbeEntity", DEBUGCHANNEL_LIGHT, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZCubemapProbeEntity",
+                DEBUGCHANNEL_LIGHT,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_VolumeLightEntity = p_EntityTreeNode->Entity.QueryInterface<ZVolumeLightEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::VolumeLightEntity]
     )) {
         if (EntityIDMatches(s_VolumeLightEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZVolumeLightEntity", DEBUGCHANNEL_LIGHT, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZVolumeLightEntity",
+                DEBUGCHANNEL_LIGHT,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_ParticleEmitterBoxEntity = p_EntityTreeNode->Entity.QueryInterface<ZParticleEmitterBoxEntity>(
@@ -877,36 +1308,30 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::ParticleGlobalAttractorEntity]
     )) {
         if (EntityIDMatches(s_ParticleGlobalAttractorEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZParticleGlobalAttractorEntity", DEBUGCHANNEL_PARTICLES, "m_pHelper");
         }
     }
     else if (auto s_ParticleKillVolumeEntity = p_EntityTreeNode->Entity.QueryInterface<ZParticleKillVolumeEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::ParticleKillVolumeEntity]
     )) {
         if (EntityIDMatches(s_ParticleKillVolumeEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZParticleKillVolumeEntity", DEBUGCHANNEL_PARTICLES, "m_pHelper");
         }
     }
     else if (auto s_GateEntity = p_EntityTreeNode->Entity.QueryInterface<ZGateEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::GateEntity]
     )) {
         if (EntityIDMatches(s_GateEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZGateEntity", DEBUGCHANNEL_PARTITIONING, "m_pHelper");
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZGateEntity", DEBUGCHANNEL_PARTITIONING, "m_pHelperClosed");
         }
     }
     else if (auto s_OccluderEntity = p_EntityTreeNode->Entity.QueryInterface<ZOccluderEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::OccluderEntity]
     )) {
         if (EntityIDMatches(s_OccluderEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZOccluderEntity", DEBUGCHANNEL_PARTITIONING, "m_pHelper");
         }
     }
     else if (auto s_DecalsSpawnEntity = p_EntityTreeNode->Entity.QueryInterface<ZDecalsSpawnEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::DecalsSpawnEntity]
     )) {
         if (EntityIDMatches(s_DecalsSpawnEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZDecalsSpawnEntity", DEBUGCHANNEL_DECALS, "m_pHelper");
         }
     }
     else if (auto s_StaticDecalEntity = p_EntityTreeNode->Entity.QueryInterface<ZStaticDecalEntity>(
@@ -925,50 +1350,82 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::LiquidTrailEntity]
     )) {
         if (EntityIDMatches(s_LiquidTrailEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZLiquidTrailEntity", DEBUGCHANNEL_DECALS, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZLiquidTrailEntity",
+                DEBUGCHANNEL_DECALS,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_CrowdActorGroupEntity = p_EntityTreeNode->Entity.QueryInterface<ZCrowdActorGroupEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::CrowdActorGroupEntity]
     )) {
         if (EntityIDMatches(s_CrowdActorGroupEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZCrowdActorGroupEntity", DEBUGCHANNEL_CROWD, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZCrowdActorGroupEntity",
+                DEBUGCHANNEL_CROWD,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_CrowdActorGroupFocalPointEntity = p_EntityTreeNode->Entity.QueryInterface<ZCrowdActorGroupFocalPointEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::CrowdActorGroupFocalPointEntity]
     )) {
         if (EntityIDMatches(s_CrowdActorGroupFocalPointEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZCrowdActorGroupFocalPointEntity", DEBUGCHANNEL_CROWD, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZCrowdActorGroupFocalPointEntity",
+                DEBUGCHANNEL_CROWD,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_CrowdEntity = p_EntityTreeNode->Entity.QueryInterface<ZCrowdEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::CrowdEntity]
     )) {
         if (EntityIDMatches(s_CrowdEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZCrowdEntity", DEBUGCHANNEL_CROWD, "m_pGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZCrowdEntity",
+                DEBUGCHANNEL_CROWD,
+                "m_pGizmo"
+            );
         }
     }
     else if (auto s_ManualActorEntity = p_EntityTreeNode->Entity.QueryInterface<ZManualActorEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::ManualActorEntity]
     )) {
         if (EntityIDMatches(s_ManualActorEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZManualActorEntity", DEBUGCHANNEL_CROWD, "m_pGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZManualActorEntity",
+                DEBUGCHANNEL_CROWD,
+                "m_pGizmo"
+            );
         }
     }
     else if (auto s_SplineCrowdFlowEntity = p_EntityTreeNode->Entity.QueryInterface<ZSplineCrowdFlowEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::SplineCrowdFlowEntity]
     )) {
         if (EntityIDMatches(s_SplineCrowdFlowEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZSplineCrowdFlowEntity", DEBUGCHANNEL_CROWD, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZSplineCrowdFlowEntity",
+                DEBUGCHANNEL_CROWD,
+                "m_pHelper"
+            );
         }
     }
     else if (p_EntityTreeNode->Entity.QueryInterface<ZBoxShapeAspect>(
         m_DebugEntityTypeIds[DebugEntityTypeName::BoxShapeAspect]
     )) {
-        const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
+        const bool s_IsCompositeEntity = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(
+            s_CompositeEntityTypeID
+        );
 
-        if (!isComposite) {
+        if (!s_IsCompositeEntity) {
             AddGizmoEntity(
                 p_EntityTreeNode->Entity,
                 "ZBoxShapeAspect",
@@ -980,9 +1437,11 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
     else if (p_EntityTreeNode->Entity.QueryInterface<ZCapsuleShapeAspect>(
         m_DebugEntityTypeIds[DebugEntityTypeName::CapsuleShapeAspect]
     )) {
-        const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
+        const bool s_IsCompositeEntity = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(
+            s_CompositeEntityTypeID
+        );
 
-        if (!isComposite) {
+        if (!s_IsCompositeEntity) {
             AddGizmoEntity(
                 p_EntityTreeNode->Entity,
                 "ZCapsuleShapeAspect",
@@ -994,9 +1453,11 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
     else if (p_EntityTreeNode->Entity.QueryInterface<ZSphereShapeAspect>(
         m_DebugEntityTypeIds[DebugEntityTypeName::SphereShapeAspect]
     )) {
-        const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
+        const bool s_IsCompositeEntity = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(
+            s_CompositeEntityTypeID
+        );
 
-        if (!isComposite) {
+        if (!s_IsCompositeEntity) {
             AddGizmoEntity(
                 p_EntityTreeNode->Entity,
                 "ZSphereShapeAspect",
@@ -1009,7 +1470,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::WindEntity]
     )) {
         if (EntityIDMatches(s_WindEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZWindEntity", DEBUGCHANNEL_PHYSICS, "m_pHelperGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZWindEntity",
+                DEBUGCHANNEL_PHYSICS,
+                "m_pHelperGizmo"
+            );
         }
     }
     else if (auto s_AISoundConnector = p_EntityTreeNode->Entity.QueryInterface<ZAISoundConnector>(
@@ -1081,21 +1547,36 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::AgitatedWaypointEntity]
     )) {
         if (EntityIDMatches(s_AgitatedWaypointEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZAgitatedWaypointEntity", DEBUGCHANNEL_AI, "m_pGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZAgitatedWaypointEntity",
+                DEBUGCHANNEL_AI,
+                "m_pGizmo"
+            );
         }
     }
     else if (auto s_CombatActEntity = p_EntityTreeNode->Entity.QueryInterface<ZCombatActEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::CombatActEntity]
     )) {
         if (EntityIDMatches(s_CombatActEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZCombatActEntity", DEBUGCHANNEL_AI, "m_pGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZCombatActEntity",
+                DEBUGCHANNEL_AI,
+                "m_pGizmo"
+            );
         }
     }
     else if (auto s_LookAtEntity = p_EntityTreeNode->Entity.QueryInterface<ZLookAtEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::LookAtEntity]
     )) {
         if (EntityIDMatches(s_LookAtEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZLookAtEntity", DEBUGCHANNEL_AI, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZLookAtEntity",
+                DEBUGCHANNEL_AI,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_OutfitProviderEntity = p_EntityTreeNode->Entity.QueryInterface<ZOutfitProviderEntity>(
@@ -1114,7 +1595,12 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::PointOfInterestEntity]
     )) {
         if (EntityIDMatches(s_PointOfInterestEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZPointOfInterestEntity", DEBUGCHANNEL_AI, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZPointOfInterestEntity",
+                DEBUGCHANNEL_AI,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_ActBehaviorEntity = p_EntityTreeNode->Entity.QueryInterface<ZActBehaviorEntity>(
@@ -1144,7 +1630,9 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
                 }
 
                 const ZActBehaviorEntity_ERotationAlignment s_AlignRotation =
-                    p_EntityTreeNode->Entity.GetProperty<ZActBehaviorEntity_ERotationAlignment>("m_AlignRotation").Get();
+                    p_EntityTreeNode->Entity.GetProperty<ZActBehaviorEntity_ERotationAlignment>(
+                        "m_AlignRotation"
+                    ).Get();
 
                 if (s_AlignRotation != ZActBehaviorEntity_ERotationAlignment::RA_NONE) {
                     const SColorRGB s_Color = p_EntityTreeNode->Entity.GetProperty<SColorRGB>("m_Color").Get();
@@ -1184,15 +1672,31 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::SpawnPointEntity]
     )) {
         if (EntityIDMatches(s_SpawnPointEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZSpawnPointEntity", DEBUGCHANNEL_AI, "m_pGizmo");
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZSpawnPointEntity", DEBUGCHANNEL_AI, "m_pAlignGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZSpawnPointEntity",
+                DEBUGCHANNEL_AI,
+                "m_pGizmo"
+            );
+
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZSpawnPointEntity",
+                DEBUGCHANNEL_AI,
+                "m_pAlignGizmo"
+            );
         }
     }
     else if (auto s_BystanderPointEntity = p_EntityTreeNode->Entity.QueryInterface<ZBystanderPointEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::BystanderPointEntity]
     )) {
         if (EntityIDMatches(s_BystanderPointEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZBystanderPointEntity", DEBUGCHANNEL_AI, "m_pGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZBystanderPointEntity",
+                DEBUGCHANNEL_AI,
+                "m_pGizmo"
+            );
         }
     }
     else if (auto s_WaypointEntity = p_EntityTreeNode->Entity.QueryInterface<ZWaypointEntity>(
@@ -1253,86 +1757,160 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::PostfilterAreaBoxEntity]
     )) {
         if (EntityIDMatches(s_PostfilterAreaBoxEntit, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZPostfilterAreaBoxEntity", DEBUGCHANNEL_GAME, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZPostfilterAreaBoxEntity",
+                DEBUGCHANNEL_GAME,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_FogBoxEntity = p_EntityTreeNode->Entity.QueryInterface<ZFogBoxEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::FogBoxEntity]
     )) {
         if (EntityIDMatches(s_FogBoxEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZFogBoxEntity", DEBUGCHANNEL_GAME, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZFogBoxEntity",
+                DEBUGCHANNEL_GAME,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_BoxVolumeEntity = p_EntityTreeNode->Entity.QueryInterface<ZBoxVolumeEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::BoxVolumeEntity]
     )) {
         if (EntityIDMatches(s_BoxVolumeEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZBoxVolumeEntity", DEBUGCHANNEL_ENGINE, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZBoxVolumeEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_SphereVolumeEntity = p_EntityTreeNode->Entity.QueryInterface<ZSphereVolumeEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::SphereVolumeEntity]
     )) {
         if (EntityIDMatches(s_SphereVolumeEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZSphereVolumeEntity", DEBUGCHANNEL_ENGINE, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZSphereVolumeEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_VolumeShapeEntity = p_EntityTreeNode->Entity.QueryInterface<ZVolumeShapeEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::VolumeShapeEntity]
     )) {
         if (EntityIDMatches(s_VolumeShapeEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZVolumeShapeEntity", DEBUGCHANNEL_ENGINE, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZVolumeShapeEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_CameraEntity = p_EntityTreeNode->Entity.QueryInterface<ZCameraEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::CameraEntity]
     )) {
         if (EntityIDMatches(s_CameraEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZCameraEntity", DEBUGCHANNEL_ENGINE, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZCameraEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_OrientationEntity = p_EntityTreeNode->Entity.QueryInterface<ZOrientationEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::OrientationEntity]
     )) {
         if (EntityIDMatches(s_OrientationEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZOrientationEntity", DEBUGCHANNEL_ENGINE, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZOrientationEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_ScatterContainerEntity = p_EntityTreeNode->Entity.QueryInterface<ZScatterContainerEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::ScatterContainerEntity]
     )) {
         if (EntityIDMatches(s_ScatterContainerEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZScatterContainerEntity", DEBUGCHANNEL_ENGINE, "m_pHelperGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZScatterContainerEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pHelperGizmo"
+            );
         }
     }
     else if (auto s_TrailShapeEntity = p_EntityTreeNode->Entity.QueryInterface<ZTrailShapeEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::TrailShapeEntity]
     )) {
         if (EntityIDMatches(s_TrailShapeEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZTrailShapeEntity", DEBUGCHANNEL_ENGINE, "m_pHelper");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZTrailShapeEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pHelper"
+            );
         }
     }
     else if (auto s_SplineEntity = p_EntityTreeNode->Entity.QueryInterface<ZSplineEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::SplineEntity]
     )) {
         if (EntityIDMatches(s_SplineEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZSplineEntity", DEBUGCHANNEL_ENGINE, "m_pSplineGizmo");
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZSplineEntity", DEBUGCHANNEL_ENGINE, "m_pMarkerGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZSplineEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pSplineGizmo"
+            );
+
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZSplineEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pMarkerGizmo"
+            );
         }
     }
     else if (auto s_SplineControlPointEntity = p_EntityTreeNode->Entity.QueryInterface<ZSplineControlPointEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::SplineControlPointEntity]
     )) {
         if (EntityIDMatches(s_SplineControlPointEntity, p_EntityTreeNode->EntityId)) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZSplineControlPointEntity", DEBUGCHANNEL_ENGINE, "m_pControlPointGizmo");
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZSplineControlPointEntity",
+                DEBUGCHANNEL_ENGINE,
+                "m_pControlPointGizmo"
+            );
+        }
+    }
+    else if (auto s_SequenceEntity = p_EntityTreeNode->Entity.QueryInterface<ZSequenceEntity>(
+        m_DebugEntityTypeIds[DebugEntityTypeName::SequenceEntity]
+    )) {
+        if (EntityIDMatches(s_SequenceEntity, p_EntityTreeNode->EntityId)) {
+            AddDebugEntity(
+                p_EntityTreeNode->Entity,
+                "ZSequenceEntity",
+                DEBUGCHANNEL_ENGINE
+            );
         }
     }
     else if (p_EntityTreeNode->Entity.QueryInterface<ZAudioEmitterSpatialAspect>(
         m_DebugEntityTypeIds[DebugEntityTypeName::AudioEmitterSpatialAspect]
     )) {
-        const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
+        const bool s_IsCompositeEntity = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(
+            s_CompositeEntityTypeID
+        );
 
-        if (!isComposite) {
+        if (!s_IsCompositeEntity) {
             AddGizmoEntity(
                 p_EntityTreeNode->Entity,
                 "ZAudioEmitterSpatialAspect",
@@ -1344,19 +1922,44 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
     else if (p_EntityTreeNode->Entity.QueryInterface<ZAudioEmitterVolumetricAspect>(
         m_DebugEntityTypeIds[DebugEntityTypeName::AudioEmitterVolumetricAspect]
     )) {
-        const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
+        const bool s_IsCompositeEntity = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(
+            s_CompositeEntityTypeID
+        );
 
-        if (!isComposite) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZAudioEmitterVolumetricAspect", DEBUGCHANNEL_SOUND, "m_pHelper");
+        if (!s_IsCompositeEntity) {
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZAudioEmitterVolumetricAspect",
+                DEBUGCHANNEL_SOUND,
+                "m_pHelper"
+            );
+        }
+    }
+    else if (auto s_SoundGateEntity = p_EntityTreeNode->Entity.QueryInterface<ZSoundGateEntity>(
+        m_DebugEntityTypeIds[DebugEntityTypeName::SoundGateEntity]
+    )) {
+        if (EntityIDMatches(s_SoundGateEntity, p_EntityTreeNode->EntityId)) {
+            AddDebugEntity(
+                p_EntityTreeNode->Entity,
+                "ZSoundGateEntity",
+                DEBUGCHANNEL_SOUND
+            );
         }
     }
     else if (p_EntityTreeNode->Entity.QueryInterface<ZClothWireEntity>(
         m_DebugEntityTypeIds[DebugEntityTypeName::ClothWireEntity]
     )) {
-        const bool isComposite = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(s_CompositeEntityTypeID);
+        const bool s_IsCompositeEntity = p_EntityTreeNode->Entity.QueryInterface<ZCompositeEntity>(
+            s_CompositeEntityTypeID
+        );
 
-        if (!isComposite) {
-            AddGizmoEntity(p_EntityTreeNode->Entity, "ZClothWireEntity", DEBUGCHANNEL_CLOTH, "m_pHelper");
+        if (!s_IsCompositeEntity) {
+            AddGizmoEntity(
+                p_EntityTreeNode->Entity,
+                "ZClothWireEntity",
+                DEBUGCHANNEL_CLOTH,
+                "m_pHelper"
+            );
         }
     }
 
@@ -1529,7 +2132,72 @@ bool Editor::EntityIDMatches(void* p_Interface, const uint64 p_EntityID) {
     return false;
 }
 
-bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction) {
+bool Editor::RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector3& p_Direction) {
+    RayCastResult s_Result;
+
+    RayCastGizmos(p_WorldPosition, p_Direction, s_Result);
+    RayCastShapes(p_WorldPosition, p_Direction, s_Result);
+
+    if (!s_Result.m_Entity) {
+        if (m_raycastLogging) {
+            Logger::Debug("[Editor] RayCastDebugEntities found no hits.");
+        }
+
+        m_SelectedDebugEntity = {};
+
+        return false;
+    }
+
+    m_SelectedDebugEntity = s_Result.m_Entity;
+
+    if (m_raycastLogging) {
+        Logger::Debug(
+            "[Editor] RayCastDebugEntities hit '{}' (channel {}) at distance {}",
+            s_Result.m_TypeName,
+            static_cast<int32_t>(s_Result.m_DebugChannel),
+            s_Result.m_Distance
+        );
+    }
+
+    const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
+
+    for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
+        const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
+
+        if (m_SelectedDebugEntity.IsAnyParent(s_Brick.m_EntityRef)) {
+            Logger::Debug(
+                "[Editor] Found debug entity in brick {} (idx = {}).",
+                s_Brick.m_RuntimeResourceID,
+                i
+            );
+
+            m_SelectedBrickIndex = i;
+            break;
+        }
+    }
+
+    if (m_SelectedDebugEntity.GetEntity() &&
+        m_SelectedDebugEntity.GetEntity()->GetType()) {
+        const auto& s_Type = *m_SelectedDebugEntity.GetEntity()->GetType();
+        const auto& s_Interfaces = *s_Type.m_pInterfaceData;
+
+        Logger::Trace(
+            "[Editor] Hit entity of type '{}' with id '{:x}'.",
+            s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
+            s_Type.m_nEntityID
+        );
+    }
+
+    OnSelectEntity(m_SelectedDebugEntity, true, std::nullopt);
+
+    return true;
+}
+
+void Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result) {
+    if (!m_DrawGizmos) {
+        return;
+    }
+
     DirectX::SimpleMath::Ray s_Ray(
         DirectX::SimpleMath::Vector3(p_WorldPosition.x, p_WorldPosition.y, p_WorldPosition.z),
         DirectX::SimpleMath::Vector3(p_Direction.x, p_Direction.y, p_Direction.z)
@@ -1573,7 +2241,8 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
                         break;
                 }
 
-                ZRenderPrimitiveResource* s_RenderPrimitiveResource = static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());
+                ZRenderPrimitiveResource* s_RenderPrimitiveResource =
+                    static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());
 
                 if (!s_RenderPrimitiveResource) {
                     continue;
@@ -1590,7 +2259,8 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
                 SMatrix s_Transform;
 
                 if (s_GizmoEntity->m_TypeName == "ZActBehaviorEntity") {
-                    const TEntityRef<ZSpatialEntity> s_MoveToTransform = s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
+                    const TEntityRef<ZSpatialEntity> s_MoveToTransform =
+                        s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
 
                     s_Transform = s_MoveToTransform.m_pInterfaceRef->GetObjectToWorldMatrix() * s_GizmoEntity->m_Transform;
                 }
@@ -1600,67 +2270,473 @@ bool Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
                     s_Transform = s_SpatialEntity->GetObjectToWorldMatrix();
                 }
 
-                DirectX::XMMATRIX s_Transform2 = DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));
+                DirectX::XMMATRIX s_Transform2 =
+                    DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));
 
                 s_Box.Transform(s_Box, s_Transform2);
 
                 float s_Distance = 0.f;
 
-                if (s_Ray.Intersects(s_Box, s_Distance)) {
-                    if (s_Distance < s_ClosestDistance && s_Distance <= 200.f) {
-                        s_ClosestDistance = s_Distance;
-                        s_HitEntity = s_GizmoEntity->m_EntityRef;
-                        s_HitEntityTypeName = s_GizmoEntity->m_TypeName;
-                        s_HitEntityDebugChannel = s_GizmoEntity->m_DebugChannel;
-                    }
+                if (s_Ray.Intersects(s_Box, s_Distance) && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
+                    p_Result.m_Distance = s_Distance;
+                    p_Result.m_Entity = s_GizmoEntity->m_EntityRef;
+                    p_Result.m_TypeName = s_GizmoEntity->m_TypeName;
+                    p_Result.m_DebugChannel = s_GizmoEntity->m_DebugChannel;
                 }
             }
         }
     }
+}
 
-    if (!s_HitEntity) {
-        if (m_raycastLogging)
-            Logger::Debug("[Editor] RaycastGizmos found no hits.");
-
-        m_SelectedGizmoEntity = {};
-
-        return false;
+void Editor::RayCastShapes(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result) {
+    if (!m_DrawShapes) {
+        return;
     }
 
-    m_SelectedGizmoEntity = s_HitEntity;
+    DirectX::SimpleMath::Ray s_Ray(
+        DirectX::SimpleMath::Vector3(
+            p_WorldPosition.x,
+            p_WorldPosition.y,
+            p_WorldPosition.z
+        ),
+        DirectX::SimpleMath::Vector3(
+            p_Direction.x,
+            p_Direction.y,
+            p_Direction.z
+        )
+    );
 
-    if (m_raycastLogging) {
-        Logger::Debug(
-            "[Editor] RaycastGizmos hit gizmo '{}' (channel {}) at distance {}",
-            s_HitEntityTypeName,
-            static_cast<int32_t>(s_HitEntityDebugChannel),
-            s_ClosestDistance
-        );
+    std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+
+    for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
+        for (const auto& s_DebugEntity : s_DebugEntities) {
+            if (s_DebugEntity->m_HasGizmo) {
+                continue;
+            }
+
+            switch (m_ShapeDrawMode) {
+                case DebugDrawMode::SelectedChannelsAndTypes: {
+                    if (!m_DebugChannelToShapeState[s_DebugEntity->m_DebugChannel] ||
+                        !m_DebugChannelToTypeNameToShapeState
+                            [s_DebugEntity->m_DebugChannel][s_DebugEntity->m_TypeName]) {
+                        continue;
+                    }
+
+                    break;
+                }
+                case DebugDrawMode::SelectedEntity: {
+                    if (s_DebugEntity->m_EntityRef != m_SelectedEntity) {
+                        continue;
+                    }
+
+                    break;
+                }
+                case DebugDrawMode::All:
+                    break;
+            }
+
+            float s_Distance = FLT_MAX;
+            bool s_Hit = false;
+
+            if (s_DebugEntity->m_TypeName == "ZSoundGateEntity") {
+                auto s_SoundGateEntity = s_DebugEntity->m_EntityRef.QueryInterface<ZSoundGateEntity>(
+                    m_DebugEntityTypeIds[DebugEntityTypeName::SoundGateEntity]
+                );
+
+                if (!s_SoundGateEntity) {
+                    continue;
+                }
+
+                s_Hit = RayCastShape(
+                    s_Ray,
+                    s_SoundGateEntity,
+                    s_Distance
+                );
+            }
+            else if (s_DebugEntity->m_TypeName == "ZSequenceEntity") {
+                auto s_SequenceEntity = s_DebugEntity->m_EntityRef.QueryInterface<ZSequenceEntity>(
+                    m_DebugEntityTypeIds[DebugEntityTypeName::SequenceEntity]
+                );
+
+                if (!s_SequenceEntity) {
+                    continue;
+                }
+
+                s_Hit = RayCastShape(
+                    s_Ray,
+                    s_SequenceEntity,
+                    s_Distance
+                );
+            }
+
+            if (s_Hit && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
+                p_Result.m_Distance = s_Distance;
+                p_Result.m_Entity = s_DebugEntity->m_EntityRef;
+                p_Result.m_TypeName = s_DebugEntity->m_TypeName;
+                p_Result.m_DebugChannel = s_DebugEntity->m_DebugChannel;
+            }
+        }
     }
+}
 
-    const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
+bool Editor::RayCastShape(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    ZSoundGateEntity* p_SoundGateEntity,
+    float& p_Distance
+) {
+    const SMatrix s_WorldMatrix = p_SoundGateEntity->GetObjectToWorldMatrix();
 
-    for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
-        const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
+    const SVector3 s_Center { 0.f, 0.f, 0.f };
 
-        if (m_SelectedGizmoEntity.IsAnyParent(s_Brick.m_EntityRef)) {
-            Logger::Debug("[Editor] Found gizmo entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
-            m_SelectedBrickIndex = i;
-            break;
+    const SVector3 s_Extents {
+        p_SoundGateEntity->m_vLocalSize.x,
+        p_SoundGateEntity->m_fThicknessSource +
+            p_SoundGateEntity->m_fThicknessDestination,
+        p_SoundGateEntity->m_vLocalSize.y
+    };
+
+    return RayIntersectsBox(
+        p_Ray,
+        s_WorldMatrix,
+        s_Center,
+        s_Extents,
+        p_Distance
+    );
+}
+
+bool Editor::RayCastShape(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    ZSequenceEntity* p_SequenceEntity,
+    float& p_Distance
+) {
+    bool s_Hit = false;
+
+    for (const auto& s_Entity : p_SequenceEntity->m_aTracksAndGroups) {
+        ZEntityGroup* s_Group = s_Entity.QueryInterface<ZEntityGroup>();
+
+        if (!s_Group) {
+            continue;
+        }
+
+        for (const auto& s_Entity : s_Group->m_aTracksAndGroups) {
+            ZTrajectoryTrackBase* s_Track =
+                s_Entity.QueryInterface<ZTrajectoryTrackBase>();
+
+            if (!s_Track) {
+                continue;
+            }
+
+            if (RayCastTrajectoryTrack(
+                p_Ray,
+                s_Track,
+                s_Group->m_targetEntity,
+                p_Distance
+            )) {
+                s_Hit = true;
+            }
         }
     }
 
-    if (m_SelectedGizmoEntity.GetEntity() && m_SelectedGizmoEntity.GetEntity()->GetType()) {
-        const auto& s_Type = *m_SelectedGizmoEntity.GetEntity()->GetType();
-        const auto& s_Interfaces = *s_Type.m_pInterfaceData;
+    return s_Hit;
+}
 
-        Logger::Trace(
-            "[Editor] Hit entity of type '{}' with id '{:x}'.", s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
-            s_Type.m_nEntityID
-        );
+bool Editor::RayCastTrajectoryTrack(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    ZTrajectoryTrackBase* p_Track,
+    ZEntityRef p_TargetEntity,
+    float& p_Distance
+) {
+    bool s_Hit = false;
+
+    for (const auto& s_ItemEntity : p_Track->m_aItems) {
+        ZMorphemeTrajectorySource* s_Item =
+            s_ItemEntity.m_entityRef.QueryInterface<ZMorphemeTrajectorySource>();
+
+        if (s_Item) {
+            s_Hit |= RayCastTrajectoryItem(
+                p_Ray,
+                s_Item,
+                p_Track,
+                p_TargetEntity,
+                p_Distance,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(
+                        p_Item,
+                        p_Track,
+                        p_ItemTime,
+                        p_Item->m_pAnimationResource.GetResource(),
+                        p_TargetEntity
+                    );
+                }
+            );
+
+            continue;
+        }
+
+        ZEulerAngleTrajectorySource* s_Item2 =
+            s_ItemEntity.m_entityRef.QueryInterface<ZEulerAngleTrajectorySource>();
+
+        if (s_Item2) {
+            s_Hit |= RayCastTrajectoryItem(
+                p_Ray,
+                s_Item2,
+                p_Track,
+                p_TargetEntity,
+                p_Distance,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(
+                        p_Item,
+                        p_Track,
+                        p_ItemTime,
+                        p_TargetEntity
+                    );
+                }
+            );
+
+            continue;
+        }
+
+        ZBezierSplineTrajectorySource* s_Item3 =
+            s_ItemEntity.m_entityRef.QueryInterface<ZBezierSplineTrajectorySource>();
+
+        if (s_Item3) {
+            s_Hit |= RayCastTrajectoryItem(
+                p_Ray,
+                s_Item3,
+                p_Track,
+                p_TargetEntity,
+                p_Distance,
+                [&](auto* p_Item, auto* p_Track, ZGameTime p_ItemTime, ZEntityRef p_TargetEntity) {
+                    return EvaluateTrajectoryWorldPosition(
+                        p_Item,
+                        p_Track,
+                        p_ItemTime,
+                        p_TargetEntity
+                    );
+                }
+            );
+        }
     }
 
-    OnSelectEntity(m_SelectedGizmoEntity, true, std::nullopt);
+    return s_Hit;
+}
+
+template <typename TItem, typename EvaluateFn>
+bool Editor::RayCastTrajectoryItem(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    TItem* p_Item,
+    ZTrajectoryTrackBase* p_Track,
+    ZEntityRef p_TargetEntity,
+    float& p_Distance,
+    EvaluateFn&& p_EvaluateFn
+) {
+    static constexpr float s_TrajectoryPickRadius = 0.1f;
+    static constexpr float s_EndpointRadius = 0.1f;
+
+    const ZGameTime s_ItemStart = p_Item->m_startTime;
+    const ZGameTime s_ItemEnd = s_ItemStart + p_Item->m_duration;
+
+    ZGameTime s_SampleTime = s_ItemStart;
+    const ZGameTime s_SampleStep = ZGameTime::FromSeconds(0.02f);
+
+    const SVector3 s_StartPosition = p_EvaluateFn(p_Item, p_Track, s_ItemStart, p_TargetEntity);
+
+    SVector3 s_PreviousSamplePosition = s_StartPosition;
+
+    bool s_Hit = false;
+
+    float s_Distance;
+
+    if (RayIntersectsSphere(
+        p_Ray,
+        s_StartPosition,
+        s_EndpointRadius,
+        s_Distance
+    ) &&
+        s_Distance < p_Distance) {
+        p_Distance = s_Distance;
+        s_Hit = true;
+    }
+
+    while (s_SampleTime < s_ItemEnd) {
+        s_SampleTime = std::min(
+            s_SampleTime + s_SampleStep,
+            s_ItemEnd
+        );
+
+        const SVector3 s_CurrentSamplePosition =
+            p_EvaluateFn(
+                p_Item,
+                p_Track,
+                s_SampleTime,
+                p_TargetEntity
+            );
+
+        if (RayIntersectsTrajectorySegment(
+            p_Ray,
+            s_PreviousSamplePosition,
+            s_CurrentSamplePosition,
+            s_TrajectoryPickRadius,
+            s_Distance
+        ) &&
+            s_Distance < p_Distance) {
+            p_Distance = s_Distance;
+            s_Hit = true;
+        }
+
+        s_PreviousSamplePosition = s_CurrentSamplePosition;
+    }
+
+    if (RayIntersectsSphere(
+        p_Ray,
+        s_PreviousSamplePosition,
+        s_EndpointRadius,
+        s_Distance
+    ) && s_Distance < p_Distance) {
+        p_Distance = s_Distance;
+        s_Hit = true;
+    }
+
+    return s_Hit;
+}
+
+bool Editor::RayIntersectsTrajectorySegment(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    const SVector3& p_Start,
+    const SVector3& p_End,
+    float p_Radius,
+    float& p_Distance
+) {
+    const DirectX::SimpleMath::Vector3 s_RayOrigin = p_Ray.position;
+    const DirectX::SimpleMath::Vector3 s_RayDirection = p_Ray.direction;
+
+    const DirectX::SimpleMath::Vector3 s_Start(p_Start.x, p_Start.y, p_Start.z);
+    const DirectX::SimpleMath::Vector3 s_End(p_End.x, p_End.y, p_End.z);
+
+    const DirectX::SimpleMath::Vector3 s_SegmentDirection = s_End - s_Start;
+    const DirectX::SimpleMath::Vector3 s_Offset = s_RayOrigin - s_Start;
+
+    const float s_A = s_RayDirection.Dot(s_RayDirection);
+    const float s_B = s_RayDirection.Dot(s_SegmentDirection);
+    const float s_C = s_SegmentDirection.Dot(s_SegmentDirection);
+    const float s_D = s_RayDirection.Dot(s_Offset);
+    const float s_E = s_SegmentDirection.Dot(s_Offset);
+
+    if (s_C <= FLT_EPSILON) {
+        return false;
+    }
+
+    const float s_Denominator = s_A * s_C - s_B * s_B;
+
+    float s_RayT;
+    float s_SegmentT;
+
+    if (std::abs(s_Denominator) > FLT_EPSILON) {
+        s_RayT = (s_B * s_E - s_C * s_D) / s_Denominator;
+        s_SegmentT = (s_A * s_E - s_B * s_D) / s_Denominator;
+    }
+    else {
+        s_RayT = 0.f;
+        s_SegmentT = s_E / s_C;
+    }
+
+    s_RayT = std::max(s_RayT, 0.f);
+    s_SegmentT = std::clamp(s_SegmentT, 0.f, 1.f);
+
+    // Recalculate the closest point on the ray after clamping the segment.
+    s_RayT = std::max(
+        (s_B * s_SegmentT - s_D) / s_A,
+        0.f
+    );
+
+    // Recalculate the segment point in case clamping the ray changed it.
+    s_SegmentT = std::clamp(
+        (s_B * s_RayT + s_E) / s_C,
+        0.f,
+        1.f
+    );
+
+    // And one final ray update for the clamped segment point.
+    s_RayT = std::max(
+        (s_B * s_SegmentT - s_D) / s_A,
+        0.f
+    );
+
+    const DirectX::SimpleMath::Vector3 s_ClosestRayPoint =
+        s_RayOrigin + s_RayDirection * s_RayT;
+
+    const DirectX::SimpleMath::Vector3 s_ClosestSegmentPoint =
+        s_Start + s_SegmentDirection * s_SegmentT;
+
+    if (DirectX::SimpleMath::Vector3::DistanceSquared(
+        s_ClosestRayPoint,
+        s_ClosestSegmentPoint
+    ) > p_Radius * p_Radius) {
+        return false;
+    }
+
+    p_Distance = DirectX::SimpleMath::Vector3::Distance(s_RayOrigin, s_ClosestRayPoint);
 
     return true;
+}
+
+bool Editor::RayIntersectsBox(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    const SMatrix& p_Transform,
+    const SVector3& p_Center,
+    const SVector3& p_Extents,
+    float& p_Distance
+) {
+    const DirectX::XMMATRIX s_WorldMatrix = DirectX::XMLoadFloat4x4(
+        reinterpret_cast<const DirectX::XMFLOAT4X4*>(&p_Transform)
+    );
+
+    const DirectX::XMMATRIX s_InverseWorldMatrix = XMMatrixInverse(nullptr, s_WorldMatrix);
+
+    const DirectX::SimpleMath::Vector3 s_LocalPosition =
+        DirectX::SimpleMath::Vector3::Transform(p_Ray.position, s_InverseWorldMatrix);
+
+    const DirectX::SimpleMath::Vector3 s_LocalDirection =
+        DirectX::SimpleMath::Vector3::TransformNormal(p_Ray.direction, s_InverseWorldMatrix);
+
+    const DirectX::SimpleMath::Ray s_LocalRay(s_LocalPosition, s_LocalDirection);
+
+    const DirectX::BoundingBox s_Box(
+        DirectX::SimpleMath::Vector3(p_Center.x, p_Center.y, p_Center.z),
+        DirectX::SimpleMath::Vector3(p_Extents.x, p_Extents.y, p_Extents.z)
+    );
+
+    float s_LocalDistance;
+
+    if (!s_LocalRay.Intersects(s_Box, s_LocalDistance)) {
+        return false;
+    }
+
+    const DirectX::SimpleMath::Vector3 s_LocalHitPosition =
+        s_LocalPosition + s_LocalDirection * s_LocalDistance;
+
+    const DirectX::SimpleMath::Vector3 s_WorldHitPosition =
+        DirectX::SimpleMath::Vector3::Transform(s_LocalHitPosition, s_WorldMatrix);
+
+    p_Distance = DirectX::SimpleMath::Vector3::Distance(p_Ray.position, s_WorldHitPosition);
+
+    return true;
+}
+
+bool Editor::RayIntersectsSphere(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    const SVector3& p_Position,
+    float p_Radius,
+    float& p_Distance
+) {
+    const DirectX::BoundingSphere s_Sphere(
+        DirectX::SimpleMath::Vector3(
+            p_Position.x,
+            p_Position.y,
+            p_Position.z
+        ),
+        p_Radius
+    );
+
+    return p_Ray.Intersects(s_Sphere, p_Distance);
 }

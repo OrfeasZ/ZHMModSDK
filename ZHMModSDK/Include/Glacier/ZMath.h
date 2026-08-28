@@ -76,9 +76,9 @@ public:
     const bool operator==(const SVector3& p_Other) const {
         return x == p_Other.x && y == p_Other.y && z == p_Other.z;
     }
-
-    float operator*(const SVector3& p_Other) const {
-        return x * p_Other.x + y * p_Other.y + z * p_Other.z;
+	
+    SVector3 operator*(const SVector3& p_Other) const {
+        return SVector3(x * p_Other.x, y * p_Other.y, z * p_Other.z);
     }
 
     SVector3 operator*(const float p_Value) const {
@@ -287,7 +287,7 @@ struct alignas(16) float4 {
         return float4(-x, -y, -z, -w);
     }
 
-    static float4 CrossProduct(float4& v1, float4& v2) {
+    static float4 CrossProduct(const float4& v1, const float4& v2) {
         return _mm_sub_ps(
             _mm_mul_ps(
                 _mm_shuffle_ps(v1.m, v1.m, _MM_SHUFFLE(3, 0, 2, 1)),
@@ -338,6 +338,10 @@ struct alignas(16) float4 {
     inline float Length() const {
         return sqrtf(x * x + y * y + z * z + w * w);
     }
+	
+	inline float Length3() const {
+		return sqrtf(x * x + y * y + z * z);
+	}
 
     inline float4 Normalized() const {
         const float s_LengthSq = DotProduct(*this, *this);
@@ -364,6 +368,10 @@ struct alignas(16) float4 {
             float w;
         };
     };
+};
+
+struct float1 {
+    float4 m4;
 };
 
 struct SQuaternion {

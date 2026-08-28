@@ -1172,8 +1172,8 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
         m_SelectedEntity = {};
     }
 
-    if (m_SelectedGizmoEntity == p_Entity) {
-        m_SelectedGizmoEntity = {};
+    if (m_SelectedDebugEntity == p_Entity) {
+        m_SelectedDebugEntity = {};
     }
 
     // Remove from the tree.
@@ -1203,8 +1203,8 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
                 m_SelectedEntity = {};
             }
 
-            if (m_SelectedGizmoEntity == s_CurrentChild->Entity) {
-                m_SelectedGizmoEntity = {};
+            if (m_SelectedDebugEntity == s_CurrentChild->Entity) {
+                m_SelectedDebugEntity = {};
             }
 
             for (auto& s_Child : s_CurrentChild->Children) {
@@ -1258,8 +1258,8 @@ void Editor::DestroyEntityNodeInternal(
             m_SelectedEntity = {};
         }
 
-        if (m_SelectedGizmoEntity == p_NodeToRemove->Entity) {
-            m_SelectedGizmoEntity = {};
+        if (m_SelectedDebugEntity == p_NodeToRemove->Entity) {
+            m_SelectedDebugEntity = {};
         }
     }
 
@@ -1281,8 +1281,8 @@ void Editor::DestroyEntityNodeInternal(
             m_SelectedEntity = {};
         }
 
-        if (m_SelectedGizmoEntity == s_CurrentChild->Entity) {
-            m_SelectedGizmoEntity = {};
+        if (m_SelectedDebugEntity == s_CurrentChild->Entity) {
+            m_SelectedDebugEntity = {};
         }
 
         for (auto& s_Child : s_CurrentChild->Children) {
@@ -1359,8 +1359,8 @@ DEFINE_PLUGIN_DETOUR(
         m_SelectedEntity = nullptr;
     }
 
-    if (m_SelectedGizmoEntity == entityRef) {
-        m_SelectedGizmoEntity = nullptr;
+    if (m_SelectedDebugEntity == entityRef) {
+        m_SelectedDebugEntity = nullptr;
     }
 
     std::shared_ptr<EntityTreeNode> s_NodeToRemove;

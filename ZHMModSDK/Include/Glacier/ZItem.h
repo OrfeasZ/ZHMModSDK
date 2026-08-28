@@ -5,6 +5,7 @@
 #include "ZGeomEntity.h"
 #include "ZHitman5.h"
 #include "ZGameTime.h"
+#include "IBoolConditionListener.h"
 
 class IItemBase : public IComponentInterface {};
 
@@ -22,8 +23,6 @@ public:
 
     PAD(0x38);
 };
-
-class IBoolConditionListener : public IComponentInterface {};
 
 class IColliderController : public IComponentInterface {};
 
