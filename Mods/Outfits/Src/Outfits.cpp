@@ -306,7 +306,7 @@ void Outfits::BuildSceneNamesToRuntimeResourceIds() {
     const ZRuntimeResourceID s_ConfigRuntimeResourceID = ResId<"[assembly:/_pro/online/default/offlineconfig/config.contracts].pc_contracts">;
     ZResourcePtr s_ConfigResourcePtr;
 
-    Globals::ResourceManager->GetResourcePtr(s_ConfigResourcePtr, s_ConfigRuntimeResourceID, 0);
+    Globals::ResourceManager->LoadResource(s_ConfigResourcePtr, s_ConfigRuntimeResourceID);
 
     const ZResourceContainer::SResourceInfo& s_ConfigResourceInfo = s_ConfigResourcePtr.GetResourceInfo();
 
