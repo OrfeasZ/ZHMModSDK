@@ -30,6 +30,7 @@
         "implot",
         {
             "name": "directxtex",
+            "default-features": false,
             "features": [
                 "dx12"
             ]
