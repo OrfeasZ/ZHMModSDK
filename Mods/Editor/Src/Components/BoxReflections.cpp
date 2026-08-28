@@ -459,24 +459,41 @@ bool Editor::ExportAllBoxReflectionCubemaps(
     const std::filesystem::path& p_OutputFolder,
     bool p_Diffuse
 ) {
-    const auto s_RenderSharedResources = Globals::RenderManager->m_pSharedResources;
+    const auto s_RenderManager = Globals::RenderManager;
     const auto s_RenderGraphManager = Globals::RenderGraphManager;
 
-    if (!s_RenderSharedResources || !s_RenderGraphManager) {
+    if (!s_RenderManager ||
+        !s_RenderManager->m_pSharedResources ||
+        !s_RenderManager->m_pDevice ||
+        !s_RenderManager->m_pDevice->m_pCommandQueue ||
+        !s_RenderGraphManager) {
         return false;
     }
 
+    const auto s_RenderSharedResources = s_RenderManager->m_pSharedResources;
+    const auto s_CommandQueue = s_RenderManager->m_pDevice->m_pCommandQueue;
+
     const auto& s_BoxReflections = s_RenderGraphManager->m_BoxReflections;
 
-    const uint32_t s_ReflectionCount = static_cast<uint32_t>(s_BoxReflections.size());
-
-    if (!s_ReflectionCount) {
+    if (s_BoxReflections.empty()) {
         return true;
     }
 
-    const std::filesystem::path s_OutputFolder = p_OutputFolder.empty()
-        ? "box_reflections"
-        : p_OutputFolder;
+    const uint32_t s_ChunkCount = s_RenderSharedResources->m_nBoxReflectionCubeRenderTargetChunks;
+
+    if (s_ChunkCount == 0 || s_ChunkCount > 2) {
+        return false;
+    }
+
+    const uint32_t s_CubemapsPerChunk =
+        s_RenderSharedResources->m_nBoxReflectionMaxCubeMaps /
+        s_ChunkCount;
+
+    if (s_CubemapsPerChunk == 0) {
+        return false;
+    }
+
+    const std::filesystem::path s_OutputFolder = p_OutputFolder.empty() ? "box_reflections" : p_OutputFolder;
 
     std::error_code s_ErrorCode;
     std::filesystem::create_directories(s_OutputFolder, s_ErrorCode);
@@ -487,46 +504,192 @@ bool Editor::ExportAllBoxReflectionCubemaps(
             s_OutputFolder.string(),
             s_ErrorCode.message()
         );
+
         return false;
     }
 
-    const uint32_t s_CubemapsPerChunk =
-        s_RenderSharedResources->m_nBoxReflectionMaxCubeMaps /
-        s_RenderSharedResources->m_nBoxReflectionCubeRenderTargetChunks;
+    std::array<DirectX::ScratchImage, 2> s_CapturedImages;
+    std::array<bool, 2> s_ChunkCaptured{};
 
-    for (uint32_t i = 0; i < s_ReflectionCount; ++i) {
-        const auto s_BoxReflectionId = s_BoxReflections[i]->m_nId;
+    constexpr D3D12_RESOURCE_STATES s_State =
+        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE |
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
-        const uint32_t s_Chunk =
-            s_RenderSharedResources->m_nBoxReflectionCubeRenderTargetChunks == 2 && s_BoxReflectionId >= s_CubemapsPerChunk
-            ? 1
-            : 0;
+    bool s_Succeeded = true;
 
-        const uint32_t s_CubeIndex =
-            s_RenderSharedResources->m_nBoxReflectionCubeRenderTargetChunks == 2 && s_BoxReflectionId >= s_CubemapsPerChunk
-            ? s_BoxReflectionId - s_CubemapsPerChunk
-            : s_BoxReflectionId;
+    for (uint32_t i = 0; i < s_BoxReflections.size(); ++i) {
+        const auto s_BoxReflection = s_BoxReflections[i];
 
-        ZRenderTexture2D* s_Texture = p_Diffuse
-            ? s_RenderSharedResources->m_pBoxReflectionDiffuseCubeTexture[s_Chunk]
-            : s_RenderSharedResources->m_pBoxReflectionCubeTexture[s_Chunk];
-
-        if (!s_Texture || !s_Texture->m_pResource) {
+        if (!s_BoxReflection) {
+            s_Succeeded = false;
             continue;
         }
 
+        const uint32_t s_BoxReflectionId = s_BoxReflection->m_nId;
+        const uint32_t s_Chunk = s_BoxReflectionId / s_CubemapsPerChunk;
+        const uint32_t s_CubeIndex = s_BoxReflectionId % s_CubemapsPerChunk;
+
+        if (s_Chunk >= s_ChunkCount) {
+            Logger::Error(
+                "[Editor] Box reflection {} has an invalid ID {}.",
+                i,
+                s_BoxReflectionId
+            );
+
+            s_Succeeded = false;
+            continue;
+        }
+
+        ZRenderTexture2D* s_Texture = p_Diffuse
+            ? s_RenderSharedResources
+            ->m_pBoxReflectionDiffuseCubeTexture[s_Chunk]
+            : s_RenderSharedResources
+            ->m_pBoxReflectionCubeTexture[s_Chunk];
+
+        if (!s_Texture || !s_Texture->m_pResource) {
+            s_Succeeded = false;
+            continue;
+        }
+
+        if (!s_ChunkCaptured[s_Chunk]) {
+            const HRESULT s_Result = DirectX::CaptureTexture(
+                s_CommandQueue,
+                s_Texture->m_pResource,
+                false,
+                s_CapturedImages[s_Chunk],
+                s_State,
+                s_State
+            );
+
+            if (FAILED(s_Result)) {
+                Logger::Error(
+                    "[Editor] CaptureTexture failed with HRESULT 0x{:08X}.",
+                    static_cast<uint32_t>(s_Result)
+                );
+
+                s_Succeeded = false;
+                continue;
+            }
+
+            s_ChunkCaptured[s_Chunk] = true;
+        }
+
         const auto s_Path = GetBoxReflectionExportPath(
-            s_BoxReflections[i],
+            s_BoxReflection,
             s_OutputFolder,
             p_Diffuse
         );
 
         if (!ExportBoxReflectionCubemap(
-            s_Texture->m_pResource,
+            s_CapturedImages[s_Chunk],
             s_CubeIndex,
-            s_Path)) {
-            Logger::Error("[Editor] Failed to export box reflection cubemap {}.", i);
+            s_Path
+        )) {
+            Logger::Error(
+                "[Editor] Failed to export box reflection cubemap {}.",
+                i
+            );
+
+            s_Succeeded = false;
         }
+    }
+
+    return s_Succeeded;
+}
+
+bool Editor::ExportBoxReflectionCubemap(
+    const DirectX::ScratchImage& p_CapturedImage,
+    uint32_t p_CubeIndex,
+    const std::filesystem::path& p_OutputFilePath
+) {
+    const auto s_ParentFolder = p_OutputFilePath.parent_path();
+
+    if (!s_ParentFolder.empty()) {
+        std::error_code s_ErrorCode;
+        std::filesystem::create_directories(s_ParentFolder, s_ErrorCode);
+
+        if (s_ErrorCode) {
+            Logger::Error(
+                "[Editor] Failed to create box reflection output folder '{}': {}.",
+                s_ParentFolder.string(),
+                s_ErrorCode.message()
+            );
+
+            return false;
+        }
+    }
+
+    const DirectX::TexMetadata& s_SourceMetadata =
+        p_CapturedImage.GetMetadata();
+
+    constexpr uint32_t s_FaceCount = 6;
+
+    const uint32_t s_FirstArraySlice = p_CubeIndex * s_FaceCount;
+
+    if (s_FirstArraySlice + s_FaceCount > s_SourceMetadata.arraySize) {
+        return false;
+    }
+
+    DirectX::ScratchImage s_CubeImage;
+
+    HRESULT s_Result = s_CubeImage.InitializeCube(
+        s_SourceMetadata.format,
+        s_SourceMetadata.width,
+        s_SourceMetadata.height,
+        1,
+        s_SourceMetadata.mipLevels
+    );
+
+    if (FAILED(s_Result)) {
+        Logger::Error(
+            "[Editor] Failed to initialize cubemap image "
+            "(HRESULT 0x{:08X}).",
+            static_cast<uint32_t>(s_Result)
+        );
+
+        return false;
+    }
+
+    for (uint32_t s_Mip = 0; s_Mip < s_SourceMetadata.mipLevels; ++s_Mip) {
+        for (uint32_t s_Face = 0; s_Face < s_FaceCount; ++s_Face) {
+            const uint32_t s_SourceArraySlice =
+                s_FirstArraySlice + s_Face;
+
+            const DirectX::Image* s_SourceImage = p_CapturedImage.GetImage(s_Mip, s_SourceArraySlice, 0);
+            const DirectX::Image* s_DestinationImage = s_CubeImage.GetImage(s_Mip, s_Face, 0);
+
+            if (!s_SourceImage || !s_DestinationImage) {
+                return false;
+            }
+
+            if (s_SourceImage->slicePitch !=
+                s_DestinationImage->slicePitch) {
+                return false;
+            }
+
+            std::memcpy(
+                s_DestinationImage->pixels,
+                s_SourceImage->pixels,
+                s_SourceImage->slicePitch
+            );
+        }
+    }
+
+    s_Result = DirectX::SaveToDDSFile(
+        s_CubeImage.GetImages(),
+        s_CubeImage.GetImageCount(),
+        s_CubeImage.GetMetadata(),
+        DirectX::DDS_FLAGS_NONE,
+        p_OutputFilePath.c_str()
+    );
+
+    if (FAILED(s_Result)) {
+        Logger::Error(
+            "[Editor] SaveToDDSFile failed with HRESULT 0x{:08X}.",
+            static_cast<uint32_t>(s_Result)
+        );
+
+        return false;
     }
 
     return true;

@@ -376,9 +376,14 @@ private:
         ImGuiTexture& p_OutImGuiTexture
     );
 
-    bool ExportAllBoxReflectionCubemaps(
+    static bool ExportAllBoxReflectionCubemaps(
         const std::filesystem::path& p_OutputFolder,
         bool p_Diffuse
+    );
+    static bool ExportBoxReflectionCubemap(
+        const DirectX::ScratchImage& p_CapturedImage,
+        uint32_t p_CubeIndex,
+        const std::filesystem::path& p_OutputFilePath
     );
     static bool ExportBoxReflectionCubemap(
         ID3D12Resource* p_Resource,
@@ -391,7 +396,7 @@ private:
         ZRenderTexture2D*& p_OutTexture,
         uint32_t& p_OutCubeIndex
     );
-    std::filesystem::path GetBoxReflectionExportPath(
+    static std::filesystem::path GetBoxReflectionExportPath(
         const ZRenderGraphNodeBoxReflection* p_BoxReflection,
         const std::filesystem::path& p_OutputFolder,
         bool p_Diffuse
