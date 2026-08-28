@@ -129,7 +129,7 @@ namespace detail {
         // Minus 1 here because the size includes the null terminator.
         constexpr auto s_Hash = Hash::MD5<sizeof(Path.Value) - 1>(std::string_view(Path.Value, sizeof(Path.Value) - 1));
 
-        constexpr uint32_t s_IDHigh = ((s_Hash.A >> 24) & 0x000000FF) | ((s_Hash.A >> 8) & 0x0000FF00) | ((s_Hash.A << 8) & 0x00FF0000) | 0x01000000;
+        constexpr uint32_t s_IDHigh = ((s_Hash.A >> 24) & 0x000000FF) | ((s_Hash.A >> 8) & 0x0000FF00) | ((s_Hash.A << 8) & 0x00FF0000);
 
         constexpr uint32_t s_IDLow =
             ((s_Hash.B >> 24) & 0x000000FF) | ((s_Hash.B >> 8) & 0x0000FF00) | ((s_Hash.B << 8) & 0x00FF0000) | ((s_Hash.B << 24) & 0xFF000000);
