@@ -8,8 +8,8 @@
 #include "Logging.h"
 
 DebugEffect::DebugEffect(
-    ScopedD3DRef<ID3D12Device> p_Device, ScopedD3DRef<ID3D12GraphicsCommandList> p_CommandList,
-    ScopedD3DRef<ID3D12CommandQueue> p_CommandQueue, const D3D12_INPUT_LAYOUT_DESC* p_InputLayoutDesc
+    ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList,
+    ID3D12CommandQueue* p_CommandQueue, const D3D12_INPUT_LAYOUT_DESC* p_InputLayoutDesc
 ) {
     CreateRootSignature(p_Device);
 
@@ -108,11 +108,11 @@ DebugEffect::DebugEffect(
     ScopedD3DRef<ID3DBlob> s_VertexShaderBlob;
     ScopedD3DRef<ID3DBlob> s_PixelShaderBlob;
 
-    if (!CompileShaderFromString(s_DebugVertexShader, "main", "vs_5_0", &s_VertexShaderBlob.Ref)) {
+    if (!CompileShaderFromString(s_DebugVertexShader, "main", "vs_5_0", &s_VertexShaderBlob.m_Ref)) {
         return;
     }
 
-    if (!CompileShaderFromString(s_DebugPixelShader, "main", "ps_5_0", &s_PixelShaderBlob.Ref)) {
+    if (!CompileShaderFromString(s_DebugPixelShader, "main", "ps_5_0", &s_PixelShaderBlob.m_Ref)) {
         return;
     }
 
@@ -165,12 +165,12 @@ DebugEffect::~DebugEffect() {
     }
 }
 
-void DebugEffect::CreateRootSignature(ScopedD3DRef<ID3D12Device> p_Device) {
+void DebugEffect::CreateRootSignature(ID3D12Device* p_Device) {
     constexpr D3D12_ROOT_SIGNATURE_FLAGS s_RootSignatureFlags =
-            D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS
-            | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
+        D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
+        | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
+        | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS
+        | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
 
     CD3DX12_ROOT_PARAMETER s_RootParameters[RootParameterIndex::RootParameterCount] = {};
     s_RootParameters[RootParameterIndex::ConstantBuffer].InitAsConstantBufferView(0, 0, D3D12_SHADER_VISIBILITY_ALL);
@@ -198,8 +198,7 @@ void DebugEffect::CreateRootSignature(ScopedD3DRef<ID3D12Device> p_Device) {
 }
 
 void DebugEffect::CreateTexture(
-    ScopedD3DRef<ID3D12Device> p_Device, ScopedD3DRef<ID3D12GraphicsCommandList> p_CommandList,
-    ScopedD3DRef<ID3D12CommandQueue> p_CommandQueue
+    ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList, ID3D12CommandQueue* p_CommandQueue
 ) {
     DirectX::ResourceUploadBatch s_Upload(p_Device);
 
@@ -208,7 +207,7 @@ void DebugEffect::CreateTexture(
     const UINT s_nTextureWidth = 1;
     const UINT s_nTextureHeight = 1;
     const UINT s_BytesPerPixel = 4;
-    const unsigned char s_WhiteTextureData[s_BytesPerPixel] = {255, 255, 255, 255};
+    const unsigned char s_WhiteTextureData[s_BytesPerPixel] = { 255, 255, 255, 255 };
 
     auto s_TextureDesc = CD3DX12_RESOURCE_DESC::Tex2D(
         DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -255,7 +254,7 @@ void DebugEffect::CreateTexture(
 }
 
 void DebugEffect::CreateShaderResourceView(
-    ScopedD3DRef<ID3D12Device> p_Device, const CD3DX12_RESOURCE_DESC& p_TextureDesc, ID3D12Resource* p_TextureResource
+    ID3D12Device* p_Device, const CD3DX12_RESOURCE_DESC& p_TextureDesc, ID3D12Resource* p_TextureResource
 ) {
     D3D12_DESCRIPTOR_HEAP_DESC s_SRVHeapDesc = {};
     s_SRVHeapDesc.NumDescriptors = 1;
@@ -279,7 +278,7 @@ void DebugEffect::CreateShaderResourceView(
     p_Device->CreateShaderResourceView(p_TextureResource, &s_SRVDesc, m_pSRVHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void DebugEffect::CreateSampler(ScopedD3DRef<ID3D12Device> p_Device) {
+void DebugEffect::CreateSampler(ID3D12Device* p_Device) {
     D3D12_SAMPLER_DESC s_SamplerDesc = {};
     s_SamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
     s_SamplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -305,12 +304,12 @@ void DebugEffect::CreateSampler(ScopedD3DRef<ID3D12Device> p_Device) {
     p_Device->CreateSampler(&s_SamplerDesc, m_pSamplerHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void DebugEffect::Apply(ScopedD3DRef<ID3D12Device> p_Device, ScopedD3DRef<ID3D12GraphicsCommandList> p_CommandList) {
+void DebugEffect::Apply(ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList) {
     m_constantBufferResource = DirectX::GraphicsMemory::Get(p_Device).AllocateConstant(m_Constants);
 
     p_CommandList->SetGraphicsRootSignature(m_pRootSignature);
 
-    ID3D12DescriptorHeap* s_Heaps[] = {m_pSRVHeap, m_pSamplerHeap};
+    ID3D12DescriptorHeap* s_Heaps[] = { m_pSRVHeap, m_pSamplerHeap };
 
     p_CommandList->SetDescriptorHeaps(_countof(s_Heaps), s_Heaps);
 
@@ -364,9 +363,9 @@ bool DebugEffect::CompileShaderFromString(
 ) {
     UINT s_CompileFlags = 0;
 
-    #if defined(_DEBUG)
+#if defined(_DEBUG)
     s_CompileFlags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-    #endif
+#endif
 
     ScopedD3DRef<ID3DBlob> s_ErrorBlob;
 
@@ -381,7 +380,7 @@ bool DebugEffect::CompileShaderFromString(
         s_CompileFlags,
         0,
         p_ShaderBlob,
-        &s_ErrorBlob.Ref
+        &s_ErrorBlob.m_Ref
     );
 
     if (FAILED(s_Result)) {

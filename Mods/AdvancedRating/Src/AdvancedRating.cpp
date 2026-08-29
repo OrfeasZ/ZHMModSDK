@@ -40,7 +40,7 @@ void AdvancedRating::Init() {
 void AdvancedRating::OnDrawUI(bool p_HasFocus) {
     char s_CurrentRating[256];
     sprintf_s(
-        s_CurrentRating, sizeof(s_CurrentRating), "RATING: %s (%lld)###AdvancedRating", GetCurrentRating().c_str(),
+        s_CurrentRating, sizeof(s_CurrentRating), "Rating: %s (%lld)###AdvancedRating", GetCurrentRating().c_str(),
         m_CurrentPoints
     );
 
@@ -49,23 +49,23 @@ void AdvancedRating::OnDrawUI(bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_WindowExpanded) {
-        ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY);
+        if (ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY)){
+            AcquireSRWLockShared(&m_EventLock);
 
-        AcquireSRWLockShared(&m_EventLock);
+            for (auto& s_Event : m_EventHistory) {
+                auto s_TypeName = s_Event.TypeToString();
 
-        for (auto& s_Event : m_EventHistory) {
-            auto s_TypeName = s_Event.TypeToString();
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(s_TypeName.c_str(), s_TypeName.c_str() + s_TypeName.size());
+                ImGui::TableNextColumn();
+                ImGui::Text("%lld", s_Event.Points);
+            }
 
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::TextUnformatted(s_TypeName.c_str(), s_TypeName.c_str() + s_TypeName.size());
-            ImGui::TableNextColumn();
-            ImGui::Text("%lld", s_Event.Points);
+            ReleaseSRWLockShared(&m_EventLock);
+
+            ImGui::EndTable();
         }
-
-        ReleaseSRWLockShared(&m_EventLock);
-
-        ImGui::EndTable();
     }
 
     ImGui::PopFont();
@@ -89,7 +89,7 @@ void AdvancedRating::OnEvent(RatingEventType p_EventType) {
 
 ZString AdvancedRating::GetCurrentRating() const {
     if (m_CurrentPoints < 10)
-        return "Silent Assassin";
+        return "Silent assassin";
 
     if (m_CurrentPoints < 20)
         return "Professional";
@@ -98,18 +98,18 @@ ZString AdvancedRating::GetCurrentRating() const {
         return "Expert";
 
     if (m_CurrentPoints < 40)
-        return "Contract Killer";
+        return "Contract killer";
 
     if (m_CurrentPoints < 50)
         return "Thug";
 
     if (m_CurrentPoints < 60)
-        return "Loose Cannon";
+        return "Loose cannon";
 
     if (m_CurrentPoints < 100)
         return "Madman";
 
-    return "Mass Murderer";
+    return "Mass murderer";
 }
 
 void AdvancedRating::RegisterEvent(RatingEventType p_EventType, int64_t p_Points) {
@@ -132,7 +132,7 @@ DEFINE_PLUGIN_DETOUR(
     ZString s_EventData;
     Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), s_EventData);
 
-    Logger::Debug("Achievement Event Sent: {} - {}", eventId, s_EventData);
+    Logger::Debug("[AdvancedRating] Achievement event sent: {} - {}", eventId, s_EventData);
 
     auto s_JsonEvent = nlohmann::json::parse(s_EventData.c_str(), s_EventData.c_str() + s_EventData.size());
 

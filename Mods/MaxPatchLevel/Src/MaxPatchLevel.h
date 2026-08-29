@@ -11,8 +11,8 @@ public:
 
 private:
     DECLARE_PLUGIN_DETOUR(
-        MaxPatchLevel, void*, IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo, IPackageManager::SPartitionInfo* th, void* a2,
-        const ZString& a3, int a4, int patchLevel
+        MaxPatchLevel, void*, IPackageManager_SPartitionInfo_SPartitionInfo, IPackageManager::SPartitionInfo* th, int32_t index,
+        ZString partitionID, IPackageManager::EPartitionType type, int32_t patchLevel
     );
 };
 

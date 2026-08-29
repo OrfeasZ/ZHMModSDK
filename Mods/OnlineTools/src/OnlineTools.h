@@ -15,8 +15,8 @@ private:
     void RestoreAuthHeaderChecks();
 
     // UI
-    void SettingsMenu();
-    void HelpMenu();
+    void DrawSettingsWindow();
+    void DrawHelpWindow();
 
     // Saving Helpers
     inline void SaveProtocol();

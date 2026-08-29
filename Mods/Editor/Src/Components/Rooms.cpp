@@ -4,18 +4,18 @@
 
 #include "Util/StringUtils.h"
 
-void Editor::DrawRooms(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_RoomsMenuActive) {
+void Editor::DrawRoomsWindow(const bool p_HasFocus) {
+    if (!p_HasFocus || !m_ShowRoomsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Rooms", &m_RoomsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Rooms", &m_ShowRoomsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing && p_HasFocus) {
-        if (!m_CachedEntityTree) {
-            if (ImGui::Button("Get Rooms")) {
+    if (s_IsWindowExpanded) {
+        if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+            if (ImGui::Button("Build entity tree")) {
                 UpdateEntities();
             }
 
@@ -40,7 +40,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
             s_CurrentRoomEntity->GetID(s_CurrentRoomEntityRef);
 
             auto s_Iterator = m_CachedEntityTreeMap.find(s_CurrentRoomEntityRef);
-            
+
             if (s_Iterator != m_CachedEntityTreeMap.end()) {
                 std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
 
@@ -48,7 +48,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
                 ImGui::SameLine();
 
-                if (ImGui::SmallButton("Select In Entity Tree##Player")) {
+                if (ImGui::SmallButton("Select in entity tree##Player")) {
                     OnSelectEntity(s_CurrentRoomEntityRef, true, std::nullopt);
                 }
 
@@ -77,7 +77,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
                 ImGui::SameLine();
 
-                if (ImGui::SmallButton("Select In Entity Tree##Camera")) {
+                if (ImGui::SmallButton("Select in entity tree##Camera")) {
                     OnSelectEntity(s_CurrentRoomEntityRef, true, std::nullopt);
                 }
 
@@ -88,18 +88,18 @@ void Editor::DrawRooms(const bool p_HasFocus) {
         ImGui::Checkbox("Show only visible rooms", &m_ShowOnlyVisibleRooms);
         ImGui::Checkbox("Show only visible gates", &m_ShowOnlyVisibleGates);
 
-        static char s_RoomName[2048]{ "" };
+        static char s_RoomName[2048] { "" };
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Room Name");
+        ImGui::Text("Room name");
         ImGui::SameLine();
 
         ImGui::InputText("##RoomName", s_RoomName, sizeof(s_RoomName));
 
-        static char s_GateName[2048]{ "" };
+        static char s_GateName[2048] { "" };
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Gate Name");
+        ImGui::Text("Gate name");
         ImGui::SameLine();
 
         ImGui::InputText("##GateName", s_GateName, sizeof(s_GateName));
@@ -162,7 +162,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
             std::shared_ptr<EntityTreeNode> s_RoomEntityTreeNode = s_Iterator->second;
 
-            if (!Util::StringUtils::FindSubstringUTF8(s_RoomEntityTreeNode->Name, s_RoomName)) {
+            if (!Util::StringUtils::FindSubstring(s_RoomEntityTreeNode->Name, s_RoomName)) {
                 continue;
             }
 
@@ -178,7 +178,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
             ImGui::SameLine();
 
-            if (ImGui::SmallButton("Select In Entity Tree")) {
+            if (ImGui::SmallButton("Select in entity tree")) {
                 OnSelectEntity(s_RoomEntityRef, true, std::nullopt);
             }
 
@@ -241,7 +241,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
                         std::shared_ptr<EntityTreeNode> s_GateEntityTreeNode = s_Iterator->second;
 
-                        if (!Util::StringUtils::FindSubstringUTF8(s_GateEntityTreeNode->Name, s_GateName)) {
+                        if (!Util::StringUtils::FindSubstring(s_GateEntityTreeNode->Name, s_GateName)) {
                             continue;
                         }
 
@@ -258,7 +258,7 @@ void Editor::DrawRooms(const bool p_HasFocus) {
 
                         ImGui::PushID(s_GateEntityTreeNode->EntityId);
 
-                        if (ImGui::SmallButton("Select In Entity Tree")) {
+                        if (ImGui::SmallButton("Select in entity tree")) {
                             OnSelectEntity(s_GateEntityRef, true, std::nullopt);
                         }
 

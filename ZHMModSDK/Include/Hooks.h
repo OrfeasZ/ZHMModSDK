@@ -93,6 +93,7 @@ class IBaseCharacter;
 class ZHitmanMorphemePostProcessor;
 class ZHM5WeaponRecoilController;
 class ZEvergreenCampaignManager;
+class ZFreeCameraControlEditorStyleEntity;
 
 class ZHMSDK_API Hooks {
 public:
@@ -133,8 +134,8 @@ public:
 
     static Hook<void(ZKeyboardWindows* th, bool a2)>* ZKeyboardWindows_Update;
 
-    static Hook<void*(IPackageManager::SPartitionInfo* th, void* a2, const ZString& a3, int a4, int patchLevel)>*
-    IPackageManager_SPartitionInfo_IPackageManager_SPartitionInfo;
+    static Hook<void*(IPackageManager::SPartitionInfo* th, int32_t index, ZString partitionID, IPackageManager::EPartitionType type, int32_t patchLevel)>*
+        IPackageManager_SPartitionInfo_SPartitionInfo;
 
     static Hook<void(ZGameLoopManager* th, const ZString& a2)>* ZGameLoopManager_ReleasePause;
     static Hook<bool(ZGameUIManagerEntity* th, EGameUIMenu menu, bool force)>* ZGameUIManagerEntity_TryOpenMenu;
@@ -147,8 +148,8 @@ public:
     static Hook<void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)>*
     ZAchievementManagerSimple_OnEventSent;
 
-    static Hook<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
-    static Hook<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
+    static Hook<bool(ZInputAction* th, int32_t controllerId)>* ZInputAction_Digital;
+    static Hook<float(ZInputAction* th, int32_t controllerId)>* ZInputAction_Analog;
 
     static Hook<void(
         ZEntityManager* th, TArrayRef<ZEntityRef> aEntities, const SExternalReferences& externalRefs,
@@ -342,5 +343,11 @@ public:
 
     static Hook<ZDynamicObject*(ZDynamicObject* th, const ZString& key, const ZDynamicObject& val)>* ZDynamicObject_Set_ZDynamicObject;
 
-    static Hook<ZEvergreenCampaignManager*(ZEvergreenCampaignManager* th)>* ZEvergreenCampaignManager_OnGenerate;
+    static Hook<ZEvergreenCampaignManager* (ZEvergreenCampaignManager* th)>* ZEvergreenCampaignManager_OnGenerate;
+
+    static Hook<void(ZFreeCameraControlEditorStyleEntity* th)>* ZFreeCameraControlEditorStyleEntity_UpdateMovementFromInput;
+
+    static Hook<ZString* (
+        ZFreeCameraControlEditorStyleEntity* th, ZString& result
+        )>* ZFreeCameraControlEditorStyleEntity_GenerateActionBindingString;
 };

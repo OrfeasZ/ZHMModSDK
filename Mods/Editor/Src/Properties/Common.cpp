@@ -110,14 +110,16 @@ void Editor::EntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity) {
             ImGui::GetColorU32(s_LinkColor)
         );
 
-        auto s_Iterator = m_CachedEntityTreeMap.find(p_Entity);
-
-        if (s_Iterator != m_CachedEntityTreeMap.end()) {
-            ImGui::SetTooltip("%s", s_Iterator->second->Name.c_str());
+        if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+            ImGui::SetTooltip("%s", "Entity tree not loaded, rebuild the entity tree");
         }
         else {
-            ImGui::SetTooltip("%s", "Entity tree not loaded, rebuild the entity tree");
-        };
+            auto s_Iterator = m_CachedEntityTreeMap.find(p_Entity);
+
+            if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                ImGui::SetTooltip("%s", s_Iterator->second->Name.c_str());
+            }
+        }
     }
 
     if (ImGui::IsItemClicked()) {
@@ -224,13 +226,13 @@ bool Editor::ZCurveProperty(
     ImGui::PushID(p_Id.c_str());
 
     ImGui::SameLine(0, 10.f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0, 0});
-    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.5, 0.5});
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 });
+    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, { 0.5, 0.5 });
     ImGui::SetWindowFontScale(0.6);
 
     const auto s_Result = ImGui::ButtonEx(
         (std::string(ICON_MD_SHOW_CHART) + "##" + p_Id).c_str(),
-        {m_CopyWidgetButtonSize, m_CopyWidgetButtonSize},
+        { m_CopyWidgetButtonSize, m_CopyWidgetButtonSize },
         ImGuiButtonFlags_AlignTextBaseLine
     );
 
@@ -320,7 +322,7 @@ void Editor::PlotZCurve(const ZCurve* p_Curve) {
             ("Segment##" + std::to_string(i)).c_str(),
             s_Xs.data(),
             s_Ys.data(),
-            (int) s_Xs.size()
+            (int32_t)s_Xs.size()
         );
     }
 
@@ -368,12 +370,12 @@ float Editor::EvaluateZCurveSegment(
 
     // f(t) = c5*t^5 + c4*t^4 + c3*t^3 + c2*t^2 + c1*t + c0
     return
-            p_Key[2] * s_T * s_T * s_T * s_T * s_T +
-            p_Key[3] * s_T * s_T * s_T * s_T +
-            p_Key[4] * s_T * s_T * s_T +
-            p_Key[5] * s_T * s_T +
-            p_Key[6] * s_T +
-            p_Key[7];
+        p_Key[2] * s_T * s_T * s_T * s_T * s_T +
+        p_Key[3] * s_T * s_T * s_T * s_T +
+        p_Key[4] * s_T * s_T * s_T +
+        p_Key[5] * s_T * s_T +
+        p_Key[6] * s_T +
+        p_Key[7];
 }
 
 std::string Editor::FormatZCurveForClipboard(ZCurve* p_Curve, void* p_Data, const IArrayType* p_ArrayType) {

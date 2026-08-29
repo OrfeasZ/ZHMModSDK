@@ -95,7 +95,7 @@ struct SPropertyInfo {
     int64_t m_nExtraData;
     uint32_t m_Flags;
     void (*m_PropertySetCallBack)(void*, void*, uint64_t, bool);
-    void (*m_PropetyGetter)(void*, void*, uint64_t);
+    void (*m_PropertyGetter)(void*, void*, uint64_t);
 };
 
 struct SNamedPropertyInfo {

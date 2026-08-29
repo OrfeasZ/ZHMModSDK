@@ -1,50 +1,64 @@
 diff --git a/imgui.cpp b/imgui.cpp
-index 45c913a0..8212aa3f 100644
+index 2edb22be2..8f13df8d5 100644
 --- a/imgui.cpp
 +++ b/imgui.cpp
-@@ -1416,6 +1416,7 @@ ImGuiStyle::ImGuiStyle()
-     ScrollbarPadding            = 2.0f;             // Padding of scrollbar grab within its frame (same for both axises)
+@@ -1514,6 +1514,7 @@ ImGuiStyle::ImGuiStyle()
+     ScrollbarPadding            = 2.0f;             // Padding of scrollbar grab within its frame (same for both axes)
      GrabMinSize                 = 12.0f;            // Minimum width/height of a grab box for slider/scrollbar
      GrabRounding                = 0.0f;             // Radius of grabs corners rounding. Set to 0.0f to have rectangular slider grabs.
-+    LayoutAlign                 = 0.5f;             // Element alignment inside horizontal and vertical layouts (0.0f - left/top, 1.0f - right/bottom, 0.5f - center).
++	LayoutAlign                 = 0.5f;             // Element alignment inside horizontal and vertical layouts (0.0f - left/top, 1.0f - right/bottom, 0.5f - center).
      LogSliderDeadzone           = 4.0f;             // The size in pixels of the dead-zone around zero on logarithmic sliders that cross zero.
+     ImageRounding               = 0.0f;             // Rounding of Image() calls.
      ImageBorderSize             = 0.0f;             // Thickness of border around tabs.
-     TabRounding                 = 5.0f;             // Radius of upper corners of a tab. Set to 0.0f to have rectangular tabs.
-@@ -3531,6 +3532,7 @@ static const ImGuiStyleVarInfo GStyleVarsInfo[] =
-     { 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, ScrollbarPadding) },          // ImGuiStyleVar_ScrollbarPadding
-     { 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, GrabMinSize) },               // ImGuiStyleVar_GrabMinSize
-     { 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, GrabRounding) },              // ImGuiStyleVar_GrabRounding
-+    { 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, LayoutAlign) },               // ImGuiStyleVar_LayoutAlign
-     { 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, ImageBorderSize) },           // ImGuiStyleVar_ImageBorderSize
-     { 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, TabRounding) },               // ImGuiStyleVar_TabRounding
-     { 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, TabBorderSize) },             // ImGuiStyleVar_TabBorderSize
-@@ -11080,6 +11082,10 @@ bool ImGui::ItemAdd(const ImRect& bb, ImGuiID id, const ImRect* nav_bb_arg, ImGu
+@@ -3687,6 +3688,7 @@ static const ImGuiStyleVarInfo GStyleVarsInfo[] =
+     { 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, SeparatorTextBorderSize)},    // ImGuiStyleVar_SeparatorTextBorderSize
+     { 2, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, SeparatorTextAlign) },        // ImGuiStyleVar_SeparatorTextAlign
+     { 2, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, SeparatorTextPadding) },      // ImGuiStyleVar_SeparatorTextPadding
++	{ 1, ImGuiDataType_Float, (ImU32)offsetof(ImGuiStyle, LayoutAlign) },               // ImGuiStyleVar_LayoutAlign
+ };
+ 
+ const ImGuiStyleVarInfo* ImGui::GetStyleVarInfo(ImGuiStyleVar idx)
+@@ -11078,6 +11080,9 @@ void    ImGui::ErrorRecoveryTryToRecoverWindowState(const ImGuiErrorRecoveryStat
+         IM_ASSERT_USER_ERROR(0, "Missing EndMultiSelect()");
+         EndMultiSelect();
+     }
++#ifdef IMGUI_HAS_STACK_LAYOUT
++    ImGuiInternal::LayoutErrorRecoveryTryToRecoverWindowState(window->ID);
++#endif
+     if (window->DC.MenuBarAppending) //-V1044
+     {
+         IM_ASSERT_USER_ERROR(0, "Missing EndMenuBar()");
+@@ -11334,6 +11339,10 @@ bool ImGui::ItemAdd(const ImRect& bb, ImGuiID id, const ImRect* nav_bb_arg, ImGu
+     // Lightweight clear of SetNextItemXXX data.
      g.NextItemData.HasFlags = ImGuiNextItemDataFlags_None;
      g.NextItemData.ItemFlags = ImGuiItemFlags_None;
- 
-+#if IMGUI_HAS_STACK_LAYOUT
++	
++#ifdef IMGUI_HAS_STACK_LAYOUT
 +    ImGuiInternal::UpdateItemRect(window->ID, bb.Min, bb.Max);
 +#endif
-+
+ 
  #ifdef IMGUI_ENABLE_TEST_ENGINE
      if (id != 0)
-         IMGUI_TEST_ENGINE_ITEM_ADD(id, g.LastItemData.NavRect, &g.LastItemData);
-@@ -11179,6 +11185,34 @@ void ImGui::ItemSize(const ImVec2& size, float text_baseline_y)
+@@ -11433,6 +11442,38 @@ void ImGui::ItemSize(const ImVec2& size, float text_baseline_y)
+     ImGuiWindow* window = g.CurrentWindow;
      if (window->SkipItems)
          return;
- 
-+#if IMGUI_HAS_STACK_LAYOUT
++	
++#ifdef IMGUI_HAS_STACK_LAYOUT
 +    ImGuiLayoutType layout_type = ImGuiInternal::GetCurrentLayoutType(window->ID);
 +#else
 +    ImGuiLayoutType layout_type = window->DC.LayoutType;
 +#endif
-+    //if (g.IO.KeyAlt) window->DrawList->AddCircle(window->DC.CursorPos, 3.0f, IM_COL32(255,255,0,255), 4); // [DEBUG] Widget
++
++    //if (g.IO.KeyAlt) window->DrawList->AddCircle(window->DC.CursorPos, 3.0f, IM_COL32(255,255,0,255), 4); // [DEBUG] Widget position
++
 +    // Stack Layouts: Handle horizontal case first to simplify merge in case code handling vertical changes.
 +    if (layout_type == ImGuiLayoutType_Horizontal)
 +    {
 +        const float line_width = ImMax(window->DC.CurrLineSize.x, size.x);
++
 +        // Always align ourselves on pixel boundaries
-+        //if (g.IO.KeyAlt) window->DrawList->AddRect(window->DC.CursorPos, window->DC.CursorPos + ImVec2(size.x, line_height)
++        //if (g.IO.KeyAlt) window->DrawList->AddRect(window->DC.CursorPos, window->DC.CursorPos + ImVec2(size.x, line_height), IM_COL32(255,0,0,200)); // [DEBUG]
 +        window->DC.CursorPosPrevLine.x = window->DC.CursorPos.x;
 +        window->DC.CursorPosPrevLine.y = window->DC.CursorPos.y + size.y;
 +        window->DC.CursorPos.x = IM_TRUNC(window->DC.CursorPos.x + line_width + g.Style.ItemSpacing.x);
@@ -52,6 +66,7 @@ index 45c913a0..8212aa3f 100644
 +        window->DC.CursorMaxPos.x = ImMax(window->DC.CursorMaxPos.x, window->DC.CursorPos.x - g.Style.ItemSpacing.x);
 +        window->DC.CursorMaxPos.y = ImMax(window->DC.CursorMaxPos.y, window->DC.CursorPosPrevLine.y);
 +        //if (g.IO.KeyAlt) window->DrawList->AddCircle(window->DC.CursorMaxPos, 3.0f, IM_COL32(255,0,0,255), 4); // [DEBUG]
++
 +        window->DC.PrevLineSize.x = line_width;
 +        window->DC.PrevLineSize.y = 0.0f;
 +        window->DC.CurrLineSize.x = 0.0f;
@@ -60,11 +75,10 @@ index 45c913a0..8212aa3f 100644
 +        window->DC.IsSameLine = window->DC.IsSetPos = false;
 +        return;
 +    }
-+
+ 
      // We increase the height in this function to accommodate for baseline offset.
      // In theory we should be offsetting the starting position (window->DC.CursorPos), that will be the topic of a larger refactor,
-     // but since ItemSize() is not yet an API that moves the cursor (to handle e.g. wrapping) enlarging the height has the same effect.
-@@ -11197,15 +11231,12 @@ void ImGui::ItemSize(const ImVec2& size, float text_baseline_y)
+@@ -11452,15 +11493,12 @@ void ImGui::ItemSize(const ImVec2& size, float text_baseline_y)
      window->DC.CursorMaxPos.y = ImMax(window->DC.CursorMaxPos.y, window->DC.CursorPos.y - g.Style.ItemSpacing.y);
      //if (g.IO.KeyAlt) window->DrawList->AddCircle(window->DC.CursorMaxPos, 3.0f, IM_COL32(255,0,0,255), 4); // [DEBUG]
  
@@ -82,46 +96,207 @@ index 45c913a0..8212aa3f 100644
  IM_MSVC_RUNTIME_CHECKS_RESTORE
  
 diff --git a/imgui.h b/imgui.h
-index aa44a51f..30246151 100644
+index 9fdce397d..d215c91ae 100644
 --- a/imgui.h
 +++ b/imgui.h
-@@ -32,6 +32,7 @@
- #define IMGUI_VERSION_NUM   19230
+@@ -33,6 +33,7 @@
+ #define IMGUI_VERSION_NUM   19280
  #define IMGUI_HAS_TABLE             // Added BeginTable() - from IMGUI_VERSION_NUM >= 18000
  #define IMGUI_HAS_TEXTURES          // Added ImGuiBackendFlags_RendererHasTextures - from IMGUI_VERSION_NUM >= 19198
-+#define IMGUI_HAS_STACK_LAYOUT      1 // Stack-Layout PR #846
++#define IMGUI_HAS_STACK_LAYOUT      // Stack-Layout PR #846
  
  /*
  
-@@ -1822,6 +1823,7 @@ enum ImGuiStyleVar_
+@@ -1842,6 +1843,7 @@ enum ImGuiStyleVar_
      ImGuiStyleVar_ScrollbarPadding,         // float     ScrollbarPadding
      ImGuiStyleVar_GrabMinSize,              // float     GrabMinSize
      ImGuiStyleVar_GrabRounding,             // float     GrabRounding
-+    ImGuiStyleVar_LayoutAlign,              // float     LayoutAlign
++	ImGuiStyleVar_LayoutAlign,              // float     LayoutAlign
+     ImGuiStyleVar_ImageRounding,            // float     ImageRounding
      ImGuiStyleVar_ImageBorderSize,          // float     ImageBorderSize
      ImGuiStyleVar_TabRounding,              // float     TabRounding
-     ImGuiStyleVar_TabBorderSize,            // float     TabBorderSize
-@@ -2289,6 +2291,7 @@ struct ImGuiStyle
-     float       ScrollbarPadding;           // Padding of scrollbar grab within its frame (same for both axises).
+@@ -2315,6 +2317,7 @@ struct ImGuiStyle
+     float       ScrollbarPadding;           // Padding of scrollbar grab within its frame (same for both axes).
      float       GrabMinSize;                // Minimum width/height of a grab box for slider/scrollbar.
      float       GrabRounding;               // Radius of grabs corners rounding. Set to 0.0f to have rectangular slider grabs.
-+    float       LayoutAlign;                // Element alignment inside horizontal and vertical layouts (0.0f - left/top, 1.0f - right/bottom, 0.5f - center).
++	float       LayoutAlign;                // Element alignment inside horizontal and vertical layouts (0.0f - left/top, 1.0f - right/bottom, 0.5f - center).
      float       LogSliderDeadzone;          // The size in pixels of the dead-zone around zero on logarithmic sliders that cross zero.
+     float       ImageRounding;              // Rounding of Image() calls.
      float       ImageBorderSize;            // Thickness of border around Image() calls.
-     float       TabRounding;                // Radius of upper corners of a tab. Set to 0.0f to have rectangular tabs.
-@@ -4146,6 +4149,10 @@ typedef ImFontAtlasRect ImFontAtlasCustomRect;
+@@ -4231,6 +4234,10 @@ typedef ImFontAtlasRect ImFontAtlasCustomRect;
  #pragma warning (pop)
  #endif
  
-+#if IMGUI_HAS_STACK_LAYOUT
++#ifdef IMGUI_HAS_STACK_LAYOUT
 +#include "imgui_stacklayout.h"
 +#endif
 +
  // Include imgui_user.h at the end of imgui.h
  // May be convenient for some users to only explicitly include vanilla imgui.h and have extra stuff included.
  #ifdef IMGUI_INCLUDE_IMGUI_USER_H
+diff --git a/imgui_demo.cpp b/imgui_demo.cpp
+index 7d882f803..24bdb76d3 100644
+--- a/imgui_demo.cpp
++++ b/imgui_demo.cpp
+@@ -5314,6 +5314,156 @@ static void DemoWindowLayout()
+ 
+         ImGui::TreePop();
+     }
++	
++#ifdef IMGUI_HAS_STACK_LAYOUT
++    IMGUI_DEMO_MARKER("Layout/Stack Layout");
++    if (ImGui::TreeNode("Stack Layout"))
++    {
++        static bool widget_a = true, widget_b = true, widget_c = true;
++        static bool spring_a = true, spring_ab = true, spring_bc = true, spring_c = true;
++        static bool minimize_width = false, minimize_height = true;
++        static bool horizontal = true, draw_springs = true;
++        static ImVec2 item_spacing = ImGui::GetStyle().ItemSpacing;
++        static float a_c_spring_weight = 0.0f;
++        static float ab_spring_weight = 0.5f;
++        static float alignment = 0.5f;
++
++        struct funcs
++        {
++            static void VisibleSpring(float spring_weight)
++            {
++                ImGui::Spring(spring_weight);
++                if (!draw_springs)
++                    return;
++
++                ImVec2 rect_min = ImGui::GetItemRectMin();
++                ImVec2 rect_max = ImGui::GetItemRectMax();
++
++                ImVec2 rect_size = ImGui::GetItemRectSize();
++                if (rect_size.x <= 0.0f && rect_size.y <= 0.0f)
++                    return;
++
++                // Draw zig-zag
++                float width = 0.0f, spacing = 0.0f;
++                ImVec2 direction, origin;
++                ImVec2 spacing_min, spring_max;
++
++                if (horizontal)
++                {
++                    spacing     = floorf(item_spacing.x);
++                    width       = rect_size.x - spacing;
++                    origin      = ImVec2(floorf(rect_min.x), floorf(rect_min.y + (rect_max.y - rect_min.y) / 2));
++                    direction   = ImVec2(1.0f, 0.0f);
++                    spring_max  = ImVec2(rect_min.x + width, rect_max.y);
++                    spacing_min = ImVec2(rect_min.x + width, rect_min.y);
++                }
++                else
++                {
++                    spacing     = floorf(item_spacing.y);
++                    width       = rect_size.y - spacing;
++                    origin      = ImVec2(floorf(rect_min.x + (rect_max.x - rect_min.x) / 2), floorf(rect_min.y));
++                    direction   = ImVec2(0.0f, 1.0f);
++                    spring_max  = ImVec2(rect_max.x, rect_min.y + width);
++                    spacing_min = ImVec2(rect_min.x, rect_min.y + width);
++                }
++
++                if (spring_weight <= 0.0f && spacing <= 0.0f)
++                    return;
++
++                ImDrawList* draw_list = ImGui::GetWindowDrawList();
++
++                draw_list->PushClipRect(rect_min, rect_max, true);
++
++                draw_list->AddRectFilled(rect_min, spring_max, ImColor(80, 20, 80));
++                draw_list->AddRectFilled(spacing_min, rect_max, ImColor(80, 20, 20));
++
++                const float zig_zag_size = 3;
++                ImVec2 normal = ImVec2(-direction.y, direction.x);
++
++                draw_list->PathClear();
++                origin.x += 0.5f;
++                origin.y += 0.5f;
++                draw_list->PathLineTo(origin);
++                for (float x = zig_zag_size * 0.5f; x <= width; x += zig_zag_size)
++                {
++                    ImVec2 p;
++                    p.x = origin.x + direction.x * x + normal.x * zig_zag_size;
++                    p.y = origin.y + direction.y * x + normal.y * zig_zag_size;
++                    draw_list->PathLineTo(p);
++                    normal = ImVec2(-normal.x, -normal.y);
++                }
++                draw_list->PathStroke(ImColor(255, 255, 255, 190), false, 1.0f);
++
++                draw_list->PopClipRect();
++            }
++        };
++
++        ImGui::Checkbox("Widget A",  &widget_a);  ImGui::SameLine();
++        ImGui::Checkbox("Widget B",  &widget_b);  ImGui::SameLine();
++        ImGui::Checkbox("Widget C",  &widget_c);
++        ImGui::Checkbox("Spring A",  &spring_a);  ImGui::SameLine();
++        ImGui::Checkbox("Spring AB", &spring_ab); ImGui::SameLine();
++        ImGui::Checkbox("Spring BC", &spring_bc); ImGui::SameLine();
++        ImGui::Checkbox("Spring C",  &spring_c);
++        ImGui::Checkbox("Horizontal", &horizontal);            ImGui::SameLine();
++        ImGui::Checkbox("Minimize Width", &minimize_width);     ImGui::SameLine();
++        ImGui::Checkbox("Minimize Height",  &minimize_height);
++        ImGui::Checkbox("Draw Springs", &draw_springs); ImGui::SameLine();
++        ImGui::TextUnformatted(" "); ImGui::SameLine();
++        ImGui::ColorButton("- Spring", ImColor(80, 20, 80), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker); ImGui::SameLine();
++        ImGui::TextUnformatted("Spring"); ImGui::SameLine();
++        ImGui::TextUnformatted(" "); ImGui::SameLine();
++        ImGui::ColorButton("- Spacing", ImColor(80, 20, 20), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker); ImGui::SameLine();
++        ImGui::TextUnformatted("Item Spacing");
++        ImGui::DragFloat("Item Spacing", horizontal ? &item_spacing.x : &item_spacing.y, 0.1f, 0.0f, 50.0f);
++        ImGui::DragFloat("A & C Spring Weight", &a_c_spring_weight, 0.002f, 0.0f, 1.0f);
++        ImGui::DragFloat("AB Spring Weight", &ab_spring_weight, 0.002f, 0.0f, 1.0f);
++        if (ImGui::IsItemHovered()) ImGui::SetTooltip("BC Spring Weight = 1 - AB Spring Weight");
++        ImGui::DragFloat("Minor Axis Alignment", &alignment, 0.002f, 0.0f, 1.0f);
++        if (ImGui::IsItemHovered()) ImGui::SetTooltip("This is vertical alignment for horizontal layouts and horizontal alignment for vertical layouts.");
++        ImGui::Text("Layout widgets:");
++        ImGui::Text("| Spring A | Widget A | Spring AB | Widget B | Spring BC | Widget C | Spring C |");
++
++        ImGui::Spacing();
++
++        ImVec2 widget_size;
++        widget_size.x = floorf(ImGui::GetContentRegionAvail().x / 4);
++        widget_size.y = horizontal ? floorf(widget_size.x / 3) : widget_size.x;
++
++        ImVec2 small_widget_size = widget_size;
++        if (horizontal)
++            small_widget_size.y = floorf(small_widget_size.y / 2);
++        else
++            small_widget_size.x = floorf(small_widget_size.x / 2);
++
++        ImVec2 layout_size = ImVec2(widget_size.x * 4, widget_size.y * 4);
++        if (minimize_width)  layout_size.x = 0.0f;
++        if (minimize_height) layout_size.y = 0.0f;
++
++        // Minor axis alignment can be set by style or directly in BeginHorizontal/BeginVertical
++        // Example:
++        //    ImGui::PushStyleVar(ImGuiStyleVar_LayoutAlign, alignment);
++
++        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(floorf(item_spacing.x), floorf(item_spacing.y)));
++
++        if (horizontal) { ImGui::BeginHorizontal("h1", layout_size, alignment); } else { ImGui::BeginVertical("v1", layout_size, alignment); }
++        if (spring_a)   { funcs::VisibleSpring(a_c_spring_weight); }
++        if (widget_a)   { ImGui::Button("Widget A", widget_size); }
++        if (spring_ab)  { funcs::VisibleSpring(ab_spring_weight); }
++        if (widget_b)   { ImGui::Button("Widget B", small_widget_size); }
++        if (spring_bc)  { funcs::VisibleSpring(1.0f - ab_spring_weight); }
++        if (widget_c)   { ImGui::Button("Widget C", widget_size); }
++        if (spring_c)   { funcs::VisibleSpring(a_c_spring_weight); }
++        if (horizontal) { ImGui::EndHorizontal(); } else { ImGui::EndVertical(); }
++
++        ImGui::PopStyleVar();
++
++        ImDrawList* draw_list = ImGui::GetWindowDrawList();
++        draw_list->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImGuiCol_Border));
++
++        ImGui::TreePop();
++    }
++#endif // IMGUI_HAS_STACK_LAYOUT
+ }
+ 
+ //-----------------------------------------------------------------------------
 diff --git a/imgui_internal.h b/imgui_internal.h
-index ece4afbd..1c2f8383 100644
+index d66b6a9db..86fe16dbd 100644
 --- a/imgui_internal.h
 +++ b/imgui_internal.h
 @@ -11,6 +11,7 @@ Index of this file:
@@ -132,7 +307,7 @@ index ece4afbd..1c2f8383 100644
  // [SECTION] Macros
  // [SECTION] Generic helpers
  // [SECTION] ImDrawList support
-@@ -224,6 +225,14 @@ typedef ImU16 ImGuiTableDrawChannelIdx;
+@@ -226,6 +227,14 @@ typedef ImU16 ImGuiTableDrawChannelIdx;
  extern IMGUI_API ImGuiContext* GImGui;  // Current implicit context pointer
  #endif
  
@@ -140,19 +315,28 @@ index ece4afbd..1c2f8383 100644
 +// [SECTION] Stack Layout includes
 +//-------------------------------------------------------------------------
 +
-+#if IMGUI_HAS_STACK_LAYOUT
-+# include "imgui_stacklayout_internal.h"
++#ifdef IMGUI_HAS_STACK_LAYOUT
++#include "imgui_stacklayout_internal.h"
 +#endif
 +
  //-----------------------------------------------------------------------------
  // [SECTION] Macros
  //-----------------------------------------------------------------------------
+@@ -281,7 +290,7 @@ extern IMGUI_API ImGuiContext* GImGui;  // Current implicit context pointer
+ #define IM_F32_TO_INT8_UNBOUND(_VAL)    ((int)((_VAL) * 255.0f + ((_VAL)>=0 ? 0.5f : -0.5f)))   // Unsaturated, for display purpose
+ #define IM_F32_TO_INT8_SAT(_VAL)        ((int)(ImSaturate(_VAL) * 255.0f + 0.5f))               // Saturated, always output 0..255
+ #define IM_TRUNC(_VAL)                  ((float)(int)(_VAL))                                    // Positive values only! ImTrunc() is not inlined in MSVC debug builds
+-#define IM_ROUND(_VAL)                  ((float)(int)((_VAL) + 0.5f))                           // Positive values only! 
++#define IM_ROUND(_VAL)                  ((float)(int)((_VAL) + 0.5f))                           // Positive values only!
+ //#define IM_FLOOR IM_TRUNC             // [OBSOLETE] Renamed in 1.90.0 (Sept 2023)
+ 
+ // Hint for branch prediction
 diff --git a/imgui_stacklayout.cpp b/imgui_stacklayout.cpp
 new file mode 100644
-index 00000000..474bac23
+index 000000000..12c977954
 --- /dev/null
 +++ b/imgui_stacklayout.cpp
-@@ -0,0 +1,1206 @@
+@@ -0,0 +1,1229 @@
 +// dear imgui, v1.86 WIP
 +// (stack layout code)
 +
@@ -1278,6 +1462,29 @@ index 00000000..474bac23
 +    IM_UNUSED(min);
 +}
 +
++void ImGuiInternal::LayoutErrorRecoveryTryToRecoverWindowState(ImGuiID window_id)
++{
++    ImGuiLayoutWindowState* state = GetWindowLayoutState(window_id);
++
++    ImGuiContext& g = *GImGui;
++
++    ImGuiWindow* window = g.CurrentWindow;
++
++    while (state->CurrentLayout != NULL) //-V1044
++    {
++        if (state->CurrentLayout->Type == ImGuiLayoutType_Horizontal)
++        {
++            IM_ASSERT_USER_ERROR(0, "Missing EndHorizontal()");
++            ImGui::EndHorizontal();
++        }
++        else
++        {
++            IM_ASSERT_USER_ERROR(0, "Missing EndVertical()");
++            ImGui::EndVertical();
++        }
++    }
++}
++
 +
 +//-----------------------------------------------------------------------------
 +// [SECTION] Stack Layout: Public API
@@ -1361,7 +1568,7 @@ index 00000000..474bac23
 +#endif // #ifndef IMGUI_DISABLE
 diff --git a/imgui_stacklayout.h b/imgui_stacklayout.h
 new file mode 100644
-index 00000000..d9364dfb
+index 000000000..d9364dfbc
 --- /dev/null
 +++ b/imgui_stacklayout.h
 @@ -0,0 +1,38 @@
@@ -1405,7 +1612,7 @@ index 00000000..d9364dfb
 +#endif // #ifndef IMGUI_DISABLE
 diff --git a/imgui_stacklayout_internal.h b/imgui_stacklayout_internal.h
 new file mode 100644
-index 00000000..4a5e9bd4
+index 000000000..27a3b99c4
 --- /dev/null
 +++ b/imgui_stacklayout_internal.h
 @@ -0,0 +1,30 @@
@@ -1434,7 +1641,7 @@ index 00000000..4a5e9bd4
 +{
 +    IMGUI_API ImGuiLayoutType GetCurrentLayoutType(ImGuiID window_id);
 +    IMGUI_API void            UpdateItemRect(ImGuiID window_id, const ImVec2& min, const ImVec2& max);
-+
++    IMGUI_API void            LayoutErrorRecoveryTryToRecoverWindowState(ImGuiID window_id);
 +} // namespace ImGuiInternal
 +
 +

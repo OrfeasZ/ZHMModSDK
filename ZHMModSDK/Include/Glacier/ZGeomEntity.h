@@ -4,9 +4,14 @@
 #include "ZSpatialEntity.h"
 #include "ZResource.h"
 
-class ZRenderableEntity : public ZBoundedEntity //Size: 0xD0
-{
-    PAD(0x18);
+class ZRenderableEntity : public ZBoundedEntity {
+public:
+    ZRenderGraphNode* m_pRenderGraphData; // 0xB8
+    PAD(0x8); // 0xC0
+    uint32 m_nRenderBaseIndex; // 0xC8
+    uint8 m_nRenderType; // 0xCC
+    PAD(0x2); // 0xCD
+    bool m_UnknownFlags; // 0xCF
 };
 
 // Size: 0x70
@@ -22,7 +27,7 @@ public:
     //PAD(0x14); // 0x24
     PAD(0x8); // 0x24
     uint32_t m_nOffset; // 0x2C
-    PAD(0x8)
+    PAD(0x8);
     ID3D12Resource* m_pResource; // 0x38
     PAD(0x18); // 0x40
     char* m_pCPUBuffer; // 0x58
@@ -144,10 +149,10 @@ static_assert(offsetof(ZRenderInputLayout, m_ElementDesc) == 0x158);
 
 struct SPrimitiveBufferData {
     enum ERenderPrimType : unsigned char {
-        RENDER_PRIM_TYPE_INVALID        = 0,
-        RENDER_PRIM_TYPE_MESH           = 1,
+        RENDER_PRIM_TYPE_INVALID = 0,
+        RENDER_PRIM_TYPE_MESH = 1,
         RENDER_PRIM_TYPE_MESH_SPEEDTREE = 2,
-        RENDER_PRIM_TYPE_SPRITES        = 3
+        RENDER_PRIM_TYPE_SPRITES = 3
     };
 
     SRenderPrimitiveMeshDesc m_Description; // 0x00
@@ -163,7 +168,7 @@ struct SPrimitiveBufferData {
     PAD(0x8); // 0x60
     ZRenderIndexBuffer* m_pIndexBuffer; // 0x68
     ZRenderVertexBuffer* m_pVertexBuffers[4]; // 0x70
-    IRenderPrimitive* m_Primitive; //0x90
+    IRenderPrimitive* m_Primitive; // 0x90
     PAD(0x8); // 0x98
 };
 

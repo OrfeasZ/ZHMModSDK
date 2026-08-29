@@ -16,18 +16,15 @@
 #include "Glacier/SColorRGBA.h"
 #include "Glacier/ZGameTime.h"
 
-void Editor::DrawEntityProperties() {
+void Editor::DrawEntityPropertiesWindow() {
     auto s_ImgGuiIO = ImGui::GetIO();
 
-    ImGui::SetNextWindowPos({s_ImgGuiIO.DisplaySize.x - 500, 110}, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize({500, s_ImgGuiIO.DisplaySize.y - 110}, ImGuiCond_FirstUseEver);
-    ImGui::Begin(ICON_MD_TUNE " Entity Properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::SetNextWindowPos({ s_ImgGuiIO.DisplaySize.x - 500, 110 }, ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize({ 500, s_ImgGuiIO.DisplaySize.y - 110 }, ImGuiCond_FirstUseEver);
+    ImGui::Begin(ICON_MD_TUNE " Entity properties", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
 
-    if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
-        m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
-    ) {
+    if (IsSpecialEntityTreeNode(m_SelectedEntity)) {
         ImGui::End();
-
         return;
     }
 
@@ -41,7 +38,7 @@ void Editor::DrawEntityProperties() {
         }
 
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select Logical Parent");
+            ImGui::SetTooltip("Select logical parent");
 
         ImGui::SameLine(0, 5);
 
@@ -50,7 +47,7 @@ void Editor::DrawEntityProperties() {
         }
 
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select Owning Entity (Brick)");
+            ImGui::SetTooltip("Select owning entity (brick)");
 
         ImGui::SameLine(0, 5);
 
@@ -73,7 +70,7 @@ void Editor::DrawEntityProperties() {
             }
 
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Destroy Entity");
+                ImGui::SetTooltip("Destroy entity");
         }
 
         ZActor* s_Actor = s_SelectedEntity.QueryInterface<ZActor>();
@@ -91,20 +88,20 @@ void Editor::DrawEntityProperties() {
             }
 
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Select In Actors Menu");
+                ImGui::SetTooltip("Select in actors window");
             }
         }
 
         static bool s_LocalTransform = false;
-        ImGui::Checkbox("Local Transforms", &s_LocalTransform);
+        ImGui::Checkbox("Local transforms", &s_LocalTransform);
 
         ImGui::SameLine(0, 20);
 
-        if (ImGui::Checkbox("QNE Transforms", &m_UseQneTransforms)) {
+        if (ImGui::Checkbox("QNE transforms", &m_UseQneTransforms)) {
             SetSettingBool("general", "qne_transforms", m_UseQneTransforms);
         }
 
-        if (ImGui::Checkbox("Round Copied Matrix Values", &m_RoundCopiedMatrixValues)) {
+        if (ImGui::Checkbox("Round copied matrix values", &m_RoundCopiedMatrixValues)) {
             SetSettingBool("general", "round_copied_matrix_values", m_RoundCopiedMatrixValues);
         }
 
@@ -112,7 +109,7 @@ void Editor::DrawEntityProperties() {
 
         ImGui::AlignTextToFramePadding();
 
-        ImGui::TextUnformatted("Decimal Places");
+        ImGui::TextUnformatted("Decimal places");
 
         ImGui::SameLine();
 
@@ -142,7 +139,7 @@ void Editor::DrawEntityProperties() {
 
         ImGui::SameLine();
 
-        if (ImGui::InputDouble("Angle Snap", &m_AngleSnapValue)) {
+        if (ImGui::InputDouble("Angle snap", &m_AngleSnapValue)) {
             SetSettingDouble("general", "angle_snap_value", m_AngleSnapValue);
         }
 
@@ -152,7 +149,7 @@ void Editor::DrawEntityProperties() {
 
         ImGui::SameLine();
 
-        if (ImGui::InputDouble("Scale Snap", &m_ScaleSnapValue)) {
+        if (ImGui::InputDouble("Scale snap", &m_ScaleSnapValue)) {
             SetSettingDouble("general", "scale_snap_value", m_ScaleSnapValue);
         }
 
@@ -168,12 +165,12 @@ void Editor::DrawEntityProperties() {
 
             if (s_Iterator != m_CachedEntityTreeMap.end()) {
                 const std::shared_ptr<EntityTreeNode> s_EntityTreeNode = s_Iterator->second;
-                const std::string s_EntityName = s_EntityTreeNode->Name.substr(
-                    0,
-                    s_EntityTreeNode->Name.find_last_of(" (") - 1
-                );
 
-                ImGui::TextUnformatted(fmt::format("Entity Name: {}", s_EntityName).c_str());
+                const size_t s_Position = s_EntityTreeNode->Name.rfind(" (");
+                const std::string s_EntityName =
+                    s_Position != std::string::npos ? s_EntityTreeNode->Name.substr(0, s_Position) : s_EntityTreeNode->Name;
+
+                ImGui::TextUnformatted(fmt::format("Entity name: {}", s_EntityName).c_str());
 
                 if (ImGuiCopyWidget("EntityName")) {
                     CopyToClipboard(s_EntityName);
@@ -185,7 +182,7 @@ void Editor::DrawEntityProperties() {
                     CopyToClipboard(fmt::format("{:016x}", s_EntityTreeNode->EntityId));
                 }
 
-                ImGui::TextUnformatted(fmt::format("Entity Type: {}", s_EntityTreeNode->EntityType).c_str());
+                ImGui::TextUnformatted(fmt::format("Entity type: {}", s_EntityTreeNode->EntityType).c_str());
 
                 if (ImGuiCopyWidget("EntityType")) {
                     CopyToClipboard(s_EntityTreeNode->EntityType);
@@ -265,12 +262,14 @@ void Editor::DrawEntityProperties() {
                         }
                     }
                     else {
-                        ImGui::TextUnformatted(
-                            fmt::format("{}: {:016X}", s_EntityTreeNode->ReferencedBlueprintFactoryType, s_EntityTreeNode->ReferencedBlueprintFactory.GetID()
-                            ).c_str());
+                        if (!s_EntityTreeNode->ReferencedBlueprintFactoryType.empty()) {
+                            ImGui::TextUnformatted(
+                                fmt::format("{}: {:016X}", s_EntityTreeNode->ReferencedBlueprintFactoryType, s_EntityTreeNode->ReferencedBlueprintFactory.GetID()
+                                ).c_str());
 
-                        if (ImGuiCopyWidget("ReferencedBlueprintFactory")) {
-                            CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
+                            if (ImGuiCopyWidget("ReferencedBlueprintFactory")) {
+                                CopyToClipboard(fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID()));
+                            }
                         }
 
                         ImGui::TextUnformatted(fmt::format(
@@ -305,7 +304,7 @@ void Editor::DrawEntityProperties() {
         }
 
         if (const auto s_Spatial = s_SelectedEntity.QueryInterface<ZSpatialEntity>()) {
-            ImGui::TextUnformatted("Entity Transform");
+            ImGui::TextUnformatted("Entity transform");
 
             auto s_Trans = s_Spatial->GetObjectToWorldMatrix();
 
@@ -389,16 +388,15 @@ void Editor::DrawEntityProperties() {
 
                 CopyToClipboard(
                     fmt::format(
-                        "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},\"position\":{{\"x\":{},\"y\":{},\"z\":{}}},"
-                        "\"scale\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
+                        "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},"
+                        "\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
                         s_QneTrans.Rotation.x, s_QneTrans.Rotation.y, s_QneTrans.Rotation.z,
-                        s_QneTrans.Position.x, s_QneTrans.Position.y, s_QneTrans.Position.z,
-                        s_QneTrans.Scale.x, s_QneTrans.Scale.y, s_QneTrans.Scale.z
+                        s_QneTrans.Position.x, s_QneTrans.Position.y, s_QneTrans.Position.z
                     )
                 );
             }
 
-            if (ImGui::Button(ICON_MD_PERSON_PIN " Move to Hitman")) {
+            if (ImGui::Button(ICON_MD_PERSON_PIN " Move to hitman")) {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                     auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
@@ -408,7 +406,7 @@ void Editor::DrawEntityProperties() {
 
             ImGui::SameLine();
 
-            if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move Hitman to")) {
+            if (ImGui::Button(ICON_MD_PERSON_PIN_CIRCLE " Move hitman to")) {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                     auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
@@ -420,17 +418,17 @@ void Editor::DrawEntityProperties() {
         }
 
         if (const auto s_CameraEntity = s_SelectedEntity.QueryInterface<ZCameraEntity>()) {
-            if (ImGui::Button(ICON_MD_CAMERA "Toggle Camera")) {
+            if (ImGui::Button(ICON_MD_CAMERA "Toggle camera")) {
                 ZEntityRef s_EntRef;
                 auto s_Camera = s_CameraEntity->GetID(s_EntRef);
 
                 if (m_CameraActive) {
                     m_CameraActive = false;
-                    Editor::DeactivateCamera();
+                    DeactivateCamera();
                 }
                 else {
                     m_CameraActive = true;
-                    Editor::ActivateCamera(s_Camera);
+                    ActivateCamera(s_Camera);
                 }
             }
         }
@@ -440,25 +438,13 @@ void Editor::DrawEntityProperties() {
         static char s_InputPinName[1024] = {};
         static char s_InputPinTypeName[2048] = {};
 
-        if (ImGui::Button(ICON_MD_BOLT "##fireInputPin")) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_InputPinData) {
-                s_ObjectRef.Assign(m_InputPinTypeID, m_InputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, s_ObjectRef);
+        if (ImGui::Button(ICON_MD_BOLT "##FireInputPin")) {
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, m_InputPinValue);
 
             s_InputPinName[0] = '\0';
             s_InputPinTypeName[0] = '\0';
 
-            m_InputPinTypeID = nullptr;
-
-            if (m_InputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
-
-                m_InputPinData = nullptr;
-            }
+            m_InputPinValue.Clear();
         }
 
         auto s_InputPins = GetPins(s_SelectedEntity, false);
@@ -466,47 +452,35 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         Util::ImGuiUtils::InputWithAutocomplete(
-            "Input Pin##InputPinsPopup",
+            "Input pin##InputPinsPopup",
             s_InputPinName,
             sizeof(s_InputPinName),
             s_InputPins,
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
             },
-            [](const PinInfo& pin) -> std::string {
-                if (pin.description.empty()) {
-                    return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                if (s_PinInfo.m_Description.empty()) {
+                    return s_PinInfo.m_Name;
                 }
 
-                return pin.name + " - " + pin.description;
+                return s_PinInfo.m_Name + " - " + s_PinInfo.m_Description;
             },
-            [](const std::string&, const std::string&, const std::string& value) {
-                strcpy_s(s_InputPinName, value.c_str());
+            [](const std::string&, const std::string&, const std::string& p_Value) {
+                strcpy_s(s_InputPinName, p_Value.c_str());
             },
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
             }
         );
 
         if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_InputPinData) {
-                s_ObjectRef.Assign(m_InputPinTypeID, m_InputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, s_ObjectRef);
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, m_InputPinValue);
 
             s_InputPinName[0] = '\0';
             s_InputPinTypeName[0] = '\0';
 
-            m_InputPinTypeID = nullptr;
-
-            if (m_InputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
-
-                m_InputPinData = nullptr;
-            }
+            m_InputPinValue.Clear();
         }
 
         ImGui::AlignTextToFramePadding();
@@ -524,23 +498,17 @@ void Editor::DrawEntityProperties() {
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
             },
-            [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
-                const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
-                const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
+            [&](const std::string&, const std::string& p_TypeName, STypeID* p_TypeID) {
+                m_InputPinValue.Clear();
+                m_InputPinValue.UNSAFE_SetType(p_TypeID);
 
-                m_InputPinTypeID = s_TypeID;
+                void* s_Data = m_InputPinValue.AllocateMemory();
 
-                m_InputPinData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                    s_TypeSize, s_TypeAlignment
-                );
-
-                if (std::string(s_InputPinTypeName) == "SMatrix43") {
-                    auto s_Value = static_cast<SMatrix43*>(m_InputPinData);
-
-                    *s_Value = SMatrix43 {};
+                if (p_TypeName == "SMatrix43") {
+                    *static_cast<SMatrix43*>(s_Data) = SMatrix43 {};
                 }
                 else {
-                    memset(m_InputPinData, 0, s_TypeSize);
+                    memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
                 }
             },
             [](auto& p_Pair) -> STypeID* {
@@ -569,31 +537,19 @@ void Editor::DrawEntityProperties() {
             ImGui::EndDisabled();
         }
         else {
-            DrawEntityPinValue("##InputPinValue", s_InputPinTypeName, m_InputPinData);
+            DrawEntityPinValue("##InputPinValue", s_InputPinTypeName, m_InputPinValue.GetData());
         }
 
         static char s_OutputPinName[1024] = {};
         static char s_OutputPinTypeName[2048] = {};
 
-        if (ImGui::Button(ICON_MD_BOLT "##fireOutputPin")) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_OutputPinData) {
-                s_ObjectRef.Assign(m_OutputPinTypeID, m_OutputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, s_ObjectRef);
+        if (ImGui::Button(ICON_MD_BOLT "##FireOutputPin")) {
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, m_OutputPinValue);
 
             s_OutputPinName[0] = '\0';
             s_OutputPinTypeName[0] = '\0';
 
-            m_OutputPinTypeID = nullptr;
-
-            if (m_OutputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
-
-                m_OutputPinData = nullptr;
-            }
+            m_OutputPinValue.Clear();
         }
 
         auto s_OutputPins = GetPins(s_SelectedEntity, true);
@@ -601,47 +557,35 @@ void Editor::DrawEntityProperties() {
         ImGui::SameLine(0, 5);
 
         Util::ImGuiUtils::InputWithAutocomplete(
-            "Output Pin##OutputPinsPopup",
+            "Output pin##OutputPinsPopup",
             s_OutputPinName,
             sizeof(s_OutputPinName),
             s_OutputPins,
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
             },
-            [](const PinInfo& pin) -> std::string {
-                if (pin.description.empty()) {
-                    return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                if (s_PinInfo.m_Description.empty()) {
+                    return s_PinInfo.m_Name;
                 }
 
-                return pin.name + " - " + pin.description;
+                return s_PinInfo.m_Name + " - " + s_PinInfo.m_Description;
             },
             [](const std::string&, const std::string&, const std::string& value) {
                 strcpy_s(s_OutputPinName, value.c_str());
             },
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
             }
         );
 
         if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_OutputPinData) {
-                s_ObjectRef.Assign(m_OutputPinTypeID, m_OutputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, s_ObjectRef);
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, m_OutputPinValue);
 
             s_OutputPinName[0] = '\0';
             s_OutputPinTypeName[0] = '\0';
 
-            m_OutputPinTypeID = nullptr;
-
-            if (m_OutputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
-
-                m_OutputPinData = nullptr;
-            }
+            m_OutputPinValue.Clear();
         }
 
         ImGui::AlignTextToFramePadding();
@@ -659,23 +603,17 @@ void Editor::DrawEntityProperties() {
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
             },
-            [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
-                const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
-                const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
+            [&](const std::string&, const std::string& p_TypeName, STypeID* p_TypeID) {
+                m_OutputPinValue.Clear();
+                m_OutputPinValue.UNSAFE_SetType(p_TypeID);
 
-                m_OutputPinTypeID = s_TypeID;
+                void* s_Data = m_OutputPinValue.AllocateMemory();
 
-                m_OutputPinData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                    s_TypeSize, s_TypeAlignment
-                );
-
-                if (std::string(s_InputPinTypeName) == "SMatrix43") {
-                    auto s_Value = static_cast<SMatrix43*>(m_InputPinData);
-
-                    *s_Value = SMatrix43 {};
+                if (p_TypeName == "SMatrix43") {
+                    *static_cast<SMatrix43*>(s_Data) = SMatrix43 {};
                 }
                 else {
-                    memset(m_InputPinData, 0, s_TypeSize);
+                    memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
                 }
             },
             [](auto& p_Pair) -> STypeID* {
@@ -685,8 +623,8 @@ void Editor::DrawEntityProperties() {
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Value");
-        
-        if (std::string(s_InputPinTypeName) != "SMatrix43") {
+
+        if (std::string(s_OutputPinTypeName) != "SMatrix43") {
             ImGui::SameLine();
         }
 
@@ -704,7 +642,7 @@ void Editor::DrawEntityProperties() {
             ImGui::EndDisabled();
         }
         else {
-            DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinData);
+            DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinValue.GetData());
         }
 
         ImGui::Separator();
@@ -712,7 +650,7 @@ void Editor::DrawEntityProperties() {
         if (ImGui::CollapsingHeader("Keywords")) {
             static char s_KeywordString[2048] = {};
 
-            const float buttonWidth = ImGui::CalcTextSize(ICON_MD_ADD " Add Keyword").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+            const float buttonWidth = ImGui::CalcTextSize(ICON_MD_ADD " Add keyword").x + ImGui::GetStyle().FramePadding.x * 2.0f;
 
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
 
@@ -720,7 +658,7 @@ void Editor::DrawEntityProperties() {
 
             ImGui::SameLine();
 
-            if (ImGui::Button(ICON_MD_ADD " Add Keyword")) {
+            if (ImGui::Button(ICON_MD_ADD " Add keyword")) {
                 if (strlen(s_KeywordString) > 0) {
                     const int32_t s_Keyword = Hash::Fnv1a(s_KeywordString);
 
@@ -820,7 +758,7 @@ void Editor::DrawEntityProperties() {
                 );
 
                 if (s_PropertyInfo->m_propertyInfo.m_Flags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
-                    s_PropertyInfo->m_propertyInfo.m_PropetyGetter(
+                    s_PropertyInfo->m_propertyInfo.m_PropertyGetter(
                         reinterpret_cast<void*>(s_PropertyAddress),
                         s_Data,
                         s_PropertyInfo->m_propertyInfo.m_nExtraData
@@ -920,7 +858,7 @@ void Editor::DrawEntityProperties() {
 
                 ImGui::Separator();
 
-                // Free the property data.
+                s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
                 (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
             }
         }

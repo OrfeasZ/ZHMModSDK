@@ -17,11 +17,9 @@ target_include_directories(DebugMod PRIVATE
 )
 
 find_package(lz4 CONFIG REQUIRED)
-find_package(7zip CONFIG REQUIRED)
 
 target_link_libraries(DebugMod PRIVATE
         ZHMModSDK
         winhttp
         lz4::lz4
-        7zip::7zip
 )

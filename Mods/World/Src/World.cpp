@@ -17,25 +17,30 @@ void World::OnEngineInitialized() {
 
 void World::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_MAN " WORLD")) {
-        m_WorldMenuActive = !m_WorldMenuActive;
+        m_ShowWorldWindow = !m_ShowWorldWindow;
     }
 }
 
 void World::OnDrawUI(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_WorldMenuActive) {
+    if (!p_HasFocus || !m_ShowWorldWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("WORLD", &m_WorldMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("World", &m_ShowWorldWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Game Time Multiplier");
+        ImGui::Text("Game time multiplier");
         ImGui::SameLine();
 
-        ImGui::Checkbox("##EnableGameTimeMultiplier", &m_IsTimeMultiplierEnabled);
+        if (ImGui::Checkbox("##EnableGameTimeMultiplier", &m_IsTimeMultiplierEnabled)) {
+            if (!m_IsTimeMultiplierEnabled) {
+                Globals::GameTimeManager->m_fGameTimeMultiplier = 1.0f;
+            }
+        }
+
         ImGui::SameLine();
 
         ImGui::BeginDisabled(!m_IsTimeMultiplierEnabled);

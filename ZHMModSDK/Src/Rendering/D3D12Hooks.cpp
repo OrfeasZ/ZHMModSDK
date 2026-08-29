@@ -30,7 +30,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
     D3D12Hooks, HRESULT, D3D12CreateDevice, IUnknown* pAdapter, D3D_FEATURE_LEVEL MinimumFeatureLevel, REFIID riid,
     void** ppDevice
 ) {
-    #if _DEBUG
+#if _DEBUG
     /*ID3D12Debug* s_Debug = nullptr;
     uint32_t s_ThingResult = D3D12GetDebugInterface(IID_PPV_ARGS(&s_Debug));
 
@@ -62,55 +62,55 @@ DEFINE_DETOUR_WITH_CONTEXT(
         s_DredSettings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
         s_DredSettings->Release();
     }*/
-    #endif
+#endif
 
     Logger::Debug("[D3D12Hooks] Creating D3D12 device.");
 
     ID3D12Device* s_Device = nullptr;
-    auto s_Result = p_Hook->CallOriginal(pAdapter, MinimumFeatureLevel, riid, (void**) &s_Device);
+    auto s_Result = p_Hook->CallOriginal(pAdapter, MinimumFeatureLevel, riid, (void**)&s_Device);
 
     if (s_Result != S_OK)
-        return {HookAction::Return(), s_Result};
+        return { HookAction::Return(), s_Result };
 
     ScopedD3DRef<ID3D12Device10> s_Device10;
 
     if (s_Device->QueryInterface(REF_IID_PPV_ARGS(s_Device10)) != S_OK) {
         Logger::Warn("[D3D12Hooks] D3D12 device was not version 10. Not touching.");
         *ppDevice = s_Device;
-        return {HookAction::Return(), S_OK};
+        return { HookAction::Return(), S_OK };
     }
 
     Logger::Debug("[D3D12Hooks] Wrapping D3D12 device.");
-    auto s_WrappedFactory = new D3D12Device(s_Device10.Ref);
+    auto s_WrappedFactory = new D3D12Device(s_Device10.m_Ref);
     s_WrappedFactory->AddRef();
 
     *ppDevice = s_WrappedFactory;
 
-    return {HookAction::Return(), S_OK};
+    return { HookAction::Return(), S_OK };
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(D3D12Hooks, HRESULT, CreateDXGIFactory1, REFIID riid, void** ppFactory) {
     Logger::Debug("[D3D12Hooks] Creating DXGI factory.");
 
     IDXGIFactory* s_Factory = nullptr;
-    auto s_Result = p_Hook->CallOriginal(riid, (void**) &s_Factory);
+    auto s_Result = p_Hook->CallOriginal(riid, (void**)&s_Factory);
 
     if (s_Result != S_OK)
-        return {HookAction::Return(), s_Result};
+        return { HookAction::Return(), s_Result };
 
     ScopedD3DRef<IDXGIFactory4> s_Factory4;
 
     if (s_Factory->QueryInterface(REF_IID_PPV_ARGS(s_Factory4)) != S_OK) {
         Logger::Warn("[D3D12Hooks] DXGI factory was not version 4. Not touching.");
         *ppFactory = s_Factory;
-        return {HookAction::Return(), S_OK};
+        return { HookAction::Return(), S_OK };
     }
 
     Logger::Debug("[D3D12Hooks] Wrapping DXGI factory.");
-    auto s_WrappedFactory = new D3D12DXGIFactory(s_Factory4.Ref);
+    auto s_WrappedFactory = new D3D12DXGIFactory(s_Factory4.m_Ref);
     s_WrappedFactory->AddRef();
 
     *ppFactory = s_WrappedFactory;
 
-    return {HookAction::Return(), S_OK};
+    return { HookAction::Return(), S_OK };
 }

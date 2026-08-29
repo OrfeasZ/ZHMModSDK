@@ -318,18 +318,17 @@ void TitaniumBullets::RestoreRepositoryPatch() {
 }
 
 void TitaniumBullets::OnDrawMenu() {
-    // Add menu checkbox
-    if (ImGui::Checkbox(ICON_MD_SHIELD " Titanium Bullets", &m_Enabled)) {
+    if (ImGui::Checkbox(ICON_MD_SHIELD " TITANIUM BULLETS", &m_Enabled)) {
         SetSettingBool("TitaniumBullets", "Enabled", m_Enabled);
 
         if (m_Enabled) {
             m_AutoApplyDisabled = false;
             // Apply immediately if possible; otherwise the frame update will apply later.
             ApplyRepositoryPatch();
-            Logger::Info("[TitaniumBullets] ENABLED");
+            Logger::Info("[TitaniumBullets] Enabled");
         } else {
             RestoreRepositoryPatch();
-            Logger::Info("[TitaniumBullets] DISABLED");
+            Logger::Info("[TitaniumBullets] Disabled");
         }
     }
     
@@ -337,36 +336,36 @@ void TitaniumBullets::OnDrawMenu() {
         ImGui::SetTooltip("Replicates SMF TitaniumBullets by patching AmmoConfig in pro.repo");
     }
 
-    if (ImGui::Button("Debug")) {
-        m_DebugWindowActive = !m_DebugWindowActive;
+    if (ImGui::Button("TITANIUM BULLETS DEBUG")) {
+        m_ShowDebugWindow = !m_ShowDebugWindow;
     }
 }
 
 void TitaniumBullets::OnDrawUI(const bool p_HasFocus) {
-    if (!m_DebugWindowActive || !p_HasFocus) {
+    if (!m_ShowDebugWindow || !p_HasFocus) {
         return;
     }
     
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Titanium Bullets Debug", &m_DebugWindowActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Titanium bullets debug", &m_ShowDebugWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
     
-    if (s_Showing) {
-        ImGui::Text("Enabled: %s", m_Enabled ? "YES" : "NO");
-        ImGui::Text("Patch Applied: %s", m_PatchApplied ? "YES" : "NO");
-        ImGui::Text("Repo Patched: %u", m_RepoEntriesPatched);
-        ImGui::Text("Repo Restored: %u", m_RepoEntriesRestored);
+    if (s_IsWindowExpanded) {
+        ImGui::Text("Enabled: %s", m_Enabled ? "Yes" : "No");
+        ImGui::Text("Patch applied: %s", m_PatchApplied ? "Yes" : "No");
+        ImGui::Text("Repo patched: %u", m_RepoEntriesPatched);
+        ImGui::Text("Repo restored: %u", m_RepoEntriesRestored);
 
         ImGui::Separator();
 
-        if (ImGui::Button("Apply Now")) {
+        if (ImGui::Button("Apply now")) {
             m_AutoApplyDisabled = false;
             ApplyRepositoryPatch();
         }
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Restore Now")) {
+        if (ImGui::Button("Restore now")) {
             m_Enabled = false;
             SetSettingBool("TitaniumBullets", "Enabled", m_Enabled);
             RestoreRepositoryPatch();

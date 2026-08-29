@@ -59,15 +59,15 @@ private:
     static bool IsInTriangle(const SVector3& point, const SVector3& triangle1, const SVector3& triangle2, const SVector3& triangle3);
 
     static const char* CompiledBehaviorTypeToString(ECompiledBehaviorType p_Type);
-    
+
     DECLARE_PLUGIN_DETOUR(DebugMod, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(DebugMod, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
     DECLARE_PLUGIN_DETOUR(DebugMod, void, ZPFObstacleEntity_UpdateObstacle, ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate);
 
 private:
-    bool m_DebugMenuActive = false;
-    bool m_PositionsMenuActive = false;
+    bool m_ShowDebugWindow = false;
+    bool m_ShowPositionsWindow = false;
 
     bool m_RenderPlayerHealth = false;
     bool m_RenderPlayerOutfitHitPoints = false;
@@ -93,15 +93,14 @@ private:
     bool m_DrawObstacles = false;
     bool m_DrawDrawPlannerConnectivity = false;
     bool m_DrawAreaPenaltyMults = false;
-    bool m_DrawGizmos = false;
     NavPower::NavMesh m_NavMesh;
     std::vector<uint8_t> m_NavpData;
     std::vector<NavPower::Area*> m_Areas;
     std::vector<std::vector<SVector3>> m_Vertices;
-    std::vector<std::vector<unsigned short>> m_Indices;
+    std::vector<std::vector<uint16_t>> m_Indices;
     std::vector<Line> m_NavMeshLines;
     std::vector<Line> m_NavMeshConnectivityLines;
-    std::unordered_map<IPFObstacleInternal*, uint64_t> m_ObstaclesToEntityIDs;
+    std::unordered_map<IPFObstacleInternal*, uint64_t> m_ObstacleToEntityID;
 };
 
 DECLARE_ZHM_PLUGIN(DebugMod)

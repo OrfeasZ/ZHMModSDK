@@ -11,7 +11,6 @@
 #include "IPluginInterface.h"
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
-#include "Util/HashingUtils.h"
 #include "Util/StringUtils.h"
 
 #include "Rendering/Renderers/DirectXTKRenderer.h"
@@ -31,7 +30,6 @@
 #include "Glacier/ZActor.h"
 #include "D3DUtils.h"
 #include "Glacier/ZRender.h"
-#include "Rendering/Renderers/ImGuiImpl.h"
 
 #include "Glacier/ZLobby.h"
 #include "Glacier/ZRakNet.h"
@@ -116,7 +114,7 @@ void ModSDK::DestroyInstance() {
             delete g_Instance;
             g_Instance = nullptr;
             return 0;
-        },
+    },
         nullptr,
         0,
         nullptr
@@ -130,12 +128,12 @@ ModSDK::ModSDK() {
 
     LoadConfiguration();
 
-    #if _DEBUG
+#if _DEBUG
     m_DebugConsole = std::make_shared<DebugConsole>();
     SetupLogging(spdlog::level::trace);
-    #else
+#else
     SetupLogging(spdlog::level::info);
-    #endif
+#endif
 
     m_ModLoader = std::make_shared<ModLoader>();
 
@@ -170,12 +168,12 @@ ModSDK::~ModSDK() {
     HookRegistry::DestroyHooks();
     Trampolines::ClearTrampolines();
 
-    #if _DEBUG
+#if _DEBUG
     FlushLoggers();
     ClearLoggers();
 
     m_DebugConsole.reset();
-    #endif
+#endif
 
     if (m_EnableSentry.value_or(false)) {
         sentry_close();
@@ -275,7 +273,7 @@ void ModSDK::LoadConfiguration() {
             continue;
 
         if (s_Mod.second.has("noui") && s_Mod.second.get("noui") == "true") {
-            m_UiEnabled = false;
+            m_UIEnabled = false;
             MessageBoxA(
                 nullptr,
                 "WARNING: The mod SDK UI is currently disabled!\n\nIf you want to re-enable it, remove the 'noui = true' line from Retail/mods.ini and restart your game.",
@@ -297,7 +295,7 @@ void ModSDK::LoadConfiguration() {
         if (s_Mod.second.has("ui_toggle_key") && !s_Mod.second.get("ui_toggle_key").empty()) {
             // Try to parse its value as a uint8_t.
             try {
-                m_UiToggleScanCode = std::stoul(s_Mod.second.get("ui_toggle_key"), nullptr, 0);
+                m_UIToggleScanCode = std::stoul(s_Mod.second.get("ui_toggle_key"), nullptr, 0);
             }
             catch (const std::exception&) {
                 Logger::Error("Could not parse ui_toggle_key value from mod.ini. Using default value.");
@@ -308,12 +306,12 @@ void ModSDK::LoadConfiguration() {
             m_IgnoredVersion = s_Mod.second.get("ignore_version");
         }
 
-        if (s_Mod.second.has("no_updates_for_me_please")) {
+        if (s_Mod.second.has("disable_update_check")) {
             m_DisableUpdateCheck = true;
         }
 
         if (s_Mod.second.has("shown_ui_toggle_warning")) {
-            m_HasShownUiToggleWarning = true;
+            m_HasShownUIToggleWarning = true;
         }
 
         if (s_Mod.second.has("force_load")) {
@@ -347,13 +345,13 @@ void ModSDK::LoadConfiguration() {
     }
 }
 
-void ModSDK::SetHasShownUiToggleWarning() {
-    m_HasShownUiToggleWarning = true;
+void ModSDK::SetHasShownUIToggleWarning() {
+    m_HasShownUIToggleWarning.store(true, std::memory_order_release);
 
-    UpdateSdkIni(
+    UpdateSDKIni(
         [&](auto& s_SdkMap) {
             s_SdkMap.set("shown_ui_toggle_warning", "true");
-        }
+    }
     );
 }
 
@@ -451,7 +449,7 @@ std::pair<uint32_t, std::string> ModSDK::RequestLatestVersion() {
     }
     while (s_ResponseSize > 0);
 
-    return {s_StatusCode, s_Response};
+    return { s_StatusCode, s_Response };
 }
 
 void ModSDK::ShowVersionNotice(const std::string& p_Version) {
@@ -467,7 +465,7 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
     std::wstring s_WideContent(s_ContentSize, 0);
     MultiByteToWideChar(CP_UTF8, 0, s_ContentStr.c_str(), -1, s_WideContent.data(), s_ContentSize);
 
-    TASKDIALOGCONFIG s_Config = {0};
+    TASKDIALOGCONFIG s_Config = { 0 };
     s_Config.cbSize = sizeof(s_Config);
     s_Config.hInstance = GetModuleHandle(nullptr);
     s_Config.dwFlags = TDF_ENABLE_HYPERLINKS | TDF_USE_COMMAND_LINKS;
@@ -525,17 +523,17 @@ void ModSDK::ShowVersionNotice(const std::string& p_Version) {
         }
 
         return S_OK;
-    };
+        };
 
     TaskDialogIndirect(&s_Config, nullptr, nullptr, nullptr);
 }
 
 // Write the version to skip update notifications for to the mods.ini file.
 void ModSDK::SkipVersionUpdate(const std::string& p_Version) {
-    UpdateSdkIni(
+    UpdateSDKIni(
         [&](auto& s_SdkMap) {
             s_SdkMap.set("ignore_version", p_Version);
-        }
+    }
     );
 }
 
@@ -581,8 +579,8 @@ bool ModSDK::CheckForUpdates() const {
         const std::string s_LatestVersionStr(s_LatestVersion.substr(1));
 
         // Compare the latest version with the current version.
-        semver::version s_CurrentVersion(SDKVersion());
-        semver::version s_LatestSemver(s_LatestVersionStr);
+        const auto s_CurrentVersion = semver::from_string(SDKVersion());
+        const auto s_LatestSemver = semver::from_string(s_LatestVersionStr);
 
         if (s_LatestSemver > s_CurrentVersion) {
             Logger::Info("A new version of the Mod SDK is available: {}.", s_LatestVersion);
@@ -605,7 +603,7 @@ bool ModSDK::CheckForUpdates() const {
 }
 
 // Built-in console commands
-void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
+void ModSDK::OnConsoleCommand(void* p_Context, TArray<ZString>& p_Args) {
     if (p_Args.size() == 1) {
         if (p_Args[0] == "unloadall") {
             ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
@@ -626,106 +624,134 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
             ModSDK::GetInstance()->GetModLoader()->ReloadMod(p_Args[1].c_str());
         }
         else if (p_Args[0] == "config") {
-            ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
+            ZConfigCommand* s_ConfigCommand = ZConfigCommand::Get(p_Args[1]);
 
-            if (!s_Command)
-                return Logger::Error("[ZConfigCommand] Invalid command.");
+            if (!s_ConfigCommand) {
+                Logger::Error("[ZConfigCommand] Invalid command.");
+                return;
+            }
 
-            switch (s_Command->GetType()) {
-                case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT:
-                    return Logger::Info(
+            switch (s_ConfigCommand->GetType()) {
+                case ZConfigCommand::ECLASSTYPE::ECLASS_FLOAT:
+                    Logger::Info(
                         "[ZConfigCommand] {} - float - {}",
                         p_Args[1],
-                        s_Command->As<ZConfigFloat>()->GetValue()
+                        s_ConfigCommand->As<ZConfigFloat>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_INT:
-                    return Logger::Info(
+                    return;
+                case ZConfigCommand::ECLASSTYPE::ECLASS_INT:
+                    Logger::Info(
                         "[ZConfigCommand] {} - int - {}",
                         p_Args[1],
-                        s_Command->As<ZConfigInt>()->GetValue()
+                        s_ConfigCommand->As<ZConfigInt>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
-                    return Logger::Info(
+                    return;
+                case ZConfigCommand::ECLASSTYPE::ECLASS_STRING:
+                    Logger::Info(
                         "[ZConfigCommand] {} - string - \"{}\"",
                         p_Args[1],
-                        s_Command->As<ZConfigString>()->GetValue()
+                        s_ConfigCommand->As<ZConfigString>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
-                    return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+                    return;
+                case ZConfigCommand::ECLASSTYPE::ECLASS_UNKNOWN:
+                    Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+                    return;
             }
         }
     }
 
     if (p_Args.size() == 3) {
         if (p_Args[0] == "config") {
-            ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
+            ZConfigCommand* s_ConfigCommand = ZConfigCommand::Get(p_Args[1]);
 
-            if (!s_Command)
-                return Logger::Info("[ZConfigCommand] Invalid command.");
+            if (!s_ConfigCommand) {
+                Logger::Info("[ZConfigCommand] Invalid command.");
+                return;
+            }
 
             // Now we validate the input, we technically don't need to do this as it'll be done by the engine function
             // we call. But we do this to provide output to the user.
-            switch (s_Command->GetType()) {
-                case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT: {
+            switch (s_ConfigCommand->GetType()) {
+                case ZConfigCommand::ECLASSTYPE::ECLASS_FLOAT: {
                     try {
-                        size_t pos;
-                        static_cast<void>(std::stof(p_Args[2].c_str(), &pos));
-                        if (pos != p_Args[2].size())
-                            return Logger::Error(
+                        size_t s_ParsedLength;
+                        static_cast<void>(std::stof(p_Args[2].c_str(), &s_ParsedLength));
+
+                        if (s_ParsedLength != p_Args[2].size()) {
+                            Logger::Error(
                                 "[ZConfigCommand] Invalid input (float), not all characters provided were processed."
                             );
+                            return;
+                        }
                     }
                     catch (const std::invalid_argument&) {
-                        return Logger::Error(
+                        Logger::Error(
                             "[ZConfigCommand] Invalid input (float), input does not represent a float."
                         );
+                        return;
                     }
                     catch (const std::out_of_range&) {
-                        return Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
+                        Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
+                        return;
                     }
                     break;
                 }
-                case ZConfigCommand_ECLASSTYPE::ECLASS_INT: {
+                case ZConfigCommand::ECLASSTYPE::ECLASS_INT: {
                     try {
-                        size_t pos;
-                        unsigned long value = std::stoul(p_Args[2].c_str(), &pos);
-                        if (pos != p_Args[2].size())
-                            return Logger::Error(
+                        size_t s_ParsedLength;
+                        unsigned long s_Value = std::stoul(p_Args[2].c_str(), &s_ParsedLength);
+
+                        if (s_ParsedLength != p_Args[2].size()) {
+                            Logger::Error(
                                 "[ZConfigCommand] Invalid input (integer), not all characters provided were processed."
                             );
-                        if (value > (std::numeric_limits<unsigned int>::max)())
-                            return Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
+                            return;
+                        }
+
+                        if (s_Value > (std::numeric_limits<unsigned int>::max)()) {
+                            Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
+                            return;
+                        }
                     }
                     catch (const std::invalid_argument&) {
-                        return Logger::Error(
+                        Logger::Error(
                             "[ZConfigCommand] Invalid input (integer), input does not represent a integer."
                         );
+                        return;
                     }
                     catch (const std::out_of_range&) {
-                        return Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
+                        Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
+                        return;
                     }
+
                     break;
                 }
-                case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
-                    if (p_Args[2].size() >= 256)
-                        return Logger::Error(
+                case ZConfigCommand::ECLASSTYPE::ECLASS_STRING: {
+                    if (p_Args[2].size() >= 256) {
+                        Logger::Error(
                             "[ZConfigCommand] Invalid input (string), maximum length of 255 exceeded."
                         );
+                        return;
+                    }
+
                     break;
-                case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
-                    return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+                }
+                case ZConfigCommand::ECLASSTYPE::ECLASS_UNKNOWN:
+                    Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+                    return;
             }
 
             Functions::ZConfigCommand_ExecuteCommand->Call(p_Args[1].c_str(), p_Args[2].c_str());
+
             Logger::Info(R"([ZConfigCommand] Set "{}" to "{}")", p_Args[1], p_Args[2]);
         }
     }
 }
 
 bool ModSDK::Startup() {
-    #if _DEBUG
+#if _DEBUG
     m_DebugConsole->StartRedirecting();
-    #endif
+#endif
 
     // If there's at least 3 failures, we probably have a problem.
     // Unless the bypass flag is set, show a message and exit.
@@ -752,7 +778,7 @@ bool ModSDK::Startup() {
                         MB_OK | MB_ICONERROR
                     );
                 }
-            }
+        }
         );
 
         s_VersionCheckThread.detach();
@@ -783,7 +809,7 @@ bool ModSDK::Startup() {
     m_D3D12Hooks->Startup();
 
     // Patch mutex creation to allow multiple instances.
-    uint8_t s_NopBytes[84] = {0x90};
+    uint8_t s_NopBytes[84] = { 0x90 };
     memset(s_NopBytes, 0x90, 84);
     if (!PatchCode(
         "\x4C\x8D\x05\x00\x00\x00\x00\xBA\x00\x00\x00\x00\x33\xC9\xFF\x15",
@@ -826,7 +852,7 @@ bool ModSDK::Startup() {
         std::thread s_VersionCheckThread(
             [&]() {
                 CheckForUpdates();
-            }
+        }
         );
 
         s_VersionCheckThread.detach();
@@ -943,10 +969,10 @@ void ModSDK::OnDrawUI(bool p_HasFocus) {
 
         if (ImGui::Button("Disable", s_ButtonSize)) {
             m_EnableSentry = false;
-            UpdateSdkIni(
+            UpdateSDKIni(
                 [&](auto& s_SdkMap) {
                     s_SdkMap.set("crash_reporting", "false");
-                }
+            }
             );
         }
 
@@ -954,10 +980,10 @@ void ModSDK::OnDrawUI(bool p_HasFocus) {
 
         if (ImGui::Button("Enable", s_ButtonSize)) {
             m_EnableSentry = true;
-            UpdateSdkIni(
+            UpdateSDKIni(
                 [&](auto& s_SdkMap) {
                     s_SdkMap.set("crash_reporting", "true");
-                }
+            }
             );
         }
 
@@ -1034,9 +1060,9 @@ void ModSDK::OnEngineInit() {
         sentry_reinstall_backend();
     }
 
-    if (m_UiEnabled) {
-        m_DirectXTKRenderer->OnEngineInit();
-        m_ImguiRenderer->OnEngineInit();
+    if (m_UIEnabled) {
+        m_DirectXTKRenderer->OnEngineInitialized();
+        m_ImguiRenderer->OnEngineInitialized();
     }
 
     /*if (Globals::ZProfileServerPageProxyBase_m_aRouteMap) {
@@ -1198,12 +1224,9 @@ void ModSDK::OnEngineInit() {
     m_ModLoader->UnlockRead();
 }
 
-static IDXGISwapChain* g_SwapChain = nullptr;
-static ID3D12CommandQueue* g_CommandQueue = nullptr;
-
-void ModSDK::SetSwapChain(Rendering::D3D12SwapChain* p_SwapChain) {
-    Logger::Debug("Setting swap chain to {}.", fmt::ptr(p_SwapChain));
-    g_SwapChain = p_SwapChain;
+void ModSDK::SetSwapChain(IDXGISwapChain3* p_SwapChain) {
+    m_DirectXTKRenderer->SetSwapChain(p_SwapChain);
+    m_ImguiRenderer->SetSwapChain(p_SwapChain);
 }
 
 void ModSDK::OnPresent(IDXGISwapChain3* p_SwapChain) {
@@ -1221,38 +1244,36 @@ void ModSDK::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult) 
 }
 
 void ModSDK::SetCommandQueue(ID3D12CommandQueue* p_CommandQueue) {
-    g_CommandQueue = p_CommandQueue;
-
     m_DirectXTKRenderer->SetCommandQueue(p_CommandQueue);
     m_ImguiRenderer->SetCommandQueue(p_CommandQueue);
 }
 
 void ModSDK::OnReset(IDXGISwapChain3* p_SwapChain) {
-    m_DirectXTKRenderer->OnReset();
-    m_ImguiRenderer->OnReset();
+    m_DirectXTKRenderer->OnReset(p_SwapChain);
+    m_ImguiRenderer->OnReset(p_SwapChain);
 }
 
 void ModSDK::PostReset(IDXGISwapChain3* p_SwapChain) {
-    m_ImguiRenderer->PostReset();
-    m_DirectXTKRenderer->PostReset();
+    m_ImguiRenderer->PostReset(p_SwapChain);
+    m_DirectXTKRenderer->PostReset(p_SwapChain);
 }
 
 void ModSDK::RequestUIFocus() {
-    if (!m_UiEnabled)
+    if (!m_UIEnabled)
         return;
 
     m_ImguiRenderer->SetFocus(true);
 }
 
 void ModSDK::ReleaseUIFocus() {
-    if (!m_UiEnabled)
+    if (!m_UIEnabled)
         return;
 
     m_ImguiRenderer->SetFocus(false);
 }
 
 ImGuiContext* ModSDK::GetImGuiContext() {
-    return ImGui::GetCurrentContext();
+    return m_ImguiRenderer->GetContext();
 }
 
 ImGuiMemAllocFunc ModSDK::GetImGuiAlloc() {
@@ -1303,7 +1324,7 @@ ImFont* ModSDK::GetImGuiBlackFont() {
 }
 
 ImPlotContext* ModSDK::GetImPlotContext() {
-    return ImPlot::GetCurrentContext();
+    return m_ImguiRenderer->GetImPlotContext();
 }
 
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name) {
@@ -1332,7 +1353,7 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
 
     if (s_Size.x == 0 && s_Size.y == 0) {
         const auto s_Desc = p_RT->m_pTexture2D->m_pResource->GetDesc();
-        s_Size = {static_cast<float>(s_Desc.Width), static_cast<float>(s_Desc.Height)};
+        s_Size = { static_cast<float>(s_Desc.Width), static_cast<float>(s_Desc.Height) };
     }
 
     const auto s_HandleIncrementSize = Globals::RenderManager->m_pDevice->m_pDevice->GetDescriptorHandleIncrementSize(
@@ -1341,7 +1362,7 @@ void ModSDK::ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Siz
 
     D3D12_GPU_DESCRIPTOR_HANDLE s_Handle {};
     s_Handle.ptr = Globals::RenderManager->m_pDevice->m_pFrameHeapCBVSRVUAV->GetGPUDescriptorHandleForHeapStart().ptr +
-            (p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
+        (p_RT->m_pSRV->m_nHeapDescriptorIndex * s_HandleIncrementSize);
 
     ImGui::GetWindowDrawList()->AddCallback(ImDrawCallback_SetGameDescriptorHeap, nullptr);
     ImGui::Image(s_Handle.ptr, s_Size);
@@ -1676,6 +1697,21 @@ bool ModSDK::CreateWICTextureFromFile(
     return m_ImguiRenderer->CreateWICTextureFromFile(p_FilePath, p_OutTexture, p_OutImGuiTexture);
 }
 
+bool ModSDK::CreateImGuiTextureSRV(ID3D12Resource* p_Texture, ImGuiTexture& p_OutImGuiTexture) {
+    return m_ImguiRenderer->CreateImGuiTextureSRV(p_Texture, p_OutImGuiTexture);
+}
+
+void ModSDK::DestroyImGuiTextureSRV(ImGuiTexture& p_Texture) {
+    return m_ImguiRenderer->DestroyImGuiTextureSRV(p_Texture);
+}
+
+void ModSDK::DestroyImGuiTexture(
+    ScopedD3DRef<ID3D12Resource>& p_Texture,
+    ImGuiTexture& p_ImGuiTexture
+) {
+    m_ImguiRenderer->DestroyImGuiTexture(p_Texture, p_ImGuiTexture);
+}
+
 void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size) {
     if (Globals::Hitman5Module->IsEngineInitialized()) {
         // If engine is initialized, allocate the normal way.
@@ -1731,15 +1767,15 @@ struct EOS_Platform_Options {
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options) {
     // Disable overlay in debug mode since it conflicts with Nsight and the like.
-    #if _DEBUG
+#if _DEBUG
     Logger::Debug("Disabling Epic overlay.");
     Options->Flags |= EOS_PF_LOADING_IN_EDITOR | EOS_PF_DISABLE_OVERLAY;
-    #endif
+#endif
 
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
-void ModSDK::UpdateSdkIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback) {
+void ModSDK::UpdateSDKIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback) {
     char s_ExePathStr[MAX_PATH];
     auto s_PathSize = GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
 
@@ -1805,6 +1841,14 @@ const char* ModSDK::SceneLoadingStageToString(ESceneLoadingStage p_SceneLoadingS
     }
 }
 
+void ModSDK::ImDrawCallback_SetGameDescriptorHeap(const ImDrawList*, const ImDrawCmd*) {
+    GetInstance()->GetImguiRenderer()->SetGameDescriptorHeap();
+}
+
+void ModSDK::ImDrawCallback_ResetDescriptorHeap(const ImDrawList*, const ImDrawCmd*) {
+    GetInstance()->GetImguiRenderer()->ResetDescriptorHeap();
+}
+
 DEFINE_DETOUR_WITH_CONTEXT(
     ModSDK,
     void,
@@ -1820,7 +1864,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
         m_DirectXTKRenderer->SetDepthBuffer((*dsv)->m_pTexture->m_pResource);
     }
 
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(
@@ -1843,7 +1887,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
             p_Parameters.m_SceneResource = m_AutoLoadScene;
         }
     }
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
@@ -1851,7 +1895,7 @@ DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void, OnClearScene, ZEntitySceneContext* th, 
         m_DirectXTKRenderer->ClearDepthBuffer();
     }
 
-    return {HookAction::Continue()};
+    return { HookAction::Continue() };
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(

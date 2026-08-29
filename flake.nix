@@ -32,7 +32,6 @@
               pkgs.cmake
               pkgs.ninja
               pkgs.pkg-config
-              pkgs.vcpkg-tool
               pkgs.xwin
               llvm.clang-unwrapped
               pkgs.lld
@@ -51,7 +50,6 @@
 
             shellHook = ''
               export VCPKG_ROOT="$PWD/External/vcpkg"
-              export VCPKG_FORCE_SYSTEM_BINARIES=1
               export VCPKG_DISABLE_METRICS=1
               export XWIN_SPLAT_DIR="$PWD/.xwin/splat"
               export INCLUDE="$XWIN_SPLAT_DIR/crt/include;$XWIN_SPLAT_DIR/sdk/include/ucrt;$XWIN_SPLAT_DIR/sdk/include/um;$XWIN_SPLAT_DIR/sdk/include/shared;$XWIN_SPLAT_DIR/sdk/include/winrt"
@@ -63,6 +61,9 @@
               if [ ! -d "$WINEPREFIX" ]; then
                 env -u NIX_CFLAGS_COMPILE -u NIX_LDFLAGS wineboot --init >/dev/null 2>&1 || true
               fi
+
+              # Bootstrap vcpkg.
+              ./External/vcpkg/bootstrap-vcpkg.sh
 
               # Regenerate the vcpkg overlay ports
               bash cmake/scripts/sync-vcpkg-overlays.sh >/dev/null \

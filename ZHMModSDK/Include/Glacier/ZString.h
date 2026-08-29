@@ -22,7 +22,8 @@ public:
 
     ZString() :
         m_nLength(0x80000000),
-        m_pChars(const_cast<char*>("")) {}
+        m_pChars(const_cast<char*>("")) {
+    }
 
     ZString(std::string_view str) :
         m_pChars(str.data()) {
@@ -34,18 +35,15 @@ public:
     }
 
     template <size_t N>
-    ZString(const char (&str)[N]) : ZString() {
+    ZString(const char(&str)[N]) : ZString() {
         Allocate(str, N - 1);
     }
 
-    ZString(const ZString& p_Other) {
-        if (p_Other.IsAllocated()) {
-            // TODO: Increase ref count instead.
-            Allocate(p_Other.c_str(), p_Other.size());
-        }
-        else {
-            m_nLength = p_Other.m_nLength;
-            m_pChars = p_Other.m_pChars;
+    ZString(const ZString& p_Other) :
+        m_nLength(p_Other.m_nLength),
+        m_pChars(p_Other.m_pChars) {
+        if (IsAllocated()) {
+            _InterlockedIncrement(&GetImpl()->m_nRefcount);
         }
     }
 
@@ -59,6 +57,10 @@ public:
 
     ZHMSDK_API ~ZString();
 
+    ZImpl* GetImpl() const {
+        return reinterpret_cast<ZImpl*>(const_cast<char*>(m_pChars)) - 1;
+    }
+
     static ZString AllocateFromCStr(const char* p_Str, uint32_t p_Size) {
         ZString s_String;
         s_String.Allocate(p_Str, p_Size);
@@ -71,17 +73,18 @@ public:
     }
 
     ZString& operator=(const ZString& p_Other) {
-        if (this == &p_Other)
+        if (this == &p_Other) {
             return *this;
+        }
 
         if (p_Other.IsAllocated()) {
-            // TODO: Increase ref count instead.
-            Allocate(p_Other.c_str(), p_Other.size());
+            _InterlockedIncrement(&p_Other.GetImpl()->m_nRefcount);
         }
-        else {
-            m_nLength = p_Other.m_nLength;
-            m_pChars = p_Other.m_pChars;
-        }
+
+        Free();
+
+        m_nLength = p_Other.m_nLength;
+        m_pChars = p_Other.m_pChars;
 
         return *this;
     }
@@ -182,6 +185,7 @@ public:
 
 private:
     ZHMSDK_API void Allocate(const char* str, uint32_t size);
+    ZHMSDK_API void Free();
 
 private:
     uint32_t m_nLength;
@@ -206,5 +210,5 @@ inline std::ostream& operator<<(std::ostream& p_Stream, const ZString& p_String)
 }
 
 inline ZString operator""_zs(const char* p_String, size_t p_Size) {
-    return {std::string_view(p_String, p_Size)};
+    return { std::string_view(p_String, p_Size) };
 }

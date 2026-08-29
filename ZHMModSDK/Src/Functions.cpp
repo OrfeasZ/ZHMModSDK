@@ -2,14 +2,14 @@
 #include "EngineFunctionImpl.h"
 
 PATTERN_FUNCTION(
-    "\x40\x53\x48\x83\xEC\x00\x48\x8B\x05\x00\x00\x00\x00\x4C\x8D\x81\x20\x04\x00\x00",
+    "\x40\x53\x48\x83\xEC\x00\x48\x8B\x05\x00\x00\x00\x00\x4C\x8D\x81\x30\x04\x00\x00",
     "xxxxx?xxx????xxxxxxx",
     ZActor_OnOutfitChanged,
     void(ZActor*)
 );
 
 PATTERN_FUNCTION(
-    "\x48\x89\x5C\x24\x10\x48\x89\x7C\x24\x18\x55\x48\x8D\x6C\x24\xA9\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x99\xD8\x02\x00\x00",
+    "\x48\x89\x5C\x24\x10\x48\x89\x7C\x24\x18\x55\x48\x8D\x6C\x24\xA9\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x99\xE8\x02\x00\x00",
     "xxxxxxxxxxxxxxxxxxx????xxxxxxx",
     ZActor_ReviveActor,
     void(ZActor*)
@@ -77,14 +77,14 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x20\x41\x56\x48\x83\xEC\x00\x8B\xDA",
     "xxxxxxxxxx?xx",
     ZInputAction_Analog,
-    double(ZInputAction* th, int a2)
+    float(ZInputAction* th, int32_t controllerId)
 );
 
 PATTERN_FUNCTION(
     "\x40\x53\x41\x56\x48\x83\xEC\x00\x8B\xDA",
     "xxxxxxx?xx",
     ZInputAction_Digital,
-    bool(ZInputAction* th, int a2)
+    bool(ZInputAction* th, int32_t controllerId)
 );
 
 /*
@@ -173,7 +173,7 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x8B\x81\xA0\x02\x00\x00",
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x57\x48\x83\xEC\x00\x8B\x81\xB0\x02\x00\x00",
     "xxxxxxxxxxxxxx?xxxxxx",
     ZHM5BaseCharacter_SendRequestToChildNetworks,
     void(ZHM5BaseCharacter* th, const ZString& request)
@@ -215,8 +215,8 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
-    "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x56\x57\x41\x56\x48\x83\xEC\x00\x48\x8B\x81\xD8\x02\x00\x00\x48\x8B\xE9",
-    "xxxxxxxxxxxxxxxxx?xxxxxxxxxx",
+    "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x56\x57\x41\x56\x48\x83\xEC\x00\x48\x8B\x81\xE8\x02\x00\x00\x48\x8B\xE9\x48\x81\xC1\x00\x00\x00\x00\x45\x8B\xF1\x49\x8B\xF0\x48\x8B\xFA\xFF\x50\x58\x84\xC0\x74\x00\x0F\x57\xC0\x0F\x2F\x85\x28\x10\x00\x00\x72\x00\x48\x8B\x85\xE8\x02\x00\x00\x48\x8D\x8D\xE8\x02\x00\x00\xFF\x50\x60\x84\xC0\x74\x00\x48\x8B\x06\x4C\x8D\x4C\x24\x60",
+    "xxxxxxxxxxxxxxxxx?xxxxxxxxxxxxx????xxxxxxxxxxxxxxx?xxxxxxxxxxx?xxxxxxxxxxxxxxxxxxxx?xxxxxxxx",
     ZActor_KillActor,
     void(ZActor* th, TEntityRef<IItem> rKillItem, TEntityRef<ZSetpieceEntity> rKillSetpiece, EDamageEvent eDamageEvent,
         EDeathBehavior eDeathBehavior)
@@ -268,7 +268,14 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x33\xED\x48\x8D\x05\x00\x00\x00\x00\x89\x69\x08",
     "xxxxxxxxxxxxxxxxxxx?xxxxx????xxx",
     ZResourceReader_ZResourceReader,
-    void(ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize)
+    void(ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr* pData, uint32_t dataSize)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8D\x05\x00\x00\x00\x00\x48\x8B\xD9\x48\x89\x01\x8B\xFA\x48\x83\xC1\x00\xE8\x00\x00\x00\x00\x48\x8D\x4B\x28\xE8\x00\x00\x00\x00\x48\x8B\x4B\x18",
+    "xxxxxxxxx?xxx????xxxxxxxxxxx?x????xxxxx????xxxx",
+	ZResourceReader_Dtor,
+	void(ZResourceReader* th)
 );
 
 PATTERN_VTABLE_FUNCTION(
@@ -304,7 +311,7 @@ PATTERN_FUNCTION(
 PATTERN_FUNCTION(
     "\x48\x8B\xC4\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x89\x58\x10\x4C\x89\x60\xF0",
     "xxxxxxx????xxxxxxxx",
-    ZResourceContainer_AcquireReferences,
+    ZResourceContainer_AcquireResourceReferences,
     void(ZResourceContainer* th, ZResourceIndex index)
 );
 
@@ -526,4 +533,60 @@ PATTERN_FUNCTION(
     "xxxxxxxxx",
     ZGameKeywordManager_RemoveKeyword,
     void(ZGameKeywordManager* th, const ZEntityRef& rHolder, int32_t nKeyword)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x8B\xC4\x48\x89\x48\x08\x55\x53\x41\x57",
+    "xxxxxxxxxxx",
+    ZFreeCameraControlEditorStyleEntity_GetSelectedEntities,
+    TArray<TEntityRef<ZSpatialEntity>>* (ZFreeCameraControlEditorStyleEntity* th, TArray<TEntityRef<ZSpatialEntity>>& result)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x55\x53\x57\x48\x8D\xAC\x24\x30\xFF\xFF\xFF",
+    "xxxxxxxxxxxx",
+    ZFreeCameraControlEditorStyleEntity_MoveCameraToSpatialEntities,
+    void(ZFreeCameraControlEditorStyleEntity* th, const TArray<TEntityRef<ZSpatialEntity>>& spatialEntities, bool bAllowZoomToPivot)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x56\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xF2\x49\x8B\xD9",
+    "xxxxxxxxxxxxxxxxxxxxxxxxx????xxxxxx",
+    ZFreeCameraControlEditorStyleEntity_GetSelectionCenter,
+    bool(const ZFreeCameraControlEditorStyleEntity* th, const float4& vSelCenter, const float4& vAABBMin, const float4& vAABBMax)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x48\x89\x7C\x24\x18\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xB9\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\xD9",
+    "xxxxxxxxxxxxxxxxxxxxxxx????xxx",
+    ZCameraUtil_PanCamera,
+    void(TEntityRef<ICameraEntity> pCamera, TEntityRef<ZSpatialEntity> pCameraSpatial, const float4& vMouseDelta, const float4& vHookPoint)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x8B\xC4\x48\x81\xEC\x00\x00\x00\x00\x44\x0F\x29\x40\xC8\x44\x0F\x29\x48\xB8",
+    "xxxxxx????xxxxxxxxxx",
+    ZFreeCameraControlEditorStyleEntity_OrbitCamera,
+    void(ZFreeCameraControlEditorStyleEntity* th, float4 orbitDelta, float4 orbitCenter)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x8B\xC4\x48\x89\x58\x08\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x59\x40",
+    "xxxxxxxxxxx????xxxx",
+    ZFreeCameraControlEditorStyleEntity_Rotate,
+    void(ZFreeCameraControlEditorStyleEntity* th, float fDeltaH, float fDeltaV)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x10\x48\x89\x6C\x24\x18\x57\x48\x83\xEC\x00\x0F\x29\x74\x24\x50",
+    "xxxxxxxxxxxxxx?xxxxx",
+    ZFreeCameraControlEditorStyleEntity_ZoomCamera,
+    void(ZFreeCameraControlEditorStyleEntity* th, float fZoom)
+);
+
+PATTERN_FUNCTION(
+    "\x4C\x8B\x0D\x00\x00\x00\x00\x44\x8B\x81\xC8\x00\x00\x00",
+    "xxx????xxxxxxx",
+    ZRenderableEntity_IsVisible,
+    bool(ZRenderableEntity* th)
 );

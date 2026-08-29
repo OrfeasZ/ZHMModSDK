@@ -46,7 +46,7 @@ Editor::Editor() {
         sizeof(s_Nop),
         0
     )) {
-        Logger::Error("Could not patch ZTemplateEntityBlueprintFactory data freeing.");
+        Logger::Error("[Editor] Could not patch ZTemplateEntityBlueprintFactory data freeing.");
     }
 
     if (!SDK()->PatchCode(
@@ -56,25 +56,25 @@ Editor::Editor() {
         sizeof(s_Nop),
         0
     )) {
-        Logger::Error("Could not patch ZTemplateEntityBlueprintFactory brick data freeing.");
+        Logger::Error("[Editor] Could not patch ZTemplateEntityBlueprintFactory brick data freeing.");
     }
 
     // Initialize Winsock and create the Qne socket and relevant things.
     WSADATA s_Ws;
     if (WSAStartup(MAKEWORD(2, 2), &s_Ws) != 0) {
-        Logger::Error("WSAStartup failed: %d", WSAGetLastError());
+        Logger::Error("[Editor] WSAStartup failed: %d", WSAGetLastError());
         return;
     }
 
     if ((m_QneSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
-        Logger::Error("Could not create socket: %d", WSAGetLastError());
+        Logger::Error("[Editor] Could not create socket: %d", WSAGetLastError());
         return;
     }
 
     // Make socket non-blocking.
     u_long s_NonBlocking = 1;
     if (ioctlsocket(m_QneSocket, FIONBIO, &s_NonBlocking) != 0) {
-        Logger::Error("Could not make socket non-blocking: %d", WSAGetLastError());
+        Logger::Error("[Editor] Could not make socket non-blocking: %d", WSAGetLastError());
         return;
     }
 
@@ -129,6 +129,8 @@ void Editor::Init() {
     m_RoundCopiedMatrixValues = GetSettingBool("general", "round_copied_matrix_values", false);
     m_CopyDecimalPlaces = GetSettingInt("general", "copy_decimal_places", 3);
     m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
+
+    m_BoxReflectionOutputFolder = GetSetting("general", "box_reflection_output_folder", "").c_str();
 }
 
 void Editor::OnDrawMenu() {
@@ -147,7 +149,7 @@ void Editor::OnDrawMenu() {
                 if (s_Brick.runtimeResourceID != ResId<"[assembly:/_sdk/editor/editor_data.brick].pc_entitytype">)
                     continue;
 
-                Logger::Debug("Found editor_data brick.");
+                Logger::Debug("[Editor] Found editor_data brick.");
 
                 const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.entityRef.GetBlueprintFactory());
 
@@ -155,13 +157,13 @@ void Editor::OnDrawMenu() {
 
                 if (s_Index != -1)
                 {
-                    Logger::Debug("Found RT at index {}.", s_Index);
+                    Logger::Debug("[Editor] Found RT at index {}.", s_Index);
                     m_CameraRT = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_Index);
 
                     const auto s_CameraRTEntity = m_CameraRT.QueryInterface<ZRenderDestinationTextureEntity>();
                     const auto s_RT = reinterpret_cast<ZRenderDestination*>(s_CameraRTEntity->GetRenderDestination());
 
-                    Logger::Debug("RTEntity = {} RT = {}", fmt::ptr(s_CameraRTEntity), fmt::ptr(s_RT));
+                    Logger::Debug("[Editor] RTEntity = {} RT = {}", fmt::ptr(s_CameraRTEntity), fmt::ptr(s_RT));
 
                     const auto s_Camera = Functions::GetCurrentCamera->Call();
 
@@ -172,7 +174,7 @@ void Editor::OnDrawMenu() {
 
                     for (auto& s_Client : *s_CameraRTEntity->GetClients())
                     {
-                        Logger::Debug("RT client = {} {:x} {}", fmt::ptr(s_Client.GetEntity()), s_Client->GetType()->m_nEntityId, (*s_Client->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName);
+                        Logger::Debug("[Editor] RT client = {} {:x} {}", fmt::ptr(s_Client.GetEntity()), s_Client->GetType()->m_nEntityId, (*s_Client->GetType()->m_pInterfaces)[0].m_pTypeId->typeInfo()->m_pTypeName);
                     }
                 }
 
@@ -180,10 +182,10 @@ void Editor::OnDrawMenu() {
 
                 if (s_CameraIndex != -1)
                 {
-                    Logger::Debug("Found Cam at index {}.", s_CameraIndex);
+                    Logger::Debug("[Editor] Found Cam at index {}.", s_CameraIndex);
                     m_Camera = s_BpFactory->GetSubEntity(s_Brick.entityRef.m_pEntity, s_CameraIndex);
 
-                    Logger::Debug("CamEntity = {}", fmt::ptr(m_Camera.GetEntity()));
+                    Logger::Debug("[Editor] CamEntity = {}", fmt::ptr(m_Camera.GetEntity()));
                 }
 
                 break;
@@ -192,19 +194,23 @@ void Editor::OnDrawMenu() {
     }*/
 
     if (ImGui::Button(ICON_MD_TUNE " ITEMS")) {
-        m_ItemsMenuActive = !m_ItemsMenuActive;
+        m_ShowItemsWindow = !m_ShowItemsWindow;
     }
 
     if (ImGui::Button(ICON_MD_PEOPLE " ACTORS")) {
-        m_ActorsMenuActive = !m_ActorsMenuActive;
+        m_ShowActorsWindow = !m_ShowActorsWindow;
     }
 
     if (ImGui::Button(ICON_MD_CATEGORY " DEBUG CHANNELS")) {
-        m_DebugChannelsMenuActive = !m_DebugChannelsMenuActive;
+        m_ShowDebugChannelsWindow = !m_ShowDebugChannelsWindow;
     }
 
     if (ImGui::Button(ICON_MD_MEETING_ROOM " ROOMS")) {
-        m_RoomsMenuActive = !m_RoomsMenuActive;
+        m_ShowRoomsWindow = !m_ShowRoomsWindow;
+    }
+
+    if (ImGui::Button(ICON_MD_VIEW_IN_AR " BOX REFLECTIONS")) {
+        m_ShowBoxReflectionsWindow = !m_ShowBoxReflectionsWindow;
     }
 }
 
@@ -322,9 +328,11 @@ void Editor::OnEngineInitialized() {
                 b.begin(), b.end(),
                 [](char ac, char bc) {
                     return std::tolower(ac) < std::tolower(bc);
-                });
-        }
+            });
+    }
     );
+
+    m_EnableBoxReflectionCache = Functions::GetApplicationOptionBool->Call("EnableBoxReflectionCache", true);
 }
 
 bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
@@ -351,20 +359,21 @@ bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
 
 void Editor::OnDrawUI(bool p_HasFocus) {
     auto s_ImgGuiIO = ImGui::GetIO();
-    DrawSettings(p_HasFocus);
+    DrawSettingsWindow(p_HasFocus);
 
     if (m_EditorWindowsVisible) {
-        DrawEntityTree();
-        DrawEntityProperties();
+        DrawEntityTreeWindow();
+        DrawEntityPropertiesWindow();
         DrawEntityManipulator(p_HasFocus);
-        //DrawPinTracer();
-        //DrawLibrary();
+        //DrawPinTracerWindow();
+        //DrawLibraryWindow();
     }
 
-    DrawItems(p_HasFocus);
-    DrawActors(p_HasFocus);
-    DrawDebugChannels(p_HasFocus);
-    DrawRooms(p_HasFocus);
+    DrawItemsWindow(p_HasFocus);
+    DrawActorsWindow(p_HasFocus);
+    DrawDebugChannelsWindow(p_HasFocus);
+    DrawRoomsWindow(p_HasFocus);
+    DrawBoxReflectionsWindow(p_HasFocus);
 
     if (m_EditorCameraRT && m_EditorCamera) {
         ImGui::Begin("RT Texture");
@@ -382,28 +391,28 @@ void Editor::OnDrawUI(bool p_HasFocus) {
     }
 }
 
-void Editor::DrawSettings(const bool p_HasFocus) {
+void Editor::DrawSettingsWindow(const bool p_HasFocus) {
     if (!m_SettingsVisible || !p_HasFocus) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
-    if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " EDITOR", &m_SettingsVisible)) {
+    if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " Editor", &m_SettingsVisible)) {
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y), ImGuiCond_FirstUseEver);
 
-        if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS "  SHOW EDITOR WINDOWS", &m_EditorWindowsVisible)) {
+        if (ImGui::Checkbox(ICON_MD_VIDEO_SETTINGS " Show editor windows", &m_EditorWindowsVisible)) {
             SetSettingBool("general", "editor_windows_visible", m_EditorWindowsVisible);
         }
         bool s_ServerEnabled = m_Server.GetEnabled();
-        if (ImGui::Checkbox(ICON_MD_TERMINAL "  ENABLE EDITOR SERVER", &s_ServerEnabled)) {
+        if (ImGui::Checkbox(ICON_MD_TERMINAL " Enable editor server", &s_ServerEnabled)) {
             ToggleEditorServerEnabled();
         }
 
         ImGui::Spacing();
-        ImGui::Text("Entity Highlight Mode");
+        ImGui::Text("Entity highlight mode");
 
-        const int s_EntityHighlightMode = static_cast<int>(m_EntityHighlightMode);
+        const int32_t s_EntityHighlightMode = static_cast<int32_t>(m_EntityHighlightMode);
 
         if (ImGui::RadioButton("Lines", s_EntityHighlightMode == 0)) {
             m_EntityHighlightMode = EntityHighlightMode::Lines;
@@ -411,7 +420,7 @@ void Editor::DrawSettings(const bool p_HasFocus) {
 
         ImGui::SameLine();
 
-        if (ImGui::RadioButton("Lines and Rectangles", s_EntityHighlightMode == 1)) {
+        if (ImGui::RadioButton("Lines and rectangles", s_EntityHighlightMode == 1)) {
             m_EntityHighlightMode = EntityHighlightMode::LinesAndTriangles;
         }
 
@@ -429,7 +438,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             return;
 
         if (!(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
-            Logger::Debug("Creating free camera.");
+            Logger::Debug("[Editor] Creating free camera.");
             Functions::ZEngineAppCommon_CreateFreeCameraAndControl->Call(
                 &(*Globals::ApplicationEngineWin32)->m_pEngineAppCommon
             );
@@ -458,7 +467,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
     if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
         std::vector<ZEntityRef> s_EntitiesToAdd;
-        
+
         {
             std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
 
@@ -482,16 +491,19 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
                 ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
             }
 
+            bool s_HasDebugEntities;
+
             {
-                std::scoped_lock s_ScopedLock(m_DebugEntitiesMutex);
+                std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+                s_HasDebugEntities = !m_EntityRefToDebugEntities.empty();
+            }
 
-                if (!m_EntityRefToDebugEntities.empty()) {
-                    for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
-                        auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
+            if (s_HasDebugEntities) {
+                for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
+                    auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
 
-                        if (s_Iterator != m_CachedEntityTreeMap.end()) {
-                            GetDebugEntities(s_Iterator->second);
-                        }
+                    if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                        GetDebugEntities(s_Iterator->second);
                     }
                 }
             }
@@ -529,8 +541,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 
     if (m_ClassToInputAndOutputPins.empty() && !s_DownloadStarted) {
         const std::string s_PinsUrl =
-            "https://raw.githubusercontent.com/glacier-modding/glaciermodding.org"
-            "/refs/heads/main/docs/modding/hitman/guides/pins.json";
+            "https://github.com/glacier-modding/Hitman-Hashes/releases/latest/download/pins.json";
 
         s_DownloadFuture = std::async(
             std::launch::async, [this, s_PinsUrl]() {
@@ -541,7 +552,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
                 }
 
                 return std::map<std::string, PinLists>();
-            }
+        }
         );
 
         s_DownloadStarted = true;
@@ -551,7 +562,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         if (s_DownloadFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             m_ClassToInputAndOutputPins = s_DownloadFuture.get();
             s_DownloadCompleted = true;
-            Logger::Debug("Pin list download complete! Loaded {} classes.", m_ClassToInputAndOutputPins.size());
+            Logger::Debug("[Editor] Pin list download complete! Loaded {} classes.", m_ClassToInputAndOutputPins.size());
         }
     }
 }
@@ -577,7 +588,7 @@ void Editor::QueueTask(std::function<void()> p_Task) {
     m_TaskQueue.push_back(std::move(p_Task));
 }
 
-std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool outputPins) {
+std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool p_OutputPins) {
     std::vector<PinInfo> s_Result;
 
     if (!p_EntityRef || !p_EntityRef->GetType()->m_pInterfaceData) {
@@ -604,10 +615,10 @@ std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool output
             continue;
         }
 
-        const auto& s_Pins = outputPins ? s_Iterator->second.outputPins : s_Iterator->second.inputPins;
+        const auto& s_Pins = p_OutputPins ? s_Iterator->second.m_OutputPins : s_Iterator->second.m_InputPins;
 
         for (const auto& s_Pin : s_Pins) {
-            if (s_PinNames.insert(s_Pin.name).second) {
+            if (s_PinNames.insert(s_Pin.m_Name).second) {
                 s_Result.push_back(s_Pin);
             }
         }
@@ -617,7 +628,7 @@ std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool output
         s_Result.begin(),
         s_Result.end(),
         [](const PinInfo& p_A, const PinInfo& p_B) {
-            return p_A.name < p_B.name;
+            return p_A.m_Name < p_B.m_Name;
         }
     );
 
@@ -625,82 +636,71 @@ std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool output
 }
 
 std::map<std::string, Editor::PinLists> Editor::ParsePinsJson(const std::string& p_PinsJson) {
-    std::map<std::string, PinLists> result;
+    std::map<std::string, PinLists> s_Result;
 
-    simdjson::ondemand::parser parser;
-    simdjson::padded_string json = simdjson::padded_string(p_PinsJson);
+    simdjson::ondemand::parser s_Parser;
+    simdjson::padded_string s_Json = simdjson::padded_string(p_PinsJson);
 
-    simdjson::ondemand::document doc = parser.iterate(json);
-    simdjson::ondemand::array entries = doc.get_array();
+    simdjson::ondemand::document s_Document = s_Parser.iterate(s_Json);
+    simdjson::ondemand::array s_Entries = s_Document.get_array();
 
-    for (auto entry : entries)
-    {
-        std::string_view path = entry["path"].get_string();
+    for (auto s_Entry : s_Entries) {
+        std::string_view s_Path = s_Entry["path"].get_string();
 
-        // extract class name
-        std::string className;
+        std::string s_ClassName;
         {
-            size_t start = path.find('/');
-            size_t end = path.find(".class");
+            size_t s_Start = s_Path.find('/');
+            size_t s_End = s_Path.find(".class");
 
-            if (start != std::string_view::npos && end != std::string_view::npos && end > start)
-                className = std::string(path.substr(start + 1, end - start - 1));
+            if (s_Start != std::string_view::npos && s_End != std::string_view::npos && s_End > s_Start) {
+                s_ClassName = std::string(s_Path.substr(s_Start + 1, s_End - s_Start - 1));
+            }
         }
 
-        if (className.empty())
+        if (s_ClassName.empty()) {
             continue;
-
-        auto& pins = result[className];
-
-        // INPUT PINS
-        simdjson::ondemand::array inputPins = entry["in"].get_array();
-
-        for (auto pinEntry : inputPins)
-        {
-            std::string_view pinName = pinEntry["pin"].get_string();
-            std::string_view description = pinEntry["description"].get_string();
-
-            pins.inputPins.push_back({
-                std::string(pinName),
-                std::string(description)
-                });
         }
 
-        // OUTPUT PINS
-        simdjson::ondemand::array outputPins = entry["out"].get_array();
+        auto& s_Pins = s_Result[s_ClassName];
 
-        for (auto pinEntry : outputPins)
-        {
-            std::string_view pinName = pinEntry["pin"].get_string();
-            std::string_view description = pinEntry["description"].get_string();
+        simdjson::ondemand::array s_InputPins = s_Entry["in"].get_array();
 
-            pins.outputPins.push_back({
-                std::string(pinName),
-                std::string(description)
-                });
+        for (auto s_PinEntry : s_InputPins) {
+            std::string_view s_PinName = s_PinEntry["pin"].get_string();
+            std::string_view s_Description = s_PinEntry["description"].get_string();
+
+            s_Pins.m_InputPins.push_back({ std::string(s_PinName), std::string(s_Description) });
+        }
+
+        simdjson::ondemand::array s_OutputPins = s_Entry["out"].get_array();
+
+        for (auto s_PinEntry : s_OutputPins) {
+            std::string_view s_PinName = s_PinEntry["pin"].get_string();
+            std::string_view s_Description = s_PinEntry["description"].get_string();
+
+            s_Pins.m_OutputPins.push_back({ std::string(s_PinName), std::string(s_Description) });
         }
     }
 
-    for (auto& [className, pins] : result)
-    {
+    for (auto& [s_ClassName, s_Pins] : s_Result) {
         std::sort(
-            pins.inputPins.begin(),
-            pins.inputPins.end(),
-            [](const PinInfo& a, const PinInfo& b) {
-                return a.name < b.name;
+            s_Pins.m_InputPins.begin(),
+            s_Pins.m_InputPins.end(),
+            [](const PinInfo& p_A, const PinInfo& p_B) {
+                return p_A.m_Name < p_B.m_Name;
             }
         );
 
         std::sort(
-            pins.outputPins.begin(),
-            pins.outputPins.end(),
-            [](const PinInfo& a, const PinInfo& b) {
-                return a.name < b.name;
+            s_Pins.m_OutputPins.begin(),
+            s_Pins.m_OutputPins.end(),
+            [](const PinInfo& p_A, const PinInfo& p_B) {
+                return p_A.m_Name < p_B.m_Name;
             }
         );
     }
 
-    return result;
+    return s_Result;
 }
 
 void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
@@ -718,7 +718,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     float4 s_To = s_From + (s_DirectionVec * 200.f);
 
     if (!*Globals::CollisionManager) {
-        Logger::Error("Collision manager not found.");
+        Logger::Error("[Editor] Collision manager not found.");
         return;
     }
 
@@ -730,18 +730,18 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     ZRayQueryOutput s_RayOutput {};
 
     if (m_raycastLogging) {
-        Logger::Debug("RayCasting from {} to {}.", s_From, s_To);
+        Logger::Debug("[Editor] RayCasting from {} to {}.", s_From, s_To);
     }
 
     if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {
         if (m_raycastLogging) {
-            Logger::Error("Raycast failed.");
+            Logger::Error("[Editor] Raycast failed.");
         }
         return;
     }
 
     if (m_raycastLogging) {
-        Logger::Debug("Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
+        Logger::Debug("[Editor] Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
     }
 
     m_From = s_From;
@@ -753,7 +753,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
         if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
             const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaceData;
             Logger::Trace(
-                "Hit entity of type '{}' with id '{:x}'.",
+                "[Editor] Hit entity of type '{}' with id '{:x}'.",
                 s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
                 s_RayOutput.m_pBlockingSpatialEntity.m_entityRef->GetType()->m_nEntityID
             );
@@ -765,7 +765,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
                 const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
                 if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
-                    Logger::Debug("Found entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
+                    Logger::Debug("[Editor] Found entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
                     m_SelectedBrickIndex = i;
                     break;
                 }
@@ -778,7 +778,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
 
 void Editor::SpawnCameras() {
     static const std::string s_EditorDataJson =
-            R"(
+        R"(
 {
     "tempHash": "00644fe9eb9feff5",
     "tbluHash": "005474211f99b411",
@@ -945,7 +945,7 @@ void Editor::SpawnCameras() {
 }
 )";
 
-    Logger::Debug("Spawning editor data entity.");
+    Logger::Debug("[Editor] Spawning editor data entity.");
 
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
@@ -953,7 +953,7 @@ void Editor::SpawnCameras() {
     TResourcePtr<ZTemplateEntityBlueprintFactory> s_CameraRTBpFactory;
 
     if (!SDK()->LoadQnEntity(s_EditorDataJson, s_CameraRTBpFactory, s_CameraRTFactory)) {
-        Logger::Error("Failed to load editor data entity.");
+        Logger::Error("[Editor] Failed to load editor data entity.");
         return;
     }
 
@@ -968,7 +968,7 @@ void Editor::SpawnCameras() {
         -1
     );
 
-    Logger::Debug("Spawned editor data entity!");
+    Logger::Debug("[Editor] Spawned editor data entity!");
 
     if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedb6fc4f5626ea); idx != -1) {
         if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pObj, idx)) {
@@ -983,7 +983,7 @@ void Editor::SpawnCameras() {
     }
 
     if (!m_EditorCamera || !m_EditorCameraRT) {
-        Logger::Error("Failed to get editor camera or render destination texture entity.");
+        Logger::Error("[Editor] Failed to get editor camera or render destination texture entity.");
         return;
     }
 
@@ -1033,14 +1033,14 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
     const auto n44 = 1.0f;
 
     const auto det =
-            n41 * (n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34
-                   - n12 * n23 * n34) + n42
-            * (n11 * n23 * n34 - n11 * n24 * n33 + n14 * n21 * n33 - n13 * n21 * n34 + n13 * n24 * n31
-               - n14 * n23 * n31) + n43
-            * (n11 * n24 * n32 - n11 * n22 * n34 - n14 * n21 * n32 + n12 * n21 * n34 + n14 * n22 * n31
-               - n12 * n24 * n31) + n44
-            * (-n13 * n22 * n31 - n11 * n23 * n32 + n11 * n22 * n33 + n13 * n21 * n32 - n12 * n21 * n33
-               + n12 * n23 * n31);
+        n41 * (n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34
+            - n12 * n23 * n34) + n42
+        * (n11 * n23 * n34 - n11 * n24 * n33 + n14 * n21 * n33 - n13 * n21 * n34 + n13 * n24 * n31
+            - n14 * n23 * n31) + n43
+        * (n11 * n24 * n32 - n11 * n22 * n34 - n14 * n21 * n32 + n12 * n21 * n34 + n14 * n22 * n31
+            - n12 * n24 * n31) + n44
+        * (-n13 * n22 * n31 - n11 * n23 * n32 + n11 * n22 * n33 + n13 * n21 * n32 - n12 * n21 * n33
+            + n12 * n23 * n31);
 
     auto sx = n11 * n11 + n21 * n21 + n31 * n31;
     const auto sy = n12 * n12 + n22 * n22 + n32 * n32;
@@ -1065,14 +1065,14 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
     s_Trans.ZAxis.z *= inv_sz;
 
     float s_RotationX = abs(s_Trans.XAxis.z) < 0.9999999f
-                            ? atan2f(-s_Trans.YAxis.z, s_Trans.ZAxis.z) * c_RAD2DEG
-                            : atan2f(s_Trans.ZAxis.y, s_Trans.YAxis.y) * c_RAD2DEG;
+        ? atan2f(-s_Trans.YAxis.z, s_Trans.ZAxis.z) * c_RAD2DEG
+        : atan2f(s_Trans.ZAxis.y, s_Trans.YAxis.y) * c_RAD2DEG;
 
     float s_RotationY = asinf(std::min(std::max(-1.f, s_Trans.XAxis.z), 1.f)) * c_RAD2DEG;
 
     float s_RotationZ = abs(s_Trans.XAxis.z) < 0.9999999f
-                            ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
-                            : 0.f;
+        ? atan2f(-s_Trans.XAxis.y, s_Trans.XAxis.x) * c_RAD2DEG
+        : 0.f;
 
     return QneTransform {
         .Position = { n41, n42, n43 },
@@ -1218,7 +1218,8 @@ std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
     if (s_IsItem || s_IsWeapon) {
         return std::string(s_Title.c_str(), s_Title.size());
     }
-    else if (!s_AmmoConfig.IsEmpty()) {
+
+    if (!s_AmmoConfig.IsEmpty()) {
         std::string s_Tag;
 
         if (s_Tags) {
@@ -1227,7 +1228,8 @@ std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
 
         return std::format("{} / {}", std::to_string(static_cast<uint32_t>(s_MagazineSize)), s_Tag);
     }
-    else if (s_OnlineTraits) {
+
+    if (s_OnlineTraits) {
         std::string s_OnlineTraits2;
 
         for (size_t i = 1; i < (*s_OnlineTraits).size(); ++i) {
@@ -1240,63 +1242,34 @@ std::string Editor::GetNameFromRepository(const ZRepositoryID& p_RepositoryID) {
 
         return s_OnlineTraits2;
     }
-    else if (!s_ModifierType.IsEmpty()) {
+
+    if (!s_ModifierType.IsEmpty()) {
         return std::string(s_ModifierType.c_str(), s_ModifierType.size());
     }
-    else if (!s_Parameter.IsEmpty()) {
+
+    if (!s_Parameter.IsEmpty()) {
         return std::string(s_Parameter.c_str(), s_Parameter.size());
     }
-    else if (!s_CommonName.IsEmpty()) {
+
+    if (!s_CommonName.IsEmpty()) {
         return std::string(s_CommonName.c_str(), s_CommonName.size());
     }
-    else if (!s_Name.IsEmpty()) {
+
+    if (!s_Name.IsEmpty()) {
         return std::string(s_Name.c_str(), s_Name.size());
     }
+
+    return "";
 }
 
 DEFINE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
-    if (m_SelectionForFreeCameraEditorStyleEntity) {
-        m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
-    }
-
-    m_EntityDestructionMutex.lock();
-    m_EntitiesToDestroy.clear();
-    m_EntityDestructionMutex.unlock();
-
-    m_CachedEntityTreeMutex.lock();
-    m_CachedEntityTree.reset();
-
-    for (auto& s_Entity: m_SpawnedEntities | std::views::values) {
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
-    }
-
-    m_SpawnedEntities.clear();
-    m_EntityNames.clear();
-    m_CachedEntityTreeMutex.unlock();
-
-    m_FilteredEntityTreeNodes.clear();
-    m_DirectEntityTreeNodeMatches.clear();
-
-    if (m_EditorData) {
-        m_EditorCamera = {};
-        m_EditorCameraRT = {};
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
-        m_EditorData = {};
-    }
-
     std::vector<std::string> s_Bricks;
 
-    for (auto& s_Brick: p_Parameters.m_aAdditionalBrickResources) {
+    for (auto& s_Brick : p_Parameters.m_aAdditionalBrickResources) {
         s_Bricks.push_back(s_Brick.c_str());
     }
 
     m_Server.OnSceneLoading(p_Parameters.m_SceneResource.c_str(), s_Bricks);
-
-    if (m_TrackCamActive) {
-        DisableTrackCam();
-
-        m_TrackCamActive = false;
-    }
 
     return { HookAction::Continue() };
 }
@@ -1309,7 +1282,7 @@ DEFINE_PLUGIN_DETOUR(
     STemplateEntityBlueprint* pTemplateEntityBlueprint,
     ZResourcePending& ResourcePending
 ) {
-    //Logger::Debug("Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
+    //Logger::Debug("[Editor] Creating Blueprint Factory {} with template {}", fmt::ptr(th), fmt::ptr(pTemplateEntityBlueprint));
     //auto s_Result = p_Hook->CallOriginal(th, pTemplateEntityBlueprint, ResourcePending);
     //return HookResult(HookAction::Return(), s_Result);
     return { HookAction::Continue() };
@@ -1320,25 +1293,53 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_SelectedEntity = {};
     m_ScrollToEntity = false;
 
-    m_EntityDestructionMutex.lock();
-    m_EntitiesToDestroy.clear();
-    m_EntityDestructionMutex.unlock();
-
-    m_CachedEntityTreeMutex.lock();
-    m_CachedEntityTree.reset();
-
-    for (auto& s_Entity: m_SpawnedEntities | std::views::values) {
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
+    {
+        std::scoped_lock s_Lock(m_EntityDestructionMutex);
+        m_EntitiesToDestroy.clear();
     }
 
-    m_SpawnedEntities.clear();
-    m_EntityNames.clear();
-    m_CachedEntityTreeMutex.unlock();
+    ClearFilters();
 
-    m_PendingDynamicEntities.clear();
-    m_DynamicEntities.clear();
+    {
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+        m_CachedEntityTree.reset();
+        m_CachedEntityTreeMap.clear();
+        m_OpenEntityTreeNodes.clear();
+        m_EntityNames.clear();
+    }
+
+    {
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+        m_OpenEntityTreeNodes.clear();
+    }
+
+    std::unordered_map<uint64_t, ZEntityRef> s_SpawnedEntitiesToDestroy;
+    {
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+        s_SpawnedEntitiesToDestroy.swap(m_SpawnedEntities);
+    }
+
+    for (const auto& s_Entity : s_SpawnedEntitiesToDestroy | std::views::values) {
+        if (s_Entity) {
+            Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
+        }
+    }
+
+    {
+        std::scoped_lock s_Lock(m_DynamicEntitiesMutex);
+        m_DynamicEntities.clear();
+    }
+
+    {
+        std::scoped_lock s_Lock(m_PendingDynamicEntitiesMutex);
+        m_PendingDynamicEntities.clear();
+    }
 
     m_Server.OnSceneClearing(p_FullyUnloadScene);
+
+    if (m_SelectionForFreeCameraEditorStyleEntity) {
+        m_SelectionForFreeCameraEditorStyleEntity->m_selection.clear();
+    }
 
     if (m_TrackCamActive) {
         DisableTrackCam();
@@ -1346,14 +1347,24 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_TrackCamActive = false;
     }
 
+    if (m_EditorData) {
+        m_EditorCamera = {};
+        m_EditorCameraRT = {};
+        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
+        m_EditorData = {};
+    }
+
     m_SelectedActor = nullptr;
     m_GlobalOutfitKit = {};
 
-    m_SelectedGizmoEntity = nullptr;
-    m_DrawGizmosForSelectedEntityOnly = false;
-    m_DrawShapesForSelectedEntityOnly = false;
+    m_SelectedAction = nullptr;
 
-    m_EntityRefToDebugEntities.clear();
+    m_SelectedGizmoEntity = nullptr;
+
+    {
+        std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+        m_EntityRefToDebugEntities.clear();
+    }
 
     if (m_EditorData) {
         m_EditorCamera = {};
@@ -1366,21 +1377,12 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
 
     m_SortedRoomEntities.clear();
 
-    m_InputPinTypeID = nullptr;
+    m_InputPinValue.Clear();
+    m_OutputPinValue.Clear();
 
-    if (m_InputPinData) {
-        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
+    ClearBoxReflectionPreview();
 
-        m_InputPinData = nullptr;
-    }
-
-    m_OutputPinTypeID = nullptr;
-
-    if (m_OutputPinData) {
-        (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
-
-        m_OutputPinData = nullptr;
-    }
+    m_SelectedBoxReflectionGraphNode = nullptr;
 
     return { HookAction::Continue() };
 }
@@ -1426,12 +1428,15 @@ DEFINE_PLUGIN_DETOUR(
 
         if (s_SubEntityFactory->IsTemplateEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZTemplateEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsAspectEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAspectEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZAspectEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        } else if (s_SubEntityFactory->IsCppEntityFactory()) {
+        }
+        else if (s_SubEntityFactory->IsCppEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZCppEntityFactory*>(s_SubEntityFactory)->m_ridResource;
-        } else if (s_SubEntityFactory->IsExtendedCppEntityFactory()) {
+        }
+        else if (s_SubEntityFactory->IsExtendedCppEntityFactory()) {
             ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory = static_cast<ZExtendedCppEntityFactory*>(
                 s_SubEntityFactory);
 
@@ -1441,21 +1446,26 @@ DEFINE_PLUGIN_DETOUR(
             if (s_Iterator != m_ExtendedCppEntityFactoryToRuntimeResourceID.end()) {
                 s_SubEntityFactoryRuntimeResourceID = s_Iterator->second;
             }
-        } else if (s_SubEntityFactory->IsUIControlEntityFactory()) {
+        }
+        else if (s_SubEntityFactory->IsUIControlEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZUIControlEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsRenderMaterialEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsRenderMaterialEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZRenderMaterialEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsBehaviorTreeEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsBehaviorTreeEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZBehaviorTreeEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsAudioSwitchEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAudioSwitchEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioSwitchEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
-        } else if (s_SubEntityFactory->IsAudioStateEntityFactory()) {
+                m_ridResource;
+        }
+        else if (s_SubEntityFactory->IsAudioStateEntityFactory()) {
             s_SubEntityFactoryRuntimeResourceID = static_cast<ZAudioStateEntityFactory*>(s_SubEntityFactory)->
-                    m_ridResource;
+                m_ridResource;
         } {
             std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
 
@@ -1482,7 +1492,7 @@ DEFINE_PLUGIN_DETOUR(
     bool s_Result = p_Hook->CallOriginal(th, ResourcePending);
 
     ZExtendedCppEntityFactory* s_ExtendedCppEntityFactory =
-            static_cast<ZExtendedCppEntityFactory*>(ResourcePending.m_pResource.GetResourceData());
+        static_cast<ZExtendedCppEntityFactory*>(ResourcePending.m_pResource.GetResourceData());
     const ZRuntimeResourceID s_RuntimeResourceID = ResourcePending.m_pResource.GetResourceInfo().rid; {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
 
@@ -1506,7 +1516,7 @@ DEFINE_PLUGIN_DETOUR(
 
     const auto& s_ResourceInfo = (*Globals::ResourceContainer)->m_resources[index.val];
     const ZRuntimeResourceID s_RuntimeResourceID = s_ResourceInfo.rid;
-    
+
     {
         std::scoped_lock s_Lock(m_ExtendedCppEntityFactoryResourceMapsMutex);
         auto s_Iterator = m_RuntimeResourceIDToExtendedCppEntityFactory.find(s_RuntimeResourceID);

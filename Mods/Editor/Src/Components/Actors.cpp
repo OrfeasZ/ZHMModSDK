@@ -18,16 +18,16 @@
 
 #undef min
 
-void Editor::DrawActors(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_ActorsMenuActive) {
+void Editor::DrawActorsWindow(const bool p_HasFocus) {
+    if (!p_HasFocus || !m_ShowActorsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("Actors", &m_ActorsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Actors", &m_ShowActorsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing && p_HasFocus) {
+    if (s_IsWindowExpanded) {
         if (!Globals::ActorManager) {
             return;
         }
@@ -44,7 +44,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         static char s_ActorName[2048]{ "" };
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Actor Name");
+        ImGui::Text("Actor name");
         ImGui::SameLine();
 
         ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
@@ -215,7 +215,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
                     m_SelectedActor = s_Actor;
                     m_GlobalOutfitKit = {};
 
-                    Logger::Info("Selected actor (by list): {}", s_ActorName2.c_str());
+                    Logger::Info("[Editor] Selected actor (by list): {}", s_ActorName2.c_str());
                 }
             }
         }
@@ -291,7 +291,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Character Set Index");
+        ImGui::Text("Character set index");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(s_CurrentCharacterSetIndex).data())) {
@@ -318,7 +318,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
@@ -344,7 +344,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Outfit Variation");
+        ImGui::Text("Outfit variation");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
@@ -387,8 +387,8 @@ void Editor::DrawActors(const bool p_HasFocus) {
         }
 
         if (m_GlobalOutfitKit) {
-            ImGui::Checkbox("Weapons Allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
-            ImGui::Checkbox("Authority Figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
+            ImGui::Checkbox("Weapons allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
+            ImGui::Checkbox("Authority figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
         }
 
         ImGui::Separator();
@@ -396,13 +396,13 @@ void Editor::DrawActors(const bool p_HasFocus) {
         static std::string s_ActorName2;
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Actor Name");
+        ImGui::Text("Actor name");
         ImGui::SameLine();
 
         ImGui::InputText("##ActorName", s_ActorName2.data(), s_ActorName2.size());
         ImGui::SameLine();
 
-        if (ImGui::Button("Get Actor Outfit")) {
+        if (ImGui::Button("Get actor outfit")) {
             if (const ZActor* s_Actor2 = Globals::ActorManager->GetActorByName(s_ActorName2)) {
                 EquipOutfit(
                     s_Actor2->m_rOutfit,
@@ -415,7 +415,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentCharSetCharacterType2.data())) {
@@ -432,7 +432,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
-        if (ImGui::Button("Get Nearest Actor's Outfit")) {
+        if (ImGui::Button("Get nearest actor's outfit")) {
             ZEntityRef s_Ref;
 
             m_SelectedActor->GetID(s_Ref);
@@ -464,7 +464,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Select In Entity Tree")) {
+        if (ImGui::Button("Select in entity tree")) {
             ZEntityRef s_Ref;
 
             m_SelectedActor->GetID(s_Ref);
@@ -476,7 +476,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             OnSelectEntity(s_Ref, true, std::nullopt);
         }
 
-        if (ImGui::Button("Teleport Actor To Player")) {
+        if (ImGui::Button("Teleport actor to player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZEntityRef s_Ref;
                 m_SelectedActor->GetID(s_Ref);
@@ -490,7 +490,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Teleport Player To Actor")) {
+        if (ImGui::Button("Teleport player to actor")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZEntityRef s_Ref;
                 m_SelectedActor->GetID(s_Ref);
@@ -504,11 +504,11 @@ void Editor::DrawActors(const bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Revive Actor")) {
+        if (ImGui::Button("Revive actor")) {
             Functions::ZActor_ReviveActor->Call(m_SelectedActor);
         }
 
-        if (ImGui::Button("Kill Actor")) {
+        if (ImGui::Button("Kill actor")) {
             TEntityRef<IItem> s_Item;
             TEntityRef<ZSetpieceEntity> s_SetPieceEntity;
 
@@ -520,13 +520,13 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::Separator();
 
-        ImGui::Text("Add Weapon To Inventory");
+        ImGui::Text("Add weapon to inventory");
         ImGui::Spacing();
 
         static char s_WeaponTitle[2048]{ "" };
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Weapon Title");
+        ImGui::Text("Weapon title");
         ImGui::SameLine();
 
         Util::ImGuiUtils::InputWithAutocomplete(
@@ -576,7 +576,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
         ImGui::Separator();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Main Weapon");
+        ImGui::Text("Main weapon");
         ImGui::SameLine();
 
         ZHM5ItemWeapon* s_MainWeapon = m_SelectedActor->m_pInventoryHandler->m_rMainWeapon.m_pInterfaceRef;
@@ -657,7 +657,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
 
         ImGui::Separator();
 
-        if (ImGui::Button(std::format("Track This Actor##{}", s_ActorName).c_str())) {
+        if (ImGui::Button(std::format("Track this actor##{}", s_ActorName).c_str())) {
 
             if (m_RenderDest.m_entityRef == nullptr) {
                 GetRenderDest();
@@ -677,7 +677,7 @@ void Editor::DrawActors(const bool p_HasFocus) {
             EnableTrackCam();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Stop Tracking")) {
+        if (ImGui::Button("Stop tracking")) {
             m_TrackCamActive = false;
             m_ActorTracked = nullptr;
 
@@ -701,26 +701,26 @@ void Editor::EquipOutfit(
     ZActor* p_Actor
 ) {
     if (!p_Actor) {
-        Logger::Error("Couldn't equip outfit - actor is null!");
+        Logger::Error("[Editor] Couldn't equip outfit - actor is null!");
         return;
     }
 
     ZGlobalOutfitKit* s_GlobalOutfitKit = p_GlobalOutfitKit.m_pInterfaceRef;
 
     if (!s_GlobalOutfitKit) {
-        Logger::Error("Couldn't equip outfit - global outfit kit is null!");
+        Logger::Error("[Editor] Couldn't equip outfit - global outfit kit is null!");
         return;
     }
 
     if (p_CharSetIndex >= s_GlobalOutfitKit->m_aCharSets.size()) {
-        Logger::Error("Couldn't equip outfit - charset index isn't valid!");
+        Logger::Error("[Editor] Couldn't equip outfit - charset index isn't valid!");
         return;
     }
 
     ZOutfitVariationCollection* s_Collection = s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef;
 
     if (!s_Collection) {
-        Logger::Error("Couldn't equip outfit - outvit variation collection is null!");
+        Logger::Error("[Editor] Couldn't equip outfit - outvit variation collection is null!");
         return;
     }
 
@@ -730,7 +730,7 @@ void Editor::EquipOutfit(
         auto* s_ActorType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
 
         if (!s_ActorType->m_pInterfaceRef) {
-            Logger::Error("Couldn't equip outfit - actor character type is null!");
+            Logger::Error("[Editor] Couldn't equip outfit - actor character type is null!");
             return;
         }
 

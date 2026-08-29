@@ -6,8 +6,7 @@
 #include "Glacier/ZCameraEntity.h"
 
 void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
-    if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
-        m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
+    if (IsSpecialEntityTreeNode(m_SelectedEntity)
     ) {
         return;
     }
@@ -70,9 +69,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
 
     ImGuizmo::Enable(p_HasFocus);
 
-    if (m_SelectedEntity == m_DynamicEntitiesNodeEntityRef ||
-        m_SelectedEntity == m_UnparentedEntitiesNodeEntityRef
-    ) {
+    if (IsSpecialEntityTreeNode(m_SelectedEntity)) {
         return;
     }
 

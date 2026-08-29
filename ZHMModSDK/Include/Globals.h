@@ -55,6 +55,7 @@ class ZUIMapManager;
 class ZKnowledgeService;
 class ZOnlineManager;
 class ZGameKeywordManager;
+class ZRenderGraphManager;
 
 namespace bfx {
     class SystemInstance;
@@ -119,8 +120,8 @@ public:
     static TArray<TEntityRef<ZSelectionForFreeCameraEditorStyleEntity>>* Selections;
     static SD3D12ObjectPools** D3D12ObjectPools;
     static ZProfileServerPageProxyBaseMap* ZProfileServerPageProxyBase_m_aRouteMap;
-    static ZObjectPool* ZVariantPool1;
-    static ZObjectPool* ZVariantPool2;
+    static ZObjectPool* Variant8BytePool;
+    static ZObjectPool* Variant32BytePool;
     static ZPackageManagerBase** PackageManager;
     static ZUIText* UIText;
     static ZWorldInventory* WorldInventory;
@@ -134,4 +135,5 @@ public:
     static ZKnowledgeService* KnowledgeService;
     static ZOnlineManager* OnlineManager;
     static ZGameKeywordManager* GameKeywordManager;
+    static ZRenderGraphManager* RenderGraphManager;
 };

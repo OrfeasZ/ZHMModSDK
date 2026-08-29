@@ -22,20 +22,20 @@ void Assets::Init() {
 
 void Assets::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_TUNE " ASSETS")) {
-        m_AssetsMenuActive = !m_AssetsMenuActive;
+        m_ShowAssetsWindow = !m_ShowAssetsWindow;
     }
 }
 
 void Assets::OnDrawUI(bool p_HasFocus) {
-    if (!p_HasFocus || !m_AssetsMenuActive) {
+    if (!p_HasFocus || !m_ShowAssetsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("ASSETS", &m_AssetsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Assets", &m_ShowAssetsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         if (m_RepositoryProps.size() == 0) {
             LoadRepositoryProps();
         }
@@ -52,12 +52,12 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         static int s_WorldInventoryButton = 1;
         static char s_ActorName[2048] {};
 
-        ImGui::Text("Repository Props");
+        ImGui::Text("Repository props");
 
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Prop Title");
+        ImGui::Text("Prop title");
         ImGui::SameLine();
 
         Util::ImGuiUtils::InputWithAutocomplete(
@@ -74,18 +74,18 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             }
         );
 
-        if (ImGui::RadioButton("Add To World", s_WorldInventoryButton == 1)) {
+        if (ImGui::RadioButton("Add to world", s_WorldInventoryButton == 1)) {
             s_WorldInventoryButton = 1;
         }
 
         ImGui::SameLine();
 
-        if (ImGui::RadioButton("Add To Inventory", s_WorldInventoryButton == 2)) {
+        if (ImGui::RadioButton("Add to inventory", s_WorldInventoryButton == 2)) {
             s_WorldInventoryButton = 2;
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Number Of Props To Spawn");
+        ImGui::Text("Number of props to spawn");
         ImGui::SameLine();
 
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
@@ -94,25 +94,25 @@ void Assets::OnDrawUI(bool p_HasFocus) {
 
         ImGui::Separator();
 
-        ImGui::Text("Non Repository Props");
+        ImGui::Text("Non repository props");
 
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Prop Assembly Path");
+        ImGui::Text("Prop assembly path");
         ImGui::SameLine();
 
         ImGui::InputText("##PropResourceID", s_PropResourceId, sizeof(s_PropResourceId));
         ImGui::SameLine();
 
-        if (ImGui::Button("Spawn Prop")) {
+        if (ImGui::Button("Spawn prop")) {
             for (size_t i = 0; i < s_NonRepositoryPropSpawnCount; ++i) {
                 SpawnNonRepositoryProp(ZRuntimeResourceID::FromString(s_PropResourceId));
             }
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Number Of Props To Spawn");
+        ImGui::Text("Number of props to spawn");
         ImGui::SameLine();
 
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
@@ -125,7 +125,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Actor Name");
+        ImGui::Text("Actor name");
         ImGui::SameLine();
 
         ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
@@ -167,7 +167,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         );
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Character Set Index");
+        ImGui::Text("Character set index");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(s_CurrentCharacterSetIndex).data())) {
@@ -185,7 +185,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
@@ -201,7 +201,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Outfit Variation");
+        ImGui::Text("Outfit variation");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
@@ -237,14 +237,14 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Number Of Props To Spawn");
+        ImGui::Text("Number of props to spawn");
         ImGui::SameLine();
 
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
 
         ImGui::InputInt("##ActorSpawnCount", &s_ActorSpawnCount);
 
-        if (ImGui::Button("Spawn Actor")) {
+        if (ImGui::Button("Spawn actor")) {
             for (size_t i = 0; i < s_ActorSpawnCount; ++i) {
                 SpawnActor(
                     s_ActorName,
@@ -267,7 +267,7 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        Logger::Debug("No local hitman");
+        Logger::Debug("[Assets] No local hitman");
         return;
     }
 
@@ -290,7 +290,7 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Assets] Scene not loaded.");
         return;
     }
 
@@ -302,10 +302,10 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     Globals::ResourceManager->GetResourcePtr(s_Resource, s_ID, 0);
     Globals::ResourceManager->GetResourcePtr(s_Resource2, s_ID2, 0);
 
-    Logger::Debug("Resource: {} {}", s_Resource.m_nResourceIndex.val, fmt::ptr(s_Resource.GetResource()));
+    Logger::Debug("[Assets] Resource: {} {}", s_Resource.m_nResourceIndex.val, fmt::ptr(s_Resource.GetResource()));
 
     if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Assets] Resource is not loaded.");
         return;
     }
 
@@ -333,12 +333,12 @@ void Assets::SpawnRepositoryProp(const ZRepositoryID& p_RepositoryId, const bool
     );
 
     if (!s_NewEntity) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Assets] Failed to spawn entity.");
         return;
     }
 
     if (!s_NewEntity2) {
-        Logger::Debug("Failed to spawn entity2.");
+        Logger::Debug("[Assets] Failed to spawn entity2.");
         return;
     }
 
@@ -359,7 +359,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Assets] Scene not loaded.");
         return;
     }
 
@@ -367,7 +367,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
     Globals::ResourceManager->GetResourcePtr(s_Resource, s_PropRuntimeResourceID, 0);
 
     if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Assets] Resource is not loaded.");
         return;
     }
 
@@ -385,7 +385,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
     );
 
     if (!s_NewEntity) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Assets] Failed to spawn entity.");
         return;
     }
 
@@ -394,7 +394,7 @@ void Assets::SpawnNonRepositoryProp(const ZRuntimeResourceID& s_PropRuntimeResou
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        Logger::Debug("No local hitman.");
+        Logger::Debug("[Assets] No local hitman.");
         return;
     }
 
@@ -415,7 +415,7 @@ void Assets::SpawnActor(
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Assets] Scene not loaded.");
         return;
     }
 
@@ -426,7 +426,7 @@ void Assets::SpawnActor(
     Globals::ResourceManager->GetResourcePtr(s_Resource, s_RuntimeResourceId, 0);
 
     if (!s_Resource) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Assets] Resource is not loaded.");
         return;
     }
 
@@ -444,14 +444,14 @@ void Assets::SpawnActor(
     );
 
     if (!s_NewEntity) {
-        Logger::Debug("Could not spawn entity.");
+        Logger::Debug("[Assets] Could not spawn entity.");
         return;
     }
 
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        Logger::Debug("No local hitman.");
+        Logger::Debug("[Assets] No local hitman.");
         return;
     }
 
@@ -490,26 +490,26 @@ void Assets::EquipOutfit(
     ZActor* p_Actor
 ) {
     if (!p_Actor) {
-        Logger::Error("Couldn't equip outfit - actor is null!");
+        Logger::Error("[Assets] Couldn't equip outfit - actor is null!");
         return;
     }
 
     ZGlobalOutfitKit* s_GlobalOutfitKit = p_GlobalOutfitKit.m_pInterfaceRef;
 
     if (!s_GlobalOutfitKit) {
-        Logger::Error("Couldn't equip outfit - global outfit kit is null!");
+        Logger::Error("[Assets] Couldn't equip outfit - global outfit kit is null!");
         return;
     }
 
     if (p_CharSetIndex >= s_GlobalOutfitKit->m_aCharSets.size()) {
-        Logger::Error("Couldn't equip outfit - charset index isn't valid!");
+        Logger::Error("[Assets] Couldn't equip outfit - charset index isn't valid!");
         return;
     }
 
     ZOutfitVariationCollection* s_Collection = s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef;
 
     if (!s_Collection) {
-        Logger::Error("Couldn't equip outfit - outvit variation collection is null!");
+        Logger::Error("[Assets] Couldn't equip outfit - outvit variation collection is null!");
         return;
     }
 
@@ -519,7 +519,7 @@ void Assets::EquipOutfit(
         auto* s_ActorType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
 
         if (!s_ActorType->m_pInterfaceRef) {
-            Logger::Error("Couldn't equip outfit - actor character type is null!");
+            Logger::Error("[Assets] Couldn't equip outfit - actor character type is null!");
             return;
         }
 

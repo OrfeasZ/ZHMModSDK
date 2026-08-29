@@ -31,7 +31,7 @@ private:
 
     void LoadRepositoryProps();
 
-    bool m_AssetsMenuActive = false;
+    bool m_ShowAssetsWindow = false;
 
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
     std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryProps;

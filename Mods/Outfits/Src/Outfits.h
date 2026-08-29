@@ -41,7 +41,7 @@ private:
 
     DECLARE_PLUGIN_DETOUR(Outfits, void, ZLevelManager_StartGame, ZLevelManager* th);
 
-    bool m_OutfitsMenuActive = false;
+    bool m_ShowOutfitsWindow = false;
 
     std::map<std::string, std::unordered_set<ZRuntimeResourceID>> m_Scenes;
     std::unordered_map<std::string, uint32_t> m_SceneToChunkIndex;

@@ -2,20 +2,19 @@
 
 #include <format>
 
-#include <Glacier/ZAction.h>
 #include <Glacier/ZItem.h>
 #include "Util/StringUtils.h"
 
-void Editor::DrawItems(bool p_HasFocus) {
-    if (!p_HasFocus || !m_ItemsMenuActive) {
+void Editor::DrawItemsWindow(bool p_HasFocus) {
+    if (!p_HasFocus || !m_ShowItemsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("ITEMS", &m_ItemsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Items", &m_ShowItemsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
 
         if (s_Hm5ActionManager->m_Actions.size() == 0) {
@@ -26,20 +25,18 @@ void Editor::DrawItems(bool p_HasFocus) {
             return;
         }
 
-        static char s_ItemTitle[2048]{ "" };
+        static char s_ItemTitle[2048] { "" };
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Item Title");
+        ImGui::Text("Item title");
         ImGui::SameLine();
 
         ImGui::InputText("##ItemName", s_ItemTitle, sizeof(s_ItemTitle));
 
-        static size_t s_Selected = 0;
-
         ImGui::BeginChild("left pane", ImVec2(300, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
         for (size_t i = 0; i < s_Hm5ActionManager->m_Actions.size(); i++) {
-            const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
+            ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
 
             if (!s_Action || s_Action->m_eActionType != EActionType::AT_PICKUP) {
                 continue;
@@ -57,8 +54,12 @@ void Editor::DrawItems(bool p_HasFocus) {
                 s_Action->m_Object->GetType()->m_nEntityID, i + 1
             );
 
-            if (ImGui::Selectable(s_ItemLabel.c_str(), s_Selected == i)) {
-                s_Selected = i;
+            const bool s_IsSelected = m_SelectedAction == s_Action;
+
+            if (ImGui::Selectable(s_ItemLabel.c_str(), s_IsSelected)) {
+                if (!s_IsSelected) {
+                    m_SelectedAction = s_Action;
+                }
             }
 
             if (ImGui::IsItemHovered()) {
@@ -88,7 +89,7 @@ void Editor::DrawItems(bool p_HasFocus) {
                         }
 
                         ImGui::SetTooltip(
-                            "%s\nOwning Entity: %s",
+                            "%s\nOwning entity: %s",
                             s_EntityName.c_str(),
                             s_OwningEntityName.c_str()
                         );
@@ -100,7 +101,7 @@ void Editor::DrawItems(bool p_HasFocus) {
                 else {
                     if (s_Item->m_pOwner) {
                         ImGui::SetTooltip(
-                            fmt::format("Owning Entity: {:016x}", s_Item->m_pOwner->GetType()->m_nEntityID).c_str()
+                            fmt::format("Owning entity: {:016x}", s_Item->m_pOwner->GetType()->m_nEntityID).c_str()
                         );
                     }
                 }
@@ -109,8 +110,15 @@ void Editor::DrawItems(bool p_HasFocus) {
 
         ImGui::EndChild();
 
-        const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[s_Selected];
-        const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
+        if (!m_SelectedAction) {
+            ImGui::PopFont();
+            ImGui::End();
+            ImGui::PopFont();
+
+            return;
+        }
+
+        const ZHM5Item* s_Item = m_SelectedAction->m_Object.QueryInterface<ZHM5Item>();
 
         if (!s_Item) {
             ImGui::PopFont();
@@ -125,17 +133,17 @@ void Editor::DrawItems(bool p_HasFocus) {
         ImGui::BeginGroup();
         ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
 
-        if (ImGui::Button("Select In Entity Tree")) {
+        if (ImGui::Button("Select in entity tree")) {
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                 UpdateEntities();
             }
 
-            OnSelectEntity(s_Action->m_Object, true, std::nullopt);
+            OnSelectEntity(m_SelectedAction->m_Object, true, std::nullopt);
         }
 
         ImGui::BeginDisabled(!s_Item->m_pOwner);
 
-        if (ImGui::Button("Select Owner In Entity Tree")) {
+        if (ImGui::Button("Select owner in entity tree")) {
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
                 UpdateEntities();
             }
@@ -145,7 +153,7 @@ void Editor::DrawItems(bool p_HasFocus) {
 
         ImGui::EndDisabled();
 
-        if (ImGui::Button("Teleport Item To Player")) {
+        if (ImGui::Button("Teleport item to player")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 s_Item->m_rGeomentity.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(
@@ -154,7 +162,7 @@ void Editor::DrawItems(bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Teleport Player To Item")) {
+        if (ImGui::Button("Teleport player to item")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
                 s_HitmanSpatial->SetObjectToWorldMatrixFromEditor(

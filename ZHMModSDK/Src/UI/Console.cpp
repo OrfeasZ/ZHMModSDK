@@ -104,7 +104,7 @@ void Console::Draw(bool p_HasFocus) {
             std::vector<std::string> s_Split = Util::StringUtils::Split(s_Command, " ");
 
             for (const std::string& arg : s_Split)
-                s_Args.push_back(*new ZString(arg));
+                s_Args.push_back(arg);
 
             Events::OnConsoleCommand->Call(s_Args);
 
@@ -123,7 +123,7 @@ void Console::Draw(bool p_HasFocus) {
 void Console::AddLogLine(spdlog::level::level_enum p_Level, const std::string& p_Text) {
     AcquireSRWLockExclusive(&m_Lock);
 
-    m_LogLines.push_back(LogLine {p_Level, std::string(p_Text.c_str(), p_Text.size())});
+    m_LogLines.push_back(LogLine { p_Level, std::string(p_Text.c_str(), p_Text.size()) });
 
     ReleaseSRWLockExclusive(&m_Lock);
 }

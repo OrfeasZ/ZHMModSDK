@@ -69,7 +69,7 @@ private:
 
     DECLARE_PLUGIN_DETOUR(Player, bool, ZActor_YouGotHit, IBaseCharacter* th, const SHitInfo& hitInfo);
 
-    bool m_PlayerMenuActive = false;
+    bool m_ShowPlayerWindow = false;
     bool m_IsInvincible = false;
     bool m_IsInvisible = false;
     bool m_IsInfiniteAmmoEnabled = false;

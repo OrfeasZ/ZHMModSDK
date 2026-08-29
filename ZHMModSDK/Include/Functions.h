@@ -54,6 +54,9 @@ class ZTimeOfDayManager;
 class ZHM5Health;
 class ZHM5WeaponControl;
 class ZGameKeywordManager;
+class ZFreeCameraControlEditorStyleEntity;
+class ICameraEntity;
+class ZRenderableEntity;
 
 namespace bfx {
     class AreaHandle;
@@ -75,8 +78,8 @@ public:
         ZCameraManager* th, TEntityRef<IRenderDestinationEntity>* result
     )>* ZCameraManager_GetActiveRenderDestinationEntity;
 
-    static EngineFunction<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
-    static EngineFunction<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
+    static EngineFunction<float(ZInputAction* th, int32_t controllerId)>* ZInputAction_Analog;
+    static EngineFunction<bool(ZInputAction* th, int32_t controllerId)>* ZInputAction_Digital;
     //static EngineFunction<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
     static EngineFunction<ZHM5InputControl*(ZHM5InputManager* th)>* ZHM5InputManager_GetInputControlForLocalPlayer;
     static EngineFunction<void(ZResourceManager* th, ZResourceIndex index)>* ZResourceManager_UninstallResource;
@@ -153,8 +156,10 @@ public:
     ZResourceContainer_AddResourceInternal;
 
     static EngineFunction<void(
-        ZResourceReader* th, ZResourceIndex* idx, ZResourceDataPtr* pData, uint32_t dataSize
+        ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr* pData, uint32_t dataSize
     )>* ZResourceReader_ZResourceReader;
+	
+	static EngineFunction<void(ZResourceReader* th)>* ZResourceReader_Dtor;
 
     static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
     ZTemplateInstaller_Install;
@@ -168,7 +173,7 @@ public:
     ZResourceContainer_AddResourceReferenceInternal;
 
     static EngineFunction<void(ZResourceContainer* th, ZResourceIndex index)>*
-    ZResourceContainer_AcquireReferences;
+    ZResourceContainer_AcquireResourceReferences;
 
     static EngineFunction<void(ZString::ZImpl* th)>* ZString_ZImpl_Free;
 
@@ -276,4 +281,45 @@ public:
         const ZEntityRef& rHolder,
         int32_t nKeyword
     )>* ZGameKeywordManager_RemoveKeyword;
+
+    static EngineFunction<TArray<TEntityRef<ZSpatialEntity>>* (
+        ZFreeCameraControlEditorStyleEntity* th, TArray<TEntityRef<ZSpatialEntity>>& result
+        )>* ZFreeCameraControlEditorStyleEntity_GetSelectedEntities;
+
+    static EngineFunction<void(
+        ZFreeCameraControlEditorStyleEntity* th,
+        const TArray<TEntityRef<ZSpatialEntity>>& spatialEntities,
+        bool bAllowZoomToPivot
+        )>* ZFreeCameraControlEditorStyleEntity_MoveCameraToSpatialEntities;
+
+    static EngineFunction<bool(
+        const ZFreeCameraControlEditorStyleEntity* th,
+        const float4& vSelCenter,
+        const float4& vAABBMin,
+        const float4& vAABBMax
+        )>* ZFreeCameraControlEditorStyleEntity_GetSelectionCenter;
+
+    static EngineFunction<void(
+        TEntityRef<ICameraEntity> pCamera,
+        TEntityRef<ZSpatialEntity> pCameraSpatial,
+        const float4& vMouseDelta,
+        const float4& vHookPoint
+        )>* ZCameraUtil_PanCamera;
+
+    static EngineFunction<void(
+        ZFreeCameraControlEditorStyleEntity* th,
+        float4 orbitDelta,
+        float4 orbitCenter
+        )>* ZFreeCameraControlEditorStyleEntity_OrbitCamera;
+
+    static EngineFunction<void(
+        ZFreeCameraControlEditorStyleEntity* th,
+        float fDeltaH,
+        float fDeltaV)>* ZFreeCameraControlEditorStyleEntity_Rotate;
+
+    static EngineFunction<void(
+        ZFreeCameraControlEditorStyleEntity* th,
+        float fZoom)>* ZFreeCameraControlEditorStyleEntity_ZoomCamera;
+
+    static EngineFunction<bool(ZRenderableEntity* th)>* ZRenderableEntity_IsVisible;
 };

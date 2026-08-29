@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.12)
 
 # The current version of the SDK.
 set(ZHMMODSDK_VER_MAJOR 4)
-set(ZHMMODSDK_VER_MINOR 0)
-set(ZHMMODSDK_VER_PATCH 2)
+set(ZHMMODSDK_VER_MINOR 1)
+set(ZHMMODSDK_VER_PATCH 0)
 
 # The current version of the SDK ABI.
 # Any change to this is a breaking change.
@@ -107,6 +107,7 @@ target_link_libraries(ZHMModSDK PUBLIC
         semver::semver
         simdjson::simdjson
         imgui::imgui
+        implot::implot
         d3d12
         dxgi
         delayimp
@@ -116,7 +117,6 @@ target_link_libraries(ZHMModSDK PUBLIC
         sentry::sentry
         zhmmodsdk_rs
         ResourceLib_HM3
-        implot
 )
 
 install(TARGETS ZHMModSDK

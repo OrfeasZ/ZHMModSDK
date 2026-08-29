@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Debug Profiles">
+    <debug-profiles>
+      <debug-profile>
+        <option name="id" value="257a1e5e-b1c8-4e7f-96ca-4c2e9e07a34f" />
+        <option name="type" value="gdb" />
+        <option name="name" value="ZHMSdk GDB" />
+        <settings>
+          <option name="executable" value="$PROJECT_DIR$/cmake/scripts/gdb-wine.sh" />
+        </settings>
+      </debug-profile>
+    </debug-profiles>
+  </component>
+</project>

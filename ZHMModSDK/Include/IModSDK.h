@@ -1,16 +1,18 @@
 #pragma once
 
+#include "directx/d3d12.h"
+
 #include "ModSDKVersion.h"
+#include "Common.h"
+#include "imgui.h"
+#include "D3DUtils.h"
+
+#include "implot.h"
+
 #include "Glacier/ZPrimitives.h"
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZResource.h"
 #include "Glacier/EntityFactory.h"
-#include "Common.h"
-#include "imgui.h"
-#include "D3DUtils.h"
-#include "directx/d3d12.h"
-
-#include "implot.h"
 
 class IPluginInterface;
 class ZRenderDestination;
@@ -27,15 +29,15 @@ struct ImGuiTexture;
 class IModSDK {
 public:
     /**
-     * Make the SDK receive focus.
-     * This will prevent the user from interacting with the game
-     * and will allow the SDK to receive input.
+     * Give focus to the SDK UI.
+     * This prevents the user from interacting with the game
+     * and allows the SDK UI to receive input.
      */
     virtual void RequestUIFocus() = 0;
 
     /**
-     * Release the focus from the SDK.
-     * This will allow the user to interact with the game again.
+     * Release focus from the SDK UI.
+     * This allows the user to interact with the game again.
      */
     virtual void ReleaseUIFocus() = 0;
 
@@ -89,7 +91,7 @@ public:
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset
     ) = 0;
 
-    virtual void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = {0, 0}) = 0;
+    virtual void ImGuiGameRenderTarget(ZRenderDestination* p_RT, const ImVec2& p_Size = { 0, 0 }) = 0;
 
     /**
      * Set a plugin setting value for the given name.
@@ -367,6 +369,24 @@ public:
         ScopedD3DRef<ID3D12Resource>& p_OutTexture,
         ImGuiTexture& p_OutImGuiTexture
     ) = 0;
+
+    /**
+     * Creates an ImGui shader resource view for the specified texture.
+     * The texture remains owned by the caller.
+     */
+    virtual bool CreateImGuiTextureSRV(ID3D12Resource* p_Texture, ImGuiTexture& p_OutImGuiTexture) = 0;
+
+    /**
+     * Destroys an ImGui shader resource view.
+     * The underlying texture is not released.
+     */
+    virtual void DestroyImGuiTextureSRV(ImGuiTexture& p_Texture) = 0;
+
+    /**
+     * Destroys an ImGui texture and its shader resource view.
+     * The texture and shader resource view are released when they are no longer in use by the GPU.
+     */
+    virtual void DestroyImGuiTexture(ScopedD3DRef<ID3D12Resource>& p_Texture, ImGuiTexture& p_ImGuiTexture) = 0;
 };
 
 /**

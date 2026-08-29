@@ -3,6 +3,10 @@
 #include "Functions.h"
 
 STypeID* ZObjectRef::GetVoidType() {
+    if (!Globals::TypeRegistry || !*Globals::TypeRegistry) {
+        return nullptr;
+    }
+
     static STypeID* s_VoidType = (*Globals::TypeRegistry)->GetTypeID("void");
     return s_VoidType;
 }
@@ -14,9 +18,6 @@ bool ZDynamicObject::Set(const ZString& p_Key, const ZDynamicObject& p_Value) {
         return false;
     }
 
-    //Functions::ZDynamicObject_Set->Call(this, p_Key, p_Value);
-
-    // TODO: Fixme. The pool freeing thing is broken.
     for (auto& s_KeyValuePair : *s_Values) {
         if (s_KeyValuePair.sKey == p_Key) {
             s_KeyValuePair.value = p_Value;
@@ -24,7 +25,7 @@ bool ZDynamicObject::Set(const ZString& p_Key, const ZDynamicObject& p_Value) {
         }
     }
 
-    s_Values->push_back({p_Key, p_Value});
+    s_Values->push_back({ p_Key, p_Value });
 
     return true;
 }
@@ -94,7 +95,7 @@ ZDynamicObject& ZDynamicObject::operator[](const ZString& p_Key) {
         }
     }
 
-    s_Values->push_back({p_Key, {}});
+    s_Values->push_back({ p_Key, {} });
 
     return s_Values->at(s_Values->size() - 1).value;
 }

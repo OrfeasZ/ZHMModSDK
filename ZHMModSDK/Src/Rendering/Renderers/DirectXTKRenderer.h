@@ -22,14 +22,16 @@
 #include "Rendering/ViewFrustum.h"
 #include "../CustomPrimitiveBatch.h"
 
+class ZRenderTexture2D;
+
 class SGameUpdateEvent;
 
 namespace Rendering::Renderers {
     class DirectXTKRenderer : public IRenderer {
     private:
         struct FrameContext {
-            ScopedD3DRef<ID3D12CommandAllocator> CommandAllocator;
-            volatile uint64_t FenceValue = 0;
+            ScopedD3DRef<ID3D12CommandAllocator> m_CommandAllocator;
+            std::atomic<std::uint64_t> m_FenceValue { 0 };
         };
 
         enum class Descriptors : int {
@@ -56,18 +58,17 @@ namespace Rendering::Renderers {
         };
 
     public:
-        DirectXTKRenderer();
+        DirectXTKRenderer() = default;
         ~DirectXTKRenderer();
 
-    public:
-        void OnEngineInit();
+        void OnEngineInitialized();
 
-    public:
+        void SetSwapChain(IDXGISwapChain3* p_SwapChain);
+        void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
         void OnPresent(IDXGISwapChain3* p_SwapChain);
         void PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult);
-        void SetCommandQueue(ID3D12CommandQueue* p_CommandQueue);
-        void OnReset();
-        void PostReset();
+        void OnReset(IDXGISwapChain3* p_SwapChain);
+        void PostReset(IDXGISwapChain3* p_SwapChain);
 
         void SetDepthBuffer(ID3D12Resource* p_DepthResource) {
             std::scoped_lock s_Lock(m_DepthBufferMutex);
@@ -97,7 +98,6 @@ namespace Rendering::Renderers {
         }
 
     private:
-        void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
         bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
         void Draw();
         void DepthDraw();
@@ -109,6 +109,7 @@ namespace Rendering::Renderers {
             const std::string& p_ShaderCode, const std::string& p_EntryPoint, const std::string& p_ShaderModel,
             ID3DBlob** p_ShaderBlob
         );
+
         bool CreateFontDistanceFieldTexture();
 
         void DrawText2D(const Text2D& p_Text2D);
@@ -166,10 +167,10 @@ namespace Rendering::Renderers {
             TextAlignment p_HorizontalAlignment = TextAlignment::Left,
             TextAlignment p_VerticalAlignment = TextAlignment::Top,
             bool p_IsCameraTransform = true
-        );
+        ) override;
 
         void DrawMesh(
-            const std::vector<SVector3>& p_Vertices, const std::vector<unsigned short>& p_Indices,
+            const std::vector<SVector3>& p_Vertices, const std::vector<uint16_t>& p_Indices,
             const SVector4& p_VertexColor
         ) override;
 
@@ -212,19 +213,18 @@ namespace Rendering::Renderers {
         uint32_t m_DsvDescriptorSize = 0;
         ScopedD3DRef<ID3D12DescriptorHeap> m_RtvDescriptorHeap;
 
-        /** The maximum number of frames that can be buffered for render. */
-        inline constexpr static size_t MaxRenderedFrames = 4;
-        std::vector<FrameContext> m_FrameContext;
+        // The maximum number of frames that can be buffered for render.
+        static constexpr std::size_t c_MaxRenderedFrames = 4;
 
+        std::array<FrameContext, c_MaxRenderedFrames> m_FrameContext {};
         std::vector<ScopedD3DRef<ID3D12Resource>> m_BackBuffers;
-
         ScopedD3DRef<ID3D12GraphicsCommandList> m_CommandList;
 
         ScopedD3DRef<ID3D12Fence> m_Fence;
         SafeHandle m_FenceEvent;
 
-        volatile uint32_t m_FrameCounter = 0;
-        volatile uint64_t m_FenceValue = 0;
+        std::atomic<std::uint32_t> m_FrameCounter { 0 };
+        std::atomic<std::uint64_t> m_FenceValue { 0 };
 
         float m_WindowWidth = 1;
         float m_WindowHeight = 1;

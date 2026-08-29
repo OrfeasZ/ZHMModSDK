@@ -34,23 +34,21 @@ public:
     static_assert((sizeof(Constants) % 16) == 0, "Constant buffer size isn't padded correctly!");
 
     DebugEffect(
-        ScopedD3DRef<ID3D12Device> p_Device, ScopedD3DRef<ID3D12GraphicsCommandList> p_CommandList,
-        ScopedD3DRef<ID3D12CommandQueue> p_CommandQueue, const D3D12_INPUT_LAYOUT_DESC* p_InputLayoutDesc
+        ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList,
+        ID3D12CommandQueue* p_CommandQueue, const D3D12_INPUT_LAYOUT_DESC* p_InputLayoutDesc
     );
     ~DebugEffect();
 
-    void CreateRootSignature(ScopedD3DRef<ID3D12Device> p_Device);
+    void CreateRootSignature(ID3D12Device* p_Device);
     void CreateTexture(
-        ScopedD3DRef<ID3D12Device> p_Device, ScopedD3DRef<ID3D12GraphicsCommandList> p_CommandList,
-        ScopedD3DRef<ID3D12CommandQueue> p_CommandQueue
+        ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList, ID3D12CommandQueue* p_CommandQueue
     );
     void CreateShaderResourceView(
-        ScopedD3DRef<ID3D12Device> p_Device, const CD3DX12_RESOURCE_DESC& p_TextureDesc,
-        ID3D12Resource* p_TextureResource
+        ID3D12Device* p_Device, const CD3DX12_RESOURCE_DESC& p_TextureDesc, ID3D12Resource* p_TextureResource
     );
-    void CreateSampler(ScopedD3DRef<ID3D12Device> p_Device);
+    void CreateSampler(ID3D12Device* p_Device);
 
-    void Apply(ScopedD3DRef<ID3D12Device> p_Device, ScopedD3DRef<ID3D12GraphicsCommandList> p_CommandList);
+    void Apply(ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList);
 
     void SetWorld(const DirectX::XMFLOAT4X4& p_World);
     void SetView(const DirectX::XMFLOAT4X4& p_View);

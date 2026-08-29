@@ -14,7 +14,7 @@ enum class ECustomFlags {
 };
 
 class IFutureCameraState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IFutureCameraState() {}
     virtual void IFutureCameraState_unk0() = 0;
@@ -79,7 +79,7 @@ public:
 };
 
 class IControllableCharacter :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IControllableCharacter() {}
     virtual void IControllableCharacter_unk0() = 0;
@@ -94,7 +94,7 @@ public:
 };
 
 class IHM5ActionEntityListener :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IHM5ActionEntityListener() {}
     virtual void IHM5ActionEntityListener_unk0() = 0;
@@ -106,7 +106,7 @@ public:
 };
 
 class ISavableEntity :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ISavableEntity() {}
     virtual void ISavableEntity_unk0() = 0;
@@ -114,14 +114,14 @@ public:
 };
 
 class IAIGameplayConcept :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IAIGameplayConcept() {}
     virtual void IAIGameplayConcept_unk0() = 0;
 };
 
 class ICharacterMovementState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICharacterMovementState() {}
     virtual void ICharacterMovementState_unk0() = 0;
@@ -190,7 +190,7 @@ public:
 };
 
 class ICharacterCombatState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICharacterCombatState() {}
     virtual void ICharacterCombatState_unk0() = 0;
@@ -226,7 +226,7 @@ public:
 };
 
 class ICharacterCoreInventoryState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICharacterCoreInventoryState() {}
     virtual void ICharacterCoreInventoryState_unk0() = 0;
@@ -239,7 +239,7 @@ public:
 };
 
 class ICharacterInventoryState :
-        public ICharacterCoreInventoryState {
+    public ICharacterCoreInventoryState {
 public:
     virtual ~ICharacterInventoryState() {}
     virtual void ICharacterInventoryState_unk0() = 0;
@@ -278,7 +278,7 @@ public:
 };
 
 class ICharacterFriskingState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICharacterFriskingState() {}
     virtual void ICharacterFriskingState_unk0() = 0;
@@ -315,7 +315,7 @@ public:
 };
 
 class ICharacterShowItemState :
-        public ICharacterCoreInventoryState {
+    public ICharacterCoreInventoryState {
 public:
     virtual ~ICharacterShowItemState() {}
     virtual void ICharacterShowItemState_unk0() = 0;
@@ -329,7 +329,7 @@ public:
 };
 
 class ICharacterArrestState :
-        public ICharacterCoreInventoryState {
+    public ICharacterCoreInventoryState {
 public:
     virtual ~ICharacterArrestState() {}
     virtual void ICharacterArrestState_unk0() = 0;
@@ -339,7 +339,7 @@ public:
 };
 
 class ICharacterIllegalInteractionsState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICharacterIllegalInteractionsState() {}
     virtual void ICharacterIllegalInteractionsState_unk0() = 0;
@@ -351,7 +351,7 @@ public:
 };
 
 class ICharacterLocationState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICharacterLocationState() {}
     virtual void ICharacterLocationState_unk0() = 0;
@@ -362,7 +362,7 @@ public:
 };
 
 class ICharacterCameraState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICharacterCameraState() {}
     virtual void ICharacterCameraState_unk0() = 0;
@@ -382,8 +382,8 @@ class ZCharacter;
 class ZHM5MainCamera;
 
 class ZHM5Animator :
-        public ZEntityImpl,
-        public IBoneAnimator {
+    public ZEntityImpl,
+    public IBoneAnimator {
 public:
 };
 
@@ -426,75 +426,75 @@ public:
 };
 
 class ZHitman5 :
-        public ZHM5BaseCharacter,
-        public IFutureCameraState, // 720
-        public ICharacterCollision, // 728
-        public IInventoryOwner, // 736
-        public IIKControllerOwner, // 744
-        public IControllableCharacter, // 752
-        public IHM5ActionEntityListener, // 760
-        public ISavableEntity, // 768
-        public IAIGameplayConcept, // 776
-        public ICharacterMovementState, // 784
-        public ICharacterCombatState, // 792
-        public ICharacterInventoryState, // 800
-        public ICharacterFriskingState, // 808
-        public ICharacterShowItemState, // 816
-        public ICharacterArrestState, // 824
-        public ICharacterIllegalInteractionsState, // 832
-        public ICharacterLocationState, // 840
-        public ICharacterCameraState // 848
+    public ZHM5BaseCharacter,
+    public IFutureCameraState, // 720
+    public ICharacterCollision, // 728
+    public IInventoryOwner, // 736
+    public IIKControllerOwner, // 744
+    public IControllableCharacter, // 752
+    public IHM5ActionEntityListener, // 760
+    public ISavableEntity, // 768
+    public IAIGameplayConcept, // 776
+    public ICharacterMovementState, // 784
+    public ICharacterCombatState, // 792
+    public ICharacterInventoryState, // 800
+    public ICharacterFriskingState, // 808
+    public ICharacterShowItemState, // 816
+    public ICharacterArrestState, // 824
+    public ICharacterIllegalInteractionsState, // 832
+    public ICharacterLocationState, // 840
+    public ICharacterCameraState // 848
 {
 public:
     bool IsInfiniteAmmoEnabled() const {
         return !IsCustomFlagEnabled(ECustomFlags::eLIMITED_AMMO);
     }
 
-    PAD(0x3B8); // 0x358
-    ZRepositoryID m_InitialOutfitId; // 0x710
-    ZEntityRef m_MorphemeEntityID; // 0x720
-    ZEntityRef m_Animator; // 0x728
-    TEntityRef<ZPhysicsSystemEntity> m_rRagdollEntity; // 0x730
-    TEntityRef<IChildNetworkEntity> m_rDefaultPickupNetwork; // 0x740
-    TEntityRef<ZItemPlacementConfigurationEntity> m_placementconfiguration; // 0x750
-    TEntityRef<ZItemPlacementConfigurationEntity> m_placementconfigurationLeft; // 0x760
-    bool m_bStreamableDisguiseGive; // 0x770
-    PAD(0x7); // 0x771
-    TEntityRef<IVariationResourceEntity> m_DefaultWeaponVariationResource; // 0x778
-    TArray<TEntityRef<ZFabricColliderBaseEntity>> m_EnvironmentClothColliders; // 0x788
-    PAD(0x18); // 0x7A0
-    ZGuid m_CharacterId; // 0x7B8
-    PAD(0x38); // 0x7C8
-    ZCharacterInputProcessor* m_pCharacterInputProcessor; // 0x800
-    PAD(0x138); // 0x808
-    TEntityRef<ZBodyPartEntity> m_pVRHeadReplacement; // 0x940
-    TEntityRef<ZBodyPartEntity> m_pVROldHeadReplacement; // 0x950
-    PAD(0x20); // 0x960
-    ZRuntimeResourceID m_SeasonOneHead1; // 0x980
-    ZRuntimeResourceID m_SeasonOneHead2; // 0x988
-    ZRuntimeResourceID m_SeasonOneHead3; // 0x990
-    ZRuntimeResourceID m_SeasonOneHead4; // 0x998
-    ZRuntimeResourceID m_SeasonOneHead5; // 0x9A0
-    PAD(0x4C8); // 0x9A8
-    ZHM5Health* m_pHealth; // 0xE70
-    PAD(0x20); // 0xE78
-    bool m_bIsInvincible; // 0xE98
-    PAD(0x7); // 0xE99
-    TEntityRef<ZHeroGuideController> m_pGuideController; // 0xEA0
-    TEntityRef<ZHeroIKController> m_pIKController; // 0xEB0
-    TEntityRef<ZCheatController> m_pCheatController; // 0xEC0
-    TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xED0
-    TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xEE0
-    TEntityRef<ZCharacter> m_pCharacter; // 0xEF0
-    PAD(0xB0); // 0xF00
-    TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0xFB0
-    int32 m_nOutfitCharset; // 0xFC0
-    int32 m_nOutfitVariation; // 0xFC4
-    PAD(0x210); // 0xFC8
-    uint64 m_nMovementFlags; // 0x11D8
-    uint32 m_nLocomotionFlag; // 0x11E0
-    uint64 m_nCustomFlags; // 0x11E8
-    PAD(0x148); // 0x11F0
-    TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1338
-    PAD(0xA8); // 0x1318
+    PAD(0x3B8); // 0x368
+    ZRepositoryID m_InitialOutfitId; // 0x720
+    ZEntityRef m_MorphemeEntityID; // 0x730
+    ZEntityRef m_Animator; // 0x738
+    TEntityRef<ZPhysicsSystemEntity> m_rRagdollEntity; // 0x740
+    TEntityRef<IChildNetworkEntity> m_rDefaultPickupNetwork; // 0x750
+    TEntityRef<ZItemPlacementConfigurationEntity> m_placementconfiguration; // 0x760
+    TEntityRef<ZItemPlacementConfigurationEntity> m_placementconfigurationLeft; // 0x770
+    bool m_bStreamableDisguiseGive; // 0x780
+    PAD(0x7); // 0x781
+    TEntityRef<IVariationResourceEntity> m_DefaultWeaponVariationResource; // 0x788
+    TArray<TEntityRef<ZFabricColliderBaseEntity>> m_EnvironmentClothColliders; // 0x798
+    PAD(0x18); // 0x7B0
+    ZGuid m_CharacterId; // 0x7C8
+    PAD(0x38); // 0x7D8
+    ZCharacterInputProcessor* m_pCharacterInputProcessor; // 0x810
+    PAD(0x138); // 0x818
+    TEntityRef<ZBodyPartEntity> m_pVRHeadReplacement; // 0x950
+    TEntityRef<ZBodyPartEntity> m_pVROldHeadReplacement; // 0x960
+    PAD(0x20); // 0x970
+    ZRuntimeResourceID m_SeasonOneHead1; // 0x990
+    ZRuntimeResourceID m_SeasonOneHead2; // 0x998
+    ZRuntimeResourceID m_SeasonOneHead3; // 0x9A0
+    ZRuntimeResourceID m_SeasonOneHead4; // 0x9A8
+    ZRuntimeResourceID m_SeasonOneHead5; // 0x9B0
+    PAD(0x4C8); // 0x9B8
+    ZHM5Health* m_pHealth; // 0xE80
+    PAD(0x20); // 0xE88
+    bool m_bIsInvincible; // 0xEA8
+    PAD(0x7); // 0xEA9
+    TEntityRef<ZHeroGuideController> m_pGuideController; // 0xEB0
+    TEntityRef<ZHeroIKController> m_pIKController; // 0xEC0
+    TEntityRef<ZCheatController> m_pCheatController; // 0xED0
+    TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xEE0
+    TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xEF0
+    TEntityRef<ZCharacter> m_pCharacter; // 0xF00
+    PAD(0xB0); // 0xF10
+    TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0xFC0
+    int32 m_nOutfitCharset; // 0xFD0
+    int32 m_nOutfitVariation; // 0xFD4
+    PAD(0x210); // 0xFD8
+    uint64 m_nMovementFlags; // 0x11E8
+    uint32 m_nLocomotionFlag; // 0x11F0
+    uint64 m_nCustomFlags; // 0x11F8
+    PAD(0x148); // 0x1200
+    TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1348
+    PAD(0xB8); // 0x1358
 };
