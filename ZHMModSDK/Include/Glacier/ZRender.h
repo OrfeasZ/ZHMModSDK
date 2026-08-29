@@ -207,6 +207,7 @@ public:
     virtual ~IRenderRefCount() = 0;
     virtual void AddRef() = 0;
     virtual uint32_t Release() = 0;
+    virtual int32_t GetRefCount() const = 0;
 };
 
 class IRenderDestination : public IRenderRefCount {
@@ -379,17 +380,26 @@ struct SRenderTexture2DDesc {
     ERenderFormat eFormat; // 0x1C
 };
 
-class IRenderResource : public IRenderRefCount {};
+class IRenderResource : public IRenderRefCount {
+public:
+    virtual ERenderResourceType GetResourceType() const = 0;
+};
 
-class IRenderResourceD3D12 : IRenderResource {};
+class IRenderResourceD3D12 : public IRenderResource {
+public:
+    ID3D12Resource* m_pResource; // 0x8
+    uint8_t m_Unknown0;         // 0x10
+    int32_t m_Unknown1;         // 0x14
+    uint64_t m_Unknown2;        // 0x18
+};
 
-class ZRenderTexture2D /*: public TRenderResourceImpl<IRenderResourceD3D12, ERenderResourceType::RENDER_RESOURCE_TYPE_TEXTURE2D>*/ {
+static_assert(sizeof(IRenderResourceD3D12) == 0x20);
+
+class ZRenderTexture2D : public TRenderResourceImpl<IRenderResourceD3D12, ERenderResourceType::RENDER_RESOURCE_TYPE_TEXTURE2D> {
 public:
     virtual ~ZRenderTexture2D() = 0;
 
 public:
-    ID3D12Resource* m_pResource; // 0x8
-    PAD(0x18); // 0x10
     SRenderTexture2DDesc m_Description; // 0x28
 };
 
