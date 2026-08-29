@@ -722,19 +722,20 @@ void Editor::DrawEntityPropertiesWindow() {
         if (s_ReferencedTemplateFactoryType == "MATT") {
             TResourcePtr<ZRenderMaterialEntityFactory> s_MaterialEntityResourcePtr;
 
-            Globals::ResourceManager->GetResourcePtr(s_MaterialEntityResourcePtr, s_ReferencedTemplateFactory, 0);
+            Globals::ResourceManager->LoadResource(s_MaterialEntityResourcePtr, s_ReferencedTemplateFactory);
 
             ZRenderMaterialEntityFactory* s_RenderMaterialEntityFactory = s_MaterialEntityResourcePtr.GetResource();
 
-            TResourcePtr<ZRenderMaterialInstance> s_RenderMaterialInstanceResourcePtr;
+            if (s_RenderMaterialEntityFactory) {
+                TResourcePtr<ZRenderMaterialInstance> s_RenderMaterialInstanceResourcePtr;
 
-            Globals::ResourceManager->GetResourcePtr(
-                s_RenderMaterialInstanceResourcePtr,
-                s_RenderMaterialEntityFactory->m_ridMaterialInstance,
-                0
-            );
+                Globals::ResourceManager->LoadResource(
+                    s_RenderMaterialInstanceResourcePtr,
+                    s_RenderMaterialEntityFactory->m_ridMaterialInstance
+                );
 
-            s_RenderMaterialInstance = s_RenderMaterialInstanceResourcePtr.GetResource();
+                s_RenderMaterialInstance = s_RenderMaterialInstanceResourcePtr.GetResource();
+            }
         }
 
         const auto s_EntityType = s_SelectedEntity->GetType();
