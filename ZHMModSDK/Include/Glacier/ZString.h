@@ -90,8 +90,11 @@ public:
     }
 
     ZString& operator=(ZString&& p_Other) noexcept {
-        if (this == &p_Other)
+        if (this == &p_Other) {
             return *this;
+        }
+
+        Free();
 
         m_nLength = p_Other.m_nLength;
         m_pChars = p_Other.m_pChars;
