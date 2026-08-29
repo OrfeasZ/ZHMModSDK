@@ -378,6 +378,7 @@ struct SRenderTexture2DDesc {
     PAD(0xE); //0xC
     uint16 nArraySize; // 0x1A
     ERenderFormat eFormat; // 0x1C
+    PAD(0x4); // 0x20
 };
 
 class IRenderResource : public IRenderRefCount {
