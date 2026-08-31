@@ -593,7 +593,6 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
 
         if (s_ShouldExpandNode) {
             m_OpenEntityTreeNodes.insert(p_Node.get());
-            ImGui::SetNextItemOpen(true);
         }
     }
 
