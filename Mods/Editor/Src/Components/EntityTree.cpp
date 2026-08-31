@@ -578,10 +578,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     else if (m_ScrollToEntity && m_SelectedEntity) {
         bool s_ShouldExpandNode = false;
 
-        if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
-            s_ShouldExpandNode = true;
-        }
-        else if (IsSpecialEntityTreeNode(s_Entity)) {
+        if (IsSpecialEntityTreeNode(s_Entity)) {
             for (const auto& [_, s_Child] : p_Node->Children) {
                 if (s_Child->Entity == m_SelectedEntity ||
                     (s_Child->Entity && m_SelectedEntity.IsAnyParent(s_Child->Entity))) {
@@ -590,10 +587,12 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
                 }
             }
         }
+        else if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
+            s_ShouldExpandNode = true;
+        }
 
         if (s_ShouldExpandNode) {
             m_OpenEntityTreeNodes.insert(p_Node.get());
-            ImGui::SetNextItemOpen(true);
         }
     }
 
