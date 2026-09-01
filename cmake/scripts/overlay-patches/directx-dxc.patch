@@ -1,0 +1,32 @@
+--- a/portfile.cmake
++++ b/portfile.cmake
+@@ -115,6 +115,19 @@ else()
+     "${PACKAGE_PATH}/bin/${DXC_ARCH}/dxil.dll"
+     DESTINATION "${CURRENT_PACKAGES_DIR}/tools/${PORT}/")
+ 
++  # The release zip stores dxc.exe without the executable bit, and directxtk12's
++  # find_program looks for DXC.EXE, which does not resolve on a case-sensitive
++  # filesystem.
++  file(CHMOD "${CURRENT_PACKAGES_DIR}/tools/${PORT}/dxc.exe"
++    PERMISSIONS
++      OWNER_READ OWNER_WRITE OWNER_EXECUTE
++      GROUP_READ GROUP_EXECUTE
++      WORLD_READ WORLD_EXECUTE)
++
++  file(CREATE_LINK "dxc.exe"
++    "${CURRENT_PACKAGES_DIR}/tools/${PORT}/DXC.EXE"
++    SYMBOLIC)
++
+   set(dll_name_dxc "dxcompiler.dll")
+   set(dll_name_dxil "dxil.dll")
+   set(dll_dir  "bin")
+--- a/vcpkg.json
++++ b/vcpkg.json
+@@ -1,6 +1,7 @@
+ {
+   "name": "directx-dxc",
+   "version-date": "2026-05-27",
++  "port-version": 99,
+   "description": "DirectX Shader Compiler (LLVM/Clang)",
+   "homepage": "https://github.com/microsoft/DirectXShaderCompiler",
+   "documentation": "https://github.com/microsoft/DirectXShaderCompiler/wiki",

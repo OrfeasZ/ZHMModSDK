@@ -71,6 +71,7 @@ There are a few sample mods included in this repository that can be used either 
 | [WakingUpNpcs](/Mods/WakingUpNpcs)                             | Makes pacified NPCs wake up after a random interval between 4 and 8 minutes.                                                                                                                                                                                                                               |
 | [World](/Mods/World)                                           | Provides world-level gameplay controls and simulation tweaks. Currently includes a configurable game time multiplier.                                                                                                                                                                                      |
 | [FreelancerSeeder](/Mods/FreelancerSeeder)                     | Allows controlling the seed used to generate Freelancer campaigns.                                                                                                                                                                                                                                         |
+| [QuickSave](/Mods/QuickSave)                                   | Allows quick-saving and quick-loading. Quick-save is F5 and quick-load is F9.                                                                                                                                                                                                                              |
 
 ## Uninstalling
 

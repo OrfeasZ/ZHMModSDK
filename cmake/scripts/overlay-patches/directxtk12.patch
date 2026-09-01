@@ -1,0 +1,50 @@
+--- a/portfile.cmake
++++ b/portfile.cmake
+@@ -8,6 +8,17 @@ vcpkg_from_github(
+     HEAD_REF main
+ )
+ 
++# CompileShaders.cmd is a Windows batch driver, so run it through wine. The
++# wrapper re-execs with `env -i` because vcpkg's port environment carries
++# variables (the nixpkgs cc-wrapper ones among others) that crash wine's loader.
++get_filename_component(_zhm_wine_wrapper
++    "${CMAKE_CURRENT_LIST_DIR}/../../scripts/run-wine-compileshaders.sh" ABSOLUTE)
++vcpkg_replace_string(
++    "${SOURCE_PATH}/CMakeLists.txt"
++    "CompileShaders.cmd ARGS \${ShaderOpts}"
++    "${_zhm_wine_wrapper} ARGS \${ShaderOpts}"
++)
++
+ vcpkg_check_features(
+     OUT_FEATURE_OPTIONS FEATURE_OPTIONS
+     FEATURES
+@@ -21,7 +32,9 @@ vcpkg_check_features(
+ set(EXTRA_OPTIONS "")
+ 
+ if(NOT VCPKG_TARGET_IS_XBOX)
+-  set(DXCPATH "${CURRENT_HOST_INSTALLED_DIR}/tools/directx-dxc")
++  # directx-dxc is a target dep here, so its tools live in the regular
++  # installed dir rather than the host one.
++  set(DXCPATH "${CURRENT_INSTALLED_DIR}/tools/directx-dxc")
+   list(APPEND EXTRA_OPTIONS -DBUILD_DXIL_SHADERS=ON "-DDIRECTX_DXC_PATH=${DXCPATH}")
+ endif()
+ 
+--- a/vcpkg.json
++++ b/vcpkg.json
+@@ -1,7 +1,7 @@
+ {
+   "name": "directxtk12",
+   "version-date": "2026-05-07",
+-  "port-version": 1,
++  "port-version": 99,
+   "description": "A collection of helper classes for writing DirectX 12 code in C++.",
+   "homepage": "https://github.com/Microsoft/DirectXTK12",
+   "documentation": "https://github.com/microsoft/DirectXTK12/wiki",
+@@ -10,7 +10,6 @@
+   "dependencies": [
+     {
+       "name": "directx-dxc",
+-      "host": true,
+       "platform": "windows & !xbox"
+     },
+     {

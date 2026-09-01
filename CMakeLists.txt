@@ -62,6 +62,7 @@ set(MODS
         Randomizer
         World
         FreelancerSeeder
+        QuickSave
 )
 
 foreach (MOD IN LISTS MODS)
