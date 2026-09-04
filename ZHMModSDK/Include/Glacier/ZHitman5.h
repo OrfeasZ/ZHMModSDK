@@ -494,7 +494,9 @@ public:
     uint64 m_nMovementFlags; // 0x11E8
     uint32 m_nLocomotionFlag; // 0x11F0
     uint64 m_nCustomFlags; // 0x11F8
-    PAD(0x148); // 0x1200
+    PAD(0x11C); // 0x1200
+    float m_fVelocity; // 0x131C
+    PAD(0x28); // 0x1320 
     TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1348
     PAD(0xB8); // 0x1358
 };
