@@ -7,8 +7,6 @@
 #include "imgui.h"
 #include "D3DUtils.h"
 
-#include "implot.h"
-
 #include "Glacier/ZPrimitives.h"
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZResource.h"
@@ -25,6 +23,7 @@ class TEntityRef;
 class ZHitman5;
 
 struct ImGuiTexture;
+struct ImPlotContext;
 
 class IModSDK {
 public:
@@ -52,6 +51,7 @@ public:
     virtual ImFont* GetImGuiBlackFont() = 0;
 
     virtual ImPlotContext* GetImPlotContext() = 0;
+    virtual void SetImPlotContext(struct ImPlotContext*) = 0;
 
     /**
      * Try to get the name of a pin by its ID.
