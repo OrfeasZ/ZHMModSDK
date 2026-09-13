@@ -302,11 +302,12 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
     const char*& p_EntityType,
     const std::unordered_map<std::string, std::string>& p_RoomNameToFolderName,
     std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
-    std::map<std::string, std::vector<std::string>>& p_PrimMatis
+    std::map<std::string, std::vector<std::string>>& p_PrimMatis,
+    bool s_OnlyCollidableMeshes
 ) {
     std::string s_AlocHash = GetCollisionHash(p_Node->Entity);
 
-    if (s_AlocHash.empty() || s_AlocHash == "null") {
+    if (s_OnlyCollidableMeshes && (s_AlocHash.empty() || s_AlocHash == "null")) {
         return;
     }
 
@@ -459,7 +460,8 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
     const char*& s_EntityType,
     const std::unordered_map<std::string, std::string>& roomNameToFolderName,
     std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
-    std::map<std::string, std::vector<std::string>>& p_PrimMatis
+    std::map<std::string, std::vector<std::string>>& p_PrimMatis,
+    bool s_OnlyCollidableMeshes
 ) {
     std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityID);
     std::string s_PrimHash =
@@ -467,7 +469,7 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
     // TODO: Check if the prim hash is needed here
 
     if (std::string s_AlocHash = GetCollisionHash(s_Node->Entity);
-        !s_AlocHash.empty() && s_AlocHash != "null") {
+        !s_OnlyCollidableMeshes || (!s_AlocHash.empty() && s_AlocHash != "null")) {
         bool s_Skip = false;
 
         for (auto s_Interface : s_Interfaces) {
@@ -518,6 +520,7 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
 }
 
 void Editor::FindMeshes(
+    const bool s_OnlyCollidableMeshes,
     const std::function<void(
         std::vector<NavKitMeshEntity>&,
         std::map<std::string, NavKitMatiTextures>&,
@@ -595,10 +598,10 @@ void Editor::FindMeshes(
             }
 
             if (const char* s_EntityType = s_TypeInfo->pszTypeName; strcmp(s_EntityType, "ZGeomEntity") == 0) {
-                FindAlocAndPrimForZGeomEntityNode(s_Entities, s_Node, s_Interfaces, s_EntityType, s_RoomNameToFolderName, s_MatiTextures, s_PrimMatis);
+                FindAlocAndPrimForZGeomEntityNode(s_Entities, s_Node, s_Interfaces, s_EntityType, s_RoomNameToFolderName, s_MatiTextures, s_PrimMatis, s_OnlyCollidableMeshes);
             }
             else if (strcmp(s_EntityType, "ZPrimitiveProxyEntity") == 0) {
-                FindAlocAndPrimForZPrimitiveProxyEntityNode(s_Entities, s_Node, s_Interfaces, s_EntityType, s_RoomNameToFolderName, s_MatiTextures, s_PrimMatis);
+                FindAlocAndPrimForZPrimitiveProxyEntityNode(s_Entities, s_Node, s_Interfaces, s_EntityType, s_RoomNameToFolderName, s_MatiTextures, s_PrimMatis, s_OnlyCollidableMeshes);
             }
 
             // Add children to the queue.

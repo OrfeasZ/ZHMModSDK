@@ -65,11 +65,10 @@ public:
     ZEntityRef FindEntity(EntitySelector p_Selector);
     static std::string GetCollisionHash(auto p_SelectedEntity);
     void FindMeshes(
-        const std::function<void(
-            std::vector<NavKitMeshEntity>&, std::map<std::string, NavKitMatiTextures>&,
-            std::map<std::string, std::vector<std::string>>&, bool
-            )>&
-        p_SendEntitiesCallback, const std::function<void()>& p_RebuiltCallback
+        bool s_OnlyCollidableMeshes, const std::function<void(std::vector<NavKitMeshEntity>&, std::map<std::string,
+            NavKitMatiTextures>&, std
+            ::map<std::string, std::vector<std::string>>&, bool)>& p_SendEntitiesCallback, const std::function<void()>&
+        p_RebuiltCallback
     );
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindEntitiesByType(
         const std::string& p_EntityType, const std::string& p_Hash
@@ -221,14 +220,15 @@ private:
         const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const
         std::unordered_map<std::string, std::string>& p_RoomNameToFolderName,
         std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
-        std::map<std::string, std::vector<std::string>>& p_PrimMatis
+        std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool s_OnlyCollidableMeshes
     );
     static void FindAlocAndPrimForZPrimitiveProxyEntityNode(
         std::vector<NavKitMeshEntity>& s_Entities,
         const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<SInterfaceData>& s_Interfaces, const char*& s_EntityType, const
-        std::unordered_map<std::string, std::string>& roomNameToFolderName,
+        std::unordered_map<std::string, std::string>&
+        roomNameToFolderName,
         std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
-        std::map<std::string, std::vector<std::string>>& p_PrimMatis
+        std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool s_OnlyCollidableMeshes
     );
 
     // Properties
