@@ -1,10 +1,10 @@
 #include "Editor.h"
 #include "imgui.h"
 
-bool Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data) {
+bool Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID) {
     bool s_IsChanged = false;
     const auto s_PropertyInfo = p_Property->GetPropertyInfo();
-    auto s_Type = reinterpret_cast<IEnumType*>(s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo());
+    auto s_Type = reinterpret_cast<IEnumType*>(p_TypeID->GetTypeInfo());
     int32_t s_Value = 0;
 
     switch (s_Type->type.m_nTypeSize) {

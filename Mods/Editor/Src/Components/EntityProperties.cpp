@@ -505,7 +505,7 @@ void Editor::DrawEntityPropertiesWindow() {
                 void* s_Data = m_InputPinValue.AllocateMemory();
 
                 if (p_TypeName == "SMatrix43") {
-                    *static_cast<SMatrix43*>(s_Data) = SMatrix43 {};
+                    *static_cast<SMatrix43*>(s_Data) = SMatrix43{};
                 }
                 else {
                     memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
@@ -610,7 +610,7 @@ void Editor::DrawEntityPropertiesWindow() {
                 void* s_Data = m_OutputPinValue.AllocateMemory();
 
                 if (p_TypeName == "SMatrix43") {
-                    *static_cast<SMatrix43*>(s_Data) = SMatrix43 {};
+                    *static_cast<SMatrix43*>(s_Data) = SMatrix43{};
                 }
                 else {
                     memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
@@ -842,7 +842,6 @@ void Editor::DrawEntityPropertiesWindow() {
                 bool s_IsChanged = DrawEntityPropertyValue(
                     s_InputId,
                     s_PropertyName,
-                    s_TypeName,
                     s_PropertyInfo->m_propertyInfo.m_Type,
                     s_SelectedEntity,
                     s_Property,
@@ -871,7 +870,6 @@ void Editor::DrawEntityPropertiesWindow() {
 bool Editor::DrawEntityPropertyValue(
     const std::string& p_Id,
     const std::string& p_PropertyName,
-    const std::string& p_TypeName,
     const STypeID* p_TypeID,
     ZEntityRef p_Entity,
     SPropertyData* p_Property,
@@ -879,92 +877,95 @@ bool Editor::DrawEntityPropertyValue(
 ) {
     bool s_IsChanged = false;
 
-    if (p_TypeName == "ZString") {
+    const IType* s_TypeInfo = p_TypeID->GetTypeInfo();
+    const std::string_view s_TypeName = s_TypeInfo->pszTypeName;
+
+    if (s_TypeName == "ZString") {
         s_IsChanged = StringProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "bool") {
+    else if (s_TypeName == "bool") {
         s_IsChanged = BoolProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "uint8") {
+    else if (s_TypeName == "uint8") {
         s_IsChanged = Uint8Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "int8") {
+    else if (s_TypeName == "int8") {
         s_IsChanged = Int8Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "uint16") {
+    else if (s_TypeName == "uint16") {
         s_IsChanged = Uint16Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "int16") {
+    else if (s_TypeName == "int16") {
         s_IsChanged = Int16Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "uint32") {
+    else if (s_TypeName == "uint32") {
         s_IsChanged = Uint32Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "int32") {
+    else if (s_TypeName == "int32") {
         s_IsChanged = Int32Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "uint64") {
+    else if (s_TypeName == "uint64") {
         s_IsChanged = Uint64Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "int64") {
+    else if (s_TypeName == "int64") {
         s_IsChanged = Int64Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "float32") {
+    else if (s_TypeName == "float32") {
         s_IsChanged = Float32Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "float64") {
+    else if (s_TypeName == "float64") {
         s_IsChanged = Float64Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SVector2") {
+    else if (s_TypeName == "SVector2") {
         s_IsChanged = SVector2Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SVector3") {
+    else if (s_TypeName == "SVector3") {
         s_IsChanged = SVector3Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SVector4") {
+    else if (s_TypeName == "SVector4") {
         s_IsChanged = SVector4Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SMatrix43") {
+    else if (s_TypeName == "SMatrix43") {
         s_IsChanged = SMatrix43Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SColorRGB") {
+    else if (s_TypeName == "SColorRGB") {
         s_IsChanged = SColorRGBProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SColorRGBA") {
+    else if (s_TypeName == "SColorRGBA") {
         s_IsChanged = SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->GetTypeInfo()->IsEnum()) {
-        s_IsChanged = EnumProperty(p_Id, p_Entity, p_Property, p_Data);
+    else if (s_TypeInfo->IsEnum()) {
+        s_IsChanged = EnumProperty(p_Id, p_Entity, p_Property, p_Data, p_TypeID);
     }
-    else if (p_TypeID->GetTypeInfo()->IsResource()) {
+    else if (s_TypeInfo->IsResource()) {
         ResourcePtrProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "ZRuntimeResourceID") {
+    else if (s_TypeName == "ZRuntimeResourceID") {
         ZRuntimeResourceIDProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName.starts_with("ZEntityRef")) {
+    else if (s_TypeName.starts_with("ZEntityRef")) {
         ZEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName.starts_with("TEntityRef")) {
+    else if (s_TypeName.starts_with("TEntityRef")) {
         TEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "ZRepositoryID") {
+    else if (s_TypeName == "ZRepositoryID") {
         ZRepositoryIDProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "ZGuid") {
+    else if (s_TypeName == "ZGuid") {
         ZGuidProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->GetTypeInfo()->IsArray() || p_TypeID->GetTypeInfo()->IsFixedArray()) {
+    else if (s_TypeInfo->IsArray() || s_TypeInfo->IsFixedArray()) {
         s_IsChanged = ArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
     }
-    else if (p_TypeName == "ZCurve") {
+    else if (s_TypeName == "ZCurve") {
         s_IsChanged = ZCurveProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
     }
-    else if (p_TypeName == "ZGameTime") {
+    else if (s_TypeName == "ZGameTime") {
         s_IsChanged = ZGameTimeProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else {
-        UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data);
+        UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data, p_TypeID);
     }
 
     return s_IsChanged;

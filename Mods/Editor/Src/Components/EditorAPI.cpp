@@ -190,7 +190,7 @@ std::unique_ptr<T, Editor::PropertyDeleter> Editor::GetProperty(ZEntityRef p_Ent
 
     return std::unique_ptr<T, PropertyDeleter>(
         s_Data,
-        PropertyDeleter { s_PropertyInfo->m_propertyInfo.m_Type }
+        PropertyDeleter{ s_PropertyInfo->m_propertyInfo.m_Type }
     );
 }
 
@@ -303,11 +303,11 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
     const std::unordered_map<std::string, std::string>& p_RoomNameToFolderName,
     std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
     std::map<std::string, std::vector<std::string>>& p_PrimMatis,
-    bool s_OnlyCollidableMeshes
+    bool p_OnlyCollidableMeshes
 ) {
     std::string s_AlocHash = GetCollisionHash(p_Node->Entity);
 
-    if (s_OnlyCollidableMeshes && (s_AlocHash.empty() || s_AlocHash == "null")) {
+    if (p_OnlyCollidableMeshes && (s_AlocHash.empty() || s_AlocHash == "null")) {
         return;
     }
 
@@ -332,7 +332,7 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
         const auto s_PrimResourceInfo =
             (*Globals::ResourceContainer)->m_resources[s_GeomEntityResourceIndex.val];
         const auto s_PrimResourceId = s_PrimResourceInfo.rid.GetID();
-        std::string s_PrimHash { std::format("{:016X}", s_PrimResourceId) };
+        std::string s_PrimHash{ std::format("{:016X}", s_PrimResourceId) };
 
         TArray<uint8_t> s_Flags;
         TArray<ZResourceIndex> s_Indices;
@@ -454,25 +454,25 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
 }
 
 void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
-    std::vector<NavKitMeshEntity>& s_Entities,
-    const std::shared_ptr<EntityTreeNode>& s_Node,
-    const TArray<SInterfaceData>& s_Interfaces,
+    std::vector<NavKitMeshEntity>& p_Entities,
+    const std::shared_ptr<EntityTreeNode>& p_Node,
+    const TArray<SInterfaceData>& p_Interfaces,
     const char*& s_EntityType,
-    const std::unordered_map<std::string, std::string>& roomNameToFolderName,
+    const std::unordered_map<std::string, std::string>& p_RoomNameToFolderName,
     std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
     std::map<std::string, std::vector<std::string>>& p_PrimMatis,
-    bool s_OnlyCollidableMeshes
+    bool p_OnlyCollidableMeshes
 ) {
-    std::string s_Id = std::format("{:016x}", s_Node->Entity->GetType()->m_nEntityID);
+    std::string s_Id = std::format("{:016x}", p_Node->Entity->GetType()->m_nEntityID);
     std::string s_PrimHash =
-        std::format("<{:08X}{:08X}>", s_Node->BlueprintFactory.m_IDHigh, s_Node->BlueprintFactory.m_IDLow);
+        std::format("<{:08X}{:08X}>", p_Node->BlueprintFactory.m_IDHigh, p_Node->BlueprintFactory.m_IDLow);
     // TODO: Check if the prim hash is needed here
 
-    if (std::string s_AlocHash = GetCollisionHash(s_Node->Entity);
-        !s_OnlyCollidableMeshes || (!s_AlocHash.empty() && s_AlocHash != "null")) {
+    if (std::string s_AlocHash = GetCollisionHash(p_Node->Entity);
+        !p_OnlyCollidableMeshes || (!s_AlocHash.empty() && s_AlocHash != "null")) {
         bool s_Skip = false;
 
-        for (auto s_Interface : s_Interfaces) {
+        for (auto s_Interface : p_Interfaces) {
             if (s_Interface.m_Type->GetTypeInfo() != nullptr) {
                 s_EntityType = s_Interface.m_Type->GetTypeInfo()->pszTypeName;
                 if (strcmp(s_EntityType, "ZPureWaterAspect") == 0) {
@@ -489,11 +489,11 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
 
             // s_NavKitMeshHashInfos.emplace_back(s_AlocHash, s_PrimHash);
 
-            const Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
+            const Quat s_EntityQuat = GetQuatFromProperty(p_Node->Entity);
             Quat s_ParentQuat;
 
             try {
-                s_ParentQuat = GetParentQuat(s_Node->Entity);
+                s_ParentQuat = GetParentQuat(p_Node->Entity);
             }
             catch (std::runtime_error) {
                 Logger::Error(
@@ -504,7 +504,7 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
 
             Quat s_CombinedQuat;
             s_CombinedQuat = s_ParentQuat * s_EntityQuat;
-            const auto [s_RoomName, s_FolderName] = Plugin()->FindRoomForEntity(s_Node->Entity, roomNameToFolderName);
+            const auto [s_RoomName, s_FolderName] = Plugin()->FindRoomForEntity(p_Node->Entity, p_RoomNameToFolderName);
             NavKitMeshEntity s_Entity =
                 NavKitMeshEntity(
                     s_AlocHash,
@@ -512,15 +512,15 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
                     s_CombinedQuat,
                     s_RoomName,
                     s_FolderName,
-                    s_Node->Entity
+                    p_Node->Entity
                 );
-            s_Entities.push_back(s_Entity);
+            p_Entities.push_back(s_Entity);
         }
     }
 }
 
 void Editor::FindMeshes(
-    const bool s_OnlyCollidableMeshes,
+    const bool p_OnlyCollidableMeshes,
     const std::function<void(
         std::vector<NavKitMeshEntity>&,
         std::map<std::string, NavKitMatiTextures>&,
@@ -598,10 +598,10 @@ void Editor::FindMeshes(
             }
 
             if (const char* s_EntityType = s_TypeInfo->pszTypeName; strcmp(s_EntityType, "ZGeomEntity") == 0) {
-                FindAlocAndPrimForZGeomEntityNode(s_Entities, s_Node, s_Interfaces, s_EntityType, s_RoomNameToFolderName, s_MatiTextures, s_PrimMatis, s_OnlyCollidableMeshes);
+                FindAlocAndPrimForZGeomEntityNode(s_Entities, s_Node, s_Interfaces, s_EntityType, s_RoomNameToFolderName, s_MatiTextures, s_PrimMatis, p_OnlyCollidableMeshes);
             }
             else if (strcmp(s_EntityType, "ZPrimitiveProxyEntity") == 0) {
-                FindAlocAndPrimForZPrimitiveProxyEntityNode(s_Entities, s_Node, s_Interfaces, s_EntityType, s_RoomNameToFolderName, s_MatiTextures, s_PrimMatis, s_OnlyCollidableMeshes);
+                FindAlocAndPrimForZPrimitiveProxyEntityNode(s_Entities, s_Node, s_Interfaces, s_EntityType, s_RoomNameToFolderName, s_MatiTextures, s_PrimMatis, p_OnlyCollidableMeshes);
             }
 
             // Add children to the queue.
@@ -671,7 +671,7 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
             Quat s_CombinedQuat = s_ParentQuat * s_EntityQuat;
 
             s_Entities.emplace_back(
-                std::vector { p_Hash },
+                std::vector{ p_Hash },
                 s_CombinedQuat,
                 s_Node->Entity
             );

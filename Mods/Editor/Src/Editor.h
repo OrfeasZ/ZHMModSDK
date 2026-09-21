@@ -65,7 +65,7 @@ public:
     ZEntityRef FindEntity(EntitySelector p_Selector);
     static std::string GetCollisionHash(auto p_SelectedEntity);
     void FindMeshes(
-        bool s_OnlyCollidableMeshes, const std::function<void(std::vector<NavKitMeshEntity>&, std::map<std::string,
+        bool p_OnlyCollidableMeshes, const std::function<void(std::vector<NavKitMeshEntity>&, std::map<std::string,
             NavKitMatiTextures>&, std
             ::map<std::string, std::vector<std::string>>&, bool)>& p_SendEntitiesCallback, const std::function<void()>&
         p_RebuiltCallback
@@ -137,7 +137,6 @@ private:
     bool DrawEntityPropertyValue(
         const std::string& p_Id,
         const std::string& p_PropertyName,
-        const std::string& p_TypeName,
         const STypeID* p_TypeID,
         ZEntityRef p_Entity,
         SPropertyData* p_Property,
@@ -220,19 +219,19 @@ private:
         const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const
         std::unordered_map<std::string, std::string>& p_RoomNameToFolderName,
         std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
-        std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool s_OnlyCollidableMeshes
+        std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool p_OnlyCollidableMeshes
     );
     static void FindAlocAndPrimForZPrimitiveProxyEntityNode(
-        std::vector<NavKitMeshEntity>& s_Entities,
-        const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<SInterfaceData>& s_Interfaces, const char*& s_EntityType, const
+        std::vector<NavKitMeshEntity>& p_Entities,
+        const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const
         std::unordered_map<std::string, std::string>&
         roomNameToFolderName,
         std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
-        std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool s_OnlyCollidableMeshes
+        std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool p_OnlyCollidableMeshes
     );
 
     // Properties
-    void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID);
 
     void ZEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
@@ -254,7 +253,7 @@ private:
     bool Int64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     bool Float32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     bool Float64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID);
 
     // Vector properties.
     bool SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
@@ -276,12 +275,12 @@ private:
     void ZRuntimeResourceIDProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     bool ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
-        const std::string& s_PropertyName, const STypeID* p_TypeID);
+        const std::string& p_PropertyName, const STypeID* p_TypeID);
 
     bool ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     bool ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
-        const std::string& s_PropertyName, const STypeID* p_TypeID);
+        const std::string& p_PropertyName, const STypeID* p_TypeID);
 
     static void PlotZCurve(const ZCurve* p_Curve);
     static float EvaluateZCurveSegment(
