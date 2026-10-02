@@ -350,11 +350,13 @@ void Randomizer::DrawPropsToSpawnTab() {
         s_PropTitle,
         sizeof(s_PropTitle),
         m_AllRepositoryProps,
-        [](auto& p_Tuple) -> const ZRepositoryID& { return std::get<0>(p_Tuple); },
+        [](auto& p_Tuple) -> uint32_t { return std::get<0>(p_Tuple).GetHashCode(); },
         [](auto& p_Tuple) -> const std::string& { return std::get<1>(p_Tuple); },
-        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+        [&](uint32_t, const std::string& p_Name, const auto& p_Tuple) {
+            const ZRepositoryID& s_Id = std::get<0>(p_Tuple);
+
             const bool s_IsAlreadyAdded = std::ranges::any_of(m_PropsToSpawn, [&](const auto& p_Item) {
-                return std::get<0>(p_Item) == p_Id;
+                return std::get<0>(p_Item) == s_Id;
             });
 
             if (s_IsAlreadyAdded) {
@@ -378,7 +380,7 @@ void Randomizer::DrawPropsToSpawnTab() {
             }
 
             m_PropsToSpawn.push_back(std::make_tuple(
-                p_Id,
+                s_Id,
                 p_Name,
                 m_SpawnInWorld,
                 m_SpawnInStash,
@@ -530,21 +532,23 @@ void Randomizer::DrawPropsToExcludeTab() {
         s_PropTitle,
         sizeof(s_PropTitle),
         m_AllRepositoryProps,
-        [](auto& p_Tuple) -> const ZRepositoryID& { return std::get<0>(p_Tuple); },
+        [](auto& p_Tuple) -> uint32_t { return std::get<0>(p_Tuple).GetHashCode(); },
         [](auto& p_Tuple) -> const std::string& { return std::get<1>(p_Tuple); },
-        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+        [&](uint32_t, const std::string& p_Name, const auto& p_Tuple) {
+            const ZRepositoryID& s_Id = std::get<0>(p_Tuple);
+
             const bool s_IsAlreadyAdded = std::ranges::any_of(m_PropsToExclude, [&](const auto& p_Item) {
-                return std::get<0>(p_Item) == p_Id;
+                return std::get<0>(p_Item) == s_Id;
             });
 
             if (s_IsAlreadyAdded) {
                 return;
             }
 
-            m_PropsToExclude.push_back(std::make_pair(p_Id, p_Name));
-            m_ExcludedPropRepositoryIds.insert(p_Id);
+            m_PropsToExclude.push_back(std::make_pair(s_Id, p_Name));
+            m_ExcludedPropRepositoryIds.insert(s_Id);
 
-            SetSettingBool("props_to_exclude", Util::StringUtils::ToLowerCase(p_Id.ToString().c_str()), true);
+            SetSettingBool("props_to_exclude", Util::StringUtils::ToLowerCase(s_Id.ToString().c_str()), true);
         },
         nullptr,
         [&](const auto& p_Tuple) -> bool {
@@ -829,11 +833,13 @@ void Randomizer::DrawOutfitsToSpawnTab() {
         s_OutfitName,
         sizeof(s_OutfitName),
         m_AllRepositoryOutfits,
-        [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+        [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
         [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
-        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+        [&](uint32_t, const std::string& p_Name, const auto& p_Tuple) {
+            const ZRepositoryID& s_Id = std::get<0>(p_Tuple);
+
             const bool s_IsAlreadyAdded = std::ranges::any_of(m_OutfitsToSpawn, [&](const auto& p_Item) {
-                return std::get<0>(p_Item) == p_Id;
+                return std::get<0>(p_Item) == s_Id;
                 });
 
             if (s_IsAlreadyAdded) {
@@ -844,17 +850,17 @@ void Randomizer::DrawOutfitsToSpawnTab() {
             bool s_SpawnForActor = m_SpawnForActor;
             bool s_SpawnForClothBundle = m_SpawnForClothBundle;
 
-            if (!m_PlayerOutfits.contains(p_Id)) {
+            if (!m_PlayerOutfits.contains(s_Id)) {
                 s_SpawnForPlayer = false;
                 s_SpawnForClothBundle = false;
             }
 
-            if (!m_ActorOutfits.contains(p_Id)) {
+            if (!m_ActorOutfits.contains(s_Id)) {
                 s_SpawnForActor = false;
             }
 
             m_OutfitsToSpawn.push_back(std::make_tuple(
-                p_Id,
+                s_Id,
                 p_Name,
                 s_SpawnForPlayer,
                 s_SpawnForActor,
@@ -1001,21 +1007,23 @@ void Randomizer::DrawOutfitsToExcludeTab() {
         s_OutfitName,
         sizeof(s_OutfitName),
         m_AllRepositoryOutfits,
-        [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+        [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
         [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
-        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+        [&](uint32_t, const std::string& p_Name, const auto& p_Pair) {
+            const ZRepositoryID& s_Id = p_Pair.first;
+
             const bool s_IsAlreadyAdded = std::ranges::any_of(m_OutfitsToExclude, [&](const auto& p_Item) {
-                return std::get<0>(p_Item) == p_Id;
-                });
+                return std::get<0>(p_Item) == s_Id;
+            });
 
             if (s_IsAlreadyAdded) {
                 return;
             }
 
-            m_OutfitsToExclude.push_back(std::make_pair(p_Id, p_Name));
-            m_ExcludedOutfitRepositoryIds.insert(p_Id);
+            m_OutfitsToExclude.push_back(std::make_pair(s_Id, p_Name));
+            m_ExcludedOutfitRepositoryIds.insert(s_Id);
 
-            SetSettingBool("outfits_to_exclude", Util::StringUtils::ToLowerCase(p_Id.ToString().c_str()), true);
+            SetSettingBool("outfits_to_exclude", Util::StringUtils::ToLowerCase(s_Id.ToString().c_str()), true);
         },
         nullptr,
         [&](const auto& p_Pair) -> bool {

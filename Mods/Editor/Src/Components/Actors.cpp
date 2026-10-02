@@ -253,14 +253,14 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
             s_OutfitName,
             sizeof(s_OutfitName),
             Globals::ContentKitManager->m_repositoryGlobalOutfitKits,
-            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
             [](auto& p_Pair) -> std::string {
                 return std::string(
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.c_str(),
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
                 );
             },
-            [&](const ZRepositoryID&,
+            [&](uint32_t,
                 const std::string& p_Name,
                 const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
                     s_CurrentCharacterSetIndex = 0;
@@ -276,7 +276,7 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
 
                     m_GlobalOutfitKit = p_GlobalOutfitKit;
             },
-            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; },
+            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>&{ return p_Pair.second; },
             [](auto& p_Pair) -> bool {
                 return p_Pair.second && !p_Pair.second.m_pInterfaceRef->m_bIsHitmanSuit;
             }
@@ -534,9 +534,9 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
             s_WeaponTitle,
             sizeof(s_WeaponTitle),
             m_RepositoryWeapons,
-            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
             [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
-            [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+            [&](uint32_t, const std::string& p_Name, const auto& p_Pair) {
                 ZEntityRef s_ActorEntityRef = m_SelectedActor->m_pInventoryHandler->m_rActor.m_entityRef;
                 const uint64_t s_NewEntityID = Functions::ZEntityManager_GenerateDynamicObjectID->Call(
                     Globals::EntityManager,
@@ -552,7 +552,7 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
 
                 uint32_t s_Ticket = Functions::ZWorldInventory_RequestNewItem->Call(
                     Globals::WorldInventory,
-                    p_Id,
+                    p_Pair.first,
                     s_Delegate,
                     s_NewEntityID,
                     false,

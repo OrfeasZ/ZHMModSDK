@@ -12,6 +12,21 @@
 namespace Util {
     class ImGuiUtils {
     public:
+        template<typename T> static void PushID(const T& p_Id) {
+            if constexpr (std::is_same_v<std::decay_t<T>, std::string>) {
+                ImGui::PushID(p_Id.c_str());
+            }
+            else if constexpr (std::is_same_v<std::decay_t<T>, std::string_view>) {
+                ImGui::PushID(p_Id.data(), p_Id.data() + p_Id.size());
+            }
+            else if constexpr (std::is_integral_v<std::decay_t<T>>) {
+                ImGui::PushID(reinterpret_cast<const char*>(&p_Id), reinterpret_cast<const char*>(&p_Id) + sizeof(p_Id));
+            }
+            else {
+                static_assert(false, "Unsupported ID type");
+            }
+        }
+
         /**
          * @brief Renders an ImGui input field with autocomplete functionality.
          *
@@ -105,7 +120,7 @@ namespace Util {
 
                     const auto& s_OptionId = p_GetOptionIdFn(s_Item);
 
-                    ImGui::PushID(&s_OptionId);
+                    PushID(s_OptionId);
 
                     const bool s_Selected = ImGui::Selectable(s_OptionName.c_str());
 
@@ -228,7 +243,7 @@ namespace Util {
 
                     const auto& s_OptionId = p_GetOptionIdFn(s_Item);
 
-                    ImGui::PushID(&s_OptionId);
+                    PushID(s_OptionId);
 
                     const bool s_Selected = ImGui::Selectable(s_OptionName.c_str());
 
