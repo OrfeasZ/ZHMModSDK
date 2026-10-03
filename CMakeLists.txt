@@ -53,7 +53,7 @@ set(MODS
         Editor
         Clumsy
         Noclip
-        #Hitmen
+        Hitmen
         DebugCheckKeyEntityEnabler
         OnlineTools
         Player

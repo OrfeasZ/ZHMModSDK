@@ -4,7 +4,7 @@ A modding SDK and mod loader for HITMAN 3.
 
 ![build status](https://github.com/OrfeasZ/ZHMModSDK/workflows/Build/badge.svg)
 
-## Description
+## Descriptio
 
 This is a community-made modding SDK and mod loader for HITMAN 3. Its purpose is to allow users to easily download and
 use mods, and make the creation of more complex runtime mods easier for developers.
