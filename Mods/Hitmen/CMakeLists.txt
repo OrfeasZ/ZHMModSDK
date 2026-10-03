@@ -18,5 +18,5 @@ target_include_directories(Hitmen PRIVATE
 
 target_link_libraries(Hitmen PRIVATE
         ZHMModSDK
-        #GameNetworkingSockets::static
+        GameNetworkingSockets::static
 )
