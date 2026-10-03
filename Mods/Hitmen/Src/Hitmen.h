@@ -40,9 +40,9 @@ private:
     void OnNpcPositions(BinaryStreamReader& p_Reader);
 
 private:
-    DECLARE_PLUGIN_DETOUR(Hitmen, void, OnLoadScene, ZEntitySceneContext*, ZSceneData&);
+    DECLARE_PLUGIN_DETOUR(Hitmen, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(Hitmen, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
-    DECLARE_PLUGIN_DETOUR(Hitmen, TEntityRef<ZHitman5>*, GetLocalPlayer, ZPlayerRegistry* th, TEntityRef<ZHitman5>* out);
+    // DECLARE_PLUGIN_DETOUR(Hitmen, TEntityRef<ZHitman5>*, GetLocalPlayer, ZPlayerRegistry* th, TEntityRef<ZHitman5>* out);
 
 private:
     bool m_Initialized = false;
