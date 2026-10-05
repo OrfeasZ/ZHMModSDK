@@ -9,6 +9,22 @@
 
 #include <Windows.h>
 
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef MAX
+#undef MAX
+#endif
+
+#ifdef MIN
+#undef MIN
+#endif
+
 #if LOADER_EXPORTS
 #	define ZHMSDK_API __declspec(dllexport)
 #else
