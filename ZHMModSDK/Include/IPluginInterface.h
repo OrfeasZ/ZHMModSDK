@@ -4,6 +4,8 @@
 #include "IModSDK.h"
 #include "IRenderer.h"
 
+static void SetImPlotContext(ImPlotContext*);
+
 class IPluginInterface {
 public:
     virtual ~IPluginInterface() = default;
@@ -18,7 +20,7 @@ private:
         ImGui::SetCurrentContext(s_Context);
         ImGui::SetAllocatorFunctions(SDK()->GetImGuiAlloc(), SDK()->GetImGuiFree(), SDK()->GetImGuiAllocatorUserData());
 
-        ImPlot::SetCurrentContext(SDK()->GetImPlotContext());
+        SDK()->SetImPlotContext(SDK()->GetImPlotContext());
     }
 
 public:
@@ -47,7 +49,7 @@ public:
 private:
     virtual void CleanupUI() {
         ImGui::SetCurrentContext(nullptr);
-        ImPlot::SetCurrentContext(nullptr);
+        SDK()->SetImPlotContext(nullptr);
     }
 
 public:
