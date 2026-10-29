@@ -131,7 +131,7 @@ public:
     TEntityRef<ZGeomEntity> m_pGeomEntity; //0x338
     PAD(0x10); // 0x2D0
     ZEntityRef m_pOwner; // 0x358
-    PAD(0x190);
+    PAD(0x1A0); // 0x360
 };
 
 class IItemWeapon : public IComponentInterface {

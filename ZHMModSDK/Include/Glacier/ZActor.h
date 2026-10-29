@@ -290,7 +290,7 @@ public:
     bool m_bHasClothOutfit : 1;
     PAD(0x1E); // 0x117E
     int32_t m_nActorRuntimeId; // 0x119C
-    PAD(0x2B0); // 0x11A0
+    PAD(0x2A0); // 0x11A0
 
 public:
     void PrintBitflags() {

@@ -486,17 +486,17 @@ public:
     TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xEE0
     TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xEF0
     TEntityRef<ZCharacter> m_pCharacter; // 0xF00
-    PAD(0xB0); // 0xF10
-    TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0xFC0
-    int32 m_nOutfitCharset; // 0xFD0
-    int32 m_nOutfitVariation; // 0xFD4
-    PAD(0x210); // 0xFD8
-    uint64 m_nMovementFlags; // 0x11E8
-    uint32 m_nLocomotionFlag; // 0x11F0
-    uint64 m_nCustomFlags; // 0x11F8
-    PAD(0x11C); // 0x1200
-    float m_fVelocity; // 0x131C
-    PAD(0x28); // 0x1320 
-    TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x1348
-    PAD(0xB8); // 0x1358
+    PAD(0x100); // 0xF10
+    TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0x1010
+    int32 m_nOutfitCharset; // 0x1020
+    int32 m_nOutfitVariation; // 0x1024
+    PAD(0x210); // 0x1028
+    uint64 m_nMovementFlags; // 0x1238
+    uint32 m_nLocomotionFlag; // 0x1240
+    uint64 m_nCustomFlags; // 0x1248
+    PAD(0x11C); // 0x1250
+    float m_fVelocity; // 0x136C
+    PAD(0x38); // 0x1370
+    TEntityRef<ZHM5MainCamera> m_rMainCamera; // 0x13A8
+    PAD(0xA8); // 0x13B8
 };
