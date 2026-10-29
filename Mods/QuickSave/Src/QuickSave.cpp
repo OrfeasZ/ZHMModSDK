@@ -13,6 +13,8 @@
 
 #include "Glacier/SExternalReferences.h"
 #include "Glacier/ZModule.h"
+#include "Glacier/ZOnlineManager.h"
+#include "Glacier/SSaveGameMetaData.h"
 
 QuickSave::QuickSave() :
     m_QuickSave("QuickSave"),
@@ -29,6 +31,7 @@ QuickSave::~QuickSave() {
 void QuickSave::Init() {
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &QuickSave::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &QuickSave::OnClearScene);
+    Hooks::ZSaveSlotManager_QuickSave->AddDetour(this, &QuickSave::OnQuickSave);
 }
 
 void QuickSave::OnEngineInitialized() {
@@ -106,6 +109,15 @@ DEFINE_PLUGIN_DETOUR(QuickSave, bool, OnLoadScene, ZEntitySceneContext* th, SSce
 
 DEFINE_PLUGIN_DETOUR(QuickSave, void, OnClearScene, ZEntitySceneContext* th, bool) {
     m_LevelControlEntity = {};
+    return {HookAction::Continue()};
+}
+
+DEFINE_PLUGIN_DETOUR(
+    QuickSave, bool, OnQuickSave, ZSaveSlotManager* th, SSaveGameMetaData& p_MetaData, TFnSaveStatusCallback*,
+    TArrayRef<uint32_t>
+) {
+    // The SaveQuick pin never sets this flag, so all quicksaves are offline if we don't set it ourselves.
+    p_MetaData.m_bIsOnline = Globals::OnlineManager->IsConnected();
     return {HookAction::Continue()};
 }
 

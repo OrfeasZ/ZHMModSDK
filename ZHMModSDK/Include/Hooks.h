@@ -12,6 +12,7 @@
 #include <Glacier/ZLevelManager.h>
 #include <Glacier/ZResource.h>
 #include <Glacier/ZInventory.h>
+#include <Glacier/SSaveGameMetaData.h>
 
 #include <Windows.h>
 #include <directx/d3d12.h>
@@ -95,6 +96,7 @@ class ZHM5WeaponRecoilController;
 class ZEvergreenCampaignManager;
 class ZFreeCameraControlEditorStyleEntity;
 struct SDestinationLocationInfo;
+class ZSaveSlotManager;
 
 class ZHMSDK_API Hooks {
 public:
@@ -355,4 +357,9 @@ public:
     static Hook<const SDestinationLocationInfo*(
         IEvergreenTerritoryDefinition_EDestination eDestination
     )>* GetDestinationLocationInfo;
+
+    static Hook<bool(
+        ZSaveSlotManager* th, SSaveGameMetaData& metaData, TFnSaveStatusCallback* callback,
+        TArrayRef<uint32_t> resourceIndices
+    )>* ZSaveSlotManager_QuickSave;
 };

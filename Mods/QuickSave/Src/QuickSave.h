@@ -22,6 +22,10 @@ private:
 
     DECLARE_PLUGIN_DETOUR(QuickSave, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
     DECLARE_PLUGIN_DETOUR(QuickSave, void, OnClearScene, ZEntitySceneContext*, bool);
+    DECLARE_PLUGIN_DETOUR(
+        QuickSave, bool, OnQuickSave, ZSaveSlotManager*, SSaveGameMetaData&, TFnSaveStatusCallback*,
+        TArrayRef<uint32_t>
+    );
 
 private:
     ZInputAction m_QuickSave;

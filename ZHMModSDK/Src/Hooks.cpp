@@ -644,3 +644,12 @@ PATTERN_HOOK(
     GetDestinationLocationInfo,
     const SDestinationLocationInfo*(IEvergreenTerritoryDefinition_EDestination eDestination)
 );
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x55\x41\x56\x48\x81\xEC\x00\x00\x00\x00\x48\x89\x58\x08", "xxxxxxxxx????xxxx",
+    ZSaveSlotManager_QuickSave,
+    bool(
+        ZSaveSlotManager* th, SSaveGameMetaData& metaData, TFnSaveStatusCallback* callback,
+        TArrayRef<uint32_t> resourceIndices
+    )
+);

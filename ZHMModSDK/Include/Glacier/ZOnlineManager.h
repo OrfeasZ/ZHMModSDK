@@ -2,6 +2,7 @@
 
 #include "IComponentInterface.h"
 #include "TCheatProtect.h"
+#include "Enums.h"
 
 class IOnlineConfigurationListener {
 public:
@@ -18,7 +19,14 @@ class ZOnlineManager :
     public IOnlineConfigurationListener,
     public ZOnlineStateMachine {
 public:
-    PAD(0x3F0); // 0x18
+    bool IsConnected() const {
+        return m_eState == ZOnlineManager_EState::eCONNECTED ||
+               m_eState == ZOnlineManager_EState::eRETRY_SAVE_EVENTS ||
+               m_eState == ZOnlineManager_EState::eREAUTHENTICATE;
+    }
+
+    ZOnlineManager_EState m_eState; // 0x18
+    PAD(0x3EC); // 0x1C
     TCheatProtect<ZString> m_sGlobalServiceAuthenticationToken; // 0x408
     TCheatProtect<ZString> m_sGlobalServiceRefreshToken; // 0x418
     bool m_bIsRenewingResourceSignature; // 0x428
