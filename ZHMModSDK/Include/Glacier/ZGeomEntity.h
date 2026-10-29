@@ -4,9 +4,14 @@
 #include "ZSpatialEntity.h"
 #include "ZResource.h"
 
-class ZRenderableEntity : public ZBoundedEntity //Size: 0xD0
-{
-    PAD(0x18);
+class ZRenderableEntity : public ZBoundedEntity {
+public:
+    ZRenderGraphNode* m_pRenderGraphData; // 0xB8
+    PAD(0x8); // 0xC0
+    uint32 m_nRenderBaseIndex; // 0xC8
+    uint8 m_nRenderType; // 0xCC
+    PAD(0x2); // 0xCD
+    bool m_UnknownFlags; // 0xCF
 };
 
 // Size: 0x70
@@ -144,10 +149,10 @@ static_assert(offsetof(ZRenderInputLayout, m_ElementDesc) == 0x158);
 
 struct SPrimitiveBufferData {
     enum ERenderPrimType : unsigned char {
-        RENDER_PRIM_TYPE_INVALID        = 0,
-        RENDER_PRIM_TYPE_MESH           = 1,
+        RENDER_PRIM_TYPE_INVALID = 0,
+        RENDER_PRIM_TYPE_MESH = 1,
         RENDER_PRIM_TYPE_MESH_SPEEDTREE = 2,
-        RENDER_PRIM_TYPE_SPRITES        = 3
+        RENDER_PRIM_TYPE_SPRITES = 3
     };
 
     SRenderPrimitiveMeshDesc m_Description; // 0x00

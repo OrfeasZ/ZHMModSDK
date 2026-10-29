@@ -15,11 +15,13 @@ DEFINE_PLUGIN_DETOUR(SkipIntro, ZString*, ZEngineAppCommon_GetBootScene, ZEngine
         return HookResult<ZString*>(HookAction::Continue());
     }
 
-    result = (*Globals::ComponentManager)->m_pApplication->GetOption("SCENE_FILE");
+    ZString s_Result = (*Globals::ComponentManager)->m_pApplication->GetOption("SCENE_FILE");
 
-    if (result == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
-        result = "assembly:/_PRO/Scenes/Frontend/MainMenu.entity";
+    if (s_Result == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
+        s_Result = "assembly:/_PRO/Scenes/Frontend/MainMenu.entity";
     }
+
+    std::construct_at(&result, std::move(s_Result));
 
     return HookResult<ZString*>(HookAction::Return(), &result);
 }

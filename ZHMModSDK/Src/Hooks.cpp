@@ -562,7 +562,7 @@ PATTERN_HOOK(
 );
 
 PATTERN_HOOK(
-    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8B\x99\x78\x11\x00\x00",
+    "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x00\x48\x8B\x99\x88\x11\x00\x00",
     "xxxxxxxxx?xxxxxxx",
     ZActor_YouGotHit,
     bool(IBaseCharacter* th, const SHitInfo& hitInfo)
@@ -637,3 +637,10 @@ PATTERN_HOOK(
 //    ZInputActionManager_ParseAsignment,
 //    bool(ZInputActionManager* th, ZInputTokenStream* pkStream)
 //);
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x89\x48\x08\x55\x41\x54\x48\x8D\xA8\x00\x00\x00\x00\x48\x81\xEC\x00\x00\x00\x00\x80\x3D\x00\x00\x00\x00\x00\x44\x8B\xE1\x48\x8D\x0D",
+    "xxxxxxxxxxxx????xxx????xx????xxxxxxx",
+    GetDestinationLocationInfo,
+    const SDestinationLocationInfo*(IEvergreenTerritoryDefinition_EDestination eDestination)
+);

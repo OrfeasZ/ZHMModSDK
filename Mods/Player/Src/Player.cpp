@@ -103,14 +103,14 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             s_OutfitName,
             sizeof(s_OutfitName),
             s_ContentKitManager->m_repositoryGlobalOutfitKits,
-            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
             [](auto& p_Pair) -> std::string {
                 return std::string(
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.c_str(),
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
                 );
             },
-            [&](const ZRepositoryID&,
+            [&](uint32_t,
                 const std::string& p_Name,
                 const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
                     s_CurrentCharacterSetIndex = 0;
@@ -126,7 +126,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
                     m_GlobalOutfitKit = p_GlobalOutfitKit;
             },
-            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
+            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>&{ return p_Pair.second; }
         );
 
         if (!s_IsPopupOpen && s_LocalHitman && s_OutfitName[0] == '\0') {
@@ -271,14 +271,14 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             s_ActorName,
             sizeof(s_ActorName),
             Globals::ActorManager->m_activatedActors,
-            [](auto& p_EntityRef) -> const ZEntityRef& { return p_EntityRef.m_entityRef; },
+            [](auto& p_EntityRef) -> uintptr_t { return reinterpret_cast<uintptr_t>(p_EntityRef.m_entityRef.GetEntity()); },
             [](auto& p_EntityRef) -> std::string {
                 return std::string(
                     p_EntityRef.m_pInterfaceRef->m_sActorName.c_str(),
                     p_EntityRef.m_pInterfaceRef->m_sActorName.size()
                 );
             },
-            [&](const ZEntityRef&, const std::string& actorName, const TEntityRef<ZActor>& p_EntityRef) {
+            [&](uintptr_t, const std::string& actorName, const TEntityRef<ZActor>& p_EntityRef) {
                 const ZActor* s_Actor = p_EntityRef.m_pInterfaceRef;
 
                 if (s_Actor) {

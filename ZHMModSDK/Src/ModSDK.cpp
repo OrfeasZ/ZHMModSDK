@@ -11,7 +11,6 @@
 #include "IPluginInterface.h"
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
-#include "Util/HashingUtils.h"
 #include "Util/StringUtils.h"
 
 #include "Rendering/Renderers/DirectXTKRenderer.h"
@@ -307,7 +306,7 @@ void ModSDK::LoadConfiguration() {
             m_IgnoredVersion = s_Mod.second.get("ignore_version");
         }
 
-        if (s_Mod.second.has("no_updates_for_me_please")) {
+        if (s_Mod.second.has("disable_update_check")) {
             m_DisableUpdateCheck = true;
         }
 
@@ -604,7 +603,7 @@ bool ModSDK::CheckForUpdates() const {
 }
 
 // Built-in console commands
-void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
+void ModSDK::OnConsoleCommand(void* p_Context, TArray<ZString>& p_Args) {
     if (p_Args.size() == 1) {
         if (p_Args[0] == "unloadall") {
             ModSDK::GetInstance()->GetModLoader()->UnloadAllMods();
@@ -625,97 +624,125 @@ void OnConsoleCommand(void* context, TArray<ZString> p_Args) {
             ModSDK::GetInstance()->GetModLoader()->ReloadMod(p_Args[1].c_str());
         }
         else if (p_Args[0] == "config") {
-            ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
+            ZConfigCommand* s_ConfigCommand = ZConfigCommand::Get(p_Args[1]);
 
-            if (!s_Command)
-                return Logger::Error("[ZConfigCommand] Invalid command.");
+            if (!s_ConfigCommand) {
+                Logger::Error("[ZConfigCommand] Invalid command.");
+                return;
+            }
 
-            switch (s_Command->GetType()) {
-                case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT:
-                    return Logger::Info(
+            switch (s_ConfigCommand->GetType()) {
+                case ZConfigCommand::ECLASSTYPE::ECLASS_FLOAT:
+                    Logger::Info(
                         "[ZConfigCommand] {} - float - {}",
                         p_Args[1],
-                        s_Command->As<ZConfigFloat>()->GetValue()
+                        s_ConfigCommand->As<ZConfigFloat>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_INT:
-                    return Logger::Info(
+                    return;
+                case ZConfigCommand::ECLASSTYPE::ECLASS_INT:
+                    Logger::Info(
                         "[ZConfigCommand] {} - int - {}",
                         p_Args[1],
-                        s_Command->As<ZConfigInt>()->GetValue()
+                        s_ConfigCommand->As<ZConfigInt>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
-                    return Logger::Info(
+                    return;
+                case ZConfigCommand::ECLASSTYPE::ECLASS_STRING:
+                    Logger::Info(
                         "[ZConfigCommand] {} - string - \"{}\"",
                         p_Args[1],
-                        s_Command->As<ZConfigString>()->GetValue()
+                        s_ConfigCommand->As<ZConfigString>()->GetValue()
                     );
-                case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
-                    return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+                    return;
+                case ZConfigCommand::ECLASSTYPE::ECLASS_UNKNOWN:
+                    Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+                    return;
             }
         }
     }
 
     if (p_Args.size() == 3) {
         if (p_Args[0] == "config") {
-            ZConfigCommand* s_Command = ZConfigCommand::Get(p_Args[1]);
+            ZConfigCommand* s_ConfigCommand = ZConfigCommand::Get(p_Args[1]);
 
-            if (!s_Command)
-                return Logger::Info("[ZConfigCommand] Invalid command.");
+            if (!s_ConfigCommand) {
+                Logger::Info("[ZConfigCommand] Invalid command.");
+                return;
+            }
 
             // Now we validate the input, we technically don't need to do this as it'll be done by the engine function
             // we call. But we do this to provide output to the user.
-            switch (s_Command->GetType()) {
-                case ZConfigCommand_ECLASSTYPE::ECLASS_FLOAT: {
+            switch (s_ConfigCommand->GetType()) {
+                case ZConfigCommand::ECLASSTYPE::ECLASS_FLOAT: {
                     try {
-                        size_t pos;
-                        static_cast<void>(std::stof(p_Args[2].c_str(), &pos));
-                        if (pos != p_Args[2].size())
-                            return Logger::Error(
+                        size_t s_ParsedLength;
+                        static_cast<void>(std::stof(p_Args[2].c_str(), &s_ParsedLength));
+
+                        if (s_ParsedLength != p_Args[2].size()) {
+                            Logger::Error(
                                 "[ZConfigCommand] Invalid input (float), not all characters provided were processed."
                             );
+                            return;
+                        }
                     }
                     catch (const std::invalid_argument&) {
-                        return Logger::Error(
+                        Logger::Error(
                             "[ZConfigCommand] Invalid input (float), input does not represent a float."
                         );
+                        return;
                     }
                     catch (const std::out_of_range&) {
-                        return Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
+                        Logger::Error("[ZConfigCommand] Invalid input (float), float is out of range.");
+                        return;
                     }
                     break;
                 }
-                case ZConfigCommand_ECLASSTYPE::ECLASS_INT: {
+                case ZConfigCommand::ECLASSTYPE::ECLASS_INT: {
                     try {
-                        size_t pos;
-                        unsigned long value = std::stoul(p_Args[2].c_str(), &pos);
-                        if (pos != p_Args[2].size())
-                            return Logger::Error(
+                        size_t s_ParsedLength;
+                        unsigned long s_Value = std::stoul(p_Args[2].c_str(), &s_ParsedLength);
+
+                        if (s_ParsedLength != p_Args[2].size()) {
+                            Logger::Error(
                                 "[ZConfigCommand] Invalid input (integer), not all characters provided were processed."
                             );
-                        if (value > (std::numeric_limits<unsigned int>::max)())
-                            return Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
+                            return;
+                        }
+
+                        if (s_Value > (std::numeric_limits<unsigned int>::max)()) {
+                            Logger::Error("[ZConfigCommand] Invalid input (integer), out of u32 range.");
+                            return;
+                        }
                     }
                     catch (const std::invalid_argument&) {
-                        return Logger::Error(
+                        Logger::Error(
                             "[ZConfigCommand] Invalid input (integer), input does not represent a integer."
                         );
+                        return;
                     }
                     catch (const std::out_of_range&) {
-                        return Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
+                        Logger::Error("[ZConfigCommand] Invalid input (integer), integer is out of range.");
+                        return;
                     }
+
                     break;
                 }
-                case ZConfigCommand_ECLASSTYPE::ECLASS_STRING:
-                    if (p_Args[2].size() >= 256)
-                        return Logger::Error(
+                case ZConfigCommand::ECLASSTYPE::ECLASS_STRING: {
+                    if (p_Args[2].size() >= 256) {
+                        Logger::Error(
                             "[ZConfigCommand] Invalid input (string), maximum length of 255 exceeded."
                         );
+                        return;
+                    }
+
                     break;
-                case ZConfigCommand_ECLASSTYPE::ECLASS_UNKNOWN:
-                    return Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+                }
+                case ZConfigCommand::ECLASSTYPE::ECLASS_UNKNOWN:
+                    Logger::Error("[ZConfigCommand] Unsupported command type (ECLASS_UNKNOWN).");
+                    return;
             }
 
             Functions::ZConfigCommand_ExecuteCommand->Call(p_Args[1].c_str(), p_Args[2].c_str());
+
             Logger::Info(R"([ZConfigCommand] Set "{}" to "{}")", p_Args[1], p_Args[2]);
         }
     }

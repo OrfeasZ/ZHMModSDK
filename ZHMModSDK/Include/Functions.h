@@ -60,6 +60,7 @@ class ZEulerAngleTrajectorySource;
 class ZMorphemeTrajectorySource;
 class ZBezierSplineTrajectorySource;
 class ZGameTime;
+class ZRenderableEntity;
 
 namespace bfx {
     class AreaHandle;
@@ -327,10 +328,14 @@ public:
     static EngineFunction<SMatrix* (
         ZEulerAngleTrajectorySource* th, SMatrix* result, ZGameTime& animationTime
     )>* ZEulerAngleTrajectorySource_GetTrajectoryAtTime;
+
     static EngineFunction<SMatrix* (
         ZMorphemeTrajectorySource* th, SMatrix* result, ZGameTime& animationTime
     )>* ZMorphemeTrajectorySource_GetTrajectoryAtTime;
+
     static EngineFunction<SMatrix* (
         ZBezierSplineTrajectorySource* th, SMatrix* result, ZGameTime& animationTime
     )>* ZBezierSplineTrajectorySource_GetTrajectoryAtTime;
+
+    static EngineFunction<bool(ZRenderableEntity* th)>* ZRenderableEntity_IsVisible;
 };

@@ -438,25 +438,13 @@ void Editor::DrawEntityPropertiesWindow() {
         static char s_InputPinName[1024] = {};
         static char s_InputPinTypeName[2048] = {};
 
-        if (ImGui::Button(ICON_MD_BOLT "##fireInputPin")) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_InputPinData) {
-                s_ObjectRef.Assign(m_InputPinTypeID, m_InputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, s_ObjectRef);
+        if (ImGui::Button(ICON_MD_BOLT "##FireInputPin")) {
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, m_InputPinValue);
 
             s_InputPinName[0] = '\0';
             s_InputPinTypeName[0] = '\0';
 
-            m_InputPinTypeID = nullptr;
-
-            if (m_InputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
-
-                m_InputPinData = nullptr;
-            }
+            m_InputPinValue.Clear();
         }
 
         auto s_InputPins = GetPins(s_SelectedEntity, false);
@@ -468,43 +456,31 @@ void Editor::DrawEntityPropertiesWindow() {
             s_InputPinName,
             sizeof(s_InputPinName),
             s_InputPins,
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
-        },
-            [](const PinInfo& pin) -> std::string {
-                if (pin.description.empty()) {
-                    return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
+            },
+            [](const PinInfo& s_PinInfo) -> std::string {
+                if (s_PinInfo.m_Description.empty()) {
+                    return s_PinInfo.m_Name;
                 }
 
-                return pin.name + " - " + pin.description;
-        },
-            [](const std::string&, const std::string&, const std::string& value) {
-                strcpy_s(s_InputPinName, value.c_str());
-        },
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
-        }
+                return s_PinInfo.m_Name + " - " + s_PinInfo.m_Description;
+            },
+            [](const std::string&, const std::string&, const std::string& p_Value) {
+                strcpy_s(s_InputPinName, p_Value.c_str());
+            },
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
+            }
         );
 
         if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_InputPinData) {
-                s_ObjectRef.Assign(m_InputPinTypeID, m_InputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, s_ObjectRef);
+            OnSignalEntityPin(s_SelectedEntity, s_InputPinName, false, m_InputPinValue);
 
             s_InputPinName[0] = '\0';
             s_InputPinTypeName[0] = '\0';
 
-            m_InputPinTypeID = nullptr;
-
-            if (m_InputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_InputPinData);
-
-                m_InputPinData = nullptr;
-            }
+            m_InputPinValue.Clear();
         }
 
         ImGui::AlignTextToFramePadding();
@@ -518,32 +494,26 @@ void Editor::DrawEntityPropertiesWindow() {
             m_PinDataTypes,
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-        },
+            },
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-        },
-            [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
-                const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
-                const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
+            },
+            [&](const std::string&, const std::string& p_TypeName, STypeID* p_TypeID) {
+                m_InputPinValue.Clear();
+                m_InputPinValue.UNSAFE_SetType(p_TypeID);
 
-                m_InputPinTypeID = s_TypeID;
+                void* s_Data = m_InputPinValue.AllocateMemory();
 
-                m_InputPinData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                    s_TypeSize, s_TypeAlignment
-                );
-
-                if (std::string(s_InputPinTypeName) == "SMatrix43") {
-                    auto s_Value = static_cast<SMatrix43*>(m_InputPinData);
-
-                    *s_Value = SMatrix43 {};
+                if (p_TypeName == "SMatrix43") {
+                    *static_cast<SMatrix43*>(s_Data) = SMatrix43{};
                 }
                 else {
-                    memset(m_InputPinData, 0, s_TypeSize);
+                    memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
                 }
-        },
+            },
             [](auto& p_Pair) -> STypeID* {
                 return p_Pair.second;
-        }
+            }
         );
 
         ImGui::AlignTextToFramePadding();
@@ -567,31 +537,19 @@ void Editor::DrawEntityPropertiesWindow() {
             ImGui::EndDisabled();
         }
         else {
-            DrawEntityPinValue("##InputPinValue", s_InputPinTypeName, m_InputPinData);
+            DrawEntityPinValue("##InputPinValue", s_InputPinTypeName, m_InputPinValue.GetData());
         }
 
         static char s_OutputPinName[1024] = {};
         static char s_OutputPinTypeName[2048] = {};
 
-        if (ImGui::Button(ICON_MD_BOLT "##fireOutputPin")) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_OutputPinData) {
-                s_ObjectRef.Assign(m_OutputPinTypeID, m_OutputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, s_ObjectRef);
+        if (ImGui::Button(ICON_MD_BOLT "##FireOutputPin")) {
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, m_OutputPinValue);
 
             s_OutputPinName[0] = '\0';
             s_OutputPinTypeName[0] = '\0';
 
-            m_OutputPinTypeID = nullptr;
-
-            if (m_OutputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
-
-                m_OutputPinData = nullptr;
-            }
+            m_OutputPinValue.Clear();
         }
 
         auto s_OutputPins = GetPins(s_SelectedEntity, true);
@@ -603,43 +561,31 @@ void Editor::DrawEntityPropertiesWindow() {
             s_OutputPinName,
             sizeof(s_OutputPinName),
             s_OutputPins,
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
-        },
-            [](const PinInfo& pin) -> std::string {
-                if (pin.description.empty()) {
-                    return pin.name;
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
+            },
+            [](const PinInfo& s_PinInfo) -> std::string {
+                if (s_PinInfo.m_Description.empty()) {
+                    return s_PinInfo.m_Name;
                 }
 
-                return pin.name + " - " + pin.description;
-        },
+                return s_PinInfo.m_Name + " - " + s_PinInfo.m_Description;
+            },
             [](const std::string&, const std::string&, const std::string& value) {
                 strcpy_s(s_OutputPinName, value.c_str());
-        },
-            [](const PinInfo& pin) -> std::string {
-                return pin.name;
-        }
+            },
+            [](const PinInfo& s_PinInfo) -> std::string {
+                return s_PinInfo.m_Name;
+            }
         );
 
         if (ImGui::IsItemActive() && ImGui::IsKeyPressed(ImGuiKey_Enter)) {
-            ZObjectRef s_ObjectRef;
-
-            if (m_OutputPinData) {
-                s_ObjectRef.Assign(m_OutputPinTypeID, m_OutputPinData);
-            }
-
-            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, s_ObjectRef);
+            OnSignalEntityPin(s_SelectedEntity, s_OutputPinName, true, m_OutputPinValue);
 
             s_OutputPinName[0] = '\0';
             s_OutputPinTypeName[0] = '\0';
 
-            m_OutputPinTypeID = nullptr;
-
-            if (m_OutputPinData) {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(m_OutputPinData);
-
-                m_OutputPinData = nullptr;
-            }
+            m_OutputPinValue.Clear();
         }
 
         ImGui::AlignTextToFramePadding();
@@ -653,38 +599,32 @@ void Editor::DrawEntityPropertiesWindow() {
             m_PinDataTypes,
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-        },
+            },
             [](auto& p_Pair) -> const std::string& {
                 return p_Pair.first;
-        },
-            [&](const std::string&, const std::string& p_TypeName, STypeID* s_TypeID) {
-                const uint16_t s_TypeSize = s_TypeID->GetTypeInfo()->m_nTypeSize;
-                const uint16_t s_TypeAlignment = s_TypeID->GetTypeInfo()->m_nTypeAlignment;
+            },
+            [&](const std::string&, const std::string& p_TypeName, STypeID* p_TypeID) {
+                m_OutputPinValue.Clear();
+                m_OutputPinValue.UNSAFE_SetType(p_TypeID);
 
-                m_OutputPinTypeID = s_TypeID;
+                void* s_Data = m_OutputPinValue.AllocateMemory();
 
-                m_OutputPinData = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
-                    s_TypeSize, s_TypeAlignment
-                );
-
-                if (std::string(s_InputPinTypeName) == "SMatrix43") {
-                    auto s_Value = static_cast<SMatrix43*>(m_InputPinData);
-
-                    *s_Value = SMatrix43 {};
+                if (p_TypeName == "SMatrix43") {
+                    *static_cast<SMatrix43*>(s_Data) = SMatrix43{};
                 }
                 else {
-                    memset(m_InputPinData, 0, s_TypeSize);
+                    memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
                 }
-        },
+            },
             [](auto& p_Pair) -> STypeID* {
                 return p_Pair.second;
-        }
+            }
         );
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Value");
 
-        if (std::string(s_InputPinTypeName) != "SMatrix43") {
+        if (std::string(s_OutputPinTypeName) != "SMatrix43") {
             ImGui::SameLine();
         }
 
@@ -702,7 +642,7 @@ void Editor::DrawEntityPropertiesWindow() {
             ImGui::EndDisabled();
         }
         else {
-            DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinData);
+            DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinValue.GetData());
         }
 
         ImGui::Separator();
@@ -782,19 +722,20 @@ void Editor::DrawEntityPropertiesWindow() {
         if (s_ReferencedTemplateFactoryType == "MATT") {
             TResourcePtr<ZRenderMaterialEntityFactory> s_MaterialEntityResourcePtr;
 
-            Globals::ResourceManager->GetResourcePtr(s_MaterialEntityResourcePtr, s_ReferencedTemplateFactory, 0);
+            Globals::ResourceManager->LoadResource(s_MaterialEntityResourcePtr, s_ReferencedTemplateFactory);
 
             ZRenderMaterialEntityFactory* s_RenderMaterialEntityFactory = s_MaterialEntityResourcePtr.GetResource();
 
-            TResourcePtr<ZRenderMaterialInstance> s_RenderMaterialInstanceResourcePtr;
+            if (s_RenderMaterialEntityFactory) {
+                TResourcePtr<ZRenderMaterialInstance> s_RenderMaterialInstanceResourcePtr;
 
-            Globals::ResourceManager->GetResourcePtr(
-                s_RenderMaterialInstanceResourcePtr,
-                s_RenderMaterialEntityFactory->m_ridMaterialInstance,
-                0
-            );
+                Globals::ResourceManager->LoadResource(
+                    s_RenderMaterialInstanceResourcePtr,
+                    s_RenderMaterialEntityFactory->m_ridMaterialInstance
+                );
 
-            s_RenderMaterialInstance = s_RenderMaterialInstanceResourcePtr.GetResource();
+                s_RenderMaterialInstance = s_RenderMaterialInstanceResourcePtr.GetResource();
+            }
         }
 
         const auto s_EntityType = s_SelectedEntity->GetType();
@@ -901,7 +842,6 @@ void Editor::DrawEntityPropertiesWindow() {
                 bool s_IsChanged = DrawEntityPropertyValue(
                     s_InputId,
                     s_PropertyName,
-                    s_TypeName,
                     s_PropertyInfo->m_propertyInfo.m_Type,
                     s_SelectedEntity,
                     s_Property,
@@ -930,7 +870,6 @@ void Editor::DrawEntityPropertiesWindow() {
 bool Editor::DrawEntityPropertyValue(
     const std::string& p_Id,
     const std::string& p_PropertyName,
-    const std::string& p_TypeName,
     const STypeID* p_TypeID,
     ZEntityRef p_Entity,
     SPropertyData* p_Property,
@@ -938,92 +877,95 @@ bool Editor::DrawEntityPropertyValue(
 ) {
     bool s_IsChanged = false;
 
-    if (p_TypeName == "ZString") {
+    const IType* s_TypeInfo = p_TypeID->GetTypeInfo();
+    const std::string_view s_TypeName = s_TypeInfo->pszTypeName;
+
+    if (s_TypeName == "ZString") {
         s_IsChanged = StringProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "bool") {
+    else if (s_TypeName == "bool") {
         s_IsChanged = BoolProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "uint8") {
+    else if (s_TypeName == "uint8") {
         s_IsChanged = Uint8Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "int8") {
+    else if (s_TypeName == "int8") {
         s_IsChanged = Int8Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "uint16") {
+    else if (s_TypeName == "uint16") {
         s_IsChanged = Uint16Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "int16") {
+    else if (s_TypeName == "int16") {
         s_IsChanged = Int16Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "uint32") {
+    else if (s_TypeName == "uint32") {
         s_IsChanged = Uint32Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "int32") {
+    else if (s_TypeName == "int32") {
         s_IsChanged = Int32Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "uint64") {
+    else if (s_TypeName == "uint64") {
         s_IsChanged = Uint64Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "int64") {
+    else if (s_TypeName == "int64") {
         s_IsChanged = Int64Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "float32") {
+    else if (s_TypeName == "float32") {
         s_IsChanged = Float32Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "float64") {
+    else if (s_TypeName == "float64") {
         s_IsChanged = Float64Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SVector2") {
+    else if (s_TypeName == "SVector2") {
         s_IsChanged = SVector2Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SVector3") {
+    else if (s_TypeName == "SVector3") {
         s_IsChanged = SVector3Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SVector4") {
+    else if (s_TypeName == "SVector4") {
         s_IsChanged = SVector4Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SMatrix43") {
+    else if (s_TypeName == "SMatrix43") {
         s_IsChanged = SMatrix43Property(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SColorRGB") {
+    else if (s_TypeName == "SColorRGB") {
         s_IsChanged = SColorRGBProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "SColorRGBA") {
+    else if (s_TypeName == "SColorRGBA") {
         s_IsChanged = SColorRGBAProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->GetTypeInfo()->IsEnum()) {
-        s_IsChanged = EnumProperty(p_Id, p_Entity, p_Property, p_Data);
+    else if (s_TypeInfo->IsEnum()) {
+        s_IsChanged = EnumProperty(p_Id, p_Entity, p_Property, p_Data, p_TypeID);
     }
-    else if (p_TypeID->GetTypeInfo()->IsResource()) {
+    else if (s_TypeInfo->IsResource()) {
         ResourcePtrProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "ZRuntimeResourceID") {
+    else if (s_TypeName == "ZRuntimeResourceID") {
         ZRuntimeResourceIDProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName.starts_with("ZEntityRef")) {
+    else if (s_TypeName.starts_with("ZEntityRef")) {
         ZEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName.starts_with("TEntityRef")) {
+    else if (s_TypeName.starts_with("TEntityRef")) {
         TEntityRefProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "ZRepositoryID") {
+    else if (s_TypeName == "ZRepositoryID") {
         ZRepositoryIDProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeName == "ZGuid") {
+    else if (s_TypeName == "ZGuid") {
         ZGuidProperty(p_Id, p_Entity, p_Property, p_Data);
     }
-    else if (p_TypeID->GetTypeInfo()->IsArray() || p_TypeID->GetTypeInfo()->IsFixedArray()) {
+    else if (s_TypeInfo->IsArray() || s_TypeInfo->IsFixedArray()) {
         s_IsChanged = ArrayProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
     }
-    else if (p_TypeName == "ZCurve") {
+    else if (s_TypeName == "ZCurve") {
         s_IsChanged = ZCurveProperty(p_Id, p_Entity, p_Property, p_Data, p_PropertyName, p_TypeID);
     }
-    else if (p_TypeName == "ZGameTime") {
+    else if (s_TypeName == "ZGameTime") {
         s_IsChanged = ZGameTimeProperty(p_Id, p_Entity, p_Property, p_Data);
     }
     else {
-        UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data);
+        UnsupportedProperty(p_Id, p_Entity, p_Property, p_Data, p_TypeID);
     }
 
     return s_IsChanged;

@@ -5,13 +5,17 @@
 #include "ModSDK.h"
 
 ZString::~ZString() {
-    if (IsAllocated()) {
-        Functions::ZString_ZImpl_Free->Call(
-            reinterpret_cast<ZImpl*>(reinterpret_cast<uintptr_t>(m_pChars) - sizeof(ZImpl))
-        );
-    }
+    Free();
 }
 
 void ZString::Allocate(const char* str, uint32_t size) {
     ModSDK::GetInstance()->AllocateZString(this, str, size);
+}
+
+void ZString::Free() {
+    if (!IsAllocated()) {
+        return;
+    }
+
+    Functions::ZString_ZImpl_Free->Call(GetImpl());
 }

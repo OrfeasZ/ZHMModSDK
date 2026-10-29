@@ -44,5 +44,6 @@ target_link_libraries(Editor PRIVATE
         ZLIB::ZLIB
         "${USOCKETS_LIB}"
         simdjson::simdjson
+        Microsoft::DirectXTex
         #	TracyClient
 )

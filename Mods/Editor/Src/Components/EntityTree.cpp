@@ -578,10 +578,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     else if (m_ScrollToEntity && m_SelectedEntity) {
         bool s_ShouldExpandNode = false;
 
-        if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
-            s_ShouldExpandNode = true;
-        }
-        else if (IsSpecialEntityTreeNode(s_Entity)) {
+        if (IsSpecialEntityTreeNode(s_Entity)) {
             for (const auto& [_, s_Child] : p_Node->Children) {
                 if (s_Child->Entity == m_SelectedEntity ||
                     (s_Child->Entity && m_SelectedEntity.IsAnyParent(s_Child->Entity))) {
@@ -590,10 +587,12 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
                 }
             }
         }
+        else if (s_Entity && m_SelectedEntity.IsAnyParent(s_Entity)) {
+            s_ShouldExpandNode = true;
+        }
 
         if (s_ShouldExpandNode) {
             m_OpenEntityTreeNodes.insert(p_Node.get());
-            ImGui::SetNextItemOpen(true);
         }
     }
 
@@ -678,9 +677,11 @@ void Editor::FilterEntityTree() {
         return;
     }
 
-    m_HasActiveFilters = !m_EntityIDSearchInput.empty() ||
+    m_HasActiveSearch = !m_EntityIDSearchInput.empty() ||
         !m_EntityTypeSearchInput.empty() ||
-        !m_EntityNameSearchInput.empty() ||
+        !m_EntityNameSearchInput.empty();
+
+    m_HasActiveFilters = m_HasActiveSearch ||
         m_EntityViewMode != EntityViewMode::All;
 
     if (!m_HasActiveFilters) {
@@ -717,20 +718,22 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSing
         return false;
     }
 
+    const bool s_PassesViewMode =
+        m_EntityViewMode == EntityViewMode::All ||
+        m_EntityViewMode == EntityViewMode::ScenesAndBricks ||
+        (m_EntityViewMode == EntityViewMode::DynamicEntities && p_Node->IsDynamicEntity);
+
     bool s_Matches = false;
 
-    if (m_EntityViewMode == EntityViewMode::All ||
-        m_EntityViewMode == EntityViewMode::ScenesAndBricks ||
-        (m_EntityViewMode == EntityViewMode::DynamicEntities && p_Node->IsDynamicEntity)) {
-
-        bool s_MatchesId = true;
+    if (s_PassesViewMode && m_HasActiveSearch) {
+        bool s_MatchesID = true;
         bool s_MatchesType = true;
         bool s_MatchesName = true;
 
         if (!IsSpecialEntityTreeNode(p_Node->Entity)) {
             if (!m_EntityIDSearchInput.empty()) {
                 const uint64_t s_EntityID = std::strtoull(m_EntityIDSearchInput.c_str(), nullptr, 16);
-                s_MatchesId = p_Node->EntityId == s_EntityID;
+                s_MatchesID = p_Node->EntityId == s_EntityID;
             }
 
             if (!m_EntityTypeSearchInput.empty()) {
@@ -742,7 +745,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSing
             s_MatchesName = Util::StringUtils::FindSubstring(p_Node->Name.c_str(), m_EntityNameSearchInput);
         }
 
-        s_Matches = s_MatchesId && s_MatchesType && s_MatchesName;
+        s_Matches = s_MatchesID && s_MatchesType && s_MatchesName;
 
         // Special root containers match only if explicitly queried by name
         if (s_Matches && IsSpecialEntityTreeNode(p_Node->Entity)) {
@@ -768,7 +771,7 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSing
         }
     }
 
-    if (s_Matches || s_ChildMatches) {
+    if ((!m_HasActiveSearch && s_PassesViewMode) || s_Matches || s_ChildMatches) {
         m_FilteredEntityTreeNodes.insert(p_Node);
         return true;
     }
@@ -789,6 +792,7 @@ void Editor::ClearFilters() {
     m_FilteredEntityTreeNodes.clear();
     m_TotalMatchCount = 0;
     m_CurrentEntitySearchResultIndex = 0;
+    m_HasActiveSearch = false;
     m_HasActiveFilters = false;
 }
 
@@ -1043,7 +1047,7 @@ void Editor::DrawEntityTreeWindow() {
                 ImGuiChildFlags_None,
                 ImGuiWindowFlags_HorizontalScrollbar
             )) {
-                const bool s_HasNoResults = m_HasActiveFilters && (m_TotalMatchCount == 0);
+                const bool s_HasNoResults = m_HasActiveSearch && m_TotalMatchCount == 0;
 
                 if (s_HasNoResults) {
                     ImGui::TextColored(ImVec4(1.0f, 0.27f, 0.27f, 1.0f), "No results found.");
@@ -1202,7 +1206,7 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
                 m_SelectedDebugEntity = {};
             }
 
-            for (auto& s_Child : s_ChildrenQueue.front()->Children) {
+            for (auto& s_Child : s_CurrentChild->Children) {
                 s_ChildrenQueue.push(s_Child.second);
             }
 

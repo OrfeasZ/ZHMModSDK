@@ -72,7 +72,13 @@ public:
     virtual ~IInputDevice() = 0;
 };
 
-class ZInputDevice : public IInputDevice {};
+class ZInputDevice : public IInputDevice {
+public:
+    PAD(0x30); // 0x8
+    bool* m_pbDigital; // 0x38
+    PAD(0x8); // 0x40
+    int m_digcount; // 0x48
+};
 
 class ZKeyboardDevice : public ZInputDevice {};
 
@@ -84,8 +90,8 @@ public:
 
 class ZKeyboardWindows : public ZKeyboardDevice {
 public:
-    PAD(0xF8);
-    ZDirectInputInf dif;
+    PAD(0xB0); // 0x50
+    ZDirectInputInf dif; // 0x100
 };
 
 class IInputDeviceManager : public IComponentInterface {

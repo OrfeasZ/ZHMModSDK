@@ -94,6 +94,7 @@ class ZHitmanMorphemePostProcessor;
 class ZHM5WeaponRecoilController;
 class ZEvergreenCampaignManager;
 class ZFreeCameraControlEditorStyleEntity;
+struct SDestinationLocationInfo;
 
 class ZHMSDK_API Hooks {
 public:
@@ -350,4 +351,8 @@ public:
     static Hook<ZString* (
         ZFreeCameraControlEditorStyleEntity* th, ZString& result
         )>* ZFreeCameraControlEditorStyleEntity_GenerateActionBindingString;
+
+    static Hook<const SDestinationLocationInfo*(
+        IEvergreenTerritoryDefinition_EDestination eDestination
+    )>* GetDestinationLocationInfo;
 };
