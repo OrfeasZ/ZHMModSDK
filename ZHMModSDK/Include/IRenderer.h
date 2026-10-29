@@ -63,11 +63,11 @@ public:
     virtual void DrawBox3D(const SVector3& p_Min, const SVector3& p_Max, const SVector4& p_Color) = 0;
 
     virtual void DrawBox3D(
-        const SVector3& p_Center, const SVector3& p_Size, const SMatrix& p_Transform, const SVector4& p_Color
+        const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
     ) = 0;
 
     virtual void DrawBoxWire3D(
-        const SVector3& p_Center, const SVector3& p_Size, const SMatrix& p_Transform, const SVector4& p_Color
+        const SVector3& p_Center, const SVector3& p_HalfSize, const SMatrix& p_Transform, const SVector4& p_Color
     ) = 0;
 
     virtual void DrawOBB3D(
@@ -132,7 +132,6 @@ public:
     virtual bool IsOBBInsideViewFrustum(
         const float4& p_Center, const float4& p_HalfSize, const SMatrix& p_Transform
     ) const = 0;
-    virtual bool IsSphereInsideViewFrustum(const SVector3& p_Center, float p_Radius) const = 0;
 
     virtual void SetFrustumCullingEnabled(bool p_Enabled) = 0;
     virtual bool IsFrustumCullingEnabled() const = 0;
@@ -149,4 +148,6 @@ public:
         float p_Size,
         const SVector4& p_Color
     ) = 0;
+
+    virtual bool IsSphereInsideViewFrustum(const SVector3& p_Center, float p_Radius) const = 0;
 };

@@ -693,16 +693,16 @@ void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Render
     SMatrix s_WorldMatrix = p_SoundGateEntity->GetObjectToWorldMatrix();
     const float4 s_Position = s_WorldMatrix.Trans;
 
-    const float4 s_Size(
-        p_SoundGateEntity->m_vLocalSize.x,
+    const float4 s_HalfSize(
+        p_SoundGateEntity->m_vLocalSize.x * 0.5f,
         0.f,
-        p_SoundGateEntity->m_vLocalSize.y,
+        p_SoundGateEntity->m_vLocalSize.y * 0.5f,
         1.f
     );
 
     p_Renderer->DrawBox3D(
         s_Position,
-        s_Size,
+        s_HalfSize,
         s_WorldMatrix,
         ZColor::UnpackUnsigned(0x3FFF0000)
     );
@@ -721,7 +721,7 @@ void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Render
 
     p_Renderer->DrawBox3D(
         s_SourcePosition,
-        s_Size,
+        s_HalfSize,
         s_SourceMatrix,
         ZColor::UnpackUnsigned(0x3F008000)
     );
@@ -740,7 +740,7 @@ void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Render
 
     p_Renderer->DrawBox3D(
         s_DestinationPosition,
-        s_Size,
+        s_HalfSize,
         s_DestinationMatrix,
         ZColor::UnpackUnsigned(0x3F800080)
     );
