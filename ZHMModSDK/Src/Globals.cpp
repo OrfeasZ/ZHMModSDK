@@ -391,14 +391,14 @@ PATTERN_RELATIVE_GLOBAL(
     "\x48\x89\x3D\x00\x00\x00\x00\x48\x8D\x0D\x00\x00\x00\x00\x48\x89\x1D",
     "xxx????xxx????xxx",
     3,
-    ZObjectPool*, ZVariantPool1
+    ZObjectPool*, Variant8BytePool
 );
 
 PATTERN_RELATIVE_GLOBAL(
     "\xF0\x48\x0F\xB1\x0D\x00\x00\x00\x00\x75\x00\xEB\x00\xE8\x00\x00\x00\x00\x49\x8B\xD7",
     "xxxxx????x?x?x????xxx",
     5,
-    ZObjectPool*, ZVariantPool2
+    ZObjectPool*, Variant32BytePool
 );
 
 PATTERN_RELATIVE_GLOBAL(
@@ -490,4 +490,11 @@ PATTERN_RELATIVE_GLOBAL(
     "xxx????xxxx????xxx?xx???????????xx",
     3,
     ZGameKeywordManager*, GameKeywordManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x1D\x00\x00\x00\x00\x48\x8B\xCB\xE8\x00\x00\x00\x00\x48\x8B\x4E\x60\x48\x8D\x55\x20\x48\x89\x5D\x20\xE8\x00\x00\x00\x00\x48\x8D\x1D\x00\x00\x00\x00\x48\x8B\xCB\xE8\x00\x00\x00\x00\x48\x8B\x4E\x60\x48\x8D\x55\x20\x48\x89\x5D\x20\xE8\x00\x00\x00\x00\x48\x8D\x05\x00\x00\x00\x00\xBF",
+    "xxx????xxxx????xxxxxxxxxxxxx????xxx????xxxx????xxxxxxxxxxxxx????xxx????x",
+    3,
+    ZRenderGraphManager*, RenderGraphManager
 );

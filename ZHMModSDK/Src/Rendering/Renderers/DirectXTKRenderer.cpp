@@ -1693,7 +1693,7 @@ void DirectXTKRenderer::SetDistanceCullingEnabled(bool p_Enabled) {
     m_ViewFrustum.SetDistanceCullingEnabled(p_Enabled);
 
     m_ViewFrustum.UpdateClipPlanes(
-        *reinterpret_cast<SMatrix*>(&m_View),
+        SMatrix(m_View),
         Globals::RenderManager->m_pDevice->m_Constants.cameraViewToClip
     );
 }
@@ -1710,7 +1710,7 @@ void DirectXTKRenderer::SetMaxDrawDistance(float p_MaxDrawDistance) {
     m_ViewFrustum.SetMaxDrawDistance(p_MaxDrawDistance);
 
     m_ViewFrustum.UpdateClipPlanes(
-        *reinterpret_cast<SMatrix*>(&m_View),
+        SMatrix(m_View),
         Globals::RenderManager->m_pDevice->m_Constants.cameraViewToClip
     );
 }

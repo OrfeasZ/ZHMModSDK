@@ -8,5 +8,5 @@
 
 class ZHMSDK_API Events {
 public:
-    static EventDispatcher<TArray<ZString>>* OnConsoleCommand;
+    static EventDispatcher<TArray<ZString>&>* OnConsoleCommand;
 };

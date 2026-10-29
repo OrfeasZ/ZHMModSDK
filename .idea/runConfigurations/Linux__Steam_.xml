@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Linux (Steam)" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="ZHMMods" TARGET_NAME="ZHMModSDK" CONFIG_NAME="x64-Debug-Cross-Install" RUN_PATH="$PROJECT_DIR$/cmake/scripts/launch-steam.sh">
+    <method v="2">
+      <option name="CMake.Install" enabled="true" />
+    </method>
+  </configuration>
+</component>

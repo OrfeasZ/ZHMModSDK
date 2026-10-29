@@ -65,11 +65,13 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             s_PropTitle,
             sizeof(s_PropTitle),
             m_RepositoryProps,
-            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
             [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
-            [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+            [&](uint32_t, const std::string& p_Name, const auto& p_Pair) {
+                const ZRepositoryID& s_Id = p_Pair.first;
+
                 for (size_t i = 0; i < s_RepositoryPropSpawnCount; ++i) {
-                    SpawnRepositoryProp(p_Id, s_WorldInventoryButton == 1);
+                    SpawnRepositoryProp(s_Id, s_WorldInventoryButton == 1);
                 }
             }
         );
@@ -147,20 +149,20 @@ void Assets::OnDrawUI(bool p_HasFocus) {
             s_OutfitName,
             sizeof(s_OutfitName),
             s_ContentKitManager->m_repositoryGlobalOutfitKits,
-            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
             [](auto& p_Pair) -> std::string {
                 return std::string(
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.c_str(),
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
                 );
             },
-            [&](const ZRepositoryID& p_RepoId,
-                const std::string& p_Name,
-                const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
-                    s_RepositoryId = p_RepoId;
-                    s_GlobalOutfitKit = p_GlobalOutfitKit;
+            [&](uint32_t,
+                const std::string&,
+                const auto& p_Pair) {
+                    s_RepositoryId = p_Pair.first;
+                    s_GlobalOutfitKit = p_Pair.second;
             },
-            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; },
+            nullptr,
             [](auto& p_Pair) -> bool {
                 return p_Pair.second && !p_Pair.second.m_pInterfaceRef->m_bIsHitmanSuit;
             }

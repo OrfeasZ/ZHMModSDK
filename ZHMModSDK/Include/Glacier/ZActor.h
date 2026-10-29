@@ -88,7 +88,7 @@ public:
 };
 
 class IActorProxy :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IActorProxy() {}
     virtual void IActorProxy_unk0() = 0;
@@ -102,7 +102,7 @@ public:
 };
 
 class ISequenceAudioPlayer :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ISequenceAudioPlayer() {}
     virtual void ISequenceAudioPlayer_unk0() = 0;
@@ -112,12 +112,24 @@ public:
 };
 
 class ICrowdAIActor :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICrowdAIActor() {}
     virtual void ICrowdAIActor_unk0() = 0;
     virtual void ICrowdAIActor_unk1() = 0;
     virtual void ICrowdAIActor_unk2() = 0;
+};
+
+class ICharacterSpeakController :
+    public IComponentInterface {
+public:
+    virtual ~ICharacterSpeakController() {}
+};
+
+class IHumanBody :
+    public IComponentInterface {
+public:
+    virtual ~IHumanBody() {}
 };
 
 class ZLinkedEntity;
@@ -161,55 +173,60 @@ public:
  * Size = 0x1410
  */
 class ZActor :
-        public ZHM5BaseCharacter,
-        public ICharacterCollision,
-        public IActor,
-        public IActorProxy,
-        public ISequenceTarget,
-        public ISequenceAudioPlayer,
-        public ICrowdAIActor {
+    public ZHM5BaseCharacter,
+    public ICharacterCollision,
+    public IActor,
+    public IActorProxy,
+    public ISequenceTarget,
+    public ISequenceAudioPlayer,
+    public ICrowdAIActor,
+    public ZUIDataProvider,
+    public ICharacterSpeakController,
+    public IHumanBody,
+    public IAIGameplayConcept,
+    public ICharacterCoreInventoryState {
 public:
     /**
      * Get the NPC's name, like "Robert Knox"
      */
     ZHMSDK_API ZString GetActorName() const;
 
-    PAD(0x100); // 0x300
-    bool m_bStartEnabled; // 0x400
-    TEntityRef<ZCharacterTemplateAspect> m_rCharacter; // 0x408
-    bool m_bBlockDisguisePickup; // 0x418
-    ZRepositoryID m_OutfitRepositoryID; // 0x420
-    int32 m_nOutfitCharset; // 0x430
-    int32 m_nOutfitVariation; // 0x434
-    TEntityRef<ZCostumeFeatureCollection> m_pCostumeFeatures; // 0x438
-    TEntityRef<ZAccessoryItemPool> m_pAccessoryItemPool; // 0x448
-    TArray<TEntityRef<ZItemRepositoryKeyEntity>> m_InventoryItemKeys; // 0x458
-    TArray<TEntityRef<ZOutfitProfessionEntity>> m_aEnforcedOutfits; // 0x470
-    ZString m_sActorName; // 0x488
-    EActorGroup m_eActorGroup; // 0x498
-    TResourcePtr<ZCompiledBehaviorTree> m_pCompiledBehaviorTree; // 0x49C
-    EActorVoiceVariation m_eRequiredVoiceVariation; // 0x4A4
-    TResourcePtr<ZSpatialEntity> m_pBodybagResource; // 0x4A8
-    bool m_bWeaponUnholstered; // 0x4B0
-    int32 m_nWeaponIndex; // 0x4B4
-    int32 m_nGrenadeIndex; // 0x4B8
-    bool m_bIsGrenadeDroppable; // 0x4BC
-    bool m_bEnableOutfitModifiers; // 0x4BD
-    TEntityRef<ZAIVisionConfigurationEntity> m_AgentVisionConfiguration; // 0x4C0
-    TEntityRef<ZHTNDomainEntity> m_DomainConfig; // 0x4D0
-    bool m_bDisableBumpAnimations; // 0x4E0
-    PAD(0x17); // 0x4E1
-    ZKnowledge* m_pKnowledge; // 0x4F8
-    PAD(0x20); // 0x500
-    ZActorInventoryHandler* m_pInventoryHandler; // 0x520
-    PAD(0xAC0); // 0x528
-    TEntityRef<ZGlobalOutfitKit> m_rOutfit; //0xFE8
-    PAD(0x20); // 0xFF8
-    float32 m_fCurrentHitPoints; // 0x1018
-    PAD(0x8C);
-    ZAnimatedActor* m_pAnimatedActor; // 0x10A8
-    PAD(0xB8);
-    bool m_bActorActivated : 1; // 0x1168
+    PAD(0xA0); // 0x370
+    bool m_bStartEnabled; // 0x410
+    TEntityRef<ZCharacterTemplateAspect> m_rCharacter; // 0x418
+    bool m_bBlockDisguisePickup; // 0x428
+    ZRepositoryID m_OutfitRepositoryID; // 0x430
+    int32 m_nOutfitCharset; // 0x440
+    int32 m_nOutfitVariation; // 0x444
+    TEntityRef<ZCostumeFeatureCollection> m_pCostumeFeatures; // 0x448
+    TEntityRef<ZAccessoryItemPool> m_pAccessoryItemPool; // 0x458
+    TArray<TEntityRef<ZItemRepositoryKeyEntity>> m_InventoryItemKeys; // 0x468
+    TArray<TEntityRef<ZOutfitProfessionEntity>> m_aEnforcedOutfits; // 0x480
+    ZString m_sActorName; // 0x498
+    EActorGroup m_eActorGroup; // 0x4A8
+    TResourcePtr<ZCompiledBehaviorTree> m_pCompiledBehaviorTree; // 0x4AC
+    EActorVoiceVariation m_eRequiredVoiceVariation; // 0x4B4
+    TResourcePtr<ZSpatialEntity> m_pBodybagResource; // 0x4B8
+    bool m_bWeaponUnholstered; // 0x4C0
+    int32 m_nWeaponIndex; // 0x4C4
+    int32 m_nGrenadeIndex; // 0x4C8
+    bool m_bIsGrenadeDroppable; // 0x4CC
+    bool m_bEnableOutfitModifiers; // 0x4CD
+    TEntityRef<ZAIVisionConfigurationEntity> m_AgentVisionConfiguration; // 0x4D0
+    TEntityRef<ZHTNDomainEntity> m_DomainConfig; // 0x4E0
+    bool m_bDisableBumpAnimations; // 0x4F0
+    PAD(0x17); // 0x4F1
+    ZKnowledge* m_pKnowledge; // 0x508
+    PAD(0x20); // 0x510
+    ZActorInventoryHandler* m_pInventoryHandler; // 0x530
+    PAD(0xAC0); // 0x538
+    TEntityRef<ZGlobalOutfitKit> m_rOutfit; //0xFF8
+    PAD(0x20); // 0x1008
+    float32 m_fCurrentHitPoints; // 0x1028
+    PAD(0x8C); // 0x102C
+    ZAnimatedActor* m_pAnimatedActor; // 0x10B8
+    PAD(0xB8); // 0x10C0
+    bool m_bActorActivated : 1; // 0x1178
     bool m_bEnabled : 1;
     bool m_bAlive : 1;
     bool m_bUnk3 : 1;
@@ -217,7 +234,7 @@ public:
     bool m_bUnk5 : 1;
     bool m_bIsBeingDragged : 1;
     bool m_bIsBeingDumped : 1;
-    bool m_bHasAIIcon : 1; // 0x1169
+    bool m_bHasAIIcon : 1; // 0x1179
     bool m_bUnk9 : 1;
     bool m_bUnk10 : 1;
     bool m_bUnk11 : 1;
@@ -232,7 +249,7 @@ public:
      * Note that the instinct glow doesn't update immediately upon changing this - certain actions, such as bumping into
      * an actor, will force it to update its instinct glow. You can use the `SetGlowType` pin to manually update it.
      */
-    bool m_bContractTarget : 1; // 0x116A
+    bool m_bContractTarget : 1; // 0x117A
 
     /**
      * When true, the actor shows up as a target on the map
@@ -247,7 +264,7 @@ public:
     bool m_bIsActiveEnforcer : 1;
     bool m_bIsPotentialEnforcer : 1;
     bool m_bIsDynamicEnforcer : 1;
-    bool m_bCrowdCharacter : 1; // 0x116B
+    bool m_bCrowdCharacter : 1; // 0x117B
     bool m_bActiveSentry : 1;
     bool m_bUnk26 : 1;
     bool m_bUnk27 : 1;
@@ -255,7 +272,7 @@ public:
     bool m_bUnk29 : 1;
     bool m_bUnk30 : 1;
     bool m_bUnk31 : 1;
-    bool m_bUnk32 : 1; // 0x116C
+    bool m_bUnk32 : 1; // 0x117C
     bool m_bUnk33 : 1;
     bool m_bUnk34 : 1;
     bool m_bUnk35 : 1;
@@ -263,7 +280,7 @@ public:
     bool m_bUnk37 : 1;
     bool m_bUnk38 : 1;
     bool m_bUnk39 : 1;
-    bool m_bUnk40 : 1; // 0x116D
+    bool m_bUnk40 : 1; // 0x117D
     bool m_bUnk41 : 1;
     bool m_bUnk42 : 1;
     bool m_bUnk43 : 1;
@@ -271,9 +288,9 @@ public:
     bool m_bUnk45 : 1;
     bool m_bUnk46 : 1;
     bool m_bHasClothOutfit : 1;
-    PAD(0x1E);
-    int32_t m_nActorRuntimeId; // 0x118C
-    PAD(0x2B0);
+    PAD(0x1E); // 0x117E
+    int32_t m_nActorRuntimeId; // 0x119C
+    PAD(0x2B0); // 0x11A0
 
 public:
     void PrintBitflags() {
@@ -288,10 +305,10 @@ public:
     }
 };
 
-static_assert(offsetof(ZActor, m_OutfitRepositoryID) == 0x420);
-static_assert(offsetof(ZActor, m_sActorName) == 0x488);
-static_assert(offsetof(ZActor, m_DomainConfig) == 0x4D0);
-static_assert(offsetof(ZActor, m_nActorRuntimeId) == 0x118C);
+static_assert(offsetof(ZActor, m_OutfitRepositoryID) == 0x430);
+static_assert(offsetof(ZActor, m_sActorName) == 0x498);
+static_assert(offsetof(ZActor, m_DomainConfig) == 0x4E0);
+static_assert(offsetof(ZActor, m_nActorRuntimeId) == 0x119C);
 
 class ZAIStateChangeService;
 class ZAIModifierService;

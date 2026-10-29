@@ -47,13 +47,11 @@ void Editor::UnsupportedProperty(
     const std::string& p_Id,
     ZEntityRef p_Entity,
     SPropertyData* p_Property,
-    void* p_Data
+    void* p_Data,
+    const STypeID* p_TypeID
 ) {
-    const auto s_PropertyInfo = p_Property->GetPropertyInfo();
-    const std::string s_TypeName = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName;
-
     constexpr auto s_TextColor = ImVec4(1.f, 1.f, 1.f, 0.5f);
-    ImGui::TextColored(s_TextColor, "(Unsupported)", s_TypeName.c_str());
+    ImGui::TextColored(s_TextColor, "(Unsupported)", p_TypeID->GetTypeInfo()->pszTypeName);
 }
 
 void Editor::ZEntityRefProperty(
@@ -66,7 +64,7 @@ void Editor::ZEntityRefProperty(
         EntityRefProperty(p_Id, *s_EntityRef);
     }
     else {
-        EntityRefProperty(p_Id, ZEntityRef {});
+        EntityRefProperty(p_Id, ZEntityRef{});
     }
 }
 
@@ -80,7 +78,7 @@ void Editor::TEntityRefProperty(
         EntityRefProperty(p_Id, s_EntityRef->m_entityRef);
     }
     else {
-        EntityRefProperty(p_Id, ZEntityRef {});
+        EntityRefProperty(p_Id, ZEntityRef{});
     }
 }
 
@@ -197,7 +195,7 @@ bool Editor::ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, SPr
 
 bool Editor::ZCurveProperty(
     const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
-    const std::string& s_PropertyName, const STypeID* p_TypeID
+    const std::string& p_PropertyName, const STypeID* p_TypeID
 ) {
     bool s_IsChanged = false;
     auto* s_Curve = static_cast<ZCurve*>(p_Data);
@@ -214,7 +212,7 @@ bool Editor::ZCurveProperty(
     const bool s_IsTreeNodeOpen = ImGui::TreeNodeEx(
         fmt::format(
             "{} ({} {})##{}",
-            s_PropertyName,
+            p_PropertyName,
             s_ArraySize,
             s_ArraySize == 1 ? "element" : "elements",
             p_Id

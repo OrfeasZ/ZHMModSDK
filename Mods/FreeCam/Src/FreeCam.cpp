@@ -614,7 +614,7 @@ DEFINE_PLUGIN_DETOUR(
 DEFINE_PLUGIN_DETOUR(
     FreeCam, ZString*, ZFreeCameraControlEditorStyleEntity_GenerateActionBindingString, ZFreeCameraControlEditorStyleEntity* th, ZString& result
 ) {
-    result = "FreeCamControlEditorStyle0={"
+    ZString s_Result = "FreeCamControlEditorStyle0={"
         "MousePosX=rel(ms,x);"
         "MousePosY=rel(ms,y);"
         "MoveX=+ -hold(kb,right) hold(kb,left) -hold(kb,d) hold(kb,a);"
@@ -628,6 +628,8 @@ DEFINE_PLUGIN_DETOUR(
         "ActivateRotate=hold(ms,mb2);"
         "ActivateObjectHook=hold(ms,mb3);"
         "};";
+
+    std::construct_at(&result, std::move(s_Result));
 
     return { HookAction::Return(), &result };
 }

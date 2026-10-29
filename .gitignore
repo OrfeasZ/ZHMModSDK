@@ -385,6 +385,8 @@ CMakeUserPresets.json
 /.wine/
 
 # Auto-generated overlays from cmake/scripts/sync-vcpkg-overlays.sh
+/cmake/vcpkg-ports-cross/directx-dxc/
+/cmake/vcpkg-ports-cross/directxtk12/
 /cmake/vcpkg-ports-cross/fmt/
 /cmake/vcpkg-ports-cross/sentry-native/
 

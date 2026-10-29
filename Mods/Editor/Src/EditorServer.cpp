@@ -209,9 +209,16 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
         SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
     }
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
+
+        bool s_OnlyCollidableMeshes = true;
+        if (auto result = s_JsonMsg["onlyCollidable"]; result.error() == simdjson::SUCCESS) {
+            if (result.type() == simdjson::ondemand::json_type::boolean) {
+                s_OnlyCollidableMeshes = result.get_bool();
+            }
+        }
         Plugin()->QueueTask(
-            [p_Socket, p_Loop]() {
-                SendNavKitScene(p_Socket, p_Loop);
+            [p_Socket, p_Loop, s_OnlyCollidableMeshes]() {
+                SendNavKitScene(p_Socket, p_Loop, s_OnlyCollidableMeshes);
             }
         );
     }
@@ -671,7 +678,7 @@ bool EditorServer::GetEnabled() {
     return m_Enabled;
 }
 
-void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
+void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop, bool s_OnlyCollidableMeshes) {
     p_Loop->defer(
         [p_Socket]() {
             p_Socket->send(R"({"version":1,"meshes":[)", uWS::OpCode::TEXT);
@@ -685,6 +692,7 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop) {
     Logger::Info("[Editor] Sending Meshes...");
 
     Plugin()->FindMeshes(
+        s_OnlyCollidableMeshes,
         [p_Socket, p_Loop, s_AnyMeshSentOverall, s_TotalMeshesSent, s_LastLoggedMilestone](
             const std::vector<NavKitMeshEntity>& p_Entities,
             const std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
