@@ -26,7 +26,7 @@ find_package(unofficial-imgui-node-editor CONFIG REQUIRED)
 find_package(implot CONFIG REQUIRED)
 find_package(directxtex CONFIG REQUIRED)
 #CPMAddPackage("gh:ValveSoftware/GameNetworkingSockets@1.4.1")
-CPMAddPackage("gh:OrfeasZ/ZHMTools@4.0.0")
+CPMAddPackage("gh:OrfeasZ/ZHMTools@4.3.0")
 #add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../ZHMTools" "${VCPKG_BUILD_ROOT}/zhmtools")
 
 # Less pollute-y windows headers
