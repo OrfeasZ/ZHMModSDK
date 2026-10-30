@@ -66,7 +66,7 @@ struct SReasoningGrid {
         const SGCellCoords fromNodeCellCoordinates = CalculateCoordinates(fromWaypoint->vPos);
         const SGCellCoords toNodeCellCoordinates = CalculateCoordinates(toWaypoint->vPos);
 
-        if (abs(fromNodeCellCoordinates.x - toNodeCellCoordinates.y) > m_Properties.nVisibilityRange ||
+        if (abs(fromNodeCellCoordinates.x - toNodeCellCoordinates.x) > m_Properties.nVisibilityRange ||
             abs(fromNodeCellCoordinates.y - toNodeCellCoordinates.y) > m_Properties.nVisibilityRange) {
             return false;
         }

@@ -32,35 +32,35 @@ private:
         ZString TypeToString() const {
             switch (Type) {
                 case RatingEventType::RecordingsRemoved:
-                    return "RecordingsRemoved";
+                    return "Recordings removed";
                 case RatingEventType::WitnessEliminatedAccident:
-                    return "WitnessEliminatedAccident";
+                    return "Witness eliminated accident";
                 case RatingEventType::WitnessEliminatedMurder:
-                    return "WitnessEliminatedMurder";
+                    return "Witness eliminated murder";
                 case RatingEventType::ActorPacified:
-                    return "ActorPacified";
+                    return "Actor pacified";
                 case RatingEventType::CaughtTrespassing:
-                    return "CaughtTrespassing";
+                    return "Caught trespassing";
                 case RatingEventType::GunshotHeard:
-                    return "GunshotHeard";
+                    return "Gunshot heard";
                 case RatingEventType::BulletImpactNoticed:
-                    return "BulletImpactNoticed";
+                    return "Bullet impact noticed";
                 case RatingEventType::UnconsciousBodyFound:
-                    return "UnconsciousBodyFound";
+                    return "Unconscious body found";
                 case RatingEventType::AlarmTriggered:
-                    return "AlarmTriggered";
+                    return "Alarm triggered";
                 case RatingEventType::GuardsAlerted:
-                    return "GuardsAlerted";
+                    return "Guards alerted";
                 case RatingEventType::DeadBodyFound:
-                    return "DeadBodyFound";
+                    return "Dead body found";
                 case RatingEventType::GuardKilled:
-                    return "GuardKilled";
+                    return "Guard killed";
                 case RatingEventType::CaughtOnCamera:
-                    return "CaughtOnCamera";
+                    return "Caught on camera";
                 case RatingEventType::CaughtCommitingCrime:
-                    return "CaughtCommitingCrime";
+                    return "Caught commiting crime";
                 case RatingEventType::CivilianKilled:
-                    return "CivilianKilled";
+                    return "Civilian killed";
             }
 
             return "Unknown";

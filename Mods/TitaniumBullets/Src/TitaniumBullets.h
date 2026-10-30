@@ -45,7 +45,7 @@ private:
     void RestoreRepositoryPatch();
 
     bool m_Enabled = true;
-    bool m_DebugWindowActive = false;
+    bool m_ShowDebugWindow = false;
     bool m_PatchApplied = false;
     bool m_LogRepoNotReadyOnce = false;
     bool m_AutoApplyDisabled = false;

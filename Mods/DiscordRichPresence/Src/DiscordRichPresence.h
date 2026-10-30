@@ -12,21 +12,21 @@ class DiscordRichPresence : public IPluginInterface {
 public:
     DiscordRichPresence();
     ~DiscordRichPresence() override;
+
     void Init() override;
-    void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
     void OnEngineInitialized() override;
 
 private:
-    void BuildSceneMappings();
-    void BuildGameModeMappings();
+    void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
-private:
+    std::string NormalizeAssetKey(std::string p_Name);
+
+    std::string GetActivityImageKey(const std::string& p_GameMode, std::string p_Location, std::string p_Title);
+
     DECLARE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelManager* th);
 
-private:
-    std::unordered_map<std::string, std::string> m_CodeNameHintToSceneName;
-    std::unordered_map<std::string, std::string> m_CodeNameHintToTitle;
-    std::unordered_map<std::string, std::string> m_TypeToGameMode;
+    static const std::unordered_map<std::string, std::string> m_TypeToGameMode;
+
     discord::Core* m_DiscordCore;
 };
 

@@ -3,7 +3,6 @@
     "version": "1.0.0",
     "dependencies": [
         "directxtk12",
-        "7zip",
         "spdlog",
         "minhook",
         "lz4",
@@ -27,7 +26,15 @@
             ]
         },
         "imguizmo",
-        "imgui-node-editor"
+        "imgui-node-editor",
+        "implot",
+        {
+            "name": "directxtex",
+            "default-features": false,
+            "features": [
+                "dx12"
+            ]
+        }
     ],
     "vcpkg-configuration": {
         "overlay-ports": [

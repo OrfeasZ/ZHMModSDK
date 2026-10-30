@@ -73,7 +73,7 @@ HRESULT D3D12DXGIFactory::CreateSwapChain(
     }
 
     Logger::Debug("[D3D12Hooks] Wrapping swap chain.");
-    auto s_WrappedSwapChain = new D3D12SwapChain(s_SwapChain3.Ref);
+    auto s_WrappedSwapChain = new D3D12SwapChain(s_SwapChain3.m_Ref);
     s_WrappedSwapChain->AddRef();
 
     *ppSwapChain = s_WrappedSwapChain;

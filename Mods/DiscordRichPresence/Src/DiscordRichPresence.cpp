@@ -1,23 +1,38 @@
 #include "DiscordRichPresence.h"
 
-#include "Hooks.h"
-#include "Logging.h"
-#include "Glacier/ZGameLoopManager.h"
-
-#include <Glacier/ZScene.h>
 #include <regex>
 
 #include <discord.h>
 
-#include "simdjson.h"
-#include "Functions.h"
+#include <Glacier/ZModule.h>
+#include <Glacier/ZScene.h>
+#include <Glacier/ZContract.h>
+#include <Glacier/ZGameLoopManager.h>
+
+#include "Hooks.h"
+#include "Logging.h"
 #include "Util/StringUtils.h"
-#include "Glacier/ZModule.h"
+
+const std::unordered_map<std::string, std::string> DiscordRichPresence::m_TypeToGameMode = {
+    {"sniper", "Sniper assassin"},
+    {"usercreated", "Contracts mode"},
+    {"creation", "Contracts mode"},
+    {"featured", "Featured contract"},
+    {"mission", "Mission"},
+    {"flashback", "Mission"},
+    {"tutorial", "Mission"},
+    {"campaign", "Mission"},
+    {"escalation", "Escalation"},
+    {"elusive", "Elusive target"},
+    {"arcade", "Elusive target arcade"},
+    {"evergreen", "Freelancer"},
+};
 
 static constexpr discord::ClientId APPLICATION_ID = 852754886197379103;
 
 DiscordRichPresence::DiscordRichPresence() :
-    m_DiscordCore(nullptr) {}
+    m_DiscordCore(nullptr) {
+}
 
 DiscordRichPresence::~DiscordRichPresence() {
     const ZMemberDelegate<DiscordRichPresence, void(const SGameUpdateEvent&)> s_Delegate(
@@ -35,12 +50,10 @@ void DiscordRichPresence::Init() {
     );
 
     if (s_DiscordCreateResult != discord::Result::Ok) {
-        Logger::Error("Discord init failed with result: {}", static_cast<int>(s_DiscordCreateResult));
+        Logger::Error("[DiscordRichPresence] Discord init failed with result: {}", static_cast<int>(s_DiscordCreateResult));
         m_DiscordCore = nullptr;
         return;
     }
-
-    BuildGameModeMappings();
 
     Hooks::ZLevelManager_StartGame->AddDetour(this, &DiscordRichPresence::ZLevelManager_StartGame);
 }
@@ -52,69 +65,66 @@ void DiscordRichPresence::OnEngineInitialized() {
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 99999, EUpdateMode::eUpdateAlways);
 }
 
-void DiscordRichPresence::BuildSceneMappings() {
-    m_CodeNameHintToSceneName.insert(std::make_pair("Boot.entity", "In Startup Screen"));
-    m_CodeNameHintToSceneName.insert(std::make_pair("MainMenu.entity", "In Main Menu"));
-    m_CodeNameHintToSceneName.insert(std::make_pair("Vanilla", "Safehouse"));
+void DiscordRichPresence::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
+    if (m_DiscordCore)
+        m_DiscordCore->RunCallbacks();
+}
 
-    const ZRuntimeResourceID s_ConfigRuntimeResourceID = ResId<"[assembly:/_pro/online/default/offlineconfig/config.contracts].pc_contracts">;
-    ZResourcePtr s_ConfigResourcePtr;
+std::string DiscordRichPresence::NormalizeAssetKey(std::string p_Name) {
+    Util::StringUtils::ReplaceAll(p_Name, "Ã ", "a");
 
-    Globals::ResourceManager->GetResourcePtr(s_ConfigResourcePtr, s_ConfigRuntimeResourceID, 0);
+    Util::StringUtils::ReplaceAll(p_Name, " ", "-");
 
-    const ZResourceContainer::SResourceInfo& s_ConfigResourceInfo = s_ConfigResourcePtr.GetResourceInfo();
+    return Util::StringUtils::ToLowerCase(p_Name);
+}
 
-    for (size_t i = 0; i < s_ConfigResourceInfo.numReferences; ++i) {
-        const uint32_t s_JsonReferenceIndex = (*Globals::ResourceContainer)->m_references[s_ConfigResourceInfo.firstReferenceIndex + i].index;
-        const ZResourceContainer::SResourceInfo& s_JsonReferenceInfo = (*Globals::ResourceContainer)->m_resources[s_JsonReferenceIndex];
-
-        // Scene path and location don't match in this json
-        if (s_JsonReferenceInfo.rid == ResId<
-            "[assembly:/_pro/online/default/contracts/seed/whitespider/"
-            "c_ws_group_3d407b2b-e2f2-4204-9c08-7da67baa78fd.contract.json]"
-            "([assembly:/_pro/online/default/offlineconfig/config.unlockables]"
-            ".pc_unlockables).pc_json">) {
-            continue;
+std::string DiscordRichPresence::GetActivityImageKey(
+    const std::string& p_GameMode,
+    std::string p_Location,
+    std::string p_Title
+) {
+    if (p_GameMode == "Mission" || p_GameMode == "Sniper assassin" ||
+        p_GameMode == "Elusive target" || p_GameMode == "Elusive target arcade") {
+        if (const size_t s_Position = p_Title.rfind(" - Level"); s_Position != std::string::npos) {
+            p_Title.erase(s_Position);
         }
 
-        ZResourcePtr s_JsonResourcePtr;
-
-        Globals::ResourceManager->LoadResource(s_JsonResourcePtr, s_JsonReferenceInfo.rid);
-
-        ZResourceReader* s_JsonResourceReader = *reinterpret_cast<ZResourceReader**>(s_JsonReferenceInfo.resourceData);
-        ZResourceDataBuffer* s_DataBuffer = s_JsonResourceReader->m_pResourceData.m_pObject;
-
-        if (!s_DataBuffer || !s_DataBuffer->m_pData) {
-            Logger::Error("{:016x} JSON resource has no data buffer!", s_JsonReferenceInfo.rid.GetID());
-
-            continue;
+        if (const size_t s_Position = p_Title.find(" ("); s_Position != std::string::npos) {
+            p_Title.erase(s_Position);
         }
 
-        const char* s_JsonData = static_cast<const char*>(s_DataBuffer->m_pData);
-        size_t s_JsonSize = s_DataBuffer->m_nSize;
-
-        simdjson::padded_string s_PaddedJson(s_JsonData, s_JsonSize);
-
-        simdjson::ondemand::parser s_Parser;
-        auto s_Document = s_Parser.iterate(s_PaddedJson);
-
-        auto s_ParseErrorCode = s_Document.error();
-
-        if (s_ParseErrorCode) {
-            Logger::Error("Failed to parse JSON: {}!", simdjson::error_message(s_ParseErrorCode));
-
-            continue;
+        if (const size_t s_Position = p_Title.find(" - Year"); s_Position != std::string::npos) {
+            p_Title.erase(s_Position);
         }
 
-        simdjson::ondemand::object s_Metadata = s_Document["Metadata"];
-        const std::string_view s_CodeNameHint = s_Metadata["CodeName_Hint"];
-        const std::string_view s_LocationKey = s_Metadata["Location"];
-        const std::string_view s_TitleKey = s_Metadata["Title"];
+        const char* s_Prefix =
+            p_GameMode == "Elusive target" ? "elusive-" :
+            p_GameMode == "Elusive target arcade" ? "arcade-" :
+            "mission-";
 
-        std::string s_LocationKey2 = std::format("UI_{}_CITY", s_LocationKey);
-        const uint32_t s_LocationHash = Hash::Crc32(s_LocationKey2.data(), s_LocationKey2.size());
+        return std::string(s_Prefix) + NormalizeAssetKey(std::move(p_Title));
+    }
 
-        const uint32_t s_TitleHash = Hash::Crc32(s_TitleKey.data(), s_TitleKey.size());
+    return "location-" + NormalizeAssetKey(std::move(p_Location));
+}
+
+DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelManager* th) {
+    if (!m_DiscordCore) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
+    SSceneInitParameters& s_SceneInitParameters = Globals::Hitman5Module->m_pEntitySceneContext->m_SceneInitParameters;
+
+    Logger::Trace("[DiscordRichPresence] Scene: {}", s_SceneInitParameters.m_SceneResource);
+    Logger::Trace("[DiscordRichPresence] Codename: {}", s_SceneInitParameters.m_CodeNameHint);
+    Logger::Trace("[DiscordRichPresence] Type: {}", s_SceneInitParameters.m_Type);
+
+    ZString s_Location;
+    ZString s_Title;
+
+    if (!Globals::ContractsManager->m_contractContext.m_sLocationId.IsEmpty()) {
+        std::string s_LocationKey = std::format("UI_{}_CITY", Globals::ContractsManager->m_contractContext.m_sLocationId.c_str());
+        const uint32_t s_LocationHash = Hash::Crc32(s_LocationKey.data(), s_LocationKey.size());
 
         ZString s_SceneName;
         int s_OutMarkupResult;
@@ -126,144 +136,90 @@ void DiscordRichPresence::BuildSceneMappings() {
             s_OutMarkupResult
         );
 
-        if (!s_TextFound) {
-            Logger::Error(
-                "Missing UI text for location key: {} (Runtime Resource ID: {:016x})!",
-                s_LocationKey2,
-                s_JsonReferenceInfo.rid.GetID()
-            );
-
-            continue;
-        }
-
-        ZString s_Title;
-
-        s_TextFound = Hooks::ZUIText_TryGetTextFromNameHash->Call(
-            Globals::UIText,
-            s_TitleHash,
-            s_Title,
-            s_OutMarkupResult
-        );
-
-        if (!s_TextFound) {
-            Logger::Error(
-                "Missing UI text for title key: {} (Runtime Resource ID: {:016x})!",
-                s_TitleKey,
-                s_JsonReferenceInfo.rid.GetID()
-            );
-
-            continue;
-        }
-
-        const std::string s_CodeNameHint2 { s_CodeNameHint };
-
-        m_CodeNameHintToSceneName[s_CodeNameHint2] = std::string(s_SceneName);
-        m_CodeNameHintToTitle[s_CodeNameHint2] = std::string(s_Title);
-    }
-
-    Logger::Trace("Finished building scene mappings.");
-}
-
-void DiscordRichPresence::BuildGameModeMappings() {
-    m_TypeToGameMode = {
-        {"sniper", "Sniper Assassin"},
-        {"usercreated", "Contracts Mode"},
-        {"creation", "Contracts Mode"},
-        {"featured", "Featured Contract"},
-        {"mission", "Mission"},
-        {"flashback", "Mission"},
-        {"tutorial", "Mission"},
-        {"campaign", "Mission"},
-        {"escalation", "Escalation"},
-        {"elusive", "Elusive Target"},
-        {"arcade", "Elusive Target Arcade"},
-        {"evergreen", "Freelancer"},
-    };
-
-    Logger::Trace("Finished building game mode mappings.");
-}
-
-void DiscordRichPresence::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
-    if (m_DiscordCore)
-        m_DiscordCore->RunCallbacks();
-}
-
-DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelManager* th) {
-    if (!m_DiscordCore) {
-        return HookResult<void>(HookAction::Continue());
-    }
-
-    SSceneInitParameters& s_SceneInitParameters = Globals::Hitman5Module->m_pEntitySceneContext->m_SceneInitParameters;
-
-    Logger::Trace("Scene: {}", s_SceneInitParameters.m_SceneResource);
-    Logger::Trace("Codename: {}", s_SceneInitParameters.m_CodeNameHint);
-    Logger::Trace("Type: {}", s_SceneInitParameters.m_Type);
-
-    std::string s_Action = "";
-    std::string s_Details = "";
-    std::string s_Location = "";
-    std::string s_ImageKey = "logo";
-
-    if (m_CodeNameHintToSceneName.empty()) {
-        if (s_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
-            s_Location = "In Startup Screen";
-        }
-        else if (s_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity") {
-            s_Location = "In Main Menu";
-
-            BuildSceneMappings();
-        }
-    }
-    else {
-        std::string s_CodeNameHint = s_SceneInitParameters.m_CodeNameHint.c_str();
-
-        if (s_CodeNameHint.empty()) {
-            s_CodeNameHint = s_SceneInitParameters.m_SceneResource;
-            s_CodeNameHint = s_CodeNameHint.substr(s_CodeNameHint.find_last_of("/") + 1);
-        }
-
-        auto s_Iterator = m_CodeNameHintToSceneName.find(s_CodeNameHint);
-
-        if (s_Iterator != m_CodeNameHintToSceneName.end()) {
-            s_Location = s_Iterator->second;
+        if (s_TextFound) {
+            s_Location = s_SceneName;
         }
         else {
             s_Location = "ERR_UNKNOWN_LOCATION";
+
+            Logger::Error("[DiscordRichPresence] Missing UI text for location key: {}!", s_LocationKey);
+        }
+
+        auto* s_Entries = Globals::ContractsManager->m_contractContext.m_contractData.As<TArray<SDynamicObjectKeyValuePair>>();
+
+        if (s_Entries) {
+            ZString s_SceneTitle;
+
+            for (auto& s_Entry : *s_Entries) {
+                if (s_Entry.sKey != "Metadata") {
+                    continue;
+                }
+
+                auto* s_Metadata = s_Entry.value.As<TArray<SDynamicObjectKeyValuePair>>();
+
+                if (!s_Metadata) {
+                    break;
+                }
+
+                for (const auto& s_MetadataEntry : *s_Metadata) {
+                    if (s_MetadataEntry.sKey == "Title") {
+                        ZString* s_TitleKey = s_MetadataEntry.value.As<ZString>();
+                        const uint32_t s_TitleHash = Hash::Crc32(s_TitleKey->c_str(), s_TitleKey->size());
+
+                        s_TextFound = Hooks::ZUIText_TryGetTextFromNameHash->Call(
+                            Globals::UIText,
+                            s_TitleHash,
+                            s_SceneTitle,
+                            s_OutMarkupResult
+                        );
+
+                        if (s_TextFound) {
+                            s_Title = s_SceneTitle;
+                        }
+                        else {
+                            s_Title = "ERR_UNKNOWN_MISSION";
+
+                            Logger::Error("[DiscordRichPresence] Missing UI text for title key: {}!", s_TitleKey->c_str());
+                        }
+
+                        break;
+                    }
+                }
+
+                break;
+            }
         }
     }
+    else if (s_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/Boot.entity") {
+        s_Location = "In startup screen";
+    }
+    else if (s_SceneInitParameters.m_SceneResource == "assembly:/_PRO/Scenes/Frontend/MainMenu.entity") {
+        s_Location = "In main menu";
+    }
 
-    if (s_Location == "In Startup Screen" || s_Location == "In Main Menu") {
+    std::string s_Action;
+    std::string s_Details;
+    std::string s_ImageKey;
+
+    if (s_Location == "In startup screen" || s_Location == "In main menu") {
         s_Action = s_Location;
+        s_ImageKey = "logo";
     }
     else {
         auto s_GameModeIt = m_TypeToGameMode.find(s_SceneInitParameters.m_Type.c_str());
         std::string s_GameMode = s_GameModeIt == m_TypeToGameMode.end() ? "ERR_UNKNOWN_GAMEMODE" : s_GameModeIt->second;
 
-        s_Details = "Playing " + s_GameMode + " in " + s_Location;
+        s_Action = s_Title.c_str();
+        s_Details = "Playing " + s_GameMode + " in " + s_Location.c_str();
 
-        // Discord image key
-        std::string s_LocationKey = std::regex_replace(s_Location, std::regex(" "), "-");
-        s_LocationKey = std::regex_replace(s_LocationKey, std::regex("à"), "a");
-        s_LocationKey = Util::StringUtils::ToLowerCase(s_LocationKey);
-
-        s_ImageKey = "location-" + s_LocationKey;
-
-        if (s_GameMode == "Mission" || s_GameMode == "Sniper Assassin") {
-            auto s_MissionIt = m_CodeNameHintToTitle.find(s_SceneInitParameters.m_CodeNameHint.c_str());
-            s_Action = s_MissionIt == m_CodeNameHintToTitle.end() ? "ERR_UNKNOWN_MISSION" : s_MissionIt->second;
-            std::string s_MissionName = s_Action;
-
-            std::string s_MissionKey = std::regex_replace(s_MissionName, std::regex(" "), "-");
-            s_MissionKey = Util::StringUtils::ToLowerCase(s_MissionKey);
-            s_ImageKey = "mission-" + s_MissionKey;
-        }
-        else {
-            s_Details = "Playing " + s_GameMode;
-            s_Action = s_Location;
-        }
+        s_ImageKey = GetActivityImageKey(
+            s_GameMode,
+            s_Location.c_str(),
+            s_Title.c_str()
+        );
     }
 
-    discord::Activity activity {};
+    discord::Activity activity{};
     activity.SetType(discord::ActivityType::Playing);
     activity.SetState(s_Action.c_str());
     activity.SetDetails(s_Details.c_str());
@@ -271,8 +227,8 @@ DEFINE_PLUGIN_DETOUR(DiscordRichPresence, void, ZLevelManager_StartGame, ZLevelM
 
     m_DiscordCore->ActivityManager().UpdateActivity(
         activity, [](discord::Result p_Result) {
-            Logger::Trace("Activity Manager push completed with result: {}", static_cast<int>(p_Result));
-        }
+        Logger::Trace("[DiscordRichPresence] Activity manager push completed with result: {}", static_cast<int>(p_Result));
+    }
     );
 
     return HookResult<void>(HookAction::Continue());

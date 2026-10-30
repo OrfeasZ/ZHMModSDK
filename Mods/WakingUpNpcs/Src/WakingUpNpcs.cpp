@@ -45,7 +45,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
                 std::uniform_real_distribution<double> s_Distribution(4.0 * 60.0, 8.0 * 60.0);
                 double s_WakeUpTime = s_Distribution(m_Generator);
 
-                Logger::Debug("Actor '{}' was pacified. Waking up in {} seconds.", s_Actor->m_sActorName, s_WakeUpTime);
+                Logger::Debug("[WakingUpNpcs] Actor '{}' was pacified. Waking up in {} seconds.", s_Actor->m_sActorName, s_WakeUpTime);
 
                 m_PacifiedTimes[s_Actor] = s_WakeUpTime;
             }
@@ -57,7 +57,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
                 // If however the NPC is being dragged we should wait until that action stops.
                 if (s_RemainingTime <= 0.0 && !s_Actor->m_bIsBeingDragged) {
                     // TODO: Set alerted state.
-                    Logger::Debug("Waking up actor '{}'.", s_Actor->m_sActorName);
+                    Logger::Debug("[WakingUpNpcs] Waking up actor '{}'.", s_Actor->m_sActorName);
                     Functions::ZActor_ReviveActor->Call(s_Actor);
 
                     m_PacifiedTimes.erase(it);
@@ -71,7 +71,7 @@ void WakingUpNpcs::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 }
 
 DEFINE_PLUGIN_DETOUR(WakingUpNpcs, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters) {
-    Logger::Debug("Loading scene: {}", p_Parameters.m_SceneResource);
+    Logger::Debug("[WakingUpNpcs] Loading scene: {}", p_Parameters.m_SceneResource);
 
     m_PacifiedTimes.clear();
 
@@ -79,7 +79,7 @@ DEFINE_PLUGIN_DETOUR(WakingUpNpcs, bool, OnLoadScene, ZEntitySceneContext* th, S
 }
 
 DEFINE_PLUGIN_DETOUR(WakingUpNpcs, void, OnClearScene, ZEntitySceneContext* th, bool) {
-    Logger::Debug("Clearing scene.");
+    Logger::Debug("[WakingUpNpcs] Clearing scene.");
 
     m_PacifiedTimes.clear();
 

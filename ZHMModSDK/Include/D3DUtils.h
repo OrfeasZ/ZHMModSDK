@@ -1,140 +1,109 @@
 #pragma once
 
-#define REF_IID_PPV_ARGS(Val) IID_PPV_ARGS(&Val.Ref)
+#include <Windows.h>
 
-template <class T>
-struct ScopedD3DRef {
-    typedef T* RefType;
+#define REF_IID_PPV_ARGS(Val) IID_PPV_ARGS(&(Val).m_Ref)
 
-    ScopedD3DRef(RefType p_Ref) : Ref(p_Ref) {}
+// RAII wrapper around a COM pointer. Constructed without an AddRef so it
+// composes with QueryInterface / IID_PPV_ARGS; reassignment AddRefs the new
+// value and Releases the old one.
+template<class T> struct ScopedD3DRef {
+    using RefType = T*;
 
-    ScopedD3DRef() : Ref(nullptr) {}
+    ScopedD3DRef() = default;
+    ScopedD3DRef(RefType p_Ref) : m_Ref(p_Ref) {}
 
-    ScopedD3DRef(const ScopedD3DRef& p_Other) {
-        Ref = p_Other.Ref;
+    ScopedD3DRef(const ScopedD3DRef&) = delete;
+    ScopedD3DRef& operator=(const ScopedD3DRef&) = delete;
 
-        if (Ref)
-            Ref->AddRef();
-    }
-
-    ScopedD3DRef(ScopedD3DRef&& p_Other) noexcept {
-        Ref = p_Other.Ref;
-        p_Other.Ref = nullptr;
-    }
-
-    ~ScopedD3DRef() {
-        if (Ref)
-            Ref->Release();
-    }
-
-    ScopedD3DRef& operator=(const ScopedD3DRef& p_Other) {
-        Reset();
-        Ref = p_Other.Ref;
-
-        if (Ref)
-            Ref->AddRef();
-
-        return *this;
+    ScopedD3DRef(ScopedD3DRef&& p_Other) noexcept : m_Ref(p_Other.m_Ref) {
+        p_Other.m_Ref = nullptr;
     }
 
     ScopedD3DRef& operator=(ScopedD3DRef&& p_Other) noexcept {
-        Ref = p_Other.Ref;
-        p_Other.Ref = nullptr;
+        if (this != &p_Other) {
+            Reset();
+            m_Ref = p_Other.m_Ref;
+            p_Other.m_Ref = nullptr;
+        }
         return *this;
+    }
+
+    ~ScopedD3DRef() {
+        Reset();
     }
 
     ScopedD3DRef& operator=(RefType p_Ref) {
         Reset();
-        Ref = p_Ref;
-
-        if (Ref)
-            Ref->AddRef();
-
+        m_Ref = p_Ref;
+        if (m_Ref) {
+            m_Ref->AddRef();
+        }
         return *this;
     }
 
     void Reset() {
-        if (Ref)
-            Ref->Release();
-
-        Ref = nullptr;
+        if (m_Ref) {
+            m_Ref->Release();
+            m_Ref = nullptr;
+        }
     }
 
     RefType operator->() const {
-        return Ref;
+        return m_Ref;
     }
 
     operator RefType() const {
-        return Ref;
+        return m_Ref;
     }
 
-    operator bool() const {
-        return Ref != nullptr;
+    explicit operator bool() const {
+        return m_Ref != nullptr;
     }
 
-    void* VTable() const {
-        return *reinterpret_cast<void**>(Ref);
-    }
-
+    // Releases any held ref and returns the storage address for the caller
+    // to write a new pointer into (e.g. via IID_PPV_ARGS).
     RefType* ReleaseAndGetPtr() {
         Reset();
-        return &Ref;
+        return &m_Ref;
     }
 
-    RefType Ref;
+    RefType m_Ref = nullptr;
 };
 
 inline void BreakIfFailed(HRESULT p_Result) {
-    if (FAILED(p_Result))
+    if (FAILED(p_Result)) {
         DebugBreak();
+    }
 }
 
+// Owning HANDLE wrapper that calls CloseHandle on destruction.
 struct SafeHandle {
-    SafeHandle(HANDLE p_Handle) : Handle(p_Handle) {}
-
-    SafeHandle() : Handle(nullptr) {}
+    SafeHandle() = default;
 
     SafeHandle(const SafeHandle&) = delete;
-
-    SafeHandle(SafeHandle&& p_Other) noexcept {
-        Handle = p_Other.Handle;
-        p_Other.Handle = nullptr;
-    }
-
-    ~SafeHandle() {
-        if (Handle)
-            CloseHandle(Handle);
-    }
-
     SafeHandle& operator=(const SafeHandle&) = delete;
-
-    SafeHandle& operator=(SafeHandle&& p_Other) noexcept {
-        Handle = p_Other.Handle;
-        p_Other.Handle = nullptr;
-        return *this;
-    }
 
     SafeHandle& operator=(HANDLE p_Handle) {
         Reset();
-        Handle = p_Handle;
+        m_Handle = p_Handle;
         return *this;
     }
 
-    void Reset() {
-        if (Handle)
-            CloseHandle(Handle);
-
-        Handle = nullptr;
-    }
-
-    operator bool() const {
-        return Handle != nullptr;
-    }
-
-    HANDLE* ReleaseAndGetPtr() {
+    ~SafeHandle() {
         Reset();
-        return &Handle;
     }
 
-    HANDLE Handle = nullptr;
+    void Reset() {
+        if (m_Handle) {
+            CloseHandle(m_Handle);
+            m_Handle = nullptr;
+        }
+    }
+
+    explicit operator bool() const {
+        return m_Handle != nullptr;
+    }
+
+    HANDLE m_Handle = nullptr;
 };

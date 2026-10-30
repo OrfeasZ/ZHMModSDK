@@ -18,18 +18,19 @@ public:
 
     void RemoveReference() override {
         if (InterlockedDecrement(&m_iRefCount) == 0) {
-            auto s_PageAllocator = (*Globals::MemoryManager)->m_pPageAllocator;
+            auto* s_MemoryManager = *Globals::MemoryManager;
 
-            if (s_PageAllocator) {
-                auto s_Allocator = s_PageAllocator->GetAllocator(this);
+            IAllocator* s_Allocator = nullptr;
 
-                if (s_Allocator) {
-                    s_Allocator->Free(this);
-                }
+            if (s_MemoryManager->m_pPageAllocator1) {
+                s_Allocator = s_MemoryManager->m_pPageAllocator1->GetAllocator(this);
             }
-            else {
-                (*Globals::MemoryManager)->m_pNormalAllocator->Free(this);
+
+            if (!s_Allocator) {
+                s_Allocator = s_MemoryManager->m_pNormalAllocator;
             }
+
+            s_Allocator->Free(this);
         }
     }
 

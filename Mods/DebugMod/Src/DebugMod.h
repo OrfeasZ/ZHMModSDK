@@ -66,8 +66,8 @@ private:
     DECLARE_PLUGIN_DETOUR(DebugMod, void, ZPFObstacleEntity_UpdateObstacle, ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate);
 
 private:
-    bool m_DebugMenuActive = false;
-    bool m_PositionsMenuActive = false;
+    bool m_ShowDebugWindow = false;
+    bool m_ShowPositionsWindow = false;
 
     bool m_RenderPlayerHealth = false;
     bool m_RenderPlayerOutfitHitPoints = false;

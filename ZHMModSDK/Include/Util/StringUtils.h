@@ -46,15 +46,15 @@ namespace Util {
             }
 
             const auto it = std::ranges::search(
-                        p_String, p_SubString,
-                        [p_CaseSensitive](const char ch1, const char ch2) {
-                            if (p_CaseSensitive) {
-                                return ch1 == ch2;
-                            }
-                            return std::tolower(ch1) == std::tolower(ch2);
-                        }
-                    )
-                    .begin();
+                p_String, p_SubString,
+                [p_CaseSensitive](const char ch1, const char ch2) {
+                if (p_CaseSensitive) {
+                    return ch1 == ch2;
+                }
+                return std::tolower(ch1) == std::tolower(ch2);
+            }
+            )
+                .begin();
 
             return (it != p_String.end());
         }
@@ -77,12 +77,25 @@ namespace Util {
 
         static bool EndsWith(const std::string& p_String, const std::string& p_Suffix) {
             return p_String.size() >= p_Suffix.size() &&
-                    p_String.compare(p_String.size() - p_Suffix.size(), p_Suffix.size(), p_Suffix) == 0;
+                p_String.compare(p_String.size() - p_Suffix.size(), p_Suffix.size(), p_Suffix) == 0;
         }
 
         static bool StartsWith(const std::string& p_String, const std::string& p_Prefix) {
             return p_String.size() >= p_Prefix.size() &&
-                    p_String.compare(0, p_Prefix.size(), p_Prefix) == 0;
+                p_String.compare(0, p_Prefix.size(), p_Prefix) == 0;
+        }
+
+        static void ReplaceAll(std::string& p_String, const std::string& p_From, const std::string& p_To) {
+            if (p_From.empty()) {
+                return;
+            }
+
+            size_t s_Position = 0;
+
+            while ((s_Position = p_String.find(p_From, s_Position)) != std::string::npos) {
+                p_String.replace(s_Position, p_From.length(), p_To);
+                s_Position += p_To.length();
+            }
         }
 
         static void NormalizeUTF32(std::u32string& p_String, bool p_CaseSensitive = false) {

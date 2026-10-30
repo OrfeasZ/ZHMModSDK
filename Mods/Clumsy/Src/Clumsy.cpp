@@ -46,7 +46,7 @@ void Clumsy::Init() {
 void Clumsy::OnDrawUI(bool p_HasFocus) {
     if (m_ShowBrickWarning) {
         ImGui::PushFont(SDK()->GetImGuiBlackFont());
-        const auto s_Expanded = ImGui::Begin(ICON_MD_WARNING " Clumsy Warning", &m_ShowBrickWarning);
+        const auto s_Expanded = ImGui::Begin(ICON_MD_WARNING " Clumsy warning", &m_ShowBrickWarning);
         ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
         if (s_Expanded) {
@@ -75,7 +75,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         if (!s_LocalHitman)
             return;
 
-        Logger::Debug("Deactivating ragdoll.");
+        Logger::Debug("[Clumsy] Deactivating ragdoll.");
         Functions::ZHM5BaseCharacter_DeactivateRagdoll->Call(s_LocalHitman.m_pInterfaceRef);
 
         const auto s_Animator = s_LocalHitman.m_pInterfaceRef->m_Animator.QueryInterface<ZHM5Animator>();
@@ -152,7 +152,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
                 return;
             }
 
-            Logger::Debug("Activating ragdoll.");
+            Logger::Debug("[Clumsy] Activating ragdoll.");
             Functions::ZHM5BaseCharacter_ActivatePoweredRagdoll->Call(s_LocalHitman.m_pInterfaceRef, 0.3f, true, false, 0.15f, false);
 
             // Fly!
@@ -217,7 +217,7 @@ void Clumsy::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
             return;
 
         m_Ragdolling = !m_Ragdolling;
-        Logger::Debug("Ragdolling: {}", m_Ragdolling);
+        Logger::Debug("[Clumsy] Ragdolling: {}", m_Ragdolling);
 
         if (m_Ragdolling) {
             Functions::ZHM5BaseCharacter_ActivatePoweredRagdoll->Call(
@@ -317,7 +317,7 @@ bool Clumsy::GetEntities() {
         if (s_Brick.m_RuntimeResourceID != ResId<"[assembly:/_sdk/get_up.brick].pc_entitytype">)
             continue;
 
-        Logger::Debug("Found get_up brick.");
+        Logger::Debug("[Clumsy] Found get_up brick.");
 
         const auto s_BpFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Brick.m_EntityRef.
             GetBlueprintFactory());

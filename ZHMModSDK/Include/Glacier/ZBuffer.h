@@ -15,7 +15,8 @@ public:
         s_Data->m_nSize = s_Size;
 
         ZBuffer s_Buffer(s_Data);
-        memcpy(s_Buffer.data(), p_Data.data(), s_Size);
+        memcpy(s_Buffer.Get(), p_Data.data(), s_Size);
+
         return s_Buffer;
     }
 
@@ -27,59 +28,98 @@ private:
 
 private:
     ZBuffer(SBufferData* p_Data) :
-        m_pData(p_Data) {}
+        m_pData(p_Data) {
+    }
 
 public:
     ZBuffer(const ZBuffer& p_Other) :
         m_pData(p_Other.m_pData) {
-        addRef();
+        IncReference();
     }
 
     ~ZBuffer() {
-        release();
+        Clear();
     }
 
     ZBuffer& operator=(const ZBuffer& p_Other) {
-        release();
+        Clear();
+
         m_pData = p_Other.m_pData;
-        addRef();
+
+        IncReference();
 
         return *this;
     }
 
-    void* data() const {
-        if (!m_pData)
+    const void* Get() const {
+        if (!m_pData) {
             return nullptr;
+        }
 
         const auto s_DataOffset = reinterpret_cast<uintptr_t>(m_pData) + sizeof(ZBuffer);
+
         return reinterpret_cast<void*>(s_DataOffset);
     }
 
-    uint32_t size() const {
-        if (!m_pData)
+    void* Get() {
+        if (!m_pData) {
+            return nullptr;
+        }
+
+        const auto s_DataOffset = reinterpret_cast<uintptr_t>(m_pData) + sizeof(ZBuffer);
+
+        return reinterpret_cast<void*>(s_DataOffset);
+    }
+
+    uint32_t Size() const {
+        if (!m_pData) {
             return 0;
+        }
 
         return m_pData->m_nSize;
     }
 
 private:
-    void addRef() const {
-        if (!m_pData)
+    void IncReference() {
+        if (!m_pData) {
             return;
+        }
 
         ++m_pData->m_nRefCount;
     }
 
-    void release() {
-        if (!m_pData)
+    void DecReference() {
+        if (!m_pData) {
             return;
+        }
 
-        const auto s_NewRefCount = m_pData->m_nRefCount;
+        --m_pData->m_nRefCount;
+    }
 
-        if (s_NewRefCount != 0)
+    void Clear() {
+        if (!m_pData) {
             return;
+        }
 
-        (*Globals::MemoryManager)->m_pPageAllocator->GetAllocator(m_pData)->Free(m_pData);
+        if (m_pData->m_nRefCount > 1) {
+            --m_pData->m_nRefCount;
+            m_pData = nullptr;
+            return;
+        }
+
+        auto* s_MemoryManager = *Globals::MemoryManager;
+
+        IAllocator* s_Allocator = nullptr;
+
+        if (s_MemoryManager->m_pPageAllocator1) {
+            s_Allocator = s_MemoryManager->m_pPageAllocator1->GetAllocator(m_pData);
+        }
+
+        if (!s_Allocator) {
+            s_Allocator = s_MemoryManager->m_pNormalAllocator;
+        }
+
+        s_Allocator->Free(m_pData);
         m_pData = nullptr;
     }
 

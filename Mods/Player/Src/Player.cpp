@@ -39,12 +39,12 @@ void Player::Init() {
 
 void Player::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_MAN " PLAYER")) {
-        m_PlayerMenuActive = !m_PlayerMenuActive;
+        m_ShowPlayerWindow = !m_ShowPlayerWindow;
     }
 }
 
 void Player::OnDrawUI(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_PlayerMenuActive) {
+    if (!p_HasFocus || !m_ShowPlayerWindow) {
         return;
     }
 
@@ -53,31 +53,31 @@ void Player::OnDrawUI(const bool p_HasFocus) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("PLAYER", &m_PlayerMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin(ICON_MD_MAN " Player", &m_ShowPlayerWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
-        if (ImGui::Checkbox("Is Invincible", &m_IsInvincible)) {
+    if (s_IsWindowExpanded) {
+        if (ImGui::Checkbox("Is invincible", &m_IsInvincible)) {
             ToggleInvincibility();
         }
 
-        if (ImGui::Checkbox("Is Invisible", &m_IsInvisible)) {
+        if (ImGui::Checkbox("Is invisible", &m_IsInvisible)) {
             ToggleInvisibility();
         }
 
-        if (ImGui::Checkbox("Infinite Ammo", &m_IsInfiniteAmmoEnabled)) {
+        if (ImGui::Checkbox("Infinite ammo", &m_IsInfiniteAmmoEnabled)) {
             ToggleInfiniteAmmo();
         }
 
-        ImGui::Checkbox("No Reload", &m_IsNoReloadEnabled);
+        ImGui::Checkbox("No reload", &m_IsNoReloadEnabled);
 
-        ImGui::Checkbox("No Recoil", &m_IsNoRecoilEnabled);
+        ImGui::Checkbox("No recoil", &m_IsNoRecoilEnabled);
 
-        ImGui::Checkbox("Super Accuracy", &m_IsSuperAccuracyEnabled);
+        ImGui::Checkbox("Super accuracy", &m_IsSuperAccuracyEnabled);
 
-        ImGui::Checkbox("RapidFire", &m_IsRapidFireEnabled);
+        ImGui::Checkbox("Rapid fire", &m_IsRapidFireEnabled);
 
-        ImGui::Checkbox("One Hit Kill", &m_IsOneHitKillEnabled);
+        ImGui::Checkbox("One hit kill", &m_IsOneHitKillEnabled);
 
         static char s_OutfitName[2048] { "" };
         static uint8_t s_CurrentCharacterSetIndex = 0;
@@ -103,14 +103,14 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             s_OutfitName,
             sizeof(s_OutfitName),
             s_ContentKitManager->m_repositoryGlobalOutfitKits,
-            [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+            [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
             [](auto& p_Pair) -> std::string {
                 return std::string(
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.c_str(),
                     p_Pair.second.m_pInterfaceRef->m_sCommonName.size()
                 );
             },
-            [&](const ZRepositoryID&,
+            [&](uint32_t,
                 const std::string& p_Name,
                 const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit) {
                     s_CurrentCharacterSetIndex = 0;
@@ -126,7 +126,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
                     m_GlobalOutfitKit = p_GlobalOutfitKit;
             },
-            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>& { return p_Pair.second; }
+            [](auto& p_Pair) -> const TEntityRef<ZGlobalOutfitKit>&{ return p_Pair.second; }
         );
 
         if (!s_IsPopupOpen && s_LocalHitman && s_OutfitName[0] == '\0') {
@@ -139,7 +139,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Character Set Index");
+        ImGui::Text("Character set index");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharacterSetIndex", std::to_string(s_CurrentCharacterSetIndex).data())) {
@@ -165,7 +165,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType", s_CurrentCharSetCharacterType.data())) {
@@ -191,7 +191,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Outfit Variation");
+        ImGui::Text("Outfit variation");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##OutfitVariation", std::to_string(s_CurrentOutfitVariationIndex).data())) {
@@ -234,18 +234,18 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         if (m_GlobalOutfitKit) {
-            ImGui::Checkbox("Weapons Allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
-            ImGui::Checkbox("Authority Figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
+            ImGui::Checkbox("Weapons allowed", &m_GlobalOutfitKit.m_pInterfaceRef->m_bWeaponsAllowed);
+            ImGui::Checkbox("Authority figure", &m_GlobalOutfitKit.m_pInterfaceRef->m_bAuthorityFigure);
         }
 
         ImGui::Separator();
 
-        ImGui::Text("Get Actor's Outfit");
+        ImGui::Text("Get actor's outfit");
 
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType2", s_CurrentCharSetCharacterType2.data())) {
@@ -261,7 +261,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Actor Name");
+        ImGui::Text("Actor name");
         ImGui::SameLine();
 
         static char s_ActorName[2048]{ "" };
@@ -271,14 +271,14 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             s_ActorName,
             sizeof(s_ActorName),
             Globals::ActorManager->m_activatedActors,
-            [](auto& p_EntityRef) -> const ZEntityRef& { return p_EntityRef.m_entityRef; },
+            [](auto& p_EntityRef) -> uintptr_t { return reinterpret_cast<uintptr_t>(p_EntityRef.m_entityRef.GetEntity()); },
             [](auto& p_EntityRef) -> std::string {
                 return std::string(
                     p_EntityRef.m_pInterfaceRef->m_sActorName.c_str(),
                     p_EntityRef.m_pInterfaceRef->m_sActorName.size()
                 );
             },
-            [&](const ZEntityRef&, const std::string& actorName, const TEntityRef<ZActor>& p_EntityRef) {
+            [&](uintptr_t, const std::string& actorName, const TEntityRef<ZActor>& p_EntityRef) {
                 const ZActor* s_Actor = p_EntityRef.m_pInterfaceRef;
 
                 if (s_Actor) {
@@ -296,7 +296,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         ImGui::Separator();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("CharSet Character Type");
+        ImGui::Text("Charset character type");
         ImGui::SameLine();
 
         if (ImGui::BeginCombo("##CharSetCharacterType3", s_CurrentCharSetCharacterType3.data())) {
@@ -311,7 +311,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             ImGui::EndCombo();
         }
 
-        if (ImGui::Button("Get Nearest Actor's Outfit")) {
+        if (ImGui::Button("Get nearest actor's outfit")) {
             const ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
             for (int i = 0; i < *Globals::NextActorId; ++i) {
@@ -322,9 +322,9 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
                 ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-                const SVector3 s_Temp = s_ActorSpatialEntity->m_mTransform.Trans - s_HitmanSpatialEntity->m_mTransform.
+                const SVector3 s_Offset = s_ActorSpatialEntity->m_mTransform.Trans - s_HitmanSpatialEntity->m_mTransform.
                     Trans;
-                const float s_Distance = sqrt(s_Temp.x * s_Temp.x + s_Temp.y * s_Temp.y + s_Temp.z * s_Temp.z);
+                const float s_Distance = sqrt(s_Offset.x * s_Offset.x + s_Offset.y * s_Offset.y + s_Offset.z * s_Offset.z);
 
                 if (s_Distance <= 3.0f) {
                     EquipOutfit(
@@ -342,12 +342,16 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::Separator();
 
-        if (ImGui::Button("Teleport All Items To Player")) {
+        if (ImGui::Button("Teleport all items to player")) {
             auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
             const ZHM5ActionManager* s_Hm5ActionManager = Globals::HM5ActionManager;
 
             for (size_t i = 0; i < s_Hm5ActionManager->m_Actions.size(); ++i) {
                 const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
+				
+			    if (!s_Action) {
+				    continue;
+			    }
 
                 if (s_Action->m_eActionType == EActionType::AT_PICKUP) {
                     const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
@@ -359,7 +363,7 @@ void Player::OnDrawUI(const bool p_HasFocus) {
             }
         }
 
-        if (ImGui::Button("Teleport All Actors To Player")) {
+        if (ImGui::Button("Teleport all actors to player")) {
             const auto s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
             for (size_t i = 0; i < *Globals::NextActorId; ++i) {
@@ -392,19 +396,19 @@ void Player::EquipOutfit(
     ZGlobalOutfitKit* s_GlobalOutfitKit = p_GlobalOutfitKit.m_pInterfaceRef;
 
     if (!s_GlobalOutfitKit) {
-        Logger::Error("Couldn't equip outfit - global outfit kit is null!");
+        Logger::Error("[Player] Couldn't equip outfit - global outfit kit is null!");
         return;
     }
 
     if (p_CharSetIndex >= s_GlobalOutfitKit->m_aCharSets.size()) {
-        Logger::Error("Couldn't equip outfit - charset index isn't valid!");
+        Logger::Error("[Player] Couldn't equip outfit - charset index isn't valid!");
         return;
     }
 
     ZOutfitVariationCollection* s_Collection = s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].m_pInterfaceRef;
 
     if (!s_Collection) {
-        Logger::Error("Couldn't equip outfit - outvit variation collection is null!");
+        Logger::Error("[Player] Couldn't equip outfit - outvit variation collection is null!");
         return;
     }
 
@@ -414,7 +418,7 @@ void Player::EquipOutfit(
         auto* s_HeroType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_HeroA)];
 
         if (!s_HeroType->m_pInterfaceRef) {
-            Logger::Error("Couldn't equip outfit - hero character type is null!");
+            Logger::Error("[Player] Couldn't equip outfit - hero character type is null!");
             return;
         }
 
@@ -497,7 +501,7 @@ void Player::ToggleInfiniteAmmo() {
         auto s_LocalHitman = SDK()->GetLocalPlayer();
 
         if (!s_LocalHitman) {
-            Logger::Debug("Local player is not alive.");
+            Logger::Debug("[Player] Local player is not alive.");
 
             return;
         }
@@ -530,7 +534,7 @@ bool Player::CreateAICrippleEntity() {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Error("Scene not loaded!");
+        Logger::Error("[Player] Scene not loaded!");
 
         return false;
     }
@@ -541,7 +545,7 @@ bool Player::CreateAICrippleEntity() {
     Globals::ResourceManager->LoadResource(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId);
 
     if (!s_AICrippleEntityFactory) {
-        Logger::Error("Resource is not loaded!");
+        Logger::Error("[Player] Resource is not loaded!");
 
         return false;
     }
@@ -559,7 +563,7 @@ bool Player::CreateAICrippleEntity() {
     );
 
     if (!m_AICrippleEntity) {
-        Logger::Error("Failed to spawn AI Cripple Entity entity!");
+        Logger::Error("[Player] Failed to spawn AI Cripple Entity entity!");
 
         return false;
     }
@@ -571,7 +575,7 @@ bool Player::CreateHM5CrippleBoxEntity() {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Player] Scene not loaded.");
 
         return false;
     }
@@ -582,7 +586,7 @@ bool Player::CreateHM5CrippleBoxEntity() {
     Globals::ResourceManager->LoadResource(s_CrippleBoxFactory, s_CrippleBoxFactoryId);
 
     if (!s_CrippleBoxFactory) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Player] Resource is not loaded.");
 
         return false;
     }
@@ -600,7 +604,7 @@ bool Player::CreateHM5CrippleBoxEntity() {
     );
 
     if (!m_HM5CrippleBoxEntity) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Player] Failed to spawn entity.");
 
         return false;
     }

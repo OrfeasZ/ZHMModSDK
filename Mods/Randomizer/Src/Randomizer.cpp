@@ -37,7 +37,7 @@ Randomizer::Randomizer() {
         sizeof(s_Nop),
         0
     )) {
-        Logger::Error("Could not patch ZTemplateEntityFactory brick data freeing.");
+        Logger::Error("[Randomizer] Could not patch ZTemplateEntityFactory brick data freeing.");
     }
 }
 
@@ -119,20 +119,20 @@ void Randomizer::Init() {
 
 void Randomizer::OnDrawMenu() {
     if (ImGui::Button(ICON_MD_MAN " RANDOMIZER")) {
-        m_RandomizerMenuActive = !m_RandomizerMenuActive;
+        m_ShowRandomizerWindow = !m_ShowRandomizerWindow;
     }
 }
 
 void Randomizer::OnDrawUI(const bool p_HasFocus) {
-    if (!p_HasFocus || !m_RandomizerMenuActive) {
+    if (!p_HasFocus || !m_ShowRandomizerWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("RANDOMIZER", &m_RandomizerMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Randomizer", &m_ShowRandomizerWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         if (m_Scenes.empty()) {
             BuildSceneNamesToRuntimeResourceIds();
 
@@ -165,13 +165,13 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
                 ImGui::EndTabItem();
             }
 
-            if (ImGui::BeginTabItem("Props To Spawn")) {
+            if (ImGui::BeginTabItem("Props to spawn")) {
                 DrawPropsToSpawnTab();
 
                 ImGui::EndTabItem();
             }
 
-            if (ImGui::BeginTabItem("Props To Exclude")) {
+            if (ImGui::BeginTabItem("Props to exclude")) {
                 DrawPropsToExcludeTab();
 
                 ImGui::EndTabItem();
@@ -183,19 +183,19 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
                 ImGui::EndTabItem();
             }
 
-            if (ImGui::BeginTabItem("Outfits From Other Scenes")) {
+            if (ImGui::BeginTabItem("Outfits from other scenes")) {
                 DrawOutfitsFromOtherScenesTab();
 
                 ImGui::EndTabItem();
             }
 
-            if (ImGui::BeginTabItem("Outfits To Spawn")) {
+            if (ImGui::BeginTabItem("Outfits to spawn")) {
                 DrawOutfitsToSpawnTab();
 
                 ImGui::EndTabItem();
             }
 
-            if (ImGui::BeginTabItem("Outfits To Exclude")) {
+            if (ImGui::BeginTabItem("Outfits to exclude")) {
                 DrawOutfitsToExcludeTab();
 
                 ImGui::EndTabItem();
@@ -211,21 +211,21 @@ void Randomizer::OnDrawUI(const bool p_HasFocus) {
 }
 
 void Randomizer::DrawGeneralTab() {
-    if (ImGui::Checkbox("Enable Randomizer", &m_IsRandomizerEnabled)) {
+    if (ImGui::Checkbox("Enable randomizer", &m_IsRandomizerEnabled)) {
         SetSettingBool("general", "enable_randomizer", m_IsRandomizerEnabled);
     }
 
     ImGui::Separator();
 
-    if (ImGui::Checkbox("Randomize Props", &m_RandomizeProps)) {
+    if (ImGui::Checkbox("Randomize props", &m_RandomizeProps)) {
         SetSettingBool("general", "randomize_props", m_RandomizeProps);
     }
 
-    if (ImGui::Checkbox("Randomize Outfits", &m_RandomizeOutfits)) {
+    if (ImGui::Checkbox("Randomize outfits", &m_RandomizeOutfits)) {
         SetSettingBool("general", "randomize_outfits", m_RandomizeOutfits);
     }
 
-    if (ImGui::Checkbox("Randomize Entrance", &m_RandomizeEntrance)) {
+    if (ImGui::Checkbox("Randomize entrance", &m_RandomizeEntrance)) {
         SetSettingBool("general", "randomize_entrance", m_RandomizeEntrance);
     }
 
@@ -236,7 +236,7 @@ void Randomizer::DrawGeneralTab() {
 
     ImGui::BeginDisabled(!m_RandomizeProps);
 
-    if (ImGui::Checkbox("Randomize World Props", &m_RandomizeWorldProps)) {
+    if (ImGui::Checkbox("Randomize world props", &m_RandomizeWorldProps)) {
         SetSettingBool("general", "randomize_world_props", m_RandomizeWorldProps);
     }
 
@@ -244,7 +244,7 @@ void Randomizer::DrawGeneralTab() {
 
     ImGui::BeginDisabled(!m_RandomizeProps);
 
-    if (ImGui::Checkbox("Randomize Stash Props", &m_RandomizeStashProps)) {
+    if (ImGui::Checkbox("Randomize stash props", &m_RandomizeStashProps)) {
         SetSettingBool("general", "randomize_stash_props", m_RandomizeStashProps);
     }
 
@@ -252,7 +252,7 @@ void Randomizer::DrawGeneralTab() {
 
     ImGui::BeginDisabled(!m_RandomizeProps);
 
-    if (ImGui::Checkbox("Randomize Player Inventory", &m_RandomizePlayerInventory)) {
+    if (ImGui::Checkbox("Randomize player inventory", &m_RandomizePlayerInventory)) {
         SetSettingBool("general", "randomize_player_inventory", m_RandomizePlayerInventory);
     }
 
@@ -260,7 +260,7 @@ void Randomizer::DrawGeneralTab() {
 
     ImGui::BeginDisabled(!m_RandomizeProps);
 
-    if (ImGui::Checkbox("Randomize Actor Inventory", &m_RandomizeActorInventory)) {
+    if (ImGui::Checkbox("Randomize actor inventory", &m_RandomizeActorInventory)) {
         SetSettingBool("general", "randomize_actor_inventory", m_RandomizeActorInventory);
     }
 
@@ -277,7 +277,7 @@ void Randomizer::DrawGeneralTab() {
 
     ImGui::BeginDisabled(!m_RandomizeProps);
 
-    if (ImGui::Checkbox("Randomize Items", &m_RandomizeItems)) {
+    if (ImGui::Checkbox("Randomize items", &m_RandomizeItems)) {
         SetSettingBool("general", "randomize_items", m_RandomizeItems);
     }
 
@@ -285,7 +285,7 @@ void Randomizer::DrawGeneralTab() {
 
     ImGui::BeginDisabled(!m_RandomizeProps);
 
-    if (ImGui::Checkbox("Randomize Weapons", &m_RandomizeWeapons)) {
+    if (ImGui::Checkbox("Randomize weapons", &m_RandomizeWeapons)) {
         SetSettingBool("general", "randomize_weapons", m_RandomizeWeapons);
     }
 
@@ -294,7 +294,7 @@ void Randomizer::DrawGeneralTab() {
     ImGui::Separator();
 
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Number Of Props To Spawn In Stashes");
+    ImGui::Text("Number of props to spawn in stashes");
     ImGui::SameLine();
 
     ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
@@ -322,25 +322,25 @@ void Randomizer::DrawCategoriesTab() {
 
 void Randomizer::DrawPropsToSpawnTab() {
     ImGui::BeginDisabled(!m_RandomizeProps || !m_RandomizeWorldProps);
-    ImGui::Checkbox("Spawn In World", &m_SpawnInWorld);
+    ImGui::Checkbox("Spawn in world", &m_SpawnInWorld);
     ImGui::EndDisabled();
 
     ImGui::BeginDisabled(!m_RandomizeProps || !m_RandomizeStashProps);
-    ImGui::Checkbox("Spawn In Stash", &m_SpawnInStash);
+    ImGui::Checkbox("Spawn in stash", &m_SpawnInStash);
     ImGui::EndDisabled();
 
     ImGui::BeginDisabled(!m_RandomizeProps || !m_RandomizePlayerInventory);
-    ImGui::Checkbox("Spawn In PlayerInventory", &m_SpawnInPlayerInventory);
+    ImGui::Checkbox("Spawn in player inventory", &m_SpawnInPlayerInventory);
     ImGui::EndDisabled();
 
     ImGui::BeginDisabled(!m_RandomizeProps || !m_RandomizeActorInventory);
-    ImGui::Checkbox("Spawn In ActorInventory", &m_SpawnInActorInventory);
+    ImGui::Checkbox("Spawn in actor inventory", &m_SpawnInActorInventory);
     ImGui::EndDisabled();
 
     static char s_PropTitle[2048]{ "" };
 
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Prop Title");
+    ImGui::Text("Prop title");
     ImGui::SameLine();
 
     ImGui::BeginDisabled(!m_RandomizeProps);
@@ -350,11 +350,13 @@ void Randomizer::DrawPropsToSpawnTab() {
         s_PropTitle,
         sizeof(s_PropTitle),
         m_AllRepositoryProps,
-        [](auto& p_Tuple) -> const ZRepositoryID& { return std::get<0>(p_Tuple); },
+        [](auto& p_Tuple) -> uint32_t { return std::get<0>(p_Tuple).GetHashCode(); },
         [](auto& p_Tuple) -> const std::string& { return std::get<1>(p_Tuple); },
-        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+        [&](uint32_t, const std::string& p_Name, const auto& p_Tuple) {
+            const ZRepositoryID& s_Id = std::get<0>(p_Tuple);
+
             const bool s_IsAlreadyAdded = std::ranges::any_of(m_PropsToSpawn, [&](const auto& p_Item) {
-                return std::get<0>(p_Item) == p_Id;
+                return std::get<0>(p_Item) == s_Id;
             });
 
             if (s_IsAlreadyAdded) {
@@ -378,7 +380,7 @@ void Randomizer::DrawPropsToSpawnTab() {
             }
 
             m_PropsToSpawn.push_back(std::make_tuple(
-                p_Id,
+                s_Id,
                 p_Name,
                 m_SpawnInWorld,
                 m_SpawnInStash,
@@ -436,7 +438,7 @@ void Randomizer::DrawPropsToSpawnTab() {
 
         ImGui::BeginDisabled(!m_RandomizeProps || !m_RandomizeWorldProps);
 
-        if (ImGui::Checkbox("Spawn In World", &s_SpawnInWorld)) {
+        if (ImGui::Checkbox("Spawn in world", &s_SpawnInWorld)) {
             UpdatePropRepositoryIdListSetting("props_to_spawn", "spawn_in_world");
         }
 
@@ -446,7 +448,7 @@ void Randomizer::DrawPropsToSpawnTab() {
 
         ImGui::BeginDisabled(!m_RandomizeProps || !m_RandomizeStashProps);
 
-        if (ImGui::Checkbox("Spawn In Stash", &s_SpawnInStash)) {
+        if (ImGui::Checkbox("Spawn in stash", &s_SpawnInStash)) {
             UpdatePropRepositoryIdListSetting("props_to_spawn", "spawn_in_stash");
         }
 
@@ -456,7 +458,7 @@ void Randomizer::DrawPropsToSpawnTab() {
 
         ImGui::BeginDisabled(!m_RandomizeProps || !m_RandomizePlayerInventory);
 
-        if (ImGui::Checkbox("Spawn In Player Inventory", &s_SpawnInPlayerInventory)) {
+        if (ImGui::Checkbox("Spawn in player inventory", &s_SpawnInPlayerInventory)) {
             UpdatePropRepositoryIdListSetting("props_to_spawn", "spawn_in_player_inventory");
         }
 
@@ -466,7 +468,7 @@ void Randomizer::DrawPropsToSpawnTab() {
 
         ImGui::BeginDisabled(!m_RandomizeProps || !m_RandomizeActorInventory);
 
-        if (ImGui::Checkbox("Spawn In Actor Inventory", &s_SpawnInActorInventory)) {
+        if (ImGui::Checkbox("Spawn in actor inventory", &s_SpawnInActorInventory)) {
             UpdatePropRepositoryIdListSetting("props_to_spawn", "spawn_in_actor_inventory");
         }
 
@@ -503,7 +505,7 @@ void Randomizer::DrawPropsToSpawnTab() {
     if (!m_PropsToSpawn.empty()) {
         ImGui::BeginDisabled(!m_RandomizeProps);
 
-        if (ImGui::Button("Clear All")) {
+        if (ImGui::Button("Clear all")) {
             RemoveSetting("props_to_spawn", "spawn_in_world");
             RemoveSetting("props_to_spawn", "spawn_in_stash");
             RemoveSetting("props_to_spawn", "spawn_in_player_inventory");
@@ -520,7 +522,7 @@ void Randomizer::DrawPropsToExcludeTab() {
     static char s_PropTitle[2048]{ "" };
 
     ImGui::AlignTextToFramePadding();
-    ImGui::Text("Prop Title");
+    ImGui::Text("Prop title");
     ImGui::SameLine();
 
     ImGui::BeginDisabled(!m_RandomizeProps);
@@ -530,21 +532,23 @@ void Randomizer::DrawPropsToExcludeTab() {
         s_PropTitle,
         sizeof(s_PropTitle),
         m_AllRepositoryProps,
-        [](auto& p_Tuple) -> const ZRepositoryID& { return std::get<0>(p_Tuple); },
+        [](auto& p_Tuple) -> uint32_t { return std::get<0>(p_Tuple).GetHashCode(); },
         [](auto& p_Tuple) -> const std::string& { return std::get<1>(p_Tuple); },
-        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+        [&](uint32_t, const std::string& p_Name, const auto& p_Tuple) {
+            const ZRepositoryID& s_Id = std::get<0>(p_Tuple);
+
             const bool s_IsAlreadyAdded = std::ranges::any_of(m_PropsToExclude, [&](const auto& p_Item) {
-                return std::get<0>(p_Item) == p_Id;
+                return std::get<0>(p_Item) == s_Id;
             });
 
             if (s_IsAlreadyAdded) {
                 return;
             }
 
-            m_PropsToExclude.push_back(std::make_pair(p_Id, p_Name));
-            m_ExcludedPropRepositoryIds.insert(p_Id);
+            m_PropsToExclude.push_back(std::make_pair(s_Id, p_Name));
+            m_ExcludedPropRepositoryIds.insert(s_Id);
 
-            SetSettingBool("props_to_exclude", Util::StringUtils::ToLowerCase(p_Id.ToString().c_str()), true);
+            SetSettingBool("props_to_exclude", Util::StringUtils::ToLowerCase(s_Id.ToString().c_str()), true);
         },
         nullptr,
         [&](const auto& p_Tuple) -> bool {
@@ -614,7 +618,7 @@ void Randomizer::DrawPropsToExcludeTab() {
     if (!m_PropsToExclude.empty()) {
         ImGui::BeginDisabled(!m_RandomizeProps);
 
-        if (ImGui::Button("Clear All")) {
+        if (ImGui::Button("Clear all")) {
             for (const auto& [s_RepositoryId, s_Name] : m_PropsToExclude) {
                 RemoveSetting("props_to_exclude", Util::StringUtils::ToLowerCase(s_RepositoryId.ToString().c_str()));
             }
@@ -630,7 +634,7 @@ void Randomizer::DrawPropsToExcludeTab() {
 void Randomizer::DrawOutfitsTab() {
     ImGui::BeginDisabled(!m_RandomizeOutfits);
 
-    if (ImGui::Checkbox("Randomize Player Outfit", &m_RandomizePlayerOutfit)) {
+    if (ImGui::Checkbox("Randomize player outfit", &m_RandomizePlayerOutfit)) {
         SetSettingBool("outfits", "randomize_player_outfit", m_RandomizePlayerOutfit);
     }
 
@@ -638,7 +642,7 @@ void Randomizer::DrawOutfitsTab() {
 
     ImGui::BeginDisabled(!m_RandomizeOutfits);
 
-    if (ImGui::Checkbox("Randomize Actor Oufit", &m_RandomizeActorOutfit)) {
+    if (ImGui::Checkbox("Randomize actor oufit", &m_RandomizeActorOutfit)) {
         SetSettingBool("outfits", "randomize_actor_outfit", m_RandomizeActorOutfit);
     }
 
@@ -646,7 +650,7 @@ void Randomizer::DrawOutfitsTab() {
 
     ImGui::BeginDisabled(!m_RandomizeOutfits);
 
-    if (ImGui::Checkbox("Randomize Cloth Bundle Outfit", &m_RandomizeClothBundleOutfit)) {
+    if (ImGui::Checkbox("Randomize cloth bundle outfit", &m_RandomizeClothBundleOutfit)) {
         SetSettingBool("outfits", "randomize_cloth_budle_outfit", m_RandomizeClothBundleOutfit);
     }
 
@@ -654,13 +658,13 @@ void Randomizer::DrawOutfitsTab() {
 
     ImGui::Separator();
 
-    ImGui::Text("Actor Types");
+    ImGui::Text("Actor types");
 
     ImGui::Spacing();
 
     ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizeActorOutfit);
 
-    if (ImGui::Checkbox("Randomize Civilian Outfit", &m_RandomizeCivilianOutfit)) {
+    if (ImGui::Checkbox("Randomize civilian outfit", &m_RandomizeCivilianOutfit)) {
         SetSettingBool("outfits", "randomize_civilian_outfit", m_RandomizeCivilianOutfit);
     }
 
@@ -668,7 +672,7 @@ void Randomizer::DrawOutfitsTab() {
 
     ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizeActorOutfit);
 
-    if (ImGui::Checkbox("Randomize Guard Outfit", &m_RandomizeGuardOutfit)) {
+    if (ImGui::Checkbox("Randomize guard outfit", &m_RandomizeGuardOutfit)) {
         SetSettingBool("outfits", "randomize_guard_outfit", m_RandomizeGuardOutfit);
     }
 
@@ -678,7 +682,7 @@ void Randomizer::DrawOutfitsTab() {
 
     ImGui::BeginDisabled(!m_RandomizeOutfits);
 
-    if (ImGui::Checkbox("Randomize Character Set Index", &m_RandomizeCharacterSetIndex)) {
+    if (ImGui::Checkbox("Randomize character set index", &m_RandomizeCharacterSetIndex)) {
         SetSettingBool("outfits", "randomize_character_set_index", m_RandomizeCharacterSetIndex);
     }
 
@@ -686,7 +690,7 @@ void Randomizer::DrawOutfitsTab() {
 
     ImGui::BeginDisabled(!m_RandomizeOutfits);
 
-    if (ImGui::Checkbox("Randomize Outfit Variation", &m_RandomizeOutfitVariation)) {
+    if (ImGui::Checkbox("Randomize outfit variation", &m_RandomizeOutfitVariation)) {
         SetSettingBool("outfits", "randomize_outfit_variation", m_RandomizeOutfitVariation);
     }
 
@@ -696,7 +700,7 @@ void Randomizer::DrawOutfitsTab() {
 void Randomizer::DrawOutfitsFromOtherScenesTab() {
     ImGui::BeginDisabled(!m_RandomizeOutfits);
 
-    if (ImGui::Checkbox("Randomize Outfits From Other Scenes", &m_RandomizeOutfitsFromOtherScenes)) {
+    if (ImGui::Checkbox("Randomize outfits from other scenes", &m_RandomizeOutfitsFromOtherScenes)) {
         SetSettingBool(
             "outfits_from_other_scenes",
             "randomize_outfits_from_other_scenes",
@@ -710,7 +714,7 @@ void Randomizer::DrawOutfitsFromOtherScenesTab() {
 
     ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizeOutfitsFromOtherScenes);
 
-    if (ImGui::Checkbox("Season 2 Global Outfits", &m_RandomizeSeason2GlobalOutfits)) {
+    if (ImGui::Checkbox("Season 2 global outfits", &m_RandomizeSeason2GlobalOutfits)) {
         SetSettingBool(
             "outfits_from_other_scenes",
             "randomize_season_2_global_outfits",
@@ -722,7 +726,7 @@ void Randomizer::DrawOutfitsFromOtherScenesTab() {
 
     ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizeOutfitsFromOtherScenes);
 
-    if (ImGui::Checkbox("Season 3 Global Outfits", &m_RandomizeSeason3GlobalOutfits)) {
+    if (ImGui::Checkbox("Season 3 global outfits", &m_RandomizeSeason3GlobalOutfits)) {
         SetSettingBool(
             "outfits_from_other_scenes",
             "randomize_season_3_global_outfits",
@@ -765,7 +769,7 @@ void Randomizer::DrawOutfitsFromOtherScenesTab() {
     ImGui::Spacing();
 
     if (m_ShowResourcePackageLimitPopup && !m_ResourcePackageLimitPopupOpened) {
-        ImGui::OpenPopup("Resource Package Limit Exceeded");
+        ImGui::OpenPopup("Resource package limit exceeded");
 
         m_ResourcePackageLimitPopupOpened = true;
     }
@@ -776,7 +780,7 @@ void Randomizer::DrawOutfitsFromOtherScenesTab() {
     ImGui::PushStyleColor(ImGuiCol_ModalWindowDimBg, ImVec4(0, 0, 0, 0));
 
     if (ImGui::BeginPopupModal(
-        "Resource Package Limit Exceeded",
+        "Resource package limit exceeded",
         nullptr,
         ImGuiWindowFlags_AlwaysAutoResize
     )) {
@@ -805,15 +809,15 @@ void Randomizer::DrawOutfitsFromOtherScenesTab() {
 
 void Randomizer::DrawOutfitsToSpawnTab() {
     ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizePlayerOutfit);
-    ImGui::Checkbox("Spawn For Player", &m_SpawnForPlayer);
+    ImGui::Checkbox("Spawn for player", &m_SpawnForPlayer);
     ImGui::EndDisabled();
 
     ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizeActorOutfit);
-    ImGui::Checkbox("Spawn For Actor", &m_SpawnForActor);
+    ImGui::Checkbox("Spawn for actor", &m_SpawnForActor);
     ImGui::EndDisabled();
 
     ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizeClothBundleOutfit);
-    ImGui::Checkbox("Spawn For Cloth Bundle", &m_SpawnForClothBundle);
+    ImGui::Checkbox("Spawn for cloth bundle", &m_SpawnForClothBundle);
     ImGui::EndDisabled();
 
     static char s_OutfitName[2048]{ "" };
@@ -829,11 +833,13 @@ void Randomizer::DrawOutfitsToSpawnTab() {
         s_OutfitName,
         sizeof(s_OutfitName),
         m_AllRepositoryOutfits,
-        [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+        [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
         [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
-        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+        [&](uint32_t, const std::string& p_Name, const auto& p_Tuple) {
+            const ZRepositoryID& s_Id = std::get<0>(p_Tuple);
+
             const bool s_IsAlreadyAdded = std::ranges::any_of(m_OutfitsToSpawn, [&](const auto& p_Item) {
-                return std::get<0>(p_Item) == p_Id;
+                return std::get<0>(p_Item) == s_Id;
                 });
 
             if (s_IsAlreadyAdded) {
@@ -844,17 +850,17 @@ void Randomizer::DrawOutfitsToSpawnTab() {
             bool s_SpawnForActor = m_SpawnForActor;
             bool s_SpawnForClothBundle = m_SpawnForClothBundle;
 
-            if (!m_PlayerOutfits.contains(p_Id)) {
+            if (!m_PlayerOutfits.contains(s_Id)) {
                 s_SpawnForPlayer = false;
                 s_SpawnForClothBundle = false;
             }
 
-            if (!m_ActorOutfits.contains(p_Id)) {
+            if (!m_ActorOutfits.contains(s_Id)) {
                 s_SpawnForActor = false;
             }
 
             m_OutfitsToSpawn.push_back(std::make_tuple(
-                p_Id,
+                s_Id,
                 p_Name,
                 s_SpawnForPlayer,
                 s_SpawnForActor,
@@ -919,7 +925,7 @@ void Randomizer::DrawOutfitsToSpawnTab() {
 
         ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizePlayerOutfit || !s_IsPlayerOutfit);
 
-        if (ImGui::Checkbox("Spawn For Player", &s_SpawnForPlayer)) {
+        if (ImGui::Checkbox("Spawn for player", &s_SpawnForPlayer)) {
             UpdateOutfitRepositoryIdListSetting("outfits_to_spawn", "spawn_for_player");
         }
 
@@ -929,7 +935,7 @@ void Randomizer::DrawOutfitsToSpawnTab() {
 
         ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizeActorOutfit || !s_IsActorOutfit);
 
-        if (ImGui::Checkbox("Spawn For Actor", &s_SpawnForActor)) {
+        if (ImGui::Checkbox("Spawn for actor", &s_SpawnForActor)) {
             UpdateOutfitRepositoryIdListSetting("outfits_to_spawn", "spawn_for_actor");
         }
 
@@ -939,7 +945,7 @@ void Randomizer::DrawOutfitsToSpawnTab() {
 
         ImGui::BeginDisabled(!m_RandomizeOutfits || !m_RandomizeClothBundleOutfit || !s_IsPlayerOutfit);
 
-        if (ImGui::Checkbox("Spawn For Cloth Bundle", &s_SpawnForClothBundle)) {
+        if (ImGui::Checkbox("Spawn for cloth bundle", &s_SpawnForClothBundle)) {
             UpdateOutfitRepositoryIdListSetting("outfits_to_spawn", "spawn_for_cloth_bundle");
         }
 
@@ -975,7 +981,7 @@ void Randomizer::DrawOutfitsToSpawnTab() {
     if (!m_OutfitsToSpawn.empty()) {
         ImGui::BeginDisabled(!m_RandomizeOutfits);
 
-        if (ImGui::Button("Clear All")) {
+        if (ImGui::Button("Clear all")) {
             RemoveSetting("outfits_to_spawn", "spawn_for_player");
             RemoveSetting("outfits_to_spawn", "spawn_for_actor");
             RemoveSetting("outfits_to_spawn", "spawn_for_cloth_bundle");
@@ -1001,21 +1007,23 @@ void Randomizer::DrawOutfitsToExcludeTab() {
         s_OutfitName,
         sizeof(s_OutfitName),
         m_AllRepositoryOutfits,
-        [](auto& p_Pair) -> const ZRepositoryID& { return p_Pair.first; },
+        [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
         [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
-        [&](const ZRepositoryID& p_Id, const std::string& p_Name, const auto&) {
+        [&](uint32_t, const std::string& p_Name, const auto& p_Pair) {
+            const ZRepositoryID& s_Id = p_Pair.first;
+
             const bool s_IsAlreadyAdded = std::ranges::any_of(m_OutfitsToExclude, [&](const auto& p_Item) {
-                return std::get<0>(p_Item) == p_Id;
-                });
+                return std::get<0>(p_Item) == s_Id;
+            });
 
             if (s_IsAlreadyAdded) {
                 return;
             }
 
-            m_OutfitsToExclude.push_back(std::make_pair(p_Id, p_Name));
-            m_ExcludedOutfitRepositoryIds.insert(p_Id);
+            m_OutfitsToExclude.push_back(std::make_pair(s_Id, p_Name));
+            m_ExcludedOutfitRepositoryIds.insert(s_Id);
 
-            SetSettingBool("outfits_to_exclude", Util::StringUtils::ToLowerCase(p_Id.ToString().c_str()), true);
+            SetSettingBool("outfits_to_exclude", Util::StringUtils::ToLowerCase(s_Id.ToString().c_str()), true);
         },
         nullptr,
         [&](const auto& p_Pair) -> bool {
@@ -1079,7 +1087,7 @@ void Randomizer::DrawOutfitsToExcludeTab() {
     if (!m_OutfitsToExclude.empty()) {
         ImGui::BeginDisabled(!m_RandomizeOutfits);
 
-        if (ImGui::Button("Clear All")) {
+        if (ImGui::Button("Clear all")) {
             for (const auto& [s_RepositoryId, s_Name] : m_OutfitsToExclude) {
                 RemoveSetting("outfits_to_exclude", Util::StringUtils::ToLowerCase(s_RepositoryId.ToString().c_str()));
             }
@@ -1248,7 +1256,7 @@ void Randomizer::LoadRepositoryOutfits() {
             }
 
             if (s_CommonName.IsEmpty()) {
-                s_FinalName = std::format("<unnamed> [{}]", s_Id.c_str());
+                s_FinalName = std::format("<Unnamed> [{}]", s_Id.c_str());
             }
             else {
                 s_FinalName = std::format("{} [{}]", s_CommonName.c_str(), s_Id.c_str());
@@ -1994,7 +2002,7 @@ void Randomizer::BuildSceneNamesToRuntimeResourceIds() {
         ResId<"[assembly:/_pro/online/default/offlineconfig/config.contracts].pc_contracts">;
     ZResourcePtr s_ConfigResourcePtr;
 
-    Globals::ResourceManager->GetResourcePtr(s_ConfigResourcePtr, s_ConfigRuntimeResourceID, 0);
+    Globals::ResourceManager->LoadResource(s_ConfigResourcePtr, s_ConfigRuntimeResourceID);
 
     const ZResourceContainer::SResourceInfo& s_ConfigResourceInfo = s_ConfigResourcePtr.GetResourceInfo();
 
@@ -2021,7 +2029,7 @@ void Randomizer::BuildSceneNamesToRuntimeResourceIds() {
         ZResourceDataBuffer* s_DataBuffer = s_JsonResourceReader->m_pResourceData.m_pObject;
 
         if (!s_DataBuffer || !s_DataBuffer->m_pData) {
-            Logger::Error("{:016x} JSON resource has no data buffer!", s_JsonReferenceInfo.rid.GetID());
+            Logger::Error("[Randomizer] {:016x} JSON resource has no data buffer!", s_JsonReferenceInfo.rid.GetID());
 
             continue;
         }
@@ -2037,7 +2045,7 @@ void Randomizer::BuildSceneNamesToRuntimeResourceIds() {
         auto s_ParseErrorCode = s_Document.error();
 
         if (s_ParseErrorCode) {
-            Logger::Error("Failed to parse JSON: {}!", simdjson::error_message(s_ParseErrorCode));
+            Logger::Error("[Randomizer] Failed to parse JSON: {}!", simdjson::error_message(s_ParseErrorCode));
 
             continue;
         }
@@ -2062,7 +2070,7 @@ void Randomizer::BuildSceneNamesToRuntimeResourceIds() {
 
         if (!s_TextFound) {
             Logger::Error(
-                "Missing UI text for location key: {} (Runtime Resource ID: {:016x})!",
+                "[Randomizer] Missing UI text for location key: {} (Runtime Resource ID: {:016x})!",
                 s_LocationKey2,
                 s_JsonReferenceInfo.rid.GetID()
             );
@@ -2102,7 +2110,7 @@ void Randomizer::BuildSceneToOutfitBrickRuntimeResourceIds(const std::string& p_
         }
     }
     else {
-        Logger::Warn("No outfit reference found in dependency tree for scene: {}", p_SceneRuntimeResourceId);
+        Logger::Warn("[Randomizer] No outfit reference found in dependency tree for scene: {}", p_SceneRuntimeResourceId);
     }
 }
 
@@ -2112,7 +2120,7 @@ void Randomizer::BuildChunkIndexToResourcePackageCount() {
     const std::filesystem::path s_RuntimeDirectory = GetRuntimeDirectory();
 
     if (!std::filesystem::exists(s_RuntimeDirectory)) {
-        Logger::Error("Runtime directory not found: {}", s_RuntimeDirectory.string());
+        Logger::Error("[Randomizer] Runtime directory not found: {}", s_RuntimeDirectory.string());
         return;
     }
 
@@ -2211,12 +2219,12 @@ bool Randomizer::LoadBrick(
     Globals::ResourceManager->LoadResource(p_ResourcePtr, p_BrickRuntimeResourceId);
 
     while (!Globals::ResourceManager->DoneLoading()) {
-        Logger::Debug("Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
+        Logger::Debug("[Randomizer] Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
         Globals::ResourceManager->Update(true);
     }
 
     if (!p_ResourcePtr) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Randomizer] Resource is not loaded.");
 
         return false;
     }
@@ -2224,7 +2232,7 @@ bool Randomizer::LoadBrick(
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Randomizer] Scene not loaded.");
         return false;
     }
 
@@ -2242,12 +2250,12 @@ bool Randomizer::LoadBrick(
     );
 
     if (!p_EntityRef) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Randomizer] Failed to spawn entity.");
         return false;
     }
 
     while (!p_ResourcePtr.GetResource()->m_blueprintResource.GetResource()->AreAllResourcesReady(p_EntityRef.m_pObj)) {
-        Logger::Debug("Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
+        Logger::Debug("[Randomizer] Waiting for resources to load (left: {})!", Globals::ResourceManager->m_nNumProcessing);
         Globals::ResourceManager->Update(true);
     }
 
@@ -2271,7 +2279,7 @@ void Randomizer::LoadOutfits(const ZRuntimeResourceID& p_OutfitsBrickRuntimeReso
     Globals::ResourceManager->LoadResource(s_ResourcePtr, p_OutfitsBrickRuntimeResourceId);
 
     if (!s_ResourcePtr) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Randomizer] Resource is not loaded.");
 
         return;
     }
@@ -2279,7 +2287,7 @@ void Randomizer::LoadOutfits(const ZRuntimeResourceID& p_OutfitsBrickRuntimeReso
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Randomizer] Scene not loaded.");
         return;
     }
 
@@ -2299,7 +2307,7 @@ void Randomizer::LoadOutfits(const ZRuntimeResourceID& p_OutfitsBrickRuntimeReso
     );
 
     if (!s_EntityRef) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Randomizer] Failed to spawn entity.");
         return;
     }
 

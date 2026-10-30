@@ -12,6 +12,7 @@
 #include <Glacier/ZLevelManager.h>
 #include <Glacier/ZResource.h>
 #include <Glacier/ZInventory.h>
+#include <Glacier/SSaveGameMetaData.h>
 
 #include <Windows.h>
 #include <directx/d3d12.h>
@@ -93,6 +94,9 @@ class IBaseCharacter;
 class ZHitmanMorphemePostProcessor;
 class ZHM5WeaponRecoilController;
 class ZEvergreenCampaignManager;
+class ZFreeCameraControlEditorStyleEntity;
+struct SDestinationLocationInfo;
+class ZSaveSlotManager;
 
 class ZHMSDK_API Hooks {
 public:
@@ -147,8 +151,8 @@ public:
     static Hook<void(ZAchievementManagerSimple* th, uint32_t eventIndex, const ZDynamicObject& event)>*
     ZAchievementManagerSimple_OnEventSent;
 
-    static Hook<bool(ZInputAction* th, int a2)>* ZInputAction_Digital;
-    static Hook<double(ZInputAction* th, int a2)>* ZInputAction_Analog;
+    static Hook<bool(ZInputAction* th, int32_t controllerId)>* ZInputAction_Digital;
+    static Hook<float(ZInputAction* th, int32_t controllerId)>* ZInputAction_Analog;
 
     static Hook<void(
         ZEntityManager* th, TArrayRef<ZEntityRef> aEntities, const SExternalReferences& externalRefs,
@@ -344,5 +348,20 @@ public:
 
     static Hook<ZDynamicObject*(ZDynamicObject* th, const ZString& key, const ZDynamicObject& val)>* ZDynamicObject_Set_ZDynamicObject;
 
-    static Hook<ZEvergreenCampaignManager*(ZEvergreenCampaignManager* th)>* ZEvergreenCampaignManager_OnGenerate;
+    static Hook<ZEvergreenCampaignManager* (ZEvergreenCampaignManager* th)>* ZEvergreenCampaignManager_OnGenerate;
+
+    static Hook<void(ZFreeCameraControlEditorStyleEntity* th)>* ZFreeCameraControlEditorStyleEntity_UpdateMovementFromInput;
+
+    static Hook<ZString* (
+        ZFreeCameraControlEditorStyleEntity* th, ZString& result
+        )>* ZFreeCameraControlEditorStyleEntity_GenerateActionBindingString;
+
+    static Hook<const SDestinationLocationInfo*(
+        IEvergreenTerritoryDefinition_EDestination eDestination
+    )>* GetDestinationLocationInfo;
+
+    static Hook<bool(
+        ZSaveSlotManager* th, SSaveGameMetaData& metaData, TFnSaveStatusCallback* callback,
+        TArrayRef<uint32_t> resourceIndices
+    )>* ZSaveSlotManager_QuickSave;
 };

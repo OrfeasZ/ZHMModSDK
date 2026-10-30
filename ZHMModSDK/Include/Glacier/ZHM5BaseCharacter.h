@@ -7,13 +7,13 @@
 class ZRagdollHandler;
 
 class IHM5BaseCharacter :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IHM5BaseCharacter() {}
 };
 
 class ICharacterTransformState :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICharacterTransformState() {}
     virtual void ICharacterTransformState_unk0() = 0;
@@ -29,7 +29,7 @@ public:
 };
 
 class IBaseCharacter :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IBaseCharacter() {}
     virtual void IBaseCharacter_unk0() = 0;
@@ -68,7 +68,7 @@ public:
 };
 
 class IItemOwner :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~IItemOwner() {}
     virtual void IItemOwner_unk0() = 0;
@@ -76,7 +76,7 @@ public:
 };
 
 class ICrowdCoreProvider :
-        public IComponentInterface {
+    public IComponentInterface {
 public:
     virtual ~ICrowdCoreProvider() {}
     virtual void ICrowdCoreProvider_unk0() = 0;
@@ -85,23 +85,29 @@ public:
     virtual void ICrowdCoreProvider_unk3() = 0;
 };
 
-// Size: 0x2D0
-class ZHM5BaseCharacter :
-        public ZEntityImpl,
-        public IHM5BaseCharacter,
-        public ICharacterTransformState,
-        public IBaseCharacter,
-        public IMorphemeCutSequenceAnimatable,
-        public IBoneCollidable,
-        public IItemOwner,
-        public ICrowdCoreProvider {
+class IVoxelSpaceObstacleProvider {
 public:
-    PAD(0x10); // 0x50
-    ZRagdollHandler* m_pRagdollHandler; // 0x60
-    ZEntityRef m_EventConsumerCollection; // 0x68
-    PAD(0x10); // 0x70
-    TEntityRef<IMorphemeEntity> m_pMorphemeEntity; // 0x80
-    PAD(0x30); // 0x90
-    TEntityRef<ZLinkedEntity> m_pGeomLinkedEntityInterface; // 0xC0
-    PAD(0x200); // 0xD0
+    virtual ~IVoxelSpaceObstacleProvider() {}
+    virtual void IVoxelSpaceObstacleProvider_unk0() = 0;
+};
+
+class ZHM5BaseCharacter :
+    public ZEntityImpl,
+    public IHM5BaseCharacter,
+    public ICharacterTransformState,
+    public IBaseCharacter,
+    public IMorphemeCutSequenceAnimatable,
+    public IBoneCollidable,
+    public IItemOwner,
+    public ICrowdCoreProvider,
+    public IVoxelSpaceObstacleProvider {
+public:
+    PAD(0x10); // 0x58
+    ZRagdollHandler* m_pRagdollHandler; // 0x68
+    ZEntityRef m_EventConsumerCollection; // 0x70
+    PAD(0x10); // 0x78
+    TEntityRef<IMorphemeEntity> m_pMorphemeEntity; // 0x88
+    PAD(0x30); // 0x98
+    TEntityRef<ZLinkedEntity> m_pGeomLinkedEntityInterface; // 0xC8
+    PAD(0x208); // 0xD8
 };

@@ -46,6 +46,9 @@ struct ImGuiTexture {
     ImTextureID id = 0;
     UINT width = 0;
     UINT height = 0;
+
+    D3D12_CPU_DESCRIPTOR_HANDLE srvCPUDescriptor {};
+    D3D12_GPU_DESCRIPTOR_HANDLE srvGPUDescriptor {};
 };
 
 class IRenderer {
@@ -138,4 +141,13 @@ public:
 
     virtual void SetMaxDrawDistance(float p_MaxDrawDistance) = 0;
     virtual float GetMaxDrawDistance() const = 0;
+
+    virtual void DrawSphere3D(
+        const SMatrix& p_Transform,
+        const float4& p_Position,
+        float p_Size,
+        const SVector4& p_Color
+    ) = 0;
+
+    virtual bool IsSphereInsideViewFrustum(const SVector3& p_Center, float p_Radius) const = 0;
 };

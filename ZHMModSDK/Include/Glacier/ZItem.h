@@ -5,6 +5,7 @@
 #include "ZGeomEntity.h"
 #include "ZHitman5.h"
 #include "ZGameTime.h"
+#include "IBoolConditionListener.h"
 
 class IItemBase : public IComponentInterface {};
 
@@ -16,10 +17,12 @@ class IKeywordHolder : public IComponentInterface {};
 
 class ZUIDataProvider {
 public:
-    PAD(0x40);
-};
+    virtual ~ZUIDataProvider() = 0;
+    virtual void ZUIDataProvider_unk0() = 0;
+    virtual void ZUIDataProvider_unk1() = 0;
 
-class IBoolConditionListener : public IComponentInterface {};
+    PAD(0x38);
+};
 
 class IColliderController : public IComponentInterface {};
 
@@ -74,8 +77,8 @@ class ZHM5Item :
 public:
     enum class EUseTypes {
         EUT_CantUse = 0,
-        EUT_Toggle  = 1,
-        EUT_TurnOn  = 2,
+        EUT_Toggle = 1,
+        EUT_TurnOn = 2,
     };
 
     PAD(0x10);
@@ -128,7 +131,7 @@ public:
     TEntityRef<ZGeomEntity> m_pGeomEntity; //0x338
     PAD(0x10); // 0x2D0
     ZEntityRef m_pOwner; // 0x358
-    PAD(0x190);
+    PAD(0x1A0); // 0x360
 };
 
 class IItemWeapon : public IComponentInterface {
@@ -281,9 +284,9 @@ class ZItemSpawner : public ZSpatialEntity, public IItemOwner, public ISavableEn
 public:
     enum EPhysicsMode {
         EPM_DEFINED_BY_ITEM = 0,
-        EPM_DYNAMIC         = 1,
-        EPM_SLEEPING        = 2,
-        EPM_KINEMATIC       = 3
+        EPM_DYNAMIC = 1,
+        EPM_SLEEPING = 2,
+        EPM_KINEMATIC = 3
     };
 
     PAD(0x40);
@@ -296,4 +299,5 @@ public:
     bool m_bSpawnOnStart; // 0x130
     bool m_bUsePlacementAttach; // 0x131
     bool m_bSetAIPerceptible; // 0x132
+    bool m_bDestroyItemOnKeyChange; // 0x133
 };

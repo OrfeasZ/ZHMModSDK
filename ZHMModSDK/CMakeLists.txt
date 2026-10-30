@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.12)
 
 # The current version of the SDK.
 set(ZHMMODSDK_VER_MAJOR 4)
-set(ZHMMODSDK_VER_MINOR 0)
-set(ZHMMODSDK_VER_PATCH 2)
+set(ZHMMODSDK_VER_MINOR 2)
+set(ZHMMODSDK_VER_PATCH 0)
 
 # The current version of the SDK ABI.
 # Any change to this is a breaking change.
@@ -107,6 +107,7 @@ target_link_libraries(ZHMModSDK PUBLIC
         semver::semver
         simdjson::simdjson
         imgui::imgui
+        implot::implot
         d3d12
         dxgi
         delayimp
@@ -116,7 +117,6 @@ target_link_libraries(ZHMModSDK PUBLIC
         sentry::sentry
         zhmmodsdk_rs
         ResourceLib_HM3
-        implot
 )
 
 install(TARGETS ZHMModSDK
@@ -149,22 +149,28 @@ install(DIRECTORY "${VCPKG_BUILD_ROOT}/include/fmt/"
         FILES_MATCHING PATTERN "*.h"
 )
 
-# Install fmt lib.
+# Install required libs.
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     install(FILES "${VCPKG_BUILD_ROOT}/debug/lib/fmtd.lib" DESTINATION lib RENAME fmt.lib)
+    install(FILES "${VCPKG_BUILD_ROOT}/debug/lib/imguid.lib" DESTINATION lib RENAME imgui.lib)
+    install(FILES "${VCPKG_BUILD_ROOT}/debug/lib/implotd.lib" DESTINATION lib RENAME implot.lib)
 else ()
     install(FILES "${VCPKG_BUILD_ROOT}/lib/fmt.lib" DESTINATION lib)
+    install(FILES "${VCPKG_BUILD_ROOT}/lib/imgui.lib" DESTINATION lib)
+    install(FILES "${VCPKG_BUILD_ROOT}/lib/implot.lib" DESTINATION lib)
 endif ()
 
 # Install icon header.
 install(FILES "${CMAKE_SOURCE_DIR}/External/IconFontCppHeaders/IconsMaterialDesign.h" DESTINATION include)
 
 # Install imgui lib and headers.
-install(FILES "${VCPKG_BUILD_ROOT}/lib/imgui.lib" DESTINATION lib)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imconfig.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stacklayout.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stdlib.h" DESTINATION include)
+
+# Install implot header.
+install(FILES "${VCPKG_BUILD_ROOT}/include/implot.h" DESTINATION include)
 
 # Install ResourceLib.
 install(TARGETS ResourceLib_HM3

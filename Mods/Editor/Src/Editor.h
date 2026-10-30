@@ -7,13 +7,22 @@
 #include <map>
 #include <shared_mutex>
 
-#include "IPluginInterface.h"
+#include <SimpleMath.h>
+
+#include <directx/d3dx12.h>
+
+#include <DirectXTex.h>
+
 #include "Glacier/ZEntity.h"
 #include "Glacier/ZInput.h"
 #include "Glacier/ZFreeCamera.h"
 #include "Glacier/EDebugChannel.h"
 #include "Glacier/ZCurve.h"
+#include "Glacier/ZAction.h"
+#include "Glacier/ZSound.h"
+#include "Glacier/ZSequence.h"
 
+#include "IPluginInterface.h"
 #include "ImGuizmo.h"
 #include "EditorServer.h"
 #include "EntityTreeNode.h"
@@ -23,14 +32,6 @@ struct QneTransform {
     SVector3 Position;
     SVector3 Rotation;
     SVector3 Scale;
-};
-
-struct AlignedDeleter {
-    template <typename T>
-    void operator()(T* ptr) const {
-        if (ptr)
-            (*Globals::MemoryManager)->m_pNormalAllocator->Free(ptr);
-    }
 };
 
 class Editor : public IPluginInterface {
@@ -64,15 +65,14 @@ public:
     void LockEntityTree() { m_CachedEntityTreeMutex.lock_shared(); }
     std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
-    std::string GetEntityName(ZEntityRef p_Entity, bool withID = true);
+    std::string GetEntityName(ZEntityRef p_Entity, bool p_WithID = true);
     ZEntityRef FindEntity(EntitySelector p_Selector);
     static std::string GetCollisionHash(auto p_SelectedEntity);
     void FindMeshes(
-        const std::function<void(
-            std::vector<NavKitMeshEntity>&, std::map<std::string, NavKitMatiTextures>&,
-            std::map<std::string, std::vector<std::string>>&, bool
-        )>&
-        p_SendEntitiesCallback, const std::function<void()>& p_RebuiltCallback
+        bool p_OnlyCollidableMeshes, const std::function<void(std::vector<NavKitMeshEntity>&, std::map<std::string,
+            NavKitMatiTextures>&, std
+            ::map<std::string, std::vector<std::string>>&, bool)>& p_SendEntitiesCallback, const std::function<void()>&
+        p_RebuiltCallback
     );
     std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> FindEntitiesByType(
         const std::string& p_EntityType, const std::string& p_Hash
@@ -97,14 +97,42 @@ private:
         SMatrix m_Transform;
     };
 
+    struct RayCastResult {
+        ZEntityRef m_Entity;
+        std::string m_TypeName;
+        EDebugChannel m_DebugChannel;
+        float m_Distance = FLT_MAX;
+    };
+
     struct PinInfo {
-        std::string name;
-        std::string description;
+        std::string m_Name;
+        std::string m_Description;
     };
 
     struct PinLists {
-        std::vector<PinInfo> inputPins;
-        std::vector<PinInfo> outputPins;
+        std::vector<PinInfo> m_InputPins;
+        std::vector<PinInfo> m_OutputPins;
+    };
+
+    struct PropertyDeleter {
+        STypeID* m_Type = nullptr;
+
+        template <typename T>
+        void operator()(T* p_Data) const {
+            if (!p_Data) {
+                return;
+            }
+
+            if (m_Type) {
+                if (const auto* s_TypeInfo = m_Type->GetTypeInfo()) {
+                    if (s_TypeInfo->m_pTypeFunctions) {
+                        s_TypeInfo->m_pTypeFunctions->destruct(p_Data);
+                    }
+                }
+            }
+
+            (*Globals::MemoryManager)->m_pNormalAllocator->Free(p_Data);
+        }
     };
 
     void SpawnCameras();
@@ -116,11 +144,10 @@ private:
     void DrawEntityManipulator(bool p_HasFocus);
     void DrawEntityAABB(IRenderer* p_Renderer);
 
-    void DrawEntityProperties();
+    void DrawEntityPropertiesWindow();
     bool DrawEntityPropertyValue(
         const std::string& p_Id,
         const std::string& p_PropertyName,
-        const std::string& p_TypeName,
         const STypeID* p_TypeID,
         ZEntityRef p_Entity,
         SPropertyData* p_Property,
@@ -137,15 +164,21 @@ private:
 
     void DrawEntityPinValue(const std::string& p_Id, const std::string& p_TypeName, void* p_Data);
 
-    void DrawLibrary();
+    void DrawLibraryWindow();
 
-    void DrawSettings(bool p_HasFocus);
+    void DrawSettingsWindow(bool p_HasFocus);
 
-    bool HasVisibleChildren(std::shared_ptr<EntityTreeNode> p_Node) const;
+    bool HasVisibleChildren(const std::shared_ptr<EntityTreeNode>& p_Node) const;
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
-    void DrawEntityTree();
+    void DrawEntityTreeWindow();
     void FilterEntityTree();
-    bool FilterEntityTree(EntityTreeNode* p_Node);
+    bool FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSingleMatchNode);
+    void ClearFilters();
+    std::shared_ptr<EntityTreeNode> FindMatchByIndex(
+        const std::shared_ptr<EntityTreeNode>& p_Node,
+        size_t p_TargetIndex,
+        size_t& p_CurrentCounter
+    );
     void UpdateEntities();
     void UpdateEntityTree(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
@@ -159,6 +192,7 @@ private:
     void ReparentDynamicOutfitEntities(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
+    bool IsSpecialEntityTreeNode(ZEntityRef p_Entity) const;
 
     void OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, std::optional<std::string> p_ClientId);
     void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
@@ -186,7 +220,7 @@ private:
 
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
 
-    void DrawPinTracer();
+    void DrawPinTracerWindow();
 
     static bool ImGuiCopyWidget(const std::string& p_Id);
 
@@ -196,18 +230,19 @@ private:
         const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const
         std::unordered_map<std::string, std::string>& p_RoomNameToFolderName,
         std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
-        std::map<std::string, std::vector<std::string>>& p_PrimMatis
+        std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool p_OnlyCollidableMeshes
     );
     static void FindAlocAndPrimForZPrimitiveProxyEntityNode(
-        std::vector<NavKitMeshEntity>& s_Entities,
-        const std::shared_ptr<EntityTreeNode>& s_Node, const TArray<SInterfaceData>& s_Interfaces, const char*& s_EntityType, const
-        std::unordered_map<std::string, std::string>& roomNameToFolderName,
+        std::vector<NavKitMeshEntity>& p_Entities,
+        const std::shared_ptr<EntityTreeNode>& p_Node, const TArray<SInterfaceData>& p_Interfaces, const char*& p_EntityType, const
+        std::unordered_map<std::string, std::string>&
+        roomNameToFolderName,
         std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
-        std::map<std::string, std::vector<std::string>>& p_PrimMatis
+        std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool p_OnlyCollidableMeshes
     );
 
     // Properties
-    void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID);
 
     void ZEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
@@ -229,7 +264,7 @@ private:
     bool Int64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     bool Float32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     bool Float64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID);
 
     // Vector properties.
     bool SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
@@ -239,10 +274,10 @@ private:
     bool SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     template <typename T>
-    static std::unique_ptr<T, AlignedDeleter> GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property);
+    static std::unique_ptr<T, PropertyDeleter> GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property);
     static Quat GetQuatFromProperty(ZEntityRef p_Entity);
     static Quat GetParentQuat(ZEntityRef p_Entity);
-    std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& roomNameToFolderName);
+    std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& p_RoomNameToFolderName);
 
     bool SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     bool SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
@@ -251,12 +286,12 @@ private:
     void ZRuntimeResourceIDProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     bool ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
-        const std::string& s_PropertyName, const STypeID* p_TypeID);
+        const std::string& p_PropertyName, const STypeID* p_TypeID);
 
     bool ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
 
     bool ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
-        const std::string& s_PropertyName, const STypeID* p_TypeID);
+        const std::string& p_PropertyName, const STypeID* p_TypeID);
 
     static void PlotZCurve(const ZCurve* p_Curve);
     static float EvaluateZCurveSegment(
@@ -273,10 +308,11 @@ private:
 
     std::string GetNameFromRepository(const ZRepositoryID& p_RepositoryID);
 
-    void DrawItems(bool p_HasFocus);
-    void DrawActors(bool p_HasFocus);
-    void DrawDebugChannels(bool p_HasFocus);
-    void DrawRooms(bool p_HasFocus);
+    void DrawItemsWindow(bool p_HasFocus);
+    void DrawActorsWindow(bool p_HasFocus);
+    void DrawDebugChannelsWindow(bool p_HasFocus);
+    void DrawRoomsWindow(bool p_HasFocus);
+    void DrawBoxReflectionsWindow(bool p_HasFocus);
 
     static void EquipOutfit(
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharSetIndex,
@@ -299,6 +335,8 @@ private:
     void DrawDebugEntities(IRenderer* p_Renderer);
     void DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer);
     void DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer);
+    void DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Renderer);
+    void DrawShapes(ZSequenceEntity* p_SequenceEntity, IRenderer* p_Renderer);
     void GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTreeNode);
     void AddDebugEntity(
         const ZEntityRef p_EntityRef,
@@ -321,18 +359,149 @@ private:
         const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
         const SMatrix& p_Transform = SMatrix()
     );
-    void DeleteDebugEntity(const ZEntityRef p_EntityRef);
+    void DeleteDebugEntities(const std::shared_ptr<EntityTreeNode>& p_RootNode);
     EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
-    bool RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction);
+
+    bool RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector3& p_Direction);
+    void RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result);
+    void RayCastShapes(const SVector3& p_WorldPosition, const SVector3& p_Direction, RayCastResult& p_Result);
+
+    bool RayCastShape(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZSoundGateEntity* p_SoundGateEntity,
+        float& p_Distance
+    );
+    bool RayCastShape(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZSequenceEntity* p_SequenceEntity,
+        float& p_Distance
+    );
+
+    bool RayCastTrajectoryTrack(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZTrajectoryTrackBase* p_Track,
+        ZEntityRef p_TargetEntity,
+        float& p_Distance
+    );
+    template <typename TItem, typename EvaluateFn>
+    bool RayCastTrajectoryItem(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        TItem* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZEntityRef p_TargetEntity,
+        float& p_Distance,
+        EvaluateFn&& p_EvaluateFn
+    );
+
+    bool RayIntersectsTrajectorySegment(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SVector3& p_Start,
+        const SVector3& p_End,
+        float p_Radius,
+        float& p_Distance
+    );
+    bool RayIntersectsBox(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SMatrix& p_Transform,
+        const SVector3& p_Center,
+        const SVector3& p_Extents,
+        float& p_Distance
+    );
+    bool RayIntersectsSphere(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        const SVector3& p_Position,
+        float p_Radius,
+        float& p_Distance
+    );
+
+    void DrawTrajectoryTrack(
+        IRenderer* p_Renderer,
+        ZTrajectoryTrackBase* p_Track,
+        const SVector4& p_Color,
+        ZEntityRef p_TargetEntity
+    );
+    template <typename TItem, typename EvaluateFn>
+    void DrawTrajectoryItem(
+        IRenderer* p_Renderer,
+        TItem* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        const SVector4& p_Color,
+        ZEntityRef p_TargetEntity,
+        EvaluateFn&& p_EvaluateFn
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZMorphemeTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZAnimationResource* p_AnimationResource,
+        ZEntityRef p_TargetEntity
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZEulerAngleTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZEntityRef p_TargetEntity
+    );
+    static SVector3 EvaluateTrajectoryWorldPosition(
+        ZBezierSplineTrajectorySource* p_Item,
+        ZTrajectoryTrackBase* p_Track,
+        ZGameTime p_ItemTime,
+        ZEntityRef p_TargetEntity
+    );
 
     static bool IsActorTarget(ZActor* p_Actor);
 
     void ProcessTasks();
 
-    std::vector<PinInfo> GetPins(ZEntityRef p_EntityRef, bool outputPins);
+    std::vector<PinInfo> GetPins(ZEntityRef p_EntityRef, bool p_OutputPins);
 
     std::map<std::string, PinLists> ParsePinsJson(const std::string& p_PinsJson);
+
+    bool UpdateBoxReflectionPreview(ZRenderGraphNodeBoxReflection* p_BoxReflectionGraphNode);
+    bool UpdateBoxReflectionCubemapPreview(
+        ZRenderTexture2D* p_SourceTexture,
+        uint32_t p_CubeIndex,
+        std::array<ScopedD3DRef<ID3D12Resource>, 6>& p_OutTextures,
+        std::array<ImGuiTexture, 6>& p_OutImGuiTextures
+    );
+    void ClearBoxReflectionPreview();
+    void DrawBoxReflectionCross(const std::array<ImGuiTexture, 6>& p_Textures, float p_FaceSize);
+
+    static bool CreateBoxReflectionFaceTexture(
+        const DirectX::Image& p_Image,
+        ScopedD3DRef<ID3D12Resource>& p_OutTexture,
+        ImGuiTexture& p_OutImGuiTexture
+    );
+
+    static bool ExportAllBoxReflectionCubemaps(
+        const std::filesystem::path& p_OutputFolder,
+        bool p_Diffuse
+    );
+    static bool ExportBoxReflectionCubemap(
+        const DirectX::ScratchImage& p_CapturedImage,
+        uint32_t p_CubeIndex,
+        const std::filesystem::path& p_OutputFilePath
+    );
+    static bool ExportBoxReflectionCubemap(
+        ID3D12Resource* p_Resource,
+        uint32_t p_CubeIndex,
+        const std::filesystem::path& p_OutputFilePath
+    );
+    static bool GetBoxReflectionTexture(
+        ZRenderGraphNodeBoxReflection* p_BoxReflectionGraphNode,
+        bool p_Diffuse,
+        ZRenderTexture2D*& p_OutTexture,
+        uint32_t& p_OutCubeIndex
+    );
+    static std::filesystem::path GetBoxReflectionExportPath(
+        const ZRenderGraphNodeBoxReflection* p_BoxReflection,
+        const std::filesystem::path& p_OutputFolder,
+        bool p_Diffuse
+    );
+
+    static bool GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputFolder);
+    static size_t CalculateCubemapSize(const DirectX::ScratchImage& p_Image, uint32_t p_CubeIndex);
 
 private:
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnLoadScene, ZEntitySceneContext*, SSceneInitParameters&);
@@ -452,7 +621,25 @@ private:
         AudioEmitterSpatialAspect,
         AudioEmitterVolumetricAspect,
         ClothWireEntity,
+        SoundGateEntity,
+        SequenceEntity,
         Count
+    };
+
+    enum class DebugDrawMode {
+        SelectedChannelsAndTypes,
+        SelectedEntity,
+        All
+    };
+
+    struct BoxReflectionPreview {
+        int32_t m_BoxReflectionId = SIZE_MAX;
+
+        std::array<ScopedD3DRef<ID3D12Resource>, 6> m_Textures;
+        std::array<ImGuiTexture, 6> m_ImGuiTextures;
+
+        std::array<ScopedD3DRef<ID3D12Resource>, 6> m_DiffuseTextures;
+        std::array<ImGuiTexture, 6> m_DiffuseImGuiTextures;
     };
 
     bool m_raycastLogging; // Mainly used for the raycasting logs
@@ -489,13 +676,16 @@ private:
 
     EntityViewMode m_EntityViewMode = EntityViewMode::All;
     EntityViewMode m_LastEntityViewMode = EntityViewMode::All;
-    const std::vector<std::string> m_EntityViewModes = { "All", "Scenes/Bricks", "Dynamic Entities" };
+    const std::vector<std::string> m_EntityViewModes = { "All", "Scenes/bricks", "Dynamic entities" };
 
-    std::string m_EntityIdSearchInput;
+    std::string m_EntityIDSearchInput;
     std::string m_EntityTypeSearchInput;
     std::string m_EntityNameSearchInput;
     std::unordered_set<EntityTreeNode*> m_FilteredEntityTreeNodes;
-    std::vector<EntityTreeNode*> m_DirectEntityTreeNodeMatches;
+    size_t m_CurrentEntitySearchResultIndex = 0;
+    size_t m_TotalMatchCount = 0;
+    bool m_HasActiveFilters = false;
+    bool m_HasActiveSearch = false;
 
     ImGuizmo::OPERATION m_GizmoMode = ImGuizmo::OPERATION::TRANSLATE;
     ImGuizmo::MODE m_GizmoSpace = ImGuizmo::MODE::WORLD;
@@ -518,6 +708,7 @@ private:
     std::shared_mutex m_CachedEntityTreeMutex;
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeMap;
     std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
+    std::unordered_set<EntityTreeNode*> m_OpenEntityTreeNodes;
 
     std::unordered_map<uint64_t, ZEntityRef> m_SpawnedEntities;
     std::unordered_map<ZEntityRef, std::string> m_EntityNames;
@@ -530,19 +721,18 @@ private:
     std::unordered_set<ZEntityRef> m_DynamicEntities;
     std::mutex m_PendingDynamicEntitiesMutex;
     std::unordered_set<ZEntityRef> m_PendingDynamicEntities;
-    std::mutex m_PendingNodeDeletionsMutex;
-    std::vector<std::weak_ptr<EntityTreeNode>> m_PendingNodeDeletions;
 
     EditorServer m_Server;
 
-    bool m_ItemsMenuActive = false;
-    bool m_ActorsMenuActive = false;
-    bool m_DebugChannelsMenuActive = false;
-    bool m_RoomsMenuActive = false;
+    bool m_ShowItemsWindow = false;
+    bool m_ShowActorsWindow = false;
+    bool m_ShowDebugChannelsWindow = false;
+    bool m_ShowRoomsWindow = false;
+    bool m_ShowBoxReflectionsWindow = false;
 
     ZActor* m_SelectedActor = nullptr;
     TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
-    const std::vector<std::string> m_CharSetCharacterTypes = {"Actor", "Nude", "HeroA"};
+    const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
     bool m_ShowAliveActors = false;
     bool m_ShowCivilians = true;
     bool m_ShowGuards = true;
@@ -559,14 +749,16 @@ private:
     bool m_ScrollToActor = false;
 
     std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryWeapons;
-    TEntityRef<IItem> m_ItemToRemove {};
+    TEntityRef<IItem> m_ItemToRemove{};
     bool m_RemoveItemFromInventory = false;
 
     ZActor* m_ActorTracked = nullptr;
     bool m_TrackCamActive = false;
     ZEntityRef m_PlayerCam = nullptr;
-    TEntityRef<ZCameraEntity> m_TrackCam {};
-    TEntityRef<IRenderDestinationEntity> m_RenderDest {};
+    TEntityRef<ZCameraEntity> m_TrackCam{};
+    TEntityRef<IRenderDestinationEntity> m_RenderDest{};
+
+    ZHM5Action* m_SelectedAction = nullptr;
 
     std::unordered_map<ZEntityRef, std::vector<std::unique_ptr<DebugEntity>>> m_EntityRefToDebugEntities;
     std::shared_mutex m_DebugEntitiesMutex;
@@ -574,22 +766,28 @@ private:
     std::unordered_map<std::string, std::vector<std::string>> m_DebugChannelNameToTypeNames;
     std::unordered_map<EDebugChannel, uint32> m_DebugChannelToDebugEntityCount;
     std::unordered_map<EDebugChannel, std::unordered_map<std::string, uint32_t>>
-    m_DebugChannelToTypeNameToDebugEntityCount;
-    std::unordered_map<EDebugChannel, bool> m_DebugChannelToState;
-    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToState;
+        m_DebugChannelToTypeNameToDebugEntityCount;
+    std::unordered_map<EDebugChannel, bool> m_DebugChannelToGizmoState;
+    std::unordered_map<EDebugChannel, bool> m_DebugChannelToShapeState;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToGizmoState;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToShapeState;
     std::vector<STypeID*> m_DebugEntityTypeIds;
+
     bool m_DrawGizmos = true;
-    bool m_DrawAllGizmos = false;
+    DebugDrawMode m_GizmoDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
+
     bool m_DrawShapes = false;
-    GizmoEntity* m_SelectedGizmoEntity = nullptr;
-    bool m_DrawGizmosForSelectedEntityOnly = false;
-    bool m_DrawShapesForSelectedEntityOnly = false;
+    DebugDrawMode m_ShapeDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
+
+    ZEntityRef m_SelectedDebugEntity = nullptr;
 
     bool m_DrawCoverInvalidOnNPCErrors = true;
     bool m_DrawHeroGuidesSolid = false;
     bool m_AlwaysDrawDebugBoxForColiValidityCheck = false;
     bool m_DrawPushDebug = false;
     bool m_DrawSafeZones = true;
+
+    bool m_ShowSoundOcclusion = false;
 
     ZEntityRef m_EditorData {};
     TEntityRef<ZCameraEntity> m_EditorCamera {};
@@ -619,14 +817,19 @@ private:
 
     std::map<std::string, PinLists> m_ClassToInputAndOutputPins;
     std::vector<std::pair<std::string, STypeID*>> m_PinDataTypes;
-    STypeID* m_InputPinTypeID = nullptr;
-    void* m_InputPinData = nullptr;
-    STypeID* m_OutputPinTypeID = nullptr;
-    void* m_OutputPinData = nullptr;
+    ZObjectRef m_InputPinValue;
+    ZObjectRef m_OutputPinValue;
 
     std::vector<std::string> m_ClassNames;
 
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
+
+    ZRenderGraphNodeBoxReflection* m_SelectedBoxReflectionGraphNode = nullptr;
+    BoxReflectionPreview m_BoxReflectionPreview;
+
+    bool m_EnableBoxReflectionCache = true;
+
+    std::string m_BoxReflectionOutputFolder;
 };
 
 DECLARE_ZHM_PLUGIN(Editor)

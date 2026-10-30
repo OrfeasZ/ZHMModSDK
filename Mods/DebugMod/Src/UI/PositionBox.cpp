@@ -6,19 +6,18 @@
 #include <Glacier/ZCameraEntity.h>
 
 void DebugMod::DrawPositionBox(bool p_HasFocus) {
-    if (!p_HasFocus || !m_PositionsMenuActive) {
+    if (!p_HasFocus || !m_ShowPositionsWindow) {
         return;
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    const auto s_Showing = ImGui::Begin("POSITIONS", &m_PositionsMenuActive);
+    const auto s_IsWindowExpanded = ImGui::Begin("Positions", &m_ShowPositionsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
-    if (s_Showing) {
+    if (s_IsWindowExpanded) {
         SMatrix s_HitmanTrans;
         SMatrix s_CameraTrans;
-
-        // Enable Hitman input.
+		
         if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
             auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
 
@@ -33,7 +32,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
             constexpr uint8_t s_ColumnCount = 4;
             constexpr uint8_t s_RowCount = 4;
 
-            ImGui::TextUnformatted("Hitman Transform:");
+            ImGui::TextUnformatted("Hitman transform:");
 
             if (ImGui::BeginTable("DebugMod_HitmanPosition", s_ColumnCount)) {
                 for (uint8_t rowIndex = 0; rowIndex < s_RowCount; ++rowIndex) {
@@ -47,7 +46,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
 
                 ImGui::EndTable();
 
-                if (ImGui::Button("Copy Hitman Transform")) {
+                if (ImGui::Button("Copy hitman transform")) {
                     CopyToClipboard(fmt::format("{}", s_HitmanTrans));
                 }
 
@@ -91,7 +90,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
                 }
             }
 
-            ImGui::TextUnformatted("Camera Transform:");
+            ImGui::TextUnformatted("Camera transform:");
 
             if (ImGui::BeginTable("DebugMod_Camera_Position", s_ColumnCount)) {
                 for (uint8_t rowIndex = 0; rowIndex < s_RowCount; ++rowIndex) {
@@ -106,7 +105,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
                 ImGui::EndTable();
             }
 
-            if (ImGui::Button("Copy Camera Transform")) {
+            if (ImGui::Button("Copy camera transform")) {
                 CopyToClipboard(fmt::format("{}", s_CameraTrans));
             }
 
@@ -150,6 +149,7 @@ void DebugMod::DrawPositionBox(bool p_HasFocus) {
             }
         }
     }
+	
     ImGui::PopFont();
     ImGui::End();
     ImGui::PopFont();

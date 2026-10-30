@@ -44,10 +44,10 @@ void Noclip::OnEngineInitialized() {
         "Fast=hold(kb,lshift) | hold(kb,rshift);};";
 
     if (ZInputActionManager::AddBindings(binds)) {
-        Logger::Debug("Successfully added bindings.");
+        Logger::Debug("[Noclip] Successfully added bindings.");
     }
     else {
-        Logger::Debug("Failed to add bindings.");
+        Logger::Debug("[Noclip] Failed to add bindings.");
     }
 }
 
@@ -56,7 +56,7 @@ void Noclip::Init() {
 }
 
 void Noclip::OnDrawMenu() {
-    if (ImGui::Checkbox(ICON_MD_SELF_IMPROVEMENT " Noclip", &m_NoclipEnabled)) {
+    if (ImGui::Checkbox(ICON_MD_SELF_IMPROVEMENT " NOCLIP", &m_NoclipEnabled)) {
         if (m_NoclipEnabled) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                 if (const auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>())
@@ -124,7 +124,7 @@ void Noclip::TogglePlayerMovement() {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman) {
-        Logger::Debug("Local player is not alive.");
+        Logger::Debug("[Noclip] Local player is not alive.");
 
         return;
     }
@@ -156,7 +156,7 @@ bool Noclip::CreateHM5CrippleBoxEntity() {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
-        Logger::Debug("Scene not loaded.");
+        Logger::Debug("[Noclip] Scene not loaded.");
 
         return false;
     }
@@ -167,7 +167,7 @@ bool Noclip::CreateHM5CrippleBoxEntity() {
     Globals::ResourceManager->GetResourcePtr(s_CrippleBoxFactory, s_CrippleBoxFactoryId, 0);
 
     if (!s_CrippleBoxFactory) {
-        Logger::Debug("Resource is not loaded.");
+        Logger::Debug("[Noclip] Resource is not loaded.");
 
         return false;
     }
@@ -185,7 +185,7 @@ bool Noclip::CreateHM5CrippleBoxEntity() {
     );
 
     if (!m_HM5CrippleBoxEntity) {
-        Logger::Debug("Failed to spawn entity.");
+        Logger::Debug("[Noclip] Failed to spawn entity.");
 
         return false;
     }

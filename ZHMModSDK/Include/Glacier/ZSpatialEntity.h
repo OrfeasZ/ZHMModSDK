@@ -7,7 +7,7 @@
 #include "Functions.h"
 
 class ZSpatialEntity :
-        public ZEntityImpl {
+    public ZEntityImpl {
 public:
     enum ERoomBehaviour {
         ROOM_STATIC                = 0,
@@ -37,6 +37,9 @@ public:
     virtual void ZSpatialEntity_unk39() = 0;
     virtual void ZSpatialEntity_unk40() = 0;
     virtual void ZSpatialEntity_unk41() = 0;
+    virtual void ZSpatialEntity_unk42() = 0;
+    virtual void ZSpatialEntity_unk43() = 0;
+    virtual void ZSpatialEntity_unk44() = 0;
 
 public:
     SMatrix GetObjectToWorldMatrix() const {
@@ -89,7 +92,7 @@ static_assert(offsetof(ZSpatialEntity, m_mTransform) == 0x20);
 static_assert(sizeof(ZSpatialEntity) == 0xA0);
 
 class ZBoundedEntity :
-        public ZSpatialEntity {
+    public ZSpatialEntity {
 public:
     SVector3 m_vCenter; // 0xA0
     SVector3 m_vHalfSize; // 0xAC
