@@ -14,6 +14,7 @@ struct LoggerList {
 };
 
 ZHMSDK_API LoggerList GetLoggers();
+ZHMSDK_API void FlushLoggers();
 
 namespace Logger {
     template <typename... Args>
