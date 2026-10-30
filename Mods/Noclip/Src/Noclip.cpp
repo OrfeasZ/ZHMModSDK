@@ -41,7 +41,7 @@ void Noclip::OnEngineInitialized() {
         "Backward=hold(kb,s);"
         "Left=hold(kb,a);"
         "Right=hold(kb,d);"
-        "Fast=hold(kb,lshift) | hold(kb,rshift);};";
+        "Fast=| hold(kb,lshift) hold(kb,rshift);};";
 
     if (ZInputActionManager::AddBindings(binds)) {
         Logger::Debug("[Noclip] Successfully added bindings.");
