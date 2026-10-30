@@ -9,6 +9,6 @@ endif()
 
 # DirectXTex pulls in OpenMP which isn't linked statically, so we turn it off to avoid
 # having to ship the VC++ redist.
-if(${PORT} STREQUAL "directxtex")
+if(PORT STREQUAL "directxtex")
 	list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DBC_USE_OPENMP=OFF")
 endif()
