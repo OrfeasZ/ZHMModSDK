@@ -13,6 +13,9 @@
 
 #include "semver.hpp"
 
+#include <imgui.h>
+#include <imgui_internal.h>
+
 static HMODULE LoadLibrarySilent(LPCSTR p_Path) {
     // Prevent LoadLibrary from showing "entry point could not be located"
     // and similar errors when trying to load a mod that's no longer compatible
@@ -22,6 +25,46 @@ static HMODULE LoadLibrarySilent(LPCSTR p_Path) {
     const auto s_Module = LoadLibraryA(p_Path);
     SetErrorMode(s_DwMode);
     return s_Module;
+}
+
+// Mods link imgui statically (imgui::imgui is a PUBLIC dependency of ZHMModSDK), so each mod
+// has its own copy of the imgui code while drawing into the SDK's shared context. The stack
+// layout extension registers context hooks (NewFramePre / EndFramePre / Shutdown) from
+// whichever module first draws an item, with callbacks pointing into *that* module. Nothing
+// removes them when the mod is unloaded, so the next ImGui::NewFrame() / EndFrame() calls
+// into the freed DLL and the game crashes (access violation executing
+// StackLayout_EndFramePreCallback inside the unloaded module).
+//
+// Remove every hook whose callback lives inside the module before it's freed. This is done
+// SDK-side (instead of in the mod's CleanupUI) so it also covers mods built against older
+// SDK headers. RemoveContextHook only marks the hook as pending removal, so this is safe to
+// call while a frame is in progress; imgui erases it at the start of the next frame.
+static size_t RemoveImGuiContextHooksForModule(HMODULE p_Module) {
+    auto* s_Context = ModSDK::GetInstance()->GetImGuiContext();
+
+    if (!s_Context || !p_Module)
+        return 0;
+
+    const auto s_Base = reinterpret_cast<uintptr_t>(p_Module);
+    const auto* s_DosHeader = reinterpret_cast<const IMAGE_DOS_HEADER*>(s_Base);
+    const auto* s_NtHeaders = reinterpret_cast<const IMAGE_NT_HEADERS*>(s_Base + s_DosHeader->e_lfanew);
+    const uintptr_t s_End = s_Base + s_NtHeaders->OptionalHeader.SizeOfImage;
+
+    size_t s_Removed = 0;
+
+    for (const ImGuiContextHook& s_Hook : s_Context->Hooks) {
+        if (s_Hook.Type == ImGuiContextHookType_PendingRemoval_)
+            continue;
+
+        const auto s_Callback = reinterpret_cast<uintptr_t>(s_Hook.Callback);
+
+        if (s_Callback >= s_Base && s_Callback < s_End) {
+            ImGui::RemoveContextHook(s_Context, s_Hook.HookId);
+            ++s_Removed;
+        }
+    }
+
+    return s_Removed;
 }
 
 ModLoader::ModLoader() {}
@@ -356,6 +399,10 @@ void ModLoader::UnloadMod(const std::string& p_Name) {
 
     delete s_ModMapIt->second.PluginInterface;
     delete s_ModMapIt->second.Settings;
+
+    if (const size_t s_RemovedHooks = RemoveImGuiContextHooksForModule(s_ModMapIt->second.Module))
+        Logger::Debug("Removed {} ImGui context hook(s) registered by mod '{}'.", s_RemovedHooks, p_Name);
+
     FreeLibrary(s_ModMapIt->second.Module);
 
     m_LoadedMods.erase(s_ModMapIt);
