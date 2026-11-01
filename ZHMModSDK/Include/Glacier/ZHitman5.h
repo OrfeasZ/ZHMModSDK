@@ -411,6 +411,8 @@ public:
     PAD(0x228); // 0x0
     TCheatProtect<float> m_fHitPoints; // 0x228
     TCheatProtect<float> m_fMaxHitPoints; // 0x238
+    PAD(0x258); // 0x248
+    TCheatProtect<bool> m_bInvincible; // 0x4A0
 };
 
 class ZHM5BaseController {
@@ -486,7 +488,9 @@ public:
     TEntityRef<ZHeroInteractionController> m_pInteractionController; // 0xEE0
     TEntityRef<ZHeroActorTagController> m_pActorTagController; // 0xEF0
     TEntityRef<ZCharacter> m_pCharacter; // 0xF00
-    PAD(0x100); // 0xF10
+    PAD(0x7C); // 0xF10
+    bool m_bIsHiding; // 0xF8C
+    PAD(0x83); // 0xF8D
     TEntityRef<ZGlobalOutfitKit> m_rOutfitKit; // 0x1010
     int32 m_nOutfitCharset; // 0x1020
     int32 m_nOutfitVariation; // 0x1024

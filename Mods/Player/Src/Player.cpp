@@ -57,12 +57,25 @@ void Player::OnDrawUI(const bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_IsWindowExpanded) {
-        if (ImGui::Checkbox("Is invincible", &m_IsInvincible)) {
-            ToggleInvincibility();
+        ImGui::BeginDisabled(!s_LocalHitman);
+
+        ZHitman5* s_Hitman = s_LocalHitman.m_pInterfaceRef;
+        ZHM5Health* s_Health = s_Hitman ? s_Hitman->m_pHealth : nullptr;
+
+        bool s_IsInvincible = s_Health ? s_Health->m_bInvincible.Get() : false;
+
+        ImGui::BeginDisabled(!s_Health);
+
+        if (ImGui::Checkbox("Is invincible", &s_IsInvincible)) {
+            s_Health->m_bInvincible.Set(s_IsInvincible);
         }
 
-        if (ImGui::Checkbox("Is invisible", &m_IsInvisible)) {
-            ToggleInvisibility();
+        ImGui::EndDisabled();
+
+        bool s_IsInvisible = s_Hitman ? s_Hitman->m_bIsHiding : false;
+
+        if (ImGui::Checkbox("Is invisible", &s_IsInvisible)) {
+            s_Hitman->m_bIsHiding = s_IsInvisible;
         }
 
         if (ImGui::Checkbox("Infinite ammo", &m_IsInfiniteAmmoEnabled)) {
@@ -348,10 +361,10 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
             for (size_t i = 0; i < s_Hm5ActionManager->m_Actions.size(); ++i) {
                 const ZHM5Action* s_Action = s_Hm5ActionManager->m_Actions[i];
-				
-			    if (!s_Action) {
-				    continue;
-			    }
+
+                if (!s_Action) {
+                    continue;
+                }
 
                 if (s_Action->m_eActionType == EActionType::AT_PICKUP) {
                     const ZHM5Item* s_Item = s_Action->m_Object.QueryInterface<ZHM5Item>();
@@ -379,6 +392,8 @@ void Player::OnDrawUI(const bool p_HasFocus) {
                 );
             }
         }
+
+        ImGui::EndDisabled();
     }
 
     ImGui::PopFont();
@@ -468,34 +483,6 @@ void Player::EquipOutfit(
     }
 }
 
-void Player::ToggleInvincibility() {
-    bool s_IsAICrippleEntityCreated = m_AICrippleEntity;
-
-    if (!s_IsAICrippleEntityCreated) {
-        s_IsAICrippleEntityCreated = CreateAICrippleEntity();
-    }
-
-    if (s_IsAICrippleEntityCreated) {
-        const std::string s_PinName = m_IsInvincible ? "SetHeroInvincible" : "SetHeroVulnerable";
-
-        m_AICrippleEntity.SignalInputPin(s_PinName);
-    }
-}
-
-void Player::ToggleInvisibility() {
-    bool s_IsAICrippleEntityCreated = m_AICrippleEntity;
-
-    if (!s_IsAICrippleEntityCreated) {
-        s_IsAICrippleEntityCreated = CreateAICrippleEntity();
-    }
-
-    if (s_IsAICrippleEntityCreated) {
-        const std::string s_PinName = m_IsInvisible ? "SetHeroHidden" : "SetHeroVisible";
-
-        m_AICrippleEntity.SignalInputPin(s_PinName);
-    }
-}
-
 void Player::ToggleInfiniteAmmo() {
     if (m_IsInfiniteAmmoEnabled) {
         auto s_LocalHitman = SDK()->GetLocalPlayer();
@@ -521,54 +508,14 @@ void Player::ToggleInfiniteAmmo() {
 
             s_HM5CrippleBox->Activate(0);
         }
-    } else {
+    }
+    else {
         if (m_HM5CrippleBoxEntity) {
             Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
 
             m_HM5CrippleBoxEntity = {};
         }
     }
-}
-
-bool Player::CreateAICrippleEntity() {
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
-
-    if (!s_Scene) {
-        Logger::Error("[Player] Scene not loaded!");
-
-        return false;
-    }
-
-    constexpr auto s_AICrippleEntityFactoryId = ResId<"[modules:/zaicrippleentity.class].pc_entitytype">;
-
-    TResourcePtr<ZTemplateEntityFactory> s_AICrippleEntityFactory;
-    Globals::ResourceManager->LoadResource(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId);
-
-    if (!s_AICrippleEntityFactory) {
-        Logger::Error("[Player] Resource is not loaded!");
-
-        return false;
-    }
-
-    SExternalReferences s_ExternalRefs;
-
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager,
-        m_AICrippleEntity,
-        "",
-        s_AICrippleEntityFactory,
-        s_Scene.m_entityRef,
-        s_ExternalRefs,
-        -1
-    );
-
-    if (!m_AICrippleEntity) {
-        Logger::Error("[Player] Failed to spawn AI Cripple Entity entity!");
-
-        return false;
-    }
-
-    return true;
 }
 
 bool Player::CreateHM5CrippleBoxEntity() {
@@ -613,20 +560,12 @@ bool Player::CreateHM5CrippleBoxEntity() {
 }
 
 DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
-    if (m_AICrippleEntity) {
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_AICrippleEntity, {});
-
-        m_AICrippleEntity = {};
-    }
-
     if (m_HM5CrippleBoxEntity) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
 
         m_HM5CrippleBoxEntity = {};
     }
 
-    m_IsInvincible = false;
-    m_IsInvisible = false;
     m_IsInfiniteAmmoEnabled = false;
     m_GlobalOutfitKit = {};
 
@@ -640,7 +579,9 @@ DEFINE_PLUGIN_DETOUR(
     ZSecuritySystemCameraManager* th,
     const SGameUpdateEvent& updateEvent
 ) {
-    if (m_IsInvisible) {
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+    if (s_LocalHitman && s_LocalHitman.m_pInterfaceRef->m_bIsHiding) {
         return { HookAction::Return() };
     }
 
@@ -654,7 +595,9 @@ DEFINE_PLUGIN_DETOUR(
     ZSecuritySystemCamera* th,
     const SGameUpdateEvent& updateEvent
 ) {
-    if (m_IsInvisible) {
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+    if (s_LocalHitman && s_LocalHitman.m_pInterfaceRef->m_bIsHiding) {
         return { HookAction::Return() };
     }
 

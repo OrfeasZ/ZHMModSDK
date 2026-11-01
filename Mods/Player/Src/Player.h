@@ -20,10 +20,7 @@ private:
         const std::string& s_CharSetCharacterType, uint8_t n_OutfitVariationIndex, ZHitman5* p_Hitman
     );
 
-    void ToggleInvincibility();
-    void ToggleInvisibility();
     void ToggleInfiniteAmmo();
-    bool CreateAICrippleEntity();
     bool CreateHM5CrippleBoxEntity();
 
     DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
@@ -70,8 +67,6 @@ private:
     DECLARE_PLUGIN_DETOUR(Player, bool, ZActor_YouGotHit, IBaseCharacter* th, const SHitInfo& hitInfo);
 
     bool m_ShowPlayerWindow = false;
-    bool m_IsInvincible = false;
-    bool m_IsInvisible = false;
     bool m_IsInfiniteAmmoEnabled = false;
     bool m_IsNoReloadEnabled = false;
     bool m_IsNoRecoilEnabled = false;
@@ -83,7 +78,6 @@ private:
 
     TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
 
-    ZEntityRef m_AICrippleEntity;
     ZEntityRef m_HM5CrippleBoxEntity;
 };
 
