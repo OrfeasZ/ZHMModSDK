@@ -192,15 +192,18 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
 
             if (m_RenderPlayerHealth) {
                 const auto s_HM5Health = s_LocalHitman.m_pInterfaceRef->m_pHealth;
-                const auto s_Health = (s_HM5Health->m_fHitPoints / s_HM5Health->m_fMaxHitPoints) * 100.f;
-                char s_Buffer[64];
 
-                snprintf(s_Buffer, sizeof(s_Buffer), "Health: %.0f%%", s_Health);
+                if (s_HM5Health) {
+                    const auto s_Health = (s_HM5Health->m_fHitPoints / s_HM5Health->m_fMaxHitPoints) * 100.f;
+                    char s_Buffer[64];
 
-                s_Text += s_Buffer;
+                    snprintf(s_Buffer, sizeof(s_Buffer), "Health: %.0f%%", s_Health);
+
+                    s_Text += s_Buffer;
+                }
             }
 
-            if (m_RenderPlayerOutfitHitPoints) {
+            if (m_RenderPlayerOutfitHitPoints && s_LocalHitman.m_pInterfaceRef->m_rOutfitKit) {
                 if (s_Text.length() > 0) {
                     s_Text += "\n\n";
                 }
@@ -313,7 +316,7 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                     s_Text += s_Buffer;
                 }
 
-                if (m_RenderActorOutfitHitPoints) {
+                if (m_RenderActorOutfitHitPoints && s_Actor->m_rOutfit) {
                     if (s_Text.length() > 0) {
                         s_Text += "\n\n";
                     }
