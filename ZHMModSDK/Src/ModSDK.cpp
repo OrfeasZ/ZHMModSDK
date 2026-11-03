@@ -68,6 +68,7 @@ G2DefaultRetailExceptionHandler_t GetG2ExceptionHandler() {
 #include "DebugConsole.h"
 
 #endif
+#include <implot.h>
 
 extern void SetupLogging(spdlog::level::level_enum p_LogLevel);
 
@@ -1325,6 +1326,10 @@ ImFont* ModSDK::GetImGuiBlackFont() {
 
 ImPlotContext* ModSDK::GetImPlotContext() {
     return m_ImguiRenderer->GetImPlotContext();
+}
+
+void ModSDK::SetImPlotContext(ImPlotContext* p_Context) {
+    ImPlot::SetCurrentContext(p_Context);
 }
 
 bool ModSDK::GetPinName(int32_t p_PinId, ZString& p_Name) {
