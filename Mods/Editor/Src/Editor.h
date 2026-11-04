@@ -21,6 +21,7 @@
 #include "Glacier/ZAction.h"
 #include "Glacier/ZSound.h"
 #include "Glacier/ZSequence.h"
+#include "Glacier/ZCover.h"
 
 #include "IPluginInterface.h"
 #include "ImGuizmo.h"
@@ -333,10 +334,24 @@ private:
     void InitializeDebugChannels();
     void InitializeDebugEntityTypeIDs();
     void DrawDebugEntities(IRenderer* p_Renderer);
-    void DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer);
-    void DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer);
+    bool DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer);
+    bool DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer);
     void DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Renderer);
     void DrawShapes(ZSequenceEntity* p_SequenceEntity, IRenderer* p_Renderer);
+    void DrawShapes(ZCoverPlane* p_CoverPlane, IRenderer* p_Renderer);
+
+    template <typename T>
+    void DrawShapeOptions();
+
+    void DrawShapeOptions(const std::string& p_TypeName, bool p_Disabled);
+    void DrawShapeOptions(ZSoundGateEntity* p_SoundGateEntity);
+    void DrawShapeOptions(ZCoverPlane* p_CoverPlane);
+
+    void DrawDebugEntityID(
+        ZSpatialEntity* p_Entity,
+        IRenderer* p_Renderer
+    );
+
     void GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTreeNode);
     void AddDebugEntity(
         const ZEntityRef p_EntityRef,
@@ -779,13 +794,16 @@ private:
     bool m_DrawShapes = false;
     DebugDrawMode m_ShapeDrawMode = DebugDrawMode::SelectedChannelsAndTypes;
 
+    bool m_DrawEntityIDs = false;
+
     ZEntityRef m_SelectedDebugEntity = nullptr;
 
-    bool m_DrawCoverInvalidOnNPCErrors = true;
+    bool m_DrawInvalidCoverOnNPCError = true;
     bool m_DrawHeroGuidesSolid = false;
-    bool m_AlwaysDrawDebugBoxForColiValidityCheck = false;
+    bool m_AlwaysDrawDebugBoxForCollisionValidityCheck = false;
     bool m_DrawPushDebug = false;
     bool m_DrawSafeZones = true;
+    bool m_DrawNPCFlags = true;
 
     bool m_ShowSoundOcclusion = false;
 

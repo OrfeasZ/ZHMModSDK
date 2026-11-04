@@ -1737,7 +1737,53 @@ void DirectXTKRenderer::DrawSphere3D(
         p_Color.w
     };
 
+    const bool s_WasFrustumCullingEnabled = m_IsFrustumCullingEnabled;
+    m_IsFrustumCullingEnabled = false;
+
     DrawSphere3DOutlinedShaded(s_Transform, p_Size, s_Color.GetAsUInt32(), 48.f, false);
+
+    m_IsFrustumCullingEnabled = s_WasFrustumCullingEnabled;
+}
+
+void DirectXTKRenderer::DrawCircle3D(
+    const SVector3& p_Center,
+    const SVector3& p_Size,
+    const SVector3& p_Normal,
+    const SVector3& p_StartDir,
+    const SVector4& p_Color,
+    float p_Steps
+) {
+    const float s_Radius = std::max(p_Size.x, p_Size.y);
+
+    if (m_IsFrustumCullingEnabled &&
+        !IsSphereInsideViewFrustum(p_Center, s_Radius)) {
+        return;
+    }
+
+    ZCircleGenerator s_CircleGenerator;
+
+    s_CircleGenerator.Init(
+        p_Center,
+        p_Size,
+        p_Normal,
+        p_StartDir,
+        2.0f * std::numbers::pi_v<float>,
+        p_Steps
+    );
+
+    const bool s_WasFrustumCullingEnabled = m_IsFrustumCullingEnabled;
+    m_IsFrustumCullingEnabled = false;
+
+    while (s_CircleGenerator.MoveNext()) {
+        DrawLine3D(
+            s_CircleGenerator.m_v1,
+            s_CircleGenerator.m_v2,
+            p_Color,
+            p_Color
+        );
+    }
+
+    m_IsFrustumCullingEnabled = s_WasFrustumCullingEnabled;
 }
 
 void DirectXTKRenderer::DrawSphere3DOutlinedShaded(

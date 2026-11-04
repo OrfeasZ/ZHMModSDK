@@ -365,11 +365,17 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
             ImGui::EndDisabled();
             ImGui::Unindent();
 
+            ImGui::Separator();
+
+            ImGui::BeginDisabled(!m_DrawGizmos && !m_DrawShapes);
+            ImGui::Checkbox("Draw entity IDs", &m_DrawEntityIDs);
+            ImGui::EndDisabled();
+
             const bool s_UseChannelAndTypeNameFilters =
                 (m_DrawGizmos &&
-                 m_GizmoDrawMode == DebugDrawMode::SelectedChannelsAndTypes) ||
+                    m_GizmoDrawMode == DebugDrawMode::SelectedChannelsAndTypes) ||
                 (m_DrawShapes &&
-                 m_ShapeDrawMode == DebugDrawMode::SelectedChannelsAndTypes);
+                    m_ShapeDrawMode == DebugDrawMode::SelectedChannelsAndTypes);
 
             ImGui::BeginDisabled(!s_UseChannelAndTypeNameFilters);
 
@@ -407,7 +413,7 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
                             );
                             };
 
-                        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 400.f);
+                        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 500.f);
                         ImGui::TableSetupColumn(
                             "Gizmo",
                             ImGuiTableColumnFlags_WidthFixed,
@@ -461,16 +467,7 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
                             );
                             ImGui::EndDisabled();
 
-                            if (s_TypeName == "ZSoundGateEntity") {
-                                ImGui::TableNextRow();
-                                ImGui::TableNextColumn();
-
-                                ImGui::Indent();
-                                ImGui::BeginDisabled(!s_DrawShapes || !s_DrawShape);
-                                ImGui::Checkbox("Show sound occlusion", &m_ShowSoundOcclusion);
-                                ImGui::EndDisabled();
-                                ImGui::Unindent();
-                            }
+                            DrawShapeOptions(s_TypeName, !s_DrawShapes || !s_DrawShape);
                         }
 
                         ImGui::EndTable();
@@ -503,61 +500,71 @@ void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
 
     std::scoped_lock s_Lock(m_DebugEntitiesMutex);
 
-    const bool s_DrawGizmosForSelectedEntity = m_DrawGizmos && m_GizmoDrawMode == DebugDrawMode::SelectedEntity;
-    const bool s_DrawShapesForSelectedEntity = m_DrawShapes && m_ShapeDrawMode == DebugDrawMode::SelectedEntity;
-
-    const bool s_DrawOtherGizmos = m_DrawGizmos && m_GizmoDrawMode != DebugDrawMode::SelectedEntity;
-    const bool s_DrawOtherShapes = m_DrawShapes && m_ShapeDrawMode != DebugDrawMode::SelectedEntity;
-
     p_Renderer->SetDistanceCullingEnabled(true);
 
-    if (s_DrawGizmosForSelectedEntity || s_DrawShapesForSelectedEntity) {
-        const auto s_Iterator = m_EntityRefToDebugEntities.find(m_SelectedEntity);
+    for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
+        bool s_DrawEntityID = false;
+        ZSpatialEntity* s_SpatialEntity = nullptr;
 
-        if (s_Iterator != m_EntityRefToDebugEntities.end()) {
-            for (const auto& s_DebugEntity : s_Iterator->second) {
-                if (s_DebugEntity->m_HasGizmo) {
-                    if (s_DrawGizmosForSelectedEntity) {
-                        DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
-                    }
+        const bool s_IsSelectedEntity = s_EntityRef == m_SelectedEntity;
+
+        const bool s_DrawGizmos =
+            m_DrawGizmos &&
+            (m_GizmoDrawMode != DebugDrawMode::SelectedEntity || s_IsSelectedEntity);
+
+        const bool s_DrawShapes =
+            m_DrawShapes &&
+            (m_ShapeDrawMode != DebugDrawMode::SelectedEntity || s_IsSelectedEntity);
+
+        if (!s_DrawGizmos && !s_DrawShapes) {
+            continue;
+        }
+
+        for (const auto& s_DebugEntity : s_DebugEntities) {
+            bool s_WasDrawn = false;
+
+            if (s_DebugEntity->m_HasGizmo) {
+                if (s_DrawGizmos) {
+                    s_WasDrawn = DrawGizmo(
+                        static_cast<GizmoEntity&>(*s_DebugEntity),
+                        p_Renderer
+                    );
                 }
-                else if (s_DrawShapesForSelectedEntity) {
-                    DrawShapes(*s_DebugEntity, p_Renderer);
+            }
+            else if (s_DrawShapes) {
+                s_WasDrawn = DrawShapes(*s_DebugEntity, p_Renderer);
+            }
+
+            if (s_WasDrawn) {
+                s_DrawEntityID = true;
+
+                if (!s_SpatialEntity) {
+                    s_SpatialEntity =
+                        s_DebugEntity->m_EntityRef.QueryInterface<ZSpatialEntity>();
                 }
             }
         }
-    }
 
-    if (s_DrawOtherGizmos || s_DrawOtherShapes) {
-        for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
-            for (const auto& s_DebugEntity : s_DebugEntities) {
-                if (s_DebugEntity->m_HasGizmo) {
-                    if (s_DrawOtherGizmos) {
-                        DrawGizmo(static_cast<GizmoEntity&>(*s_DebugEntity), p_Renderer);
-                    }
-                }
-                else if (s_DrawOtherShapes) {
-                    DrawShapes(*s_DebugEntity, p_Renderer);
-                }
-            }
+        if (s_DrawEntityID && s_SpatialEntity) {
+            DrawDebugEntityID(s_SpatialEntity, p_Renderer);
         }
     }
 
     p_Renderer->SetDistanceCullingEnabled(false);
 }
 
-void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
+bool Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
     if (!m_DrawGizmos) {
-        return;
+        return false;
     }
 
     if (m_GizmoDrawMode == DebugDrawMode::SelectedChannelsAndTypes) {
         if (!m_DebugChannelToGizmoState[p_GizmoEntity.m_DebugChannel]) {
-            return;
+            return false;
         }
 
         if (!m_DebugChannelToTypeNameToGizmoState[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
-            return;
+            return false;
         }
     }
 
@@ -567,21 +574,21 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
 
         if (s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() !=
             ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">
-        ) {
-            return;
+            ) {
+            return false;
         }
 
         if (!s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() ==
             ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">
-        ) {
-            return;
+            ) {
+            return false;
         }
     }
     else if (p_GizmoEntity.m_DebugChannel == EDebugChannel::DEBUGCHANNEL_DEFAULT &&
         p_GizmoEntity.m_TypeName == "ZPureWaveModifierEntity" &&
         p_GizmoEntity.m_RuntimeResourceID.GetID() ==
         ResId<"[assembly:/geometry/g2/gizmos.wl2?/unit_circle.prim].pc_prim">
-    ) {
+        ) {
         const float s_Radius = p_GizmoEntity.m_EntityRef.GetProperty<float>("m_fRadius").Get();
 
         if (p_GizmoEntity.m_Transform.XAxis.x != s_Radius) {
@@ -613,7 +620,7 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
 
     if (!s_pRenderPrimitiveResource) {
         Logger::Error("[Editor] PRIM of {:016x} gizmo isn't installed!", p_GizmoEntity.m_RuntimeResourceID.GetID());
-        return;
+        return false;
     }
 
     for (size_t j = 0; j < s_pRenderPrimitiveResource->m_Primitives.size(); ++j) {
@@ -634,24 +641,34 @@ void Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
             p_GizmoEntity.m_Color
         );
     }
+
+    return true;
 }
 
-void Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer) {
+bool Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer) {
     if (!m_DrawShapes) {
-        return;
+        return false;
     }
 
     if (m_ShapeDrawMode == DebugDrawMode::SelectedChannelsAndTypes) {
         if (!m_DebugChannelToShapeState[p_DebugEntity.m_DebugChannel]) {
-            return;
+            return false;
         }
 
         if (!m_DebugChannelToTypeNameToShapeState[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
-            return;
+            return false;
         }
     }
 
-    if (p_DebugEntity.m_TypeName == "ZSoundGateEntity") {
+    if (p_DebugEntity.m_TypeName == "ZCoverPlane") {
+        DrawShapes(
+            p_DebugEntity.m_EntityRef.QueryInterface<ZCoverPlane>(
+                m_DebugEntityTypeIds[DebugEntityTypeName::CoverPlane]
+            ),
+            p_Renderer
+        );
+    }
+    else if (p_DebugEntity.m_TypeName == "ZSoundGateEntity") {
         DrawShapes(
             p_DebugEntity.m_EntityRef.QueryInterface<ZSoundGateEntity>(
                 m_DebugEntityTypeIds[DebugEntityTypeName::SoundGateEntity]
@@ -667,6 +684,8 @@ void Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer)
             p_Renderer
         );
     }
+
+    return true;
 }
 
 void Editor::DrawShapes(ZSequenceEntity* p_SequenceEntity, IRenderer* p_Renderer) {
@@ -762,6 +781,123 @@ void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Render
     }
 }
 
+void Editor::DrawShapes(ZCoverPlane* p_CoverPlane, IRenderer* p_Renderer) {
+    bool s_HasNPCValidationError = false;
+
+    if (m_DrawInvalidCoverOnNPCError) {
+        s_HasNPCValidationError =
+            ZCoverPlaneDebug::CheckNPCValidity(p_CoverPlane) != ZCoverPlaneDebug::ENPCValidationError::VE_OK;
+    }
+
+    if (p_CoverPlane->IsCoverValid() && p_CoverPlane->m_bEnabled && !s_HasNPCValidationError) {
+        ZCoverPlaneDebug::DrawDebugCoverValid(
+            p_CoverPlane,
+            p_Renderer,
+            m_DrawHeroGuidesSolid,
+            m_AlwaysDrawDebugBoxForCollisionValidityCheck
+        );
+        ZCoverPlaneDebug::DrawDebugNeighborConnectedState(p_CoverPlane, p_Renderer, m_DrawHeroGuidesSolid);
+        ZCoverPlaneDebug::DrawDebugCorners(p_CoverPlane, p_Renderer, m_DrawHeroGuidesSolid);
+        ZCoverPlaneDebug::DrawDebugHeroPushNPCOverRail(p_CoverPlane, p_Renderer, m_DrawHeroGuidesSolid);
+        ZCoverPlaneDebug::DrawDebugRailDebug(p_CoverPlane, p_Renderer);
+        ZCoverPlaneDebug::DrawDebugWindowDebug(p_CoverPlane, p_Renderer);
+        ZCoverPlaneDebug::DrawDebugPushDebug(p_CoverPlane, p_Renderer, m_DrawHeroGuidesSolid, m_DrawPushDebug);
+        ZCoverPlaneDebug::DrawDebugSafeZones(p_CoverPlane, p_Renderer, m_DrawHeroGuidesSolid, m_DrawSafeZones);
+        ZCoverPlaneDebug::DrawDebugNPCFlags(p_CoverPlane, p_Renderer, m_DrawNPCFlags);
+    }
+    else {
+        ZCoverPlaneDebug::DrawDebugCoverInvalid(
+            p_CoverPlane, p_Renderer,
+            m_DrawHeroGuidesSolid,
+            m_AlwaysDrawDebugBoxForCollisionValidityCheck
+        );
+    }
+
+    ZCoverPlaneDebug::DrawDebugNPCValidation(p_CoverPlane, p_Renderer);
+}
+
+template <>
+void Editor::DrawShapeOptions<ZSoundGateEntity>() {
+    ImGui::Checkbox("Show sound occlusion", &m_ShowSoundOcclusion);
+}
+
+template <>
+void Editor::DrawShapeOptions<ZCoverPlane>() {
+    ImGui::Checkbox("Draw invalid cover on NPC error", &m_DrawInvalidCoverOnNPCError);
+    ImGui::Checkbox("Draw hero guides solid", &m_DrawHeroGuidesSolid);
+    ImGui::Checkbox("Always draw debug box for collision validity check", &m_AlwaysDrawDebugBoxForCollisionValidityCheck);
+    ImGui::Checkbox("Draw push debug", &m_DrawPushDebug);
+    ImGui::Checkbox("Draw safe zones", &m_DrawSafeZones);
+    ImGui::Checkbox("Draw NPC flags", &m_DrawNPCFlags);
+}
+
+void Editor::DrawShapeOptions(
+    const std::string& p_TypeName,
+    bool p_Disabled
+) {
+    using DrawOptionsFn = void (Editor::*)();
+
+    static const std::unordered_map<std::string, DrawOptionsFn> s_DrawOptions = {
+        { "ZSoundGateEntity", &Editor::DrawShapeOptions<ZSoundGateEntity> },
+        { "ZCoverPlane", &Editor::DrawShapeOptions<ZCoverPlane> }
+    };
+
+    const auto s_It = s_DrawOptions.find(p_TypeName);
+
+    if (s_It == s_DrawOptions.end()) {
+        return;
+    }
+
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+
+    ImGui::Indent();
+    ImGui::BeginDisabled(p_Disabled);
+
+    (this->*(s_It->second))();
+
+    ImGui::EndDisabled();
+    ImGui::Unindent();
+}
+
+void Editor::DrawDebugEntityID(
+    ZSpatialEntity* p_Entity,
+    IRenderer* p_Renderer
+) {
+    if (!m_DrawEntityIDs || !p_Entity) {
+        return;
+    }
+
+    const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
+
+    if (!s_CurrentCamera) {
+        return;
+    }
+
+    auto s_CameraTransform = s_CurrentCamera->GetObjectToWorldMatrix();
+
+    s_CameraTransform.Trans =
+        p_Entity->GetObjectToWorldMatrix().Trans +
+        float4(0.f, 0.f, 0.25f, 0.f);
+
+    const std::string s_Text = fmt::format(
+        "{:016X}",
+        p_Entity->GetType()->m_nEntityID
+    );
+
+    static const SVector4 s_White = ZColor::UnpackUnsigned(0xFFFFFFFF);
+
+    p_Renderer->DrawText3D(
+        s_Text.c_str(),
+        s_CameraTransform,
+        s_White,
+        0.1f,
+        TextAlignment::Center,
+        TextAlignment::Center,
+        true
+    );
+}
+
 void Editor::DrawTrajectoryTrack(
     IRenderer* p_Renderer,
     ZTrajectoryTrackBase* p_Track,
@@ -855,8 +991,8 @@ void Editor::DrawTrajectoryItem(
         s_PreviousSamplePosition = s_CurrentSamplePosition;
     }
 
-    p_Renderer->DrawSphere3D(SMatrix {}, s_StartPosition, 0.05f, SVector4 { 0.0f, 1.0f, 0.0f, 1.0f });
-    p_Renderer->DrawSphere3D(SMatrix {}, s_PreviousSamplePosition, 0.05f, SVector4 { 1.0f, 0.0f, 0.0f, 1.0f });
+    p_Renderer->DrawSphere3D(SMatrix{}, s_StartPosition, 0.05f, SVector4{ 0.0f, 1.0f, 0.0f, 1.0f });
+    p_Renderer->DrawSphere3D(SMatrix{}, s_PreviousSamplePosition, 0.05f, SVector4{ 1.0f, 0.0f, 0.0f, 1.0f });
 }
 
 SVector3 Editor::EvaluateTrajectoryWorldPosition(
@@ -1046,13 +1182,13 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
         m_DebugEntityTypeIds[DebugEntityTypeName::DarkLightEntity]
     );
 
-    /*if (auto s_CoverPlane = p_EntityTreeNode->Entity.QueryInterface<ZCoverPlane>(
+    if (auto s_CoverPlane = p_EntityTreeNode->Entity.QueryInterface<ZCoverPlane>(
         m_DebugEntityTypeIds[DebugEntityTypeName::CoverPlane]
     )) {
         if (EntityIDMatches(s_CoverPlane, p_EntityTreeNode->EntityId)) {
             AddDebugEntity(p_EntityTreeNode->Entity, "ZCoverPlane", DEBUGCHANNEL_GUIDES_COVER);
         }
-    }*/
+    }
     if (auto s_GuideLadder = p_EntityTreeNode->Entity.QueryInterface<ZGuideLadder>(
         m_DebugEntityTypeIds[DebugEntityTypeName::GuideLadder]
     )) {
@@ -1168,7 +1304,7 @@ void Editor::GetDebugEntities(const std::shared_ptr<EntityTreeNode>& p_EntityTre
     else if (s_LightEntity || s_DarkLightEntity) {
         if (EntityIDMatches(s_LightEntity, p_EntityTreeNode->EntityId) ||
             EntityIDMatches(s_DarkLightEntity, p_EntityTreeNode->EntityId)
-        ) {
+            ) {
             std::string s_TypeName;
 
             if (s_LightEntity) {
@@ -2205,7 +2341,7 @@ void Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
     float s_ClosestDistance = FLT_MAX;
     ZEntityRef s_HitEntity;
     std::string s_HitEntityTypeName;
-    EDebugChannel s_HitEntityDebugChannel {};
+    EDebugChannel s_HitEntityDebugChannel{};
 
     static STypeID* s_SpatialEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZSpatialEntity");
 
@@ -2224,7 +2360,7 @@ void Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
                     case DebugDrawMode::SelectedChannelsAndTypes: {
                         if (!m_DebugChannelToGizmoState[s_GizmoEntity->m_DebugChannel] ||
                             !m_DebugChannelToTypeNameToGizmoState
-                                [s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
+                            [s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
                             continue;
                         }
 
@@ -2318,7 +2454,7 @@ void Editor::RayCastShapes(const SVector3& p_WorldPosition, const SVector3& p_Di
                 case DebugDrawMode::SelectedChannelsAndTypes: {
                     if (!m_DebugChannelToShapeState[s_DebugEntity->m_DebugChannel] ||
                         !m_DebugChannelToTypeNameToShapeState
-                            [s_DebugEntity->m_DebugChannel][s_DebugEntity->m_TypeName]) {
+                        [s_DebugEntity->m_DebugChannel][s_DebugEntity->m_TypeName]) {
                         continue;
                     }
 
@@ -2386,9 +2522,9 @@ bool Editor::RayCastShape(
 ) {
     const SMatrix s_WorldMatrix = p_SoundGateEntity->GetObjectToWorldMatrix();
 
-    const SVector3 s_Center { 0.f, 0.f, 0.f };
+    const SVector3 s_Center{ 0.f, 0.f, 0.f };
 
-    const SVector3 s_Extents {
+    const SVector3 s_Extents{
         p_SoundGateEntity->m_vLocalSize.x,
         p_SoundGateEntity->m_fThicknessSource +
             p_SoundGateEntity->m_fThicknessDestination,
