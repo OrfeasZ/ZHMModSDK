@@ -392,6 +392,11 @@ private:
         ZSequenceEntity* p_SequenceEntity,
         float& p_Distance
     );
+    bool RayCastShape(
+        const DirectX::SimpleMath::Ray& p_Ray,
+        ZCoverPlane* p_CoverPlane,
+        float& p_Distance
+    );
 
     bool RayCastTrajectoryTrack(
         const DirectX::SimpleMath::Ray& p_Ray,

@@ -573,14 +573,12 @@ bool Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
         const bool s_IsOpen = p_GizmoEntity.m_EntityRef.GetProperty<bool>("m_bIsOpen").Get();
 
         if (s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() !=
-            ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">
-            ) {
+            ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">) {
             return false;
         }
 
         if (!s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() ==
-            ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">
-            ) {
+            ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">) {
             return false;
         }
     }
@@ -2504,6 +2502,21 @@ void Editor::RayCastShapes(const SVector3& p_WorldPosition, const SVector3& p_Di
                     s_Distance
                 );
             }
+            else if (s_DebugEntity->m_TypeName == "ZCoverPlane") {
+                auto s_CoverPlane = s_DebugEntity->m_EntityRef.QueryInterface<ZCoverPlane>(
+                    m_DebugEntityTypeIds[DebugEntityTypeName::CoverPlane]
+                );
+
+                if (!s_CoverPlane) {
+                    continue;
+                }
+
+                s_Hit = RayCastShape(
+                    s_Ray,
+                    s_CoverPlane,
+                    s_Distance
+                );
+            }
 
             if (s_Hit && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
                 p_Result.m_Distance = s_Distance;
@@ -2574,6 +2587,53 @@ bool Editor::RayCastShape(
     }
 
     return s_Hit;
+}
+
+bool Editor::RayCastShape(
+    const DirectX::SimpleMath::Ray& p_Ray,
+    ZCoverPlane* p_CoverPlane,
+    float& p_Distance
+) {
+    float4 s_EdgePoints[4];
+    p_CoverPlane->CalcEdgePoints(s_EdgePoints);
+
+    const auto s_ToVector3 = [](const float4& p_Point) {
+        return DirectX::SimpleMath::Vector3(
+            p_Point.x,
+            p_Point.y,
+            p_Point.z
+        );
+        };
+
+    const auto s_P0 = s_ToVector3(s_EdgePoints[0]);
+    const auto s_P1 = s_ToVector3(s_EdgePoints[1]);
+    const auto s_P2 = s_ToVector3(s_EdgePoints[2]);
+    const auto s_P3 = s_ToVector3(s_EdgePoints[3]);
+
+    float s_Distance1 = FLT_MAX;
+    float s_Distance2 = FLT_MAX;
+
+    const bool s_Hit1 = p_Ray.Intersects(
+        s_P0,
+        s_P1,
+        s_P2,
+        s_Distance1
+    );
+
+    const bool s_Hit2 = p_Ray.Intersects(
+        s_P2,
+        s_P1,
+        s_P3,
+        s_Distance2
+    );
+
+    if (!s_Hit1 && !s_Hit2) {
+        return false;
+    }
+
+    p_Distance = std::min(s_Distance1, s_Distance2);
+
+    return true;
 }
 
 bool Editor::RayCastTrajectoryTrack(
