@@ -1477,9 +1477,7 @@ DEFINE_PLUGIN_DETOUR(
         }
     }
 
-    p_Hook->CallOriginal(th, pEntity, externalRefs, unk0);
-
-    return HookResult<void>(HookAction::Return());
+    return HookResult<void>(HookAction::Continue());
 }
 
 DEFINE_PLUGIN_DETOUR(
