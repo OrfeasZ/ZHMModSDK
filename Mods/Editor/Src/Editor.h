@@ -809,6 +809,7 @@ private:
     bool m_DrawPushDebug = false;
     bool m_DrawSafeZones = true;
     bool m_DrawNPCFlags = true;
+    bool m_DrawNPCValidation = true;
 
     bool m_ShowSoundOcclusion = false;
 

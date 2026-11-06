@@ -811,7 +811,7 @@ void Editor::DrawShapes(ZCoverPlane* p_CoverPlane, IRenderer* p_Renderer) {
         );
     }
 
-    ZCoverPlaneDebug::DrawDebugNPCValidation(p_CoverPlane, p_Renderer);
+    ZCoverPlaneDebug::DrawDebugNPCValidation(p_CoverPlane, p_Renderer, m_DrawNPCValidation);
 }
 
 template <>
@@ -827,6 +827,7 @@ void Editor::DrawShapeOptions<ZCoverPlane>() {
     ImGui::Checkbox("Draw push debug", &m_DrawPushDebug);
     ImGui::Checkbox("Draw safe zones", &m_DrawSafeZones);
     ImGui::Checkbox("Draw NPC flags", &m_DrawNPCFlags);
+    ImGui::Checkbox("Draw NPC validation", &m_DrawNPCValidation);
 }
 
 void Editor::DrawShapeOptions(

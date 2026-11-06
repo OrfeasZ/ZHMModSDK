@@ -875,9 +875,9 @@ public:
     static void DrawDebugNPCFlags(
         ZCoverPlane* p_CoverPlane,
         IRenderer* p_Renderer,
-        bool p_DrawNpcFlags
+        bool p_DrawNPCFlags
     ) {
-        if (!p_DrawNpcFlags) {
+        if (!p_DrawNPCFlags) {
             return;
         }
 
@@ -932,8 +932,13 @@ public:
 
     static void DrawDebugNPCValidation(
         ZCoverPlane* p_CoverPlane,
-        IRenderer* p_Renderer
+        IRenderer* p_Renderer,
+        bool p_DrawNPCValidation
     ) {
+        if (!p_DrawNPCValidation) {
+            return;
+        }
+
         const auto s_ValidationError = CheckNPCValidity(p_CoverPlane);
 
         if (s_ValidationError == ENPCValidationError::VE_OK) {
