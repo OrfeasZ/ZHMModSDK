@@ -505,10 +505,10 @@ void Editor::DrawEntityPropertiesWindow() {
                 void* s_Data = m_InputPinValue.AllocateMemory();
 
                 if (p_TypeName == "SMatrix43") {
-                    *static_cast<SMatrix43*>(s_Data) = SMatrix43{};
+                    new (s_Data) SMatrix43{};
                 }
                 else {
-                    memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
+                    p_TypeID->GetTypeInfo()->m_pTypeFunctions->placementConstruct(s_Data);
                 }
             },
             [](auto& p_Pair) -> STypeID* {
@@ -610,10 +610,10 @@ void Editor::DrawEntityPropertiesWindow() {
                 void* s_Data = m_OutputPinValue.AllocateMemory();
 
                 if (p_TypeName == "SMatrix43") {
-                    *static_cast<SMatrix43*>(s_Data) = SMatrix43{};
+                    new (s_Data) SMatrix43{};
                 }
                 else {
-                    memset(s_Data, 0, p_TypeID->GetTypeInfo()->m_nTypeSize);
+                    p_TypeID->GetTypeInfo()->m_pTypeFunctions->placementConstruct(s_Data);
                 }
             },
             [](auto& p_Pair) -> STypeID* {
