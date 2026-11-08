@@ -538,32 +538,72 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     static std::future<std::map<std::string, PinLists>> s_DownloadFuture;
     static bool s_DownloadStarted = false;
     static bool s_DownloadCompleted = false;
+    static int s_DownloadAttempts = 0;
+    static constexpr int s_MaxDownloadAttempts = 5;
+    static auto s_NextRetryTime = std::chrono::steady_clock::time_point{};
 
-    if (m_ClassToInputAndOutputPins.empty() && !s_DownloadStarted) {
+    const auto s_Now = std::chrono::steady_clock::now();
+
+    if (m_ClassToInputAndOutputPins.empty() &&
+        !s_DownloadStarted &&
+        !s_DownloadCompleted &&
+        s_DownloadAttempts < s_MaxDownloadAttempts &&
+        s_Now >= s_NextRetryTime) {
         const std::string s_PinsUrl =
             "https://github.com/glacier-modding/Hitman-Hashes/releases/latest/download/pins.json";
 
         s_DownloadFuture = std::async(
             std::launch::async, [this, s_PinsUrl]() {
-                std::string jsonContent = Util::HttpUtils::DownloadFromUrl(s_PinsUrl);
+                const std::string s_JsonContent = Util::HttpUtils::DownloadFromUrl(s_PinsUrl);
 
-                if (!jsonContent.empty()) {
-                    return ParsePinsJson(jsonContent);
+                if (!s_JsonContent.empty()) {
+                    return ParsePinsJson(s_JsonContent);
                 }
 
-                return std::map<std::string, PinLists>();
-        }
+                return std::map<std::string, PinLists>{};
+            }
         );
 
         s_DownloadStarted = true;
+        ++s_DownloadAttempts;
     }
 
-    if (s_DownloadStarted && !s_DownloadCompleted) {
-        if (s_DownloadFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-            m_ClassToInputAndOutputPins = s_DownloadFuture.get();
+    if (s_DownloadStarted &&
+        s_DownloadFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        try {
+            auto s_Pins = s_DownloadFuture.get();
+
+            if (s_Pins.empty()) {
+                throw std::runtime_error("Pin list is empty.");
+            }
+
+            m_ClassToInputAndOutputPins = std::move(s_Pins);
             s_DownloadCompleted = true;
-            Logger::Debug("[Editor] Pin list download complete! Loaded {} classes.", m_ClassToInputAndOutputPins.size());
+
+            Logger::Debug(
+                "[Editor] Pin list download complete! Loaded {} classes.",
+                m_ClassToInputAndOutputPins.size()
+            );
         }
+        catch (const std::exception& p_Exception) {
+            Logger::Error(
+                "[Editor] Failed to download pin list (attempt {}/{}): {}",
+                s_DownloadAttempts,
+                s_MaxDownloadAttempts,
+                p_Exception.what()
+            );
+
+            if (s_DownloadAttempts < s_MaxDownloadAttempts) {
+                s_NextRetryTime = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+            }
+            else {
+                s_DownloadCompleted = true;
+
+                Logger::Error("[Editor] Pin list download failed after 5 attempts.");
+            }
+        }
+
+        s_DownloadStarted = false;
     }
 }
 
