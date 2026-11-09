@@ -4,9 +4,34 @@ use quickentity_rs::qn_structs::Entity;
 use rpkg_rs::WoaVersion;
 use rpkg_rs::resource::partition_manager::PartitionManager;
 
-fn read_as_entity(json_data: &[u8]) -> Entity {
+// These helpers are called from `#[ffi_export]` functions, where a panic aborts the
+// whole process. Every failure is returned as an error message instead.
+fn read_as_entity(json_data: &[u8]) -> Result<Entity, String> {
     serde_path_to_error::deserialize(&mut serde_json::Deserializer::from_slice(json_data))
-        .expect("Failed to parse file")
+        .map_err(|e| format!("invalid QN entity JSON: {}", e))
+}
+
+fn to_c_json(json: serde_json::Result<String>) -> Result<char_p::Box, String> {
+    let json = json.map_err(|e| format!("could not serialise RT JSON: {}", e))?;
+    json.try_into().map_err(|_| "RT JSON contains a NUL byte".to_owned())
+}
+
+// Kept separate from the `#[ffi_export]` wrapper so the steps can use `?`.
+fn convert_qn_entity_impl(json_data: &[u8]) -> Result<QnConvertedData, String> {
+    // Try to parse the JSON data as a QN entity.
+    let entity = read_as_entity(json_data)?;
+
+    // Convert the QN entity to an RT entity.
+    let (factory, factory_meta, blueprint, blueprint_meta) =
+        convert_to_rt(&entity).map_err(|e| format!("conversion to RT failed: {:#}", e))?;
+
+    // Convert to JSON, and then to the C representation.
+    Ok(QnConvertedData {
+        factory_json: to_c_json(serde_json::to_string(&factory))?,
+        factory_meta_json: to_c_json(serde_json::to_string(&factory_meta))?,
+        blueprint_json: to_c_json(serde_json::to_string(&blueprint))?,
+        blueprint_meta_json: to_c_json(serde_json::to_string(&blueprint_meta))?,
+    })
 }
 
 #[derive_ReprC]
@@ -16,6 +41,15 @@ pub struct QnConvertedData {
     pub factory_meta_json: char_p::Box,
     pub blueprint_json: char_p::Box,
     pub blueprint_meta_json: char_p::Box,
+}
+
+/// The result of `convert_qn_entity`: exactly one of `data` and `error` is non-null.
+/// (A Rust `Result` has no C layout, so it crosses the FFI boundary as two nullable pointers.)
+#[derive_ReprC]
+#[repr(C)]
+pub struct QnConvertResult {
+    pub data: Option<repr_c::Box<QnConvertedData>>,
+    pub error: Option<char_p::Box>,
 }
 
 #[derive_ReprC]
@@ -31,41 +65,28 @@ pub struct ResourceChunkMap {
     pub entries: repr_c::Vec<ResourceChunkEntry>,
 }
 
+/// Converts a QuickEntity JSON entity to RT JSON and meta. Never returns null: on failure,
+/// `data` is null and `error` holds the reason. Free the result with `free_qn_convert_result`.
 #[ffi_export]
-pub fn convert_qn_entity(qn_json: char_p::Ref<'_>) -> Option<repr_c::Box<QnConvertedData>> {
-    // Try to parse the JSON data as a QN entity.
-    let json_data = qn_json.to_bytes();
-    let entity = read_as_entity(json_data);
+pub fn convert_qn_entity(qn_json: char_p::Ref<'_>) -> repr_c::Box<QnConvertResult> {
+    let result = match convert_qn_entity_impl(qn_json.to_bytes()) {
+        Ok(data) => QnConvertResult {
+            data: Some(Box::new(data).into()),
+            error: None,
+        },
+        Err(message) => QnConvertResult {
+            data: None,
+            // The message can only fail to convert if it contains a NUL byte; drop those.
+            error: Some(message.replace('\0', "").try_into().unwrap_or_else(|_| c!("unknown error").to_owned())),
+        },
+    };
 
-    // Convert the QN entity to an RT entity.
-    let (factory, factory_meta, blueprint, blueprint_meta) = convert_to_rt(&entity).ok()?;
-
-    // Convert to JSON.
-    let factory_json = serde_json::to_string(&factory).ok()?;
-    let factory_meta_json = serde_json::to_string(&factory_meta).ok()?;
-    let blueprint_json = serde_json::to_string(&blueprint).ok()?;
-    let blueprint_meta_json = serde_json::to_string(&blueprint_meta).ok()?;
-
-    // And then to the C representation.
-    let factory_json_cstr: char_p::Box = factory_json.try_into().ok()?;
-    let factory_meta_json_cstr: char_p::Box = factory_meta_json.try_into().ok()?;
-    let blueprint_json_cstr: char_p::Box = blueprint_json.try_into().ok()?;
-    let blueprint_meta_json_cstr: char_p::Box = blueprint_meta_json.try_into().ok()?;
-
-    Some(
-        Box::new(QnConvertedData {
-            factory_json: factory_json_cstr,
-            factory_meta_json: factory_meta_json_cstr,
-            blueprint_json: blueprint_json_cstr,
-            blueprint_meta_json: blueprint_meta_json_cstr,
-        })
-        .into(),
-    )
+    Box::new(result).into()
 }
 
 #[ffi_export]
-pub fn free_qn_converted_data(data: Option<repr_c::Box<QnConvertedData>>) {
-    drop(data);
+pub fn free_qn_convert_result(result: Option<repr_c::Box<QnConvertResult>>) {
+    drop(result);
 }
 
 #[ffi_export]

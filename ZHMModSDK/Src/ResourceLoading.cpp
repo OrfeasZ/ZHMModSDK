@@ -367,10 +367,15 @@ bool ModSDK::LoadQnEntity(
 ) {
     Logger::Debug("Converting QN entity JSON to RT JSON and meta...");
 
-    const auto s_QnData = convert_qn_entity(p_Json.c_str());
+    const auto s_QnResult = convert_qn_entity(p_Json.c_str());
+    const auto s_QnData = s_QnResult->data;
 
     if (!s_QnData) {
-        Logger::Error("Failed to convert QN entity to RT.");
+        Logger::Error(
+            "Failed to convert QN entity to RT: {}",
+            s_QnResult->error ? s_QnResult->error : "unknown error"
+        );
+        free_qn_convert_result(s_QnResult);
         return false;
     }
 
@@ -392,7 +397,7 @@ bool ModSDK::LoadQnEntity(
     std::string s_BlueprintMetaJson {s_QnData->blueprint_meta_json};
 
     // Free the QN data.
-    free_qn_converted_data(s_QnData);
+    free_qn_convert_result(s_QnResult);
 
     if (!s_ResourceTbluMem || !s_ResourceTempMem) {
         Logger::Error("Failed to generate editor resources.");
