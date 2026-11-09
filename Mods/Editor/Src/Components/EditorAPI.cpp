@@ -810,15 +810,12 @@ void Editor::SetEntityProperty(
         const auto s_PropertyInfo = s_Property->GetPropertyInfo();
 
         if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsEntity()) {
-            if (p_JsonValue == "null") {
-                auto s_EntityRefObj = ZObjectRef::From<ZEntityRef>({});
-                s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_propertyInfo.m_Type);
+            const auto s_PropertyType = s_PropertyInfo->m_propertyInfo.m_Type;
+            const std::string_view s_TypeName = s_PropertyType->GetTypeInfo()->pszTypeName;
 
-                OnSetPropertyValue(
-                    s_Entity, p_PropertyId, s_EntityRefObj, std::move(p_ClientId)
-                );
-            }
-            else {
+            ZEntityRef s_EntityRef;
+
+            if (p_JsonValue != "null") {
                 // Parse EntitySelector
                 simdjson::ondemand::parser s_Parser;
                 const auto s_EntitySelectorJson = simdjson::padded_string(p_JsonValue);
@@ -827,19 +824,49 @@ void Editor::SetEntityProperty(
                 const auto s_EntitySelector = EditorServer::ReadEntitySelector(s_EntitySelectorMsg);
 
                 if (const auto s_TargetEntity = FindEntity(s_EntitySelector)) {
-                    auto s_EntityRefObj = ZObjectRef::From<TEntityRef<ZEntityImpl>>(
-                        TEntityRef<ZEntityImpl>(s_TargetEntity)
-                    );
-                    s_EntityRefObj.UNSAFE_SetType(s_PropertyInfo->m_propertyInfo.m_Type);
-
-                    OnSetPropertyValue(
-                        s_Entity, p_PropertyId, s_EntityRefObj, std::move(p_ClientId)
-                    );
+                    s_EntityRef = s_TargetEntity;
                 }
                 else {
                     throw std::runtime_error("Could not find entity for the given selector.");
                 }
             }
+
+            ZObjectRef s_EntityRefObj;
+
+            if (s_TypeName == "ZEntityRef") {
+                s_EntityRefObj.Assign(s_PropertyType, &s_EntityRef);
+            }
+            else if (s_TypeName.starts_with("TEntityRef<") && s_TypeName.ends_with(">")) {
+                constexpr std::string_view s_Prefix = "TEntityRef<";
+
+                const std::string s_InterfaceTypeName(
+                    s_TypeName.substr(s_Prefix.size(), s_TypeName.size() - s_Prefix.size() - 1)
+                );
+
+                const auto s_InterfaceTypeID = (*Globals::TypeRegistry)->GetTypeID(s_InterfaceTypeName);
+
+                if (!s_InterfaceTypeID) {
+                    throw std::runtime_error("Could not find entity interface type.");
+                }
+
+                TEntityRef<void> s_TypedEntityRef;
+                s_TypedEntityRef.m_entityRef = s_EntityRef;
+
+                if (s_EntityRef) {
+                    s_TypedEntityRef.m_pInterfaceRef = s_EntityRef.QueryInterface(s_InterfaceTypeID);
+
+                    if (!s_TypedEntityRef.m_pInterfaceRef) {
+                        throw std::runtime_error("Target entity does not implement the required interface.");
+                    }
+                }
+
+                s_EntityRefObj.Assign(s_PropertyType, &s_TypedEntityRef);
+            }
+            else {
+                throw std::runtime_error("Unsupported entity reference type.");
+            }
+
+            OnSetPropertyValue(s_Entity, p_PropertyId, s_EntityRefObj, std::move(p_ClientId));
         }
         else {
             const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
