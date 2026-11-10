@@ -162,6 +162,7 @@ private:
         const IArrayType* p_ArrayType
     );
 
+    void DrawEntityPinValueField(const char* p_Id, const ZObjectRef& p_Value);
     void DrawEntityPinValue(const std::string& p_Id, const std::string& p_TypeName, void* p_Data);
 
     void DrawLibraryWindow();

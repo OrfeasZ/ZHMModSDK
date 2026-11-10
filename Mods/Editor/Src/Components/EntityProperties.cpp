@@ -516,29 +516,7 @@ void Editor::DrawEntityPropertiesWindow() {
             }
         );
 
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("Value");
-
-        if (std::string(s_InputPinTypeName) != "SMatrix43") {
-            ImGui::SameLine();
-        }
-
-        if (s_InputPinTypeName[0] == '\0') {
-            static char s_EmptyBuffer[1] = {};
-
-            ImGui::BeginDisabled();
-
-            ImGui::InputText(
-                "##InputPinValue",
-                s_EmptyBuffer,
-                sizeof(s_EmptyBuffer)
-            );
-
-            ImGui::EndDisabled();
-        }
-        else {
-            DrawEntityPinValue("##InputPinValue", s_InputPinTypeName, m_InputPinValue.GetData());
-        }
+        DrawEntityPinValueField("##InputPinValue", m_InputPinValue);
 
         static char s_OutputPinName[1024] = {};
         static char s_OutputPinTypeName[2048] = {};
@@ -621,29 +599,7 @@ void Editor::DrawEntityPropertiesWindow() {
             }
         );
 
-        ImGui::AlignTextToFramePadding();
-        ImGui::Text("Value");
-
-        if (std::string(s_OutputPinTypeName) != "SMatrix43") {
-            ImGui::SameLine();
-        }
-
-        if (s_OutputPinTypeName[0] == '\0') {
-            static char s_EmptyBuffer[1] = {};
-
-            ImGui::BeginDisabled();
-
-            ImGui::InputText(
-                "##OuputPinValue",
-                s_EmptyBuffer,
-                sizeof(s_EmptyBuffer)
-            );
-
-            ImGui::EndDisabled();
-        }
-        else {
-            DrawEntityPinValue("##OuputPinValue", s_OutputPinTypeName, m_OutputPinValue.GetData());
-        }
+        DrawEntityPinValueField("##OutputPinValue", m_OutputPinValue);
 
         ImGui::Separator();
 
@@ -969,6 +925,31 @@ bool Editor::DrawEntityPropertyValue(
     }
 
     return s_IsChanged;
+}
+
+void Editor::DrawEntityPinValueField(const char* p_Id, const ZObjectRef& p_Value) {
+    const auto s_TypeID = p_Value.GetTypeID();
+    void* s_Data = p_Value.GetData();
+
+    const char* s_TypeName = s_TypeID ? s_TypeID->GetTypeInfo()->pszTypeName : nullptr;
+
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Value");
+
+    if (!s_TypeName || std::string_view(s_TypeName) != "SMatrix43") {
+        ImGui::SameLine();
+    }
+
+    if (s_Data && s_TypeName) {
+        DrawEntityPinValue(p_Id, s_TypeName, s_Data);
+    }
+    else {
+        char s_EmptyBuffer[1] = {};
+
+        ImGui::BeginDisabled();
+        ImGui::InputText(p_Id, s_EmptyBuffer, sizeof(s_EmptyBuffer));
+        ImGui::EndDisabled();
+    }
 }
 
 void Editor::DrawEntityPinValue(const std::string& p_Id, const std::string& p_TypeName, void* p_Data) {
