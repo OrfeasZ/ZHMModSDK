@@ -45,12 +45,12 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         static char s_PropTitle[2048] { "" };
         static char s_PropResourceId[2048] { "" };
 
-        static int s_RepositoryPropSpawnCount = 1;
-        static int s_NonRepositoryPropSpawnCount = 1;
-        static int s_ActorSpawnCount = 1;
+        static int32_t s_RepositoryPropSpawnCount = 1;
+        static int32_t s_NonRepositoryPropSpawnCount = 1;
+        static int32_t s_ActorSpawnCount = 1;
 
-        static int s_WorldInventoryButton = 1;
         static char s_ActorName[2048] {};
+        static int32_t s_WorldInventoryButton = 1;
 
         ImGui::Text("Repository props");
 
@@ -93,6 +93,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
 
         ImGui::InputInt("##RepositoryPropSpawnCount", &s_RepositoryPropSpawnCount);
+        s_RepositoryPropSpawnCount = std::max(0, s_RepositoryPropSpawnCount);
 
         ImGui::Separator();
 
@@ -120,10 +121,12 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
 
         ImGui::InputInt("##NonRepositoryPropSpawnCount", &s_NonRepositoryPropSpawnCount);
+        s_NonRepositoryPropSpawnCount = std::max(0, s_NonRepositoryPropSpawnCount);
+
         ImGui::Separator();
 
         ImGui::Text("Actors");
-        
+
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
@@ -245,6 +248,7 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         ImGui::SetNextItemWidth(ImGui::GetFrameHeight() * 5.f);
 
         ImGui::InputInt("##ActorSpawnCount", &s_ActorSpawnCount);
+        s_ActorSpawnCount = std::max(0, s_ActorSpawnCount);
 
         if (ImGui::Button("Spawn actor")) {
             for (size_t i = 0; i < s_ActorSpawnCount; ++i) {
