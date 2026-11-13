@@ -17,6 +17,7 @@ void Editor::OnSetPropertyValue(
     std::optional<std::string> p_ClientId
 ) {
     Hooks::SetPropertyValue->Call(p_Entity, p_PropertyId, p_Value, true);
+    RefreshPathfinderObstacle(p_Entity, true);
     m_Server.OnEntityPropertySet(p_Entity, p_PropertyId, std::move(p_ClientId));
 }
 

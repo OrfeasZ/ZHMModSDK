@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Enums.h"
 #include "ZBuffer.h"
 #include "TSharedPointer.h"
 #include "ZSharedPointerTarget.h"
@@ -209,6 +210,19 @@ public:
     bool m_bEnabled; // 0xD4
     ZResourcePtr m_pHelper; // 0xD8
     ZPFObstacleHandle m_obstacle; // 0xE0
+};
+
+class ZActorFlagPFObstacleEntity : public ZPFObstacleEntity {
+public:
+    uint32 GetEffectiveFlags() const {
+        if (m_nObstacleBlockageFlags != 0)
+            return m_nObstacleBlockageFlags;
+
+        return 1u << static_cast<uint32>(m_eActorObstacleBlockage);
+    }
+
+    PAD(0x08); // 0xE8
+    EActorObstacleBlockage m_eActorObstacleBlockage; // 0xF0
 };
 
 class ZPathfinderConfiguration : public ZEntityImpl {
