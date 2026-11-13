@@ -958,14 +958,14 @@ public:
             float4(0.f, 0.f, 0.6f, 0.f);
 
         const uint32_t s_Color =
-            s_ValidationError == ENPCValidationError::VE_TooShort ||
-            s_ValidationError == ENPCValidationError::VE_NoValidCorner
+            p_ValidationError == ENPCValidationError::VE_TooShort ||
+            p_ValidationError == ENPCValidationError::VE_NoValidCorner
             ? 0xFF00FFFF
             : 0xFF000080;
 
         const char* s_ValidationMessage = nullptr;
 
-        switch (s_ValidationError) {
+        switch (p_ValidationError) {
             case ENPCValidationError::VE_TooShort:
                 s_ValidationMessage = "Cover too short";
                 break;
