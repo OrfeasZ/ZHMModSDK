@@ -1118,12 +1118,12 @@ public:
             );
 
             const float4 s_Center = s_Box.m_mvCenterMatPos.Trans;
-            const float4 s_Size = s_Box.m_vHalfSize * 2.f;
+            const float4 s_HalfSize = s_Box.m_vHalfSize;
 
             if (p_DrawHeroGuidesSolid) {
                 p_Renderer->DrawBox3D(
                     s_Center,
-                    s_Size,
+                    s_HalfSize,
                     s_Box.m_mvCenterMatPos,
                     s_BoxColor
                 );
@@ -1131,7 +1131,7 @@ public:
             else {
                 p_Renderer->DrawBoxWire3D(
                     s_Center,
-                    s_Size,
+                    s_HalfSize,
                     s_Box.m_mvCenterMatPos,
                     s_BoxColor
                 );
