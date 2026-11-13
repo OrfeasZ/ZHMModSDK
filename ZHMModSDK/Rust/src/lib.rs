@@ -4,9 +4,10 @@ use quickentity_rs::qn_structs::Entity;
 use rpkg_rs::WoaVersion;
 use rpkg_rs::resource::partition_manager::PartitionManager;
 
-fn read_as_entity(json_data: &[u8]) -> Entity {
+fn read_as_entity(json_data: &[u8]) -> Option<Entity> {
     serde_path_to_error::deserialize(&mut serde_json::Deserializer::from_slice(json_data))
-        .expect("Failed to parse file")
+        .inspect_err(|e| println!("Failed to parse QN entity: {}", e))
+        .ok()
 }
 
 #[derive_ReprC]
@@ -33,9 +34,13 @@ pub struct ResourceChunkMap {
 
 #[ffi_export]
 pub fn convert_qn_entity(qn_json: char_p::Ref<'_>) -> Option<repr_c::Box<QnConvertedData>> {
+    std::panic::catch_unwind(|| convert_qn_entity_impl(qn_json)).ok().flatten()
+}
+
+fn convert_qn_entity_impl(qn_json: char_p::Ref<'_>) -> Option<repr_c::Box<QnConvertedData>> {
     // Try to parse the JSON data as a QN entity.
     let json_data = qn_json.to_bytes();
-    let entity = read_as_entity(json_data);
+    let entity = read_as_entity(json_data)?;
 
     // Convert the QN entity to an RT entity.
     let (factory, factory_meta, blueprint, blueprint_meta) = convert_to_rt(&entity).ok()?;
@@ -70,6 +75,10 @@ pub fn free_qn_converted_data(data: Option<repr_c::Box<QnConvertedData>>) {
 
 #[ffi_export]
 pub fn get_resource_chunk_map(game_path: char_p::Ref<'_>) -> Option<repr_c::Box<ResourceChunkMap>> {
+    std::panic::catch_unwind(|| get_resource_chunk_map_impl(game_path)).ok().flatten()
+}
+
+fn get_resource_chunk_map_impl(game_path: char_p::Ref<'_>) -> Option<repr_c::Box<ResourceChunkMap>> {
     let game_path = game_path.to_string();
 
     let mut entries = Vec::new();
