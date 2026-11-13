@@ -9,17 +9,7 @@ public:
     virtual ~IPluginInterface() = default;
 
 private:
-    virtual void SetupUI() {
-        auto* s_Context = SDK()->GetImGuiContext();
-
-        if (!s_Context)
-            return;
-
-        ImGui::SetCurrentContext(s_Context);
-        ImGui::SetAllocatorFunctions(SDK()->GetImGuiAlloc(), SDK()->GetImGuiFree(), SDK()->GetImGuiAllocatorUserData());
-
-        ImPlot::SetCurrentContext(SDK()->GetImPlotContext());
-    }
+    virtual void SetupUI() {}
 
 public:
     /** Invoked on the game thread */
@@ -45,10 +35,7 @@ public:
     virtual void OnDepthDraw3D(IRenderer* p_Renderer) {}
 
 private:
-    virtual void CleanupUI() {
-        ImGui::SetCurrentContext(nullptr);
-        ImPlot::SetCurrentContext(nullptr);
-    }
+    virtual void CleanupUI() {}
 
 public:
     /**

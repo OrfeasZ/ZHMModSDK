@@ -27,5 +27,4 @@ set_target_properties(ZHMModSDK PROPERTIES
 
 target_link_libraries(ZHMModSDK INTERFACE
     fmt
-    imgui
 )

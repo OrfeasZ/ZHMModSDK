@@ -18,5 +18,10 @@ if(PORT STREQUAL "directxtex")
 	list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DBC_USE_OPENMP=OFF")
 endif()
 
+if(PORT MATCHES "^(imgui|implot|imguizmo)$")
+	set(VCPKG_C_FLAGS "/DIMGUI_EXPORTS")
+	set(VCPKG_CXX_FLAGS "/DIMGUI_EXPORTS")
+endif()
+
 get_filename_component(_zhm_toolchain "${CMAKE_CURRENT_LIST_DIR}/../toolchains/clang-cl.cmake" ABSOLUTE)
 set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${_zhm_toolchain}")

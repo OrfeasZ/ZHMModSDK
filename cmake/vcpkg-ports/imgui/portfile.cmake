@@ -78,6 +78,17 @@ if ("test-engine" IN_LIST FEATURES)
     vcpkg_replace_string("${SOURCE_PATH}/test-engine/imgui_te_imconfig.h" "#define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 0" "#define IMGUI_TEST_ENGINE_ENABLE_COROUTINE_STDTHREAD_IMPL 1")
 endif()
 
+file(APPEND "${SOURCE_PATH}/imconfig.h" [[
+
+#ifdef IMGUI_EXPORTS
+#define IMGUI_API __declspec(dllexport)
+#define IMPLOT_API __declspec(dllexport)
+#else
+#define IMGUI_API __declspec(dllimport)
+#define IMPLOT_API __declspec(dllimport)
+#endif
+]])
+
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS

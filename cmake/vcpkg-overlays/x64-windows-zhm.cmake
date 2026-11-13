@@ -12,3 +12,8 @@ endif()
 if(PORT STREQUAL "directxtex")
 	list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DBC_USE_OPENMP=OFF")
 endif()
+
+if(PORT MATCHES "^(imgui|implot|imguizmo)$")
+	set(VCPKG_C_FLAGS "/DIMGUI_EXPORTS")
+	set(VCPKG_CXX_FLAGS "/DIMGUI_EXPORTS")
+endif()

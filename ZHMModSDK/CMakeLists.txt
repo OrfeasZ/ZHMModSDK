@@ -90,7 +90,7 @@ target_include_directories(ZHMModSDK PUBLIC
 
 target_compile_definitions(ZHMModSDK PRIVATE
         LOADER_EXPORTS
-
+        IMGUI_EXPORTS
 )
 
 target_link_options(ZHMModSDK PRIVATE
@@ -106,8 +106,9 @@ target_link_libraries(ZHMModSDK PUBLIC
         Microsoft::DirectX-Headers
         semver::semver
         simdjson::simdjson
-        imgui::imgui
-        implot::implot
+        $<COMPILE_ONLY:imgui::imgui>
+        $<COMPILE_ONLY:implot::implot>
+        $<COMPILE_ONLY:imguizmo::imguizmo>
         d3d12
         dxgi
         delayimp
@@ -117,6 +118,11 @@ target_link_libraries(ZHMModSDK PUBLIC
         sentry::sentry
         zhmmodsdk_rs
         ResourceLib_HM3
+)
+
+# Export imgui, implot and ImGuizmo as whole, so mods can use them.
+target_link_libraries(ZHMModSDK PRIVATE
+        "$<LINK_LIBRARY:WHOLE_ARCHIVE,imgui::imgui,implot::implot,imguizmo::imguizmo>"
 )
 
 install(TARGETS ZHMModSDK
@@ -152,18 +158,14 @@ install(DIRECTORY "${VCPKG_BUILD_ROOT}/include/fmt/"
 # Install required libs.
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     install(FILES "${VCPKG_BUILD_ROOT}/debug/lib/fmtd.lib" DESTINATION lib RENAME fmt.lib)
-    install(FILES "${VCPKG_BUILD_ROOT}/debug/lib/imguid.lib" DESTINATION lib RENAME imgui.lib)
-    install(FILES "${VCPKG_BUILD_ROOT}/debug/lib/implotd.lib" DESTINATION lib RENAME implot.lib)
 else ()
     install(FILES "${VCPKG_BUILD_ROOT}/lib/fmt.lib" DESTINATION lib)
-    install(FILES "${VCPKG_BUILD_ROOT}/lib/imgui.lib" DESTINATION lib)
-    install(FILES "${VCPKG_BUILD_ROOT}/lib/implot.lib" DESTINATION lib)
 endif ()
 
 # Install icon header.
 install(FILES "${CMAKE_SOURCE_DIR}/External/IconFontCppHeaders/IconsMaterialDesign.h" DESTINATION include)
 
-# Install imgui lib and headers.
+# Install imgui headers.
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imconfig.h" DESTINATION include)
 install(FILES "${VCPKG_BUILD_ROOT}/include/imgui_stacklayout.h" DESTINATION include)
