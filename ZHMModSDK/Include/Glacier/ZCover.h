@@ -933,15 +933,14 @@ public:
     static void DrawDebugNPCValidation(
         ZCoverPlane* p_CoverPlane,
         IRenderer* p_Renderer,
+        ENPCValidationError p_ValidationError,
         bool p_DrawNPCValidation
     ) {
         if (!p_DrawNPCValidation) {
             return;
         }
 
-        const auto s_ValidationError = CheckNPCValidity(p_CoverPlane);
-
-        if (s_ValidationError == ENPCValidationError::VE_OK) {
+        if (p_ValidationError == ENPCValidationError::VE_OK) {
             return;
         }
 

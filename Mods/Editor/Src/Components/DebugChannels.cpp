@@ -780,12 +780,15 @@ void Editor::DrawShapes(ZSoundGateEntity* p_SoundGateEntity, IRenderer* p_Render
 }
 
 void Editor::DrawShapes(ZCoverPlane* p_CoverPlane, IRenderer* p_Renderer) {
-    bool s_HasNPCValidationError = false;
+    const bool s_CheckNPCValidity = m_DrawInvalidCoverOnNPCError || m_DrawNPCValidation;
 
-    if (m_DrawInvalidCoverOnNPCError) {
-        s_HasNPCValidationError =
-            ZCoverPlaneDebug::CheckNPCValidity(p_CoverPlane) != ZCoverPlaneDebug::ENPCValidationError::VE_OK;
-    }
+    const auto s_NPCValidationError = s_CheckNPCValidity
+        ? ZCoverPlaneDebug::CheckNPCValidity(p_CoverPlane)
+        : ZCoverPlaneDebug::ENPCValidationError::VE_OK;
+
+    const bool s_HasNPCValidationError =
+        m_DrawInvalidCoverOnNPCError &&
+        s_NPCValidationError != ZCoverPlaneDebug::ENPCValidationError::VE_OK;
 
     if (p_CoverPlane->IsCoverValid() && p_CoverPlane->m_bEnabled && !s_HasNPCValidationError) {
         ZCoverPlaneDebug::DrawDebugCoverValid(
@@ -811,7 +814,7 @@ void Editor::DrawShapes(ZCoverPlane* p_CoverPlane, IRenderer* p_Renderer) {
         );
     }
 
-    ZCoverPlaneDebug::DrawDebugNPCValidation(p_CoverPlane, p_Renderer, m_DrawNPCValidation);
+    ZCoverPlaneDebug::DrawDebugNPCValidation(p_CoverPlane, p_Renderer, s_NPCValidationError, m_DrawNPCValidation);
 }
 
 template <>
