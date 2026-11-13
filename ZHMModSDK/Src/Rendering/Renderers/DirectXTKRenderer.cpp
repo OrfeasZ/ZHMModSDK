@@ -249,11 +249,8 @@ void DirectXTKRenderer::PostReset(IDXGISwapChain3* p_SwapChain) {
         s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, s_Descriptor);
     }
 
-    RECT s_Rect = { 0, 0, 0, 0 };
-    GetClientRect(m_Hwnd, &s_Rect);
-
-    m_WindowWidth = static_cast<float>(s_Rect.right - s_Rect.left);
-    m_WindowHeight = static_cast<float>(s_Rect.bottom - s_Rect.top);
+    m_WindowWidth = static_cast<float>(s_SwapChainDesc.Width);
+    m_WindowHeight = static_cast<float>(s_SwapChainDesc.Height);
 
     const D3D12_VIEWPORT s_Viewport = { 0.0f, 0.0f, m_WindowWidth, m_WindowHeight, D3D12_MIN_DEPTH, D3D12_MAX_DEPTH };
     m_SpriteBatch->SetViewport(s_Viewport);
@@ -557,11 +554,8 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
         return false;
     }
 
-    RECT s_Rect = { 0, 0, 0, 0 };
-    GetClientRect(m_Hwnd, &s_Rect);
-
-    m_WindowWidth = static_cast<float>(s_Rect.right - s_Rect.left);
-    m_WindowHeight = static_cast<float>(s_Rect.bottom - s_Rect.top);
+    m_WindowWidth = static_cast<float>(s_SwapChainDesc.Width);
+    m_WindowHeight = static_cast<float>(s_SwapChainDesc.Height);
 
     m_GraphicsMemory = std::make_unique<DirectX::GraphicsMemory>(s_Device);
 

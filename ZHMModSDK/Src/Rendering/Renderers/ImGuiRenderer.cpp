@@ -491,11 +491,8 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     }
 
     ImGuiIO& s_Io = ImGui::GetIO();
-    RECT s_Rect {};
 
-    GetClientRect(m_Hwnd, &s_Rect);
-
-    s_Io.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
+    s_Io.DisplaySize = ImVec2(static_cast<float>(s_SwapChainDesc.Width), static_cast<float>(s_SwapChainDesc.Height));
     s_Io.FontGlobalScale = (s_Io.DisplaySize.y / 1800.f);
 
     ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
@@ -589,11 +586,9 @@ void ImGuiRenderer::PostReset(IDXGISwapChain3* p_SwapChain) {
     ImGui_ImplDX12_CreateDeviceObjects();
 
     ImGuiIO& s_Io = ImGui::GetIO();
-    RECT s_Rect {};
 
-    GetClientRect(m_Hwnd, &s_Rect);
-
-    s_Io.DisplaySize = ImVec2(static_cast<float>(s_Rect.right - s_Rect.left), static_cast<float>(s_Rect.bottom - s_Rect.top));
+    s_Io.DisplaySize = ImVec2(static_cast<float>(s_SwapChainDesc.Width), static_cast<float>(s_SwapChainDesc.Height));
+    s_Io.FontGlobalScale = (s_Io.DisplaySize.y / 1800.f);
 }
 
 void ImGuiRenderer::Draw() {
