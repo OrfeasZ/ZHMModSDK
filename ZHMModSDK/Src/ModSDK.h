@@ -214,6 +214,8 @@ public:
         ImGuiTexture& p_ImGuiTexture
     ) override;
 
+    bool GetSmfDeploymentPath(ZString& p_Path) override;
+
 #pragma endregion
 
     void AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Size);
@@ -261,6 +263,8 @@ private:
     );
 
     void UpdateSDKIni(std::function<void(mINI::INIMap<std::string>&)> p_Callback);
+
+    void ResolveSmfDeploymentPath();
 
 #pragma region ResourceLoading
 
@@ -320,6 +324,8 @@ private:
     bool m_IsScaleformLoggingEnabled = false;
 
     std::unordered_map<ZRuntimeResourceID, TArray<uint32_t>> m_ResourceIdToChunkMap;
+
+    std::optional<std::string> m_SmfDeploymentPath;
 
     std::shared_ptr<ModLoader> m_ModLoader {};
 

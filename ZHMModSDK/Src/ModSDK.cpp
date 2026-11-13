@@ -787,6 +787,8 @@ bool ModSDK::Startup() {
         return true;
     }
 
+    ResolveSmfDeploymentPath();
+
     m_ModLoader->Startup();
 
     // Notify all loaded mods that the engine has initialized once it has.

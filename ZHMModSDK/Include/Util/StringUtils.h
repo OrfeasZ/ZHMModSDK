@@ -122,6 +122,24 @@ namespace Util {
             return s_Out;
         }
 
+        static std::string UTF16ToUTF8(const std::wstring& p_UTF16) {
+            if (p_UTF16.empty()) {
+                return {};
+            }
+
+            const int s_Size = WideCharToMultiByte(
+                CP_UTF8, 0, p_UTF16.data(), static_cast<int>(p_UTF16.size()), nullptr, 0, nullptr, nullptr
+            );
+
+            std::string s_Out(s_Size, '\0');
+
+            WideCharToMultiByte(
+                CP_UTF8, 0, p_UTF16.data(), static_cast<int>(p_UTF16.size()), s_Out.data(), s_Size, nullptr, nullptr
+            );
+
+            return s_Out;
+        }
+
     private:
         static uint32_t DecodeUTF8(const char*& p) {
             const uint8_t c = *p;

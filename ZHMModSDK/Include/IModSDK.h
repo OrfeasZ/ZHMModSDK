@@ -387,6 +387,14 @@ public:
      * The texture and shader resource view are released when they are no longer in use by the GPU.
      */
     virtual void DestroyImGuiTexture(ScopedD3DRef<ID3D12Resource>& p_Texture, ImGuiTexture& p_ImGuiTexture) = 0;
+
+    /**
+     * Gets the folder where the Simple Mod Framework placed its deployment data (e.g. summary.json)
+     * for this game installation, if it exists.
+     * @param p_Path The UTF-8 encoded output path.
+     * @return True if a deployment was found, false otherwise.
+     */
+    virtual bool GetSmfDeploymentPath(ZString& p_Path) = 0;
 };
 
 /**
