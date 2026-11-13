@@ -325,11 +325,10 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
 
     s_Buffer->m_pData = const_cast<void*>(p_ResourceMem->ResourceData);
     s_Buffer->m_nSize = p_ResourceMem->DataSize;
-    s_Buffer->m_iRefCount = 1;
     s_Buffer->m_nCapacity = p_ResourceMem->DataSize;
     s_Buffer->m_bOwnsDataPtr = false;
 
-    ZResourceDataPtr s_DataPtr {.m_pObject = s_Buffer};
+    ZResourceDataPtr s_DataPtr(s_Buffer);
 
     auto* s_Reader = static_cast<ZResourceReader*>((*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
         sizeof(ZResourceReader),
@@ -339,14 +338,13 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
     Functions::ZResourceReader_ZResourceReader->Call(
         s_Reader,
         s_Index,
-        &s_DataPtr,
+        std::move(s_DataPtr),
         p_ResourceMem->DataSize
     );
 
     ZResourcePending s_Pending {};
     s_Pending.m_pResource.m_nResourceIndex = s_Index.val;
-    s_Pending.m_pResourceReader.m_pObject = s_Reader;
-    s_Pending.m_pResourceReader.m_pObject->m_iRefCount = 1;
+    s_Pending.m_pResourceReader = ZResourceReaderPtr(s_Reader);
 
     // Increment m_nNumProcessing by 1 because installing will set the
     // resource status to valid, which will decrement m_nNumProcessing.
@@ -354,8 +352,6 @@ std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(
     p_Install(&s_Pending);
 
     WaitForResources();
-
-    Functions::ZResourceReader_Dtor->Call(s_Reader);
 
     return std::make_tuple(s_Index, s_ResId);
 }

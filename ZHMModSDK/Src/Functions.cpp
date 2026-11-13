@@ -268,7 +268,7 @@ PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x00\x33\xED\x48\x8D\x05\x00\x00\x00\x00\x89\x69\x08",
     "xxxxxxxxxxxxxxxxxxx?xxxxx????xxx",
     ZResourceReader_ZResourceReader,
-    void(ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr* pData, uint32_t dataSize)
+    void(ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr pData, uint32_t dataSize)
 );
 
 PATTERN_FUNCTION(

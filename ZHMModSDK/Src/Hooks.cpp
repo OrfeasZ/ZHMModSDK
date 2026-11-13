@@ -306,14 +306,14 @@ PATTERN_HOOK(
     "\x40\x53\x56\x57\x41\x54\x41\x57\x48\x81\xEC\x00\x00\x00\x00\x48\x8D\x05",
     "xxxxxxxxxxx????xxx",
     ZDynamicPageController_Expand,
-    void(ZDynamicPageController* th, ZDynamicObject& data, void* a3, void* a4, void* a5)
+    void(ZDynamicPageController* th, const ZDynamicObject&, const ZDynamicObject&, std::function<void(ZDynamicObject&&)>, std::function<void()>)
 );
 
 PATTERN_HOOK(
     "\x40\x55\x57\x48\x8B\xEC\x48\x83\xEC\x00\x4C\x8B\x1A",
     "xxxxxxxxx?xxx",
-    ZDynamicPageController_HandleActionObject2,
-    void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)
+    ZDynamicPageController_HandleActionObject,
+    bool(ZDynamicPageController* th, const ZDynamicObject& actionObj, TSharedPointer<ZMenuStructureNode> pNode)
 );
 
 /*

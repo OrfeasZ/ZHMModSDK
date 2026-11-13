@@ -13,6 +13,7 @@
 #include <Glacier/ZResource.h>
 #include <Glacier/ZInventory.h>
 #include <Glacier/SSaveGameMetaData.h>
+#include <Glacier/ZMenuStructureNode.h>
 
 #include <Windows.h>
 #include <directx/d3d12.h>
@@ -179,11 +180,11 @@ public:
 
     //static Hook<TEntityRef<ZHitman5>*(ZPlayerRegistry* th, TEntityRef<ZHitman5>* out)>* ZPlayerRegistry_GetLocalPlayer;
 
-    static Hook<void(ZDynamicPageController* th, ZDynamicObject& data, void* a3, void* a4, void* a5)>*
+    static Hook<void(ZDynamicPageController* th, const ZDynamicObject& tplNode, const ZDynamicObject& context, std::function<void(ZDynamicObject&&)> onExpanded, std::function<void()> onFailed)>*
     ZDynamicPageController_Expand;
 
-    static Hook<void(ZDynamicPageController* th, ZDynamicObject& actionObj, void* menuNode)>*
-    ZDynamicPageController_HandleActionObject2;
+    static Hook<bool(ZDynamicPageController* th, const ZDynamicObject& actionObj, TSharedPointer<ZMenuStructureNode> pNode)>*
+    ZDynamicPageController_HandleActionObject;
 
     //static Hook<void*(void* th, void* a2)>* ZLevelManagerStateCondition_ZLevelManagerStateCondition;
     static Hook<void*(void* th, void* a1)>* ZLoadingScreenVideo_ActivateLoadingScreen;
