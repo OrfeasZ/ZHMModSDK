@@ -7,10 +7,10 @@
 class ZCircleGenerator {
 public:
     void Init(
-        const SVector3& p_Center,
-        const SVector3& p_Size,
-        const SVector3& p_Normal,
-        const SVector3& p_StartDir,
+        const float4& p_Center,
+        const float4& p_Size,
+        const float4& p_Normal,
+        const float4& p_StartDir,
         float p_Angle,
         float fStepsToACircle
     ) {
@@ -18,12 +18,11 @@ public:
 
         m_vXAxis = p_StartDir * p_Size.x;
 
-        SVector3 s_Cross = SVector3::CrossProduct(p_Normal, p_StartDir);
+        const float4 s_Cross = float4::CrossProduct(p_Normal, p_StartDir);
         m_vYAxis = s_Cross * p_Size.y;
 
-        float4 s_initialPosition = m_vCenter + m_vXAxis;
-        m_v1 = s_initialPosition;
-        m_v2 = s_initialPosition;
+        m_v1 = m_vCenter + m_vXAxis;
+        m_v2 = m_v1;
 
         m_vX.m4 = float4(1.f);
         m_vY.m4 = float4(0.f);

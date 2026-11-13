@@ -208,6 +208,15 @@ namespace Rendering::Renderers {
             const SVector4& p_Color
         ) override;
 
+        void DrawCircle3D(
+            const SVector3& p_Center,
+            const SVector3& p_Size,
+            const SVector3& p_Normal,
+            const SVector3& p_StartDir,
+            const SVector4& p_Color,
+            float p_Steps = 48.f
+        ) override;
+
         void DrawSphere3DOutlinedShaded(
             const SMatrix& p_Transform,
             float p_Size,
