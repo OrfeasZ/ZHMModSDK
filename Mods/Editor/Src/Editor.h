@@ -344,8 +344,6 @@ private:
     void DrawShapeOptions();
 
     void DrawShapeOptions(const std::string& p_TypeName, bool p_Disabled);
-    void DrawShapeOptions(ZSoundGateEntity* p_SoundGateEntity);
-    void DrawShapeOptions(ZCoverPlane* p_CoverPlane);
 
     void DrawDebugEntityID(
         ZSpatialEntity* p_Entity,
