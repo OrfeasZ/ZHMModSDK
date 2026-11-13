@@ -21,7 +21,7 @@ namespace Logger {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
-            s_Loggers.Loggers[i]->error(fmt::runtime(p_Format), p_Args...);
+            s_Loggers.Loggers[i]->error(fmt::runtime(p_Format.get()), p_Args...);
     }
 
     template <typename... Args>
@@ -29,7 +29,7 @@ namespace Logger {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
-            s_Loggers.Loggers[i]->warn(fmt::runtime(p_Format), p_Args...);
+            s_Loggers.Loggers[i]->warn(fmt::runtime(p_Format.get()), p_Args...);
     }
 
     template <typename... Args>
@@ -37,7 +37,7 @@ namespace Logger {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
-            s_Loggers.Loggers[i]->info(fmt::runtime(p_Format), p_Args...);
+            s_Loggers.Loggers[i]->info(fmt::runtime(p_Format.get()), p_Args...);
     }
 
     template <typename... Args>
@@ -45,7 +45,7 @@ namespace Logger {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
-            s_Loggers.Loggers[i]->debug(fmt::runtime(p_Format), p_Args...);
+            s_Loggers.Loggers[i]->debug(fmt::runtime(p_Format.get()), p_Args...);
     }
 
     template <typename... Args>
@@ -53,6 +53,6 @@ namespace Logger {
         const auto s_Loggers = GetLoggers();
 
         for (size_t i = 0; i < s_Loggers.Count; ++i)
-            s_Loggers.Loggers[i]->trace(fmt::runtime(p_Format), p_Args...);
+            s_Loggers.Loggers[i]->trace(fmt::runtime(p_Format.get()), p_Args...);
     }
 };

@@ -9,7 +9,7 @@ UPSTREAM=External/vcpkg/ports
 OVERLAY=cmake/vcpkg-ports-cross
 PATCHES=cmake/scripts/overlay-patches
 
-PATCHED_PORTS=(directx-dxc directxtk12 fmt sentry-native)
+PATCHED_PORTS=(directx-dxc directxtk12 sentry-native)
 
 mkdir -p "$OVERLAY"
 
