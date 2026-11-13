@@ -202,6 +202,7 @@ private:
     void OnEntityTransformChange(
         ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
     );
+    void RefreshPathfinderObstacle(ZEntityRef p_Entity, bool p_Force);
     void OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId);
     void OnSetPropertyValue(
         ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value, std::optional<std::string> p_ClientId

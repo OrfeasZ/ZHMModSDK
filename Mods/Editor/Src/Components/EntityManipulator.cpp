@@ -4,6 +4,7 @@
 #include "Glacier/ZSpatialEntity.h"
 #include "Glacier/ZPhysics.h"
 #include "Glacier/ZCameraEntity.h"
+#include "Glacier/ZPathfinder.h"
 
 void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
     if (IsSpecialEntityTreeNode(m_SelectedEntity)
@@ -146,6 +147,22 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
     }
 }
 
+void Editor::RefreshPathfinderObstacle(ZEntityRef p_Entity, bool p_Force) {
+    auto* s_Obstacle = p_Entity.QueryInterface<ZPFObstacleEntity>();
+
+    if (!s_Obstacle) {
+        return;
+    }
+
+    uint32 s_Flags = s_Obstacle->m_nObstacleBlockageFlags;
+
+    if (const auto* s_ActorFlagObstacle = p_Entity.QueryInterface<ZActorFlagPFObstacleEntity>()) {
+        s_Flags = s_ActorFlagObstacle->GetEffectiveFlags();
+    }
+
+    Hooks::ZPFObstacleEntity_UpdateObstacle->Call(s_Obstacle, s_Flags, s_Obstacle->m_bEnabled, p_Force);
+}
+
 void Editor::OnEntityTransformChange(
     ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
 ) {
@@ -180,6 +197,8 @@ void Editor::OnEntityTransformChange(
                 s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetObjectToWorldMatrix());
             }
         }
+
+        RefreshPathfinderObstacle(p_Entity, false);
 
         m_Server.OnEntityTransformChanged(p_Entity, std::move(p_ClientId));
     }
