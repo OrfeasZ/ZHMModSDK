@@ -472,8 +472,8 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
-    "\x48\x8D\x05\x00\x00\x00\x00\x4C\x8B\xF6\x48\x89\x05",
-    "xxx????xxxxxx",
+    "\x48\x89\x05\x00\x00\x00\x00\x48\x8D\x1D\x00\x00\x00\x00\x49\xBC",
+    "xxx????xxx????xx",
     3,
     ZKnowledgeService*, KnowledgeService
 );
