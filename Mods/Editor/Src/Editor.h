@@ -266,6 +266,7 @@ private:
     bool Float32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     bool Float64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
     bool EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID);
+    void LoadSmfEnumVariants();
 
     // Vector properties.
     bool SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
@@ -773,6 +774,9 @@ private:
     std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToGizmoState;
     std::unordered_map<EDebugChannel, std::unordered_map<std::string, bool>> m_DebugChannelToTypeNameToShapeState;
     std::vector<STypeID*> m_DebugEntityTypeIds;
+
+    // Enum type name -> (ModID:VariantName, value), from the SMF deployment summary.
+    std::unordered_map<std::string, std::vector<std::pair<std::string, int64_t>>> m_SmfEnumVariants;
 
     bool m_DrawGizmos = true;
     DebugDrawMode m_GizmoDrawMode = DebugDrawMode::SelectedChannelsAndTypes;

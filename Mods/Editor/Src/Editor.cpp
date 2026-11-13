@@ -119,6 +119,8 @@ void Editor::Init() {
 
     Hooks::ZResourceManager_UninstallResource->AddDetour(this, &Editor::ZResourceManager_UninstallResource);
 
+    LoadSmfEnumVariants();
+
     m_UseSnap = GetSettingBool("general", "snap", true);
     m_SnapValue = GetSettingDouble("general", "snap_value", 1.0);
     m_UseAngleSnap = GetSettingBool("general", "angle_snap", true);
