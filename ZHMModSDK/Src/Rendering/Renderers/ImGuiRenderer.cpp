@@ -41,6 +41,7 @@ ImGuiRenderer::ImGuiRenderer() {
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
     s_ImGuiIO.IniFilename = nullptr;
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
     s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
     s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;

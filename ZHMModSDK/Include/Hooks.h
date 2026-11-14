@@ -42,6 +42,15 @@ class ZRenderGraphNodeCamera;
 class ZGameUIManagerEntity;
 class ZGameStatsManager;
 class ZRenderContext;
+class ZRenderTraversalContext;
+class ZSparseBitArray;
+class ZRenderGraphNode;
+class ZRenderDeviceContext;
+class CLightTile;
+class ZLookAtTriggerManager;
+class ZBoolConditionListenerManager;
+class IBoolCondition;
+class IBoolConditionListener;
 class ZDynamicObject;
 class ZAchievementManagerSimple;
 class SOnlineEvent;
@@ -75,6 +84,12 @@ struct SHttpRequestBehavior;
 class ZPFObstacleHandle;
 enum EPFObstacleClient;
 class ZPFObstacleEntity;
+class ZFileOpener;
+class ZUITextureManager;
+class ZScaleformValue;
+class ZOnlineManager;
+class ZUITemplateCache;
+class ZUIAsyncResourceBase;
 class ZOnlineVersionConfig;
 struct SExternalReferences;
 enum class ESceneLoadingStage;
@@ -226,10 +241,53 @@ public:
     )>* DrawScaleform;
 
     static Hook<void(
+        ZRenderGraphNodeCamera* th, ZRenderGraphNode* pParent, ZRenderTraversalContext* pTraversalContext,
+        ZRenderContext* pRenderContext, uint64_t a5
+    )>* ZRenderGraphNodeCamera_Traverse;
+
+    static Hook<void(
+        CLightTile* th, ZRenderContext* pRenderContext, ZRenderDeviceContext* pDeviceContext, void* a4, void* a5,
+        void* a6, void* a7, void* a8, void* a9, void* a10, void* a11, void* a12, void* a13, void* a14, int32_t a15,
+        void* a16, const float4* vClearColor, bool bDisableLighting, bool bMergeDiffuse,
+        int32_t nSelectedBoxReflectionId, bool bDisableBoxReflections, bool bEnableAtmosphericScatteringBackdrop,
+        bool bIsBoxReflectionPass, int32_t a24
+    )>* CLightTile_DispatchShadeDeferred;
+
+    static Hook<int64_t(ZLookAtTriggerManager* th, ZEntityRef* pTrigger, ZEntityRef* pTarget)>*
+    ZLookAtTriggerManager_RegisterLookAtTrigger;
+
+    static Hook<void(ZLookAtTriggerManager* th, ZEntityRef* pTrigger)>* ZLookAtTriggerManager_UnregisterLookAtTrigger;
+
+    static Hook<void(
+        ZBoolConditionListenerManager* th, const TEntityRef<IBoolCondition>& condition,
+        const TEntityRef<IBoolConditionListener>& listener
+    )>* ZBoolConditionListenerManager_UnregisterListener;
+
+    static Hook<void(
+        ZRenderTraversalContext* pTraversalContext, uint32_t nSkipMask, const ZSparseBitArray& Nodes
+    )>* ZRenderGraphTraversal_TraverseSimple;
+
+    static Hook<void(
         const ZString& id, const ZString& locationId, const ZDynamicObject& extraGameChangedIds, int difficulty,
         const std::function<void(const ZDynamicObject&)>& onOk, const std::function<void(int)>& onError,
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     )>* ZUserChannelContractsProxyBase_GetForPlay2;
+
+    static Hook<void(
+        const ZDynamicObject& creationData, std::function<void(const ZDynamicObject&)> onOk,
+        std::function<void(int)> onError, ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
+    )>* ZUserChannelContractsProxyBase_CreateFromParams;
+
+    static Hook<void(
+        const ZString& userId, const ZDynamicObject& values, const ZString& lastEventTicks, const ZString& clienttype,
+        const ZString& lastPushDt, std::function<void(const ZDynamicObject&)> onOk, std::function<void(int)> onError,
+        ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
+    )>* ZUserChannelEventsProxyBase_SaveAndSynchronizeEvents4;
+
+    static Hook<void(
+        const ZString& userId, const ZDynamicObject& values, std::function<void(const ZDynamicObject&)> onOk,
+        std::function<void(int)> onError, ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
+    )>* ZUserChannelEventsProxyBase_SaveEvents2;
 
     static Hook<ZPFObstacleHandle*(
         ZPathfinder* th,
@@ -245,6 +303,17 @@ public:
     ZPFObstacleEntity_UpdateObstacle;
 
     static Hook<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int32_t& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
+
+    static Hook<Scaleform::File*(ZFileOpener* th, const char* purl, int flags, int mode)>* ZFileOpener_OpenFile;
+
+    static Hook<void(ZUITextureManager* th, const ZString& url, const ZScaleformValue& target)>*
+    ZUITextureManager_AddRequest;
+
+    static Hook<ZString*(ZOnlineManager* th, ZString* out, const ZString& resourceName)>*
+    ZOnlineManager_GetOnlineResourcePath;
+
+    static Hook<ZDynamicObject*(ZUITemplateCache* th, ZDynamicObject* out, ZUIAsyncResourceBase* resource)>*
+    ZUITemplateCache_GetJson;
 
     static Hook<void(ZLevelManager* th, ZLevelManager::EGameState state)>* ZLevelManager_SetGameState;
 

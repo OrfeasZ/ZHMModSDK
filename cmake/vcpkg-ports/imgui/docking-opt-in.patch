@@ -1,0 +1,26 @@
+diff --git a/imgui.cpp b/imgui.cpp
+index 9c0a566..acab068 100644
+--- a/imgui.cpp
++++ b/imgui.cpp
+@@ -7831,6 +7831,9 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
+     IM_ASSERT(g.WithinFrameScope);                  // Forgot to call ImGui::NewFrame()
+     IM_ASSERT(g.FrameCountEnded != g.FrameCount);   // Called ImGui::Render() or ImGui::EndFrame() and haven't called ImGui::NewFrame() again yet
+ 
++    if (!(flags & (ImGuiWindowFlags_Docking | ImGuiWindowFlags_DockNodeHost)))
++        flags |= ImGuiWindowFlags_NoDocking;
++
+     // Find or create
+     ImGuiWindow* window = FindWindowByName(name);
+     const bool window_just_created = (window == NULL);
+diff --git a/imgui.h b/imgui.h
+index 9683832..13e20ad 100644
+--- a/imgui.h
++++ b/imgui.h
+@@ -1233,6 +1233,7 @@ enum ImGuiWindowFlags_
+     ImGuiWindowFlags_NoNavFocus             = 1 << 17,  // No focusing toward this window with keyboard/gamepad navigation (e.g. skipped by Ctrl+Tab)
+     ImGuiWindowFlags_UnsavedDocument        = 1 << 18,  // Display a dot next to the title. When used in a tab/docking context, tab is selected when clicking the X + closure is not assumed (will wait for user to stop submitting the tab). Otherwise closure is assumed when pressing the X, so if you keep submitting the tab may reappear at end of tab bar.
+     ImGuiWindowFlags_NoDocking              = 1 << 19,  // Disable docking of this window
++    ImGuiWindowFlags_Docking                = 1 << 22,  // Allow docking of this window. Windows without this flag get ImGuiWindowFlags_NoDocking.
+     ImGuiWindowFlags_NoNav                  = ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus,
+     ImGuiWindowFlags_NoDecoration           = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse,
+     ImGuiWindowFlags_NoInputs               = ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoNavInputs | ImGuiWindowFlags_NoNavFocus,
