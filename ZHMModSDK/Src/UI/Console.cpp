@@ -26,9 +26,11 @@ void Console::Draw(bool p_HasFocus) {
 
     ImGui::SetWindowCollapsed(true, ImGuiCond_Once);
 
-    const auto& s_ImGuiIO = ImGui::GetIO();
-    ImGui::SetWindowSize(ImVec2(s_ImGuiIO.DisplaySize.x - 60, 400), ImGuiCond_Always);
-    ImGui::SetWindowPos(ImVec2(30, 80 * (s_ImGuiIO.DisplaySize.y / 1800.f)), ImGuiCond_Always);
+    const auto* s_Viewport = ImGui::GetMainViewport();
+    ImGui::SetWindowSize(ImVec2(s_Viewport->Size.x - 60, 400), ImGuiCond_Always);
+    ImGui::SetWindowPos(
+        ImVec2(s_Viewport->Pos.x + 30, s_Viewport->Pos.y + 80 * (s_Viewport->Size.y / 1800.f)), ImGuiCond_Always
+    );
 
     if (s_Showing) {
         // Render the list of log lines.

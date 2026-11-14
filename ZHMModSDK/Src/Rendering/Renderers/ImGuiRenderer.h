@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <mutex>
 #include <vector>
 #include <directx/d3d12.h>
 #include <dxgi1_4.h>
@@ -29,6 +31,17 @@ namespace Rendering::Renderers {
             std::atomic<std::uint64_t> m_FenceValue { 0 };
 
             std::vector<DeferredResource> m_DeferredResources;
+        };
+
+        // A copy of a viewport's draw data that the render thread can use while the window thread builds the next frame.
+        struct DrawDataSnapshot {
+            explicit DrawDataSnapshot(const ImDrawData* p_Source);
+            ~DrawDataSnapshot();
+
+            DrawDataSnapshot(const DrawDataSnapshot&) = delete;
+            DrawDataSnapshot& operator=(const DrawDataSnapshot&) = delete;
+
+            ImDrawData m_DrawData;
         };
 
         ImGuiRenderer();
@@ -101,6 +114,8 @@ namespace Rendering::Renderers {
     private:
         bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
         void TeardownRenderer();
+        void RunFrame();
+        void StartWindowManagerMove(HWND p_Hwnd);
         void Draw();
         void SetupStyles();
         void WaitForCurrentFrameToFinish() const;
@@ -116,15 +131,10 @@ namespace Rendering::Renderers {
 
         void ReleaseDeferredResources(std::vector<DeferredResource>& p_Resources);
 
-        // Input plumbing helpers (ported from ZHM's WndProc handler).
-        static ImGuiMouseSource GetMouseSourceFromMessageExtraInfo();
-        static bool IsVkDown(int p_Vk);
-        static void UpdateKeyModifiers(ImGuiIO& p_ImGuiIO);
-        void UpdateKeyboardCodePage();
-        static ImGuiKey KeyEventToImGuiKey(WPARAM p_Wparam, LPARAM p_Lparam);
-        static void AddKeyEvent(ImGuiIO& p_ImGuiIO, ImGuiKey p_Key, bool p_Down, int p_NativeKeycode, int p_NativeScancode = -1);
-        void UpdateMouseData(ImGuiIO& p_ImGuiIO);
-        void ProcessKeyEventsWorkarounds(ImGuiIO& p_ImGuiIO);
+        std::vector<DeferredResource> TakeDeferredResources();
+
+        // Waits for the GPU, then releases deferred textures and draw data snapshots before textures are destroyed.
+        void ReleaseFrameResources();
 
         bool CreateTexture(
             std::function<HRESULT(ScopedD3DRef<ID3D12Device>&, DirectX::ResourceUploadBatch&, ID3D12Resource**)> p_Loader,
@@ -150,12 +160,15 @@ namespace Rendering::Renderers {
         static constexpr std::size_t c_MaxSRVDescriptors = 1024;
         // The maximum number of frames that can be buffered for render.
         static constexpr std::size_t c_MaxRenderedFrames = 4;
+        // ZApplicationEngineWin32_MainWindowProc applies its cursor clip when it gets this message.
+        static constexpr UINT c_GameUpdateCursorClipMessage = WM_USER + 1;
 
         bool m_RendererSetup = false;
 
         ScopedD3DRef<IDXGISwapChain3> m_SwapChain;
         ScopedD3DRef<ID3D12CommandQueue> m_CommandQueue;
         HWND m_Hwnd = nullptr;
+        bool m_PlatformSetup = false;
 
         std::uint32_t m_RTVDescriptorSize = 0;
         ScopedD3DRef<ID3D12DescriptorHeap> m_RTVDescriptorHeap;
@@ -175,10 +188,33 @@ namespace Rendering::Renderers {
         std::atomic<std::uint32_t> m_FrameCounter { 0 };
         std::atomic<std::uint64_t> m_FenceValue { 0 };
 
+        // Guards the SRV descriptor free list and m_PendingDeferredResources.
+        std::mutex m_DescriptorMutex;
         std::vector<DeferredResource> m_PendingDeferredResources;
 
-        std::int64_t m_Time = 0;
-        std::int64_t m_TicksPerSecond = 0;
+        // The ImGui frame runs on the thread that owns the game window, and the main viewport is rendered on the
+        // present thread. The DX12 backend has shared state (for example Renderer_RenderState), so every call into it
+        // holds this mutex. Never make Win32 calls that can send messages to other threads while holding it.
+        std::mutex m_BackendMutex;
+
+        // DX12 backend viewport callbacks.
+        void (*m_RendererCreateWindow)(ImGuiViewport*) = nullptr;
+        void (*m_RendererDestroyWindow)(ImGuiViewport*) = nullptr;
+        void (*m_RendererSetWindowSize)(ImGuiViewport*, ImVec2) = nullptr;
+        void (*m_RendererRenderWindow)(ImGuiViewport*, void*) = nullptr;
+
+        // Win32 backend show callbac.
+        void (*m_PlatformShowWindow)(ImGuiViewport*) = nullptr;
+
+        UINT m_FrameMessage = 0;
+        std::atomic<bool> m_WndProcHooked { false };
+        std::atomic<bool> m_FrameRequested { false };
+        bool m_InFrame = false;
+        HWND m_WindowManagerMoveHwnd = nullptr;
+
+        std::mutex m_SnapshotMutex;
+        std::unique_ptr<DrawDataSnapshot> m_PendingSnapshot;
+        std::unique_ptr<DrawDataSnapshot> m_RenderSnapshot;
 
         ImGuiContext* m_ImGuiContext = nullptr;
         ImPlotContext* m_ImPlotContext = nullptr;
@@ -193,11 +229,5 @@ namespace Rendering::Renderers {
         std::atomic<bool> m_IsImGuiVisible { true };
         std::atomic<bool> m_UIToggleWarningRequested { false };
         bool m_ShowingUIToggleWarning = false;
-
-        // Input state for WndProc handler.
-        HWND m_MouseHwnd = nullptr;
-        int m_MouseTrackedArea = 0; // 0: not tracked, 1: client area, 2: non-client area
-        int m_MouseButtonsDown = 0;
-        UINT32 m_KeyboardCodePage = CP_ACP;
     };
 }

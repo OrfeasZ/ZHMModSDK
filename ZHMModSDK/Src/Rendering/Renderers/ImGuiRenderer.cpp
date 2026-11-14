@@ -6,12 +6,13 @@
 #include <dxgi1_4.h>
 
 #include <imgui_impl_dx12.h>
+#include <imgui_impl_win32.h>
+#include <imgui_internal.h>
 
 #include <DDSTextureLoader.h>
 #include <WICTextureLoader.h>
 #include <ResourceUploadBatch.h>
 #include <DirectXHelpers.h>
-#include <windowsx.h>
 
 #include "Hooks.h"
 #include "Logging.h"
@@ -25,15 +26,35 @@
 #include "HookImpl.h"
 #include "ModSDK.h"
 #include "Glacier/ZRender.h"
+#include "Util/ProcessUtils.h"
 
 #include <IconsMaterialDesign.h>
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 using namespace Rendering::Renderers;
 
-ImGuiRenderer::ImGuiRenderer() {
-    QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&m_TicksPerSecond));
-    QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&m_Time));
+ImGuiRenderer::DrawDataSnapshot::DrawDataSnapshot(const ImDrawData* p_Source) : m_DrawData(*p_Source) {
+    // Textures are updated on the window thread before the snapshot is taken.
+    m_DrawData.Textures = nullptr;
 
+    for (auto& s_DrawList : m_DrawData.CmdLists) {
+        s_DrawList = s_DrawList->CloneOutput();
+
+        // Resolve texture ids now so the snapshot doesn't read ImTextureData that the window thread owns.
+        for (auto& s_Command : s_DrawList->CmdBuffer) {
+            s_Command.TexRef = ImTextureRef(s_Command.GetTexID());
+        }
+    }
+}
+
+ImGuiRenderer::DrawDataSnapshot::~DrawDataSnapshot() {
+    for (auto* s_DrawList : m_DrawData.CmdLists) {
+        IM_DELETE(s_DrawList);
+    }
+}
+
+ImGuiRenderer::ImGuiRenderer() {
     IMGUI_CHECKVERSION();
     m_ImGuiContext = ImGui::CreateContext();
     m_ImPlotContext = ImPlot::CreateContext();
@@ -42,10 +63,8 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.IniFilename = nullptr;
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
-    s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+    s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
-    s_ImGuiIO.BackendPlatformName = "imgui_impl_win32";
     s_ImGuiIO.BackendRendererName = "imgui_impl_dx12";
 
     // Here we merge the material icon glyphs into each of our other fonts.
@@ -99,6 +118,8 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.FontDefault = m_FontRegular;
 
     SetupStyles();
+
+    m_FrameMessage = RegisterWindowMessageW(L"ZHMModSDK_ImGuiFrame");
 }
 
 ImGuiRenderer::~ImGuiRenderer() {
@@ -201,6 +222,8 @@ void ImGuiRenderer::SetupStyles() {
 void ImGuiRenderer::OnEngineInitialized() {
     Hooks::ZApplicationEngineWin32_MainWindowProc->AddDetour(this, &ImGuiRenderer::WndProc);
     Hooks::ZKeyboardWindows_Update->AddDetour(this, &ImGuiRenderer::ZKeyboardWindows_Update);
+
+    m_WndProcHooked.store(true, std::memory_order_release);
 }
 
 void ImGuiRenderer::SetSwapChain(IDXGISwapChain3* p_SwapChain) {
@@ -229,12 +252,34 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
         return;
     }
 
+    // The ImGui frame runs on the thread that owns the game window, since the platform windows ImGui creates must
+    // belong to that thread too. Owned windows on another thread share its input queue and can deadlock with it.
+    if (m_WndProcHooked.load(std::memory_order_acquire) &&
+        !m_FrameRequested.exchange(true, std::memory_order_acq_rel)) {
+        if (!PostMessageW(m_Hwnd, m_FrameMessage, 0, 0)) {
+            m_FrameRequested.store(false, std::memory_order_release);
+        }
+    }
+
     if (!m_IsImGuiVisible.load(std::memory_order_acquire)) {
+        m_RenderSnapshot.reset();
         return;
     }
 
-    Draw();
-    ImGui::Render();
+    std::unique_ptr<DrawDataSnapshot> s_OldSnapshot;
+
+    {
+        std::scoped_lock s_Lock(m_SnapshotMutex);
+
+        // Free the old snapshjot after the lock is released, so the window thread doesn't wait for it.
+        if (m_PendingSnapshot) {
+            s_OldSnapshot = std::exchange(m_RenderSnapshot, std::move(m_PendingSnapshot));
+        }
+    }
+
+    if (!m_RenderSnapshot) {
+        return;
+    }
 
     const auto s_NextFrame = (++m_FrameCounter) % m_FrameContext.size();
     auto& s_FrameCtx = m_FrameContext[s_NextFrame];
@@ -269,10 +314,12 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     m_CommandList->OMSetRenderTargets(1, &s_RTVDescriptor, FALSE, nullptr);
     m_CommandList->SetDescriptorHeaps(1, &m_SRVDescriptorHeap.m_Ref);
 
-    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList);
+    {
+        std::scoped_lock s_Lock(m_BackendMutex);
+        ImGui_ImplDX12_RenderDrawData(&m_RenderSnapshot->m_DrawData, m_CommandList);
+    }
 
-    s_FrameCtx.m_DeferredResources = std::move(m_PendingDeferredResources);
-    m_PendingDeferredResources.clear();
+    s_FrameCtx.m_DeferredResources = TakeDeferredResources();
 
     D3D12_RESOURCE_BARRIER s_PresentBarrier {};
     s_PresentBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -319,6 +366,8 @@ void ImGuiRenderer::AllocateSRVDescriptor(
     D3D12_CPU_DESCRIPTOR_HANDLE* p_OutCpuHandle,
     D3D12_GPU_DESCRIPTOR_HANDLE* p_OutGpuHandle
 ) {
+    std::scoped_lock s_Lock(m_DescriptorMutex);
+
     UINT s_Index;
 
     if (!m_FreeSRVDescriptorIndices.empty()) {
@@ -346,7 +395,13 @@ void ImGuiRenderer::FreeSRVDescriptor(
     const UINT s_Index =
         static_cast<UINT>((p_CpuHandle.ptr - s_HeapStart.ptr) / m_SRVDescriptorSize);
 
+    std::scoped_lock s_Lock(m_DescriptorMutex);
     m_FreeSRVDescriptorIndices.push_back(s_Index);
+}
+
+std::vector<ImGuiRenderer::DeferredResource> ImGuiRenderer::TakeDeferredResources() {
+    std::scoped_lock s_Lock(m_DescriptorMutex);
+    return std::exchange(m_PendingDeferredResources, {});
 }
 
 void ImGuiRenderer::ReleaseDeferredResources(
@@ -491,12 +546,37 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
         return false;
     }
 
-    ImGuiIO& s_Io = ImGui::GetIO();
+    auto& s_PlatformIO = ImGui::GetPlatformIO();
 
-    s_Io.DisplaySize = ImVec2(static_cast<float>(s_SwapChainDesc.Width), static_cast<float>(s_SwapChainDesc.Height));
-    s_Io.FontGlobalScale = (s_Io.DisplaySize.y / 1800.f);
+    m_RendererCreateWindow = s_PlatformIO.Renderer_CreateWindow;
+    m_RendererDestroyWindow = s_PlatformIO.Renderer_DestroyWindow;
+    m_RendererSetWindowSize = s_PlatformIO.Renderer_SetWindowSize;
+    m_RendererRenderWindow = s_PlatformIO.Renderer_RenderWindow;
 
-    ImGui::GetMainViewport()->PlatformHandleRaw = m_Hwnd;
+    s_PlatformIO.Renderer_CreateWindow = [](ImGuiViewport* p_Viewport) {
+        const auto s_Renderer = ModSDK::GetInstance()->GetImguiRenderer();
+
+        std::scoped_lock s_Lock(s_Renderer->m_BackendMutex);
+        s_Renderer->m_RendererCreateWindow(p_Viewport);
+    };
+
+    s_PlatformIO.Renderer_DestroyWindow = [](ImGuiViewport* p_Viewport) {
+        const auto s_Renderer = ModSDK::GetInstance()->GetImguiRenderer();
+        std::scoped_lock s_Lock(s_Renderer->m_BackendMutex);
+        s_Renderer->m_RendererDestroyWindow(p_Viewport);
+    };
+
+    s_PlatformIO.Renderer_SetWindowSize = [](ImGuiViewport* p_Viewport, ImVec2 p_Size) {
+        const auto s_Renderer = ModSDK::GetInstance()->GetImguiRenderer();
+        std::scoped_lock s_Lock(s_Renderer->m_BackendMutex);
+        s_Renderer->m_RendererSetWindowSize(p_Viewport, p_Size);
+    };
+
+    s_PlatformIO.Renderer_RenderWindow = [](ImGuiViewport* p_Viewport, void* p_RenderArg) {
+        const auto s_Renderer = ModSDK::GetInstance()->GetImguiRenderer();
+        std::scoped_lock s_Lock(s_Renderer->m_BackendMutex);
+        s_Renderer->m_RendererRenderWindow(p_Viewport, p_RenderArg);
+    };
 
     m_RendererSetup = true;
 
@@ -510,15 +590,21 @@ void ImGuiRenderer::TeardownRenderer() {
         return;
     }
 
-    WaitForCurrentFrameToFinish();
+    ReleaseFrameResources();
 
-    for (auto& s_FrameCtx : m_FrameContext) {
-        ReleaseDeferredResources(s_FrameCtx.m_DeferredResources);
-    }
-
-    ReleaseDeferredResources(m_PendingDeferredResources);
+    // The wrappers reach this renderer through ModSDK, which may already be tearing it down.
+    auto& s_PlatformIO = ImGui::GetPlatformIO();
+    s_PlatformIO.Renderer_CreateWindow = m_RendererCreateWindow;
+    s_PlatformIO.Renderer_DestroyWindow = m_RendererDestroyWindow;
+    s_PlatformIO.Renderer_SetWindowSize = m_RendererSetWindowSize;
+    s_PlatformIO.Renderer_RenderWindow = m_RendererRenderWindow;
 
     ImGui_ImplDX12_Shutdown();
+
+    if (m_PlatformSetup) {
+        ImGui_ImplWin32_Shutdown();
+        m_PlatformSetup = false;
+    }
 
     m_BackBuffers.clear();
     m_CommandList.Reset();
@@ -531,11 +617,7 @@ void ImGuiRenderer::TeardownRenderer() {
     m_RendererSetup = false;
 }
 
-void ImGuiRenderer::OnReset(IDXGISwapChain3* p_SwapChain) {
-    if (!m_RendererSetup) {
-        return;
-    }
-
+void ImGuiRenderer::ReleaseFrameResources() {
     WaitForCurrentFrameToFinish();
 
     for (auto& s_FrameCtx : m_FrameContext) {
@@ -544,10 +626,25 @@ void ImGuiRenderer::OnReset(IDXGISwapChain3* p_SwapChain) {
         s_FrameCtx.m_FenceValue.store(m_FenceValue.load(std::memory_order_acquire));
     }
 
-    ReleaseDeferredResources(m_PendingDeferredResources);
+    auto s_PendingResources = TakeDeferredResources();
+    ReleaseDeferredResources(s_PendingResources);
+
+    m_RenderSnapshot.reset();
+
+    std::scoped_lock s_Lock(m_SnapshotMutex);
+    m_PendingSnapshot.reset();
+}
+
+void ImGuiRenderer::OnReset(IDXGISwapChain3* p_SwapChain) {
+    if (!m_RendererSetup) {
+        return;
+    }
+
+    ReleaseFrameResources();
 
     m_BackBuffers.clear();
 
+    std::scoped_lock s_Lock(m_BackendMutex);
     ImGui_ImplDX12_InvalidateDeviceObjects();
 }
 
@@ -584,29 +681,150 @@ void ImGuiRenderer::PostReset(IDXGISwapChain3* p_SwapChain) {
         s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, s_Descriptor);
     }
 
+    std::scoped_lock s_Lock(m_BackendMutex);
+
     ImGui_ImplDX12_CreateDeviceObjects();
-
-    ImGuiIO& s_Io = ImGui::GetIO();
-
-    s_Io.DisplaySize = ImVec2(static_cast<float>(s_SwapChainDesc.Width), static_cast<float>(s_SwapChainDesc.Height));
-    s_Io.FontGlobalScale = (s_Io.DisplaySize.y / 1800.f);
 }
 
-void ImGuiRenderer::Draw() {
-    ImGui_ImplDX12_NewFrame();
+void ImGuiRenderer::RunFrame() {
+    m_FrameRequested.store(false, std::memory_order_release);
 
-    ImGuiIO& s_Io = ImGui::GetIO();
+    if (m_InFrame) {
+        return;
+    }
 
-    std::int64_t s_Now = 0;
-    QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&s_Now));
-    s_Io.DeltaTime = static_cast<float>(s_Now - m_Time) / m_TicksPerSecond;
-    m_Time = s_Now;
+    if (!m_PlatformSetup) {
+        if (!ImGui_ImplWin32_Init(m_Hwnd)) {
+            Logger::Error("[ImGuiRenderer] ImGui_ImplWin32_Init failed.");
+            return;
+        }
 
-    UpdateMouseData(s_Io);
-    ProcessKeyEventsWorkarounds(s_Io);
+        // ImGui shows windows dragged out of the game without activating them, so they end up behind the game
+        // window, which stays active. Popups, menus and tooltips have no taskbar icon and keep that behavior.
+        auto& s_PlatformIO = ImGui::GetPlatformIO();
+        m_PlatformShowWindow = s_PlatformIO.Platform_ShowWindow;
+
+        s_PlatformIO.Platform_ShowWindow = [](ImGuiViewport* p_Viewport) {
+            ModSDK::GetInstance()->GetImguiRenderer()->m_PlatformShowWindow(p_Viewport);
+
+            if (!(p_Viewport->Flags & ImGuiViewportFlags_NoTaskBarIcon)) {
+                ImGui::GetPlatformIO().Platform_SetWindowFocus(p_Viewport);
+            }
+        };
+
+        m_PlatformSetup = true;
+    }
+
+    if (!m_IsImGuiVisible.load(std::memory_order_acquire)) {
+        ImGui::DestroyPlatformWindows();
+        return;
+    }
+
+    // Wait until the game window has a non zero size.
+    RECT s_ClientRect {};
+
+    if (IsIconic(m_Hwnd) || !GetClientRect(m_Hwnd, &s_ClientRect) || s_ClientRect.right <= 0 || s_ClientRect.bottom <= 0) {
+        return;
+    }
+
+    m_InFrame = true;
+
+    {
+        std::scoped_lock s_Lock(m_BackendMutex);
+        ImGui_ImplDX12_NewFrame();
+    }
+
+    ImGui_ImplWin32_NewFrame();
+
+    auto& s_IO = ImGui::GetIO();
+    s_IO.FontGlobalScale = s_IO.DisplaySize.y / 1800.f;
+
+    // While the window manager moves a window, Wine gets no pointer updates, so we work out the mouse position from
+    // where the window is and where on it the drag started. ImGui then places the window where it already is, and can
+    // find the docking target under the mouse. These events come after the Win32 backend's, which use the stale
+    // cursor position.
+    if (m_WindowManagerMoveHwnd) {
+        const ImVec2 s_ClickOffset = ImGui::GetCurrentContext()->ActiveIdClickOffset;
+        POINT s_MovePoint {};
+        ClientToScreen(m_WindowManagerMoveHwnd, &s_MovePoint);
+        s_MovePoint.x += static_cast<LONG>(s_ClickOffset.x);
+        s_MovePoint.y += static_cast<LONG>(s_ClickOffset.y);
+
+        // The moved window is transparent to hit tests while it is dragged, so this finds the window under it.
+        const ImGuiViewport* s_HoveredViewport = ImGui::FindViewportByPlatformHandle(WindowFromPoint(s_MovePoint));
+
+        s_IO.AddMousePosEvent(static_cast<float>(s_MovePoint.x), static_cast<float>(s_MovePoint.y));
+        s_IO.AddMouseViewportEvent(s_HoveredViewport ? s_HoveredViewport->ID : 0);
+    }
 
     ImGui::NewFrame();
 
+    Draw();
+
+    ImGui::Render();
+
+    {
+        std::scoped_lock s_Lock(m_BackendMutex);
+
+        for (ImTextureData* s_Texture : ImGui::GetPlatformIO().Textures) {
+            if (s_Texture->Status != ImTextureStatus_OK) {
+                ImGui_ImplDX12_UpdateTexture(s_Texture);
+            }
+        }
+    }
+
+    auto s_Snapshot = std::make_unique<DrawDataSnapshot>(ImGui::GetDrawData());
+
+    {
+        std::scoped_lock s_Lock(m_SnapshotMutex);
+        m_PendingSnapshot = std::move(s_Snapshot);
+    }
+
+    ImGui::UpdatePlatformWindows();
+    ImGui::RenderPlatformWindowsDefault();
+
+    m_InFrame = false;
+
+    // X11 window managers like KWin keep windows that a program moves inside the work area, but not windows that
+    // the user drags. So under Wine we hand the drag of a detached window over to the window manager.
+    static const bool s_IsWine = Util::ProcessUtils::IsRunningUnderWine();
+    const ImGuiWindow* s_MovingWindow = ImGui::GetCurrentContext()->MovingWindow;
+
+    if (!s_IsWine || m_WindowManagerMoveHwnd || !s_MovingWindow || !s_MovingWindow->ViewportOwned) {
+        return;
+    }
+
+    const auto s_MovingHwnd = static_cast<HWND>(s_MovingWindow->Viewport->PlatformHandleRaw);
+
+    if (s_MovingHwnd && (GetAsyncKeyState(VK_LBUTTON) & 0x8000)) {
+        StartWindowManagerMove(s_MovingHwnd);
+    }
+}
+
+void ImGuiRenderer::StartWindowManagerMove(HWND p_Hwnd) {
+    POINT s_Cursor {};
+    GetCursorPos(&s_Cursor);
+
+    // ImGui captures the mouse while a button is down, and the move can't start while another window holds it.
+    ReleaseCapture();
+
+    m_WindowManagerMoveHwnd = p_Hwnd;
+    ClipCursor(nullptr);
+
+    // This runs a modal loop until the button is released. The loop still dispatches our frame messages, so ImGui
+    // keeps running and can show the docking targets.
+    SendMessageW(p_Hwnd, WM_NCLBUTTONDOWN, HTCAPTION, MAKELPARAM(s_Cursor.x, s_Cursor.y));
+
+    m_WindowManagerMoveHwnd = nullptr;
+    PostMessageW(m_Hwnd, c_GameUpdateCursorClipMessage, 0, 0);
+
+    // The window manager can swallow the button release, which would leave ImGui dragging the window.
+    if (!(GetAsyncKeyState(VK_LBUTTON) & 0x8000)) {
+        ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, false);
+    }
+}
+
+void ImGuiRenderer::Draw() {
     const bool s_HasFocus = m_ImGuiHasFocus.load(std::memory_order_acquire);
 
     ImGui::GetStyle().Alpha = s_HasFocus ? 1.f : 0.3f;
@@ -662,312 +880,6 @@ void ImGuiRenderer::Draw() {
         ImGui::PopFont();
         ImGui::End();
         ImGui::PopFont();
-    }
-}
-
-ImGuiMouseSource ImGuiRenderer::GetMouseSourceFromMessageExtraInfo() {
-    const auto s_ExtraInfo = ::GetMessageExtraInfo();
-    if ((s_ExtraInfo & 0xFFFFFF80) == 0xFF515700) {
-        return ImGuiMouseSource_Pen;
-    }
-    if ((s_ExtraInfo & 0xFFFFFF80) == 0xFF515780) {
-        return ImGuiMouseSource_TouchScreen;
-    }
-    return ImGuiMouseSource_Mouse;
-}
-
-bool ImGuiRenderer::IsVkDown(int p_Vk) {
-    return (::GetKeyState(p_Vk) & 0x8000) != 0;
-}
-
-void ImGuiRenderer::UpdateKeyModifiers(ImGuiIO& p_Io) {
-    p_Io.AddKeyEvent(ImGuiMod_Ctrl, IsVkDown(VK_CONTROL));
-    p_Io.AddKeyEvent(ImGuiMod_Shift, IsVkDown(VK_SHIFT));
-    p_Io.AddKeyEvent(ImGuiMod_Alt, IsVkDown(VK_MENU));
-    p_Io.AddKeyEvent(ImGuiMod_Super, IsVkDown(VK_LWIN) || IsVkDown(VK_RWIN));
-}
-
-void ImGuiRenderer::UpdateKeyboardCodePage() {
-    const auto s_KeyboardLayout = ::GetKeyboardLayout(0);
-    const auto s_KeyboardLcid = MAKELCID(HIWORD(s_KeyboardLayout), SORT_DEFAULT);
-    if (::GetLocaleInfoA(
-        s_KeyboardLcid, LOCALE_RETURN_NUMBER | LOCALE_IDEFAULTANSICODEPAGE, reinterpret_cast<LPSTR>(&m_KeyboardCodePage),
-        sizeof(m_KeyboardCodePage)
-    )
-        == 0) {
-        m_KeyboardCodePage = CP_ACP;
-    }
-}
-
-ImGuiKey ImGuiRenderer::KeyEventToImGuiKey(WPARAM p_Wparam, LPARAM p_Lparam) {
-    if (p_Wparam == VK_RETURN && (HIWORD(p_Lparam) & KF_EXTENDED)) {
-        return ImGuiKey_KeypadEnter;
-    }
-    const int s_Scancode = LOBYTE(HIWORD(p_Lparam));
-    switch (p_Wparam) {
-        case VK_TAB:
-            return ImGuiKey_Tab;
-        case VK_LEFT:
-            return ImGuiKey_LeftArrow;
-        case VK_RIGHT:
-            return ImGuiKey_RightArrow;
-        case VK_UP:
-            return ImGuiKey_UpArrow;
-        case VK_DOWN:
-            return ImGuiKey_DownArrow;
-        case VK_PRIOR:
-            return ImGuiKey_PageUp;
-        case VK_NEXT:
-            return ImGuiKey_PageDown;
-        case VK_HOME:
-            return ImGuiKey_Home;
-        case VK_END:
-            return ImGuiKey_End;
-        case VK_INSERT:
-            return ImGuiKey_Insert;
-        case VK_DELETE:
-            return ImGuiKey_Delete;
-        case VK_BACK:
-            return ImGuiKey_Backspace;
-        case VK_SPACE:
-            return ImGuiKey_Space;
-        case VK_RETURN:
-            return ImGuiKey_Enter;
-        case VK_ESCAPE:
-            return ImGuiKey_Escape;
-        case VK_OEM_COMMA:
-            return ImGuiKey_Comma;
-        case VK_OEM_PERIOD:
-            return ImGuiKey_Period;
-        case VK_CAPITAL:
-            return ImGuiKey_CapsLock;
-        case VK_SCROLL:
-            return ImGuiKey_ScrollLock;
-        case VK_NUMLOCK:
-            return ImGuiKey_NumLock;
-        case VK_SNAPSHOT:
-            return ImGuiKey_PrintScreen;
-        case VK_PAUSE:
-            return ImGuiKey_Pause;
-        case VK_NUMPAD0:
-            return ImGuiKey_Keypad0;
-        case VK_NUMPAD1:
-            return ImGuiKey_Keypad1;
-        case VK_NUMPAD2:
-            return ImGuiKey_Keypad2;
-        case VK_NUMPAD3:
-            return ImGuiKey_Keypad3;
-        case VK_NUMPAD4:
-            return ImGuiKey_Keypad4;
-        case VK_NUMPAD5:
-            return ImGuiKey_Keypad5;
-        case VK_NUMPAD6:
-            return ImGuiKey_Keypad6;
-        case VK_NUMPAD7:
-            return ImGuiKey_Keypad7;
-        case VK_NUMPAD8:
-            return ImGuiKey_Keypad8;
-        case VK_NUMPAD9:
-            return ImGuiKey_Keypad9;
-        case VK_DECIMAL:
-            return ImGuiKey_KeypadDecimal;
-        case VK_DIVIDE:
-            return ImGuiKey_KeypadDivide;
-        case VK_MULTIPLY:
-            return ImGuiKey_KeypadMultiply;
-        case VK_SUBTRACT:
-            return ImGuiKey_KeypadSubtract;
-        case VK_ADD:
-            return ImGuiKey_KeypadAdd;
-        case VK_LSHIFT:
-            return ImGuiKey_LeftShift;
-        case VK_LCONTROL:
-            return ImGuiKey_LeftCtrl;
-        case VK_LMENU:
-            return ImGuiKey_LeftAlt;
-        case VK_LWIN:
-            return ImGuiKey_LeftSuper;
-        case VK_RSHIFT:
-            return ImGuiKey_RightShift;
-        case VK_RCONTROL:
-            return ImGuiKey_RightCtrl;
-        case VK_RMENU:
-            return ImGuiKey_RightAlt;
-        case VK_RWIN:
-            return ImGuiKey_RightSuper;
-        case VK_APPS:
-            return ImGuiKey_Menu;
-        case '0':
-            return ImGuiKey_0;
-        case '1':
-            return ImGuiKey_1;
-        case '2':
-            return ImGuiKey_2;
-        case '3':
-            return ImGuiKey_3;
-        case '4':
-            return ImGuiKey_4;
-        case '5':
-            return ImGuiKey_5;
-        case '6':
-            return ImGuiKey_6;
-        case '7':
-            return ImGuiKey_7;
-        case '8':
-            return ImGuiKey_8;
-        case '9':
-            return ImGuiKey_9;
-        case 'A':
-            return ImGuiKey_A;
-        case 'B':
-            return ImGuiKey_B;
-        case 'C':
-            return ImGuiKey_C;
-        case 'D':
-            return ImGuiKey_D;
-        case 'E':
-            return ImGuiKey_E;
-        case 'F':
-            return ImGuiKey_F;
-        case 'G':
-            return ImGuiKey_G;
-        case 'H':
-            return ImGuiKey_H;
-        case 'I':
-            return ImGuiKey_I;
-        case 'J':
-            return ImGuiKey_J;
-        case 'K':
-            return ImGuiKey_K;
-        case 'L':
-            return ImGuiKey_L;
-        case 'M':
-            return ImGuiKey_M;
-        case 'N':
-            return ImGuiKey_N;
-        case 'O':
-            return ImGuiKey_O;
-        case 'P':
-            return ImGuiKey_P;
-        case 'Q':
-            return ImGuiKey_Q;
-        case 'R':
-            return ImGuiKey_R;
-        case 'S':
-            return ImGuiKey_S;
-        case 'T':
-            return ImGuiKey_T;
-        case 'U':
-            return ImGuiKey_U;
-        case 'V':
-            return ImGuiKey_V;
-        case 'W':
-            return ImGuiKey_W;
-        case 'X':
-            return ImGuiKey_X;
-        case 'Y':
-            return ImGuiKey_Y;
-        case 'Z':
-            return ImGuiKey_Z;
-        case VK_F1:
-            return ImGuiKey_F1;
-        case VK_F2:
-            return ImGuiKey_F2;
-        case VK_F3:
-            return ImGuiKey_F3;
-        case VK_F4:
-            return ImGuiKey_F4;
-        case VK_F5:
-            return ImGuiKey_F5;
-        case VK_F6:
-            return ImGuiKey_F6;
-        case VK_F7:
-            return ImGuiKey_F7;
-        case VK_F8:
-            return ImGuiKey_F8;
-        case VK_F9:
-            return ImGuiKey_F9;
-        case VK_F10:
-            return ImGuiKey_F10;
-        case VK_F11:
-            return ImGuiKey_F11;
-        case VK_F12:
-            return ImGuiKey_F12;
-        case VK_BROWSER_BACK:
-            return ImGuiKey_AppBack;
-        case VK_BROWSER_FORWARD:
-            return ImGuiKey_AppForward;
-        default:
-            break;
-    }
-    switch (s_Scancode) {
-        case 41:
-            return ImGuiKey_GraveAccent;
-        case 12:
-            return ImGuiKey_Minus;
-        case 13:
-            return ImGuiKey_Equal;
-        case 26:
-            return ImGuiKey_LeftBracket;
-        case 27:
-            return ImGuiKey_RightBracket;
-        case 86:
-            return ImGuiKey_Oem102;
-        case 43:
-            return ImGuiKey_Backslash;
-        case 39:
-            return ImGuiKey_Semicolon;
-        case 40:
-            return ImGuiKey_Apostrophe;
-        case 51:
-            return ImGuiKey_Comma;
-        case 52:
-            return ImGuiKey_Period;
-        case 53:
-            return ImGuiKey_Slash;
-        default:
-            break;
-    }
-    return ImGuiKey_None;
-}
-
-void ImGuiRenderer::AddKeyEvent(ImGuiIO& p_Io, ImGuiKey p_Key, bool p_Down, int p_NativeKeycode, int p_NativeScancode) {
-    p_Io.AddKeyEvent(p_Key, p_Down);
-    p_Io.SetKeyEventNativeData(p_Key, p_NativeKeycode, p_NativeScancode);
-}
-
-void ImGuiRenderer::UpdateMouseData(ImGuiIO& p_Io) {
-    const auto s_Focused = ::GetForegroundWindow();
-    const bool s_IsAppFocused = (s_Focused == m_Hwnd);
-    if (!s_IsAppFocused) {
-        return;
-    }
-    if (p_Io.WantSetMousePos) {
-        POINT s_Pos = { static_cast<int>(p_Io.MousePos.x), static_cast<int>(p_Io.MousePos.y) };
-        if (::ClientToScreen(m_Hwnd, &s_Pos)) {
-            ::SetCursorPos(s_Pos.x, s_Pos.y);
-        }
-    }
-    if (!p_Io.WantSetMousePos && m_MouseTrackedArea == 0) {
-        POINT s_Pos;
-        if (::GetCursorPos(&s_Pos) && ::ScreenToClient(m_Hwnd, &s_Pos)) {
-            p_Io.AddMousePosEvent(static_cast<float>(s_Pos.x), static_cast<float>(s_Pos.y));
-        }
-    }
-}
-
-void ImGuiRenderer::ProcessKeyEventsWorkarounds(ImGuiIO& p_Io) {
-    if (ImGui::IsKeyDown(ImGuiKey_LeftShift) && !IsVkDown(VK_LSHIFT)) {
-        AddKeyEvent(p_Io, ImGuiKey_LeftShift, false, VK_LSHIFT);
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_RightShift) && !IsVkDown(VK_RSHIFT)) {
-        AddKeyEvent(p_Io, ImGuiKey_RightShift, false, VK_RSHIFT);
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_LeftSuper) && !IsVkDown(VK_LWIN)) {
-        AddKeyEvent(p_Io, ImGuiKey_LeftSuper, false, VK_LWIN);
-    }
-    if (ImGui::IsKeyDown(ImGuiKey_RightSuper) && !IsVkDown(VK_RWIN)) {
-        AddKeyEvent(p_Io, ImGuiKey_RightSuper, false, VK_RWIN);
     }
 }
 
@@ -1101,6 +1013,8 @@ void ImGuiRenderer::DestroyImGuiTextureSRV(ImGuiTexture& p_Texture) {
         return;
     }
 
+    std::scoped_lock s_Lock(m_DescriptorMutex);
+
     m_PendingDeferredResources.push_back({
         .m_Texture = {},
         .m_ImGuiTexture = p_Texture
@@ -1113,6 +1027,8 @@ void ImGuiRenderer::DestroyImGuiTexture(ScopedD3DRef<ID3D12Resource>& p_Texture,
     if (!p_Texture && !p_ImGuiTexture.id) {
         return;
     }
+
+    std::scoped_lock s_Lock(m_DescriptorMutex);
 
     m_PendingDeferredResources.push_back({
         std::move(p_Texture),
@@ -1223,6 +1139,16 @@ DEFINE_DETOUR_WITH_CONTEXT(
     if (ImGui::GetCurrentContext() == nullptr)
         return HookResult<LRESULT>(HookAction::Continue());
 
+    if (p_Message == m_FrameMessage) {
+        RunFrame();
+        return { HookAction::Return(), 0 };
+    }
+
+    // Fix weird window clipping behavior under Wine.
+    if (p_Message == c_GameUpdateCursorClipMessage && m_WindowManagerMoveHwnd) {
+        return { HookAction::Return(), 0 };
+    }
+
     // Layout-independent tilde toggle: compare the hardware scancode
     // (lParam bits 16-23) rather than VK_OEM_3, which moves per layout.
     const uint8_t s_ScanCode = static_cast<uint8_t>(p_Lparam >> 16);
@@ -1300,212 +1226,8 @@ DEFINE_DETOUR_WITH_CONTEXT(
         return HookResult<LRESULT>(HookAction::Continue());
     }
 
-    ImGuiIO& s_ImGuiIO = ImGui::GetIO();
-
-    switch (p_Message) {
-        case WM_MOUSEMOVE:
-        case WM_NCMOUSEMOVE: {
-            // We need to call TrackMouseEvent in order to receive WM_MOUSELEAVE events
-            const auto s_MouseSource = GetMouseSourceFromMessageExtraInfo();
-            const int s_Area = (p_Message == WM_MOUSEMOVE) ? 1 : 2;
-            m_MouseHwnd = p_Hwnd;
-
-            if (m_MouseTrackedArea != s_Area) {
-                TRACKMOUSEEVENT s_TmeCancel = { sizeof(s_TmeCancel), TME_CANCEL, p_Hwnd, 0 };
-                TRACKMOUSEEVENT s_TmeTrack = {
-                    sizeof(s_TmeTrack), static_cast<DWORD>(s_Area == 2 ? (TME_LEAVE | TME_NONCLIENT) : TME_LEAVE),
-                    p_Hwnd, 0
-                };
-
-                if (m_MouseTrackedArea != 0) {
-                    ::TrackMouseEvent(&s_TmeCancel);
-                }
-
-                ::TrackMouseEvent(&s_TmeTrack);
-                m_MouseTrackedArea = s_Area;
-            }
-
-            POINT s_MousePos = { static_cast<LONG>(GET_X_LPARAM(p_Lparam)), static_cast<LONG>(GET_Y_LPARAM(p_Lparam)) };
-
-            if (p_Message == WM_NCMOUSEMOVE && ::ScreenToClient(p_Hwnd, &s_MousePos) == FALSE) {
-                // WM_NCMOUSEMOVE are provided in absolute coordinates.
-                break;
-            }
-
-            s_ImGuiIO.AddMouseSourceEvent(s_MouseSource);
-            s_ImGuiIO.AddMousePosEvent(static_cast<float>(s_MousePos.x), static_cast<float>(s_MousePos.y));
-
-            break;
-        }
-
-        case WM_MOUSELEAVE:
-        case WM_NCMOUSELEAVE: {
-            if (const int s_Area = (p_Message == WM_MOUSELEAVE) ? 1 : 2; m_MouseTrackedArea == s_Area) {
-                if (m_MouseHwnd == p_Hwnd) {
-                    m_MouseHwnd = nullptr;
-                }
-
-                m_MouseTrackedArea = 0;
-                s_ImGuiIO.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
-            }
-
-            break;
-        }
-
-        case WM_LBUTTONDOWN:
-        case WM_LBUTTONDBLCLK:
-        case WM_RBUTTONDOWN:
-        case WM_RBUTTONDBLCLK:
-        case WM_MBUTTONDOWN:
-        case WM_MBUTTONDBLCLK:
-        case WM_XBUTTONDOWN:
-        case WM_XBUTTONDBLCLK: {
-            const auto s_MouseSource = GetMouseSourceFromMessageExtraInfo();
-            int s_Button = 0;
-
-            if (p_Message == WM_LBUTTONDOWN || p_Message == WM_LBUTTONDBLCLK) { s_Button = 0; }
-            if (p_Message == WM_RBUTTONDOWN || p_Message == WM_RBUTTONDBLCLK) { s_Button = 1; }
-            if (p_Message == WM_MBUTTONDOWN || p_Message == WM_MBUTTONDBLCLK) { s_Button = 2; }
-            if (p_Message == WM_XBUTTONDOWN || p_Message == WM_XBUTTONDBLCLK) {
-                s_Button = GET_XBUTTON_WPARAM(p_Wparam) == XBUTTON1 ? 3 : 4;
-            }
-
-            HWND s_HwndWithCapture = ::GetCapture();
-
-            if (m_MouseButtonsDown != 0 && s_HwndWithCapture != p_Hwnd) {
-                // Did we externally lose capture?
-                m_MouseButtonsDown = 0;
-            }
-
-            if (m_MouseButtonsDown == 0 && s_HwndWithCapture == nullptr) {
-                ::SetCapture(p_Hwnd);
-            }
-
-            // Allow us to read mouse coordinates when dragging mouse outside our window bounds.
-            m_MouseButtonsDown |= 1 << s_Button;
-            s_ImGuiIO.AddMouseSourceEvent(s_MouseSource);
-            s_ImGuiIO.AddMouseButtonEvent(s_Button, true);
-
-            break;
-        }
-
-        case WM_LBUTTONUP:
-        case WM_RBUTTONUP:
-        case WM_MBUTTONUP:
-        case WM_XBUTTONUP: {
-            const auto s_MouseSource = GetMouseSourceFromMessageExtraInfo();
-            int s_Button = 0;
-
-            if (p_Message == WM_LBUTTONUP) { s_Button = 0; }
-            if (p_Message == WM_RBUTTONUP) { s_Button = 1; }
-            if (p_Message == WM_MBUTTONUP) { s_Button = 2; }
-            if (p_Message == WM_XBUTTONUP) { s_Button = (GET_XBUTTON_WPARAM(p_Wparam) == XBUTTON1) ? 3 : 4; }
-
-            m_MouseButtonsDown &= ~(1 << s_Button);
-
-            if (m_MouseButtonsDown == 0 && ::GetCapture() == p_Hwnd) {
-                ::ReleaseCapture();
-            }
-
-            s_ImGuiIO.AddMouseSourceEvent(s_MouseSource);
-            s_ImGuiIO.AddMouseButtonEvent(s_Button, false);
-
-            break;
-        }
-
-        case WM_MOUSEWHEEL:
-            s_ImGuiIO.AddMouseWheelEvent(
-                0.0f, static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(WHEEL_DELTA)
-            );
-            break;
-
-        case WM_MOUSEHWHEEL:
-            s_ImGuiIO.AddMouseWheelEvent(
-                -static_cast<float>(GET_WHEEL_DELTA_WPARAM(p_Wparam)) / static_cast<float>(WHEEL_DELTA), 0.0f
-            );
-            break;
-
-        case WM_KEYDOWN:
-        case WM_KEYUP:
-        case WM_SYSKEYDOWN:
-        case WM_SYSKEYUP: {
-            const bool s_IsKeyDown = (p_Message == WM_KEYDOWN || p_Message == WM_SYSKEYDOWN);
-
-            if (p_Wparam < 256) {
-                // Submit modifiers
-                UpdateKeyModifiers(s_ImGuiIO);
-
-                // Obtain virtual key code and convert to ImGuiKey
-                const ImGuiKey s_Key = KeyEventToImGuiKey(p_Wparam, p_Lparam);
-                const int s_Vk = static_cast<int>(p_Wparam);
-                const int s_Scancode = LOBYTE(HIWORD(p_Lparam));
-
-                // Special behavior for VK_SNAPSHOT / ImGuiKey_PrintScreen as Windows doesn't emit the key down event.
-                if (s_Key == ImGuiKey_PrintScreen && !s_IsKeyDown) {
-                    AddKeyEvent(s_ImGuiIO, s_Key, true, s_Vk, s_Scancode);
-                }
-
-                // Submit key event
-                if (s_Key != ImGuiKey_None) {
-                    AddKeyEvent(s_ImGuiIO, s_Key, s_IsKeyDown, s_Vk, s_Scancode);
-                }
-
-                // Submit individual left/right modifier events
-                if (s_Vk == VK_SHIFT) {
-                    // Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in ImGui_ImplWin32_ProcessKeyEventsWorkarounds()
-                    if (IsVkDown(VK_LSHIFT) == s_IsKeyDown) {
-                        AddKeyEvent(s_ImGuiIO, ImGuiKey_LeftShift, s_IsKeyDown, VK_LSHIFT, s_Scancode);
-                    }
-                    if (IsVkDown(VK_RSHIFT) == s_IsKeyDown) {
-                        AddKeyEvent(s_ImGuiIO, ImGuiKey_RightShift, s_IsKeyDown, VK_RSHIFT, s_Scancode);
-                    }
-                }
-                else if (s_Vk == VK_CONTROL) {
-                    if (IsVkDown(VK_LCONTROL) == s_IsKeyDown) {
-                        AddKeyEvent(s_ImGuiIO, ImGuiKey_LeftCtrl, s_IsKeyDown, VK_LCONTROL, s_Scancode);
-                    }
-                    if (IsVkDown(VK_RCONTROL) == s_IsKeyDown) {
-                        AddKeyEvent(s_ImGuiIO, ImGuiKey_RightCtrl, s_IsKeyDown, VK_RCONTROL, s_Scancode);
-                    }
-                }
-                else if (s_Vk == VK_MENU) {
-                    if (IsVkDown(VK_LMENU) == s_IsKeyDown) {
-                        AddKeyEvent(s_ImGuiIO, ImGuiKey_LeftAlt, s_IsKeyDown, VK_LMENU, s_Scancode);
-                    }
-                    if (IsVkDown(VK_RMENU) == s_IsKeyDown) {
-                        AddKeyEvent(s_ImGuiIO, ImGuiKey_RightAlt, s_IsKeyDown, VK_RMENU, s_Scancode);
-                    }
-                }
-            }
-            break;
-        }
-
-        case WM_SETFOCUS:
-        case WM_KILLFOCUS:
-            s_ImGuiIO.AddFocusEvent(p_Message == WM_SETFOCUS);
-            break;
-
-        case WM_INPUTLANGCHANGE:
-            UpdateKeyboardCodePage();
-            break;
-
-        case WM_CHAR:
-            if (::IsWindowUnicode(p_Hwnd)) {
-                // You can also use ToAscii()+GetKeyboardState() to retrieve characters.
-                if (p_Wparam > 0 && p_Wparam < 0x10000) {
-                    s_ImGuiIO.AddInputCharacterUTF16(static_cast<unsigned short>(p_Wparam));
-                }
-            }
-            else {
-                wchar_t s_Wch = 0;
-                ::MultiByteToWideChar(
-                    m_KeyboardCodePage, MB_PRECOMPOSED, reinterpret_cast<char*>(&p_Wparam), 1, &s_Wch, 1
-                );
-
-                s_ImGuiIO.AddInputCharacter(s_Wch);
-            }
-
-            break;
+    if (ImGui_ImplWin32_WndProcHandler(p_Hwnd, p_Message, p_Wparam, p_Lparam)) {
+        return { HookAction::Return(), TRUE };
     }
 
     // Don't call the original function so input isn't passed down to the game.

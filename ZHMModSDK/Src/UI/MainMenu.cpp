@@ -13,10 +13,10 @@ void MainMenu::Draw(bool p_HasFocus) {
     if (!p_HasFocus)
         return;
 
-    const auto& s_ImGuiIO = ImGui::GetIO();
+    const auto* s_Viewport = ImGui::GetMainViewport();
 
-    ImGui::SetNextWindowSize(ImVec2(s_ImGuiIO.DisplaySize.x, 0.f), ImGuiCond_Always);
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(s_Viewport->Size.x, 0.f), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(s_Viewport->Pos, ImGuiCond_Always);
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.f, 0));
 

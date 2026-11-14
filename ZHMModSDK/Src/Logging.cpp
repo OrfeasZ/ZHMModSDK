@@ -97,6 +97,7 @@ void SetupLogging(spdlog::level::level_enum p_LogLevel) {
 
     s_FileLogger->set_level(p_LogLevel);
     s_FileLogger->set_pattern("%v");
+    s_FileLogger->flush_on(spdlog::level::debug);
 
     g_Loggers->push_back(s_FileLogger);
 }
