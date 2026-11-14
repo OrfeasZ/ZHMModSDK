@@ -498,3 +498,10 @@ PATTERN_RELATIVE_GLOBAL(
     3,
     ZRenderGraphManager*, RenderGraphManager
 );
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x3D\x00\x00\x00\x00\x48\x8B\xCF\xE8\x00\x00\x00\x00\x48\x8B\x4B\x60\x48\x8D\x55\x10\x48\x89\x7D\x10\xE8\x00\x00\x00\x00\x48\x8D\x05\x00\x00\x00\x00\x41\xB8",
+    "xxx????xxxx????xxxxxxxxxxxxx????xxx????xx",
+    3,
+    ZScaleformGFxManager*, ScaleformGFxManager
+);

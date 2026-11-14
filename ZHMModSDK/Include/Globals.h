@@ -56,6 +56,7 @@ class ZKnowledgeService;
 class ZOnlineManager;
 class ZGameKeywordManager;
 class ZRenderGraphManager;
+class ZScaleformGFxManager;
 
 namespace bfx {
     class SystemInstance;
@@ -136,4 +137,5 @@ public:
     static ZOnlineManager* OnlineManager;
     static ZGameKeywordManager* GameKeywordManager;
     static ZRenderGraphManager* RenderGraphManager;
+    static ZScaleformGFxManager* ScaleformGFxManager;
 };

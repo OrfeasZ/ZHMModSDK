@@ -5,6 +5,7 @@
 #include "Glacier/ZPhysics.h"
 #include "Glacier/ZCameraEntity.h"
 #include "Glacier/ZPathfinder.h"
+#include "Glacier/ZScaleform.h"
 
 void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
     if (IsSpecialEntityTreeNode(m_SelectedEntity)
@@ -39,7 +40,9 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
     ImGuizmo::BeginFrame();
 
     if (p_HasFocus) {
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && !s_ImgGuiIO.WantCaptureMouse) {
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left) &&
+            !s_ImgGuiIO.WantCaptureMouse &&
+            !Globals::ScaleformGFxManager->GetIsMenuModeUnsafe()) {
             const auto s_MousePos = ImGui::GetMousePos();
             OnMouseDown(SVector2(s_MousePos.x, s_MousePos.y), !m_HoldingMouse);
             m_HoldingMouse = true;
