@@ -64,6 +64,7 @@ ImGuiRenderer::ImGuiRenderer() {
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
     s_ImGuiIO.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
     s_ImGuiIO.BackendRendererName = "imgui_impl_dx12";
 
