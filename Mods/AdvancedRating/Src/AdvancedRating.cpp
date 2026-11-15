@@ -49,7 +49,7 @@ void AdvancedRating::OnDrawUI(bool p_HasFocus) {
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
     if (s_WindowExpanded) {
-        if (ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY)){
+        if (ImGui::BeginTable("RatingTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_ScrollY)) {
             AcquireSRWLockShared(&m_EventLock);
 
             for (auto& s_Event : m_EventHistory) {
@@ -129,8 +129,7 @@ DEFINE_PLUGIN_DETOUR(
     AdvancedRating, void, ZAchievementManagerSimple_OnEventSent, ZAchievementManagerSimple* th, uint32_t eventId,
     const ZDynamicObject& event
 ) {
-    ZString s_EventData;
-    Functions::ZDynamicObject_ToString->Call(const_cast<ZDynamicObject*>(&event), s_EventData);
+    ZString s_EventData = event.ToJson();
 
     Logger::Debug("[AdvancedRating] Achievement event sent: {} - {}", eventId, s_EventData);
 
