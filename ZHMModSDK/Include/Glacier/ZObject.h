@@ -394,6 +394,8 @@ public:
         s_Obj = TArray<ZDynamicObject>();
         return s_Obj;
     }
+
+    ZHMSDK_API ZString ToJson() const;
 };
 
 struct SDynamicObjectKeyValuePair {
