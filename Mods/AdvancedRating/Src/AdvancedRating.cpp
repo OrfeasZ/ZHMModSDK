@@ -8,7 +8,7 @@
 #include <Glacier/ZAIGameState.h>
 #include <Glacier/SOnlineEvent.h>
 
-#include "json.hpp"
+#include <nlohmann/json.hpp>
 
 void AdvancedRating::Init() {
     InitializeSRWLock(&m_EventLock);
