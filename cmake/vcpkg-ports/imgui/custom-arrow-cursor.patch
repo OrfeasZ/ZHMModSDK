@@ -1,0 +1,43 @@
+diff --git a/backends/imgui_impl_win32.cpp b/backends/imgui_impl_win32.cpp
+index eb38c31..3cb7dad 100644
+--- a/backends/imgui_impl_win32.cpp
++++ b/backends/imgui_impl_win32.cpp
+@@ -167,6 +167,13 @@ static ImGui_ImplWin32_Data* ImGui_ImplWin32_GetBackendData(ImGuiIO& io)
+     return (ImGui_ImplWin32_Data*)io.BackendPlatformUserData;
+ }
+ 
++static HCURSOR g_CustomArrowCursor = nullptr;
++
++void ImGui_ImplWin32_SetArrowCursor(void* cursor)
++{
++    g_CustomArrowCursor = static_cast<HCURSOR>(cursor);
++}
++
+ // Functions
+ static void ImGui_ImplWin32_UpdateKeyboardCodePage(ImGuiIO& io)
+ {
+@@ -308,7 +315,11 @@ static bool ImGui_ImplWin32_UpdateMouseCursor(ImGuiIO& io, ImGuiMouseCursor imgu
+         case ImGuiMouseCursor_Progress:     win32_cursor = IDC_APPSTARTING; break;
+         case ImGuiMouseCursor_NotAllowed:   win32_cursor = IDC_NO; break;
+         }
+-        ::SetCursor(::LoadCursor(nullptr, win32_cursor));
++        ::SetCursor(
++            imgui_cursor == ImGuiMouseCursor_Arrow && g_CustomArrowCursor
++                ? g_CustomArrowCursor
++                : ::LoadCursor(nullptr, win32_cursor)
++        );
+     }
+     return true;
+ }
+diff --git a/backends/imgui_impl_win32.h b/backends/imgui_impl_win32.h
+index 0f1b9b2..6a242b8 100644
+--- a/backends/imgui_impl_win32.h
++++ b/backends/imgui_impl_win32.h
+@@ -26,6 +26,7 @@ IMGUI_IMPL_API bool     ImGui_ImplWin32_Init(void* hwnd);
+ IMGUI_IMPL_API bool     ImGui_ImplWin32_InitForOpenGL(void* hwnd);
+ IMGUI_IMPL_API void     ImGui_ImplWin32_Shutdown();
+ IMGUI_IMPL_API void     ImGui_ImplWin32_NewFrame();
++IMGUI_IMPL_API void     ImGui_ImplWin32_SetArrowCursor(void* cursor);
+ 
+ // Win32 message handler your application needs to call.
+ // - Intentionally commented out in a '#if 0' block to avoid dragging dependencies on <windows.h> from this helper.

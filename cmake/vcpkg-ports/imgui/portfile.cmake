@@ -10,6 +10,7 @@ if ("docking-experimental" IN_LIST FEATURES)
         PATCHES
             "layout-external-docking.patch"
             "docking-opt-in.patch"
+            "custom-arrow-cursor.patch"
     )
 else()
     vcpkg_from_github(

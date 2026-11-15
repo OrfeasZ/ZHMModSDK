@@ -16,6 +16,10 @@ public:
     bool m_bSceneLoaded; // 0x161
     PAD(0x1D6); // 0x162
     HWND m_Hwnd; // 0x338
+    PAD(0x9); // 0x340
+    bool m_bShowingCursor; // 0x349
+    PAD(0xE); // 0x34A
+    HICON m_hDefaultCursor; // 0x358
 };
 
 static_assert(offsetof(ZApplicationEngineWin32, m_pEngineAppCommon) == 0xB8);
