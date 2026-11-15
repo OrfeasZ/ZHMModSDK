@@ -5,6 +5,7 @@
 #include <winhttp.h>
 #include <numbers>
 #include <filesystem>
+#include <algorithm>
 
 #include <imgui_internal.h>
 
@@ -20,6 +21,7 @@
 #include <Glacier/ZColor.h>
 #include <Glacier/ZGrid.h>
 #include <Glacier/ZBehavior.h>
+#include <Glacier/ZAISoundSensor.h>
 
 #include <Functions.h>
 #include <Globals.h>
@@ -92,6 +94,14 @@ void DebugMod::DrawOptions(const bool p_HasFocus) {
             ImGui::Checkbox("Show visibility", &m_ShowVisibility);
             ImGui::Checkbox("Show layers", &m_ShowLayers);
             ImGui::Checkbox("Show indices", &m_ShowIndices);
+
+            ImGui::Checkbox("Draw sound connectors", &m_DrawSoundConnectors);
+
+            if (m_DrawSoundConnectors) {
+                ImGui::TextColored(ImVec4(1.f, 0.55f, 0.f, 1.f), "Two-way");
+                ImGui::SameLine();
+                ImGui::TextColored(ImVec4(0.f, 0.9f, 1.f, 1.f), "One-way (fades to white at target)");
+            }
         }
 
         if (ImGui::CollapsingHeader("Guide path finder", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -145,9 +155,21 @@ void DebugMod::CopyToClipboard(const std::string& p_String) {
     CloseClipboard();
 }
 
-void DebugMod::OnDraw3D(IRenderer* p_Renderer) {}
+namespace {
+    constexpr float c_OccludedSoundConnectorAlpha = 0.15f;
+}
+
+void DebugMod::OnDraw3D(IRenderer* p_Renderer) {
+    if (m_DrawSoundConnectors) {
+        DrawSoundConnectors(p_Renderer, c_OccludedSoundConnectorAlpha);
+    }
+}
 
 void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
+    if (m_DrawSoundConnectors) {
+        DrawSoundConnectors(p_Renderer, 1.f);
+    }
+
     if (m_DrawReasoningGrid) {
         DrawReasoningGrid(p_Renderer);
     }
@@ -342,6 +364,85 @@ void DebugMod::OnDepthDraw3D(IRenderer* p_Renderer) {
                 );
             }
         }
+    }
+}
+
+namespace {
+    constexpr size_t c_MaxSoundConnectorNodes = 8192;
+    constexpr float c_SoundConnectorLineHeight = 0.3f;
+
+    struct SSoundConnectorLink {
+        uint16_t m_From;
+        uint16_t m_To;
+        bool m_TwoWay;
+    };
+
+    std::vector<SSoundConnectorLink> CollectSoundConnectorLinks(const ZSharedSoundSensor* p_Sensor) {
+        std::vector<std::pair<uint16_t, uint16_t>> s_Directed;
+        const auto* s_Header = reinterpret_cast<const SAISoundConnectorNode*>(&p_Sensor->m_SoundConnectors);
+        std::vector<const SAISoundConnectorNode*> s_Stack {p_Sensor->m_SoundConnectors.m_pRoot};
+
+        while (!s_Stack.empty() && s_Directed.size() < c_MaxSoundConnectorNodes) {
+            const SAISoundConnectorNode* s_Node = s_Stack.back();
+            s_Stack.pop_back();
+
+            if (!s_Node || s_Node == s_Header) {
+                continue;
+            }
+
+            s_Directed.emplace_back(s_Node->m_nFromWaypoint, s_Node->m_Edge.m_nToWaypoint);
+            s_Stack.push_back(s_Node->m_pLeft);
+            s_Stack.push_back(s_Node->m_pRight);
+        }
+
+        std::sort(s_Directed.begin(), s_Directed.end());
+
+        std::vector<SSoundConnectorLink> s_Links;
+
+        for (const auto& [s_From, s_To] : s_Directed) {
+            const bool s_HasReverse = std::binary_search(s_Directed.begin(), s_Directed.end(), std::make_pair(s_To, s_From));
+
+            if (s_HasReverse && s_From > s_To) {
+                continue;
+            }
+
+            s_Links.push_back({s_From, s_To, s_HasReverse});
+        }
+
+        return s_Links;
+    }
+}
+
+void DebugMod::DrawSoundConnectors(IRenderer* p_Renderer, float p_Alpha) {
+    if (!Globals::SharedSoundSensor || !*Globals::SharedSoundSensor || !Globals::ActiveGrid || !*Globals::ActiveGrid) {
+        return;
+    }
+
+    const SReasoningGrid* s_Grid = *Globals::ActiveGrid;
+    const size_t s_WaypointCount = s_Grid->m_WaypointList.size();
+    const std::vector<SSoundConnectorLink> s_Links = CollectSoundConnectorLinks(*Globals::SharedSoundSensor);
+
+    const SVector4 s_TwoWayColor(1.f, 0.55f, 0.f, p_Alpha);
+    const SVector4 s_OneWayFromColor(0.f, 0.9f, 1.f, p_Alpha);
+    const SVector4 s_OneWayToColor(1.f, 1.f, 1.f, p_Alpha);
+
+    for (const SSoundConnectorLink& s_Link : s_Links) {
+        if (s_Link.m_From >= s_WaypointCount || s_Link.m_To >= s_WaypointCount) {
+            continue;
+        }
+
+        const float4& s_FromWaypoint = s_Grid->m_WaypointList[s_Link.m_From].vPos;
+        const float4& s_ToWaypoint = s_Grid->m_WaypointList[s_Link.m_To].vPos;
+        const SVector3 s_FromGround(s_FromWaypoint.x, s_FromWaypoint.y, s_FromWaypoint.z);
+        const SVector3 s_ToGround(s_ToWaypoint.x, s_ToWaypoint.y, s_ToWaypoint.z);
+        const SVector3 s_From(s_FromGround.x, s_FromGround.y, s_FromGround.z + c_SoundConnectorLineHeight);
+        const SVector3 s_To(s_ToGround.x, s_ToGround.y, s_ToGround.z + c_SoundConnectorLineHeight);
+        const SVector4& s_FromColor = s_Link.m_TwoWay ? s_TwoWayColor : s_OneWayFromColor;
+        const SVector4& s_ToColor = s_Link.m_TwoWay ? s_TwoWayColor : s_OneWayToColor;
+
+        p_Renderer->DrawLine3D(s_From, s_To, s_FromColor, s_ToColor);
+        p_Renderer->DrawLine3D(s_FromGround, s_From, s_FromColor, s_FromColor);
+        p_Renderer->DrawLine3D(s_ToGround, s_To, s_ToColor, s_ToColor);
     }
 }
 

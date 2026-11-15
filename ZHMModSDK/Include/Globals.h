@@ -57,6 +57,8 @@ class ZOnlineManager;
 class ZGameKeywordManager;
 class ZRenderGraphManager;
 
+class ZSharedSoundSensor;
+
 namespace bfx {
     class SystemInstance;
 }
@@ -92,6 +94,7 @@ public:
     static ZPathfinder* Pathfinder;
     static SReasoningGrid** ActiveGrid;
     static bfx::SystemInstance* NavPowerSystemInstance;
+    static ZSharedSoundSensor** SharedSoundSensor;
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
