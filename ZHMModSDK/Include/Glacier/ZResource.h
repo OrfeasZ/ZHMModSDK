@@ -96,7 +96,7 @@ public:
         unsigned int resourceType;
         int32_t monitorId;
         short priority;
-        int8 packageId;
+        uint8 packageId;
     };
 
     /**

@@ -59,7 +59,6 @@ private:
     void BuildGlobalOutfitRepositoryIdsFromBricks();
     void BuildSceneNamesToRuntimeResourceIds();
     void BuildSceneToOutfitBrickRuntimeResourceIds(const std::string& p_SceneName, const ZRuntimeResourceID& p_SceneRuntimeResourceId);
-    void BuildChunkIndexToResourcePackageCount();
     static bool FindOutfitReferencesRecursive(
         const ZRuntimeResourceID& p_CurrentRuntimeResourceId,
         std::unordered_set<uint64_t>& p_Visited,
@@ -77,7 +76,6 @@ private:
     void LoadOutfitsForSelectedScenes();
     void UnloadOutfits();
     static std::string ToEntityTemplatePath(const std::string_view p_ScenePath);
-    static std::filesystem::path GetRuntimeDirectory();
     bool IsResourcePackageLimitExceeded();
     static void FindGlobalOutfitRepositoryIds(
         const ZEntityRef& p_BrickEntityRef,
@@ -227,7 +225,6 @@ private:
     std::unordered_map<std::string, std::unordered_set<ZRuntimeResourceID>> m_SceneToOutfitBrickIds;
     std::unordered_set<std::string> m_SelectedScenes;
     std::unordered_set<std::string> m_LoadedScenes;
-    std::unordered_map<uint32_t, size_t> m_ChunkIndexToResourcePackageCount;
     std::unordered_set<uint32_t> m_PendingChunks;
     std::vector<std::pair<ZResourcePtr, ZEntityRef>> m_LoadedOutfitBricks;
     std::unordered_map<ZRuntimeResourceID, std::pair<ZResourcePtr, ZEntityRef>> m_LoadedGlobalOutfitBricks;
@@ -235,7 +232,6 @@ private:
     bool m_ResourcePackageLimitPopupOpened = false;
     size_t m_PendingChunkCount = 0;
     size_t m_PendingResourcePackageCount = 0;
-    const size_t MAX_RESOURCE_PACKAGES = 128;
 
     bool m_SpawnForPlayer = true;
     bool m_SpawnForActor = true;

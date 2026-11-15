@@ -156,6 +156,8 @@ public:
     static Hook<void*(IPackageManager::SPartitionInfo* th, int32_t index, ZString partitionID, IPackageManager::EPartitionType type, int32_t patchLevel)>*
         IPackageManager_SPartitionInfo_SPartitionInfo;
 
+    static Hook<void*(void** th)>* ZWwiseIOHookBlocking_InitPackageStreams;
+
     static Hook<void(ZGameLoopManager* th, const ZString& a2)>* ZGameLoopManager_ReleasePause;
     static Hook<bool(ZGameUIManagerEntity* th, EGameUIMenu menu, bool force)>* ZGameUIManagerEntity_TryOpenMenu;
     static Hook<void(ZGameStatsManager* th)>* ZGameStatsManager_SendAISignals01;

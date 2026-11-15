@@ -836,16 +836,7 @@ bool ModSDK::Startup() {
         Logger::Warn("Could not patch SetUnhandledExceptionFilter. Crash reporting will not work.");
     }
 
-    // Patch local mounted package count variable from int8_t to uint8_t.
-    // This allows us to mount up to 256 chunks at a time (up from 128).
-    // Patch `movsx r14d, byte ptr [rbp+0x88]` to `movzx r14d, byte ptr [rbp+0x88]`.
-    // TODO: There's more int8 places to patch... ain't no way
-    /*uint8_t s_SecondMovBytes[8] = {0x44, 0x0F, 0xB6, 0xB5, 0x88, 0x00, 0x00, 0x00};
-    if (!PatchCode("\x44\x0F\xBE\xB5\x88\x00\x00\x00", "xxxxxxxx", s_SecondMovBytes, 8, 0)) {
-        Logger::Warn(
-            "Could not patch local mounted package count #2. You will not be able to mount more than 128 chunks."
-        );
-    }*/
+    PatchResourcePackageLimit();
 
     // Setup custom multiplayer code.
     //Multiplayer::Lobby::Setup();

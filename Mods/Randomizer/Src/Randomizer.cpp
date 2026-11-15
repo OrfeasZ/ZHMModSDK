@@ -1,7 +1,6 @@
 #include "Randomizer.h"
 
 #include <random>
-#include <filesystem>
 
 #include "IconsMaterialDesign.h"
 
@@ -21,7 +20,6 @@
 #include "Glacier/ZUIMap.h"
 
 #include "Util/ImGuiUtils.h"
-#include "Util/ResourceUtils.h"
 
 #include "Glacier/ZWorldInventory.h"
 #include "Glacier/ZGameLoopManager.h"
@@ -786,10 +784,10 @@ void Randomizer::DrawOutfitsFromOtherScenesTab() {
     )) {
         ImGui::Text(
             "The selected scenes require %zu chunks and %zu resource packages.\n"
-            "The engine supports a maximum of %d resource packages.",
+            "The engine supports a maximum of %zu resource packages.",
             m_PendingChunkCount,
             m_PendingResourcePackageCount,
-            MAX_RESOURCE_PACKAGES
+            SDK()->GetMaxResourcePackageCount()
         );
 
         ImGui::Dummy(ImVec2(0.f, 14.f));
@@ -2114,37 +2112,6 @@ void Randomizer::BuildSceneToOutfitBrickRuntimeResourceIds(const std::string& p_
     }
 }
 
-void Randomizer::BuildChunkIndexToResourcePackageCount() {
-    m_ChunkIndexToResourcePackageCount.clear();
-
-    const std::filesystem::path s_RuntimeDirectory = GetRuntimeDirectory();
-
-    if (!std::filesystem::exists(s_RuntimeDirectory)) {
-        Logger::Error("[Randomizer] Runtime directory not found: {}", s_RuntimeDirectory.string());
-        return;
-    }
-
-    for (const auto& s_DirectoryEntry : std::filesystem::directory_iterator(s_RuntimeDirectory)) {
-        if (!s_DirectoryEntry.is_regular_file()) {
-            continue;
-        }
-
-        const auto& s_Path = s_DirectoryEntry.path();
-
-        if (s_Path.extension() != ".rpkg") {
-            continue;
-        }
-
-        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_Path.string());
-
-        if (!s_ChunkIndex) {
-            continue;
-        }
-
-        m_ChunkIndexToResourcePackageCount[*s_ChunkIndex]++;
-    }
-}
-
 bool Randomizer::FindOutfitReferencesRecursive(
     const ZRuntimeResourceID& p_CurrentRuntimeResourceId,
     std::unordered_set<uint64_t>& p_Visited,
@@ -2378,21 +2345,7 @@ std::string Randomizer::ToEntityTemplatePath(const std::string_view p_ScenePath)
     return std::format("[{}].pc_entitytemplate", s_NormalizedPath);
 }
 
-std::filesystem::path Randomizer::GetRuntimeDirectory() {
-    char s_ExePathStr[MAX_PATH]{};
-
-    GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
-
-    std::filesystem::path s_ExePath(s_ExePathStr);
-
-    return s_ExePath.parent_path().parent_path() / "Runtime";
-}
-
 bool Randomizer::IsResourcePackageLimitExceeded() {
-    if (m_ChunkIndexToResourcePackageCount.empty()) {
-        BuildChunkIndexToResourcePackageCount();
-    }
-
     m_PendingChunks.clear();
 
     for (auto& s_PartitionInfo : (*Globals::PackageManager)->m_aPartitionInfos) {
@@ -2415,14 +2368,10 @@ bool Randomizer::IsResourcePackageLimitExceeded() {
     m_PendingResourcePackageCount = 0;
 
     for (uint32_t s_ChunkIndex : m_PendingChunks) {
-        auto s_Iterator = m_ChunkIndexToResourcePackageCount.find(s_ChunkIndex);
-
-        if (s_Iterator != m_ChunkIndexToResourcePackageCount.end()) {
-            m_PendingResourcePackageCount += s_Iterator->second;
-        }
+        m_PendingResourcePackageCount += SDK()->GetResourcePackageCount(s_ChunkIndex);
     }
 
-    if (m_PendingResourcePackageCount > MAX_RESOURCE_PACKAGES) {
+    if (m_PendingResourcePackageCount > SDK()->GetMaxResourcePackageCount()) {
         return true;
     }
 

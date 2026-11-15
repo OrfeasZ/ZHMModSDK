@@ -10,7 +10,9 @@
 #include <ResourceLib_HM3.h>
 #include <simdjson.h>
 #include <filesystem>
+#include <charconv>
 #include <Util/ResourceUtils.h>
+#include <Util/ProcessUtils.h>
 
 static void WaitForResources() {
     while (!Globals::ResourceManager->DoneLoading()) {
@@ -231,6 +233,215 @@ const TArray<uint32_t>& ModSDK::GetChunkIndicesForRuntimeResourceId(const ZRunti
     auto s_Iterator = m_ResourceIdToChunkMap.find(id);
 
     return s_Iterator != m_ResourceIdToChunkMap.end() ? s_Iterator->second : s_Empty;
+}
+
+size_t ModSDK::GetResourcePackageCount(uint32_t p_ChunkIndex) {
+    if (m_ChunkIndexToResourcePackageCount.empty()) {
+        char s_ExePathStr[MAX_PATH] {};
+        GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
+
+        const auto s_RuntimeDirectory = std::filesystem::path(s_ExePathStr).parent_path().parent_path() / "Runtime";
+        std::error_code s_Error;
+
+        for (const auto& s_Entry : std::filesystem::directory_iterator(s_RuntimeDirectory, s_Error)) {
+            const std::string s_Name = s_Entry.path().filename().string();
+
+            if (s_Entry.path().extension() != ".rpkg" || !s_Name.starts_with("chunk")) {
+                continue;
+            }
+
+            uint32_t s_ChunkIndex = 0;
+            const auto s_Result = std::from_chars(s_Name.data() + 5, s_Name.data() + s_Name.size(), s_ChunkIndex);
+
+            if (s_Result.ec == std::errc()) {
+                ++m_ChunkIndexToResourcePackageCount[s_ChunkIndex];
+            }
+        }
+
+        if (s_Error) {
+            Logger::Error("Failed to list the resource packages in {}: {}.", s_RuntimeDirectory.string(), s_Error.message());
+        }
+    }
+
+    const auto s_Iterator = m_ChunkIndexToResourcePackageCount.find(p_ChunkIndex);
+
+    return s_Iterator != m_ChunkIndexToResourcePackageCount.end() ? s_Iterator->second : 0;
+}
+
+// The engine stores package IDs in a signed byte, which limits it to 128 mounted packages, and ZWwiseIOHookBlocking
+// keeps one stream per package in a fixed array of 127. These patches read the IDs as unsigned bytes and give that
+// array 255 slots, which raises the limit to 255 packages. 0xFF means "not mounted".
+constexpr size_t c_SignedMaxResourcePackageCount = 127;
+constexpr size_t c_UnsignedMaxResourcePackageCount = 255;
+
+static bool FindCodePatches(std::vector<ModSDK::SCodePatch>& p_Patches) {
+    bool s_AreAllFound = true;
+
+    for (auto& s_Patch : p_Patches) {
+        const auto s_Match = Util::ProcessUtils::SearchPattern(
+            ModSDK::GetInstance()->GetModuleBase(),
+            ModSDK::GetInstance()->GetSizeOfCode(),
+            reinterpret_cast<const uint8_t*>(s_Patch.Pattern),
+            s_Patch.Mask
+        );
+
+        if (s_Match == 0) {
+            Logger::Warn("Could not find the code for patch '{}'.", s_Patch.Name);
+            s_AreAllFound = false;
+            continue;
+        }
+
+        s_Patch.Address = reinterpret_cast<uint8_t*>(s_Match + s_Patch.Offset);
+
+        if (memcmp(s_Patch.Address, s_Patch.Original.data(), s_Patch.Original.size()) != 0) {
+            Logger::Warn("The code for patch '{}' is not what was expected.", s_Patch.Name);
+            s_AreAllFound = false;
+        }
+    }
+
+    return s_AreAllFound;
+}
+
+static void ApplyCodePatches(const std::vector<ModSDK::SCodePatch>& p_Patches) {
+    for (const auto& s_Patch : p_Patches) {
+        DWORD s_OldProtect;
+        VirtualProtect(s_Patch.Address, s_Patch.Patched.size(), PAGE_EXECUTE_READWRITE, &s_OldProtect);
+        memcpy(s_Patch.Address, s_Patch.Patched.data(), s_Patch.Patched.size());
+        VirtualProtect(s_Patch.Address, s_Patch.Patched.size(), s_OldProtect, &s_OldProtect);
+    }
+}
+
+void ModSDK::PatchResourcePackageLimit() {
+    std::vector<SCodePatch> s_Patches {
+        {
+            "ZResourceContainer::MountPackages package ID",
+            "\x44\x0F\xBE\xB5\x88\x00\x00\x00",
+            "xxxxxxxx",
+            2,
+            {0xBE},
+            {0xB6},
+        },
+        {
+            "ZDirectResourceStreamer package ID",
+            "\x4C\x0F\xBE\x74\x0A\x3E\x48\x8B\x4E\x78",
+            "xxxxxxxxxx",
+            2,
+            {0xBE},
+            {0xB6},
+        },
+        {
+            "ZDirectResourceStreamer thread package ID",
+            "\x48\x0F\xBE\x94\x24\xC0\x00\x00\x00\x3A\x94\x24",
+            "xxxxxxxxxxxx",
+            2,
+            {0xBE},
+            {0xB6},
+        },
+        {
+            "ZFileSystemDevice package ID",
+            "\x48\x0F\xBE\x7C\x0A\x3E\x40\x80\xFF\xFF",
+            "xxxxxxxxxx",
+            2,
+            {0xBE},
+            {0xB6},
+        },
+        {
+            "ZResourceContainer::FindPackage package ID",
+            "\x4C\x0F\xBE\x4C\x03\x3E\x45\x84\xC9\x0F\x88",
+            "xxxxxxxxxxx",
+            2,
+            {0xBE},
+            {0xB6},
+        },
+        {
+            "ZResourceContainer::FindPackage sign check",
+            "\x4C\x0F\xBE\x4C\x03\x3E\x45\x84\xC9\x0F\x88",
+            "xxxxxxxxxxx",
+            9,
+            {0x0F, 0x88},
+            {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+        },
+        {
+            "ZOverlappedDevice package ID",
+            "\x4C\x0F\xBE\x74\x29\x3E\x45\x85\xF6\x0F\x88",
+            "xxxxxxxxxxx",
+            2,
+            {0xBE},
+            {0xB6},
+        },
+        {
+            "ZWwiseIOHookBlocking::Open package ID",
+            "\x48\x0F\xBE\x44\x0A\x3E\x0F\xB6\x74\x0A\x3F",
+            "xxxxxxxxxxx",
+            2,
+            {0xBE},
+            {0xB6},
+        },
+        {
+            "ZWwiseIOHookBlocking::Open sign check",
+            "\x84\xC0\x0F\x88\x00\x00\x00\x00\x48\x8B\x5C\xC5\x18",
+            "xxxx????xxxxx",
+            0,
+            {0x84, 0xC0, 0x0F, 0x88},
+            {0x3C, 0xFF, 0x0F, 0x84},
+        },
+        {
+            "ZWwiseIOHookBlocking allocation size",
+            "\xBA\x10\x04\x00\x00\x48\x8B\x48\x10\x48\x8B\x01\xFF\x50\x38\x48\x8B\xD8\x48\x85\xC0\x74\x00\x48\x8D\x05",
+            "xxxxxxxxxxxxxxxxxxxxxx?xxx",
+            1,
+            {0x10, 0x04},
+            {0x10, 0x08},
+        },
+    };
+
+    m_WwiseDestructorPatches = {
+        {
+            "ZWwiseIOHookBlocking destructor end",
+            "\x48\x8D\xBE\x10\x04\x00\x00\x48\x3B\xDF",
+            "xxxxxxxxxx",
+            3,
+            {0x10, 0x04},
+            {0x10, 0x08},
+        },
+        {
+            "ZWwiseIOHookBlocking free size",
+            "\xBA\x10\x04\x00\x00\x48\x8B\xCE\xE8\x00\x00\x00\x00\x48\x8B\xC6\x48\x83\xC4\x40\x5E\xC3",
+            "xxxxxxxxx????xxxxxxxxx",
+            1,
+            {0x10, 0x04},
+            {0x10, 0x08},
+        },
+    };
+
+    const bool s_ArePatchesFound = FindCodePatches(s_Patches);
+
+    if (!FindCodePatches(m_WwiseDestructorPatches) || !s_ArePatchesFound) {
+        Logger::Warn("Could not raise the resource package limit. At most {} packages can be mounted.", c_SignedMaxResourcePackageCount);
+        return;
+    }
+
+    ApplyCodePatches(s_Patches);
+    Hooks::ZWwiseIOHookBlocking_InitPackageStreams->AddDetour(this, &ModSDK::ZWwiseIOHookBlocking_InitPackageStreams);
+}
+
+size_t ModSDK::GetMaxResourcePackageCount() {
+    return m_IsResourcePackageLimitRaised ? c_UnsignedMaxResourcePackageCount : c_SignedMaxResourcePackageCount;
+}
+
+DEFINE_DETOUR_WITH_CONTEXT(ModSDK, void*, ZWwiseIOHookBlocking_InitPackageStreams, void** th) {
+    p_Hook->CallOriginal(th);
+
+    // The original clears the first 127 slots, of the 255 the patched allocation has, so
+    // we need to clear the rest.
+    std::fill(th + c_SignedMaxResourcePackageCount, th + c_UnsignedMaxResourcePackageCount, nullptr);
+
+    ApplyCodePatches(m_WwiseDestructorPatches);
+    m_IsResourcePackageLimitRaised = true;
+
+    Logger::Info("Raised the resource package limit to {}.", c_UnsignedMaxResourcePackageCount);
+
+    return HookResult<void*>(HookAction::Return(), th);
 }
 
 std::tuple<ZResourceIndex, ZRuntimeResourceID> ModSDK::LoadResourceFromBIN1(

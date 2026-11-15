@@ -395,6 +395,21 @@ public:
      * @return True if a deployment was found, false otherwise.
      */
     virtual bool GetSmfDeploymentPath(ZString& p_Path) = 0;
+
+    /**
+     * Get the number of resource packages (the base rpkg and its patches) that mounting a chunk adds.
+     * Each mounted package uses one package ID. See GetMaxResourcePackageCount for the limit.
+     * @param p_ChunkIndex The index of the chunk.
+     * @return The number of rpkg files of the chunk in the Runtime directory, 0 if it has none.
+     */
+    virtual size_t GetResourcePackageCount(uint32_t p_ChunkIndex) = 0;
+
+    /**
+     * Get the number of resource packages the engine can have mounted at once.
+     * Mounting more corrupts memory, so please check before you do!
+     * @return The number of rpkgs that can be mounted.
+     */
+    virtual size_t GetMaxResourcePackageCount() = 0;
 };
 
 /**

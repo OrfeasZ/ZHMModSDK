@@ -149,6 +149,13 @@ PATTERN_RELATIVE_CALL_HOOK(
     void*(IPackageManager::SPartitionInfo* th, int32_t index, ZString partitionID, IPackageManager::EPartitionType type, int32_t patchLevel)
 );
 
+PATTERN_RELATIVE_CALL_HOOK(
+    "\xE8\x00\x00\x00\x00\xEB\x00\x49\x8B\xDF\x83\x7D\x38",
+    "x????x?xxxxxx",
+    ZWwiseIOHookBlocking_InitPackageStreams,
+    void*(void** th)
+);
+
 PATTERN_HOOK(
     "\x40\x55\x56\x48\x83\xEC\x00\x48\x8D\xB1\x20\x01\x00\x00",
     "xxxxxx?xxxxxxx",

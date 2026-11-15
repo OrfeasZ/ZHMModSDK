@@ -1,6 +1,5 @@
 #include "Outfits.h"
 
-#include <filesystem>
 
 #include <imgui_internal.h>
 
@@ -163,10 +162,6 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
         ImGui::Spacing();
 
         if (ImGui::Button("Load/unload outfits")) {
-            if (m_ChunkIndexToResourcePackageCount.empty()) {
-                BuildChunkIndexToResourcePackageCount();
-            }
-
             std::vector<std::string> s_ScenesToLoad;
             std::unordered_set<std::string> s_ScenesToUnload;
             std::vector<ZRuntimeResourceID> s_OutfitBricksToUnload;
@@ -232,14 +227,10 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
             m_PendingResourcePackageCount = 0;
 
             for (uint32_t s_ChunkIndex : m_PendingChunks) {
-                auto s_Iterator = m_ChunkIndexToResourcePackageCount.find(s_ChunkIndex);
-
-                if (s_Iterator != m_ChunkIndexToResourcePackageCount.end()) {
-                    m_PendingResourcePackageCount += s_Iterator->second;
-                }
+                m_PendingResourcePackageCount += SDK()->GetResourcePackageCount(s_ChunkIndex);
             }
 
-            if (m_PendingResourcePackageCount > MAX_RESOURCE_PACKAGES) {
+            if (m_PendingResourcePackageCount > SDK()->GetMaxResourcePackageCount()) {
                 m_ShowResourcePackageLimitPopup = true;
             }
             else {
@@ -276,10 +267,10 @@ void Outfits::OnDrawUI(const bool p_HasFocus) {
         )) {
             ImGui::Text(
                 "The selected scenes require %zu chunks and %zu resource packages.\n"
-                "The engine supports a maximum of %d resource packages.",
+                "The engine supports a maximum of %zu resource packages.",
                 m_PendingChunkCount,
                 m_PendingResourcePackageCount,
-                MAX_RESOURCE_PACKAGES
+                SDK()->GetMaxResourcePackageCount()
             );
 
             ImGui::Dummy(ImVec2(0.f, 14.f));
@@ -413,37 +404,6 @@ void Outfits::BuildSceneToOutfitBrickRuntimeResourceIds(const std::string& p_Sce
     }
     else {
         Logger::Warn("[Outfits] No outfit reference found in dependency tree for scene: {}", p_SceneRuntimeResourceId);
-    }
-}
-
-void Outfits::BuildChunkIndexToResourcePackageCount() {
-    m_ChunkIndexToResourcePackageCount.clear();
-
-    const std::filesystem::path s_RuntimeDirectory = GetRuntimeDirectory();
-
-    if (!std::filesystem::exists(s_RuntimeDirectory)) {
-        Logger::Error("[Outfits] Runtime directory not found: {}", s_RuntimeDirectory.string());
-        return;
-    }
-
-    for (const auto& s_DirectoryEntry : std::filesystem::directory_iterator(s_RuntimeDirectory)) {
-        if (!s_DirectoryEntry.is_regular_file()) {
-            continue;
-        }
-
-        const auto& s_Path = s_DirectoryEntry.path();
-
-        if (s_Path.extension() != ".rpkg") {
-            continue;
-        }
-
-        auto s_ChunkIndex = Util::ResourceUtils::TryParseChunkIndexFromResourcePackagePath(s_Path.string());
-
-        if (!s_ChunkIndex) {
-            continue;
-        }
-
-        m_ChunkIndexToResourcePackageCount[*s_ChunkIndex]++;
     }
 }
 
@@ -917,16 +877,6 @@ std::string Outfits::ToEntityTemplatePath(const std::string_view p_ScenePath) {
     std::transform(s_NormalizedPath.begin(), s_NormalizedPath.end(), s_NormalizedPath.begin(), ::tolower);
 
     return std::format("[{}].pc_entitytemplate", s_NormalizedPath);
-}
-
-std::filesystem::path Outfits::GetRuntimeDirectory() {
-    char s_ExePathStr[MAX_PATH]{};
-
-    GetModuleFileNameA(nullptr, s_ExePathStr, MAX_PATH);
-
-    std::filesystem::path s_ExePath(s_ExePathStr);
-
-    return s_ExePath.parent_path().parent_path() / "Runtime";
 }
 
 DEFINE_PLUGIN_DETOUR(Outfits, void, ZLevelManager_StartGame, ZLevelManager* th) {

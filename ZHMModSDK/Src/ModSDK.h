@@ -224,6 +224,7 @@ private:
 #pragma region Detours
 
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2);
+    DECLARE_DETOUR_WITH_CONTEXT(ModSDK, void*, ZWwiseIOHookBlocking_InitPackageStreams, void** th);
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, EOS_PlatformHandle*, EOS_Platform_Create, EOS_Platform_Options* Options);
 
     DECLARE_DETOUR_WITH_CONTEXT(ModSDK, bool, OnLoadScene, ZEntitySceneContext* th, SSceneInitParameters& p_Parameters);
@@ -279,6 +280,19 @@ public:
     void MountChunk(uint32_t p_ChunkIndex) override;
     void UnmountChunk(uint32_t p_ChunkIndex, bool p_RemountChunksBelow) override;
     const TArray<uint32_t>& GetChunkIndicesForRuntimeResourceId(const ZRuntimeResourceID& id) override;
+    size_t GetResourcePackageCount(uint32_t p_ChunkIndex) override;
+    size_t GetMaxResourcePackageCount() override;
+
+    // A byte patch of game code, found by pattern and checked against the original bytes before it is applied.
+    struct SCodePatch {
+        const char* Name;
+        const char* Pattern;
+        const char* Mask;
+        ptrdiff_t Offset;
+        std::vector<uint8_t> Original;
+        std::vector<uint8_t> Patched;
+        uint8_t* Address = nullptr;
+    };
 
 private:
     std::tuple<ZResourceIndex, ZRuntimeResourceID> LoadResourceFromBIN1(
@@ -286,6 +300,7 @@ private:
     );
 
     void LoadResourceChunkMap();
+    void PatchResourcePackageLimit();
 
 #pragma endregion
 
@@ -324,6 +339,9 @@ private:
     bool m_IsScaleformLoggingEnabled = false;
 
     std::unordered_map<ZRuntimeResourceID, TArray<uint32_t>> m_ResourceIdToChunkMap;
+    std::unordered_map<uint32_t, size_t> m_ChunkIndexToResourcePackageCount;
+    std::vector<SCodePatch> m_WwiseDestructorPatches;
+    std::atomic<bool> m_IsResourcePackageLimitRaised = false;
 
     std::optional<std::string> m_SmfDeploymentPath;
 
