@@ -81,13 +81,43 @@ public:
     TArray<TPair<ZString, ZString>> m_queryArgs;
 };
 
+enum class EHttpRequestOnFailureBehavior : int32_t {
+    E_IGNORE_FAILURES = 0,
+    E_TRIGGER_DISCONNECT_ON_COMMON_ERROR = 1,
+    E_TRIGGER_DISCONNECT_ON_ANY_ERROR = 2,
+};
+
 struct SHttpRequestBehavior {
-    void (*unk0)();
-    void (*unk1)();
-    void (*unk2)();
-    void (*unk3)();
-    void (*unk4)();
-    void (*unk5)();
+    float m_fTimeout;
+    float m_fAdaptiveTimeout;
+    float m_fAdaptiveSpeedKbs;
+    bool m_bUseAdaptiveTimeout;
+    uint32_t m_nNumRetries;
+    EHttpRequestOnFailureBehavior m_eOnFailureBehaviour;
+};
+
+static_assert(sizeof(SHttpRequestBehavior) == 0x18);
+
+class ZHttpManager {
+public:
+    virtual ~ZHttpManager() = 0;
+    virtual void unk01() = 0;
+    virtual void unk02() = 0;
+    virtual void unk03() = 0;
+    virtual void unk04() = 0;
+    virtual void unk05() = 0;
+    virtual void unk06() = 0;
+    virtual void unk07() = 0;
+    virtual void unk08() = 0;
+    virtual void unk09() = 0;
+    virtual void unk10() = 0;
+    virtual void unk11() = 0;
+    virtual void unk12() = 0;
+    virtual void unk13() = 0;
+    virtual void unk14() = 0;
+    virtual float GetDefaultHttpTimeout() const = 0;
+    virtual void SetAdaptiveHttpTimeout(float p_Timeout, float p_SpeedKbs) = 0;
+    virtual void GetAdaptiveHttpTimeout(float& p_Timeout, float& p_SpeedKbs) = 0;
 };
 
 class ZHttpRequestParams {

@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "Glacier/TMap.h"
+#include "Scaleform.h"
 
 class ZObjectRef;
 class ZObjectPool;
@@ -39,6 +40,7 @@ class ZBehaviorService;
 struct SPrimitiveBufferData;
 class IGameMode;
 class IEngineMode;
+class ZMenuResourceIndexOwner;
 struct SRenderGraphNodeEntry;
 class ZInputActionManager;
 class ZSelectionForFreeCameraEditorStyleEntity;
@@ -74,6 +76,7 @@ class ZOnlineManager;
 class ZGameKeywordManager;
 class ZRenderGraphManager;
 class ZScaleformGFxManager;
+class ZHttpManager;
 
 class ZSharedSoundSensor;
 
@@ -116,6 +119,7 @@ public:
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
+    static ZMenuResourceIndexOwner** MenuResourceIndexOwner;
     static SRenderGraphNodeEntry** RenderGraphNodes;
     static ZLookAtTriggerManager* LookAtTriggerManager;
     static ZInteractionManager* InteractionManager;
@@ -126,6 +130,8 @@ public:
     static ZSetpieceDistractionTables*** SetpieceDistractionTables;
     static TEntityRef<ZSplashHintManager>* SplashHintManager;
     static ZDistanceConditionManager* DistanceConditionManager;
+    static Scaleform::MemoryHeap** ScaleformGlobalHeap;
+    static void* ScaleformMemoryFile_vtbl;
     static void* ZTemplateEntityFactory_vtbl;
     static void* ZAspectEntityFactory_vtbl;
     static void* ZCppEntityFactory_vtbl;
@@ -168,4 +174,5 @@ public:
     static ZGameKeywordManager* GameKeywordManager;
     static ZRenderGraphManager* RenderGraphManager;
     static ZScaleformGFxManager* ScaleformGFxManager;
+    static ZHttpManager* HttpManager;
 };

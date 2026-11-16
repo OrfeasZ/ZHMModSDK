@@ -32,4 +32,6 @@ public:
     bool m_bIsRenewingResourceSignature; // 0x428
     ZString m_sResourcesBlobUrl; // 0x430
     TCheatProtect<ZString> m_sResourcesSignature; // 0x440
+    PAD(0x310); // 0x450
+    ZString m_sSessionId; // 0x760
 };

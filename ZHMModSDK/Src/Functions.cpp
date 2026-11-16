@@ -619,6 +619,27 @@ PATTERN_FUNCTION(
     bool(ZRenderableEntity* th)
 );
 
+PATTERN_RELATIVE_FUNCTION(
+    "\xE8\x00\x00\x00\x00\x48\x89\x5F\x18\x89\x77\x20\x44\x89\x77\x24\x4D\x85\xFF",
+    "x????xxxxxxxxxxxxxx",
+    Scaleform_String_String,
+    void*(void* th, const char* str)
+);
+
+PATTERN_FUNCTION(
+    "\x4C\x8B\xDC\x49\x89\x5B\x08\x57\x48\x81\xEC\x90\x00\x00\x00\x66\x0F\x6F\x05\x00\x00\x00\x00\x4D\x8D\x4B\xC8\x49\x8B\x40\x08\x33\xFF",
+    "xxxxxxxxxxxxxxxxxxx????xxxxxxxxxx",
+    ZScaleformValue_Invoke_ZString,
+    void(const ZScaleformValue* th, const char* name, const ZString& arg)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x53\x48\x83\xEC\x20\x8B\x41\x50\x4D\x8B\xD0\x48\x8B\xDA\x85\xC0\x0F\x88\x00\x00\x00\x00",
+    "xxxxxxxxxxxxxxxxxxx????",
+    ZMenuResourceIndex_GetPathForResourceID,
+    ZString*(ZMenuResourceIndex* th, ZString* out, const ZRuntimeResourceID& rid)
+);
+
 PATTERN_FUNCTION(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x50\x48\x8B\xD9\x33",
     "xxxxxxxxxxxxxxxxxxxxxxxx",

@@ -220,6 +220,13 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x05\x00\x00\x00\x00\x48\x8B\xF1\x48\x81\xC1\xA0\x00\x00\x00",
+    "xxx????xxxxxxxxxx",
+    3,
+    ZMenuResourceIndexOwner**, MenuResourceIndexOwner
+);
+
+PATTERN_RELATIVE_GLOBAL(
     "\x48\x8B\x15\x00\x00\x00\x00\x48\xC1\xE0\x06\x48\x89\x0C\x10",
     "xxx????xxxxxxxx",
     3,
@@ -289,6 +296,20 @@ PATTERN_RELATIVE_GLOBAL(
     "xxx????xxxx????xxx",
     3,
     ZDistanceConditionManager*, DistanceConditionManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x0D\x00\x00\x00\x00\x45\x33\xC0\x48\x8B\x01\x41\x8D\x50\x30\xFF\x50\x50\x48\x8B\xF8\x48\x85\xC0\x0F\x84\x00\x00\x00\x00\x4C\x8B\xBD\xC8\x01\x00\x00",
+    "xxx????xxxxxxxxxxxxxxxxxxxxx????xxxxxxx",
+    3,
+    Scaleform::MemoryHeap**, ScaleformGlobalHeap
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x05\x00\x00\x00\x00\xC7\x47\x08\x01\x00\x00\x00\x49\x8B\xD7\x48\x89\x07\xE8",
+    "xxx????xxxxxxxxxxxxxx",
+    3,
+    void*, ScaleformMemoryFile_vtbl
 );
 
 PATTERN_RELATIVE_GLOBAL(
@@ -576,6 +597,13 @@ PATTERN_RELATIVE_GLOBAL(
     "xxx????xxxx????xxxxxxxxxxxxx????xxx????xxxx????xxxxxxxxxxxxx????xxx????x",
     3,
     ZRenderGraphManager*, RenderGraphManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x0D\x00\x00\x00\x00\xFF\x52\x78",
+    "xxx????xxx",
+    3,
+    ZHttpManager*, HttpManager
 );
 
 PATTERN_RELATIVE_GLOBAL(

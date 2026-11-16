@@ -417,6 +417,23 @@ PATTERN_HOOK(
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior)
 );
 
+PATTERN_RELATIVE_CALL_HOOK(
+    "\xE8\x00\x00\x00\x00\x48\x8B\x9C\x24\xF0\x00\x00\x00\x4C\x8D\x9C\x24\xE0\x00\x00\x00",
+    "x????xxxxxxxxxxxxxxxx",
+    ZUserChannelContractsProxyBase_CreateFromParams,
+    void(const ZDynamicObject& creationData, std::function<void(const ZDynamicObject&)> onOk,
+        std::function<void(int)> onError, ZAsyncContext* ctx, const SHttpRequestBehavior& behavior)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x48\x89\x7C\x24\x18\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x20\xFD\xFF\xFF",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    ZUserChannelEventsProxyBase_SaveAndSynchronizeEvents4,
+    void(const ZString& userId, const ZDynamicObject& values, const ZString& lastEventTicks, const ZString& clienttype,
+        const ZString& lastPushDt, std::function<void(const ZDynamicObject&)> onOk, std::function<void(int)> onError,
+        ZAsyncContext* ctx, const SHttpRequestBehavior& behavior)
+);
+
 PATTERN_HOOK(
     "\x48\x89\x5C\x24\x18\x55\x56\x57\x41\x56\x41\x57\x48\x83\xEC\x00\x45\x33\xFF\x49\x8B\xF1",
     "xxxxxxxxxxxxxxx?xxxxxx",
@@ -437,6 +454,34 @@ PATTERN_HOOK(
     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx?xxxx",
     ZUIText_TryGetTextFromNameHash,
     bool(ZUIText* th, int32 nNameHash, ZString& sResult, int32_t& outMarkupResult)
+);
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x48\x89\x50\x10\x55\x48\x8D\xA8\x00\x00\x00\x00\x48\x81\xEC\x00\x00\x00\x00\x48\x89\x58\x08\x48\x89\x70\x18\x48\xC7\xC6\xFF\xFF\xFF\xFF",
+    "xxxxxxxxxxx????xxx????xxxxxxxxxxxxxxx",
+    ZFileOpener_OpenFile,
+    Scaleform::File*(ZFileOpener* th, const char* purl, int flags, int mode)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x74\x24\x18\x55\x57\x41\x56\x48\x8B\xEC\x48\x83\xEC\x70\x4C\x8B\x89\x00\x00\x00\x00\x49\x8B\xF0\x48\x8B\xFA\x4C\x8B\xF1\x4D\x85\xC9",
+    "xxxxxxxxxxxxxxxxxxx????xxxxxxxxxxxx",
+    ZUITextureManager_AddRequest,
+    void(ZUITextureManager* th, const ZString& url, const ZScaleformValue& target)
+);
+
+PATTERN_HOOK(
+    "\x4C\x89\x44\x24\x18\x55\x53\x57\x41\x55\x41\x57\x48\x8D\x6C\x24\xF0\x48\x81\xEC\x00\x00\x00\x00\x48\x8B\x81\x00\x00\x00\x00\x48\x8B\xFA\x4C\x8B\xE9\x48\x8D\x54\x24\x20\x49\x8B\xC8",
+    "xxxxxxxxxxxxxxxxxxxx????xxx????xxxxxxxxxxxxxx",
+    ZOnlineManager_GetOnlineResourcePath,
+    ZString*(ZOnlineManager* th, ZString* out, const ZString& resourceName)
+);
+
+PATTERN_HOOK(
+    "\x4C\x89\x44\x24\x18\x53\x56\x57\x48\x83\xEC\x70\x49\x8B\x00\x48\x8B\xD9\x49\x8B\xC8",
+    "xxxxxxxxxxxxxxxxxxxxx",
+    ZUITemplateCache_GetJson,
+    ZDynamicObject*(ZUITemplateCache* th, ZDynamicObject* out, ZUIAsyncResourceBase* resource)
 );
 
 PATTERN_HOOK(

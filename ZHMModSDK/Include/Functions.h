@@ -16,6 +16,8 @@ class ZHitman5;
 class ZActor;
 class ZDynamicObject;
 class ZString;
+class ZScaleformValue;
+class ZMenuResourceIndex;
 class ZSplashHintManager;
 class ZSplashHintController;
 class ZLookAtTriggerManager;
@@ -354,6 +356,14 @@ public:
     )>* ZBezierSplineTrajectorySource_GetTrajectoryAtTime;
 
     static EngineFunction<bool(ZRenderableEntity* th)>* ZRenderableEntity_IsVisible;
+
+    static EngineFunction<void*(void* th, const char* str)>* Scaleform_String_String;
+
+    static EngineFunction<void(const ZScaleformValue* th, const char* name, const ZString& arg)>*
+    ZScaleformValue_Invoke_ZString;
+
+    static EngineFunction<ZString*(ZMenuResourceIndex* th, ZString* out, const ZRuntimeResourceID& rid)>*
+    ZMenuResourceIndex_GetPathForResourceID;
 
     static EngineFunction<void(ZLookAtTriggerManager* th, ZEntityRef* pTrigger)>*
     ZLookAtTriggerManager_UnregisterLookAtTrigger;
