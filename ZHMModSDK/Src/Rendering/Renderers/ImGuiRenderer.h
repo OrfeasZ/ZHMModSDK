@@ -121,7 +121,7 @@ namespace Rendering::Renderers {
         void SetupStyles();
         void WaitForCurrentFrameToFinish() const;
 
-        void AllocateSRVDescriptor(
+        bool AllocateSRVDescriptor(
             D3D12_CPU_DESCRIPTOR_HANDLE* p_OutCPUHandle,
             D3D12_GPU_DESCRIPTOR_HANDLE* p_OutGPUHandle
         );

@@ -370,7 +370,7 @@ void ImGuiRenderer::WaitForCurrentFrameToFinish() const {
     }
 }
 
-void ImGuiRenderer::AllocateSRVDescriptor(
+bool ImGuiRenderer::AllocateSRVDescriptor(
     D3D12_CPU_DESCRIPTOR_HANDLE* p_OutCpuHandle,
     D3D12_GPU_DESCRIPTOR_HANDLE* p_OutGpuHandle
 ) {
@@ -382,8 +382,12 @@ void ImGuiRenderer::AllocateSRVDescriptor(
         s_Index = m_FreeSRVDescriptorIndices.back();
         m_FreeSRVDescriptorIndices.pop_back();
     }
-    else {
+    else if (m_NextSRVDescriptorIndex < c_MaxSRVDescriptors) {
         s_Index = m_NextSRVDescriptorIndex++;
+    }
+    else {
+        Logger::Error("[ImGuiRenderer] All {} SRV descriptors are in use.", c_MaxSRVDescriptors);
+        return false;
     }
 
     *p_OutCpuHandle = m_SRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -391,6 +395,8 @@ void ImGuiRenderer::AllocateSRVDescriptor(
 
     *p_OutGpuHandle = m_SRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
     p_OutGpuHandle->ptr += s_Index * m_SRVDescriptorSize;
+
+    return true;
 }
 
 void ImGuiRenderer::FreeSRVDescriptor(
@@ -533,7 +539,10 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
         D3D12_CPU_DESCRIPTOR_HANDLE* p_OutCPUHandle,
         D3D12_GPU_DESCRIPTOR_HANDLE* p_OutGPUHandle) {
             auto* s_Renderer = static_cast<ImGuiRenderer*>(p_InitInfo->UserData);
-            s_Renderer->AllocateSRVDescriptor(p_OutCPUHandle, p_OutGPUHandle);
+
+            // The ImGui backend can't handle a failed allocation.
+            const bool s_Allocated = s_Renderer->AllocateSRVDescriptor(p_OutCPUHandle, p_OutGPUHandle);
+            IM_ASSERT(s_Allocated);
         };
 
     s_InitInfo.SrvDescriptorFreeFn = [](
@@ -651,9 +660,6 @@ void ImGuiRenderer::OnReset(IDXGISwapChain3* p_SwapChain) {
     ReleaseFrameResources();
 
     m_BackBuffers.clear();
-
-    std::scoped_lock s_Lock(m_BackendMutex);
-    ImGui_ImplDX12_InvalidateDeviceObjects();
 }
 
 void ImGuiRenderer::PostReset(IDXGISwapChain3* p_SwapChain) {
@@ -688,10 +694,6 @@ void ImGuiRenderer::PostReset(IDXGISwapChain3* p_SwapChain) {
 
         s_Device->CreateRenderTargetView(m_BackBuffers[i], nullptr, s_Descriptor);
     }
-
-    std::scoped_lock s_Lock(m_BackendMutex);
-
-    ImGui_ImplDX12_CreateDeviceObjects();
 }
 
 void ImGuiRenderer::RunFrame() {
@@ -990,13 +992,12 @@ bool ImGuiRenderer::CreateImGuiTextureSRV(ID3D12Resource* p_Texture, ImGuiTextur
 
     const auto s_Description = p_Texture->GetDesc();
 
+    if (!AllocateSRVDescriptor(&p_OutImGuiTexture.srvCPUDescriptor, &p_OutImGuiTexture.srvGPUDescriptor)) {
+        return false;
+    }
+
     p_OutImGuiTexture.width = static_cast<UINT>(s_Description.Width);
     p_OutImGuiTexture.height = s_Description.Height;
-
-    AllocateSRVDescriptor(
-        &p_OutImGuiTexture.srvCPUDescriptor,
-        &p_OutImGuiTexture.srvGPUDescriptor
-    );
 
     D3D12_SHADER_RESOURCE_VIEW_DESC s_SRVDescription {};
     s_SRVDescription.Format = s_Description.Format;
@@ -1085,17 +1086,16 @@ bool ImGuiRenderer::CreateTexture(
 
     s_Finish.wait();
 
+    if (!AllocateSRVDescriptor(&p_OutImGuiTexture.srvCPUDescriptor, &p_OutImGuiTexture.srvGPUDescriptor)) {
+        return false;
+    }
+
     p_OutTexture = std::move(s_Texture);
 
     auto s_TextureDescription = p_OutTexture->GetDesc();
 
     p_OutImGuiTexture.width = static_cast<UINT>(s_TextureDescription.Width);
     p_OutImGuiTexture.height = static_cast<UINT>(s_TextureDescription.Height);
-
-    AllocateSRVDescriptor(
-        &p_OutImGuiTexture.srvCPUDescriptor,
-        &p_OutImGuiTexture.srvGPUDescriptor
-    );
 
     DirectX::CreateShaderResourceView(
         s_Device,
