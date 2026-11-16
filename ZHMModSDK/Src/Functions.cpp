@@ -26,7 +26,7 @@ PATTERN_FUNCTION(
     "\x48\x8B\xC4\x44\x88\x48\x20\x53",
     "xxxxxxxx",
     ZJsonDeserializer_Deserialize,
-    ZDynamicObject*(ZDynamicObject& result, const uint8_t* pData, uint64_t nLength)
+    ZDynamicObject*(ZDynamicObject& result, const char* pData, uint32_t nLength, bool bUnused, ZString sName)
 );
 
 PATTERN_FUNCTION(
