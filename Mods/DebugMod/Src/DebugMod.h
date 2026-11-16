@@ -37,6 +37,7 @@ private:
     void DrawPositionBox(bool p_HasFocus);
 
     void DrawReasoningGrid(IRenderer* p_Renderer);
+    void DrawSoundConnectors(IRenderer* p_Renderer, float p_Alpha);
     void DrawNavMesh(IRenderer* p_Renderer);
     void DrawObstacles(IRenderer* p_Renderer);
 
@@ -83,6 +84,7 @@ private:
     bool m_ShowVisibility = false;
     bool m_ShowLayers = false;
     bool m_ShowIndices = false;
+    bool m_DrawSoundConnectors = false;
     std::vector<Line> m_Lines;
     std::vector<Triangle> m_Triangles;
 

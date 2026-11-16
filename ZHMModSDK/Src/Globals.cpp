@@ -192,6 +192,13 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x0D\x00\x00\x00\x00\x48\x8D\x54\x24\x20\x48\x89\x7C\x24\x28\xE8",
+    "xxx????xxxxxxxxxxx",
+    3,
+    ZSharedSoundSensor**, SharedSoundSensor
+);
+
+PATTERN_RELATIVE_GLOBAL(
     "\x4C\x8D\x35\x00\x00\x00\x00\x33\xF6\x48\x8D\x05",
     "xxx????xxxxx",
     3,
