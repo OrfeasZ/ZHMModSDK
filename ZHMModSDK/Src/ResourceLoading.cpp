@@ -583,17 +583,46 @@ bool ModSDK::LoadQnEntity(
 
     Logger::Debug("Converted from QN to RT! Generating BIN1 resources from RT JSON...");
 
-    const auto s_ResourceTempMem = HM3_GetGeneratorForResource("TEMP")->FromJsonStringToResourceMem(
-        s_QnData->factory_json,
-        strlen(s_QnData->factory_json),
-        false
+    struct SGenerateContext {
+        QnConvertedData* QnData;
+        ResourceMem* TempMem;
+        ResourceMem* TbluMem;
+    };
+
+    SGenerateContext s_Context { s_QnData, nullptr, nullptr };
+
+    // ResourceLib uses huge stack frames (especially in debug builds) that overflow the game
+    // thread's stack, so we generate the resources on a thread with a bigger stack.
+    auto* s_GenerateThread = CreateThread(
+        nullptr,
+        16 * 1024 * 1024,
+        [](LPVOID p_Param) -> DWORD {
+            auto* s_Context = static_cast<SGenerateContext*>(p_Param);
+
+            s_Context->TempMem = HM3_GetGeneratorForResource("TEMP")->FromJsonStringToResourceMem(
+                s_Context->QnData->factory_json,
+                strlen(s_Context->QnData->factory_json),
+                false
+            );
+
+            s_Context->TbluMem = HM3_GetGeneratorForResource("TBLU")->FromJsonStringToResourceMem(
+                s_Context->QnData->blueprint_json,
+                strlen(s_Context->QnData->blueprint_json),
+                false
+            );
+
+            return 0;
+        },
+        &s_Context,
+        STACK_SIZE_PARAM_IS_A_RESERVATION,
+        nullptr
     );
 
-    const auto s_ResourceTbluMem = HM3_GetGeneratorForResource("TBLU")->FromJsonStringToResourceMem(
-        s_QnData->blueprint_json,
-        strlen(s_QnData->blueprint_json),
-        false
-    );
+    WaitForSingleObject(s_GenerateThread, INFINITE);
+    CloseHandle(s_GenerateThread);
+
+    const auto s_ResourceTempMem = s_Context.TempMem;
+    const auto s_ResourceTbluMem = s_Context.TbluMem;
 
     std::string s_FactoryMetaJson {s_QnData->factory_meta_json};
     std::string s_BlueprintMetaJson {s_QnData->blueprint_meta_json};
