@@ -63,8 +63,6 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
             }
 
             if (ImGui::IsItemHovered()) {
-                std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
-
                 if (!m_CachedEntityTreeMap.empty()) {
                     std::string s_EntityName;
 
@@ -135,7 +133,7 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
 
         if (ImGui::Button("Select in entity tree")) {
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
-                UpdateEntities();
+                QueueTask([this] { UpdateEntities(); });
             }
 
             OnSelectEntity(m_SelectedAction->m_Object, true, std::nullopt);
@@ -145,7 +143,7 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
 
         if (ImGui::Button("Select owner in entity tree")) {
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
-                UpdateEntities();
+                QueueTask([this] { UpdateEntities(); });
             }
 
             OnSelectEntity(s_Item->m_pOwner, true, std::nullopt);
@@ -154,21 +152,25 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
         ImGui::EndDisabled();
 
         if (ImGui::Button("Teleport item to player")) {
-            if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-                s_Item->m_rGeomentity.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(
-                    s_HitmanSpatial->GetObjectToWorldMatrix()
-                );
-            }
+            QueueTask([s_Item] {
+                if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
+                    ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
+                    s_Item->m_rGeomentity.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(
+                        s_HitmanSpatial->GetObjectToWorldMatrix()
+                    );
+                }
+            });
         }
 
         if (ImGui::Button("Teleport player to item")) {
-            if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-                s_HitmanSpatial->SetObjectToWorldMatrixFromEditor(
-                    s_Item->m_rGeomentity.m_pInterfaceRef->GetObjectToWorldMatrix()
-                );
-            }
+            QueueTask([s_Item] {
+                if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
+                    ZSpatialEntity* s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
+                    s_HitmanSpatial->SetObjectToWorldMatrixFromEditor(
+                        s_Item->m_rGeomentity.m_pInterfaceRef->GetObjectToWorldMatrix()
+                    );
+                }
+            });
         }
 
         ImGui::EndChild();

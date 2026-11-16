@@ -46,7 +46,7 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
 
     if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
         if (ImGui::Button("Build entity tree")) {
-            UpdateEntities();
+            QueueTask([this] { UpdateEntities(); });
         }
 
         ImGui::PopFont();
@@ -119,14 +119,8 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
 
         std::string s_BoxReflectionEntityName;
 
-        {
-            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
-
-            const auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityRef);
-
-            if (s_Iterator != m_CachedEntityTreeMap.end()) {
-                s_BoxReflectionEntityName = s_Iterator->second->Name;
-            }
+        if (const auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityRef); s_Iterator != m_CachedEntityTreeMap.end()) {
+            s_BoxReflectionEntityName = s_Iterator->second->Name;
         }
 
         if (!Util::StringUtils::FindSubstring(s_BoxReflectionEntityName, s_EntityName)) {

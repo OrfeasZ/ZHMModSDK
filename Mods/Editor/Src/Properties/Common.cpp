@@ -564,17 +564,6 @@ std::string Editor::FormatPropertyValueForClipboard(const STypeID* p_TypeID, voi
     return {};
 }
 
-void Editor::OnSetPropertyValue(
-    ZEntityRef p_Entity,
-    uint32_t p_PropertyId,
-    const ZObjectRef& p_Value,
-    std::optional<std::string> p_ClientId
-) {
-    Hooks::SetPropertyValue->Call(p_Entity, p_PropertyId, p_Value, true);
-    RefreshPathfinderObstacle(p_Entity, true);
-    m_Server.OnEntityPropertySet(p_Entity, p_PropertyId, std::move(p_ClientId));
-}
-
 void Editor::OnSignalEntityPin(
     ZEntityRef p_Entity,
     uint32_t p_PinId,
@@ -627,6 +616,7 @@ bool Editor::TEntityRefProperty(const std::string& p_Id, void* p_Data, const STy
     return true;
 }
 
+// Needs m_CachedEntityTreeMutex.
 bool Editor::EntityRefProperty(const std::string& p_Id, ZEntityRef& p_EntityRef) {
     bool s_IsChanged = false;
     const bool s_IsPicking = m_EntityRefPickTarget == p_Id;
@@ -649,8 +639,6 @@ bool Editor::EntityRefProperty(const std::string& p_Id, ZEntityRef& p_EntityRef)
     if (p_EntityRef) {
         s_EntityId = fmt::format("{:016x}", p_EntityRef->GetType()->m_nEntityID);
         s_Name = s_EntityId;
-
-        std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
 
         if (const auto s_Iterator = m_CachedEntityTreeMap.find(p_EntityRef); s_Iterator != m_CachedEntityTreeMap.end()) {
             s_Name = SplitEntityTreeNodeName(s_Iterator->second->Name).Name;

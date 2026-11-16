@@ -3,6 +3,8 @@
 #include <expected>
 #include <string>
 #include <cstdint>
+#include <functional>
+#include <unordered_map>
 
 #include "EntityTreeNode.h"
 
@@ -44,17 +46,20 @@ public:
     static bool GetEnabled();
 
 private:
-    static void OnMessage(WebSocket* p_Socket, std::string_view p_Message, uWS::Loop* p_Loop) noexcept(false);
+    void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);
+    void QueueRequest(const std::string& p_ClientId, std::optional<int64_t> p_MessageId, std::function<void()> p_Request);
+    void DeferToClient(const std::string& p_ClientId, std::function<void(WebSocket*)> p_Send);
+    void SendToClient(const std::string& p_ClientId, std::string p_Message);
 
     static void SendWelcome(WebSocket* p_Socket);
-    static void SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
-    static void SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId);
-    static void SendError(WebSocket* p_Socket, std::string p_Message, std::optional<int64_t> p_MessageId);
-    static void SendEntityList(
-        WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
+    void SendHitmanEntity(const std::string& p_ClientId, std::optional<int64_t> p_MessageId);
+    void SendCameraEntity(const std::string& p_ClientId, std::optional<int64_t> p_MessageId);
+    void SendError(const std::string& p_ClientId, std::string p_Message, std::optional<int64_t> p_MessageId);
+    void SendEntityList(
+        const std::string& p_ClientId, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
     );
-    static void SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
-    static void SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop, bool s_OnlyCollidableMeshes);
+    void SendEntityDetails(const std::string& p_ClientId, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId);
+    void SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCollidableMeshes);
     static bool SendEntitiesDetails(
         WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities
     );
@@ -77,7 +82,7 @@ public:
     static uint64_t ReadEntityId(simdjson::ondemand::value p_EntityId);
 
 private:
-    void PublishEvent(const std::string& p_Event, std::optional<std::string> p_IgnoreClient);
+    void PublishEvent(std::string p_Event, std::optional<std::string> p_IgnoreClient);
     static bool IsPropertyValueTrue(const SPropertyData* s_Property, const ZEntityRef& p_Entity);
     static bool IsExcludedFromNavMeshExport(const ZEntityRef& p_Entity);
 
@@ -85,7 +90,8 @@ private:
     uint64_t m_LastClientId = 0;
     uWS::App* m_App;
     uWS::Loop* m_Loop;
-    std::vector<SocketUserData*> m_SocketUserDatas;
+    // Only used on the server thread.
+    std::unordered_map<std::string, WebSocket*> m_Sockets;
     std::jthread m_ServerThread;
     static std::atomic<bool> m_Enabled;
 };

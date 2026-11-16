@@ -1,6 +1,7 @@
 #include <Editor.h>
 
 #include "imgui_internal.h"
+#include <cassert>
 #include <imgui_stdlib.h>
 
 #include <Glacier/EntityFactory.h>
@@ -29,10 +30,6 @@ void Editor::UpdateEntityTree(
     const std::vector<ZEntityRef>& p_Entities,
     const bool p_AreEntitiesDynamic
 ) {
-    if (m_IsBuildingEntityTree.exchange(true)) {
-        return;
-    }
-
     // Go through a first pass by creating all the nodes of the tree using a BFS
     // approach. We'll also opportunistically assign children nodes to parents we've
     // seen before. Then, as a second pass we'll go through and assign the remaining
@@ -346,7 +343,6 @@ void Editor::UpdateEntityTree(
     }
 
     m_EntityTreeRowsDirty = true;
-    m_IsBuildingEntityTree = false;
 }
 
 void Editor::UpdateEntities() {
@@ -1074,9 +1070,8 @@ bool Editor::FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSing
     return false;
 }
 
+// Needs m_CachedEntityTreeMutex.
 void Editor::ClearFilters() {
-    std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
-
     m_EntityIDSearchInput.clear();
     m_EntityTypeSearchInput.clear();
     m_EntityNameSearchInput.clear();
@@ -1118,6 +1113,7 @@ std::shared_ptr<EntityTreeNode> Editor::FindMatchByIndex(
     return nullptr;
 }
 
+// Needs m_CachedEntityTreeMutex.
 void Editor::DrawEntityTreeWindow() {
     BeginPanelWindow(c_EntityTreeWindowName, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_Docking);
 
@@ -1189,7 +1185,6 @@ void Editor::DrawEntityTreeToolbar() {
             if (ImGui::Selectable(m_EntityViewModes[i].c_str(), s_IsSelected)) {
                 m_EntityViewMode = static_cast<EntityViewMode>(i);
 
-                std::shared_lock s_Lock(m_CachedEntityTreeMutex);
                 FilterEntityTree();
             }
 
@@ -1237,7 +1232,6 @@ void Editor::DrawEntityTreeToolbar() {
             return p_ClassName;
         },
         [&](const std::string&, const std::string&, const auto&) {
-            std::shared_lock s_Lock(m_CachedEntityTreeMutex);
             FilterEntityTree();
         }
     );
@@ -1276,7 +1270,6 @@ void Editor::DrawEntityTreeToolbar() {
     ImGui::EndDisabled();
 
     if (s_ShouldSelectMatch) {
-        std::shared_lock s_Lock(m_CachedEntityTreeMutex);
         size_t s_Counter = 0;
 
         if (auto s_Node = FindMatchByIndex(m_CachedEntityTree, m_CurrentEntitySearchResultIndex, s_Counter)) {
@@ -1295,20 +1288,11 @@ void Editor::DrawEntityTreeToolbar() {
 
     ImGui::SameLine();
 
-    bool s_HasEntityTree;
-
-    {
-        std::shared_lock s_Lock(m_CachedEntityTreeMutex);
-        s_HasEntityTree = m_CachedEntityTree != nullptr;
-    }
-
-    if (IconButton(ICON_MD_CONSTRUCTION, s_HasEntityTree ? "Rebuild entity tree" : "Build entity tree")) {
-        UpdateEntities();
+    if (IconButton(ICON_MD_CONSTRUCTION, m_CachedEntityTree ? "Rebuild entity tree" : "Build entity tree")) {
+        QueueTask([this] { UpdateEntities(); });
     }
 
     ImGui::SameLine();
-
-    std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
     ImGui::BeginDisabled(!m_CachedEntityTree);
 
@@ -1374,8 +1358,6 @@ void Editor::ExportEntityTree() {
 }
 
 void Editor::DrawEntityTreeTable() {
-    std::shared_lock s_Lock(m_CachedEntityTreeMutex);
-
     ImGui::PushStyleColor(ImGuiCol_Header, ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered, c_ListRowHoverColor);
     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
@@ -1503,6 +1485,7 @@ void Editor::DrawEntityTreeTable() {
     ImGui::PopStyleColor(7);
 }
 
+// Needs m_CachedEntityTreeMutex.
 void Editor::OnSelectEntity(
     ZEntityRef p_Entity,
     bool p_ShouldScrollToEntity,
@@ -1518,31 +1501,55 @@ void Editor::OnSelectEntity(
         m_EntityRefPickTarget.clear();
     }
 
+    QueueTask([this, p_Entity, p_ShouldScrollToEntity, p_ClientId] {
+        SelectEntityInternal(p_Entity, p_ShouldScrollToEntity, p_ClientId);
+    });
+}
+
+void Editor::SelectEntityInternal(
+    ZEntityRef p_Entity,
+    bool p_ShouldScrollToEntity,
+    std::optional<std::string> p_ClientId
+) {
+    assert(std::this_thread::get_id() == m_UpdateThreadId);
+
     if (m_SelectedEntity.m_pObj == p_Entity.m_pObj) {
         return;
     }
 
-    m_ScrollToEntity = p_ShouldScrollToEntity && p_Entity.GetEntity() != nullptr;
+    if (p_Entity && !IsSpecialEntityTreeNode(p_Entity) && !IsEntityInTree(p_Entity)) {
+        return;
+    }
+
+    ZRenderMaterialInstance* s_MaterialInstance = p_Entity && !IsSpecialEntityTreeNode(p_Entity)
+        ? LoadSelectedMaterialInstance(p_Entity)
+        : nullptr;
+
+    {
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+
+        m_ScrollToEntity = p_ShouldScrollToEntity && p_Entity.GetEntity() != nullptr;
+        m_SelectedEntity = p_Entity;
+        m_SelectedMaterialInstance = s_MaterialInstance;
+
+        if (m_SelectActorOnMouseClick) {
+            ZActor* s_Actor = nullptr;
+            ZEntityRef logicalParent = m_SelectedEntity.GetLogicalParent();
+
+            if (logicalParent) {
+                s_Actor = logicalParent.QueryInterface<ZActor>();
+            }
+
+            if (s_Actor) {
+                m_SelectedActor = s_Actor;
+                m_ScrollToActor = true;
+                m_GlobalOutfitKit = {};
+            }
+        }
+    }
 
     if (!IsSpecialEntityTreeNode(p_Entity)) {
         m_Server.OnEntitySelected(p_Entity, std::move(p_ClientId));
-    }
-
-    m_SelectedEntity = p_Entity;
-
-    if (m_SelectActorOnMouseClick) {
-        ZActor* s_Actor = nullptr;
-        ZEntityRef logicalParent = m_SelectedEntity.GetLogicalParent();
-
-        if (logicalParent) {
-            s_Actor = logicalParent.QueryInterface<ZActor>();
-        }
-
-        if (s_Actor) {
-            m_SelectedActor = s_Actor;
-            m_ScrollToActor = true;
-            m_GlobalOutfitKit = {};
-        }
     }
 
     if (!m_SelectionForFreeCameraEditorStyleEntity) {
@@ -1567,26 +1574,48 @@ void Editor::OnSelectEntity(
 }
 
 void Editor::OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
-    std::scoped_lock s_Lock(m_EntityDestructionMutex);
-
-    // Spawned entities can wait in the queue for a few frames, so don't queue them twice.
-    const bool s_IsQueued = std::ranges::any_of(m_EntitiesToDestroy, [&](const auto& p_Entry) {
-        return std::get<0>(p_Entry) == p_Entity;
+    QueueTask([this, p_Entity, p_ClientId] {
+        DestroyEntityInternal(p_Entity, p_ClientId, ChangeMode::Commit);
     });
-
-    if (!s_IsQueued) {
-        m_EntitiesToDestroy.push_back({ p_Entity, std::move(p_ClientId) });
-    }
 }
 
-void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId) {
-    m_CachedEntityTreeMutex.lock();
+void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId, const ChangeMode p_Mode) {
+    assert(std::this_thread::get_id() == m_UpdateThreadId);
 
-    m_EntityNames.erase(p_Entity);
+    // The game can only delete the entities it created as a whole, so the editor only deletes
+    // spawned entities. A second delete of the same entity can also still be in the queue.
+    const auto s_It = m_SpawnedEntities.find(p_Entity);
 
-    // Keep the factory alive until the entity is deleted.
-    auto s_SpawnedEntity = m_SpawnedEntities.extract(p_Entity);
+    if (s_It == m_SpawnedEntities.end()) {
+        return;
+    }
 
+    if (p_Mode == ChangeMode::Commit) {
+        PushHistory({ .Change = DestroyHistoryEntry { MakeSpawnInfo(s_It->second) }, .ClientId = p_ClientId });
+    }
+
+    m_Server.OnEntityDestroying(p_Entity->GetType()->m_nEntityID, std::move(p_ClientId));
+
+    // Spawned entities wait until their tree can be deleted. We take them out of the spawned
+    // entities immediately, so a spawn with the same entity ID doesn't find this one.
+    // Constructed in place, because assigning a TResourcePtr doesn't count the reference.
+    std::optional<SpawnedEntity> s_SpawnedEntity;
+
+    {
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+
+        m_EntityNames.erase(p_Entity);
+        s_SpawnedEntity.emplace(std::move(m_SpawnedEntities.extract(s_It).mapped()));
+
+        RemoveEntityFromTree(p_Entity);
+    }
+
+    std::scoped_lock s_Lock(m_EntityDestructionMutex);
+    m_EntitiesToDestroy.push_back(std::move(*s_SpawnedEntity));
+}
+
+// Needs m_CachedEntityTreeMutex locked exclusively.
+void Editor::RemoveEntityFromTree(ZEntityRef p_Entity) {
     if (m_SelectedEntity == p_Entity) {
         m_SelectedEntity = {};
     }
@@ -1615,6 +1644,8 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
         while (!s_ChildrenQueue.empty()) {
             auto s_CurrentChild = s_ChildrenQueue.front();
 
+            // Queued changes check the map, so they skip the children too.
+            m_CachedEntityTreeMap.erase(s_CurrentChild->Entity);
             m_OpenEntityTreeNodes.erase(s_CurrentChild.get());
             m_FilteredEntityTreeNodes.erase(s_CurrentChild.get());
 
@@ -1635,17 +1666,6 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
 
         s_NodeToRemove->RemoveFromParent();
         m_EntityTreeRowsDirty = true;
-    }
-
-    m_CachedEntityTreeMutex.unlock();
-
-    m_Server.OnEntityDestroying(p_Entity->GetType()->m_nEntityID, std::move(p_ClientId));
-
-    if (s_SpawnedEntity) {
-        m_EntityTreeDeleter.Delete(p_Entity, s_SpawnedEntity.mapped().Tree);
-    }
-    else {
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, p_Entity, {});
     }
 }
 
@@ -1689,6 +1709,8 @@ void Editor::DestroyEntityNodeInternal(
         auto s_CurrentChild = s_ChildrenQueue.front();
         s_ChildrenQueue.pop();
 
+        // Queued changes check the map, so they skip the children too.
+        m_CachedEntityTreeMap.erase(s_CurrentChild->Entity);
         m_OpenEntityTreeNodes.erase(s_CurrentChild.get());
         m_FilteredEntityTreeNodes.erase(s_CurrentChild.get());
 
@@ -1709,14 +1731,6 @@ void Editor::DestroyEntityNodeInternal(
     m_EntityTreeRowsDirty = true;
 
     m_Server.OnEntityDestroying(s_EntityId, std::move(p_ClientId));
-}
-
-void Editor::OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId) {
-    m_CachedEntityTreeMutex.lock();
-    m_EntityNames[p_Entity] = p_Name;
-    m_CachedEntityTreeMutex.unlock();
-
-    m_Server.OnEntityNameChanged(p_Entity, std::move(p_ClientId));
 }
 
 DEFINE_PLUGIN_DETOUR(
@@ -1748,7 +1762,7 @@ DEFINE_PLUGIN_DETOUR(
         m_DynamicEntities.insert(result);
     }
 
-    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
+    if (m_CachedEntityTree) {
         std::scoped_lock lock(m_PendingDynamicEntitiesMutex);
         m_PendingDynamicEntities.insert(result);
     }
@@ -1777,7 +1791,7 @@ DEFINE_PLUGIN_DETOUR(
             m_SelectedDebugEntity = nullptr;
         }
 
-        if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
+        if (m_CachedEntityTree) {
             auto it = m_CachedEntityTreeMap.find(entityRef);
 
             if (it != m_CachedEntityTreeMap.end()) {
@@ -1803,7 +1817,10 @@ DEFINE_PLUGIN_DETOUR(
         m_PendingDynamicEntities.erase(entityRef);
     }
 
-    m_EntityRefToFactoryRuntimeResourceIDs.erase(entityRef);
+    {
+        std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
+        m_EntityRefToFactoryRuntimeResourceIDs.erase(entityRef);
+    }
 
     return { HookAction::Continue() };
 }

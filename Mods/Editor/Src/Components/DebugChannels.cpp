@@ -479,11 +479,13 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
         }
         else {
             if (ImGui::Button("Get debug entities")) {
-                if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
-                    UpdateEntities();
-                }
+                QueueTask([this] {
+                    if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
+                        UpdateEntities();
+                    }
 
-                GetDebugEntities(m_CachedEntityTree);
+                    GetDebugEntities(m_CachedEntityTree);
+                });
             }
         }
     }
@@ -2281,12 +2283,15 @@ bool Editor::RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector
             Logger::Debug("[Editor] RayCastDebugEntities found no hits.");
         }
 
-        m_SelectedDebugEntity = {};
+        QueueTask([this] { m_SelectedDebugEntity = {}; });
 
         return false;
     }
 
-    m_SelectedDebugEntity = s_Result.m_Entity;
+    const ZEntityRef s_Entity = s_Result.m_Entity;
+
+    // The update thread clears it when the entity is deleted, so it also owns the writes.
+    QueueTask([this, s_Entity] { m_SelectedDebugEntity = s_Entity; });
 
     if (m_raycastLogging) {
         Logger::Debug(
@@ -2302,7 +2307,7 @@ bool Editor::RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector
     for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
         const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
-        if (m_SelectedDebugEntity.IsAnyParent(s_Brick.m_EntityRef)) {
+        if (s_Entity.IsAnyParent(s_Brick.m_EntityRef)) {
             Logger::Debug(
                 "[Editor] Found debug entity in brick {} (idx = {}).",
                 s_Brick.m_RuntimeResourceID,
@@ -2314,9 +2319,9 @@ bool Editor::RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector
         }
     }
 
-    if (m_SelectedDebugEntity.GetEntity() &&
-        m_SelectedDebugEntity.GetEntity()->GetType()) {
-        const auto& s_Type = *m_SelectedDebugEntity.GetEntity()->GetType();
+    if (s_Entity.GetEntity() &&
+        s_Entity.GetEntity()->GetType()) {
+        const auto& s_Type = *s_Entity.GetEntity()->GetType();
         const auto& s_Interfaces = *s_Type.m_pInterfaceData;
 
         Logger::Trace(
@@ -2326,7 +2331,8 @@ bool Editor::RayCastDebugEntities(const SVector3& p_WorldPosition, const SVector
         );
     }
 
-    OnSelectEntity(m_SelectedDebugEntity, true, std::nullopt);
+    std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+    OnSelectEntity(s_Entity, true, std::nullopt);
 
     return true;
 }

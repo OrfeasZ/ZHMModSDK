@@ -9,6 +9,7 @@
 #include <deque>
 #include <list>
 #include <shared_mutex>
+#include <variant>
 
 #include <SimpleMath.h>
 
@@ -74,6 +75,7 @@ public:
     void SignalEntityPin(EntitySelector p_Selector, uint32_t p_PinId, bool p_Output);
     void LockEntityTree() { m_CachedEntityTreeMutex.lock_shared(); }
     std::shared_ptr<EntityTreeNode> GetEntityTree() { return m_CachedEntityTree; }
+    bool IsSpecialEntityTreeNode(ZEntityRef p_Entity) const;
     void UnlockEntityTree() { m_CachedEntityTreeMutex.unlock_shared(); }
     std::string GetEntityName(ZEntityRef p_Entity, bool p_WithID = true);
     ZEntityRef FindEntity(EntitySelector p_Selector);
@@ -95,6 +97,129 @@ public:
     void QueueTask(std::function<void()> p_Task);
 
 private:
+    enum class ChangeMode {
+        Preview,
+        Commit,
+        // Applies like a commit but doesn't add a history entry. Used by undo, redo and cancelled drags.
+        Revert
+    };
+
+    // Queued previews with the same key replace each other, so only the latest value is applied.
+    struct ChangeKey {
+        ZEntityRef Entity;
+
+        // Empty for the transform.
+        std::optional<uint32_t> PropertyId;
+
+        bool operator==(const ChangeKey& p_Other) const = default;
+    };
+
+    struct QueuedChange {
+        std::function<void()> Apply;
+
+        // A newer preview with the same key replaces this one.
+        std::optional<ChangeKey> PreviewKey;
+    };
+
+    struct EditStart {
+        ChangeKey Key;
+        ZObjectRef Value;
+        SMatrix Transform;
+    };
+
+    // A property or gizmo drag in the UI. The UI keeps drawing this value until the commit is applied.
+    struct ActiveEdit {
+        ChangeKey Key;
+        ZObjectRef Value;
+        SMatrix Transform;
+        SMatrix StartTransform;
+        bool IsDrawn = false;
+        uint64_t CommitSerial = 0;
+
+        bool IsCommitted() const { return CommitSerial != 0; }
+    };
+
+    // Entities in a spawned tree get new refs when an undo spawns the tree again, so we find
+    // those by the root's entity ID and their position in ForEachEntityInTree.
+    struct HistoryTarget {
+        ZEntityRef Entity;
+        std::optional<uint64_t> SpawnedRootId;
+        size_t TreeIndex = 0;
+    };
+
+    struct HistoryValue {
+        ZObjectRef Value;
+        std::optional<HistoryTarget> EntityRef;
+    };
+
+    struct SpawnInfo {
+        TResourcePtr<ZTemplateEntityFactory> Factory;
+        std::string Name;
+        uint64_t EntityId = 0;
+        SMatrix Transform;
+        bool IsAsset = false;
+    };
+
+    struct PropertyHistoryEntry {
+        HistoryTarget Target;
+        uint32_t PropertyId = 0;
+        HistoryValue OldValue;
+        HistoryValue NewValue;
+    };
+
+    struct TransformHistoryEntry {
+        HistoryTarget Target;
+        SMatrix OldTransform;
+        SMatrix NewTransform;
+    };
+
+    struct NameHistoryEntry {
+        HistoryTarget Target;
+        std::string OldName;
+        std::string NewName;
+    };
+
+    struct SpawnHistoryEntry {
+        SpawnInfo Spawn;
+    };
+
+    struct DestroyHistoryEntry {
+        SpawnInfo Spawn;
+    };
+
+    struct HistoryEntry {
+        std::variant<
+            PropertyHistoryEntry,
+            TransformHistoryEntry,
+            NameHistoryEntry,
+            SpawnHistoryEntry,
+            DestroyHistoryEntry
+        > Change;
+        std::optional<std::string> ClientId;
+    };
+
+    void QueueChange(const ChangeKey& p_Key, ChangeMode p_Mode, std::function<void()> p_Apply);
+    bool IsEntityInTree(ZEntityRef p_Entity);
+    std::optional<EditStart> TakeEditStart(const ChangeKey& p_Key);
+    void CommitPropertyEdit();
+    void CommitGizmoEdit(ChangeMode p_Mode);
+    void QueueEditCommitted(ActiveEdit& p_Edit);
+    void UpdateActiveEdits();
+    void UpdateActiveEdit(std::optional<ActiveEdit>& p_Edit, const std::function<void()>& p_Commit);
+
+    HistoryTarget MakeHistoryTarget(ZEntityRef p_Entity);
+    ZEntityRef ResolveHistoryTarget(const HistoryTarget& p_Target);
+    HistoryValue MakeHistoryValue(const ZObjectRef& p_Value);
+    std::optional<ZObjectRef> ResolveHistoryValue(const HistoryValue& p_Value);
+    ZEntityRef SpawnEntityInternal(const SpawnInfo& p_Spawn);
+    void PushHistory(HistoryEntry p_Entry);
+    bool ApplyHistoryEntry(const HistoryEntry& p_Entry, bool p_IsUndo);
+    void ReplayHistory(uint64_t p_SpawnedRootId);
+    void Undo();
+    void Redo();
+    void StepHistory(std::deque<HistoryEntry>& p_From, std::deque<HistoryEntry>& p_To, bool p_IsUndo);
+    void HandleUndoKeys(bool p_HasFocus);
+
     struct DebugEntity {
         std::string m_TypeName;
         ZEntityRef m_EntityRef;
@@ -172,6 +297,7 @@ private:
 
     bool DrawEntityToolbar(ZEntityRef p_Entity, ZSpatialEntity* p_Spatial);
     EntityDetails CollectEntityDetails(ZEntityRef p_Entity);
+    ZRenderMaterialInstance* LoadSelectedMaterialInstance(ZEntityRef p_Entity);
     void DrawEntityName(const EntityDetails& p_Details);
     void DrawEntityDetails(const EntityDetails& p_Details);
     void DrawEntityKeywords(ZEntityRef p_Entity);
@@ -311,12 +437,12 @@ private:
     void ReparentSpawnedEntity(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap, ZEntityRef p_Entity
     );
-    bool IsSpecialEntityTreeNode(ZEntityRef p_Entity) const;
 
     struct SpawnedEntity {
         ZEntityRef Entity;
 
         std::optional<TResourcePtr<ZTemplateEntityFactory>> Factory;
+        bool IsAsset = false;
 
         SpawnedTree Tree;
 
@@ -340,25 +466,43 @@ private:
     };
 
     void AddSpawnedEntity(SpawnedEntity p_SpawnedEntity, const std::string& p_Name, std::optional<std::string> p_ClientId);
+    SpawnInfo MakeSpawnInfo(const SpawnedEntity& p_SpawnedEntity);
     void OnAssetItemDropped(const AssetItem& p_Item, SVector2 p_ScreenPosition);
     void UpdateAssetSpawns();
     void SpawnAssetItem(const PendingAssetSpawn& p_Spawn);
     void UpdatePhysicsFreezes(double p_DeltaSeconds);
-    bool IsReadyToDestroy(ZEntityRef p_Entity);
+    static bool IsReadyToDestroy(SpawnedEntity& p_SpawnedEntity);
+    void UpdateEntitiesToDestroy();
 
     void OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, std::optional<std::string> p_ClientId);
+    void SelectEntityInternal(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, std::optional<std::string> p_ClientId);
     void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
-    void DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
+    void DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::string> p_ClientId, ChangeMode p_Mode);
+    void RemoveEntityFromTree(ZEntityRef p_Entity);
     void DestroyEntityNodeInternal(const std::shared_ptr<EntityTreeNode>& p_NodeToRemove, std::optional<std::string> p_ClientId);
     void OnEntityTransformChange(
-        ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
+        ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId,
+        ChangeMode p_Mode = ChangeMode::Commit
+    );
+    void SetEntityTransformInternal(
+        ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId,
+        ChangeMode p_Mode
     );
     void RefreshPathfinderObstacle(ZEntityRef p_Entity, bool p_Force);
     void RefreshStaticPhysicsAndObstacles(ZEntityRef p_Root);
-    void OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId);
-    void OnSetPropertyValue(
-        ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value, std::optional<std::string> p_ClientId
+    void SetEntityNameInternal(
+        ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId, ChangeMode p_Mode
     );
+    void OnSetPropertyValue(
+        ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value, std::optional<std::string> p_ClientId,
+        ChangeMode p_Mode = ChangeMode::Commit
+    );
+    void SetPropertyValueInternal(
+        ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value, std::optional<std::string> p_ClientId,
+        ChangeMode p_Mode
+    );
+    static ZObjectRef GetPropertyValue(ZEntityRef p_Entity, const SPropertyData* p_Property);
+    static ZObjectRef MakeEntityRefValue(STypeID* p_Type, ZEntityRef p_Entity);
     void OnSignalEntityPin(
         ZEntityRef p_Entity,
         const std::string& p_Pin,
@@ -470,6 +614,10 @@ private:
     void DrawRoomsWindow(bool p_HasFocus);
     void DrawBoxReflectionsWindow(bool p_HasFocus);
 
+    void OnEquipOutfit(
+        const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharSetIndex,
+        const std::string& p_CharSetCharacterType, uint8_t p_OutfitVariationIndex, ZActor* p_Actor
+    );
     static void EquipOutfit(
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t p_CharSetIndex,
         const std::string& p_CharSetCharacterType, uint8_t p_OutfitVariationindex, ZActor* p_Actor
@@ -895,10 +1043,11 @@ private:
     std::list<PendingAssetSpawn> m_PendingAssetSpawns;
     std::unordered_map<ZEntityRef, std::string> m_EntityNames;
 
+    // Spawned entities wait here until their tree can be deleted.
     std::mutex m_EntityDestructionMutex;
-    std::vector<std::tuple<ZEntityRef, std::optional<std::string>>> m_EntitiesToDestroy;
+    std::list<SpawnedEntity> m_EntitiesToDestroy;
 
-    std::atomic_bool m_IsBuildingEntityTree = false;
+
     std::mutex m_DynamicEntitiesMutex;
     std::unordered_set<ZEntityRef> m_DynamicEntities;
     std::mutex m_PendingDynamicEntitiesMutex;
@@ -1009,8 +1158,26 @@ private:
     std::string m_EntityRefPickTarget;
     std::optional<ZEntityRef> m_PickedEntityRef;
 
-    std::mutex m_TaskMutex;
-    std::vector<std::function<void()>> m_TaskQueue;
+    std::mutex m_ChangeQueueMutex;
+    std::vector<QueuedChange> m_ChangeQueue;
+    std::thread::id m_UpdateThreadId;
+
+    // Only used on the update thread.
+    std::vector<EditStart> m_EditStarts;
+
+    std::optional<ActiveEdit> m_PropertyEdit;
+    std::optional<ActiveEdit> m_GizmoEdit;
+    bool m_IsGizmoBlocked = false;
+    std::atomic<bool> m_ShouldResetEdits = false;
+    uint64_t m_LastCommitSerial = 0;
+    std::atomic<uint64_t> m_AppliedCommitSerial = 0;
+
+    // Guarded by m_ChangeQueueMutex.
+    std::deque<HistoryEntry> m_UndoHistory;
+    std::deque<HistoryEntry> m_RedoHistory;
+    std::atomic<int32_t> m_MaxHistorySize = 200;
+
+    ZRenderMaterialInstance* m_SelectedMaterialInstance = nullptr;
 
     std::map<std::string, PinLists> m_ClassToInputAndOutputPins;
     std::vector<std::pair<std::string, STypeID*>> m_PinDataTypes;

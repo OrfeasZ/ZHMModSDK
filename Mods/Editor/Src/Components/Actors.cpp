@@ -266,7 +266,7 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
                     s_CurrentCharacterSetIndex = 0;
                     s_CurrentOutfitVariationIndex = 0;
 
-                    EquipOutfit(
+                    OnEquipOutfit(
                         p_GlobalOutfitKit,
                         s_CurrentCharacterSetIndex,
                         s_CurrentCharSetCharacterType,
@@ -303,7 +303,7 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
                     if (ImGui::Selectable(s_CharacterSetIndex.c_str(), s_IsSelected)) {
                         s_CurrentCharacterSetIndex = i;
 
-                        EquipOutfit(
+                        OnEquipOutfit(
                             m_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
                             s_CurrentCharSetCharacterType,
@@ -329,7 +329,7 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
                     if (ImGui::Selectable(m_CharSetCharacterType.data(), s_IsSelected)) {
                         s_CurrentCharSetCharacterType = m_CharSetCharacterType;
 
-                        EquipOutfit(
+                        OnEquipOutfit(
                             m_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
                             s_CurrentCharSetCharacterType,
@@ -372,7 +372,7 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
                     if (ImGui::Selectable(std::to_string(i).data(), s_IsSelected)) {
                         s_CurrentOutfitVariationIndex = i;
 
-                        EquipOutfit(
+                        OnEquipOutfit(
                             m_GlobalOutfitKit,
                             s_CurrentCharacterSetIndex,
                             s_CurrentCharSetCharacterType,
@@ -404,7 +404,7 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
 
         if (ImGui::Button("Get actor outfit")) {
             if (const ZActor* s_Actor2 = Globals::ActorManager->GetActorByName(s_ActorName2)) {
-                EquipOutfit(
+                OnEquipOutfit(
                     s_Actor2->m_rOutfit,
                     s_Actor2->m_nOutfitCharset,
                     s_CurrentCharSetCharacterType2,
@@ -451,7 +451,7 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
                 const float s_Distance = sqrt(s_Temp.x * s_Temp.x + s_Temp.y * s_Temp.y + s_Temp.z * s_Temp.z);
 
                 if (s_Distance <= 3.0f) {
-                    EquipOutfit(
+                    OnEquipOutfit(
                         s_Actor2->m_rOutfit,
                         s_Actor2->m_nOutfitCharset,
                         s_CurrentCharSetCharacterType2,
@@ -470,52 +470,60 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
             m_SelectedActor->GetID(s_Ref);
 
             if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
-                UpdateEntities();
+                QueueTask([this] { UpdateEntities(); });
             }
 
             OnSelectEntity(s_Ref, true, std::nullopt);
         }
 
         if (ImGui::Button("Teleport actor to player")) {
-            if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                ZEntityRef s_Ref;
-                m_SelectedActor->GetID(s_Ref);
+            QueueTask([s_Actor = m_SelectedActor] {
+                if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
+                    ZEntityRef s_Ref;
+                    s_Actor->GetID(s_Ref);
 
-                ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-                ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+                    ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
+                    ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-                s_ActorSpatialEntity->SetObjectToWorldMatrixFromEditor(
-                    s_HitmanSpatialEntity->GetObjectToWorldMatrix()
-                );
-            }
+                    s_ActorSpatialEntity->SetObjectToWorldMatrixFromEditor(
+                        s_HitmanSpatialEntity->GetObjectToWorldMatrix()
+                    );
+                }
+            });
         }
 
         if (ImGui::Button("Teleport player to actor")) {
-            if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                ZEntityRef s_Ref;
-                m_SelectedActor->GetID(s_Ref);
+            QueueTask([s_Actor = m_SelectedActor] {
+                if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
+                    ZEntityRef s_Ref;
+                    s_Actor->GetID(s_Ref);
 
-                ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-                ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
+                    ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
+                    ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-                s_HitmanSpatialEntity->SetObjectToWorldMatrixFromEditor(
-                    s_ActorSpatialEntity->GetObjectToWorldMatrix()
-                );
-            }
+                    s_HitmanSpatialEntity->SetObjectToWorldMatrixFromEditor(
+                        s_ActorSpatialEntity->GetObjectToWorldMatrix()
+                    );
+                }
+            });
         }
 
         if (ImGui::Button("Revive actor")) {
-            Functions::ZActor_ReviveActor->Call(m_SelectedActor);
+            QueueTask([s_Actor = m_SelectedActor] {
+                Functions::ZActor_ReviveActor->Call(s_Actor);
+            });
         }
 
         if (ImGui::Button("Kill actor")) {
-            TEntityRef<IItem> s_Item;
-            TEntityRef<ZSetpieceEntity> s_SetPieceEntity;
+            QueueTask([s_Actor = m_SelectedActor] {
+                TEntityRef<IItem> s_Item;
+                TEntityRef<ZSetpieceEntity> s_SetPieceEntity;
 
-            Functions::ZActor_KillActor->Call(
-                m_SelectedActor, s_Item, s_SetPieceEntity, EDamageEvent::eDE_UNDEFINED,
-                EDeathBehavior::eDB_IMPACT_ANIM
-            );
+                Functions::ZActor_KillActor->Call(
+                    s_Actor, s_Item, s_SetPieceEntity, EDamageEvent::eDE_UNDEFINED,
+                    EDeathBehavior::eDB_IMPACT_ANIM
+                );
+            });
         }
 
         ImGui::Separator();
@@ -537,39 +545,41 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
             [](auto& p_Pair) -> uint32_t { return p_Pair.first.GetHashCode(); },
             [](auto& p_Pair) -> const std::string& { return p_Pair.second; },
             [&](uint32_t, const std::string& p_Name, const auto& p_Pair) {
-                ZEntityRef s_ActorEntityRef = m_SelectedActor->m_pInventoryHandler->m_rActor.m_entityRef;
-                const uint64_t s_NewEntityID = Functions::ZEntityManager_GenerateDynamicObjectID->Call(
-                    Globals::EntityManager,
-                    s_ActorEntityRef,
-                    EDynamicEntityType::eDET_CharacterInventoryItem,
-                    0
-                );
+                QueueTask([this, s_RepositoryId = p_Pair.first] {
+                    ZEntityRef s_ActorEntityRef = m_SelectedActor->m_pInventoryHandler->m_rActor.m_entityRef;
+                    const uint64_t s_NewEntityID = Functions::ZEntityManager_GenerateDynamicObjectID->Call(
+                        Globals::EntityManager,
+                        s_ActorEntityRef,
+                        EDynamicEntityType::eDET_CharacterInventoryItem,
+                        0
+                    );
 
-                const ZEntityRef s_ActorEntityRef2 = m_SelectedActor->m_pInventoryHandler->m_rActor.m_entityRef;
-                const ZMemberDelegate<Editor, void(uint32 nTicket, TEntityRef<IItemBase> rNewItem)> s_Delegate(
-                    this, &Editor::ItemCreatedHandler
-                );
+                    const ZEntityRef s_ActorEntityRef2 = m_SelectedActor->m_pInventoryHandler->m_rActor.m_entityRef;
+                    const ZMemberDelegate<Editor, void(uint32 nTicket, TEntityRef<IItemBase> rNewItem)> s_Delegate(
+                        this, &Editor::ItemCreatedHandler
+                    );
 
-                uint32_t s_Ticket = Functions::ZWorldInventory_RequestNewItem->Call(
-                    Globals::WorldInventory,
-                    p_Pair.first,
-                    s_Delegate,
-                    s_NewEntityID,
-                    false,
-                    {},
-                    s_ActorEntityRef2
-                );
+                    uint32_t s_Ticket = Functions::ZWorldInventory_RequestNewItem->Call(
+                        Globals::WorldInventory,
+                        s_RepositoryId,
+                        s_Delegate,
+                        s_NewEntityID,
+                        false,
+                        {},
+                        s_ActorEntityRef2
+                    );
 
-                if (s_Ticket != *Globals::WorldInventory_InvalidTicket) {
-                    ZActorInventoryHandler::SPendingItemInfo s_PendingItemInfo;
-                    s_PendingItemInfo.m_nTicket = s_Ticket;
-                    s_PendingItemInfo.m_eAttachLocation = EAttachLocation::eALUndefined;
-                    s_PendingItemInfo.m_eMaxTension = EGameTension::EGT_Undefined;
-                    s_PendingItemInfo.m_bLeftHand = false;
-                    s_PendingItemInfo.m_bWeapon = true;
+                    if (s_Ticket != *Globals::WorldInventory_InvalidTicket) {
+                        ZActorInventoryHandler::SPendingItemInfo s_PendingItemInfo;
+                        s_PendingItemInfo.m_nTicket = s_Ticket;
+                        s_PendingItemInfo.m_eAttachLocation = EAttachLocation::eALUndefined;
+                        s_PendingItemInfo.m_eMaxTension = EGameTension::EGT_Undefined;
+                        s_PendingItemInfo.m_bLeftHand = false;
+                        s_PendingItemInfo.m_bWeapon = true;
 
-                    m_SelectedActor->m_pInventoryHandler->m_aPendingItems.push_back(s_PendingItemInfo);
-                }
+                        m_SelectedActor->m_pInventoryHandler->m_aPendingItems.push_back(s_PendingItemInfo);
+                    }
+                });
             }
         );
 
@@ -602,7 +612,9 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
                 if (ImGui::Selectable(s_ItemConfigDescriptor->m_sTitle.c_str(), s_IsSelected)) {
                     ZEntityRef entityRef;
                     s_HM5Item->GetID(entityRef);
-                    m_SelectedActor->m_pInventoryHandler->m_rMainWeapon = TEntityRef<ZHM5ItemWeapon>(entityRef);
+                    QueueTask([s_Actor = m_SelectedActor, entityRef] {
+                        s_Actor->m_pInventoryHandler->m_rMainWeapon = TEntityRef<ZHM5ItemWeapon>(entityRef);
+                    });
                 }
             }
 
@@ -671,17 +683,21 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
                 GetPlayerCam();
             }
 
-            m_ActorTracked = m_SelectedActor;
-            m_TrackCamActive = true;
+            QueueTask([this, s_Actor = m_SelectedActor] {
+                m_ActorTracked = s_Actor;
+                m_TrackCamActive = true;
 
-            EnableTrackCam();
+                EnableTrackCam();
+            });
         }
         ImGui::SameLine();
         if (ImGui::Button("Stop tracking")) {
-            m_TrackCamActive = false;
-            m_ActorTracked = nullptr;
+            QueueTask([this] {
+                m_TrackCamActive = false;
+                m_ActorTracked = nullptr;
 
-            DisableTrackCam();
+                DisableTrackCam();
+            });
         }
 
         ImGui::EndChild();
@@ -691,6 +707,18 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
     ImGui::PopFont();
     ImGui::End();
     ImGui::PopFont();
+}
+
+void Editor::OnEquipOutfit(
+    const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
+    uint8_t p_CharSetIndex,
+    const std::string& p_CharSetCharacterType,
+    uint8_t p_OutfitVariationIndex,
+    ZActor* p_Actor
+) {
+    QueueTask([=] {
+        EquipOutfit(p_GlobalOutfitKit, p_CharSetIndex, p_CharSetCharacterType, p_OutfitVariationIndex, p_Actor);
+    });
 }
 
 void Editor::EquipOutfit(

@@ -4,10 +4,8 @@
 
 #include "Logging.h"
 
-#include <Functions.h>
 #include <Globals.h>
 #include <Glacier/EntityFactory.h>
-#include <Glacier/SExternalReferences.h>
 #include <Glacier/ZModule.h>
 #include <Glacier/ZPhysics.h>
 #include <Glacier/ZScene.h>
@@ -144,12 +142,6 @@ void Editor::UpdateAssetSpawns() {
 }
 
 void Editor::SpawnAssetItem(const PendingAssetSpawn& p_Spawn) {
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
-
-    if (!s_Scene) {
-        return;
-    }
-
     const auto& s_Request = p_Spawn.Request;
     const auto s_Factory = p_Spawn.Factory.GetResource();
     const std::string s_ItemName = fmt::format("{} ({})", s_Request.Path, s_Request.ResourceId);
@@ -160,36 +152,20 @@ void Editor::SpawnAssetItem(const PendingAssetSpawn& p_Spawn) {
 
     static std::mt19937_64 s_Random(std::random_device {}());
 
-    ZEntityRef s_Entity;
-    SExternalReferences s_ExternalRefs;
+    SpawnInfo s_Spawn {
+        .Factory = p_Spawn.Factory,
+        .Name = s_Request.Name,
+        .EntityId = s_Random(),
+        .IsAsset = true,
+    };
+    s_Spawn.Transform.Trans = float4(s_Request.Position, 1.f);
 
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager,
-        s_Entity,
-        s_Request.Name,
-        s_Factory,
-        s_Scene.m_entityRef,
-        s_ExternalRefs,
-        s_Random()
-    );
+    const ZEntityRef s_Entity = SpawnEntityInternal(s_Spawn);
 
     if (!s_Entity) {
         Logger::Error("[Editor] Failed to spawn asset {}.", s_ItemName);
         return;
     }
-
-    if (const auto s_SpatialEntity = s_Entity.QueryInterface<ZSpatialEntity>()) {
-        s_Entity.SetProperty("m_eRoomBehaviour", ZSpatialEntity::ERoomBehaviour::ROOM_DYNAMIC);
-
-        SMatrix s_Transform;
-        s_Transform.Trans = float4(s_Request.Position, 1.f);
-        s_SpatialEntity->SetObjectToWorldMatrixFromEditor(s_Transform);
-    }
-
-    RefreshStaticPhysicsAndObstacles(s_Entity);
-
-    SpawnedEntity s_SpawnedEntity { .Entity = s_Entity, .Tree = CollectSpawnedTree(s_Entity) };
-    s_SpawnedEntity.Factory.emplace(p_Spawn.Factory);
 
     Logger::Info(
         "[Editor] Spawned asset {} with id {:016x} at ({}, {}, {}).",
@@ -200,8 +176,8 @@ void Editor::SpawnAssetItem(const PendingAssetSpawn& p_Spawn) {
         s_Request.Position.z
     );
 
-    AddSpawnedEntity(std::move(s_SpawnedEntity), s_Request.Name, std::nullopt);
-    OnSelectEntity(s_Entity, true, std::nullopt);
+    PushHistory({ .Change = SpawnHistoryEntry { std::move(s_Spawn) } });
+    SelectEntityInternal(s_Entity, true, std::nullopt);
 }
 
 void Editor::UpdatePhysicsFreezes(double p_DeltaSeconds) {
@@ -228,17 +204,21 @@ void Editor::UpdatePhysicsFreezes(double p_DeltaSeconds) {
 
 // Wait one more frame after the tree is no longer in use, because an item spawner's item is
 // still pending registration with ZDistanceConditionManager in the frame it's created.
-bool Editor::IsReadyToDestroy(ZEntityRef p_Entity) {
-    std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+bool Editor::IsReadyToDestroy(SpawnedEntity& p_SpawnedEntity) {
+    p_SpawnedEntity.DeleteReadyFrames = IsTreeInUse(p_SpawnedEntity.Tree) ? 0 : p_SpawnedEntity.DeleteReadyFrames + 1;
 
-    const auto s_It = m_SpawnedEntities.find(p_Entity);
+    return p_SpawnedEntity.DeleteReadyFrames >= 2;
+}
 
-    if (s_It == m_SpawnedEntities.end()) {
+void Editor::UpdateEntitiesToDestroy() {
+    std::scoped_lock s_Lock(m_EntityDestructionMutex);
+
+    std::erase_if(m_EntitiesToDestroy, [&](SpawnedEntity& p_SpawnedEntity) {
+        if (!IsReadyToDestroy(p_SpawnedEntity)) {
+            return false;
+        }
+
+        m_EntityTreeDeleter.Delete(p_SpawnedEntity.Entity, p_SpawnedEntity.Tree);
         return true;
-    }
-
-    auto& s_SpawnedEntity = s_It->second;
-    s_SpawnedEntity.DeleteReadyFrames = IsTreeInUse(s_SpawnedEntity.Tree) ? 0 : s_SpawnedEntity.DeleteReadyFrames + 1;
-
-    return s_SpawnedEntity.DeleteReadyFrames >= 2;
+    });
 }

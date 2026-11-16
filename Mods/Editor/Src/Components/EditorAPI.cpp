@@ -194,6 +194,56 @@ std::unique_ptr<T, Editor::PropertyDeleter> Editor::GetProperty(ZEntityRef p_Ent
     );
 }
 
+ZObjectRef Editor::GetPropertyValue(ZEntityRef p_Entity, const SPropertyData* p_Property) {
+    const auto s_Data = GetProperty<void>(p_Entity, p_Property);
+
+    ZObjectRef s_Value;
+    s_Value.Assign(p_Property->GetPropertyInfo()->m_propertyInfo.m_Type, s_Data.get());
+
+    return s_Value;
+}
+
+ZObjectRef Editor::MakeEntityRefValue(STypeID* p_Type, ZEntityRef p_Entity) {
+    const std::string_view s_TypeName = p_Type->GetTypeInfo()->pszTypeName;
+
+    ZObjectRef s_EntityRefObj;
+
+    if (s_TypeName == "ZEntityRef") {
+        s_EntityRefObj.Assign(p_Type, &p_Entity);
+    }
+    else if (s_TypeName.starts_with("TEntityRef<") && s_TypeName.ends_with(">")) {
+        constexpr std::string_view s_Prefix = "TEntityRef<";
+
+        const std::string s_InterfaceTypeName(
+            s_TypeName.substr(s_Prefix.size(), s_TypeName.size() - s_Prefix.size() - 1)
+        );
+
+        const auto s_InterfaceTypeID = (*Globals::TypeRegistry)->GetTypeID(s_InterfaceTypeName);
+
+        if (!s_InterfaceTypeID) {
+            throw std::runtime_error("Could not find entity interface type.");
+        }
+
+        TEntityRef<void> s_TypedEntityRef;
+        s_TypedEntityRef.m_entityRef = p_Entity;
+
+        if (p_Entity) {
+            s_TypedEntityRef.m_pInterfaceRef = p_Entity.QueryInterface(s_InterfaceTypeID);
+
+            if (!s_TypedEntityRef.m_pInterfaceRef) {
+                throw std::runtime_error("Target entity does not implement the required interface.");
+            }
+        }
+
+        s_EntityRefObj.Assign(p_Type, &s_TypedEntityRef);
+    }
+    else {
+        throw std::runtime_error("Unsupported entity reference type.");
+    }
+
+    return s_EntityRefObj;
+}
+
 Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
     const std::string s_TransformPropertyName = "m_mTransform";
     const auto s_EntityType = p_Entity->GetType();
@@ -271,12 +321,11 @@ Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     return s_Quat;
 }
 
+// Needs m_CachedEntityTreeMutex.
 std::pair<std::string, std::string> Editor::FindRoomForEntity(
     const ZEntityRef p_Entity,
     const std::unordered_map<std::string, std::string>& p_RoomNameToFolderName
 ) {
-    std::shared_lock s_Lock(m_CachedEntityTreeMutex);
-
     // ZEntityRef s_EntityRef = p_Entity.GetLogicalParent();
     auto s_EntityRef = p_Entity.GetProperty<TEntityRef<ZSpatialEntity>>("m_eidParent").Get().m_entityRef;
 
@@ -690,7 +739,7 @@ void Editor::SelectEntity(EntitySelector p_Selector, std::optional<std::string> 
     auto s_Entity = FindEntity(p_Selector);
 
     if (s_Entity) {
-        OnSelectEntity(s_Entity, true, std::move(p_ClientId));
+        SelectEntityInternal(s_Entity, true, std::move(p_ClientId));
     }
     else {
         throw std::runtime_error("Could not find entity for the given selector.");
@@ -701,7 +750,7 @@ void Editor::SetEntityTransform(
     EntitySelector p_Selector, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
 ) {
     if (const auto s_Entity = FindEntity(p_Selector)) {
-        OnEntityTransformChange(s_Entity, p_Transform, p_Relative, std::move(p_ClientId));
+        SetEntityTransformInternal(s_Entity, p_Transform, p_Relative, std::move(p_ClientId), ChangeMode::Commit);
     }
     else {
         throw std::runtime_error("Could not find entity for the given selector.");
@@ -720,7 +769,8 @@ void Editor::SpawnQnEntity(
     // If entity is already spawned, destroy it first.
     for (const ZEntityRef s_Entity : m_SpawnedEntities | std::views::keys) {
         if (s_Entity->GetType()->m_nEntityID == p_EntityId) {
-            OnDestroyEntity(s_Entity, p_ClientId);
+            DestroyEntityInternal(s_Entity, p_ClientId, ChangeMode::Commit);
+            break;
         }
     }
 
@@ -745,11 +795,15 @@ void Editor::SpawnQnEntity(
         s_SpawnedEnt->GetType()->m_nEntityID
     );
 
-    AddSpawnedEntity(
-        SpawnedEntity { .Entity = s_SpawnedEnt, .Tree = CollectSpawnedTree(s_SpawnedEnt) },
-        p_Name,
-        std::move(p_ClientId)
-    );
+    SpawnedEntity s_SpawnedEntity { .Entity = s_SpawnedEnt, .Tree = CollectSpawnedTree(s_SpawnedEnt) };
+    s_SpawnedEntity.Factory.emplace(s_Factory);
+
+    SpawnInfo s_Spawn = MakeSpawnInfo(s_SpawnedEntity);
+    s_Spawn.Name = p_Name;
+
+    PushHistory({ .Change = SpawnHistoryEntry { std::move(s_Spawn) }, .ClientId = p_ClientId });
+
+    AddSpawnedEntity(std::move(s_SpawnedEntity), p_Name, std::move(p_ClientId));
 }
 
 void Editor::CreateEntityResources(const std::string& p_QnJson, std::optional<std::string> p_ClientId) {
@@ -763,7 +817,11 @@ void Editor::CreateEntityResources(const std::string& p_QnJson, std::optional<st
 
 void Editor::DestroyEntity(EntitySelector p_Selector, std::optional<std::string> p_ClientId) {
     if (const auto s_Entity = FindEntity(p_Selector)) {
-        OnDestroyEntity(s_Entity, std::move(p_ClientId));
+        if (!m_SpawnedEntities.contains(s_Entity)) {
+            throw std::runtime_error("Only spawned entities can be destroyed.");
+        }
+
+        DestroyEntityInternal(s_Entity, std::move(p_ClientId), ChangeMode::Commit);
     }
     else {
         throw std::runtime_error("Could not find entity for the given selector.");
@@ -772,7 +830,7 @@ void Editor::DestroyEntity(EntitySelector p_Selector, std::optional<std::string>
 
 void Editor::SetEntityName(EntitySelector p_Selector, std::string p_Name, std::optional<std::string> p_ClientId) {
     if (const auto s_Entity = FindEntity(p_Selector)) {
-        OnEntityNameChange(s_Entity, p_Name, std::move(p_ClientId));
+        SetEntityNameInternal(s_Entity, p_Name, std::move(p_ClientId), ChangeMode::Commit);
     }
     else {
         throw std::runtime_error("Could not find entity for the given selector.");
@@ -804,7 +862,6 @@ void Editor::SetEntityProperty(
 
         if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsEntity()) {
             const auto s_PropertyType = s_PropertyInfo->m_propertyInfo.m_Type;
-            const std::string_view s_TypeName = s_PropertyType->GetTypeInfo()->pszTypeName;
 
             ZEntityRef s_EntityRef;
 
@@ -824,42 +881,10 @@ void Editor::SetEntityProperty(
                 }
             }
 
-            ZObjectRef s_EntityRefObj;
-
-            if (s_TypeName == "ZEntityRef") {
-                s_EntityRefObj.Assign(s_PropertyType, &s_EntityRef);
-            }
-            else if (s_TypeName.starts_with("TEntityRef<") && s_TypeName.ends_with(">")) {
-                constexpr std::string_view s_Prefix = "TEntityRef<";
-
-                const std::string s_InterfaceTypeName(
-                    s_TypeName.substr(s_Prefix.size(), s_TypeName.size() - s_Prefix.size() - 1)
-                );
-
-                const auto s_InterfaceTypeID = (*Globals::TypeRegistry)->GetTypeID(s_InterfaceTypeName);
-
-                if (!s_InterfaceTypeID) {
-                    throw std::runtime_error("Could not find entity interface type.");
-                }
-
-                TEntityRef<void> s_TypedEntityRef;
-                s_TypedEntityRef.m_entityRef = s_EntityRef;
-
-                if (s_EntityRef) {
-                    s_TypedEntityRef.m_pInterfaceRef = s_EntityRef.QueryInterface(s_InterfaceTypeID);
-
-                    if (!s_TypedEntityRef.m_pInterfaceRef) {
-                        throw std::runtime_error("Target entity does not implement the required interface.");
-                    }
-                }
-
-                s_EntityRefObj.Assign(s_PropertyType, &s_TypedEntityRef);
-            }
-            else {
-                throw std::runtime_error("Unsupported entity reference type.");
-            }
-
-            OnSetPropertyValue(s_Entity, p_PropertyId, s_EntityRefObj, std::move(p_ClientId));
+            SetPropertyValueInternal(
+                s_Entity, p_PropertyId, MakeEntityRefValue(s_PropertyType, s_EntityRef), std::move(p_ClientId),
+                ChangeMode::Commit
+            );
         }
         else {
             const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
@@ -887,9 +912,7 @@ void Editor::SetEntityProperty(
             ZObjectRef s_DataObj;
             s_DataObj.UNSAFE_Assign(s_PropertyInfo->m_propertyInfo.m_Type, s_Data);
 
-            OnSetPropertyValue(
-                s_Entity, p_PropertyId, s_DataObj, std::move(p_ClientId)
-            );
+            SetPropertyValueInternal(s_Entity, p_PropertyId, s_DataObj, std::move(p_ClientId), ChangeMode::Commit);
         }
     }
     else {

@@ -39,9 +39,11 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
 
     ImGuizmo::BeginFrame();
 
+    // The raycast waits on the physics world, so it runs without the tree lock.
     if (p_HasFocus) {
         if (ImGui::IsMouseDown(ImGuiMouseButton_Left) &&
             !s_ImgGuiIO.WantCaptureMouse &&
+            !m_IsGizmoBlocked &&
             !Globals::ScaleformGFxManager->GetIsMenuModeUnsafe()) {
             const auto s_MousePos = ImGui::GetMousePos();
             const auto s_ViewportPos = ImGui::GetMainViewport()->Pos;
@@ -51,33 +53,54 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
         else {
             m_HoldingMouse = false;
         }
+    }
 
-        if (!s_ImgGuiIO.WantTextInput) {
-            if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
-                if (m_GizmoMode == ImGuizmo::TRANSLATE)
-                    m_GizmoMode = ImGuizmo::ROTATE;
-                else if (m_GizmoMode == ImGuizmo::ROTATE)
-                    m_GizmoMode = ImGuizmo::SCALE;
-                else if (m_GizmoMode == ImGuizmo::SCALE)
-                    m_GizmoMode = ImGuizmo::TRANSLATE;
-            }
+    std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
 
-            if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
-                m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
-            }
+    const bool s_IsGizmoDragging = m_GizmoEdit && !m_GizmoEdit->IsCommitted();
 
-            if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-                OnSelectEntity({}, false, std::nullopt);
-            }
+    if (p_HasFocus && !s_ImgGuiIO.WantTextInput) {
+        const auto s_GizmoMode = m_GizmoMode;
+        const auto s_GizmoSpace = m_GizmoSpace;
 
-            // Only custom entities can be destroyed.
-            if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_SelectedEntity && m_EntityNames.contains(m_SelectedEntity)) {
-                OnDestroyEntity(m_SelectedEntity, std::nullopt);
-            }
+        if (ImGui::IsKeyPressed(ImGuiKey_Tab)) {
+            if (m_GizmoMode == ImGuizmo::TRANSLATE)
+                m_GizmoMode = ImGuizmo::ROTATE;
+            else if (m_GizmoMode == ImGuizmo::ROTATE)
+                m_GizmoMode = ImGuizmo::SCALE;
+            else if (m_GizmoMode == ImGuizmo::SCALE)
+                m_GizmoMode = ImGuizmo::TRANSLATE;
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
+            m_GizmoSpace = m_GizmoSpace == ImGuizmo::WORLD ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
+            OnSelectEntity({}, false, std::nullopt);
+        }
+
+        // Only spawned entities can be destroyed.
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_SpawnedEntities.contains(m_SelectedEntity)) {
+            OnDestroyEntity(m_SelectedEntity, std::nullopt);
+        }
+
+        if (s_IsGizmoDragging && ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            CommitGizmoEdit(ChangeMode::Revert);
+            m_IsGizmoBlocked = true;
+        }
+        else if (s_IsGizmoDragging && (m_GizmoMode != s_GizmoMode || m_GizmoSpace != s_GizmoSpace)) {
+            CommitGizmoEdit(ChangeMode::Commit);
+            m_IsGizmoBlocked = true;
         }
     }
 
-    ImGuizmo::Enable(p_HasFocus);
+    // A cancelled drag stays cancelled until the mouse button is released.
+    if (m_IsGizmoBlocked && !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        m_IsGizmoBlocked = false;
+    }
+
+    ImGuizmo::Enable(p_HasFocus && !m_IsGizmoBlocked);
 
     if (IsSpecialEntityTreeNode(m_SelectedEntity)) {
         return;
@@ -106,51 +129,74 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
                 const auto* s_Viewport = ImGui::GetMainViewport();
                 ImGuizmo::SetRect(s_Viewport->Pos.x, s_Viewport->Pos.y, s_Viewport->Size.x, s_Viewport->Size.y);
 
-                if (m_GizmoMode == ImGuizmo::SCALE) {
-                    const auto s_GeomEntity = s_SelectedEntity.QueryInterface<ZGeomEntity>();
+                const bool s_IsScale = m_GizmoMode == ImGuizmo::SCALE;
 
-                    if (s_GeomEntity) {
-                        ZVariant<SVector3> s_Scale = m_SelectedEntity.GetProperty<SVector3>("m_PrimitiveScale");
+                if (s_IsScale && !s_SelectedEntity.QueryInterface<ZGeomEntity>()) {
+                    return;
+                }
 
-                        s_ModelMatrix.ScaleTransform(s_Scale.Get());
+                // The scale gizmo edits the primitive scale property instead of the transform.
+                const ChangeKey s_Key = s_IsScale
+                    ? ChangeKey { s_SelectedEntity, Hash::Crc32("m_PrimitiveScale") }
+                    : ChangeKey { s_SelectedEntity };
 
-                        float s_ScaleSnapValue = static_cast<float>(m_ScaleSnapValue);
-                        if (ImGuizmo::Manipulate(
-                            &s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace,
-                            &s_ModelMatrix.XAxis.x, NULL, m_UseScaleSnap ? &s_ScaleSnapValue : NULL
-                        )) {
-                            m_SelectedEntity.SetProperty<SVector3>("m_PrimitiveScale", s_ModelMatrix.GetScale());
+                if (s_IsScale) {
+                    ZVariant<SVector3> s_Scale = s_SelectedEntity.GetProperty<SVector3>("m_PrimitiveScale");
 
-                            const bool s_bRemovePhysics = m_SelectedEntity.GetProperty<bool>("m_bRemovePhysics").Get();
+                    s_ModelMatrix.ScaleTransform(s_Scale.Get());
+                }
 
-                            if (!s_bRemovePhysics) {
-                                m_SelectedEntity.SetProperty<bool>("m_bRemovePhysics", true);
-                                m_SelectedEntity.SetProperty<bool>("m_bRemovePhysics", false);
-                            }
-                        }
+                // The update thread moves the entity a frame later, so we keep drawing the edited
+                // transform until its commit is applied.
+                if (m_GizmoEdit && m_GizmoEdit->Key == s_Key) {
+                    s_ModelMatrix = m_GizmoEdit->Transform;
+                    m_GizmoEdit->IsDrawn = true;
+                }
+
+                const SMatrix s_StartMatrix = s_ModelMatrix;
+
+                float s_TranslateSnapValue[3] = {
+                    static_cast<float>(m_SnapValue), static_cast<float>(m_SnapValue),
+                    static_cast<float>(m_SnapValue)
+                };
+                float s_AngleSnapValue = static_cast<float>(m_AngleSnapValue);
+                float s_ScaleSnapValue = static_cast<float>(m_ScaleSnapValue);
+
+                const float* s_Snap = nullptr;
+
+                if (m_GizmoMode == ImGuizmo::TRANSLATE && m_UseSnap)
+                    s_Snap = s_TranslateSnapValue;
+                else if (m_GizmoMode == ImGuizmo::ROTATE && m_UseAngleSnap)
+                    s_Snap = &s_AngleSnapValue;
+                else if (m_GizmoMode == ImGuizmo::SCALE && m_UseScaleSnap)
+                    s_Snap = &s_ScaleSnapValue;
+
+                // A drag sends a preview each frame and commits once on release.
+                if (ImGuizmo::Manipulate(
+                    &s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace,
+                    &s_ModelMatrix.XAxis.x, NULL, s_Snap
+                )) {
+                    if (!s_IsGizmoDragging || m_GizmoEdit->Key != s_Key) {
+                        m_GizmoEdit = ActiveEdit { .Key = s_Key, .StartTransform = s_StartMatrix, .IsDrawn = true };
+                    }
+
+                    m_GizmoEdit->Transform = s_ModelMatrix;
+
+                    if (s_IsScale) {
+                        OnSetPropertyValue(
+                            s_SelectedEntity, *s_Key.PropertyId, ZObjectRef::From<SVector3>(s_ModelMatrix.GetScale()),
+                            std::nullopt, ChangeMode::Preview
+                        );
+                    }
+                    else {
+                        OnEntityTransformChange(
+                            s_SelectedEntity, s_ModelMatrix, false, std::nullopt, ChangeMode::Preview
+                        );
                     }
                 }
-                else if (m_GizmoMode == ImGuizmo::TRANSLATE) {
-                    float m_CombinedSnapValue[3] = {
-                        static_cast<float>(m_SnapValue), static_cast<float>(m_SnapValue),
-                        static_cast<float>(m_SnapValue)
-                    };
 
-                    if (ImGuizmo::Manipulate(
-                        &s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace,
-                        &s_ModelMatrix.XAxis.x, NULL, m_UseSnap ? m_CombinedSnapValue : NULL
-                    )) {
-                        OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix, false, std::nullopt);
-                    }
-                }
-                else if (m_GizmoMode == ImGuizmo::ROTATE) {
-                    float s_AngleSnapValue = static_cast<float>(m_AngleSnapValue);
-                    if (ImGuizmo::Manipulate(
-                        &s_ViewMatrix.XAxis.x, &s_ProjectionMatrix.XAxis.x, m_GizmoMode, m_GizmoSpace,
-                        &s_ModelMatrix.XAxis.x, NULL, m_UseAngleSnap ? &s_AngleSnapValue : NULL
-                    )) {
-                        OnEntityTransformChange(s_SelectedEntity, s_ModelMatrix, false, std::nullopt);
-                    }
+                if (m_GizmoEdit && !m_GizmoEdit->IsCommitted() && !ImGuizmo::IsUsing()) {
+                    CommitGizmoEdit(ChangeMode::Commit);
                 }
             }
         }
@@ -187,39 +233,4 @@ void Editor::RefreshStaticPhysicsAndObstacles(ZEntityRef p_Root) {
 
         RefreshPathfinderObstacle(p_Entity, false);
     });
-}
-
-void Editor::OnEntityTransformChange(
-    ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
-) {
-    if (auto* s_SpatialEntity = p_Entity.QueryInterface<ZSpatialEntity>()) {
-        if (!p_Relative) {
-            s_SpatialEntity->SetObjectToWorldMatrixFromEditor(p_Transform);
-        }
-        else {
-            SMatrix s_ParentTrans;
-
-            // Get parent entity transform.
-            if (s_SpatialEntity->m_eidParent.m_pInterfaceRef) {
-                s_ParentTrans = s_SpatialEntity->m_eidParent.m_pInterfaceRef->GetObjectToWorldMatrix();
-            }
-            else if (p_Entity.GetLogicalParent() && p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()) {
-                s_ParentTrans = p_Entity.GetLogicalParent().QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
-            }
-            else if (p_Entity.GetOwningEntity() && p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()) {
-                s_ParentTrans = p_Entity.GetOwningEntity().QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
-            }
-
-            // Calculate world transform based on the provided relative transform.
-            auto s_WorldTrans = p_Transform * s_ParentTrans;
-            s_WorldTrans.Trans = s_ParentTrans.Trans + p_Transform.Trans;
-            s_WorldTrans.Trans.w = 1.f;
-
-            s_SpatialEntity->SetObjectToWorldMatrixFromEditor(s_WorldTrans);
-        }
-
-        RefreshStaticPhysicsAndObstacles(p_Entity);
-
-        m_Server.OnEntityTransformChanged(p_Entity, std::move(p_ClientId));
-    }
 }

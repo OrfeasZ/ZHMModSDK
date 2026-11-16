@@ -16,7 +16,7 @@ void Editor::DrawRoomsWindow(const bool p_HasFocus) {
     if (s_IsWindowExpanded) {
         if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
             if (ImGui::Button("Build entity tree")) {
-                UpdateEntities();
+                QueueTask([this] { UpdateEntities(); });
             }
 
             ImGui::PopFont();

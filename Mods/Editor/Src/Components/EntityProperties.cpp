@@ -12,6 +12,7 @@
 #include <ResourceLib_HM3.h>
 #include "Glacier/ZRender.h"
 #include "Util/ImGuiUtils.h"
+#include "imgui_internal.h"
 
 
 static SMatrix ToLocalTransform(ZEntityRef p_Entity, const ZSpatialEntity* p_Spatial, const SMatrix& p_World) {
@@ -86,17 +87,17 @@ void Editor::DrawEntityPropertiesWindow() {
             BeginPanelPadding("##CameraToggle");
 
             if (ImGui::Button(ICON_MD_CAMERA "Toggle camera")) {
-                ZEntityRef s_EntRef;
-                auto s_Camera = s_CameraEntity->GetID(s_EntRef);
+                m_CameraActive = !m_CameraActive;
 
-                if (m_CameraActive) {
-                    m_CameraActive = false;
-                    DeactivateCamera();
-                }
-                else {
-                    m_CameraActive = true;
-                    ActivateCamera(s_Camera);
-                }
+                QueueTask([this, s_SelectedEntity, s_IsActive = m_CameraActive] {
+                    if (!s_IsActive) {
+                        DeactivateCamera();
+                    }
+                    else if (IsEntityInTree(s_SelectedEntity)) {
+                        ZEntityRef s_CameraRef = s_SelectedEntity;
+                        ActivateCamera(&s_CameraRef);
+                    }
+                });
             }
 
             EndPanelPadding();
@@ -159,12 +160,9 @@ bool Editor::DrawEntityToolbar(ZEntityRef p_Entity, ZSpatialEntity* p_Spatial) {
         OnSelectEntity({}, false, std::nullopt);
     }
 
-    // Only show destroy button for custom entities.
-    if (m_EntityNames.contains(p_Entity) && s_ToolbarButton(ICON_MD_DELETE, "Destroy entity")) {
+    // Only spawned entities can be destroyed.
+    if (m_SpawnedEntities.contains(p_Entity) && s_ToolbarButton(ICON_MD_DELETE, "Destroy entity")) {
         OnDestroyEntity(p_Entity, std::nullopt);
-
-        ImGui::PopStyleVar(2);
-        return true;
     }
 
     if (p_Spatial) {
@@ -181,10 +179,6 @@ bool Editor::DrawEntityToolbar(ZEntityRef p_Entity, ZSpatialEntity* p_Spatial) {
 
         if (s_ToolbarButton(ICON_MD_PERSON_PIN_CIRCLE, "Move hitman to entity")) {
             if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
-                auto s_HitmanSpatial = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-
-                s_HitmanSpatial->SetObjectToWorldMatrixFromEditor(p_Spatial->GetObjectToWorldMatrix());
-
                 OnEntityTransformChange(s_LocalHitman.m_entityRef, p_Spatial->GetObjectToWorldMatrix(), false, std::nullopt);
             }
         }
@@ -215,12 +209,11 @@ static std::string GetTemplateFactoryType(const std::string_view p_BlueprintFact
     return s_It != std::end(c_TemplateFactoryTypes) ? std::string(s_It->second) : std::string();
 }
 
+// Needs m_CachedEntityTreeMutex.
 Editor::EntityDetails Editor::CollectEntityDetails(ZEntityRef p_Entity) {
     EntityDetails s_Details;
 
     {
-        std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
-
         auto s_Iterator = m_CachedEntityTreeMap.find(p_Entity);
 
         if (s_Iterator != m_CachedEntityTreeMap.end()) {
@@ -376,11 +369,9 @@ void Editor::DrawEntityKeywords(ZEntityRef p_Entity) {
         if (strlen(s_KeywordString) > 0) {
             const int32_t s_Keyword = Hash::Fnv1a(s_KeywordString);
 
-            Functions::ZGameKeywordManager_AddKeyword->Call(
-                Globals::GameKeywordManager,
-                p_Entity,
-                s_Keyword
-            );
+            QueueTask([p_Entity, s_Keyword] {
+                Functions::ZGameKeywordManager_AddKeyword->Call(Globals::GameKeywordManager, p_Entity, s_Keyword);
+            });
 
             s_KeywordString[0] = '\0';
         }
@@ -414,7 +405,9 @@ void Editor::DrawEntityKeywords(ZEntityRef p_Entity) {
         ImGui::SameLine();
 
         if (ImGui::SmallButton(ICON_MD_DELETE)) {
-            Functions::ZGameKeywordManager_RemoveKeyword->Call(Globals::GameKeywordManager, p_Entity, s_Keyword);
+            QueueTask([p_Entity, s_Keyword] {
+                Functions::ZGameKeywordManager_RemoveKeyword->Call(Globals::GameKeywordManager, p_Entity, s_Keyword);
+            });
 
             ImGui::PopID();
 
@@ -468,6 +461,42 @@ static std::string GetPropertyName(const SPropertyData* p_Property, const SNamed
     return fmt::format("~{:08x}", p_Property->m_nPropertyID);
 }
 
+static bool IsActiveIdSubmittedSince(const ImGuiID p_ActiveIdAliveBefore) {
+    const ImGuiContext& s_Context = *ImGui::GetCurrentContext();
+
+    return s_Context.ActiveId != 0 &&
+        s_Context.ActiveIdIsAlive == s_Context.ActiveId &&
+        p_ActiveIdAliveBefore != s_Context.ActiveId;
+}
+
+ZRenderMaterialInstance* Editor::LoadSelectedMaterialInstance(ZEntityRef p_Entity) {
+    ZRuntimeResourceID s_MaterialEntityFactory;
+
+    {
+        std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
+        const auto s_NodeIt = m_CachedEntityTreeMap.find(p_Entity);
+
+        if (s_NodeIt == m_CachedEntityTreeMap.end() ||
+            GetTemplateFactoryType(s_NodeIt->second->ReferencedBlueprintFactoryType) != "MATT") {
+            return nullptr;
+        }
+
+        std::shared_lock s_FactoryLock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
+
+        const auto s_It = m_EntityRefToFactoryRuntimeResourceIDs.find(p_Entity);
+
+        if (s_It == m_EntityRefToFactoryRuntimeResourceIDs.end()) {
+            return nullptr;
+        }
+
+        s_MaterialEntityFactory = s_It->second.first;
+    }
+
+    return LoadRenderMaterialInstance(s_MaterialEntityFactory);
+}
+
+// Needs m_CachedEntityTreeMutex.
 void Editor::DrawEntityPropertyTable(ZEntityRef p_Entity, const EntityDetails& p_Details) {
     const auto s_EntityType = p_Entity->GetType();
 
@@ -476,6 +505,9 @@ void Editor::DrawEntityPropertyTable(ZEntityRef p_Entity, const EntityDetails& p
         !BeginPropertyTable("##Properties", 132.f)) {
         return;
     }
+
+    // Widget IDs include the entity, so a drag ends when the selection changes.
+    ImGui::PushID(p_Entity.m_pObj);
 
     for (uint32_t i = 0; i < s_EntityType->m_pPropertyData->size(); ++i) {
         SPropertyData* s_Property = &(*s_EntityType->m_pPropertyData)[i];
@@ -489,12 +521,23 @@ void Editor::DrawEntityPropertyTable(ZEntityRef p_Entity, const EntityDetails& p
         const uint16_t s_TypeSize = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeSize;
         const uint16_t s_TypeAlignment = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_nTypeAlignment;
 
+        const ChangeKey s_Key { p_Entity, s_Property->m_nPropertyID };
+        const bool s_IsEdited = m_PropertyEdit && m_PropertyEdit->Key == s_Key;
+
         // Get the value of the property.
         auto* s_Data = (*Globals::MemoryManager)->m_pNormalAllocator->AllocateAligned(
             s_TypeSize, s_TypeAlignment
         );
 
-        if (s_PropertyInfo->m_propertyInfo.m_Flags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
+        // The update thread applies edits a frame later, and the drag widgets add to the value
+        // we pass in, so we keep drawing the edited value until its commit is applied.
+        if (s_IsEdited) {
+            s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->placementCopyConstruct(
+                s_Data,
+                m_PropertyEdit->Value.GetData()
+            );
+        }
+        else if (s_PropertyInfo->m_propertyInfo.m_Flags & EPropertyInfoFlags::E_HAS_GETTER_SETTER) {
             s_PropertyInfo->m_propertyInfo.m_PropertyGetter(
                 reinterpret_cast<void*>(s_PropertyAddress),
                 s_Data,
@@ -510,6 +553,7 @@ void Editor::DrawEntityPropertyTable(ZEntityRef p_Entity, const EntityDetails& p
 
         const std::string s_InputId = std::format("##Property{}", i);
         const std::string s_PropertyName = GetPropertyName(s_Property, s_PropertyInfo);
+        const ImGuiID s_ActiveIdAliveBefore = ImGui::GetCurrentContext()->ActiveIdIsAlive;
 
         const PropertyRowResult s_Row = DrawPropertyRow(
             s_InputId,
@@ -524,9 +568,7 @@ void Editor::DrawEntityPropertyTable(ZEntityRef p_Entity, const EntityDetails& p
         if (s_Row.m_IsNameHovered) {
             std::string s_Tooltip = s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->pszTypeName;
 
-            const ZRenderMaterialInstance* s_RenderMaterialInstance = p_Details.ReferencedTemplateFactoryType == "MATT"
-                ? LoadRenderMaterialInstance(p_Details.ReferencedTemplateFactory)
-                : nullptr;
+            const ZRenderMaterialInstance* s_RenderMaterialInstance = m_SelectedMaterialInstance;
 
             if (s_RenderMaterialInstance && s_RenderMaterialInstance->m_pEffect) {
                 for (const auto& s_SemanticStringPair : s_RenderMaterialInstance->m_pEffect->m_SemanticStringPairs) {
@@ -546,17 +588,38 @@ void Editor::DrawEntityPropertyTable(ZEntityRef p_Entity, const EntityDetails& p
             ImGui::EndTooltip();
         }
 
+        const bool s_IsActive = IsActiveIdSubmittedSince(s_ActiveIdAliveBefore);
+
+        // A drag sends a preview each frame and commits once on release. Other edits commit right away.
         if (s_Row.m_Changed) {
-            ZObjectRef s_ObjectRef;
+            if (!s_IsEdited || m_PropertyEdit->IsCommitted()) {
+                m_PropertyEdit = ActiveEdit { .Key = s_Key };
+            }
 
-            s_ObjectRef.Assign(s_PropertyInfo->m_propertyInfo.m_Type, s_Data);
+            m_PropertyEdit->Value.Assign(s_PropertyInfo->m_propertyInfo.m_Type, s_Data);
 
-            OnSetPropertyValue(p_Entity, s_Property->m_nPropertyID, s_ObjectRef, std::nullopt);
+            if (s_IsActive) {
+                OnSetPropertyValue(
+                    p_Entity, s_Property->m_nPropertyID, m_PropertyEdit->Value, std::nullopt, ChangeMode::Preview
+                );
+            }
+            else {
+                CommitPropertyEdit();
+            }
+        }
+        else if (s_IsEdited && !m_PropertyEdit->IsCommitted() && !s_IsActive) {
+            CommitPropertyEdit();
+        }
+
+        if (m_PropertyEdit && m_PropertyEdit->Key == s_Key) {
+            m_PropertyEdit->IsDrawn = true;
         }
 
         s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
         (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
     }
+
+    ImGui::PopID();
 
     EndPropertyTable();
 }
@@ -750,7 +813,11 @@ void Editor::FireEntityPin(
         return;
     }
 
-    OnSignalEntityPin(p_Entity, p_Name, p_IsOutput, p_Value);
+    QueueTask([this, p_Entity, p_Name, p_IsOutput, p_Value] {
+        if (IsEntityInTree(p_Entity)) {
+            OnSignalEntityPin(p_Entity, p_Name, p_IsOutput, p_Value);
+        }
+    });
 
     m_LastPinArgumentTypes[p_Name] = p_Value.GetTypeID();
 

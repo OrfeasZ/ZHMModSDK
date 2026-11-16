@@ -131,6 +131,7 @@ void Editor::Init() {
     m_ShowEntityIds = GetSettingBool("general", "show_entity_ids", true);
     m_RoundCopiedMatrixValues = GetSettingBool("general", "round_copied_matrix_values", false);
     m_CopyDecimalPlaces = GetSettingInt("general", "copy_decimal_places", 3);
+    m_MaxHistorySize = GetSettingInt("general", "history_size", 200);
     m_TransformToolbarOffset.x = GetSettingDouble("general", "transform_toolbar_x", 8.0);
     m_TransformToolbarOffset.y = GetSettingDouble("general", "transform_toolbar_y", 8.0);
     m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
@@ -256,6 +257,8 @@ void Editor::CopyToClipboard(const std::string& p_String) const {
 }
 
 void Editor::OnDraw3D(IRenderer* p_Renderer) {
+    std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
     DrawEntityAABB(p_Renderer);
 
     /*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
@@ -279,6 +282,8 @@ void Editor::OnDraw3D(IRenderer* p_Renderer) {
 }
 
 void Editor::OnDepthDraw3D(IRenderer* p_Renderer) {
+    std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
     DrawDebugEntities(p_Renderer);
 }
 
@@ -351,10 +356,24 @@ void Editor::OnDrawUI(bool p_HasFocus) {
 
     m_AssetBrowser.CaptureThumbnail();
 
+    UpdateActiveEdits();
+    HandleUndoKeys(p_HasFocus);
+
+    // The update thread waits for this lock to change the tree, so each panel holds it only
+    // while it draws.
     if (m_EditorWindowsVisible) {
         DrawDockSpace();
-        DrawEntityTreeWindow();
-        DrawEntityPropertiesWindow();
+
+        {
+            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+            DrawEntityTreeWindow();
+        }
+
+        {
+            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+            DrawEntityPropertiesWindow();
+        }
+
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracerWindow();
         m_AssetBrowser.Draw(c_AssetBrowserWindowName);
@@ -363,11 +382,15 @@ void Editor::OnDrawUI(bool p_HasFocus) {
         m_AssetBrowser.ClearHoverPreview();
     }
 
-    DrawItemsWindow(p_HasFocus);
-    DrawActorsWindow(p_HasFocus);
-    DrawDebugChannelsWindow(p_HasFocus);
-    DrawRoomsWindow(p_HasFocus);
-    DrawBoxReflectionsWindow(p_HasFocus);
+    {
+        std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
+        DrawItemsWindow(p_HasFocus);
+        DrawActorsWindow(p_HasFocus);
+        DrawDebugChannelsWindow(p_HasFocus);
+        DrawRoomsWindow(p_HasFocus);
+        DrawBoxReflectionsWindow(p_HasFocus);
+    }
 
     ImGui::PopFont();
 }
@@ -531,6 +554,53 @@ void Editor::DrawTransformToolbar(const ImVec2& p_GameViewPos) {
     DrawTransformToolbarHandle(p_GameViewPos);
     ImGui::SameLine();
 
+    const auto s_IconButton = [&](const char* p_Icon, const char* p_Tooltip, const bool p_IsEnabled) {
+        const float s_Size = ImGui::GetFrameHeight();
+
+        ImGui::BeginDisabled(!p_IsEnabled);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
+
+        if (!p_IsEnabled) {
+            ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32_BLACK_TRANS);
+        }
+
+        const bool s_IsClicked = ImGui::Button(p_Icon, ImVec2(s_Size, s_Size));
+
+        if (!p_IsEnabled) {
+            ImGui::PopStyleColor();
+        }
+
+        ImGui::PopStyleVar();
+        ImGui::EndDisabled();
+
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip("%s", p_Tooltip);
+        }
+
+        ImGui::SameLine();
+
+        return s_IsClicked;
+    };
+
+    bool s_HasUndo;
+    bool s_HasRedo;
+
+    {
+        std::scoped_lock s_Lock(m_ChangeQueueMutex);
+        s_HasUndo = !m_UndoHistory.empty();
+        s_HasRedo = !m_RedoHistory.empty();
+    }
+
+    if (s_IconButton(ICON_MD_UNDO, "Undo (Ctrl+Z)", s_HasUndo)) {
+        QueueTask([this] { Undo(); });
+    }
+
+    if (s_IconButton(ICON_MD_REDO, "Redo (Ctrl+Y)", s_HasRedo)) {
+        QueueTask([this] { Redo(); });
+    }
+
+    s_Separator();
+
     if (s_Checkbox("QNE", &m_UseQneTransforms, "Show matrices as position and rotation")) {
         SetSettingBool("general", "qne_transforms", m_UseQneTransforms);
     }
@@ -687,6 +757,13 @@ void Editor::DrawSettingsWindow(const bool p_HasFocus) {
 
         ImGui::Checkbox("Raycast logging", &m_raycastLogging);
 
+        int s_HistorySize = m_MaxHistorySize;
+
+        if (ImGui::InputInt("Undo history size", &s_HistorySize)) {
+            m_MaxHistorySize = std::max(s_HistorySize, 1);
+            SetSettingInt("general", "history_size", m_MaxHistorySize);
+        }
+
         ImGui::Spacing();
 
         if (ImGui::Button(ICON_MD_DASHBOARD " Reset layout")) {
@@ -724,20 +801,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     UpdatePhysicsFreezes(p_UpdateEvent.m_GameTimeDelta.ToSeconds());
     m_EntityTreeDeleter.Update();
 
-    std::lock_guard lock(m_EntityDestructionMutex);
-
-    // Spawned entities wait in the queue until their tree can be deleted.
-    std::erase_if(m_EntitiesToDestroy, [&](const auto& p_Entry) {
-        const auto& [s_Entity, s_ClientId] = p_Entry;
-
-        if (!IsReadyToDestroy(s_Entity)) {
-            return false;
-        }
-
-        DestroyEntityInternal(s_Entity, s_ClientId);
-        return true;
-    });
-
+    UpdateEntitiesToDestroy();
     AddPendingDynamicEntities();
 
     if (m_RemoveItemFromInventory) {
@@ -769,7 +833,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
 }
 
 void Editor::AddPendingDynamicEntities() {
-    if (!m_CachedEntityTree || m_IsBuildingEntityTree.load()) {
+    if (!m_CachedEntityTree) {
         return;
     }
 
@@ -888,27 +952,6 @@ void Editor::UpdatePinsDownload() {
 
         s_DownloadStarted = false;
     }
-}
-
-void Editor::ProcessTasks() {
-    std::vector<std::function<void()>> tasksToRun;
-
-    {
-        std::lock_guard lock(m_TaskMutex);
-        if (m_TaskQueue.empty()) {
-            return;
-        }
-        tasksToRun.swap(m_TaskQueue);
-    }
-
-    for (const auto& task : tasksToRun) {
-        task();
-    }
-}
-
-void Editor::QueueTask(std::function<void()> p_Task) {
-    std::lock_guard lock(m_TaskMutex);
-    m_TaskQueue.push_back(std::move(p_Task));
 }
 
 std::vector<Editor::PinInfo> Editor::GetPins(ZEntityRef p_EntityRef, bool p_OutputPins) {
@@ -1063,6 +1106,7 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
                 }
             }
 
+            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
             OnSelectEntity(s_SelectedEntity, true, std::nullopt);
         }
     }
@@ -1398,23 +1442,41 @@ DEFINE_PLUGIN_DETOUR(
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_SelectedBrickIndex = 0;
-    m_SelectedEntity = {};
-    m_ScrollToEntity = false;
+
+    {
+        std::scoped_lock s_Lock(m_ChangeQueueMutex);
+        m_ChangeQueue.clear();
+        m_EditStarts.clear();
+        m_UndoHistory.clear();
+        m_RedoHistory.clear();
+    }
+
+    m_ShouldResetEdits = true;
 
     {
         std::scoped_lock s_Lock(m_EntityDestructionMutex);
+
+        for (const auto& s_SpawnedEntity : m_EntitiesToDestroy) {
+            m_EntityTreeDeleter.Delete(s_SpawnedEntity.Entity, s_SpawnedEntity.Tree);
+        }
+
         m_EntitiesToDestroy.clear();
     }
 
-    ClearFilters();
-
     {
         std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+        m_SelectedEntity = {};
+        m_SelectedMaterialInstance = nullptr;
+        m_ScrollToEntity = false;
+        ClearFilters();
         m_CachedEntityTree.reset();
         m_ShouldClearRecentPinFires = true;
         m_CachedEntityTreeMap.clear();
         m_OpenEntityTreeNodes.clear();
         m_EntityNames.clear();
+        m_SortedRoomEntities.clear();
+        m_InputPinValue.Clear();
+        m_OutputPinValue.Clear();
     }
 
     {
@@ -1477,12 +1539,10 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_EntityRefToDebugEntities.clear();
     }
 
-    m_EntityRefToFactoryRuntimeResourceIDs.clear();
-
-    m_SortedRoomEntities.clear();
-
-    m_InputPinValue.Clear();
-    m_OutputPinValue.Clear();
+    {
+        std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
+        m_EntityRefToFactoryRuntimeResourceIDs.clear();
+    }
 
     ClearBoxReflectionPreview();
 

@@ -34,21 +34,21 @@ EditorServer::EditorServer() {
                 "/*", {
                     .compression = uWS::DISABLED,
                     .maxPayloadLength = 100 * 1024 * 1024,
-                    .open = [this, s_Loop](WebSocket* p_Socket) {
+                    .open = [this](WebSocket* p_Socket) {
                         Logger::Debug("[Editor] New editor connection established.");
 
                         const auto s_ClientId = m_LastClientId++;
                         const auto s_ClientIdStr = std::to_string(s_ClientId);
 
                         p_Socket->getUserData()->ClientId = s_ClientIdStr;
-                        m_SocketUserDatas.push_back(p_Socket->getUserData());
+                        m_Sockets[s_ClientIdStr] = p_Socket;
                     },
                     .message = [&](WebSocket* p_Socket, std::string_view p_Message, uWS::OpCode p_OpCode) {
                         Logger::Trace("[Editor] Socket message received: {}", p_Message);
 
                         try {
                             if (m_Enabled) {
-                                OnMessage(p_Socket, p_Message, s_Loop);
+                                OnMessage(p_Socket, p_Message);
                             }
                             else {
                                 Logger::Info("[Editor] EditorServer disabled, ignoring message.");
@@ -58,17 +58,13 @@ EditorServer::EditorServer() {
                             Logger::Error(
                                 "[Editor] Failed to handle editor message with error: {}\nMessage was: {}", e.what(), p_Message
                             );
-                            SendError(p_Socket, e.what(), std::nullopt);
+                            SendError(p_Socket->getUserData()->ClientId, e.what(), std::nullopt);
                         }
                     },
                     .close = [this](WebSocket* p_Socket, int p_Code, std::string_view p_Message) {
                         Logger::Debug("[Editor] Editor connection closed with code '{}' and message: {}", p_Code, p_Message);
 
-                        auto s_Data = p_Socket->getUserData();
-                        m_SocketUserDatas.erase(
-                            std::remove(m_SocketUserDatas.begin(), m_SocketUserDatas.end(), s_Data),
-                            m_SocketUserDatas.end()
-                        );
+                        m_Sockets.erase(p_Socket->getUserData()->ClientId);
                     }
                 }
             );
@@ -115,7 +111,7 @@ EditorServer::~EditorServer() {
 
 std::atomic<bool> EditorServer::m_Enabled = true;
 
-void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uWS::Loop* p_Loop) noexcept(false) {
+void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false) {
     simdjson::ondemand::parser s_Parser;
     const auto s_Json = simdjson::padded_string(p_Message);
     simdjson::ondemand::document s_JsonMsg = s_Parser.iterate(s_Json);
@@ -131,44 +127,60 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
         }
     }
 
+    const std::string s_ClientId = p_Socket->getUserData()->ClientId;
+
     if (s_Type == "hello") {
         p_Socket->getUserData()->Identifier = std::string_view(s_JsonMsg["identifier"]);
         SendWelcome(p_Socket);
     }
     else if (s_Type == "selectEntity") {
-        Plugin()->SelectEntity(ReadEntitySelector(s_JsonMsg["entity"]), p_Socket->getUserData()->ClientId);
+        QueueRequest(s_ClientId, s_MessageId, [s_ClientId, s_Selector = ReadEntitySelector(s_JsonMsg["entity"])] {
+            Plugin()->SelectEntity(s_Selector, s_ClientId);
+        });
     }
     else if (s_Type == "setEntityTransform") {
-        Plugin()->SetEntityTransform(
-            ReadEntitySelector(s_JsonMsg["entity"]),
-            ReadTransform(s_JsonMsg["transform"]),
-            s_JsonMsg["relative"],
-            p_Socket->getUserData()->ClientId
-        );
+        const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
+        const auto s_Transform = ReadTransform(s_JsonMsg["transform"]);
+        const bool s_Relative = s_JsonMsg["relative"];
+
+        QueueRequest(s_ClientId, s_MessageId, [s_ClientId, s_Selector, s_Transform, s_Relative] {
+            Plugin()->SetEntityTransform(s_Selector, s_Transform, s_Relative, s_ClientId);
+        });
     }
     else if (s_Type == "spawnQnEntity") {
-        Plugin()->SpawnQnEntity(
-            std::string(std::string_view(s_JsonMsg["qnJson"])),
-            ReadEntityId(s_JsonMsg["entityId"]),
-            std::string(std::string_view(s_JsonMsg["name"])),
-            p_Socket->getUserData()->ClientId
+        auto s_QnJson = std::string(std::string_view(s_JsonMsg["qnJson"]));
+        const auto s_EntityId = ReadEntityId(s_JsonMsg["entityId"]);
+        auto s_Name = std::string(std::string_view(s_JsonMsg["name"]));
+
+        QueueRequest(
+            s_ClientId,
+            s_MessageId,
+            [s_ClientId, s_QnJson = std::move(s_QnJson), s_EntityId, s_Name = std::move(s_Name)] {
+                Plugin()->SpawnQnEntity(s_QnJson, s_EntityId, s_Name, s_ClientId);
+            }
         );
     }
     else if (s_Type == "createEntityResources") {
-        Plugin()->CreateEntityResources(
-            std::string(std::string_view(s_JsonMsg["qnJson"])),
-            p_Socket->getUserData()->ClientId
+        QueueRequest(
+            s_ClientId,
+            s_MessageId,
+            [s_ClientId, s_QnJson = std::string(std::string_view(s_JsonMsg["qnJson"]))] {
+                Plugin()->CreateEntityResources(s_QnJson, s_ClientId);
+            }
         );
     }
     else if (s_Type == "destroyEntity") {
-        Plugin()->DestroyEntity(ReadEntitySelector(s_JsonMsg["entity"]), p_Socket->getUserData()->ClientId);
+        QueueRequest(s_ClientId, s_MessageId, [s_ClientId, s_Selector = ReadEntitySelector(s_JsonMsg["entity"])] {
+            Plugin()->DestroyEntity(s_Selector, s_ClientId);
+        });
     }
     else if (s_Type == "setEntityName") {
-        Plugin()->SetEntityName(
-            ReadEntitySelector(s_JsonMsg["entity"]),
-            std::string(std::string_view(s_JsonMsg["name"])),
-            p_Socket->getUserData()->ClientId
-        );
+        const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
+        auto s_Name = std::string(std::string_view(s_JsonMsg["name"]));
+
+        QueueRequest(s_ClientId, s_MessageId, [s_ClientId, s_Selector, s_Name = std::move(s_Name)] {
+            Plugin()->SetEntityName(s_Selector, s_Name, s_ClientId);
+        });
     }
     else if (s_Type == "setEntityProperty") {
         int32_t s_PropertyId;
@@ -181,12 +193,12 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
             s_PropertyId = Hash::Crc32(s_PropertyName.data(), s_PropertyName.size());
         }
 
-        Plugin()->SetEntityProperty(
-            ReadEntitySelector(s_JsonMsg["entity"]),
-            s_PropertyId,
-            simdjson::to_json_string(s_JsonMsg["value"]),
-            p_Socket->getUserData()->ClientId
-        );
+        const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
+        std::string s_Value(simdjson::to_json_string(s_JsonMsg["value"]).value());
+
+        QueueRequest(s_ClientId, s_MessageId, [s_ClientId, s_Selector, s_PropertyId, s_Value = std::move(s_Value)] {
+            Plugin()->SetEntityProperty(s_Selector, s_PropertyId, s_Value, s_ClientId);
+        });
     }
     else if (s_Type == "signalEntityPin") {
         int32_t s_PinId;
@@ -199,14 +211,17 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
             s_PinId = Hash::Crc32(s_PinName.data(), s_PinName.size());
         }
 
-        Plugin()->SignalEntityPin(
-            ReadEntitySelector(s_JsonMsg["entity"]),
-            s_PinId,
-            s_JsonMsg["output"]
-        );
+        const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
+        const bool s_Output = s_JsonMsg["output"];
+
+        QueueRequest(s_ClientId, s_MessageId, [s_Selector, s_PinId, s_Output] {
+            Plugin()->SignalEntityPin(s_Selector, s_PinId, s_Output);
+        });
     }
     else if (s_Type == "listEntities") {
-        SendEntityList(p_Socket, Plugin()->GetEntityTree(), s_MessageId);
+        QueueRequest(s_ClientId, s_MessageId, [this, s_ClientId, s_MessageId] {
+            SendEntityList(s_ClientId, Plugin()->GetEntityTree(), s_MessageId);
+        });
     }
     else if (s_Type == "listAlocPfBoxAndSeedPointEntities") {
 
@@ -216,29 +231,71 @@ void EditorServer::OnMessage(WebSocket* p_Socket, std::string_view p_Message, uW
                 s_OnlyCollidableMeshes = result.get_bool();
             }
         }
-        Plugin()->QueueTask(
-            [p_Socket, p_Loop, s_OnlyCollidableMeshes]() {
-                SendNavKitScene(p_Socket, p_Loop, s_OnlyCollidableMeshes);
+        QueueRequest(s_ClientId, s_MessageId, [this, s_ClientId, s_OnlyCollidableMeshes] {
+            SendNavKitScene(s_ClientId, s_OnlyCollidableMeshes);
+        });
+    }
+    else if (s_Type == "getEntityDetails") {
+        QueueRequest(
+            s_ClientId,
+            s_MessageId,
+            [this, s_ClientId, s_MessageId, s_Selector = ReadEntitySelector(s_JsonMsg["entity"])] {
+                SendEntityDetails(s_ClientId, Plugin()->FindEntity(s_Selector), s_MessageId);
             }
         );
     }
-    else if (s_Type == "getEntityDetails") {
-        const auto s_Selector = ReadEntitySelector(s_JsonMsg["entity"]);
-        const auto s_Entity = Plugin()->FindEntity(s_Selector);
-        SendEntityDetails(p_Socket, s_Entity, s_MessageId);
-    }
     else if (s_Type == "getHitmanEntity") {
-        SendHitmanEntity(p_Socket, s_MessageId);
+        QueueRequest(s_ClientId, s_MessageId, [this, s_ClientId, s_MessageId] {
+            SendHitmanEntity(s_ClientId, s_MessageId);
+        });
     }
     else if (s_Type == "getCameraEntity") {
-        SendCameraEntity(p_Socket, s_MessageId);
+        QueueRequest(s_ClientId, s_MessageId, [this, s_ClientId, s_MessageId] {
+            SendCameraEntity(s_ClientId, s_MessageId);
+        });
     }
     else if (s_Type == "rebuildEntityTree") {
-        Plugin()->RebuildEntityTree();
+        QueueRequest(s_ClientId, s_MessageId, [] {
+            Plugin()->RebuildEntityTree();
+        });
     }
     else {
         throw std::runtime_error(std::format("Unknown editor message type: {}", s_Type));
     }
+}
+
+// Requests change and read game state, so they run on the game's update thread.
+void EditorServer::QueueRequest(
+    const std::string& p_ClientId, std::optional<int64_t> p_MessageId, std::function<void()> p_Request
+) {
+    Plugin()->QueueTask([this, p_ClientId, p_MessageId, p_Request = std::move(p_Request)] {
+        try {
+            p_Request();
+        }
+        catch (const std::exception& e) {
+            Logger::Error("[Editor] Failed to handle editor message with error: {}", e.what());
+            SendError(p_ClientId, e.what(), p_MessageId);
+        }
+    });
+}
+
+// The socket can close before the loop runs this, so we find it again by client ID.
+void EditorServer::DeferToClient(const std::string& p_ClientId, std::function<void(WebSocket*)> p_Send) {
+    if (!m_Loop) {
+        return;
+    }
+
+    m_Loop->defer([this, p_ClientId, p_Send = std::move(p_Send)] {
+        if (const auto s_It = m_Sockets.find(p_ClientId); s_It != m_Sockets.end()) {
+            p_Send(s_It->second);
+        }
+    });
+}
+
+void EditorServer::SendToClient(const std::string& p_ClientId, std::string p_Message) {
+    DeferToClient(p_ClientId, [p_Message = std::move(p_Message)](WebSocket* p_Socket) {
+        p_Socket->send(p_Message, uWS::OpCode::TEXT);
+    });
 }
 
 void EditorServer::SendWelcome(EditorServer::WebSocket* p_Socket) {
@@ -262,7 +319,7 @@ void EditorServer::SendWelcome(EditorServer::WebSocket* p_Socket) {
     p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
 }
 
-void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId) {
+void EditorServer::SendHitmanEntity(const std::string& p_ClientId, std::optional<int64_t> p_MessageId) {
     if (!m_Enabled) {
         Logger::Info("[Editor] EditorServer disabled. Skipping SendHitmanEntity.");
         return;
@@ -271,7 +328,7 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> 
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     if (!s_LocalHitman || !s_LocalHitman.m_entityRef) {
-        SendError(p_Socket, "Failed to get local hitman entity.", p_MessageId);
+        SendError(p_ClientId, "Failed to get local hitman entity.", p_MessageId);
         return;
     }
 
@@ -288,10 +345,10 @@ void EditorServer::SendHitmanEntity(WebSocket* p_Socket, std::optional<int64_t> 
     WriteEntityDetails(s_Event, s_LocalHitman.m_entityRef);
     s_Event << "}";
 
-    p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+    SendToClient(p_ClientId, s_Event.str());
 }
 
-void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> p_MessageId) {
+void EditorServer::SendCameraEntity(const std::string& p_ClientId, std::optional<int64_t> p_MessageId) {
     if (!m_Enabled) {
         Logger::Info("[Editor] EditorServer disabled. Skipping SendCameraEntity.");
         return;
@@ -299,7 +356,7 @@ void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> 
     const auto s_CurrentCamera = Functions::GetCurrentCamera->Call();
 
     if (!s_CurrentCamera) {
-        SendError(p_Socket, "Failed to get active camera entity.", p_MessageId);
+        SendError(p_ClientId, "Failed to get active camera entity.", p_MessageId);
         return;
     }
 
@@ -319,11 +376,11 @@ void EditorServer::SendCameraEntity(WebSocket* p_Socket, std::optional<int64_t> 
     WriteEntityDetails(s_Event, s_Ref);
     s_Event << "}";
 
-    p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+    SendToClient(p_ClientId, s_Event.str());
 }
 
 void EditorServer::SendError(
-    EditorServer::WebSocket* p_Socket, std::string p_Message, std::optional<int64_t> p_MessageId
+    const std::string& p_ClientId, std::string p_Message, std::optional<int64_t> p_MessageId
 ) {
     std::ostringstream s_Event;
 
@@ -337,7 +394,7 @@ void EditorServer::SendError(
     s_Event << write_json("message") << ":" << write_json(p_Message);
     s_Event << "}";
 
-    p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+    SendToClient(p_ClientId, s_Event.str());
 }
 
 void EditorServer::OnEntitySelected(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
@@ -345,34 +402,23 @@ void EditorServer::OnEntitySelected(ZEntityRef p_Entity, std::optional<std::stri
         Logger::Info("[Editor] EditorServer disabled. Skipping OnEntitySelected.");
         return;
     }
-    if (!m_Loop) {
-        return;
+
+    std::ostringstream s_Event;
+
+    s_Event << "{";
+
+    if (!p_Entity) {
+        s_Event << write_json("type") << ":" << write_json("entityDeselected");
+    }
+    else {
+        s_Event << write_json("type") << ":" << write_json("entitySelected") << ",";
+        s_Event << write_json("entity") << ":";
+        WriteEntityDetails(s_Event, p_Entity);
     }
 
-    m_Loop->defer(
-        [this, p_Entity, p_ByClient]() {
-            if (!m_App) {
-                return;
-            }
+    s_Event << "}";
 
-            std::ostringstream s_Event;
-
-            s_Event << "{";
-
-            if (!p_Entity) {
-                s_Event << write_json("type") << ":" << write_json("entityDeselected");
-            }
-            else {
-                s_Event << write_json("type") << ":" << write_json("entitySelected") << ",";
-                s_Event << write_json("entity") << ":";
-                WriteEntityDetails(s_Event, p_Entity);
-            }
-
-            s_Event << "}";
-
-            PublishEvent(s_Event.str(), p_ByClient);
-        }
-    );
+    PublishEvent(s_Event.str(), p_ByClient);
 }
 
 void EditorServer::OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
@@ -380,29 +426,18 @@ void EditorServer::OnEntityTransformChanged(ZEntityRef p_Entity, std::optional<s
         Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityTransformChanged.");
         return;
     }
-    if (!m_Loop) {
-        return;
-    }
 
-    m_Loop->defer(
-        [this, p_Entity, p_ByClient]() {
-            if (!m_App) {
-                return;
-            }
+    std::ostringstream s_Event;
 
-            std::ostringstream s_Event;
+    s_Event << "{";
 
-            s_Event << "{";
+    s_Event << write_json("type") << ":" << write_json("entityTransformUpdated") << ",";
+    s_Event << write_json("entity") << ":";
+    WriteEntityDetails(s_Event, p_Entity);
 
-            s_Event << write_json("type") << ":" << write_json("entityTransformUpdated") << ",";
-            s_Event << write_json("entity") << ":";
-            WriteEntityDetails(s_Event, p_Entity);
+    s_Event << "}";
 
-            s_Event << "}";
-
-            PublishEvent(s_Event.str(), p_ByClient);
-        }
-    );
+    PublishEvent(s_Event.str(), p_ByClient);
 }
 
 void EditorServer::OnEntityNameChanged(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
@@ -410,29 +445,18 @@ void EditorServer::OnEntityNameChanged(ZEntityRef p_Entity, std::optional<std::s
         Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityNameChanged.");
         return;
     }
-    if (!m_Loop) {
-        return;
-    }
 
-    m_Loop->defer(
-        [this, p_Entity, p_ByClient]() {
-            if (!m_App) {
-                return;
-            }
+    std::ostringstream s_Event;
 
-            std::ostringstream s_Event;
+    s_Event << "{";
 
-            s_Event << "{";
+    s_Event << write_json("type") << ":" << write_json("entityNameUpdated") << ",";
+    s_Event << write_json("entity") << ":";
+    WriteEntityDetails(s_Event, p_Entity);
 
-            s_Event << write_json("type") << ":" << write_json("entityNameUpdated") << ",";
-            s_Event << write_json("entity") << ":";
-            WriteEntityDetails(s_Event, p_Entity);
+    s_Event << "}";
 
-            s_Event << "}";
-
-            PublishEvent(s_Event.str(), p_ByClient);
-        }
-    );
+    PublishEvent(s_Event.str(), p_ByClient);
 }
 
 void EditorServer::OnEntityPropertySet(
@@ -442,68 +466,56 @@ void EditorServer::OnEntityPropertySet(
         Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityPropertySet.");
         return;
     }
-    if (!m_Loop) {
+    const auto s_EntityType = p_Entity->GetType();
+
+    if (!s_EntityType) {
         return;
     }
 
-    m_Loop->defer(
-        [this, p_Entity, p_PropertyId, p_ByClient]() {
-            if (!m_App) {
-                return;
-            }
+    const auto s_Property = s_EntityType->FindProperty(p_PropertyId);
 
-            const auto s_EntityType = p_Entity->GetType();
+    if (!s_Property || !s_Property->m_pPropertyInfo->m_Type) {
+        return;
+    }
 
-            if (!s_EntityType) {
-                return;
-            }
+    const auto s_PropertyInfo = s_Property->GetPropertyInfo();
 
-            const auto s_Property = s_EntityType->FindProperty(p_PropertyId);
+    if (!s_PropertyInfo) {
+        return;
+    }
 
-            if (!s_Property || !s_Property->m_pPropertyInfo->m_Type) {
-                return;
-            }
+    std::ostringstream s_Event;
 
-            const auto s_PropertyInfo = s_Property->GetPropertyInfo();
+    s_Event << "{";
 
-            if (!s_PropertyInfo) {
-                return;
-            }
+    s_Event << write_json("type") << ":" << write_json("entityPropertyChanged") << ",";
+    s_Event << write_json("entity") << ":";
+    WriteEntityDetails(s_Event, p_Entity);
+    s_Event << ",";
+    s_Event << write_json("property") << ":";
 
-            std::ostringstream s_Event;
+    if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
+        s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyID) {
+        // Some properties don't have a name for some reason. Try to find using RL.
+        const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyID);
 
-            s_Event << "{";
-
-            s_Event << write_json("type") << ":" << write_json("entityPropertyChanged") << ",";
-            s_Event << write_json("entity") << ":";
-            WriteEntityDetails(s_Event, p_Entity);
-            s_Event << ",";
-            s_Event << write_json("property") << ":";
-
-            if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsResource() ||
-                s_PropertyInfo->m_nPropertyID != s_Property->m_nPropertyID) {
-                // Some properties don't have a name for some reason. Try to find using RL.
-                const auto s_PropertyName = HM3_GetPropertyName(s_Property->m_nPropertyID);
-
-                if (s_PropertyName.Size > 0) {
-                    s_Event << write_json(std::string_view(s_PropertyName.Data, s_PropertyName.Size)) << ",";
-                }
-                else {
-                    s_Event << write_json(s_Property->m_nPropertyID) << ",";
-                }
-            }
-            else {
-                s_Event << write_json(s_PropertyInfo->m_pszPropertyName) << ",";
-            }
-
-            s_Event << write_json("value") << ":";
-            WriteProperty(s_Event, p_Entity, s_Property);
-
-            s_Event << "}";
-
-            PublishEvent(s_Event.str(), p_ByClient);
+        if (s_PropertyName.Size > 0) {
+            s_Event << write_json(std::string_view(s_PropertyName.Data, s_PropertyName.Size)) << ",";
         }
-    );
+        else {
+            s_Event << write_json(s_Property->m_nPropertyID) << ",";
+        }
+    }
+    else {
+        s_Event << write_json(s_PropertyInfo->m_pszPropertyName) << ",";
+    }
+
+    s_Event << write_json("value") << ":";
+    WriteProperty(s_Event, p_Entity, s_Property);
+
+    s_Event << "}";
+
+    PublishEvent(s_Event.str(), p_ByClient);
 }
 
 void EditorServer::OnEntitySpawned(ZEntityRef p_Entity, std::optional<std::string> p_ByClient) {
@@ -511,29 +523,18 @@ void EditorServer::OnEntitySpawned(ZEntityRef p_Entity, std::optional<std::strin
         Logger::Info("[Editor] EditorServer disabled. Skipping OnEntitySpawned.");
         return;
     }
-    if (!m_Loop) {
-        return;
-    }
 
-    m_Loop->defer(
-        [this, p_Entity, p_ByClient]() {
-            if (!m_App) {
-                return;
-            }
+    std::ostringstream s_Event;
 
-            std::ostringstream s_Event;
+    s_Event << "{";
 
-            s_Event << "{";
+    s_Event << write_json("type") << ":" << write_json("entitySpawned") << ",";
+    s_Event << write_json("entity") << ":";
+    WriteEntityDetails(s_Event, p_Entity);
 
-            s_Event << write_json("type") << ":" << write_json("entitySpawned") << ",";
-            s_Event << write_json("entity") << ":";
-            WriteEntityDetails(s_Event, p_Entity);
+    s_Event << "}";
 
-            s_Event << "}";
-
-            PublishEvent(s_Event.str(), std::nullopt);
-        }
-    );
+    PublishEvent(s_Event.str(), std::nullopt);
 }
 
 void EditorServer::OnEntityDestroying(uint64_t p_EntityId, std::optional<std::string> p_ByClient) {
@@ -541,28 +542,17 @@ void EditorServer::OnEntityDestroying(uint64_t p_EntityId, std::optional<std::st
         Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityDestroying.");
         return;
     }
-    if (!m_Loop) {
-        return;
-    }
 
-    m_Loop->defer(
-        [this, p_EntityId, p_ByClient]() {
-            if (!m_App) {
-                return;
-            }
+    std::ostringstream s_Event;
 
-            std::ostringstream s_Event;
+    s_Event << "{";
 
-            s_Event << "{";
+    s_Event << write_json("type") << ":" << write_json("entityDestroying") << ",";
+    s_Event << write_json("entityId") << ":" << write_json(std::format("{:016x}", p_EntityId));
 
-            s_Event << write_json("type") << ":" << write_json("entityDestroying") << ",";
-            s_Event << write_json("entityId") << ":" << write_json(std::format("{:016x}", p_EntityId));
+    s_Event << "}";
 
-            s_Event << "}";
-
-            PublishEvent(s_Event.str(), std::nullopt);
-        }
-    );
+    PublishEvent(s_Event.str(), std::nullopt);
 }
 
 void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<std::string>& p_Bricks) {
@@ -570,43 +560,32 @@ void EditorServer::OnSceneLoading(const std::string& p_Scene, const std::vector<
         Logger::Info("[Editor] EditorServer disabled. Skipping OnSceneLoading.");
         return;
     }
-    if (!m_Loop) {
-        return;
+
+    std::ostringstream s_Event;
+
+    s_Event << "{";
+
+    s_Event << write_json("type") << ":" << write_json("sceneLoading") << ",";
+    s_Event << write_json("scene") << ":" << write_json(p_Scene) << ",";
+    s_Event << write_json("bricks") << ":" << "[";
+
+    bool s_First = true;
+
+    for (const auto& s_Brick : p_Bricks) {
+        if (!s_First) {
+            s_Event << ",";
+        }
+
+        s_Event << write_json(s_Brick);
+
+        s_First = false;
     }
 
-    m_Loop->defer(
-        [this, p_Scene, p_Bricks]() {
-            if (!m_App) {
-                return;
-            }
+    s_Event << "]";
 
-            std::ostringstream s_Event;
+    s_Event << "}";
 
-            s_Event << "{";
-
-            s_Event << write_json("type") << ":" << write_json("sceneLoading") << ",";
-            s_Event << write_json("scene") << ":" << write_json(p_Scene) << ",";
-            s_Event << write_json("bricks") << ":" << "[";
-
-            bool s_First = true;
-
-            for (const auto& s_Brick : p_Bricks) {
-                if (!s_First) {
-                    s_Event << ",";
-                }
-
-                s_Event << write_json(s_Brick);
-
-                s_First = false;
-            }
-
-            s_Event << "]";
-
-            s_Event << "}";
-
-            m_App->publish("all", s_Event.str(), uWS::OpCode::TEXT);
-        }
-    );
+    PublishEvent(s_Event.str(), std::nullopt);
 }
 
 void EditorServer::OnSceneClearing(bool p_FullyUnloadScene) {
@@ -614,28 +593,17 @@ void EditorServer::OnSceneClearing(bool p_FullyUnloadScene) {
         Logger::Info("[Editor] EditorServer disabled. Skipping OnSceneClearing.");
         return;
     }
-    if (!m_Loop) {
-        return;
-    }
 
-    m_Loop->defer(
-        [this, p_FullyUnloadScene]() {
-            if (!m_App) {
-                return;
-            }
+    std::ostringstream s_Event;
 
-            std::ostringstream s_Event;
+    s_Event << "{";
 
-            s_Event << "{";
+    s_Event << write_json("type") << ":" << write_json("sceneClearing") << ",";
+    s_Event << write_json("forReload") << ":" << write_json(p_FullyUnloadScene);
 
-            s_Event << write_json("type") << ":" << write_json("sceneClearing") << ",";
-            s_Event << write_json("forReload") << ":" << write_json(p_FullyUnloadScene);
+    s_Event << "}";
 
-            s_Event << "}";
-
-            m_App->publish("all", s_Event.str(), uWS::OpCode::TEXT);
-        }
-    );
+    PublishEvent(s_Event.str(), std::nullopt);
 }
 
 void EditorServer::OnEntityTreeRebuilt() {
@@ -643,25 +611,14 @@ void EditorServer::OnEntityTreeRebuilt() {
         Logger::Info("[Editor] EditorServer disabled. Skipping OnEntityTreeRebuilt.");
         return;
     }
-    if (!m_Loop) {
-        return;
-    }
 
-    m_Loop->defer(
-        [this]() {
-            if (!m_App) {
-                return;
-            }
+    std::ostringstream s_Event;
 
-            std::ostringstream s_Event;
+    s_Event << "{";
+    s_Event << write_json("type") << ":" << write_json("entityTreeRebuilt");
+    s_Event << "}";
 
-            s_Event << "{";
-            s_Event << write_json("type") << ":" << write_json("entityTreeRebuilt");
-            s_Event << "}";
-
-            m_App->publish("all", s_Event.str(), uWS::OpCode::TEXT);
-        }
-    );
+    PublishEvent(s_Event.str(), std::nullopt);
 }
 
 void EditorServer::SetEnabled(bool p_Enabled) {
@@ -678,9 +635,10 @@ bool EditorServer::GetEnabled() {
     return m_Enabled;
 }
 
-void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop, bool s_OnlyCollidableMeshes) {
-    p_Loop->defer(
-        [p_Socket]() {
+void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCollidableMeshes) {
+    DeferToClient(
+        p_ClientId,
+        [](WebSocket* p_Socket) {
             p_Socket->send(R"({"version":1,"meshes":[)", uWS::OpCode::TEXT);
         }
     );
@@ -693,7 +651,7 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop, bool 
 
     Plugin()->FindMeshes(
         s_OnlyCollidableMeshes,
-        [p_Socket, p_Loop, s_AnyMeshSentOverall, s_TotalMeshesSent, s_LastLoggedMilestone](
+        [this, p_ClientId, s_AnyMeshSentOverall, s_TotalMeshesSent, s_LastLoggedMilestone](
             const std::vector<NavKitMeshEntity>& p_Entities,
             const std::map<std::string, NavKitMatiTextures>& p_MatiTextures,
             const std::map<std::string, std::vector<std::string>>& p_PrimMatis,
@@ -735,8 +693,9 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop, bool 
                 if (s_DidPrepareDataThisBatch) {
                     std::string data_to_send = s_BatchJson.str();
 
-                    p_Loop->defer(
-                        [p_Socket, data_to_send, s_AnyMeshSentOverall]() {
+                    DeferToClient(
+                        p_ClientId,
+                        [data_to_send, s_AnyMeshSentOverall](WebSocket* p_Socket) {
                             if (*s_AnyMeshSentOverall) {
                                 p_Socket->send(",", uWS::OpCode::TEXT);
                             }
@@ -760,10 +719,11 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop, bool 
                         "ZSphereVolumeEntity", "00B86A9EE991EFB2"
                     );
 
-                    p_Loop->defer(
-                        [p_Socket, s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities,
+                    DeferToClient(
+                        p_ClientId,
+                        [s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities,
                             s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities,
-                            p_PrimMatis, p_MatiTextures]() {
+                            p_PrimMatis, p_MatiTextures](WebSocket* p_Socket) {
                                 p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                                 SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
@@ -847,9 +807,10 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop, bool 
                     );
                 }
         },
-        [p_Socket, p_Loop]() -> void {
-            p_Loop->defer(
-                [p_Socket]() {
+        [this, p_ClientId]() -> void {
+            DeferToClient(
+                p_ClientId,
+                [](WebSocket* p_Socket) {
                     p_Socket->send("Rebuilding tree.", uWS::OpCode::TEXT);
                 }
             );
@@ -859,7 +820,7 @@ void EditorServer::SendNavKitScene(WebSocket* p_Socket, uWS::Loop* p_Loop, bool 
 
 
 void EditorServer::SendEntityList(
-    EditorServer::WebSocket* p_Socket, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
+    const std::string& p_ClientId, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
 ) {
     if (!m_Enabled) {
         Logger::Info("[Editor] EditorServer disabled. Skipping SendEntityList.");
@@ -888,7 +849,12 @@ void EditorServer::SendEntityList(
         auto s_Node = s_NodeQueue.front();
         s_NodeQueue.pop();
 
-        if (!s_Node->Entity) {
+        for (auto& childPair : s_Node->Children) {
+            s_NodeQueue.push(childPair.second);
+        }
+
+        // The special nodes only group their children and have no real entity.
+        if (!s_Node->Entity || Plugin()->IsSpecialEntityTreeNode(s_Node->Entity)) {
             continue;
         }
 
@@ -926,20 +892,18 @@ void EditorServer::SendEntityList(
         }
 
         s_EventStream << "}";
-
-        for (auto& childPair : s_Node->Children) {
-            s_NodeQueue.push(childPair.second);
-        }
     }
 
     s_EventStream << "]";
 
     s_EventStream << "}";
 
-    p_Socket->send(s_EventStream.str(), uWS::OpCode::TEXT);
+    SendToClient(p_ClientId, s_EventStream.str());
 }
 
-void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId) {
+void EditorServer::SendEntityDetails(
+    const std::string& p_ClientId, ZEntityRef p_Entity, std::optional<int64_t> p_MessageId
+) {
     if (!m_Enabled) {
         Logger::Info("[Editor] EditorServer disabled. Skipping SendEntityDetails.");
         return;
@@ -962,7 +926,7 @@ void EditorServer::SendEntityDetails(WebSocket* p_Socket, ZEntityRef p_Entity, s
 
     s_Event << "}";
 
-    p_Socket->send(s_Event.str(), uWS::OpCode::TEXT);
+    SendToClient(p_ClientId, s_Event.str());
 }
 
 bool EditorServer::IsPropertyValueTrue(const SPropertyData* s_Property, const ZEntityRef& p_Entity) {
@@ -1616,16 +1580,27 @@ uint64_t EditorServer::ReadEntityId(simdjson::ondemand::value p_EntityId) {
     return std::stoull(std::string(s_IdString), nullptr, 16);
 }
 
-void EditorServer::PublishEvent(const std::string& p_Event, std::optional<std::string> p_IgnoreClient) {
-    if (!p_IgnoreClient) {
-        m_App->publish("all", p_Event, uWS::OpCode::TEXT);
+// Events are built on the thread that changed the entity, and only published on the server thread.
+void EditorServer::PublishEvent(std::string p_Event, std::optional<std::string> p_IgnoreClient) {
+    if (!m_Loop) {
+        return;
     }
-    else {
-        // Send to all but the client that triggered the event.
-        for (auto& s_Socket : m_SocketUserDatas) {
-            if (s_Socket->ClientId != *p_IgnoreClient) {
-                m_App->publish(s_Socket->ClientId, p_Event, uWS::OpCode::TEXT);
+
+    m_Loop->defer([this, p_Event = std::move(p_Event), p_IgnoreClient = std::move(p_IgnoreClient)] {
+        if (!m_App) {
+            return;
+        }
+
+        if (!p_IgnoreClient) {
+            m_App->publish("all", p_Event, uWS::OpCode::TEXT);
+        }
+        else {
+            // Send to all but the client that triggered the event.
+            for (const auto& s_ClientId : m_Sockets | std::views::keys) {
+                if (s_ClientId != *p_IgnoreClient) {
+                    m_App->publish(s_ClientId, p_Event, uWS::OpCode::TEXT);
+                }
             }
         }
-    }
+    });
 }
