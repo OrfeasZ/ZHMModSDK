@@ -1346,6 +1346,18 @@ DEFINE_DETOUR_WITH_CONTEXT(
 
     const bool s_HasFocus = m_ImGuiHasFocus.load(std::memory_order_acquire);
 
+    // Prevent game from clipping the mouse while imgui is active.
+    if (s_HasFocus != m_CursorClipReleased) {
+        m_CursorClipReleased = s_HasFocus;
+
+        if (s_HasFocus) {
+            ClipCursor(nullptr);
+        }
+        else {
+            PostMessageW(m_Hwnd, c_GameUpdateCursorClipMessage, 0, 0);
+        }
+    }
+
     //Globals::InputActionManager->m_bDebugKeys = true;
     Globals::InputActionManager->m_bEnabled = !s_HasFocus;
 

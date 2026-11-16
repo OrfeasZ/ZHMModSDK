@@ -237,6 +237,7 @@ namespace Rendering::Renderers {
         std::atomic<bool> m_FrameRequested { false };
         bool m_InFrame = false;
         HWND m_WindowManagerMoveHwnd = nullptr;
+        bool m_CursorClipReleased = false;
 
         std::mutex m_SnapshotMutex;
         std::unique_ptr<DrawDataSnapshot> m_PendingSnapshot;
