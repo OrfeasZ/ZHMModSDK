@@ -44,7 +44,8 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
             !s_ImgGuiIO.WantCaptureMouse &&
             !Globals::ScaleformGFxManager->GetIsMenuModeUnsafe()) {
             const auto s_MousePos = ImGui::GetMousePos();
-            OnMouseDown(SVector2(s_MousePos.x, s_MousePos.y), !m_HoldingMouse);
+            const auto s_ViewportPos = ImGui::GetMainViewport()->Pos;
+            OnMouseDown(SVector2(s_MousePos.x - s_ViewportPos.x, s_MousePos.y - s_ViewportPos.y), !m_HoldingMouse);
             m_HoldingMouse = true;
         }
         else {
@@ -67,6 +68,11 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
 
             if (ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
                 OnSelectEntity({}, false, std::nullopt);
+            }
+
+            // Only custom entities can be destroyed.
+            if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_SelectedEntity && m_EntityNames.contains(m_SelectedEntity)) {
+                OnDestroyEntity(m_SelectedEntity, std::nullopt);
             }
         }
     }
@@ -97,7 +103,8 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
                 const auto s_ProjectionMatrix = *reinterpret_cast<SMatrix*>(&Globals::RenderManager->m_pDevice->
                     m_Constants.cameraViewToClip);
 
-                ImGuizmo::SetRect(0, 0, s_ImgGuiIO.DisplaySize.x, s_ImgGuiIO.DisplaySize.y);
+                const auto* s_Viewport = ImGui::GetMainViewport();
+                ImGuizmo::SetRect(s_Viewport->Pos.x, s_Viewport->Pos.y, s_Viewport->Size.x, s_Viewport->Size.y);
 
                 if (m_GizmoMode == ImGuizmo::SCALE) {
                     const auto s_GeomEntity = s_SelectedEntity.QueryInterface<ZGeomEntity>();
@@ -166,6 +173,22 @@ void Editor::RefreshPathfinderObstacle(ZEntityRef p_Entity, bool p_Force) {
     Hooks::ZPFObstacleEntity_UpdateObstacle->Call(s_Obstacle, s_Flags, s_Obstacle->m_bEnabled, p_Force);
 }
 
+// Static physics objects and pathfinder obstacles don't follow their entities when they
+// move, so we move them ourselves.
+void Editor::RefreshStaticPhysicsAndObstacles(ZEntityRef p_Root) {
+    ForEachEntityInTree(p_Root, [&](ZEntityRef p_Entity) {
+        const auto s_PhysicsAspect = p_Entity.QueryInterface<ZStaticPhysicsAspect>();
+
+        if (s_PhysicsAspect && s_PhysicsAspect->m_pPhysicsObject) {
+            if (const auto s_SpatialEntity = p_Entity.QueryInterface<ZSpatialEntity>()) {
+                s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetObjectToWorldMatrix());
+            }
+        }
+
+        RefreshPathfinderObstacle(p_Entity, false);
+    });
+}
+
 void Editor::OnEntityTransformChange(
     ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
 ) {
@@ -195,13 +218,7 @@ void Editor::OnEntityTransformChange(
             s_SpatialEntity->SetObjectToWorldMatrixFromEditor(s_WorldTrans);
         }
 
-        if (const auto s_PhysicsAspect = p_Entity.QueryInterface<ZStaticPhysicsAspect>()) {
-            if (s_PhysicsAspect->m_pPhysicsObject) {
-                s_PhysicsAspect->m_pPhysicsObject->SetTransform(s_SpatialEntity->GetObjectToWorldMatrix());
-            }
-        }
-
-        RefreshPathfinderObstacle(p_Entity, false);
+        RefreshStaticPhysicsAndObstacles(p_Entity);
 
         m_Server.OnEntityTransformChanged(p_Entity, std::move(p_ClientId));
     }

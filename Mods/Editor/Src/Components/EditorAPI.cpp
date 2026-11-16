@@ -28,10 +28,10 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
 
     // When TBLU hash is not set, we're selecting from spawned entities.
     if (!p_Selector.TbluHash.has_value()) {
-        const auto s_Entity = m_SpawnedEntities.find(p_Selector.EntityId);
-
-        if (s_Entity != m_SpawnedEntities.end()) {
-            return s_Entity->second;
+        for (const ZEntityRef s_Entity : m_SpawnedEntities | std::views::keys) {
+            if (s_Entity->GetType()->m_nEntityID == p_Selector.EntityId) {
+                return s_Entity;
+            }
         }
 
         return {};
@@ -718,10 +718,10 @@ void Editor::SpawnQnEntity(
     }
 
     // If entity is already spawned, destroy it first.
-    const auto s_SpawnedEntity = m_SpawnedEntities.find(p_EntityId);
-
-    if (s_SpawnedEntity != m_SpawnedEntities.end()) {
-        OnDestroyEntity(s_SpawnedEntity->second, p_ClientId);
+    for (const ZEntityRef s_Entity : m_SpawnedEntities | std::views::keys) {
+        if (s_Entity->GetType()->m_nEntityID == p_EntityId) {
+            OnDestroyEntity(s_Entity, p_ClientId);
+        }
     }
 
     TResourcePtr<ZTemplateEntityBlueprintFactory> s_BpFactory;
@@ -745,18 +745,11 @@ void Editor::SpawnQnEntity(
         s_SpawnedEnt->GetType()->m_nEntityID
     );
 
-    m_CachedEntityTreeMutex.lock();
-
-    m_EntityNames[s_SpawnedEnt] = p_Name;
-    m_SpawnedEntities[p_EntityId] = s_SpawnedEnt;
-
-    if (m_CachedEntityTree && m_CachedEntityTreeMap.size() > 0) {
-        UpdateEntityTree(m_CachedEntityTreeMap, { s_SpawnedEnt }, true);
-    }
-
-    m_CachedEntityTreeMutex.unlock();
-
-    m_Server.OnEntitySpawned(s_SpawnedEnt, std::move(p_ClientId));
+    AddSpawnedEntity(
+        SpawnedEntity { .Entity = s_SpawnedEnt, .Tree = CollectSpawnedTree(s_SpawnedEnt) },
+        p_Name,
+        std::move(p_ClientId)
+    );
 }
 
 void Editor::CreateEntityResources(const std::string& p_QnJson, std::optional<std::string> p_ClientId) {
