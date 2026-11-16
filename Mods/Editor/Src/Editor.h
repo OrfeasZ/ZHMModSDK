@@ -246,7 +246,34 @@ private:
     bool HasVisibleChildren(const std::shared_ptr<EntityTreeNode>& p_Node) const;
     bool ShouldOpenForScroll(const EntityTreeNode& p_Node) const;
     void DrawSpawnedEntityContextMenu(const EntityTreeNode& p_Node, bool p_IsSpawnedEntitiesNode);
-    void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
+
+    struct EntityTreeRow {
+        std::shared_ptr<EntityTreeNode> Node;
+        int Depth;
+        int ParentRow;
+        int LastChildRow;
+        bool HasVisibleChildren;
+    };
+
+    int BuildEntityTreeRows(bool p_OpenForScroll);
+    void AddEntityTreeRows(
+        const std::shared_ptr<EntityTreeNode>& p_Node,
+        int p_Depth,
+        int p_ParentRow,
+        bool p_OpenForScroll,
+        int& p_SelectedRow
+    );
+    void RenderEntityTreeRows(int p_SelectedRow, float p_RootNameX);
+    void PushEntityTreeAncestors(
+        int p_RowIndex,
+        std::vector<int>& p_PushedRows,
+        int p_LastSubmittedRow,
+        const ImGuiListClipper& p_Clipper,
+        float p_RootNameX
+    );
+    void PushEntityTreeRow(int p_RowIndex, const ImGuiListClipper& p_Clipper, float p_RootNameX);
+    void PopEntityTreeRow(std::vector<int>& p_PushedRows, int p_LastSubmittedRow, const ImGuiListClipper& p_Clipper);
+    bool RenderEntityRow(const EntityTreeRow& p_Row, bool& p_OpenStateChanged);
 
     struct EntityTreeNodeName {
         std::string_view Name;
@@ -854,6 +881,9 @@ private:
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeMap;
     std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
     std::unordered_set<EntityTreeNode*> m_OpenEntityTreeNodes;
+    std::vector<EntityTreeRow> m_EntityTreeRows;
+    bool m_EntityTreeRowsDirty = true;
+    const EntityTreeNode* m_EntityTreeMenuNode = nullptr;
 
     std::unordered_map<ZEntityRef, SpawnedEntity> m_SpawnedEntities;
     EntityTreeDeleter m_EntityTreeDeleter;

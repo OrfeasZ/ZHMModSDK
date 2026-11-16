@@ -345,6 +345,7 @@ void Editor::UpdateEntityTree(
         }
     }
 
+    m_EntityTreeRowsDirty = true;
     m_IsBuildingEntityTree = false;
 }
 
@@ -447,6 +448,7 @@ void Editor::UpdateEntities() {
     m_CachedEntityTreeMutex.lock();
     m_CachedEntityTree = std::move(s_SceneNode);
     m_CachedEntityTreeMap = std::move(s_NodeMap);
+    m_EntityTreeRowsDirty = true;
     m_CachedEntityTreeMutex.unlock();
 
     m_Server.OnEntityTreeRebuilt();
@@ -598,6 +600,8 @@ void Editor::DrawSpawnedEntityContextMenu(const EntityTreeNode& p_Node, const bo
         return;
     }
 
+    m_EntityTreeMenuNode = &p_Node;
+
     if (!p_IsSpawnedEntitiesNode && ImGui::MenuItem("Delete")) {
         OnDestroyEntity(p_Node.Entity, std::nullopt);
     }
@@ -611,22 +615,224 @@ void Editor::DrawSpawnedEntityContextMenu(const EntityTreeNode& p_Node, const bo
     ImGui::EndPopup();
 }
 
-void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
+// Returns the row of the selected entity when p_OpenForScroll is set, otherwise -1.
+int Editor::BuildEntityTreeRows(const bool p_OpenForScroll) {
+    m_EntityTreeRows.clear();
+
+    int s_SelectedRow = -1;
+
+    AddEntityTreeRows(m_CachedEntityTree, 0, -1, p_OpenForScroll, s_SelectedRow);
+
+    return s_SelectedRow;
+}
+
+void Editor::AddEntityTreeRows(
+    const std::shared_ptr<EntityTreeNode>& p_Node,
+    const int p_Depth,
+    const int p_ParentRow,
+    const bool p_OpenForScroll,
+    int& p_SelectedRow
+) {
     if (!p_Node) {
         return;
     }
-
-    const bool s_IsPendingDeletion = p_Node->IsPendingDeletion.load(std::memory_order_acquire);
 
     if (m_HasActiveFilters && !m_FilteredEntityTreeNodes.contains(p_Node.get())) {
         return;
     }
 
-    ImGui::PushID(p_Node.get());
+    const int s_RowIndex = static_cast<int>(m_EntityTreeRows.size());
+    const bool s_HasVisibleChildren = HasVisibleChildren(p_Node);
 
-    const auto s_Entity = p_Node->Entity;
-    const auto& s_EntityType = p_Node->EntityType;
-    const auto& s_EntityName = p_Node->Name;
+    // Nodes after the selected one are not opened.
+    if (p_OpenForScroll && p_SelectedRow < 0) {
+        if (p_Node->Entity == m_SelectedEntity) {
+            p_SelectedRow = s_RowIndex;
+        }
+        else if (ShouldOpenForScroll(*p_Node)) {
+            m_OpenEntityTreeNodes.insert(p_Node.get());
+        }
+    }
+
+    m_EntityTreeRows.push_back({ p_Node, p_Depth, p_ParentRow, -1, s_HasVisibleChildren });
+
+    if (p_ParentRow >= 0) {
+        m_EntityTreeRows[p_ParentRow].LastChildRow = s_RowIndex;
+    }
+
+    if (!s_HasVisibleChildren || !m_OpenEntityTreeNodes.contains(p_Node.get())) {
+        return;
+    }
+
+    for (const auto& s_Child : p_Node->Children) {
+        AddEntityTreeRows(s_Child.second, p_Depth + 1, s_RowIndex, p_OpenForScroll, p_SelectedRow);
+    }
+}
+
+static float GetEntityTreeRowY(const int p_RowIndex, const ImGuiListClipper& p_Clipper) {
+    return static_cast<float>(
+        p_Clipper.StartPosY + p_Clipper.StartSeekOffsetY + p_RowIndex * static_cast<double>(p_Clipper.ItemsHeight)
+    );
+}
+
+void Editor::RenderEntityTreeRows(const int p_SelectedRow, const float p_RootNameX) {
+    ImGuiListClipper s_Clipper;
+    s_Clipper.Begin(static_cast<int>(m_EntityTreeRows.size()));
+
+    // `SetScrollHereY` aims at the row before the selected one.
+    if (p_SelectedRow >= 0) {
+        s_Clipper.IncludeItemsByIndex(std::max(0, p_SelectedRow - 1), p_SelectedRow + 1);
+    }
+
+    // The context menu closes when its row is not submitted.
+    if (m_EntityTreeMenuNode) {
+        const auto s_MenuRow = std::ranges::find_if(
+            m_EntityTreeRows,
+            [this](const EntityTreeRow& p_Row) {
+                return p_Row.Node.get() == m_EntityTreeMenuNode;
+            }
+        );
+
+        if (s_MenuRow != m_EntityTreeRows.end()) {
+            s_Clipper.IncludeItemByIndex(static_cast<int>(s_MenuRow - m_EntityTreeRows.begin()));
+        }
+
+        m_EntityTreeMenuNode = nullptr;
+    }
+
+    std::vector<int> s_PushedRows;
+    int s_LastSubmittedRow = -1;
+
+    while (s_Clipper.Step()) {
+        for (int i = s_Clipper.DisplayStart;
+             i < s_Clipper.DisplayEnd && i < static_cast<int>(m_EntityTreeRows.size());
+             ++i) {
+            PushEntityTreeAncestors(i, s_PushedRows, s_LastSubmittedRow, s_Clipper, p_RootNameX);
+
+            bool s_OpenStateChanged = false;
+
+            if (RenderEntityRow(m_EntityTreeRows[i], s_OpenStateChanged)) {
+                s_PushedRows.push_back(i);
+            }
+
+            // Rows up to i stay the same, so the pushed rows are still valid.
+            if (s_OpenStateChanged) {
+                BuildEntityTreeRows(false);
+                s_Clipper.ItemsCount = static_cast<int>(m_EntityTreeRows.size());
+            }
+
+            s_LastSubmittedRow = i;
+        }
+    }
+
+    while (!s_PushedRows.empty()) {
+        PopEntityTreeRow(s_PushedRows, s_LastSubmittedRow, s_Clipper);
+    }
+}
+
+// The clipper skips rows, so ancestors of a submitted row may not have been submitted.
+// p_PushedRows[d] is the pushed row at depth d.
+void Editor::PushEntityTreeAncestors(
+    const int p_RowIndex,
+    std::vector<int>& p_PushedRows,
+    const int p_LastSubmittedRow,
+    const ImGuiListClipper& p_Clipper,
+    const float p_RootNameX
+) {
+    std::vector<int> s_MissingRows;
+    int s_Ancestor = m_EntityTreeRows[p_RowIndex].ParentRow;
+
+    while (s_Ancestor >= 0) {
+        const int s_Depth = m_EntityTreeRows[s_Ancestor].Depth;
+
+        if (s_Depth < static_cast<int>(p_PushedRows.size()) && p_PushedRows[s_Depth] == s_Ancestor) {
+            break;
+        }
+
+        s_MissingRows.push_back(s_Ancestor);
+        s_Ancestor = m_EntityTreeRows[s_Ancestor].ParentRow;
+    }
+
+    const size_t s_KeepCount = s_Ancestor >= 0 ? m_EntityTreeRows[s_Ancestor].Depth + 1 : 0;
+
+    while (p_PushedRows.size() > s_KeepCount) {
+        PopEntityTreeRow(p_PushedRows, p_LastSubmittedRow, p_Clipper);
+    }
+
+    for (const int s_MissingRow : s_MissingRows | std::views::reverse) {
+        PushEntityTreeRow(s_MissingRow, p_Clipper, p_RootNameX);
+        p_PushedRows.push_back(s_MissingRow);
+    }
+}
+
+// Does what TreeNodeEx() does for an open node outside the clip rect, so ImGui still draws its tree lines.
+void Editor::PushEntityTreeRow(const int p_RowIndex, const ImGuiListClipper& p_Clipper, const float p_RootNameX) {
+    ImGuiContext& g = *ImGui::GetCurrentContext();
+    ImGuiWindow* s_Window = g.CurrentWindow;
+    const EntityTreeRow& s_Row = m_EntityTreeRows[p_RowIndex];
+
+    ImGui::PushID(s_Row.Node.get());
+
+    const ImGuiID s_Id = ImGui::GetID("##EntityTreeNode");
+    const float s_RowY = GetEntityTreeRowY(p_RowIndex, p_Clipper);
+
+    if (g.Style.TreeLinesSize > 0.f && s_RowY < s_Window->ClipRect.Max.y) {
+        const float s_NameX = p_RootNameX + s_Row.Depth * g.Style.IndentSpacing;
+
+        ImGuiTreeNodeStackData s_Data {};
+        s_Data.ID = s_Id;
+        s_Data.TreeFlags = ImGuiTreeNodeFlags_DrawLinesToNodes;
+        s_Data.ItemFlags = ImGuiItemFlags_None;
+        s_Data.NavRect = ImRect(s_NameX, s_RowY, s_NameX, s_RowY + p_Clipper.ItemsHeight);
+        s_Data.DrawLinesX1 = s_NameX + g.FontSize * 0.5f + g.Style.FramePadding.x;
+        s_Data.DrawLinesToNodesY2 = -FLT_MAX;
+        s_Data.DrawLinesTableColumn = 0;
+
+        g.TreeNodeStack.push_back(s_Data);
+        s_Window->DC.TreeHasStackDataDepthMask |= 1 << s_Window->DC.TreeDepth;
+        s_Window->DC.TreeRecordsClippedNodesY2Mask |= 1 << s_Window->DC.TreeDepth;
+    }
+
+    ImGui::TreePushOverrideID(s_Id);
+}
+
+void Editor::PopEntityTreeRow(
+    std::vector<int>& p_PushedRows,
+    const int p_LastSubmittedRow,
+    const ImGuiListClipper& p_Clipper
+) {
+    ImGuiContext& g = *ImGui::GetCurrentContext();
+    ImGuiWindow* s_Window = g.CurrentWindow;
+    const EntityTreeRow& s_Row = m_EntityTreeRows[p_PushedRows.back()];
+    const ImU32 s_DepthMask = 1 << (s_Window->DC.TreeDepth - 1);
+
+    // ImGui only extends the tree line to children that were submitted.
+    if (s_Row.LastChildRow > p_LastSubmittedRow && (s_Window->DC.TreeHasStackDataDepthMask & s_DepthMask)) {
+        ImGuiTreeNodeStackData& s_Data = g.TreeNodeStack.back();
+
+        s_Data.DrawLinesToNodesY2 = ImMax(
+            s_Data.DrawLinesToNodesY2,
+            GetEntityTreeRowY(s_Row.LastChildRow, p_Clipper)
+        );
+    }
+
+    ImGui::TreePop();
+    ImGui::PopID();
+
+    p_PushedRows.pop_back();
+}
+
+// Returns true when the row stays pushed for its children.
+bool Editor::RenderEntityRow(const EntityTreeRow& p_Row, bool& p_OpenStateChanged) {
+    const auto& s_Node = p_Row.Node;
+
+    const bool s_IsPendingDeletion = s_Node->IsPendingDeletion.load(std::memory_order_acquire);
+
+    ImGui::PushID(s_Node.get());
+
+    const auto s_Entity = s_Node->Entity;
+    const auto& s_EntityType = s_Node->EntityType;
+    const auto& s_EntityName = s_Node->Name;
     const auto s_IsSelected = s_Entity == m_SelectedEntity;
 
     ImGuiTreeNodeFlags s_Flags = ImGuiTreeNodeFlags_OpenOnArrow |
@@ -634,9 +840,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         ImGuiTreeNodeFlags_SpanAvailWidth |
         ImGuiTreeNodeFlags_DrawLinesToNodes;
 
-    const bool s_HasVisibleChildren = HasVisibleChildren(p_Node);
-
-    if (!s_HasVisibleChildren) {
+    if (!p_Row.HasVisibleChildren) {
         s_Flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
     }
 
@@ -648,29 +852,26 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
             m_ScrollToEntity = false;
         }
     }
-    else if (ShouldOpenForScroll(*p_Node)) {
-        m_OpenEntityTreeNodes.insert(p_Node.get());
-    }
 
     if (s_IsPendingDeletion) {
-        m_OpenEntityTreeNodes.erase(p_Node.get());
+        p_OpenStateChanged = m_OpenEntityTreeNodes.erase(s_Node.get()) > 0;
 
         ImGui::PushStyleColor(ImGuiCol_Text, c_SecondaryTextColor);
         ImGui::BeginDisabled();
     }
 
-    const bool s_IsDirectMatch = m_HasActiveFilters && p_Node->IsDirectMatch && !s_IsPendingDeletion;
+    const bool s_IsDirectMatch = m_HasActiveFilters && s_Node->IsDirectMatch && !s_IsPendingDeletion;
 
     if (s_IsDirectMatch) {
         ImGui::PushStyleColor(ImGuiCol_Text, c_HighlightTextColor);
     }
 
     ImGui::SetNextItemOpen(
-        m_OpenEntityTreeNodes.contains(p_Node.get()),
+        m_OpenEntityTreeNodes.contains(s_Node.get()),
         ImGuiCond_Always
     );
 
-    const auto s_Parent = p_Node->Parent.lock();
+    const auto s_Parent = s_Node->Parent.lock();
     const bool s_IsSpawnedEntitiesNode = s_Entity == m_SpawnedEntitiesNodeEntityRef;
     const bool s_IsSpawnedEntity = s_Parent && s_Parent->Entity == m_SpawnedEntitiesNodeEntityRef;
 
@@ -705,11 +906,13 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
     }
 
     if (ImGui::IsItemToggledOpen()) {
+        p_OpenStateChanged = true;
+
         if (s_Open) {
-            m_OpenEntityTreeNodes.insert(p_Node.get());
+            m_OpenEntityTreeNodes.insert(s_Node.get());
         }
         else {
-            m_OpenEntityTreeNodes.erase(p_Node.get());
+            m_OpenEntityTreeNodes.erase(s_Node.get());
         }
     }
 
@@ -732,7 +935,7 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         }
 
         if (s_IsSpawnedEntitiesNode || s_IsSpawnedEntity) {
-            DrawSpawnedEntityContextMenu(*p_Node, s_IsSpawnedEntitiesNode);
+            DrawSpawnedEntityContextMenu(*s_Node, s_IsSpawnedEntitiesNode);
         }
     }
 
@@ -744,28 +947,23 @@ void Editor::RenderEntity(std::shared_ptr<EntityTreeNode> p_Node) {
         s_DisplayId.data()
     );
 
-    if (s_Open) {
-        if (s_HasVisibleChildren) {
-            for (const auto& s_Child : p_Node->Children) {
-                RenderEntity(s_Child.second);
-            }
-        }
-
-        if (!(s_Flags & ImGuiTreeNodeFlags_NoTreePushOnOpen)) {
-            ImGui::TreePop();
-        }
-    }
-
     if (s_IsPendingDeletion) {
         ImGui::EndDisabled();
         ImGui::PopStyleColor();
     }
 
+    if (s_Open && !(s_Flags & ImGuiTreeNodeFlags_NoTreePushOnOpen)) {
+        return true;
+    }
+
     ImGui::PopID();
+
+    return false;
 }
 
 void Editor::FilterEntityTree() {
     m_FilteredEntityTreeNodes.clear();
+    m_EntityTreeRowsDirty = true;
     m_TotalMatchCount = 0;
 
     if (!m_CachedEntityTree) {
@@ -891,6 +1089,7 @@ void Editor::ClearFilters() {
     m_CurrentEntitySearchResultIndex = 0;
     m_HasActiveSearch = false;
     m_HasActiveFilters = false;
+    m_EntityTreeRowsDirty = true;
 }
 
 std::shared_ptr<EntityTreeNode> Editor::FindMatchByIndex(
@@ -990,6 +1189,7 @@ void Editor::DrawEntityTreeToolbar() {
             if (ImGui::Selectable(m_EntityViewModes[i].c_str(), s_IsSelected)) {
                 m_EntityViewMode = static_cast<EntityViewMode>(i);
 
+                std::shared_lock s_Lock(m_CachedEntityTreeMutex);
                 FilterEntityTree();
             }
 
@@ -1037,6 +1237,7 @@ void Editor::DrawEntityTreeToolbar() {
             return p_ClassName;
         },
         [&](const std::string&, const std::string&, const auto&) {
+            std::shared_lock s_Lock(m_CachedEntityTreeMutex);
             FilterEntityTree();
         }
     );
@@ -1075,6 +1276,7 @@ void Editor::DrawEntityTreeToolbar() {
     ImGui::EndDisabled();
 
     if (s_ShouldSelectMatch) {
+        std::shared_lock s_Lock(m_CachedEntityTreeMutex);
         size_t s_Counter = 0;
 
         if (auto s_Node = FindMatchByIndex(m_CachedEntityTree, m_CurrentEntitySearchResultIndex, s_Counter)) {
@@ -1112,6 +1314,7 @@ void Editor::DrawEntityTreeToolbar() {
 
     if (IconButton(ICON_MD_UNFOLD_LESS, "Collapse tree")) {
         m_OpenEntityTreeNodes.clear();
+        m_EntityTreeRowsDirty = true;
     }
 
     ImGui::SameLine();
@@ -1255,7 +1458,14 @@ void Editor::DrawEntityTreeTable() {
             ImGui::TextColored(c_ErrorTextColor, "No results found.");
         }
         else if (m_CachedEntityTree) {
-            RenderEntity(m_CachedEntityTree);
+            const bool s_RowsDirty = std::exchange(m_EntityTreeRowsDirty, false);
+            int s_SelectedRow = -1;
+
+            if (s_RowsDirty || m_ScrollToEntity) {
+                s_SelectedRow = BuildEntityTreeRows(m_ScrollToEntity);
+            }
+
+            RenderEntityTreeRows(s_SelectedRow, s_NameColumnScreenX - m_EntityTreeNameScroll);
         }
         else {
             ImGui::TableNextRow();
@@ -1424,6 +1634,7 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
         }
 
         s_NodeToRemove->RemoveFromParent();
+        m_EntityTreeRowsDirty = true;
     }
 
     m_CachedEntityTreeMutex.unlock();
@@ -1495,6 +1706,7 @@ void Editor::DestroyEntityNodeInternal(
     }
 
     p_NodeToRemove->RemoveFromParent();
+    m_EntityTreeRowsDirty = true;
 
     m_Server.OnEntityDestroying(s_EntityId, std::move(p_ClientId));
 }
@@ -1552,18 +1764,18 @@ DEFINE_PLUGIN_DETOUR(
     const ZEntityRef& entityRef,
     const SExternalReferences& externalRefs
 ) {
-    if (m_SelectedEntity == entityRef) {
-        m_SelectedEntity = nullptr;
-    }
-
-    if (m_SelectedDebugEntity == entityRef) {
-        m_SelectedDebugEntity = nullptr;
-    }
-
     std::shared_ptr<EntityTreeNode> s_NodeToRemove;
 
     {
-        std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+        std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
+
+        if (m_SelectedEntity == entityRef) {
+            m_SelectedEntity = nullptr;
+        }
+
+        if (m_SelectedDebugEntity == entityRef) {
+            m_SelectedDebugEntity = nullptr;
+        }
 
         if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
             auto it = m_CachedEntityTreeMap.find(entityRef);
