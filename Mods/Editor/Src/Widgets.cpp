@@ -12,12 +12,18 @@ static constexpr float c_GhostIconFontSize = 15.f;
 
 static constexpr float c_EditorScale = 12.f / 14.f;
 
+static float g_UserScale = 1.f;
+
+void SetEditorScale(const float p_Scale) {
+    g_UserScale = p_Scale;
+}
+
 float ScaledSize(const float p_CanvasPixels) {
-    return p_CanvasPixels * c_EditorScale * ImGui::GetIO().DisplaySize.y / 900.f;
+    return p_CanvasPixels * c_EditorScale * g_UserScale * ImGui::GetIO().DisplaySize.y / 900.f;
 }
 
 float FontSize(const float p_CanvasPixels) {
-    return p_CanvasPixels * 2.f * c_EditorScale;
+    return p_CanvasPixels * 2.f * c_EditorScale * g_UserScale;
 }
 
 void PushFrameHeight(const float p_CanvasPixels) {

@@ -28,6 +28,8 @@ inline constexpr ImU32 c_AxisTagColors[] = {
     IM_COL32(0x1f, 0x5f, 0xbf, 0xff),
 };
 
+void SetEditorScale(float p_Scale);
+
 float ScaledSize(float p_CanvasPixels);
 
 float FontSize(float p_CanvasPixels);

@@ -805,6 +805,7 @@ private:
     ImVec2 m_TransformToolbarOffset { 8.f, 8.f };
 
     bool m_SettingsVisible = false;
+    float m_UiScale = 1.f;
     bool m_ResetDockLayout = false;
     bool m_EditorWindowsVisible = true;
 

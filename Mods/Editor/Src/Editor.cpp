@@ -134,6 +134,8 @@ void Editor::Init() {
     m_TransformToolbarOffset.x = GetSettingDouble("general", "transform_toolbar_x", 8.0);
     m_TransformToolbarOffset.y = GetSettingDouble("general", "transform_toolbar_y", 8.0);
     m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
+    m_UiScale = static_cast<float>(GetSettingDouble("general", "ui_scale", 1.0));
+    SetEditorScale(m_UiScale);
 
     m_BoxReflectionOutputFolder = GetSetting("general", "box_reflection_output_folder", "").c_str();
 }
@@ -656,6 +658,16 @@ void Editor::DrawSettingsWindow(const bool p_HasFocus) {
         bool s_ServerEnabled = m_Server.GetEnabled();
         if (ImGui::Checkbox(ICON_MD_TERMINAL " Enable editor server", &s_ServerEnabled)) {
             ToggleEditorServerEnabled();
+        }
+
+        ImGui::Spacing();
+
+        // Applied on release, so the slider does not resize under the mouse while it is dragged.
+        ImGui::SliderFloat("UI scale", &m_UiScale, 0.5f, 2.f, "%.2fx", ImGuiSliderFlags_AlwaysClamp);
+
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            SetEditorScale(m_UiScale);
+            SetSettingDouble("general", "ui_scale", m_UiScale);
         }
 
         ImGui::Spacing();
