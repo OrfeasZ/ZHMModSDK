@@ -360,10 +360,20 @@ public:
     PAD(0x80);
 };
 
+class ISituation;
+
 class ZSituationManager {
 public:
-    PAD(0x75890);
+    PAD(0x75818);
+
+    // Drama roles add their situation here when they deactivate.
+    TArray<TEntityRef<ISituation>> m_aRegistrationChanges; // 0x75818
+
+    PAD(0x60);
 };
+
+static_assert(offsetof(ZSituationManager, m_aRegistrationChanges) == 0x75818);
+static_assert(sizeof(ZSituationManager) == 0x75890);
 
 class ZActorDialogManager {
 public:
@@ -433,7 +443,7 @@ public:
     TMaxArray<ZGridNodeRef, 500> m_aAliveActorGridNodes; // 0xADE8
     TMaxArray<TEntityRef<ZActor>, 400> m_aliveHm5Characters; // 0xCD30
     TMaxArray<int, 400> m_aliveHm5CharacterIds; // 0xE638
-    PAD(0x88); // 0xEC80
+    PAD(0x8C); // 0xEC7C
     bool m_bDisableAIBehavior; // 0xED08
     bool m_bDisableAIBehaviorLast; // 0xED09
     TArray<TEntityRef<ZActor>> m_Unk0; // 0xED10
@@ -473,23 +483,35 @@ public:
     ZSuspiciousMovementSensor* m_pSuspiciousMovementSensor; // 0x10760
     ZLockdownManager* m_pLockdownManager; // 0x10768
     ZCombatManager m_CombatManager; // 0x10770
-    ZGameStatsManager* m_pGameStats; // 0x107F0
-    PAD(0x10); // 0x107F8
-    ZActorSavableHandler* m_pSavableHandler; // 0x10808
-    ZSituationManager m_situationManager; // 0x10810
-    ZActorDialogManager m_actorDialogManager; // 0x860A0
-    ZCombatDialogManager m_combatDialogManager; // 0x87240
-    ZDialogGesturesManager m_dialogGesturesManager; // 0x87248
-    TArray<SActorEventEmitterState> m_actorEventEmitters; // 0x87268
-    TMaxArray<TEntityRef<ZPointOfInterestEntity>, 64> m_RegisteredPOI; // 0x87280
-    TSet<TEntityRef<ZActor>> m_GuardsSneakedBy; // 0x87688
-    TArray<ZEntityRef> m_RegisteredLinkedItems; // 0x876B0
-    PAD(0xC0); // 0x876C8
-    TSet<TEntityRef<ZActor>> m_CurrentDyingActors; // 0x87788
-    TArray<TEntityRef<ZActor>> m_aTargetList; // 0x877B0
-    TArray<TEntityRef<ZActor>> m_aCollateralTargetList; // 0x877C8
-    TArray<TEntityRef<ZCharacterTemplateAspect>> m_aFakeTargetList; // 0x877E0
-    TArray<TEntityRef<ZItemStashEntity>> m_aItemStashList; // 0x877F8
-    TArray<TEntityRef<ZOutfitProviderEntity>> m_aOutfitProviderList; // 0x87810
-    TEntityRef<ZImpactConfigEntity> m_rImpactConfig; // 0x87828
+    PAD(0x7A0); // 0x107F0
+    ZGameStatsManager* m_pGameStats; // 0x10F90
+    PAD(0x10); // 0x10F98
+    ZActorSavableHandler* m_pSavableHandler; // 0x10FA8
+    ZSituationManager m_situationManager; // 0x10FB0
+    ZActorDialogManager m_actorDialogManager; // 0x86840
+    ZCombatDialogManager m_combatDialogManager; // 0x879E0
+    ZDialogGesturesManager m_dialogGesturesManager; // 0x879E8
+    TArray<SActorEventEmitterState> m_actorEventEmitters; // 0x87A08
+    TMaxArray<TEntityRef<ZPointOfInterestEntity>, 64> m_RegisteredPOI; // 0x87A20
+    TSet<TEntityRef<ZActor>> m_GuardsSneakedBy; // 0x87E28
+    TArray<ZEntityRef> m_RegisteredLinkedItems; // 0x87E50
+    PAD(0xC0); // 0x87E68
+    TSet<TEntityRef<ZActor>> m_CurrentDyingActors; // 0x87F28
+    TArray<TEntityRef<ZActor>> m_aTargetList; // 0x87F50
+    TArray<TEntityRef<ZActor>> m_aCollateralTargetList; // 0x87F68
+    TArray<TEntityRef<ZCharacterTemplateAspect>> m_aFakeTargetList; // 0x87F80
+    TArray<TEntityRef<ZItemStashEntity>> m_aItemStashList; // 0x87F98
+    TArray<TEntityRef<ZOutfitProviderEntity>> m_aOutfitProviderList; // 0x87FB0
+    TEntityRef<ZImpactConfigEntity> m_rImpactConfig; // 0x87FC8
 };
+
+static_assert(offsetof(ZActorManager, m_bDisableAIBehavior) == 0xED08);
+static_assert(offsetof(ZActorManager, m_pStateChangeService) == 0x10660);
+static_assert(offsetof(ZActorManager, m_CombatManager) == 0x10770);
+static_assert(offsetof(ZActorManager, m_pGameStats) == 0x10F90);
+static_assert(offsetof(ZActorManager, m_pSavableHandler) == 0x10FA8);
+static_assert(offsetof(ZActorManager, m_situationManager) == 0x10FB0);
+static_assert(offsetof(ZActorManager, m_actorDialogManager) == 0x86840);
+static_assert(offsetof(ZActorManager, m_RegisteredPOI) == 0x87A20);
+static_assert(offsetof(ZActorManager, m_aItemStashList) == 0x87F98);
+static_assert(offsetof(ZActorManager, m_rImpactConfig) == 0x87FC8);

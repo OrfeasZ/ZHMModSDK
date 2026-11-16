@@ -3,6 +3,7 @@
 #include "Reflection.h"
 #include "ZItem.h"
 #include "ISavable.h"
+#include "ZBitArray.h"
 
 class ZAABBTreeNode;
 class ZFirearmConfigDescriptor;
@@ -34,13 +35,19 @@ public:
         float32 m_fHalfSize; // 0x68
     };
 
-    bool m_bResourceCleanupEnabled; // 0x10
-    TArray<SRegisteredFactory> m_aFactories; // 0x18
-    TArray<TEntityRef<IItemBase>> m_aItems; // 0x30
-    TArray<uint32_t> m_aLoadingItemsTickets; // 0x48
-    ZConfigDatabase m_ConfigDatabase; // 0x60
-    TArray<TEntityRef<IItem>> m_aNonOwnedItems; // 0xC0
-    ZAABBTreeNode* m_pSpatialRegistry; // 0xD8
-    TNonReallocatingArray<ZRegisteredEntityData, 2000> m_aRegisteredEntities; // 0xE0
-    bool m_bHasRequests; // 0x100
+    PAD(0x40); // 0x10
+    bool m_bResourceCleanupEnabled; // 0x50
+    TArray<SRegisteredFactory> m_aFactories; // 0x58
+    TArray<TEntityRef<IItemBase>> m_aItems; // 0x70
+    TArray<uint32_t> m_aLoadingItemsTickets; // 0x88
+    ZConfigDatabase m_ConfigDatabase; // 0xA0
+    TArray<TEntityRef<IItem>> m_aNonOwnedItems; // 0x100
+    ZAABBTreeNode* m_pSpatialRegistry; // 0x118
+    TNonReallocatingArray<ZRegisteredEntityData, 2000> m_aRegisteredEntities; // 0x120
+    bool m_bHasRequests; // 0x140
 };
+
+static_assert(offsetof(ZWorldInventory, m_bResourceCleanupEnabled) == 0x50);
+static_assert(offsetof(ZWorldInventory, m_aFactories) == 0x58);
+static_assert(offsetof(ZWorldInventory, m_aItems) == 0x70);
+static_assert(offsetof(ZWorldInventory, m_aNonOwnedItems) == 0x100);
