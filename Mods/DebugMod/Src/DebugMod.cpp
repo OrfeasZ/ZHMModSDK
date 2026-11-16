@@ -552,10 +552,17 @@ void DebugMod::DrawReasoningGrid(IRenderer* p_Renderer) {
 void DebugMod::DrawNavMesh(IRenderer* p_Renderer) {
     static const SVector4 s_GreenTriangleColor = SVector4(0.19608f, 0.80392f, 0.19608f, 0.49804f);
     static const SVector4 s_YellowTriangleColor = SVector4(1.f, 1.f, 0.f, 0.49804f);
+    static const SVector4 s_PlannerExcludedTriangleColor = SVector4(0.6f, 0.f, 0.6f, 0.49804f);
 
     if (m_DrawPlannerAreasSolid) {
         for (size_t i = 0; i < m_Areas.size(); ++i) {
-            if (m_ColorizeAreaUsageFlags && m_Areas[i]->m_area->m_usageFlags ==
+            const uint32_t s_UsageFlags = static_cast<uint32_t>(m_Areas[i]->m_area->m_usageFlags);
+
+            if (m_ColorizeAreaUsageFlags
+                && (s_UsageFlags & static_cast<uint32_t>(NavPower::AreaUsageFlags::AREA_PLANNER_EXCLUDED)) != 0) {
+                p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_PlannerExcludedTriangleColor);
+            }
+            else if (m_ColorizeAreaUsageFlags && m_Areas[i]->m_area->m_usageFlags ==
                 NavPower::AreaUsageFlags::AREA_STEPS) {
                 p_Renderer->DrawMesh(m_Vertices[i], m_Indices[i], s_YellowTriangleColor);
             }
