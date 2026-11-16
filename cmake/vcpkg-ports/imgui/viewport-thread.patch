@@ -1,0 +1,130 @@
+diff --git a/backends/imgui_impl_dx12.cpp b/backends/imgui_impl_dx12.cpp
+index d675b71..58be272 100644
+--- a/backends/imgui_impl_dx12.cpp
++++ b/backends/imgui_impl_dx12.cpp
+@@ -112,6 +112,10 @@ struct ImGui_ImplDX12_Data
+     ID3D12Fence*                Fence;
+     UINT64                      FenceLastSignaledValue;
+     HANDLE                      FenceEvent;
++    // Texture uploads get their own fence since the viewports render on another thread.
++    ID3D12Fence*                TexFence;
++    UINT64                      TexFenceLastSignaledValue;
++    HANDLE                      TexFenceEvent;
+     UINT                        numFramesInFlight;
+     bool                        tearingSupport;
+     bool                        LegacySingleDescriptorUsed;
+@@ -168,6 +172,9 @@ struct ImGui_ImplDX12_ViewportData
+     UINT                            FrameIndex;
+     ImGui_ImplDX12_RenderBuffers*   FrameRenderBuffers;
+ 
++    // Recorded by RenderWindow, submitted by SwapBuffers.
++    ImGui_ImplDX12_FrameContext*    RecordedFrameContext;
++
+     ImGui_ImplDX12_ViewportData(UINT num_frames_in_flight)
+     {
+         CommandQueue = nullptr;
+@@ -179,6 +186,7 @@ struct ImGui_ImplDX12_ViewportData
+         FrameCtx = new ImGui_ImplDX12_FrameContext[NumFramesInFlight];
+         FrameIndex = 0;
+         FrameRenderBuffers = new ImGui_ImplDX12_RenderBuffers[NumFramesInFlight];
++        RecordedFrameContext = nullptr;
+ 
+         for (UINT i = 0; i < NumFramesInFlight; ++i)
+         {
+@@ -630,15 +638,15 @@ void ImGui_ImplDX12_UpdateTexture(ImTextureData* tex)
+         IM_ASSERT(SUCCEEDED(hr));
+         ID3D12CommandQueue* cmdQueue = bd->pCommandQueue;
+         cmdQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&cmdList);
+-        hr = cmdQueue->Signal(bd->Fence, ++bd->FenceLastSignaledValue);
++        hr = cmdQueue->Signal(bd->TexFence, ++bd->TexFenceLastSignaledValue);
+         IM_ASSERT(SUCCEEDED(hr));
+ 
+         // FIXME-OPT: Suboptimal?
+         // - To remove this may need to create NumFramesInFlight x ImGui_ImplDX12_FrameContext in backend data (mimick docking version)
+         // - Store per-frame in flight: upload buffer?
+         // - Where do cmdList and cmdAlloc fit?
+-        bd->Fence->SetEventOnCompletion(bd->FenceLastSignaledValue, bd->FenceEvent);
+-        ::WaitForSingleObject(bd->FenceEvent, INFINITE);
++        bd->TexFence->SetEventOnCompletion(bd->TexFenceLastSignaledValue, bd->TexFenceEvent);
++        ::WaitForSingleObject(bd->TexFenceEvent, INFINITE);
+ 
+         tex->SetStatus(ImTextureStatus_OK);
+     }
+@@ -915,6 +923,11 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
+     bd->FenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+     IM_ASSERT(bd->FenceEvent != nullptr);
+ 
++    hr = bd->pd3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&bd->TexFence));
++    IM_ASSERT(hr == S_OK);
++    bd->TexFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
++    IM_ASSERT(bd->TexFenceEvent != nullptr);
++
+     return true;
+ }
+ 
+@@ -952,6 +965,9 @@ void    ImGui_ImplDX12_InvalidateDeviceObjects()
+     SafeRelease(bd->Fence);
+     CloseHandle(bd->FenceEvent);
+     bd->FenceEvent = nullptr;
++    SafeRelease(bd->TexFence);
++    CloseHandle(bd->TexFenceEvent);
++    bd->TexFenceEvent = nullptr;
+ 
+     // Destroy all textures
+     for (ImTextureData* tex : ImGui::GetPlatformIO().Textures)
+@@ -1281,12 +1297,14 @@ static void ImGui_ImplDX12_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
+     }
+ }
+ 
+-static void ImGui_ImplDX12_RenderWindow(ImGuiViewport* viewport, void*)
++// Only records the draw data passed in render_arg. SwapBuffers submits, presents and waits.
++static void ImGui_ImplDX12_RenderWindow(ImGuiViewport* viewport, void* render_arg)
+ {
+     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
+     ImGui_ImplDX12_ViewportData* vd = (ImGui_ImplDX12_ViewportData*)viewport->RendererUserData;
+ 
+-    ImGui_ImplDX12_FrameContext* frame_context = ImGui_WaitForNextFrameContext(vd);
++    ImDrawData* draw_data = (ImDrawData*)render_arg;
++    ImGui_ImplDX12_FrameContext* frame_context = &vd->FrameCtx[vd->FrameIndex % vd->NumFramesInFlight];
+     UINT back_buffer_idx = vd->SwapChain->GetCurrentBackBufferIndex();
+ 
+     const ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+@@ -1309,18 +1327,14 @@ static void ImGui_ImplDX12_RenderWindow(ImGuiViewport* viewport, void*)
+         cmd_list->ClearRenderTargetView(vd->FrameCtx[back_buffer_idx].RenderTargetCpuDescriptors, (const float*)&clear_color, 0, nullptr);
+     cmd_list->SetDescriptorHeaps(1, &bd->pd3dSrvDescHeap);
+ 
+-    ImGui_ImplDX12_RenderDrawData(viewport->DrawData, cmd_list);
++    ImGui_ImplDX12_RenderDrawData(draw_data, cmd_list);
+ 
+     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+     cmd_list->ResourceBarrier(1, &barrier);
+     cmd_list->Close();
+ 
+-    vd->CommandQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&cmd_list);
+-
+-    HRESULT hr = vd->CommandQueue->Signal(bd->Fence, ++bd->FenceLastSignaledValue);
+-    IM_ASSERT(hr == S_OK);
+-    frame_context->FenceValue = bd->FenceLastSignaledValue;
++    vd->RecordedFrameContext = frame_context;
+ }
+ 
+ static void ImGui_ImplDX12_SwapBuffers(ImGuiViewport* viewport, void*)
+@@ -1328,7 +1342,17 @@ static void ImGui_ImplDX12_SwapBuffers(ImGuiViewport* viewport, void*)
+     ImGui_ImplDX12_Data* bd = ImGui_ImplDX12_GetBackendData();
+     ImGui_ImplDX12_ViewportData* vd = (ImGui_ImplDX12_ViewportData*)viewport->RendererUserData;
+ 
++    IM_ASSERT(vd->RecordedFrameContext != nullptr);
++    vd->CommandQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&vd->CommandList);
++
++    HRESULT hr = vd->CommandQueue->Signal(bd->Fence, ++bd->FenceLastSignaledValue);
++    IM_ASSERT(hr == S_OK);
++    vd->RecordedFrameContext->FenceValue = bd->FenceLastSignaledValue;
++    vd->RecordedFrameContext = nullptr;
++
+     vd->SwapChain->Present(0, bd->tearingSupport ? DXGI_PRESENT_ALLOW_TEARING : 0);
++
++    ImGui_WaitForNextFrameContext(vd);
+ }
+ 
+ void ImGui_ImplDX12_InitMultiViewportSupport()

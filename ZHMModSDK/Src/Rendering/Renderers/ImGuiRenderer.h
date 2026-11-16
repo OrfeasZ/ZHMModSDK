@@ -1,9 +1,12 @@
 #pragma once
 
-#include <chrono>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
+#include <thread>
+#include <unordered_map>
 #include <vector>
 #include <directx/d3d12.h>
 #include <dxgi1_4.h>
@@ -114,46 +117,20 @@ namespace Rendering::Renderers {
         void ResetDescriptorHeap();
 
     private:
-        struct TimingStat {
-            void Add(std::chrono::steady_clock::time_point p_Start);
-            std::string Format() const;
-
-            double m_TotalMs = 0.0;
-            double m_MaxMs = 0.0;
-            std::uint32_t m_Count = 0;
+        // Work for a detached viewport that the viewport thread hasn't done yet.
+        struct PendingViewport {
+            std::unique_ptr<DrawDataSnapshot> m_Snapshot;
+            std::optional<ImVec2> m_Size;
         };
 
-        // Traces where the window thread and the render thread spend time.
-        struct WindowThreadTimings {
-            TimingStat m_MessageGap;
-            TimingStat m_FrameDelay;
-            TimingStat m_FrameInterval;
-            TimingStat m_Draw;
-            TimingStat m_UpdatePlatformWindows;
-            TimingStat m_RenderPlatformWindows;
-            TimingStat m_ViewportLock;
-            TimingStat m_ViewportRender;
-            TimingStat m_ViewportSwap;
-
-            // Frames submitted to the game's command queue that the GPU hasn't finished yet.
-            std::uint64_t m_MaxGameQueueBacklog = 0;
-
-            bool m_MovedViewport = false;
-            bool m_MovedGameWindow = false;
-        };
-
-        struct RenderThreadTimings {
-            TimingStat m_BackendLock;
-            TimingStat m_FenceWait;
-            std::uint32_t m_PresentCount = 0;
-        };
-
-        void FlushWindowThreadTimings();
-        void FlushRenderThreadTimings();
+        void RunViewportThread();
+        void StopViewportThread();
+        void DestroyViewport(ImGuiViewport* p_Viewport);
 
         bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
         void TeardownRenderer();
         void RunFrame();
+        void RequestFrame();
         void StartWindowManagerMove(HWND p_Hwnd);
         void Draw();
         void SetupStyles();
@@ -232,10 +209,18 @@ namespace Rendering::Renderers {
         std::mutex m_DescriptorMutex;
         std::vector<DeferredResource> m_PendingDeferredResources;
 
-        // The ImGui frame runs on the thread that owns the game window, and the main viewport is rendered on the
-        // present thread. The DX12 backend has shared state (for example Renderer_RenderState), so every call into it
-        // holds this mutex. Never make Win32 calls that can send messages to other threads while holding it.
+        // The ImGui frame runs on the thread that owns the game window, the main viewport is rendered on the present
+        // thread, and detached viewports are rendered on the viewport thread. The DX12 backend has shared state (for
+        // example Renderer_RenderState), so recording and texture updates hold this mutex. Never make Win32 calls that
+        // can send messages to other threads while holding it, and never Present or ExecuteCommandLists for a viewport.
         std::mutex m_BackendMutex;
+        std::thread m_ViewportThread;
+        std::mutex m_ViewportMutex;
+        std::condition_variable m_ViewportCondition;
+        std::unordered_map<ImGuiViewport*, PendingViewport> m_PendingViewports;
+        std::vector<ImGuiViewport*> m_ViewportsToDestroy;
+        SafeHandle m_ViewportsDestroyedEvent;
+        bool m_StopViewportThread = false;
 
         // DX12 backend viewport callbacks.
         void (*m_RendererCreateWindow)(ImGuiViewport*) = nullptr;
@@ -252,16 +237,6 @@ namespace Rendering::Renderers {
         std::atomic<bool> m_FrameRequested { false };
         bool m_InFrame = false;
         HWND m_WindowManagerMoveHwnd = nullptr;
-
-        WindowThreadTimings m_WindowThreadTimings;
-        RenderThreadTimings m_RenderThreadTimings;
-        std::chrono::steady_clock::time_point m_LastMessage;
-        std::chrono::steady_clock::time_point m_LastFrame;
-        std::chrono::steady_clock::time_point m_LastWindowThreadFlush;
-        std::chrono::steady_clock::time_point m_LastRenderThreadFlush;
-        std::atomic<std::chrono::steady_clock::time_point> m_FramePostedAt;
-        std::atomic<bool> m_HasDetachedViewports { false };
-        bool m_IsGameWindowInMoveLoop = false;
 
         std::mutex m_SnapshotMutex;
         std::unique_ptr<DrawDataSnapshot> m_PendingSnapshot;

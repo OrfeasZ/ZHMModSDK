@@ -3,9 +3,8 @@
 #include "ImGuiRenderer.h"
 
 #include <d3dcompiler.h>
-#include <dxgi1_5.h>
+#include <dxgi1_4.h>
 #include <filesystem>
-#include <format>
 
 #include <imgui_impl_dx12.h>
 #include <imgui_impl_win32.h>
@@ -256,23 +255,12 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
         return;
     }
 
-    ++m_RenderThreadTimings.m_PresentCount;
-
     if (!SetupRenderer(p_SwapChain)) {
         Logger::Error("[ImGuiRenderer] Failed to set up renderer.");
         return;
     }
 
-    // The ImGui frame runs on the thread that owns the game window, since the platform windows ImGui creates must
-    // belong to that thread too. Owned windows on another thread share its input queue and can deadlock with it.
-    if (m_WndProcHooked.load(std::memory_order_acquire) &&
-        !m_FrameRequested.exchange(true, std::memory_order_acq_rel)) {
-        m_FramePostedAt.store(std::chrono::steady_clock::now());
-
-        if (!PostMessageW(m_Hwnd, m_FrameMessage, 0, 0)) {
-            m_FrameRequested.store(false, std::memory_order_release);
-        }
-    }
+    RequestFrame();
 
     if (!m_IsImGuiVisible.load(std::memory_order_acquire)) {
         m_RenderSnapshot.reset();
@@ -299,14 +287,10 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
 
     const std::uint64_t s_PendingValue = s_FrameCtx.m_FenceValue.load(std::memory_order_acquire);
 
-    const auto s_FenceWaitStart = std::chrono::steady_clock::now();
-
     if (s_PendingValue != 0 && s_PendingValue > m_Fence->GetCompletedValue()) {
         BreakIfFailed(m_Fence->SetEventOnCompletion(s_PendingValue, m_FenceEvent.m_Handle));
         WaitForSingleObject(m_FenceEvent.m_Handle, INFINITE);
     }
-
-    m_RenderThreadTimings.m_FenceWait.Add(s_FenceWaitStart);
 
     ReleaseDeferredResources(s_FrameCtx.m_DeferredResources);
 
@@ -332,10 +316,7 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
     m_CommandList->SetDescriptorHeaps(1, &m_SRVDescriptorHeap.m_Ref);
 
     {
-        const auto s_LockStart = std::chrono::steady_clock::now();
         std::scoped_lock s_Lock(m_BackendMutex);
-        m_RenderThreadTimings.m_BackendLock.Add(s_LockStart);
-
         ImGui_ImplDX12_RenderDrawData(&m_RenderSnapshot->m_DrawData, m_CommandList);
     }
 
@@ -354,8 +335,17 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
 
     ID3D12CommandList* s_Lists[] = { m_CommandList.m_Ref };
     m_CommandQueue->ExecuteCommandLists(1, s_Lists);
+}
 
-    FlushRenderThreadTimings();
+void ImGuiRenderer::RequestFrame() {
+    // The ImGui frame runs on the thread that owns the game window, since the platform windows ImGui creates must
+    // belong to that thread too. Owned windows on another thread share its input queue and can deadlock with it.
+    if (m_WndProcHooked.load(std::memory_order_acquire) &&
+        !m_FrameRequested.exchange(true, std::memory_order_acq_rel)) {
+        if (!PostMessageW(m_Hwnd, m_FrameMessage, 0, 0)) {
+            m_FrameRequested.store(false, std::memory_order_release);
+        }
+    }
 }
 
 void ImGuiRenderer::PostPresent(IDXGISwapChain3* p_SwapChain, HRESULT p_PresentResult) {
@@ -465,15 +455,6 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     }
 
     m_SwapChain = p_SwapChain;
-
-    ScopedD3DRef<IDXGIFactory5> s_Factory;
-    BOOL s_AllowTearing = FALSE;
-
-    if (p_SwapChain->GetParent(REF_IID_PPV_ARGS(s_Factory)) == S_OK) {
-        s_Factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &s_AllowTearing, sizeof(s_AllowTearing));
-    }
-
-    Logger::Info("[ImGuiTiming] tearing supported: {}", s_AllowTearing == TRUE);
 
     const auto s_BufferCount = s_SwapChainDesc.BufferCount;
 
@@ -609,41 +590,39 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
     };
 
     s_PlatformIO.Renderer_DestroyWindow = [](ImGuiViewport* p_Viewport) {
-        const auto s_Renderer = ModSDK::GetInstance()->GetImguiRenderer();
-        std::scoped_lock s_Lock(s_Renderer->m_BackendMutex);
-        s_Renderer->m_RendererDestroyWindow(p_Viewport);
+        ModSDK::GetInstance()->GetImguiRenderer()->DestroyViewport(p_Viewport);
     };
 
     s_PlatformIO.Renderer_SetWindowSize = [](ImGuiViewport* p_Viewport, ImVec2 p_Size) {
         const auto s_Renderer = ModSDK::GetInstance()->GetImguiRenderer();
-        std::scoped_lock s_Lock(s_Renderer->m_BackendMutex);
-        s_Renderer->m_RendererSetWindowSize(p_Viewport, p_Size);
+
+        {
+            std::scoped_lock s_Lock(s_Renderer->m_ViewportMutex);
+            s_Renderer->m_PendingViewports[p_Viewport].m_Size = p_Size;
+        }
+
+        s_Renderer->m_ViewportCondition.notify_one();
     };
 
-    s_PlatformIO.Renderer_RenderWindow = [](ImGuiViewport* p_Viewport, void* p_RenderArg) {
+    // A viewport whose previous frame the viewport thread hasn't presented yet skips that frame.
+    s_PlatformIO.Renderer_RenderWindow = [](ImGuiViewport* p_Viewport, void*) {
         const auto s_Renderer = ModSDK::GetInstance()->GetImguiRenderer();
-        auto& s_Timings = s_Renderer->m_WindowThreadTimings;
+        auto s_Snapshot = std::make_unique<DrawDataSnapshot>(p_Viewport->DrawData);
 
-        const std::uint64_t s_Backlog =
-            s_Renderer->m_FenceValue.load(std::memory_order_acquire) - s_Renderer->m_Fence->GetCompletedValue();
-        s_Timings.m_MaxGameQueueBacklog = std::max(s_Timings.m_MaxGameQueueBacklog, s_Backlog);
+        {
+            std::scoped_lock s_Lock(s_Renderer->m_ViewportMutex);
+            std::swap(s_Renderer->m_PendingViewports[p_Viewport].m_Snapshot, s_Snapshot);
+        }
 
-        const auto s_LockStart = std::chrono::steady_clock::now();
-        std::scoped_lock s_Lock(s_Renderer->m_BackendMutex);
-        s_Timings.m_ViewportLock.Add(s_LockStart);
-
-        const auto s_RenderStart = std::chrono::steady_clock::now();
-        s_Renderer->m_RendererRenderWindow(p_Viewport, p_RenderArg);
-        s_Timings.m_ViewportRender.Add(s_RenderStart);
+        s_Renderer->m_ViewportCondition.notify_one();
     };
 
-    s_PlatformIO.Renderer_SwapBuffers = [](ImGuiViewport* p_Viewport, void* p_RenderArg) {
-        const auto s_Renderer = ModSDK::GetInstance()->GetImguiRenderer();
+    // The viewport thread presents right after rendering.
+    s_PlatformIO.Renderer_SwapBuffers = nullptr;
 
-        const auto s_SwapStart = std::chrono::steady_clock::now();
-        s_Renderer->m_RendererSwapBuffers(p_Viewport, p_RenderArg);
-        s_Renderer->m_WindowThreadTimings.m_ViewportSwap.Add(s_SwapStart);
-    };
+    m_ViewportsDestroyedEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+    m_StopViewportThread = false;
+    m_ViewportThread = std::thread(&ImGuiRenderer::RunViewportThread, this);
 
     m_RendererSetup = true;
 
@@ -658,6 +637,7 @@ void ImGuiRenderer::TeardownRenderer() {
     }
 
     ReleaseFrameResources();
+    StopViewportThread();
 
     // The wrappers reach this renderer through ModSDK, which may already be tearing it down.
     auto& s_PlatformIO = ImGui::GetPlatformIO();
@@ -748,83 +728,84 @@ void ImGuiRenderer::PostReset(IDXGISwapChain3* p_SwapChain) {
     }
 }
 
-void ImGuiRenderer::TimingStat::Add(std::chrono::steady_clock::time_point p_Start) {
-    const double s_Ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - p_Start).count();
+void ImGuiRenderer::RunViewportThread() {
+    while (true) {
+        std::vector<ImGuiViewport*> s_ViewportsToDestroy;
+        std::unordered_map<ImGuiViewport*, PendingViewport> s_PendingViewports;
+        bool s_Stop;
 
-    m_TotalMs += s_Ms;
-    m_MaxMs = std::max(m_MaxMs, s_Ms);
-    ++m_Count;
+        {
+            std::unique_lock s_Lock(m_ViewportMutex);
+
+            m_ViewportCondition.wait(s_Lock, [this] {
+                return m_StopViewportThread || !m_ViewportsToDestroy.empty() || !m_PendingViewports.empty();
+            });
+
+            s_Stop = m_StopViewportThread;
+            s_ViewportsToDestroy = std::exchange(m_ViewportsToDestroy, {});
+            s_PendingViewports = std::exchange(m_PendingViewports, {});
+        }
+
+        for (ImGuiViewport* s_Viewport : s_ViewportsToDestroy) {
+            m_RendererDestroyWindow(s_Viewport);
+        }
+
+        if (!s_ViewportsToDestroy.empty()) {
+            SetEvent(m_ViewportsDestroyedEvent.m_Handle);
+        }
+
+        if (s_Stop) {
+            return;
+        }
+
+        for (auto& [s_Viewport, s_Pending] : s_PendingViewports) {
+            if (s_Pending.m_Size) {
+                m_RendererSetWindowSize(s_Viewport, *s_Pending.m_Size);
+            }
+
+            if (!s_Pending.m_Snapshot) {
+                continue;
+            }
+
+            {
+                std::scoped_lock s_Lock(m_BackendMutex);
+                m_RendererRenderWindow(s_Viewport, &s_Pending.m_Snapshot->m_DrawData);
+            }
+
+            m_RendererSwapBuffers(s_Viewport, nullptr);
+        }
+    }
 }
 
-std::string ImGuiRenderer::TimingStat::Format() const {
-    const double s_AverageMs = m_Count > 0 ? m_TotalMs / m_Count : 0.0;
-    return std::format("{:.2f}/{:.2f}ms x{}", s_AverageMs, m_MaxMs, m_Count);
-}
-
-void ImGuiRenderer::FlushWindowThreadTimings() {
-    const auto& s_Timings = m_WindowThreadTimings;
-    const auto s_Now = std::chrono::steady_clock::now();
-
-    if (s_Now - m_LastWindowThreadFlush < std::chrono::seconds(1)) {
-        return;
+void ImGuiRenderer::StopViewportThread() {
+    {
+        std::scoped_lock s_Lock(m_ViewportMutex);
+        m_StopViewportThread = true;
     }
 
-    Logger::Info(
-        "[ImGuiTiming] window thread (avg/max): detached {}, message gap {}, frame delay {}, frame interval {}, "
-        "draw {}, update platform windows {}, render platform windows {}, viewport lock {}, viewport render {}, "
-        "viewport swap {}, max game queue backlog {}, moving viewport {}, moving game window {}, wm move {}",
-        m_HasDetachedViewports.load(std::memory_order_acquire),
-        s_Timings.m_MessageGap.Format(),
-        s_Timings.m_FrameDelay.Format(),
-        s_Timings.m_FrameInterval.Format(),
-        s_Timings.m_Draw.Format(),
-        s_Timings.m_UpdatePlatformWindows.Format(),
-        s_Timings.m_RenderPlatformWindows.Format(),
-        s_Timings.m_ViewportLock.Format(),
-        s_Timings.m_ViewportRender.Format(),
-        s_Timings.m_ViewportSwap.Format(),
-        s_Timings.m_MaxGameQueueBacklog,
-        s_Timings.m_MovedViewport,
-        s_Timings.m_MovedGameWindow,
-        m_WindowManagerMoveHwnd != nullptr
-    );
-
-    m_LastMessage = m_LastFrame = std::chrono::steady_clock::now();
-
-    m_WindowThreadTimings = {};
-    m_LastWindowThreadFlush = s_Now;
+    m_ViewportCondition.notify_one();
+    m_ViewportThread.join();
 }
 
-void ImGuiRenderer::FlushRenderThreadTimings() {
-    const auto& s_Timings = m_RenderThreadTimings;
-    const auto s_Now = std::chrono::steady_clock::now();
-
-    if (s_Now - m_LastRenderThreadFlush < std::chrono::seconds(1)) {
-        return;
+void ImGuiRenderer::DestroyViewport(ImGuiViewport* p_Viewport) {
+    {
+        std::scoped_lock s_Lock(m_ViewportMutex);
+        m_PendingViewports.erase(p_Viewport);
+        m_ViewportsToDestroy.push_back(p_Viewport);
     }
 
-    Logger::Info(
-        "[ImGuiTiming] render thread (avg/max): detached {}, fps {:.1f}, backend lock {}, fence wait {}",
-        m_HasDetachedViewports.load(std::memory_order_acquire),
-        s_Timings.m_PresentCount / std::chrono::duration<double>(s_Now - m_LastRenderThreadFlush).count(),
-        s_Timings.m_BackendLock.Format(),
-        s_Timings.m_FenceWait.Format()
-    );
+    m_ViewportCondition.notify_one();
 
-    m_RenderThreadTimings = {};
-    m_LastRenderThreadFlush = s_Now;
+    // DXGI and overlay hooks on the viewport thread can send messages to this thread, so keep handling them.
+    while (MsgWaitForMultipleObjectsEx(1, &m_ViewportsDestroyedEvent.m_Handle, INFINITE, QS_SENDMESSAGE, 0) !=
+        WAIT_OBJECT_0) {
+        MSG s_Message;
+        PeekMessageW(&s_Message, nullptr, 0, 0, PM_NOREMOVE | PM_QS_SENDMESSAGE);
+    }
 }
 
 void ImGuiRenderer::RunFrame() {
     m_FrameRequested.store(false, std::memory_order_release);
-
-    m_WindowThreadTimings.m_FrameDelay.Add(m_FramePostedAt.load());
-
-    if (m_LastFrame.time_since_epoch().count() != 0) {
-        m_WindowThreadTimings.m_FrameInterval.Add(m_LastFrame);
-    }
-
-    m_LastFrame = std::chrono::steady_clock::now();
 
     if (m_InFrame) {
         return;
@@ -855,7 +836,13 @@ void ImGuiRenderer::RunFrame() {
     }
 
     if (!m_IsImGuiVisible.load(std::memory_order_acquire)) {
-        ImGui::DestroyPlatformWindows();
+        // Not DestroyPlatformWindows, which also destroys the main viewport's platform and renderer data.
+        for (ImGuiViewportP* s_Viewport : ImGui::GetCurrentContext()->Viewports) {
+            if (s_Viewport != ImGui::GetMainViewport()) {
+                ImGui::DestroyPlatformWindow(s_Viewport);
+            }
+        }
+
         return;
     }
 
@@ -867,8 +854,6 @@ void ImGuiRenderer::RunFrame() {
     }
 
     m_InFrame = true;
-
-    const auto s_DrawStart = std::chrono::steady_clock::now();
 
     {
         std::scoped_lock s_Lock(m_BackendMutex);
@@ -916,35 +901,30 @@ void ImGuiRenderer::RunFrame() {
 
     auto s_Snapshot = std::make_unique<DrawDataSnapshot>(ImGui::GetDrawData());
 
+    // Fade the main viewport while the UI doesn't have focus. Do not fade detached windows.
+    if (!m_ImGuiHasFocus.load(std::memory_order_acquire)) {
+        for (ImDrawList* s_DrawList : s_Snapshot->m_DrawData.CmdLists) {
+            for (ImDrawVert& s_Vertex : s_DrawList->VtxBuffer) {
+                const ImU32 s_Alpha = (s_Vertex.col & IM_COL32_A_MASK) >> IM_COL32_A_SHIFT;
+                s_Vertex.col = (s_Vertex.col & ~IM_COL32_A_MASK) | ((s_Alpha * 3 / 10) << IM_COL32_A_SHIFT);
+            }
+        }
+    }
+
     {
         std::scoped_lock s_Lock(m_SnapshotMutex);
         m_PendingSnapshot = std::move(s_Snapshot);
     }
 
-    m_WindowThreadTimings.m_Draw.Add(s_DrawStart);
-
-    const auto s_UpdateStart = std::chrono::steady_clock::now();
     ImGui::UpdatePlatformWindows();
-    m_WindowThreadTimings.m_UpdatePlatformWindows.Add(s_UpdateStart);
-
-    const auto s_RenderStart = std::chrono::steady_clock::now();
     ImGui::RenderPlatformWindowsDefault();
-    m_WindowThreadTimings.m_RenderPlatformWindows.Add(s_RenderStart);
 
     m_InFrame = false;
-
-    const ImGuiWindow* s_MovingWindow = ImGui::GetCurrentContext()->MovingWindow;
-
-    if (s_MovingWindow && s_MovingWindow->ViewportOwned) {
-        m_WindowThreadTimings.m_MovedViewport = true;
-    }
-
-    m_HasDetachedViewports.store(ImGui::GetPlatformIO().Viewports.Size > 1, std::memory_order_release);
-    FlushWindowThreadTimings();
 
     // X11 window managers like KWin keep windows that a program moves inside the work area, but not windows that
     // the user drags. So under Wine we hand the drag of a detached window over to the window manager.
     static const bool s_IsWine = Util::ProcessUtils::IsRunningUnderWine();
+    const ImGuiWindow* s_MovingWindow = ImGui::GetCurrentContext()->MovingWindow;
 
     if (!s_IsWine || m_WindowManagerMoveHwnd || !s_MovingWindow || !s_MovingWindow->ViewportOwned) {
         return;
@@ -983,8 +963,6 @@ void ImGuiRenderer::StartWindowManagerMove(HWND p_Hwnd) {
 void ImGuiRenderer::Draw() {
     const bool s_HasFocus = m_ImGuiHasFocus.load(std::memory_order_acquire);
 
-    ImGui::GetStyle().Alpha = s_HasFocus ? 1.f : 0.3f;
-
     ModSDK::GetInstance()->OnDrawUI(s_HasFocus);
 
     if (m_UIToggleWarningRequested.exchange(false, std::memory_order_acquire)) {
@@ -1022,6 +1000,9 @@ void ImGuiRenderer::Draw() {
                 m_IsImGuiVisible.store(false, std::memory_order_release);
                 m_ShowingUIToggleWarning = false;
                 m_ImGuiHasFocus.store(false, std::memory_order_release);
+
+                // No frames are requested while the UI is hidden, so request one to destroy the detached windows.
+                RequestFrame();
             }
 
             ImGui::EndDisabled();
@@ -1293,21 +1274,6 @@ DEFINE_DETOUR_WITH_CONTEXT(
     if (ImGui::GetCurrentContext() == nullptr)
         return HookResult<LRESULT>(HookAction::Continue());
 
-    if (m_LastMessage.time_since_epoch().count() != 0) {
-        m_WindowThreadTimings.m_MessageGap.Add(m_LastMessage);
-    }
-
-    m_LastMessage = std::chrono::steady_clock::now();
-
-    if (p_Message == WM_ENTERSIZEMOVE) {
-        m_IsGameWindowInMoveLoop = true;
-    }
-    else if (p_Message == WM_EXITSIZEMOVE) {
-        m_IsGameWindowInMoveLoop = false;
-    }
-
-    m_WindowThreadTimings.m_MovedGameWindow |= m_IsGameWindowInMoveLoop;
-
     if (p_Message == m_FrameMessage) {
         RunFrame();
         return { HookAction::Return(), 0 };
@@ -1371,6 +1337,9 @@ DEFINE_DETOUR_WITH_CONTEXT(
 
             if (!s_NewVisible) {
                 m_ImGuiHasFocus.store(false, std::memory_order_release);
+
+                // No frames are requested while the UI is hidden, so request one to destroy the detached windows.
+                RequestFrame();
             }
         }
     }
