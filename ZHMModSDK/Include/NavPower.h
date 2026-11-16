@@ -65,6 +65,7 @@ namespace NavPower {
     enum class AreaUsageFlags : uint32_t {
         AREA_FLAT  = 1,
         AREA_STEPS = 8,
+        AREA_PLANNER_EXCLUDED = 0x10000000,
     };
 
     enum EdgeType {
