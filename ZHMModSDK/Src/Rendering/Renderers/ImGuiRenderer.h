@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -113,6 +114,43 @@ namespace Rendering::Renderers {
         void ResetDescriptorHeap();
 
     private:
+        struct TimingStat {
+            void Add(std::chrono::steady_clock::time_point p_Start);
+            std::string Format() const;
+
+            double m_TotalMs = 0.0;
+            double m_MaxMs = 0.0;
+            std::uint32_t m_Count = 0;
+        };
+
+        // Traces where the window thread and the render thread spend time.
+        struct WindowThreadTimings {
+            TimingStat m_MessageGap;
+            TimingStat m_FrameDelay;
+            TimingStat m_FrameInterval;
+            TimingStat m_Draw;
+            TimingStat m_UpdatePlatformWindows;
+            TimingStat m_RenderPlatformWindows;
+            TimingStat m_ViewportLock;
+            TimingStat m_ViewportRender;
+            TimingStat m_ViewportSwap;
+
+            // Frames submitted to the game's command queue that the GPU hasn't finished yet.
+            std::uint64_t m_MaxGameQueueBacklog = 0;
+
+            bool m_MovedViewport = false;
+            bool m_MovedGameWindow = false;
+        };
+
+        struct RenderThreadTimings {
+            TimingStat m_BackendLock;
+            TimingStat m_FenceWait;
+            std::uint32_t m_PresentCount = 0;
+        };
+
+        void FlushWindowThreadTimings();
+        void FlushRenderThreadTimings();
+
         bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
         void TeardownRenderer();
         void RunFrame();
@@ -203,6 +241,7 @@ namespace Rendering::Renderers {
         void (*m_RendererDestroyWindow)(ImGuiViewport*) = nullptr;
         void (*m_RendererSetWindowSize)(ImGuiViewport*, ImVec2) = nullptr;
         void (*m_RendererRenderWindow)(ImGuiViewport*, void*) = nullptr;
+        void (*m_RendererSwapBuffers)(ImGuiViewport*, void*) = nullptr;
 
         // Win32 backend show callbac.
         void (*m_PlatformShowWindow)(ImGuiViewport*) = nullptr;
@@ -212,6 +251,16 @@ namespace Rendering::Renderers {
         std::atomic<bool> m_FrameRequested { false };
         bool m_InFrame = false;
         HWND m_WindowManagerMoveHwnd = nullptr;
+
+        WindowThreadTimings m_WindowThreadTimings;
+        RenderThreadTimings m_RenderThreadTimings;
+        std::chrono::steady_clock::time_point m_LastMessage;
+        std::chrono::steady_clock::time_point m_LastFrame;
+        std::chrono::steady_clock::time_point m_LastWindowThreadFlush;
+        std::chrono::steady_clock::time_point m_LastRenderThreadFlush;
+        std::atomic<std::chrono::steady_clock::time_point> m_FramePostedAt;
+        std::atomic<bool> m_HasDetachedViewports { false };
+        bool m_IsGameWindowInMoveLoop = false;
 
         std::mutex m_SnapshotMutex;
         std::unique_ptr<DrawDataSnapshot> m_PendingSnapshot;
