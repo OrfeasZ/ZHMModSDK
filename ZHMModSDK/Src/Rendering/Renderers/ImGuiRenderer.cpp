@@ -549,9 +549,16 @@ bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
         return false;
     }
 
+    D3D12_COMMAND_QUEUE_DESC s_QueueDesc {};
+    s_QueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+    if (s_Device->CreateCommandQueue(&s_QueueDesc, IID_PPV_ARGS(m_BackendCommandQueue.ReleaseAndGetPtr())) != S_OK) {
+        return false;
+    }
+
     ImGui_ImplDX12_InitInfo s_InitInfo {};
     s_InitInfo.Device = s_Device;
-    s_InitInfo.CommandQueue = m_CommandQueue;
+    s_InitInfo.CommandQueue = m_BackendCommandQueue;
     s_InitInfo.NumFramesInFlight = c_MaxRenderedFrames;
     s_InitInfo.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
     s_InitInfo.SrvDescriptorHeap = m_SRVDescriptorHeap;
@@ -675,6 +682,7 @@ void ImGuiRenderer::TeardownRenderer() {
     m_SRVDescriptorHeap.Reset();
     m_SwapChain.Reset();
     m_CommandQueue.Reset();
+    m_BackendCommandQueue.Reset();
     m_RendererSetup = false;
 }
 

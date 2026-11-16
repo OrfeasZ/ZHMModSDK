@@ -206,6 +206,7 @@ namespace Rendering::Renderers {
 
         ScopedD3DRef<IDXGISwapChain3> m_SwapChain;
         ScopedD3DRef<ID3D12CommandQueue> m_CommandQueue;
+        ScopedD3DRef<ID3D12CommandQueue> m_BackendCommandQueue;
         HWND m_Hwnd = nullptr;
         bool m_PlatformSetup = false;
 
