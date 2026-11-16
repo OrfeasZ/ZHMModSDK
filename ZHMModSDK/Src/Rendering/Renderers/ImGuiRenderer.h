@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <mutex>
+#include <string>
 #include <vector>
 #include <directx/d3d12.h>
 #include <dxgi1_4.h>
@@ -215,6 +216,9 @@ namespace Rendering::Renderers {
         std::mutex m_SnapshotMutex;
         std::unique_ptr<DrawDataSnapshot> m_PendingSnapshot;
         std::unique_ptr<DrawDataSnapshot> m_RenderSnapshot;
+
+        // ImGui keeps a pointer to this, so it has to live as long as the context.
+        std::string m_IniFilePath;
 
         ImGuiContext* m_ImGuiContext = nullptr;
         ImPlotContext* m_ImPlotContext = nullptr;

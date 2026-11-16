@@ -4,6 +4,7 @@
 
 #include <d3dcompiler.h>
 #include <dxgi1_4.h>
+#include <filesystem>
 
 #include <imgui_impl_dx12.h>
 #include <imgui_impl_win32.h>
@@ -60,7 +61,14 @@ ImGuiRenderer::ImGuiRenderer() {
     m_ImPlotContext = ImPlot::CreateContext();
 
     ImGuiIO& s_ImGuiIO = ImGui::GetIO();
-    s_ImGuiIO.IniFilename = nullptr;
+
+    if (const auto s_ExeDirectory = Util::ProcessUtils::GetExecutableDirectory()) {
+        m_IniFilePath = (*s_ExeDirectory / "imgui.ini").string();
+        s_ImGuiIO.IniFilename = m_IniFilePath.c_str();
+    }
+    else {
+        s_ImGuiIO.IniFilename = nullptr;
+    }
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     s_ImGuiIO.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
