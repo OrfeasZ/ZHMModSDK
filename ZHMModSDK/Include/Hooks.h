@@ -47,10 +47,8 @@ class ZSparseBitArray;
 class ZRenderGraphNode;
 class ZRenderDeviceContext;
 class CLightTile;
-class ZLookAtTriggerManager;
-class ZBoolConditionListenerManager;
-class IBoolCondition;
-class IBoolConditionListener;
+class ZRoomManager;
+class ZRoomEntity;
 class ZDynamicObject;
 class ZAchievementManagerSimple;
 class SOnlineEvent;
@@ -255,15 +253,7 @@ public:
         bool bIsBoxReflectionPass, int32_t a24
     )>* CLightTile_DispatchShadeDeferred;
 
-    static Hook<int64_t(ZLookAtTriggerManager* th, ZEntityRef* pTrigger, ZEntityRef* pTarget)>*
-    ZLookAtTriggerManager_RegisterLookAtTrigger;
-
-    static Hook<void(ZLookAtTriggerManager* th, ZEntityRef* pTrigger)>* ZLookAtTriggerManager_UnregisterLookAtTrigger;
-
-    static Hook<void(
-        ZBoolConditionListenerManager* th, const TEntityRef<IBoolCondition>& condition,
-        const TEntityRef<IBoolConditionListener>& listener
-    )>* ZBoolConditionListenerManager_UnregisterListener;
+    static Hook<void(ZRoomManager* th, ZRoomEntity* pRoom)>* ZRoomManager_UnregisterRoom;
 
     static Hook<void(
         ZRenderTraversalContext* pTraversalContext, uint32_t nSkipMask, const ZSparseBitArray& Nodes
@@ -285,11 +275,6 @@ public:
         const ZString& lastPushDt, std::function<void(const ZDynamicObject&)> onOk, std::function<void(int)> onError,
         ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
     )>* ZUserChannelEventsProxyBase_SaveAndSynchronizeEvents4;
-
-    static Hook<void(
-        const ZString& userId, const ZDynamicObject& values, std::function<void(const ZDynamicObject&)> onOk,
-        std::function<void(int)> onError, ZAsyncContext* ctx, const SHttpRequestBehavior& behavior
-    )>* ZUserChannelEventsProxyBase_SaveEvents2;
 
     static Hook<ZPFObstacleHandle*(
         ZPathfinder* th,

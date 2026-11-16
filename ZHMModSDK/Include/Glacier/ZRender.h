@@ -341,15 +341,25 @@ public:
     SMatrix m_mViewToProjection; // 0x340, function called by ZRenderContext_Unknown01, first pair of 4
 };
 
+class ZRenderGraphNode;
+
 class ZRenderGraphNodeCamera {
 public:
     virtual ~ZRenderGraphNodeCamera() = 0;
 
-    PAD(0x5E0); // 0x8
+    PAD(0x588); // 0x8
+
+    // When not empty, the camera skips gate traversal and frustum-tests every base node.
+    TArray<ZRenderGraphNode*> m_RootNodes; // 0x590
+
+    PAD(0x40); // 0x5A8
     uint16 m_nStickyRoomId; // 0x5E8
     uint16 m_nNumOverlappingRooms; // 0x5EA
     uint16 m_aOverlappingRooms[32]; // 0x5EC
 };
+
+static_assert(offsetof(ZRenderGraphNodeCamera, m_RootNodes) == 0x590);
+static_assert(offsetof(ZRenderGraphNodeCamera, m_nStickyRoomId) == 0x5E8);
 
 class ZRenderManager : public IComponentInterface {
 public:
@@ -588,6 +598,23 @@ public:
     TYPE m_nType; // 0x28
 };
 
+struct SRenderGraphNodeEntry {
+    ZRenderGraphNode* m_pNode; // 0x0
+    PAD(0x38); // 0x8
+};
+
+static_assert(sizeof(SRenderGraphNodeEntry) == 0x40);
+
+class ZRenderGraphNodeDestination : public ZRenderGraphNode {
+public:
+    PAD(0x20); // 0x30
+
+    // The destination only renders when one of these is visible to the main camera.
+    TArray<ZRenderGraphNode*> m_aClientNodes; // 0x50
+};
+
+static_assert(offsetof(ZRenderGraphNodeDestination, m_aClientNodes) == 0x50);
+
 class ZRenderGraphNodeBoxReflection : public ZRenderGraphNode {
 public:
     PAD(0xC4); // 0x30
@@ -598,9 +625,17 @@ class IRenderGraphManager : public IComponentInterface {};
 
 class ZRenderGraphManager : public IRenderGraphManager {
 public:
-    PAD(0x578); // 0x8
+    PAD(0x508); // 0x8
+
+    // Marked visible to the main camera every frame.
+    TArray<ZRenderGraphNode*> m_aForcedVisibleNodes; // 0x510
+
+    PAD(0x58); // 0x528
     TMaxArray<ZRenderGraphNodeBoxReflection*, 682> m_BoxReflections; // 0x580
 };
+
+static_assert(offsetof(ZRenderGraphManager, m_aForcedVisibleNodes) == 0x510);
+static_assert(offsetof(ZRenderGraphManager, m_BoxReflections) == 0x580);
 
 class ZRenderBoxReflectionCacheResource {
 public:

@@ -16,6 +16,12 @@ class ZHitman5;
 class ZActor;
 class ZDynamicObject;
 class ZString;
+class ZSplashHintManager;
+class ZSplashHintController;
+class ZLookAtTriggerManager;
+class ZBoolConditionListenerManager;
+class IBoolCondition;
+class IBoolConditionListener;
 class ZHM5BaseCharacter;
 class ZCameraEntity;
 class ZSpatialEntity;
@@ -49,6 +55,8 @@ class ZUIText;
 class ZActorInventoryHandler;
 class ZWorldInventory;
 class IItemBase;
+class ZSituationManager;
+class ISituation;
 class ZStashPointEntity;
 class ZTimeOfDayManager;
 class ZHM5Health;
@@ -162,7 +170,7 @@ public:
     static EngineFunction<void(
         ZResourceReader* th, const ZResourceIndex& index, ZResourceDataPtr pData, uint32_t dataSize
     )>* ZResourceReader_ZResourceReader;
-	
+
 	static EngineFunction<void(ZResourceReader* th)>* ZResourceReader_Dtor;
 
     static EngineFunction<bool(ZTemplateInstaller* th, ZResourcePending* ResourcePending)>*
@@ -221,6 +229,12 @@ public:
         ZWorldInventory* th,
         TEntityRef<IItemBase> rItemInc
     )>* ZWorldInventory_DestroyItem;
+
+    // The situation must still be alive.
+    static EngineFunction<void(
+        ZSituationManager* th,
+        const TEntityRef<ISituation>& rSituation
+    )>* ZSituationManager_RemoveSituation;
 
     static EngineFunction<ZResourceIndex*(
         ZResourceManager* th,
@@ -338,4 +352,16 @@ public:
     )>* ZBezierSplineTrajectorySource_GetTrajectoryAtTime;
 
     static EngineFunction<bool(ZRenderableEntity* th)>* ZRenderableEntity_IsVisible;
+
+    static EngineFunction<void(ZLookAtTriggerManager* th, ZEntityRef* pTrigger)>*
+    ZLookAtTriggerManager_UnregisterLookAtTrigger;
+
+    static EngineFunction<void(
+        ZBoolConditionListenerManager* th, const TEntityRef<IBoolCondition>& condition,
+        const TEntityRef<IBoolConditionListener>& listener
+    )>* ZBoolConditionListenerManager_UnregisterListener;
+
+    // Also removes queued controllers and clears the reference.
+    static EngineFunction<void(ZSplashHintManager* th, TEntityRef<ZSplashHintController>& rController)>*
+    ZSplashHintManager_HideController;
 };

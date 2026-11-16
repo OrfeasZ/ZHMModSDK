@@ -197,6 +197,17 @@ public:
         }
     }
 
+    void pop_back() {
+        back().~T();
+
+        if (fitsInline() && hasInlineFlag()) {
+            --m_nInlineCount;
+        }
+        else {
+            --m_pEnd;
+        }
+    }
+
     size_t size() const {
         if (fitsInline() && hasInlineFlag()) {
             return m_nInlineCount;

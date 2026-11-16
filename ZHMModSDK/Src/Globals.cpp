@@ -220,6 +220,78 @@ PATTERN_RELATIVE_GLOBAL(
 );
 
 PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x15\x00\x00\x00\x00\x48\xC1\xE0\x06\x48\x89\x0C\x10",
+    "xxx????xxxxxxxx",
+    3,
+    SRenderGraphNodeEntry**, RenderGraphNodes
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x89\x44\x24\x28\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x4C\x8B\x05\x00\x00\x00\x00\x4C\x8D\x1D",
+    "xxxxxxxx????x????xxx????xxx",
+    8,
+    ZLookAtTriggerManager*, LookAtTriggerManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x84\xC0\x74\x00\x48\x8B\x83\x08\x01\x00\x00\x48\x89\x05\x00\x00\x00\x00\xEB\x00\x48\xC7\x05\x00\x00\x00\x00\x00\x00\x00\x00\xFF\xC7",
+    "xxx????x????xxx?xxxxxxxxxx????x?xxx????????xx",
+    3,
+    ZInteractionManager*, InteractionManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x1D\x00\x00\x00\x00\x48\x8D\x4D\xC0\x45\x8B\xF0",
+    "xxx????xxxxxxx",
+    3,
+    ZMassImpulseCollisionChecker**, MassImpulseCollisionChecker
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x15\x00\x00\x00\x00\x84\xC0\x41\x0F\x94\xC0",
+    "xxx????xxxxxx",
+    3,
+    ZMassImpulseCharacterExploder**, MassImpulseCharacterExploder
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x4C\x8D\x44\x24\x20\x48\x89\x44\x24\x28\x48\x8B\xD3\x48\x8D\x0D\x00\x00\x00\x00\xE8\x00\x00\x00\x00\x48\x89\x6C\x24\x20\x48\x89\x6C\x24\x58",
+    "xxxxxxxxxxxxxxxx????x????xxxxxxxxxx",
+    16,
+    ZBoolConditionListenerManager*, BoolConditionListenerManager
+);
+
+// The global holds a pointer to an allocated holder of the store pointer.
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x05\x00\x00\x00\x00\x4C\x89\xBC\x24\x50\x04\x00\x00\x48\x8B\x08\x48\x8B\x91\xD0\x00\x00\x00",
+    "xxx????xxxxxxxxxxxxxxxxxx",
+    3,
+    AIFramework::Private::TAgentsStore<AI::Private::ZAgentsStoreData>***, AgentsStore
+);
+
+// The global holds a pointer to an allocated holder of the tables pointer.
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8B\x0D\x00\x00\x00\x00\x41\xB8\x00\x00\x00\x00\x48\x8B\x01\x48\x8B\x90\x50\x02\x00\x00",
+    "xxx????xx????xxxxxxxxxx",
+    3,
+    ZSetpieceDistractionTables***, SetpieceDistractionTables
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x39\x05\x00\x00\x00\x00\x75\x00\x0F\x57\xC0\xF3\x0F\x7F\x05\x00\x00\x00\x00\x48\x8D\x4B\x28",
+    "xxx????x?xxxxxxx????xxxx",
+    3,
+    TEntityRef<ZSplashHintManager>*, SplashHintManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
+    "\x48\x8D\x1D\x00\x00\x00\x00\x66\x0F\x6F\x05\x00\x00\x00\x00\x48\x8D\x0D",
+    "xxx????xxxx????xxx",
+    3,
+    ZDistanceConditionManager*, DistanceConditionManager
+);
+
+PATTERN_RELATIVE_GLOBAL(
     "\x48\x8D\x05\x00\x00\x00\x00\x48\x89\x01\x33\xDB\x48\x89\x59\x18",
     "xxx????xxxxxxxxx",
     3,

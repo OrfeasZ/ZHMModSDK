@@ -185,7 +185,15 @@ public:
     ZRuntimeResourceID m_ridResource; // 0x28
 };
 
-class ZCppEntityBlueprintFactory;
+class ZCppEntityBlueprintFactory : public IEntityBlueprintFactory {
+public:
+    ZRuntimeResourceID m_ridResource; // 0x8
+    PAD(0x10); // 0x10
+    ZEntityType* m_pFactoryEntityType; // 0x20
+    const IClassType* m_pClassType; // 0x28
+};
+
+static_assert(offsetof(ZCppEntityBlueprintFactory, m_pClassType) == 0x28);
 
 class ZCppEntityFactory : public IEntityFactory {
 public:

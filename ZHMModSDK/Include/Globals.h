@@ -25,16 +25,33 @@ class ZGameUIManager;
 class ZCameraManager;
 class ZPlayerRegistry;
 class ZHM5InputManager;
+class ZLookAtTriggerManager;
+class ZInteractionManager;
+class ZMassImpulseCollisionChecker;
+class ZMassImpulseCharacterExploder;
+class ZBoolConditionListenerManager;
+class ZSetpieceDistractionTables;
+class ZSplashHintManager;
+class ZDistanceConditionManager;
 class ZContentKitManager;
 class ZHM5ActionManager;
 class ZBehaviorService;
 struct SPrimitiveBufferData;
 class IGameMode;
 class IEngineMode;
+struct SRenderGraphNodeEntry;
 class ZInputActionManager;
 class ZSelectionForFreeCameraEditorStyleEntity;
 template <typename T> class TArray;
 template <typename T> class TEntityRef;
+
+namespace AI::Private {
+    class ZAgentsStoreData;
+}
+
+namespace AIFramework::Private {
+    template <typename TData> class TAgentsStore;
+}
 struct SD3D12ObjectPools;
 class ZServerProxyRoute;
 class ZString;
@@ -99,6 +116,16 @@ public:
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;
     static IEngineMode** EngineMode;
+    static SRenderGraphNodeEntry** RenderGraphNodes;
+    static ZLookAtTriggerManager* LookAtTriggerManager;
+    static ZInteractionManager* InteractionManager;
+    static ZMassImpulseCollisionChecker** MassImpulseCollisionChecker;
+    static ZMassImpulseCharacterExploder** MassImpulseCharacterExploder;
+    static ZBoolConditionListenerManager* BoolConditionListenerManager;
+    static AIFramework::Private::TAgentsStore<AI::Private::ZAgentsStoreData>*** AgentsStore;
+    static ZSetpieceDistractionTables*** SetpieceDistractionTables;
+    static TEntityRef<ZSplashHintManager>* SplashHintManager;
+    static ZDistanceConditionManager* DistanceConditionManager;
     static void* ZTemplateEntityFactory_vtbl;
     static void* ZAspectEntityFactory_vtbl;
     static void* ZCppEntityFactory_vtbl;

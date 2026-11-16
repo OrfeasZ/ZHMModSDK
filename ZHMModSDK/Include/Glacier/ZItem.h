@@ -300,4 +300,10 @@ public:
     bool m_bUsePlacementAttach; // 0x131
     bool m_bSetAIPerceptible; // 0x132
     bool m_bDestroyItemOnKeyChange; // 0x133
+    uint8_t m_nSpawnerFlags; // 0x134
+
+    // Set while the spawner waits for its requested item.
+    bool IsPreparing() const {
+        return (m_nSpawnerFlags & 2) != 0;
+    }
 };

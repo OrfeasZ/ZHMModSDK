@@ -63,10 +63,17 @@ struct SGateInfoHeader {
 class ZRoomManager {
 public:
     TArray<ZRoomEntity*> m_RoomEntities; // 0x0
-    PAD(0x6B8);
+    TArray<ZGateEntity*> m_ChangedGates; // 0x18
+    PAD(0x6A0);
     TArray<SRoomInfoHeader> m_RoomHeaders; // 0x6D0
     TArray<SGateInfoHeader> m_GateHeaders; // 0x6E8
-    PAD(0x318);
+    PAD(0x158);
+
+    // Set when rooms or gates change. 1 rebuilds the headers partially, 2 fully, which can
+    // reorder the room indices.
+    int32_t m_nPendingUpdate; // 0x858
+
+    PAD(0x1BC);
     ZSparseBitArray m_NodesVisibleRender; // 0xA18
     ZSparseBitArray m_RoomsVisibleRender; // 0xA38
     ZSparseBitArray m_GatesVisibleRender; // 0xA58
@@ -75,3 +82,7 @@ public:
     ZSparseBitArray m_GatesVisibleMain; // 0xAB8
     ZSparseBitArray m_NodesVisibleChangedMain; // 0xAD8
 };
+
+static_assert(offsetof(ZRoomManager, m_ChangedGates) == 0x18);
+static_assert(offsetof(ZRoomManager, m_nPendingUpdate) == 0x858);
+static_assert(offsetof(ZRoomManager, m_NodesVisibleRender) == 0xA18);

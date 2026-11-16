@@ -150,6 +150,18 @@ public:
         }
     }
 
+    // Mask words under a clear stencil bit are stale, so check the stencil first.
+    bool Test(uint32 p_Index) const {
+        return (m_pStencil[p_Index >> 13] >> ((p_Index >> 7) & 63) & 1) &&
+               (m_pMask[p_Index >> 6] >> (p_Index & 63) & 1);
+    }
+
+    // Assumes the mask words under a clear stencil bit are zero.
+    void Set(uint32 p_Index) {
+        m_pStencil[p_Index >> 13] |= 1ull << ((p_Index >> 7) & 63);
+        m_pMask[p_Index >> 6] |= 1ull << (p_Index & 63);
+    }
+
     uint64* m_pStencil;
     uint64* m_pMask;
     uint32 m_nSize;

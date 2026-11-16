@@ -376,6 +376,39 @@ PATTERN_HOOK(
 );
 
 PATTERN_HOOK(
+    "\x4C\x89\x44\x24\x18\x48\x89\x54\x24\x10\x56\x41\x54\x41\x55\x41\x56\x41\x57\xB8\x00\x00\x00\x00",
+    "xxxxxxxxxxxxxxxxxxxx????",
+    ZRenderGraphNodeCamera_Traverse,
+    void(ZRenderGraphNodeCamera* th, ZRenderGraphNode* pParent, ZRenderTraversalContext* pTraversalContext,
+        ZRenderContext* pRenderContext, uint64_t a5)
+);
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x48\x89\x48\x08\x55\x56\x41\x54\x41\x56\x48\x8D\xA8\x00\x00\x00\x00",
+    "xxxxxxxxxxxxxxxx????",
+    CLightTile_DispatchShadeDeferred,
+    void(CLightTile* th, ZRenderContext* pRenderContext, ZRenderDeviceContext* pDeviceContext, void* a4, void* a5,
+        void* a6, void* a7, void* a8, void* a9, void* a10, void* a11, void* a12, void* a13, void* a14, int32_t a15,
+        void* a16, const float4* vClearColor, bool bDisableLighting, bool bMergeDiffuse,
+        int32_t nSelectedBoxReflectionId, bool bDisableBoxReflections, bool bEnableAtmosphericScatteringBackdrop,
+        bool bIsBoxReflectionPass, int32_t a24)
+);
+
+PATTERN_HOOK(
+    "\x40\x53\x48\x83\xEC\x00\x4C\x8B\x49\x10\x48\x8B\xD9\x4D\x8B\xC1\x4D\x8B\xD1\x49\xC1\xE8\x00\x41\x80\xE0\x00\x74\x00\x41\x0F\xB6\xC1\x48\x8D\x0C\xC1",
+    "xxxxx?xxxxxxxxxxxxxxxx?xxx?x?xxxxxxxx",
+    ZRoomManager_UnregisterRoom,
+    void(ZRoomManager* th, ZRoomEntity* pRoom)
+);
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x55\x48\x81\xEC\x70\x02\x00\x00\x48\x89\x58\x18",
+    "xxxxxxxxxxxxxxx",
+    ZRenderGraphTraversal_TraverseSimple,
+    void(ZRenderTraversalContext* pTraversalContext, uint32_t nSkipMask, const ZSparseBitArray& Nodes)
+);
+
+PATTERN_HOOK(
     "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x48\x89\x7C\x24\x18\x44\x89\x4C\x24\x20\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x20\xFD\xFF\xFF",
     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     ZUserChannelContractsProxyBase_GetForPlay2,

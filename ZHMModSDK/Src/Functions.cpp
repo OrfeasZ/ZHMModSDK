@@ -395,6 +395,13 @@ PATTERN_FUNCTION(
 );
 
 PATTERN_FUNCTION(
+    "\x40\x55\x53\x41\x54\x41\x56\x48\x8B\xEC\x48\x83\xEC\x00\x4C\x8D\x81\x18\x58\x07\x00",
+    "xxxxxxxxxxxxx?xxxxxxx",
+    ZSituationManager_RemoveSituation,
+    void(ZSituationManager* th, const TEntityRef<ISituation>& rSituation)
+);
+
+PATTERN_FUNCTION(
     "\x40\x53\x56\x41\x54\x41\x55\x41\x57\x48\x83\xEC\x00\x48\x8B\x84\x24\x80\x00\x00\x00",
     "xxxxxxxxxxxx?xxxxxxxx",
     ZResourceManager_GetResourceIndex,
@@ -610,4 +617,28 @@ PATTERN_FUNCTION(
     "xxx????xxxxxxx",
     ZRenderableEntity_IsVisible,
     bool(ZRenderableEntity* th)
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x57\x48\x83\xEC\x50\x48\x8B\xD9\x33",
+    "xxxxxxxxxxxxxxxxxxxxxxxx",
+    ZLookAtTriggerManager_UnregisterLookAtTrigger,
+    void(ZLookAtTriggerManager* th, ZEntityRef* pTrigger)
+);
+
+PATTERN_FUNCTION(
+    "\x40\x55\x56\x48\x83\xEC\x58\x4C\x8B\x51\x18\x48\x8D\x69\x10\x4C\x8B\x4A\x08\x4D\x8B\xD8\x48\x8B\xF1\x4D\x85\xD2",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    ZBoolConditionListenerManager_UnregisterListener,
+    void(
+        ZBoolConditionListenerManager* th, const TEntityRef<IBoolCondition>& condition,
+        const TEntityRef<IBoolConditionListener>& listener
+    )
+);
+
+PATTERN_FUNCTION(
+    "\x48\x89\x5C\x24\x20\x56\x41\x56\x41\x57\x48\x83\xEC\x00\x4C\x8B\x0A",
+    "xxxxxxxxxxxxx?xxx",
+    ZSplashHintManager_HideController,
+    void(ZSplashHintManager* th, TEntityRef<ZSplashHintController>& rController)
 );
