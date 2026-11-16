@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <string>
 #include <Glacier/ZResourceID.h>
 #include <Glacier/ZEntity.h>
@@ -41,5 +42,22 @@ struct EntityTreeNode {
         ReferencedBlueprintFactoryType(p_ReferencedBlueprintFactoryType),
         Entity(p_Ref),
         IsDynamicEntity(p_IsDynamicEntity) {
+    }
+
+    void RemoveFromParent() {
+        const auto s_Parent = Parent.lock();
+
+        if (!s_Parent) {
+            return;
+        }
+
+        auto [s_It, s_End] = s_Parent->Children.equal_range(Name);
+
+        for (; s_It != s_End; ++s_It) {
+            if (s_It->second.get() == this) {
+                s_Parent->Children.erase(s_It);
+                return;
+            }
+        }
     }
 };

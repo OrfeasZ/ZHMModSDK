@@ -2,57 +2,53 @@
 #include <Glacier/SColorRGB.h>
 #include <Glacier/SColorRGBA.h>
 
-bool Editor::SColorRGBProperty(
-    const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data
-) {
+static constexpr const char* c_ColorTags[] = { "R", "G", "B", "A" };
+
+bool Editor::DrawColorSwatch(const std::string& p_Id, float* p_Color, const bool p_HasAlpha) {
     bool s_IsChanged = false;
-    auto s_Value = static_cast<SColorRGB*>(p_Data);
+    const float s_Size = ScaledSize(20.f);
+    const ImVec4 s_Color(p_Color[0], p_Color[1], p_Color[2], p_HasAlpha ? p_Color[3] : 1.f);
 
-    ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - m_CopyWidgetWidth);
-
-    if (ImGui::ColorEdit3(p_Id.c_str(), &s_Value->r)) {
-        s_IsChanged = true;
+    if (ImGui::ColorButton(
+        (p_Id + "_Swatch").c_str(),
+        s_Color,
+        p_HasAlpha ? ImGuiColorEditFlags_AlphaPreviewHalf : ImGuiColorEditFlags_NoAlpha,
+        ImVec2(s_Size, s_Size)
+    )) {
+        ImGui::OpenPopup((p_Id + "_Picker").c_str());
     }
 
-    if (ImGuiCopyWidget(("SColorRGB_" + p_Id).c_str())) {
-        const uint32_t s_Color = s_Value->GetAsUInt32();
+    if (ImGui::BeginPopup((p_Id + "_Picker").c_str())) {
+        const ImGuiColorEditFlags s_Flags = ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR;
 
-        const uint8_t r = s_Color & 0xFF;
-        const uint8_t g = (s_Color >> 8) & 0xFF;
-        const uint8_t b = (s_Color >> 16) & 0xFF;
+        s_IsChanged = p_HasAlpha
+            ? ImGui::ColorPicker4((p_Id + "_Picker4").c_str(), p_Color, s_Flags | ImGuiColorEditFlags_AlphaBar)
+            : ImGui::ColorPicker3((p_Id + "_Picker3").c_str(), p_Color, s_Flags);
 
-        CopyToClipboard(
-            fmt::format("#{0:02X}{1:02X}{2:02X}", r, g, b)
-        );
+        ImGui::EndPopup();
     }
+
+    ImGui::SameLine();
 
     return s_IsChanged;
 }
 
-bool Editor::SColorRGBAProperty(
-    const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data
-) {
-    bool s_IsChanged = false;
-    auto s_Value = static_cast<SColorRGBA*>(p_Data);
+bool Editor::ColorComponentsProperty(const std::string& p_Id, float* p_Color, const bool p_HasAlpha) {
+    const float s_StartX = ImGui::GetCursorPosX();
+    const float s_Width = ImGui::CalcItemWidth();
 
-    ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - m_CopyWidgetWidth);
+    bool s_IsChanged = DrawColorSwatch(p_Id, p_Color, p_HasAlpha);
 
-    if (ImGui::ColorEdit4(p_Id.c_str(), &s_Value->r)) {
-        s_IsChanged = true;
-    }
-
-    if (ImGuiCopyWidget(("SColorRGBA_" + p_Id).c_str())) {
-        const uint32_t s_Color = s_Value->GetAsUInt32();
-
-        const uint8_t r = s_Color & 0xFF;
-        const uint8_t g = (s_Color >> 8) & 0xFF;
-        const uint8_t b = (s_Color >> 16) & 0xFF;
-        const uint8_t a = (s_Color >> 24) & 0xFF;
-
-        CopyToClipboard(
-            fmt::format("#{0:02X}{1:02X}{2:02X}{3:02X}", r, g, b, a)
-        );
-    }
+    ImGui::SetNextItemWidth(s_Width - (ImGui::GetCursorPosX() - s_StartX));
+    s_IsChanged |= DragFloatComponents(p_Id, p_Color, p_HasAlpha ? 4 : 3, c_ColorTags, 0.01f);
 
     return s_IsChanged;
+}
+
+bool Editor::SColorRGBProperty(const std::string& p_Id, void* p_Data) {
+    return ColorComponentsProperty(p_Id, &static_cast<SColorRGB*>(p_Data)->r, false);
+}
+
+bool Editor::SColorRGBAProperty(const std::string& p_Id, void* p_Data) {
+    return ColorComponentsProperty(p_Id, &static_cast<SColorRGBA*>(p_Data)->r, true);
 }

@@ -34,7 +34,7 @@
 #include "Util/StringUtils.h"
 #include "Util/HttpUtils.h"
 
-Editor::Editor() {
+Editor::Editor() : m_AssetBrowser(m_EntityTreeDeleter) {
     // Disable ZTemplateEntityBlueprintFactory freeing its associated data.
     uint8_t s_Nop[0x45] = {};
     memset(s_Nop, 0x90, sizeof(s_Nop));
@@ -128,8 +128,11 @@ void Editor::Init() {
     m_UseScaleSnap = GetSettingBool("general", "scale_snap", true);
     m_ScaleSnapValue = GetSettingDouble("general", "scale_snap_value", 1.0);
     m_UseQneTransforms = GetSettingBool("general", "qne_transforms", false);
+    m_ShowEntityIds = GetSettingBool("general", "show_entity_ids", true);
     m_RoundCopiedMatrixValues = GetSettingBool("general", "round_copied_matrix_values", false);
     m_CopyDecimalPlaces = GetSettingInt("general", "copy_decimal_places", 3);
+    m_TransformToolbarOffset.x = GetSettingDouble("general", "transform_toolbar_x", 8.0);
+    m_TransformToolbarOffset.y = GetSettingDouble("general", "transform_toolbar_y", 8.0);
     m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
 
     m_BoxReflectionOutputFolder = GetSetting("general", "box_reflection_output_folder", "").c_str();
@@ -337,38 +340,25 @@ void Editor::OnEngineInitialized() {
     m_EnableBoxReflectionCache = Functions::GetApplicationOptionBool->Call("EnableBoxReflectionCache", true);
 }
 
-bool Editor::ImGuiCopyWidget(const std::string& p_Id) {
-    ImGui::SameLine(0, 10.f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 });
-    ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, { 0.5, 0.5 });
-    ImGui::SetWindowFontScale(0.6);
-
-    const auto s_Result = ImGui::ButtonEx(
-        (std::string(ICON_MD_CONTENT_COPY) + "##" + p_Id).c_str(),
-        { m_CopyWidgetButtonSize, m_CopyWidgetButtonSize },
-        ImGuiButtonFlags_AlignTextBaseLine
-    );
-
-    ImGui::SetWindowFontScale(1.0);
-    ImGui::PopStyleVar(2);
-
-    if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Copy to clipboard");
-    }
-
-    return s_Result;
-}
-
 void Editor::OnDrawUI(bool p_HasFocus) {
     auto s_ImgGuiIO = ImGui::GetIO();
+
+    ImGui::PushFont(nullptr, FontSize(14.f));
+
     DrawSettingsWindow(p_HasFocus);
 
+    m_AssetBrowser.CaptureThumbnail();
+
     if (m_EditorWindowsVisible) {
+        DrawDockSpace();
         DrawEntityTreeWindow();
         DrawEntityPropertiesWindow();
         DrawEntityManipulator(p_HasFocus);
         //DrawPinTracerWindow();
-        //DrawLibraryWindow();
+        m_AssetBrowser.Draw(c_AssetBrowserWindowName);
+    }
+    else {
+        m_AssetBrowser.ClearHoverPreview();
     }
 
     DrawItemsWindow(p_HasFocus);
@@ -377,19 +367,276 @@ void Editor::OnDrawUI(bool p_HasFocus) {
     DrawRoomsWindow(p_HasFocus);
     DrawBoxReflectionsWindow(p_HasFocus);
 
-    if (m_EditorCameraRT && m_EditorCamera) {
-        ImGui::Begin("RT Texture");
+    ImGui::PopFont();
+}
 
-        const auto s_RT = reinterpret_cast<ZRenderDestination*>(m_EditorCameraRT.m_pInterfaceRef->
-            GetRenderDestination());
+void Editor::DrawDockSpace() {
+    const auto* s_Viewport = ImGui::GetMainViewport();
 
-        m_EditorCameraRT.m_entityRef.SetProperty("m_bVisible", true);
-        m_EditorCamera.m_entityRef.SetProperty("m_bVisible", true);
+    // Leave room for the SDK menu bar and console at the top of the screen.
+    const float s_TopOffset = 110.f;
+    const ImVec2 s_Pos = { s_Viewport->Pos.x, s_Viewport->Pos.y + s_TopOffset };
+    const ImVec2 s_Size = { s_Viewport->Size.x, s_Viewport->Size.y - s_TopOffset };
 
-        if (s_RT)
-            SDK()->ImGuiGameRenderTarget(s_RT);
+    if (s_Size.x <= 0.f || s_Size.y <= 0.f) {
+        return;
+    }
 
+    ImGui::SetNextWindowPos(s_Pos);
+    ImGui::SetNextWindowSize(s_Size);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+
+    ImGui::Begin(
+        "EditorDockSpaceHost",
+        nullptr,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground |
+        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoSavedSettings
+    );
+
+    ImGui::PopStyleVar();
+
+    const ImGuiID s_DockSpaceId = ImGui::GetID("EditorDockSpace");
+
+    if (m_ResetDockLayout) {
+        ImGui::DockBuilderRemoveNode(s_DockSpaceId);
+        m_ResetDockLayout = false;
+    }
+
+    if (!ImGui::DockBuilderGetNode(s_DockSpaceId)) {
+        ImGui::DockBuilderAddNode(s_DockSpaceId, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(s_DockSpaceId, s_Size);
+
+        ImGuiID s_CenterId = s_DockSpaceId;
+
+        const ImGuiID s_LeftId = ImGui::DockBuilderSplitNode(
+            s_CenterId, ImGuiDir_Left, 615.f / s_Size.x, nullptr, &s_CenterId
+        );
+
+        const ImGuiID s_RightId = ImGui::DockBuilderSplitNode(
+            s_CenterId, ImGuiDir_Right, 500.f / (s_Size.x - 615.f), nullptr, &s_CenterId
+        );
+
+        const ImGuiID s_BottomId = ImGui::DockBuilderSplitNode(
+            s_CenterId, ImGuiDir_Down, 300.f / s_Size.y, nullptr, &s_CenterId
+        );
+
+        ImGui::DockBuilderDockWindow(c_EntityTreeWindowName, s_LeftId);
+        ImGui::DockBuilderDockWindow(c_EntityPropertiesWindowName, s_RightId);
+        ImGui::DockBuilderDockWindow(c_AssetBrowserWindowName, s_BottomId);
+        ImGui::DockBuilderFinish(s_DockSpaceId);
+    }
+
+    ImGui::DockSpace(s_DockSpaceId, { 0, 0 }, ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::End();
+
+    if (const ImGuiDockNode* s_GameView = ImGui::DockBuilderGetCentralNode(s_DockSpaceId)) {
+        DrawTransformToolbar(s_GameView->Pos);
+
+        // The game view isn't an ImGui window, so we handle asset drops on it here.
+        // The payload is still set in the frame the mouse is released.
+        const ImGuiPayload* s_Payload = ImGui::GetDragDropPayload();
+        const ImVec2 s_MousePos = ImGui::GetMousePos();
+        const ImRect s_GameViewRect(
+            s_GameView->Pos,
+            ImVec2(s_GameView->Pos.x + s_GameView->Size.x, s_GameView->Pos.y + s_GameView->Size.y)
+        );
+
+        if (s_Payload &&
+            s_Payload->IsDataType(c_AssetItemPayloadType) &&
+            ImGui::IsMouseReleased(ImGuiMouseButton_Left) &&
+            s_GameViewRect.Contains(s_MousePos) &&
+            !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)) {
+            const auto s_Item = *static_cast<const AssetItem* const*>(s_Payload->Data);
+            const ImVec2 s_ViewportPos = ImGui::GetMainViewport()->Pos;
+
+            OnAssetItemDropped(*s_Item, SVector2(s_MousePos.x - s_ViewportPos.x, s_MousePos.y - s_ViewportPos.y));
+        }
+    }
+}
+
+void Editor::DrawTransformToolbar(const ImVec2& p_GameViewPos) {
+    static constexpr float c_FontSize = 12.f;
+
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            p_GameViewPos.x + ScaledSize(m_TransformToolbarOffset.x),
+            p_GameViewPos.y + ScaledSize(m_TransformToolbarOffset.y)
+        )
+    );
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaledSize(5.f), ScaledSize(2.f)));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(1.f, 1.f));
+
+    const bool s_IsOpen = ImGui::Begin(
+        "##TransformToolbar",
+        nullptr,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoMove
+    );
+
+    ImGui::PopStyleVar(3);
+
+    if (!s_IsOpen) {
         ImGui::End();
+        return;
+    }
+
+    ImGui::PushFont(nullptr, FontSize(c_FontSize));
+
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ScaledSize(4.f), ScaledSize(2.f)));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(ScaledSize(4.f), ScaledSize(4.f)));
+    ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, ScaledSize(5.f));
+
+    const auto s_Checkbox = [&](const char* p_Label, bool* p_Value, const char* p_Tooltip = nullptr) {
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ScaledSize(1.f));
+        PushFrameHeight(14.f, 3.f);
+
+        const bool s_IsChanged = ImGui::Checkbox(p_Label, p_Value);
+
+        ImGui::PopStyleVar();
+
+        if (p_Tooltip && ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("%s", p_Tooltip);
+        }
+
+        ImGui::SameLine();
+
+        return s_IsChanged;
+    };
+
+    const auto s_Separator = [&] {
+        ImGui::Dummy(ImVec2(ScaledSize(2.f), 0.f));
+        ImGui::SameLine(0.f, 0.f);
+        DrawToolbarSeparator(12.f);
+        ImGui::SameLine(0.f, ScaledSize(2.f) + ImGui::GetStyle().ItemSpacing.x);
+    };
+
+    PushFrameHeight(16.f, 3.f);
+
+    const auto s_SnapField = [&](const char* p_Id, double* p_Value) {
+        ImGui::SetNextItemWidth(ScaledSize(48.f));
+
+        const bool s_IsChanged = ImGui::InputDouble(p_Id, p_Value, 0.0, 0.0, "%.1f");
+
+        ImGui::SameLine();
+
+        return s_IsChanged;
+    };
+
+    DrawTransformToolbarHandle(p_GameViewPos);
+    ImGui::SameLine();
+
+    if (s_Checkbox("QNE", &m_UseQneTransforms, "Show matrices as position and rotation")) {
+        SetSettingBool("general", "qne_transforms", m_UseQneTransforms);
+    }
+
+    s_Separator();
+
+    if (s_Checkbox("Snap", &m_UseSnap)) {
+        SetSettingBool("general", "snap", m_UseSnap);
+    }
+
+    if (s_SnapField("##SnapValue", &m_SnapValue)) {
+        SetSettingDouble("general", "snap_value", m_SnapValue);
+    }
+
+    if (s_Checkbox("Angle", &m_UseAngleSnap)) {
+        SetSettingBool("general", "angle_snap", m_UseAngleSnap);
+    }
+
+    if (s_SnapField("##AngleSnapValue", &m_AngleSnapValue)) {
+        SetSettingDouble("general", "angle_snap_value", m_AngleSnapValue);
+    }
+
+    if (s_Checkbox("Scale", &m_UseScaleSnap)) {
+        SetSettingBool("general", "scale_snap", m_UseScaleSnap);
+    }
+
+    if (s_SnapField("##ScaleSnapValue", &m_ScaleSnapValue)) {
+        SetSettingDouble("general", "scale_snap_value", m_ScaleSnapValue);
+    }
+
+    s_Separator();
+
+    if (s_Checkbox("Round", &m_RoundCopiedMatrixValues, "Round copied matrix values")) {
+        SetSettingBool("general", "round_copied_matrix_values", m_RoundCopiedMatrixValues);
+    }
+
+    ImGui::BeginDisabled(!m_RoundCopiedMatrixValues);
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImGui::GetStyleColorVec4(ImGuiCol_ButtonHovered));
+    ImGui::SetNextItemWidth(ScaledSize(40.f));
+
+    if (ImGui::SliderInt("##DecimalPlaces", &m_CopyDecimalPlaces, 0, 6, "%d dp")) {
+        SetSettingInt("general", "copy_decimal_places", m_CopyDecimalPlaces);
+    }
+
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+        ImGui::SetTooltip("Decimal places of copied matrix values");
+    }
+
+    ImGui::PopStyleColor(2);
+    ImGui::EndDisabled();
+
+    ImGui::PopStyleVar(4);
+    ImGui::PopFont();
+
+    ImGui::End();
+}
+
+void Editor::DrawTransformToolbarHandle(const ImVec2& p_GameViewPos) {
+    ImGui::InvisibleButton("##TransformToolbarHandle", ImVec2(ScaledSize(8.f), ScaledSize(16.f)));
+
+    const bool s_IsActive = ImGui::IsItemActive();
+
+    if (s_IsActive || ImGui::IsItemHovered()) {
+        ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+    }
+
+    if (s_IsActive) {
+        const ImGuiViewport* s_Viewport = ImGui::GetMainViewport();
+        const ImVec2 s_WindowPos = ImGui::GetWindowPos();
+        const ImVec2 s_WindowSize = ImGui::GetWindowSize();
+        const ImVec2 s_MouseDelta = ImGui::GetIO().MouseDelta;
+
+        const float s_X = std::clamp(
+            s_WindowPos.x + s_MouseDelta.x,
+            s_Viewport->Pos.x,
+            s_Viewport->Pos.x + s_Viewport->Size.x - s_WindowSize.x
+        );
+        const float s_Y = std::clamp(
+            s_WindowPos.y + s_MouseDelta.y,
+            s_Viewport->Pos.y,
+            s_Viewport->Pos.y + s_Viewport->Size.y - s_WindowSize.y
+        );
+
+        const float s_Scale = ScaledSize(1.f);
+        m_TransformToolbarOffset = ImVec2((s_X - p_GameViewPos.x) / s_Scale, (s_Y - p_GameViewPos.y) / s_Scale);
+    }
+
+    if (ImGui::IsItemDeactivated()) {
+        SetSettingDouble("general", "transform_toolbar_x", m_TransformToolbarOffset.x);
+        SetSettingDouble("general", "transform_toolbar_y", m_TransformToolbarOffset.y);
+    }
+
+    const ImVec2 s_Min = ImGui::GetItemRectMin();
+    const ImVec2 s_Max = ImGui::GetItemRectMax();
+    const float s_CenterX = (s_Min.x + s_Max.x) * 0.5f;
+    const float s_CenterY = (s_Min.y + s_Max.y) * 0.5f;
+    const float s_DotSpacing = ScaledSize(4.f);
+    const ImU32 s_DotColor = ImGui::GetColorU32(
+        s_IsActive || ImGui::IsItemHovered() ? ImGuiCol_Text : ImGuiCol_TextDisabled
+    );
+
+    for (int i = -1; i <= 1; ++i) {
+        ImGui::GetWindowDrawList()->AddCircleFilled(
+            ImVec2(s_CenterX, s_CenterY + i * s_DotSpacing),
+            ScaledSize(1.5f),
+            s_DotColor
+        );
     }
 }
 
@@ -398,8 +645,8 @@ void Editor::DrawSettingsWindow(const bool p_HasFocus) {
         return;
     }
 
-    ImGui::PushFont(SDK()->GetImGuiBlackFont());
-    ImGui::PushFont(SDK()->GetImGuiRegularFont());
+    ImGui::PushFont(SDK()->GetImGuiBlackFont(), 0.f);
+    ImGui::PushFont(SDK()->GetImGuiRegularFont(), 0.f);
     if (ImGui::Begin(ICON_MD_VIDEO_SETTINGS " Editor", &m_SettingsVisible)) {
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y), ImGuiCond_FirstUseEver);
 
@@ -427,6 +674,12 @@ void Editor::DrawSettingsWindow(const bool p_HasFocus) {
         }
 
         ImGui::Checkbox("Raycast logging", &m_raycastLogging);
+
+        ImGui::Spacing();
+
+        if (ImGui::Button(ICON_MD_DASHBOARD " Reset layout")) {
+            m_ResetDockLayout = true;
+        }
     }
     ImGui::PopFont();
     ImGui::End();
@@ -453,64 +706,26 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         UpdateTrackCam();
     }
 
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+    m_AssetBrowser.Update(p_UpdateEvent.m_RealTimeDelta.ToSeconds());
 
-    if (!m_EditorData && (*Globals::ApplicationEngineWin32)->m_bSceneLoaded && s_Scene) {
-        //SpawnCameras();
-    }
+    UpdateAssetSpawns();
+    m_EntityTreeDeleter.Update();
 
     std::lock_guard lock(m_EntityDestructionMutex);
 
-    for (const auto& [s_Entity, s_ClientId] : m_EntitiesToDestroy) {
+    // Spawned entities wait in the queue until their tree can be deleted.
+    std::erase_if(m_EntitiesToDestroy, [&](const auto& p_Entry) {
+        const auto& [s_Entity, s_ClientId] = p_Entry;
+
+        if (!IsReadyToDestroy(s_Entity)) {
+            return false;
+        }
+
         DestroyEntityInternal(s_Entity, s_ClientId);
-    }
+        return true;
+    });
 
-    m_EntitiesToDestroy.clear();
-
-    if (m_CachedEntityTree && !m_IsBuildingEntityTree.load()) {
-        std::vector<ZEntityRef> s_EntitiesToAdd;
-
-        {
-            std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
-
-            if (!m_PendingDynamicEntities.empty()) {
-                s_EntitiesToAdd.reserve(m_PendingDynamicEntities.size());
-
-                for (const auto& ref : m_PendingDynamicEntities) {
-                    s_EntitiesToAdd.push_back(ref);
-                }
-
-                m_PendingDynamicEntities.clear();
-            }
-        }
-
-        if (!s_EntitiesToAdd.empty()) {
-            std::scoped_lock s_ScopedLock(m_CachedEntityTreeMutex);
-
-            UpdateEntityTree(m_CachedEntityTreeMap, s_EntitiesToAdd, true);
-
-            if (m_ReparentDynamicOutfitEntities) {
-                ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
-            }
-
-            bool s_HasDebugEntities;
-
-            {
-                std::scoped_lock s_Lock(m_DebugEntitiesMutex);
-                s_HasDebugEntities = !m_EntityRefToDebugEntities.empty();
-            }
-
-            if (s_HasDebugEntities) {
-                for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
-                    auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
-
-                    if (s_Iterator != m_CachedEntityTreeMap.end()) {
-                        GetDebugEntities(s_Iterator->second);
-                    }
-                }
-            }
-        }
-    }
+    AddPendingDynamicEntities();
 
     if (m_RemoveItemFromInventory) {
         if (!m_ItemToRemove) {
@@ -537,6 +752,59 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         m_RemoveItemFromInventory = false;
     }
 
+    UpdatePinsDownload();
+}
+
+void Editor::AddPendingDynamicEntities() {
+    if (!m_CachedEntityTree || m_IsBuildingEntityTree.load()) {
+        return;
+    }
+
+    std::vector<ZEntityRef> s_EntitiesToAdd;
+
+    {
+        std::scoped_lock s_ScopedLock(m_PendingDynamicEntitiesMutex);
+
+        if (!m_PendingDynamicEntities.empty()) {
+            s_EntitiesToAdd.reserve(m_PendingDynamicEntities.size());
+
+            for (const auto& ref : m_PendingDynamicEntities) {
+                s_EntitiesToAdd.push_back(ref);
+            }
+
+            m_PendingDynamicEntities.clear();
+        }
+    }
+
+    if (!s_EntitiesToAdd.empty()) {
+        std::scoped_lock s_ScopedLock(m_CachedEntityTreeMutex);
+
+        UpdateEntityTree(m_CachedEntityTreeMap, s_EntitiesToAdd, true);
+
+        if (m_ReparentDynamicOutfitEntities) {
+            ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
+        }
+
+        bool s_HasDebugEntities;
+
+        {
+            std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+            s_HasDebugEntities = !m_EntityRefToDebugEntities.empty();
+        }
+
+        if (s_HasDebugEntities) {
+            for (const auto& s_EntityToAdd : s_EntitiesToAdd) {
+                auto s_Iterator = m_CachedEntityTreeMap.find(s_EntityToAdd);
+
+                if (s_Iterator != m_CachedEntityTreeMap.end()) {
+                    GetDebugEntities(s_Iterator->second);
+                }
+            }
+        }
+    }
+}
+
+void Editor::UpdatePinsDownload() {
     static std::future<std::map<std::string, PinLists>> s_DownloadFuture;
     static bool s_DownloadStarted = false;
     static bool s_DownloadCompleted = false;
@@ -754,42 +1022,11 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
         return;
     }
 
-    float4 s_DirectionVec(s_Direction.x, s_Direction.y, s_Direction.z, 1.f);
-
-    float4 s_From = float4(s_World.x, s_World.y, s_World.z, 1.f);
-    float4 s_To = s_From + (s_DirectionVec * 200.f);
-
-    if (!*Globals::CollisionManager) {
-        Logger::Error("[Editor] Collision manager not found.");
-        return;
-    }
-
-    ZRayQueryInput s_RayInput {
-        .m_vFrom = s_From,
-        .m_vTo = s_To,
-    };
-
     ZRayQueryOutput s_RayOutput {};
 
-    if (m_raycastLogging) {
-        Logger::Debug("[Editor] RayCasting from {} to {}.", s_From, s_To);
-    }
-
-    if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {
-        if (m_raycastLogging) {
-            Logger::Error("[Editor] Raycast failed.");
-        }
+    if (!RayCastCollision(s_World, s_Direction, s_RayOutput)) {
         return;
     }
-
-    if (m_raycastLogging) {
-        Logger::Debug("[Editor] Raycast result: {} {}", fmt::ptr(&s_RayOutput), s_RayOutput.m_vPosition);
-    }
-
-    m_From = s_From;
-    m_To = s_To;
-    m_Hit = s_RayOutput.m_vPosition;
-    m_Normal = s_RayOutput.m_vNormal;
 
     if (p_FirstClick) {
         if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
@@ -818,221 +1055,37 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
     }
 }
 
-void Editor::SpawnCameras() {
-    static const std::string s_EditorDataJson =
-        R"(
-{
-    "tempHash": "00644fe9eb9feff5",
-    "tbluHash": "005474211f99b411",
-    "rootEntity": "fffffffffffffffe",
-    "entities": {
-        "fffffffffffffffe": {
-            "parent": null,
-            "name": "editor_data",
-            "factory": "[modules:/zspatialentity.class].pc_entitytype",
-            "blueprint": "[modules:/zspatialentity.class].pc_entityblueprint"
-        },
-        "feed678791f1b3e1": {
-            "parent": "fffffffffffffffe",
-            "name": "Tablet_A",
-            "factory": "[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entitytype",
-            "blueprint": "[assembly:/_pro/environment/templates/props/accessories/tablet_a.template?/tablet_a.entitytemplate].pc_entityblueprint",
-            "properties": {
-                "m_mTransform": {
-                    "type": "SMatrix43",
-                    "value": {
-                        "rotation": {
-                            "x": -87.4014365441793,
-                            "y": 0.0000017075472925031877,
-                            "z": 91.0032070293913
-                        },
-                        "position": {
-                            "x": -40.105434,
-                            "y": -29.001667,
-                            "z": -999.3575625
-                        }
-                    }
-                },
-                "Texture2D_04_dest": {
-                    "type": "SEntityTemplateReference",
-                    "value": "feedbf5a41eb9c48"
-                },
-                "m_eRoomBehaviour": {
-                    "type": "ZSpatialEntity.ERoomBehaviour",
-                    "value": "ROOM_DYNAMIC"
-                },
-                "m_eidParent": {
-                    "type": "SEntityTemplateReference",
-                    "value": "fffffffffffffffe",
-                    "postInit": true
-                }
-            }
-        },
-        "feedbf5a41eb9c48": {
-            "parent": "fffffffffffffffe",
-            "name": "RenderDestinationTexture",
-            "factory": "[modules:/zrenderdestinationtextureentity.class].pc_entitytype",
-            "blueprint": "[modules:/zrenderdestinationtextureentity.class].pc_entityblueprint",
-            "properties": {
-                "m_aMultiSource": {
-                    "type": "TArray<SEntityTemplateReference>",
-                    "value": [
-                        "feedb6fc4f5626ea"
-                    ]
-                },
-                "m_nWidth": {
-                    "type": "uint32",
-                    "value": 1280
-                },
-                "m_nHeight": {
-                    "type": "uint32",
-                    "value": 720
-                },
-                "m_bUseBGRA": {
-                    "type": "bool",
-                    "value": true
-                },
-                "m_bIsPIP": {
-                    "type": "bool",
-                    "value": false
-                },
-                "m_bDrawGates": {
-                    "type": "bool",
-                    "value": true
-                },
-                "m_nGateTraversalDepth": {
-                    "type": "int32",
-                    "value": 10000
-                },
-                "m_bForceVisible": {
-                    "type": "bool",
-                    "value": true
-                },
-                "m_eRoomBehaviour": {
-                    "type": "ZSpatialEntity.ERoomBehaviour",
-                    "value": "ROOM_DYNAMIC"
-                }
-            }
-        },
-        "feedb6fc4f5626ea": {
-            "parent": "fffffffffffffffe",
-            "name": "Camera",
-            "factory": "[modules:/zcameraentity.class].pc_entitytype",
-            "blueprint": "[modules:/zcameraentity.class].pc_entityblueprint",
-            "properties": {
-                "m_bAllowAutoCameraCuts": {
-                    "type": "bool",
-                    "value": false
-                },
-                "m_fNearZ": {
-                    "type": "float32",
-                    "value": 0.5
-                },
-                "m_fAspectWByH": {
-                    "type": "float32",
-                    "value": 1
-                },
-                "m_fFovYDeg": {
-                    "type": "float32",
-                    "value": 35
-                },
-                "m_fFarZ": {
-                    "type": "float32",
-                    "value": 250
-                },
-                "m_bIsUICamera": {
-                    "type": "bool",
-                    "value": true
-                },
-                "m_mTransform": {
-                    "type": "SMatrix43",
-                    "value": {
-                        "rotation": {
-                            "x": -73.77378164046733,
-                            "y": 1.7075472925031877e-06,
-                            "z": 90.61792971868923
-                        },
-                        "position": {
-                            "x": -43.491676,
-                            "y": -28.87086,
-                            "z": 3.2203503
-                        }
-                    }
-                },
-                "m_bForceVisible": {
-                    "type": "bool",
-                    "value": true
-                },
-                "m_nPIPPriority": {
-                    "type": "uint32",
-                    "value": 0
-                },
-                "m_eRoomBehaviour": {
-                    "type": "ZSpatialEntity.ERoomBehaviour",
-                    "value": "ROOM_DYNAMIC"
-                }
-            }
+bool Editor::RayCastCollision(const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output) {
+    if (!*Globals::CollisionManager) {
+        Logger::Error("[Editor] Collision manager not found.");
+        return false;
+    }
+
+    const float4 s_From(p_World, 1.f);
+    const float4 s_To(p_World + p_Direction * 200.f, 1.f);
+
+    ZRayQueryInput s_RayInput {
+        .m_vFrom = s_From,
+        .m_vTo = s_To,
+    };
+
+    if (m_raycastLogging) {
+        Logger::Debug("[Editor] RayCasting from {} to {}.", s_From, s_To);
+    }
+
+    if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &p_Output)) {
+        if (m_raycastLogging) {
+            Logger::Error("[Editor] Raycast failed.");
         }
-    },
-    "propertyOverrides": [],
-    "overrideDeletes": [],
-    "pinConnectionOverrides": [],
-    "pinConnectionOverrideDeletes": [],
-    "externalScenes": [],
-    "subType": "brick",
-    "quickEntityVersion": 3.1,
-    "extraFactoryDependencies": [],
-    "extraBlueprintDependencies": [],
-    "comments": []
-}
-)";
 
-    Logger::Debug("[Editor] Spawning editor data entity.");
-
-    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
-
-    TResourcePtr<ZTemplateEntityFactory> s_CameraRTFactory;
-    TResourcePtr<ZTemplateEntityBlueprintFactory> s_CameraRTBpFactory;
-
-    if (!SDK()->LoadQnEntity(s_EditorDataJson, s_CameraRTBpFactory, s_CameraRTFactory)) {
-        Logger::Error("[Editor] Failed to load editor data entity.");
-        return;
+        return false;
     }
 
-    SExternalReferences s_ExternalRefs;
-    Functions::ZEntityManager_NewEntity->Call(
-        Globals::EntityManager,
-        m_EditorData,
-        "SDKCam",
-        s_CameraRTFactory,
-        s_Scene.m_entityRef,
-        s_ExternalRefs,
-        -1
-    );
-
-    Logger::Debug("[Editor] Spawned editor data entity!");
-
-    if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedb6fc4f5626ea); idx != -1) {
-        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pObj, idx)) {
-            m_EditorCamera = TEntityRef<ZCameraEntity>(s_Ent);
-        }
+    if (m_raycastLogging) {
+        Logger::Debug("[Editor] Raycast result: {} {}", fmt::ptr(&p_Output), p_Output.m_vPosition);
     }
 
-    if (const auto idx = s_CameraRTBpFactory.GetResource()->GetSubEntityIndex(0xfeedbf5a41eb9c48); idx != -1) {
-        if (const auto s_Ent = s_CameraRTBpFactory.GetResource()->GetSubEntity(m_EditorData.m_pObj, idx)) {
-            m_EditorCameraRT = TEntityRef<ZRenderDestinationTextureEntity>(s_Ent);
-        }
-    }
-
-    if (!m_EditorCamera || !m_EditorCameraRT) {
-        Logger::Error("[Editor] Failed to get editor camera or render destination texture entity.");
-        return;
-    }
-
-    // If we have a current camera, move the editor camera to its position.
-    if (const auto s_CurrentCamera = Functions::GetCurrentCamera->Call()) {
-        m_EditorCamera.m_pInterfaceRef->SetObjectToWorldMatrixFromEditor(s_CurrentCamera->GetObjectToWorldMatrix());
-    }
+    return true;
 }
 
 void Editor::ActivateCamera(ZEntityRef* m_CameraEntity) {
@@ -1345,6 +1398,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     {
         std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
         m_CachedEntityTree.reset();
+        m_ShouldClearRecentPinFires = true;
         m_CachedEntityTreeMap.clear();
         m_OpenEntityTreeNodes.clear();
         m_EntityNames.clear();
@@ -1355,15 +1409,22 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_OpenEntityTreeNodes.clear();
     }
 
-    std::unordered_map<uint64_t, ZEntityRef> s_SpawnedEntitiesToDestroy;
+    {
+        std::scoped_lock s_Lock(m_AssetSpawnRequestsMutex);
+        m_AssetSpawnRequests.clear();
+    }
+
+    m_PendingAssetSpawns.clear();
+
+    decltype(m_SpawnedEntities) s_SpawnedEntitiesToDestroy;
     {
         std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
         s_SpawnedEntitiesToDestroy.swap(m_SpawnedEntities);
     }
 
-    for (const auto& s_Entity : s_SpawnedEntitiesToDestroy | std::views::values) {
-        if (s_Entity) {
-            Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, s_Entity, {});
+    for (const auto& s_SpawnedEntity : s_SpawnedEntitiesToDestroy | std::views::values) {
+        if (s_SpawnedEntity.Entity) {
+            m_EntityTreeDeleter.Delete(s_SpawnedEntity.Entity, s_SpawnedEntity.Tree);
         }
     }
 
@@ -1389,12 +1450,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_TrackCamActive = false;
     }
 
-    if (m_EditorData) {
-        m_EditorCamera = {};
-        m_EditorCameraRT = {};
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
-        m_EditorData = {};
-    }
+    m_AssetBrowser.OnClearScene();
 
     m_SelectedActor = nullptr;
     m_GlobalOutfitKit = {};
@@ -1406,13 +1462,6 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     {
         std::scoped_lock s_Lock(m_DebugEntitiesMutex);
         m_EntityRefToDebugEntities.clear();
-    }
-
-    if (m_EditorData) {
-        m_EditorCamera = {};
-        m_EditorCameraRT = {};
-        Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_EditorData, {});
-        m_EditorData = {};
     }
 
     m_EntityRefToFactoryRuntimeResourceIDs.clear();

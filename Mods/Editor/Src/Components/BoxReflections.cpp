@@ -20,9 +20,9 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
         return;
     }
 
-    ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    ImGui::PushFont(SDK()->GetImGuiBlackFont(), 0.f);
     const auto s_IsWindowExpanded = ImGui::Begin(ICON_MD_VIEW_IN_AR " Box reflections", &m_ShowBoxReflectionsWindow);
-    ImGui::PushFont(SDK()->GetImGuiRegularFont());
+    ImGui::PushFont(SDK()->GetImGuiRegularFont(), 0.f);
 
     if (!s_IsWindowExpanded) {
         ImGui::PopFont();

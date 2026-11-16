@@ -23,9 +23,9 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
         return;
     }
 
-    ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    ImGui::PushFont(SDK()->GetImGuiBlackFont(), 0.f);
     const auto s_IsWindowExpanded = ImGui::Begin("Actors", &m_ShowActorsWindow);
-    ImGui::PushFont(SDK()->GetImGuiRegularFont());
+    ImGui::PushFont(SDK()->GetImGuiRegularFont(), 0.f);
 
     if (s_IsWindowExpanded) {
         if (!Globals::ActorManager) {

@@ -5,6 +5,9 @@
 #include <random>
 #include <unordered_map>
 #include <map>
+#include <atomic>
+#include <deque>
+#include <list>
 #include <shared_mutex>
 
 #include <SimpleMath.h>
@@ -22,12 +25,18 @@
 #include "Glacier/ZSound.h"
 #include "Glacier/ZSequence.h"
 #include "Glacier/ZCover.h"
+#include "Glacier/ZCollision.h"
 
 #include "IPluginInterface.h"
+#include "IconsMaterialDesign.h"
 #include "ImGuizmo.h"
 #include "EditorServer.h"
 #include "EntityTreeNode.h"
 #include "NavKit.h"
+#include "Components/AssetBrowser.h"
+#include "Components/SpawnSafety.h"
+#include "Properties/Curve.h"
+#include "Widgets.h"
 
 struct QneTransform {
     SVector3 Position;
@@ -80,6 +89,8 @@ public:
     );
     void RebuildEntityTree();
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
+    static int32_t GetEnumValue(const IEnumType* p_Type, const void* p_Data);
+    static void SetEnumValue(const IEnumType* p_Type, void* p_Data, int32_t p_Value);
 
     void QueueTask(std::function<void()> p_Task);
 
@@ -136,24 +147,85 @@ private:
         }
     };
 
-    void SpawnCameras();
     void ActivateCamera(ZEntityRef* m_CameraEntity);
     void DeactivateCamera();
     void CopyToClipboard(const std::string& p_String) const;
     void OnMouseDown(SVector2 p_Pos, bool p_FirstClick);
+    bool RayCastCollision(const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output);
 
     void DrawEntityManipulator(bool p_HasFocus);
     void DrawEntityAABB(IRenderer* p_Renderer);
 
     void DrawEntityPropertiesWindow();
-    bool DrawEntityPropertyValue(
+
+    struct EntityDetails {
+        bool HasTreeNode = false;
+        std::string Name;
+        std::string Id;
+        std::string TypeName;
+
+        std::vector<std::pair<std::string, std::string>> Rows;
+
+        std::string ReferencedTemplateFactoryType;
+        ZRuntimeResourceID ReferencedTemplateFactory;
+    };
+
+    bool DrawEntityToolbar(ZEntityRef p_Entity, ZSpatialEntity* p_Spatial);
+    EntityDetails CollectEntityDetails(ZEntityRef p_Entity);
+    void DrawEntityName(const EntityDetails& p_Details);
+    void DrawEntityDetails(const EntityDetails& p_Details);
+    void DrawEntityKeywords(ZEntityRef p_Entity);
+    void DrawEntityPropertyTable(ZEntityRef p_Entity, const EntityDetails& p_Details);
+    void DrawEntityTransform(const SMatrix& p_Transform);
+    void DrawEntityPins(ZEntityRef p_Entity);
+
+    struct RecentPinFire {
+        bool m_IsOutput;
+        std::string m_Name;
+        ZObjectRef m_Value;
+        double m_FireTime;
+    };
+
+    void FireEntityPin(ZEntityRef p_Entity, bool p_IsOutput, const std::string& p_Name, const ZObjectRef& p_Value);
+
+    std::optional<RecentPinFire> DrawRecentPinFires(ZEntityRef p_Entity);
+
+    enum class EPropertyRowButton {
+        Copy,
+        Remove,
+        None
+    };
+
+    struct PropertyRowResult {
+        bool m_Changed = false;
+        bool m_RemoveClicked = false;
+        bool m_IsNameHovered = false;
+    };
+
+    bool BeginPropertyTable(const char* p_Id, float p_NameColumnWidth);
+    static void EndPropertyTable();
+    static void BeginPropertyTableRow();
+
+    struct PropertyTableBlock {
+        ImVec2 m_Min;
+        float m_MaxX;
+        float m_ContentWidth;
+    };
+
+    static PropertyTableBlock BeginPropertyTableBlock();
+    static void EndPropertyTableBlock(const PropertyTableBlock& p_Block);
+
+    PropertyRowResult DrawPropertyRow(
         const std::string& p_Id,
-        const std::string& p_PropertyName,
+        const std::string& p_Name,
         const STypeID* p_TypeID,
         ZEntityRef p_Entity,
         SPropertyData* p_Property,
-        void* p_Data
+        void* p_Data,
+        EPropertyRowButton p_Button
     );
+
+    bool DrawEntityPropertyValue(const std::string& p_Id, const STypeID* p_TypeID, void* p_Data);
 
     bool DrawArrayElements(
         const std::string& p_Id,
@@ -163,16 +235,31 @@ private:
         const IArrayType* p_ArrayType
     );
 
-    void DrawEntityPinValueField(const char* p_Id, const ZObjectRef& p_Value);
-    void DrawEntityPinValue(const std::string& p_Id, const std::string& p_TypeName, void* p_Data);
+    void DrawEntityPinValue(const std::string& p_Id, SMatrix43* p_Value);
 
-    void DrawLibraryWindow();
 
+    void DrawDockSpace();
+    void DrawTransformToolbar(const ImVec2& p_GameViewPos);
+    void DrawTransformToolbarHandle(const ImVec2& p_GameViewPos);
     void DrawSettingsWindow(bool p_HasFocus);
 
     bool HasVisibleChildren(const std::shared_ptr<EntityTreeNode>& p_Node) const;
+    bool ShouldOpenForScroll(const EntityTreeNode& p_Node) const;
+    void DrawSpawnedEntityContextMenu(const EntityTreeNode& p_Node, bool p_IsSpawnedEntitiesNode);
     void RenderEntity(std::shared_ptr<EntityTreeNode> p_Node);
+
+    struct EntityTreeNodeName {
+        std::string_view Name;
+        std::string_view Id;
+
+        std::string_view Marker;
+    };
+
+    static EntityTreeNodeName SplitEntityTreeNodeName(std::string_view p_NodeName);
     void DrawEntityTreeWindow();
+    void DrawEntityTreeToolbar();
+    void ExportEntityTree();
+    void DrawEntityTreeTable();
     void FilterEntityTree();
     bool FilterEntityTree(EntityTreeNode* p_Node, EntityTreeNode*& p_OutSingleMatchNode);
     void ClearFilters();
@@ -194,7 +281,39 @@ private:
     void ReparentDynamicOutfitEntities(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
+    void ReparentSpawnedEntity(
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap, ZEntityRef p_Entity
+    );
     bool IsSpecialEntityTreeNode(ZEntityRef p_Entity) const;
+
+    struct SpawnedEntity {
+        ZEntityRef Entity;
+
+        std::optional<TResourcePtr<ZTemplateEntityFactory>> Factory;
+
+        SpawnedTree Tree;
+
+        int DeleteReadyFrames = 0;
+    };
+
+    struct AssetSpawnRequest {
+        ZRuntimeResourceID ResourceId;
+        std::string Path;
+        std::string Name;
+        SVector3 Position;
+    };
+
+    struct PendingAssetSpawn {
+        AssetSpawnRequest Request;
+        TResourcePtr<ZTemplateEntityFactory> Factory;
+        int LoadFrames = 0;
+    };
+
+    void AddSpawnedEntity(SpawnedEntity p_SpawnedEntity, const std::string& p_Name, std::optional<std::string> p_ClientId);
+    void OnAssetItemDropped(const AssetItem& p_Item, SVector2 p_ScreenPosition);
+    void UpdateAssetSpawns();
+    void SpawnAssetItem(const PendingAssetSpawn& p_Spawn);
+    bool IsReadyToDestroy(ZEntityRef p_Entity);
 
     void OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, std::optional<std::string> p_ClientId);
     void OnDestroyEntity(ZEntityRef p_Entity, std::optional<std::string> p_ClientId);
@@ -204,6 +323,7 @@ private:
         ZEntityRef p_Entity, SMatrix p_Transform, bool p_Relative, std::optional<std::string> p_ClientId
     );
     void RefreshPathfinderObstacle(ZEntityRef p_Entity, bool p_Force);
+    void RefreshStaticPhysicsAndObstacles(ZEntityRef p_Root);
     void OnEntityNameChange(ZEntityRef p_Entity, const std::string& p_Name, std::optional<std::string> p_ClientId);
     void OnSetPropertyValue(
         ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value, std::optional<std::string> p_ClientId
@@ -222,10 +342,11 @@ private:
     );
 
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
+    void AddPendingDynamicEntities();
+    void UpdatePinsDownload();
 
     void DrawPinTracerWindow();
 
-    static bool ImGuiCopyWidget(const std::string& p_Id);
 
     static void ToggleEditorServerEnabled();
     static void FindAlocAndPrimForZGeomEntityNode(
@@ -244,38 +365,45 @@ private:
         std::map<std::string, std::vector<std::string>>& p_PrimMatis, bool p_OnlyCollidableMeshes
     );
 
+    static void DrawPropertyName(const std::string& p_Name, bool p_IsChild);
+    static bool DrawVectorChildRow(const std::string& p_Id, const char* p_Label, const char* p_Suffix, float* p_Values);
+    static bool DrawColorSwatch(const std::string& p_Id, float* p_Color, bool p_HasAlpha);
+    static bool ColorComponentsProperty(const std::string& p_Id, float* p_Color, bool p_HasAlpha);
+    static bool IsReadOnlyProperty(const SPropertyData* p_Property);
+    static bool CanCopyPropertyValue(const IType* p_Type);
+    std::string FormatPropertyValueForClipboard(const STypeID* p_TypeID, void* p_Data);
+    std::string GetEnumValueName(const IEnumType* p_Type, const void* p_Data);
+
     // Properties
-    void UnsupportedProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID);
+    void UnsupportedProperty();
 
-    void ZEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    void TEntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    void EntityRefProperty(const std::string& p_Id, ZEntityRef p_Entity);
+    bool TEntityRefProperty(const std::string& p_Id, void* p_Data, const STypeID* p_TypeID);
+    bool EntityRefProperty(const std::string& p_Id, ZEntityRef& p_EntityRef);
 
-    void ZRepositoryIDProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    void ZGuidProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    void ZRepositoryIDProperty(void* p_Data);
+    bool ZGuidProperty(const std::string& p_Id, void* p_Data);
 
     // Primitive properties.
-    bool StringProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool BoolProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Uint8Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Uint16Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Uint32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Uint64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Int8Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Int16Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Int32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Int64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Float32Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool Float64Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID);
+    bool StringProperty(const std::string& p_Id, void* p_Data);
+    bool BoolProperty(const std::string& p_Id, void* p_Data);
+
+    struct ScalarPropertyType {
+        std::string_view m_TypeName;
+        const char* m_Tag;
+        ImGuiDataType m_DataType;
+        float m_Speed;
+    };
+
+    static const ScalarPropertyType* FindScalarPropertyType(std::string_view p_TypeName);
+    bool EnumProperty(const std::string& p_Id, void* p_Data, const STypeID* p_TypeID);
     void LoadSmfEnumVariants();
 
     // Vector properties.
-    bool SVector2Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool SVector3Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool SVector4Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool SVector2Property(const std::string& p_Id, void* p_Data);
+    bool SVector3Property(const std::string& p_Id, void* p_Data);
+    bool SVector4Property(const std::string& p_Id, void* p_Data);
 
-    bool SMatrix43Property(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool SMatrix43Property(const std::string& p_Id, void* p_Data);
 
     template <typename T>
     static std::unique_ptr<T, PropertyDeleter> GetProperty(ZEntityRef p_Entity, const SPropertyData* p_Property);
@@ -283,32 +411,25 @@ private:
     static Quat GetParentQuat(ZEntityRef p_Entity);
     std::pair<std::string, std::string> FindRoomForEntity(ZEntityRef p_Entity, const std::unordered_map<std::string, std::string>& p_RoomNameToFolderName);
 
-    bool SColorRGBProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    bool SColorRGBAProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool SColorRGBProperty(const std::string& p_Id, void* p_Data);
+    bool SColorRGBAProperty(const std::string& p_Id, void* p_Data);
 
-    void ResourcePtrProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
-    void ZRuntimeResourceIDProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    void DrawResourceIdLink(const ZRuntimeResourceID& p_ResourceId) const;
 
-    bool ArrayProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
-        const std::string& p_PropertyName, const STypeID* p_TypeID);
+    void ResourcePtrProperty(void* p_Data);
+    void ZRuntimeResourceIDProperty(void* p_Data);
 
-    bool ZGameTimeProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data);
+    bool ArrayProperty(void* p_Data, const STypeID* p_TypeID);
 
-    bool ZCurveProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data,
-        const std::string& p_PropertyName, const STypeID* p_TypeID);
+    bool ZGameTimeProperty(const std::string& p_Id, void* p_Data);
 
-    static void PlotZCurve(const ZCurve* p_Curve);
-    static float EvaluateZCurveSegment(
-        const TFixedArray<float, 8>& p_Key,
-        const TFixedArray<float, 8>& p_NextKey,
-        float p_Time
-    );
-
-    static std::string FormatZCurveForClipboard(ZCurve* p_Curve, void* p_Data, const IArrayType* p_ArrayType);
+    static std::string FormatZCurveForClipboard(ZCurve* p_Curve);
 
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
 
     static std::string FormatFloat(float p_Value, bool p_Round, uint32_t p_Decimals);
+    static std::string FormatMatrixAsRtJson(const SMatrix43& p_Matrix, bool p_Round, uint32_t p_Decimals);
+    static std::string FormatQneTransformAsJson(const QneTransform& p_Transform, bool p_Round, uint32_t p_Decimals);
 
     std::string GetNameFromRepository(const ZRepositoryID& p_RepositoryID);
 
@@ -681,13 +802,11 @@ private:
     double m_AngleSnapValue = 90.0;
     double m_ScaleSnapValue = 1.0;
 
-    bool m_SettingsVisible = false;
-    bool m_EditorWindowsVisible = true;
+    ImVec2 m_TransformToolbarOffset { 8.f, 8.f };
 
-    float4 m_From;
-    float4 m_To;
-    float4 m_Hit;
-    float4 m_Normal;
+    bool m_SettingsVisible = false;
+    bool m_ResetDockLayout = false;
+    bool m_EditorWindowsVisible = true;
 
     size_t m_SelectedBrickIndex = 0;
     ZEntityRef m_SelectedEntity;
@@ -731,7 +850,14 @@ private:
     std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
     std::unordered_set<EntityTreeNode*> m_OpenEntityTreeNodes;
 
-    std::unordered_map<uint64_t, ZEntityRef> m_SpawnedEntities;
+    std::unordered_map<ZEntityRef, SpawnedEntity> m_SpawnedEntities;
+    EntityTreeDeleter m_EntityTreeDeleter;
+
+    std::mutex m_AssetSpawnRequestsMutex;
+    std::vector<AssetSpawnRequest> m_AssetSpawnRequests;
+
+    // TResourcePtr's assignment doesn't count references, so these must not move.
+    std::list<PendingAssetSpawn> m_PendingAssetSpawns;
     std::unordered_map<ZEntityRef, std::string> m_EntityNames;
 
     std::mutex m_EntityDestructionMutex;
@@ -750,7 +876,6 @@ private:
     bool m_ShowDebugChannelsWindow = false;
     bool m_ShowRoomsWindow = false;
     bool m_ShowBoxReflectionsWindow = false;
-
     ZActor* m_SelectedActor = nullptr;
     TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
     const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
@@ -817,14 +942,13 @@ private:
 
     bool m_ShowSoundOcclusion = false;
 
-    ZEntityRef m_EditorData {};
-    TEntityRef<ZCameraEntity> m_EditorCamera {};
-    TEntityRef<ZRenderDestinationTextureEntity> m_EditorCameraRT {};
+    AssetBrowser m_AssetBrowser;
 
     bool m_ReparentDynamicOutfitEntities = true;
 
     inline static ZEntityRef m_DynamicEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x1));
     inline static ZEntityRef m_UnparentedEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x2));
+    inline static ZEntityRef m_SpawnedEntitiesNodeEntityRef = ZEntityRef(reinterpret_cast<ZEntityType**>(0x3));
 
     std::unordered_map<ZEntityRef, std::pair<ZRuntimeResourceID, ZRuntimeResourceID>> m_EntityRefToFactoryRuntimeResourceIDs;
     std::unordered_map<ZExtendedCppEntityFactory*, ZRuntimeResourceID> m_ExtendedCppEntityFactoryToRuntimeResourceID;
@@ -836,9 +960,19 @@ private:
     bool m_ShowOnlyVisibleRooms = false;
     bool m_ShowOnlyVisibleGates = false;
 
-    static constexpr float m_CopyWidgetButtonSize = 20.f;
-    static constexpr float m_CopyWidgetSpacing = 10.f;
-    static constexpr float m_CopyWidgetWidth = m_CopyWidgetButtonSize + m_CopyWidgetSpacing;
+    int m_PropertyTableTreeDepth = 0;
+
+    static constexpr const char* c_EntityTreeWindowName = ICON_MD_CATEGORY " Entities";
+    static constexpr const char* c_EntityPropertiesWindowName = ICON_MD_TUNE " Entity properties";
+    static constexpr const char* c_AssetBrowserWindowName = ICON_MD_LIBRARY_BOOKS " Asset browser";
+    bool m_UseLocalTransforms = false;
+    bool m_ShowEntityIds = true;
+
+    float m_EntityTreeNameScroll = 0.f;
+    float m_EntityTreeNameWidth = 0.f;
+
+    std::string m_EntityRefPickTarget;
+    std::optional<ZEntityRef> m_PickedEntityRef;
 
     std::mutex m_TaskMutex;
     std::vector<std::function<void()>> m_TaskQueue;
@@ -847,6 +981,14 @@ private:
     std::vector<std::pair<std::string, STypeID*>> m_PinDataTypes;
     ZObjectRef m_InputPinValue;
     ZObjectRef m_OutputPinValue;
+
+    bool m_IsFiringOutputPin = false;
+    std::unordered_map<ZEntityRef, std::deque<RecentPinFire>> m_RecentPinFires;
+    std::unordered_map<std::string, STypeID*> m_LastPinArgumentTypes;
+
+    std::atomic<bool> m_ShouldClearRecentPinFires = false;
+
+    CurveEditor m_CurveEditor;
 
     std::vector<std::string> m_ClassNames;
 

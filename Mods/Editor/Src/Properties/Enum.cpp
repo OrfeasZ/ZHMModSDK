@@ -52,39 +52,13 @@ void Editor::LoadSmfEnumVariants() {
     Logger::Info("Loaded SMF enum variants for {} enum(s).", m_SmfEnumVariants.size());
 }
 
-bool Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data, const STypeID* p_TypeID) {
+bool Editor::EnumProperty(const std::string& p_Id, void* p_Data, const STypeID* p_TypeID) {
     bool s_IsChanged = false;
-    const auto s_PropertyInfo = p_Property->GetPropertyInfo();
     auto s_Type = reinterpret_cast<IEnumType*>(p_TypeID->GetTypeInfo());
-    int32_t s_Value = 0;
-
-    switch (s_Type->type.m_nTypeSize) {
-        case 1:
-            s_Value = *static_cast<int8_t*>(p_Data);
-            break;
-        case 2:
-            s_Value = *static_cast<int16_t*>(p_Data);
-            break;
-        case 4:
-            s_Value = *static_cast<int32_t*>(p_Data);
-            break;
-    }
+    int32_t s_Value = GetEnumValue(s_Type, p_Data);
 
     const auto s_SetValue = [&](int32_t p_NewValue) {
-        switch (s_Type->type.m_nTypeSize) {
-            case 1:
-                *static_cast<int8_t*>(p_Data) = static_cast<int8_t>(p_NewValue);
-                break;
-            case 2:
-                *static_cast<int16_t*>(p_Data) = static_cast<int16_t>(p_NewValue);
-                break;
-            case 4:
-                *static_cast<int32_t*>(p_Data) = static_cast<int32_t>(p_NewValue);
-                break;
-            default:
-                break;
-        }
-
+        SetEnumValue(s_Type, p_Data, p_NewValue);
         s_Value = p_NewValue;
 
         s_IsChanged = true;
@@ -96,29 +70,7 @@ bool Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropert
         s_SmfVariants = s_It->second;
     }
 
-    std::string s_CurrentValue;
-
-    for (auto& s_EnumValue : s_Type->items) {
-        if (s_EnumValue.nValue == s_Value) {
-            s_CurrentValue = s_EnumValue.szName;
-            break;
-        }
-    }
-
-    if (s_CurrentValue.empty()) {
-        for (const auto& [s_Name, s_VariantValue] : s_SmfVariants) {
-            if (s_VariantValue == s_Value) {
-                s_CurrentValue = s_Name;
-                break;
-            }
-        }
-    }
-
-    if (s_CurrentValue.empty()) {
-        s_CurrentValue = std::to_string(s_Value);
-    }
-
-    ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - m_CopyWidgetWidth);
+    const std::string s_CurrentValue = GetEnumValueName(s_Type, p_Data);
 
     if (ImGui::BeginCombo(p_Id.c_str(), s_CurrentValue.c_str())) {
         for (auto& s_EnumValue : s_Type->items) {
@@ -138,10 +90,6 @@ bool Editor::EnumProperty(const std::string& p_Id, ZEntityRef p_Entity, SPropert
         }
 
         ImGui::EndCombo();
-    }
-
-    if (ImGuiCopyWidget(("Enum_" + p_Id).c_str())) {
-        CopyToClipboard(s_CurrentValue);
     }
 
     return s_IsChanged;

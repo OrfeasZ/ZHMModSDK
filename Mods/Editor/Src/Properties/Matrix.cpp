@@ -1,91 +1,27 @@
 #include "Editor.h"
 #include "imgui.h"
 
-bool Editor::SMatrix43Property(
-    const std::string& p_Id, ZEntityRef p_Entity, SPropertyData* p_Property, void* p_Data
-) {
+bool Editor::SMatrix43Property(const std::string& p_Id, void* p_Data) {
     bool s_IsChanged = false;
-    auto s_Value = static_cast<SMatrix43*>(p_Data);
+    auto* s_Value = static_cast<SMatrix43*>(p_Data);
 
     if (m_UseQneTransforms) {
         auto s_QneTransform = MatrixToQneTransform(*s_Value);
 
-        if (ImGuiCopyWidget(("##QNE JSON_" + p_Id).c_str())) {
-            CopyToClipboard(
-                fmt::format(
-                    "{{\"rotation\":{{\"x\":{},\"y\":{},\"z\":{}}},"
-                    "\"position\":{{\"x\":{},\"y\":{},\"z\":{}}}}}",
-                    FormatFloat(s_QneTransform.Rotation.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_QneTransform.Rotation.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_QneTransform.Rotation.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_QneTransform.Position.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_QneTransform.Position.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_QneTransform.Position.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces)
-                )
-            );
-        }
-
-        if (ImGui::DragFloat3((p_Id + "p").c_str(), &s_QneTransform.Position.x, 0.1f)) {
-            const auto s_Matrix = QneTransformToMatrix(s_QneTransform);
-            *s_Value = s_Matrix.ToMatrix43();
-
-            s_IsChanged = true;
-        }
-
-        if (ImGui::DragFloat3((p_Id + "r").c_str(), &s_QneTransform.Rotation.x, 0.1f)) {
-            const auto s_Matrix = QneTransformToMatrix(s_QneTransform);
-            *s_Value = s_Matrix.ToMatrix43();
-
-            s_IsChanged = true;
-        }
+        bool s_IsQneChanged = DrawVectorChildRow(p_Id + "p", "Position", nullptr, &s_QneTransform.Position.x);
+        s_IsQneChanged |= DrawVectorChildRow(p_Id + "r", "Rotation", "\xC2\xB0", &s_QneTransform.Rotation.x);
 
         // We can't update scale like this. Use the gizmo instead.
-        /*if (ImGui::DragFloat3((p_Id + "s").c_str(), &s_QneTransform.Scale.x, 0.1f)) {
-            const auto s_Matrix = QneTransformToMatrix(s_QneTransform);
-            OnSetPropertyValue(p_Entity, p_Property->m_nPropertyId, ZVariant(s_Matrix.ToMatrix43()), std::nullopt);
-        }*/
+        if (s_IsQneChanged) {
+            *s_Value = QneTransformToMatrix(s_QneTransform).ToMatrix43();
+            s_IsChanged = true;
+        }
     }
     else {
-        if (ImGuiCopyWidget(("##RT JSON_" + p_Id).c_str())) {
-            CopyToClipboard(
-                fmt::format(
-                    "{{"
-                    "\"XAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
-                    "\"YAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
-                    "\"ZAxis\":{{\"x\":{},\"y\":{},\"z\":{}}},"
-                    "\"Trans\":{{\"x\":{},\"y\":{},\"z\":{}}}"
-                    "}}",
-                    FormatFloat(s_Value->XAxis.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->XAxis.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->XAxis.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->YAxis.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->YAxis.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->YAxis.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->ZAxis.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->ZAxis.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->ZAxis.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->Trans.x, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->Trans.y, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces),
-                    FormatFloat(s_Value->Trans.z, m_RoundCopiedMatrixValues, m_CopyDecimalPlaces)
-                )
-            );
-        }
-
-        if (ImGui::DragFloat3((p_Id + "x").c_str(), &s_Value->XAxis.x, 0.1f)) {
-            s_IsChanged = true;
-        }
-
-        if (ImGui::DragFloat3((p_Id + "y").c_str(), &s_Value->YAxis.x, 0.1f)) {
-            s_IsChanged = true;
-        }
-
-        if (ImGui::DragFloat3((p_Id + "z").c_str(), &s_Value->ZAxis.x, 0.1f)) {
-            s_IsChanged = true;
-        }
-
-        if (ImGui::DragFloat3((p_Id + "t").c_str(), &s_Value->Trans.x, 0.1f)) {
-            s_IsChanged = true;
-        }
+        s_IsChanged |= DrawVectorChildRow(p_Id + "x", "X axis", nullptr, &s_Value->XAxis.x);
+        s_IsChanged |= DrawVectorChildRow(p_Id + "y", "Y axis", nullptr, &s_Value->YAxis.x);
+        s_IsChanged |= DrawVectorChildRow(p_Id + "z", "Z axis", nullptr, &s_Value->ZAxis.x);
+        s_IsChanged |= DrawVectorChildRow(p_Id + "t", "Translation", nullptr, &s_Value->Trans.x);
     }
 
     return s_IsChanged;
