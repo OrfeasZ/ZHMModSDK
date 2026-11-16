@@ -9,6 +9,7 @@
 #include <Glacier/EntityFactory.h>
 #include <Glacier/SExternalReferences.h>
 #include <Glacier/ZModule.h>
+#include <Glacier/ZPhysics.h>
 #include <Glacier/ZScene.h>
 #include <Glacier/ZSpatialEntity.h>
 
@@ -20,6 +21,19 @@ void Editor::AddSpawnedEntity(
     const ZEntityRef s_Entity = p_SpawnedEntity.Entity;
 
     m_EntityTreeDeleter.OnTreeSpawned(p_SpawnedEntity.Tree);
+
+    // Disable physics for spawned entities for a second, cause otherwise they fall through the map.
+    for (const auto s_EntityObj : p_SpawnedEntity.Tree.Entities) {
+        ZEntityRef s_TreeEntity(s_EntityObj);
+        const auto s_PhysicsAspect = s_TreeEntity.QueryInterface<ZDynamicPhysicsAspect>();
+
+        if (!s_PhysicsAspect || s_PhysicsAspect->m_bKinematic) {
+            continue;
+        }
+
+        s_TreeEntity.SetProperty("m_bKinematic", true);
+        p_SpawnedEntity.PhysicsFrozenEntities.push_back(s_TreeEntity);
+    }
 
     {
         std::scoped_lock s_Lock(m_CachedEntityTreeMutex);
@@ -188,6 +202,28 @@ void Editor::SpawnAssetItem(const PendingAssetSpawn& p_Spawn) {
 
     AddSpawnedEntity(std::move(s_SpawnedEntity), s_Request.Name, std::nullopt);
     OnSelectEntity(s_Entity, true, std::nullopt);
+}
+
+void Editor::UpdatePhysicsFreezes(double p_DeltaSeconds) {
+    std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+
+    for (auto& s_SpawnedEntity : m_SpawnedEntities | std::views::values) {
+        if (s_SpawnedEntity.PhysicsFrozenEntities.empty()) {
+            continue;
+        }
+
+        s_SpawnedEntity.PhysicsFreezeSeconds -= p_DeltaSeconds;
+
+        if (s_SpawnedEntity.PhysicsFreezeSeconds > 0.0) {
+            continue;
+        }
+
+        for (auto& s_Entity : s_SpawnedEntity.PhysicsFrozenEntities) {
+            s_Entity.SetProperty("m_bKinematic", false);
+        }
+
+        s_SpawnedEntity.PhysicsFrozenEntities.clear();
+    }
 }
 
 // Wait one more frame after the tree is no longer in use, because an item spawner's item is

@@ -721,6 +721,7 @@ void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     m_AssetBrowser.Update(p_UpdateEvent.m_RealTimeDelta.ToSeconds());
 
     UpdateAssetSpawns();
+    UpdatePhysicsFreezes(p_UpdateEvent.m_GameTimeDelta.ToSeconds());
     m_EntityTreeDeleter.Update();
 
     std::lock_guard lock(m_EntityDestructionMutex);

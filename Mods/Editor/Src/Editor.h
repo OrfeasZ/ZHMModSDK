@@ -294,6 +294,9 @@ private:
         SpawnedTree Tree;
 
         int DeleteReadyFrames = 0;
+
+        std::vector<ZEntityRef> PhysicsFrozenEntities;
+        double PhysicsFreezeSeconds = 1.0;
     };
 
     struct AssetSpawnRequest {
@@ -313,6 +316,7 @@ private:
     void OnAssetItemDropped(const AssetItem& p_Item, SVector2 p_ScreenPosition);
     void UpdateAssetSpawns();
     void SpawnAssetItem(const PendingAssetSpawn& p_Spawn);
+    void UpdatePhysicsFreezes(double p_DeltaSeconds);
     bool IsReadyToDestroy(ZEntityRef p_Entity);
 
     void OnSelectEntity(ZEntityRef p_Entity, bool p_ShouldScrollToEntity, std::optional<std::string> p_ClientId);
