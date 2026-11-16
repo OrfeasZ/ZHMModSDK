@@ -7,6 +7,7 @@
 #include <numbers>
 
 #include <imgui_stdlib.h>
+#include <imgui_internal.h>
 
 #include "IPluginInterface.h"
 #include "SpawnSafety.h"
@@ -926,8 +927,46 @@ void AssetBrowser::Draw(const char* p_WindowName) {
 
             ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyleColorVec4(ImGuiCol_FrameBg));
 
-            DrawFolderTree(s_BodyHeight);
-            ImGui::SameLine();
+            const float s_SplitterWidth = ImGui::GetStyle().ItemSpacing.x;
+            const float s_MinColumnWidth = ScaledSize(100.f);
+            const float s_MaxFolderTreeWidth = std::max(
+                s_MinColumnWidth, ImGui::GetContentRegionAvail().x - s_SplitterWidth - s_MinColumnWidth
+            );
+            const float s_FolderTreeWidth = std::clamp(
+                ScaledSize(m_FolderTreeWidth), s_MinColumnWidth, s_MaxFolderTreeWidth
+            );
+
+            DrawFolderTree(s_FolderTreeWidth, s_BodyHeight);
+
+            ImGui::SameLine(0.f, 0.f);
+            ImGui::InvisibleButton("##AssetBrowserSplitter", ImVec2(s_SplitterWidth, s_BodyHeight));
+
+            const bool s_IsSplitterActive = ImGui::IsItemActive();
+
+            if (s_IsSplitterActive) {
+                const float s_NewWidth = std::clamp(
+                    s_FolderTreeWidth + ImGui::GetIO().MouseDelta.x, s_MinColumnWidth, s_MaxFolderTreeWidth
+                );
+
+                m_FolderTreeWidth = s_NewWidth / ScaledSize(1.f);
+            }
+
+            if (s_IsSplitterActive || ImGui::IsItemHovered()) {
+                ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+
+                const ImVec2 s_SplitterMin = ImGui::GetItemRectMin();
+                const ImVec2 s_SplitterMax = ImGui::GetItemRectMax();
+                const float s_LineX = (s_SplitterMin.x + s_SplitterMax.x) * 0.5f;
+
+                ImGui::GetWindowDrawList()->AddLine(
+                    ImVec2(s_LineX, s_SplitterMin.y),
+                    ImVec2(s_LineX, s_SplitterMax.y),
+                    ImGui::GetColorU32(s_IsSplitterActive ? ImGuiCol_SeparatorActive : ImGuiCol_SeparatorHovered),
+                    ScaledSize(2.f)
+                );
+            }
+
+            ImGui::SameLine(0.f, 0.f);
             DrawContent(s_BodyHeight);
 
             ImGui::PopStyleColor();
@@ -967,17 +1006,16 @@ void AssetBrowser::Draw(const char* p_WindowName) {
 void AssetBrowser::DrawToolbar() {
     BeginPanelPadding("##AssetBrowserToolbar");
 
+    const ImGuiStyle& s_Style = ImGui::GetStyle();
     const float s_FrameHeight = ImGui::GetFrameHeight();
     const float s_RowStartX = ImGui::GetCursorPosX();
-    const float s_RowWidth = ImGui::GetContentRegionAvail().x;
+    const float s_RowEndX = s_RowStartX + ImGui::GetContentRegionAvail().x;
     const float s_SearchWidth = ScaledSize(200.f);
+    const float s_MinSearchWidth = ScaledSize(80.f);
     const float s_ScopeWidth = ScaledSize(104.f);
-    const float s_SearchStartX = s_RowStartX + s_RowWidth - s_SearchWidth - ImGui::GetStyle().ItemSpacing.x -
-        s_ScopeWidth;
-    const float s_InnerSpacing = ImGui::GetStyle().ItemInnerSpacing.x;
-    const float s_FiltersWidth = s_FrameHeight * 2.f + s_InnerSpacing * 2.f + ImGui::CalcTextSize("TEMP").x +
-        ImGui::CalcTextSize("PRIM").x + ImGui::GetStyle().ItemSpacing.x;
-    const float s_FiltersStartX = s_SearchStartX - ImGui::GetStyle().ItemSpacing.x - s_FiltersWidth;
+    const float s_FiltersWidth = s_FrameHeight * 2.f + s_Style.ItemInnerSpacing.x * 2.f +
+        ImGui::CalcTextSize("TEMP").x + ImGui::CalcTextSize("PRIM").x + s_Style.ItemSpacing.x;
+    const float s_ControlsWidth = s_FiltersWidth + s_SearchWidth + s_ScopeWidth + s_Style.ItemSpacing.x * 2.f;
 
     ImGui::BeginDisabled(m_History.empty());
 
@@ -1001,9 +1039,53 @@ void AssetBrowser::DrawToolbar() {
     DrawToolbarSeparator();
     ImGui::SameLine();
 
+    const char* s_CrumbSeparator = "\xE2\x80\xBA";
+    const char* s_Ellipsis = "\xE2\x80\xA6";
+    const float s_CrumbSpacing = ScaledSize(4.f);
+    const float s_SeparatorWidth = ImGui::CalcTextSize(s_CrumbSeparator).x + s_CrumbSpacing * 2.f;
+
+    std::vector<float> s_CrumbWidths;
+    s_CrumbWidths.push_back(ImGui::CalcTextSize(m_Root->Name.c_str()).x);
+
+    for (const auto* s_Folder : m_CurrentPath) {
+        s_CrumbWidths.push_back(ImGui::CalcTextSize(s_Folder->Name.c_str()).x);
+    }
+
+    ImGui::PushFont(SDK()->GetImGuiBoldFont(), 0.f);
+    s_CrumbWidths.back() = ImGui::CalcTextSize(
+        m_CurrentPath.empty() ? m_Root->Name.c_str() : m_CurrentPath.back()->Name.c_str()
+    ).x;
+    ImGui::PopFont();
+
+    float s_CrumbsWidth = s_SeparatorWidth * static_cast<float>(m_CurrentPath.size());
+
+    for (const float s_Width : s_CrumbWidths) {
+        s_CrumbsWidth += s_Width;
+    }
+
+    if (IsSearching()) {
+        s_CrumbsWidth += s_SeparatorWidth + ImGui::CalcTextSize("Search results").x;
+    }
+
+    const float s_CrumbsStartX = ImGui::GetCursorPosX();
+    const float s_SingleRowCrumbsWidth = s_RowEndX - s_ControlsWidth - s_Style.ItemSpacing.x - s_CrumbsStartX;
+    const bool s_IsWrapped = s_CrumbsWidth > s_SingleRowCrumbsWidth;
+    const float s_CrumbsAvailWidth = s_IsWrapped ? s_RowEndX - s_CrumbsStartX : s_SingleRowCrumbsWidth;
+
+    // Fold folders between into ellipsis when we don't have space.
+    size_t s_HiddenCount = 0;
+
+    while (s_CrumbsWidth > s_CrumbsAvailWidth && s_HiddenCount + 1 < m_CurrentPath.size()) {
+        ++s_HiddenCount;
+        s_CrumbsWidth -= s_CrumbWidths[s_HiddenCount] + s_SeparatorWidth;
+
+        if (s_HiddenCount == 1) {
+            s_CrumbsWidth += ImGui::CalcTextSize(s_Ellipsis).x + s_SeparatorWidth;
+        }
+    }
+
     const ImVec2 s_CrumbsMin = ImGui::GetCursorScreenPos();
-    const float s_CrumbsMaxX = s_CrumbsMin.x + s_FiltersStartX - ImGui::GetCursorPosX() -
-        ImGui::GetStyle().ItemSpacing.x;
+    const float s_CrumbsMaxX = s_CrumbsMin.x + s_CrumbsAvailWidth;
 
     ImGui::PushClipRect(s_CrumbsMin, ImVec2(s_CrumbsMaxX, s_CrumbsMin.y + s_FrameHeight), true);
 
@@ -1014,8 +1096,31 @@ void AssetBrowser::DrawToolbar() {
 
         if (s_IsLast) {
             ImGui::PushFont(SDK()->GetImGuiBoldFont(), 0.f);
-            ImGui::TextUnformatted(p_Label.c_str());
+
+            const ImVec2 s_Pos = ImGui::GetCursorScreenPos();
+            const float s_MaxWidth = s_CrumbsMaxX - s_Pos.x;
+
+            if (ImGui::CalcTextSize(p_Label.c_str()).x > s_MaxWidth) {
+                const ImVec2 s_TextPos(s_Pos.x, s_Pos.y + ImGui::GetStyle().FramePadding.y);
+
+                ImGui::RenderTextEllipsis(
+                    ImGui::GetWindowDrawList(),
+                    s_TextPos,
+                    ImVec2(s_CrumbsMaxX, s_TextPos.y + ImGui::GetFontSize()),
+                    s_CrumbsMaxX,
+                    p_Label.c_str(),
+                    nullptr,
+                    nullptr
+                );
+                ImGui::Dummy(ImVec2(s_MaxWidth, ImGui::GetFrameHeight()));
+                ImGui::SetItemTooltip("%s", p_Label.c_str());
+            }
+            else {
+                ImGui::TextUnformatted(p_Label.c_str());
+            }
+
             ImGui::PopFont();
+
             return;
         }
 
@@ -1029,14 +1134,36 @@ void AssetBrowser::DrawToolbar() {
     };
 
     const auto s_DrawCrumbSeparator = [&] {
-        ImGui::SameLine(0.f, ScaledSize(4.f));
-        ImGui::TextColored(c_MutedTextColor, "\xE2\x80\xBA");
-        ImGui::SameLine(0.f, ScaledSize(4.f));
+        ImGui::SameLine(0.f, s_CrumbSpacing);
+        ImGui::TextColored(c_MutedTextColor, "%s", s_CrumbSeparator);
+        ImGui::SameLine(0.f, s_CrumbSpacing);
     };
 
     s_DrawCrumb(m_Root->Name, 0);
 
-    for (size_t i = 0; i < m_CurrentPath.size(); ++i) {
+    if (s_HiddenCount > 0) {
+        s_DrawCrumbSeparator();
+
+        if (DrawLinkText(s_Ellipsis)) {
+            ImGui::OpenPopup("##HiddenCrumbs");
+        }
+
+        if (ImGui::BeginPopup("##HiddenCrumbs")) {
+            for (size_t i = 0; i < s_HiddenCount; ++i) {
+                ImGui::PushID(static_cast<int>(i));
+
+                if (ImGui::Selectable(m_CurrentPath[i]->Name.c_str())) {
+                    m_NextPath = FolderPath(m_CurrentPath.begin(), m_CurrentPath.begin() + i + 1);
+                }
+
+                ImGui::PopID();
+            }
+
+            ImGui::EndPopup();
+        }
+    }
+
+    for (size_t i = s_HiddenCount; i < m_CurrentPath.size(); ++i) {
         s_DrawCrumbSeparator();
         s_DrawCrumb(m_CurrentPath[i]->Name, i + 1);
     }
@@ -1048,8 +1175,17 @@ void AssetBrowser::DrawToolbar() {
 
     ImGui::PopClipRect();
 
-    ImGui::SameLine();
-    ImGui::SetCursorPosX(s_FiltersStartX);
+    float s_SearchBoxWidth = s_SearchWidth;
+
+    if (s_IsWrapped) {
+        s_SearchBoxWidth = std::max(s_MinSearchWidth, s_SearchWidth + s_RowEndX - s_RowStartX - s_ControlsWidth);
+        ImGui::SetCursorPosX(s_RowStartX);
+    }
+    else {
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(s_RowEndX - s_ControlsWidth);
+    }
+
     ImGui::Checkbox("TEMP", &m_ShowTemplates);
     ImGui::SetItemTooltip("Show templates");
     ImGui::SameLine();
@@ -1057,12 +1193,11 @@ void AssetBrowser::DrawToolbar() {
     ImGui::SetItemTooltip("Show prims");
 
     ImGui::SameLine();
-    ImGui::SetCursorPosX(s_SearchStartX);
 
     const ImVec2 s_SearchPos = ImGui::GetCursorScreenPos();
 
     ImGui::PushStyleVarX(ImGuiStyleVar_FramePadding, ScaledSize(22.f));
-    ImGui::SetNextItemWidth(s_SearchWidth);
+    ImGui::SetNextItemWidth(s_SearchBoxWidth);
     ImGui::SetNextItemAllowOverlap();
     ImGui::InputTextWithHint("##AssetBrowserSearch", "Search assets", &m_SearchFilter);
     ImGui::PopStyleVar();
@@ -1074,7 +1209,7 @@ void AssetBrowser::DrawToolbar() {
     );
 
     if (IsSearching()) {
-        ImGui::SetCursorScreenPos(ImVec2(s_SearchPos.x + s_SearchWidth - ScaledSize(21.f), s_SearchPos.y));
+        ImGui::SetCursorScreenPos(ImVec2(s_SearchPos.x + s_SearchBoxWidth - ScaledSize(21.f), s_SearchPos.y));
 
         if (GhostButton(ICON_MD_CLOSE, "##ClearAssetBrowserSearch", "Clear search")) {
             m_SearchFilter.clear();
@@ -1082,7 +1217,7 @@ void AssetBrowser::DrawToolbar() {
     }
 
     ImGui::SetCursorScreenPos(
-        ImVec2(s_SearchPos.x + s_SearchWidth + ImGui::GetStyle().ItemSpacing.x, s_SearchPos.y)
+        ImVec2(s_SearchPos.x + s_SearchBoxWidth + s_Style.ItemSpacing.x, s_SearchPos.y)
     );
     ImGui::SetNextItemWidth(s_ScopeWidth);
 
@@ -1101,8 +1236,8 @@ void AssetBrowser::DrawToolbar() {
     EndPanelPadding();
 }
 
-void AssetBrowser::DrawFolderTree(const float p_Height) {
-    if (ImGui::BeginChild("##AssetBrowserFolders", ImVec2(ScaledSize(180.f), p_Height))) {
+void AssetBrowser::DrawFolderTree(const float p_Width, const float p_Height) {
+    if (ImGui::BeginChild("##AssetBrowserFolders", ImVec2(p_Width, p_Height))) {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.f, 0.f));
 
         const float s_Width = ImGui::GetContentRegionAvail().x;
@@ -1377,7 +1512,7 @@ void AssetBrowser::DrawFooter(const float p_Height) {
         );
     }
     else {
-        s_Summary = fmt::format("{} templates", s_CurrentFolder.Children.size() - s_CurrentFolder.FolderCount);
+        s_Summary = fmt::format("{} items", s_CurrentFolder.Children.size() - s_CurrentFolder.FolderCount);
 
         if (s_CurrentFolder.FolderCount > 0) {
             s_Summary += fmt::format(" \xC2\xB7 {} folders", s_CurrentFolder.FolderCount);
@@ -1385,6 +1520,22 @@ void AssetBrowser::DrawFooter(const float p_Height) {
 
         s_Summary += " in " + s_CurrentFolder.Name;
     }
+
+    const float s_MinSliderWidth = ScaledSize(48.f);
+    const float s_MaxSliderWidth = ScaledSize(120.f);
+    const float s_SmallIconWidth = ImGui::CalcTextSize(ICON_MD_PHOTO_SIZE_SELECT_SMALL).x;
+
+    ImGui::PushFont(nullptr, FontSize(c_LargeIconFontSize));
+    const float s_LargeIconWidth = ImGui::CalcTextSize(ICON_MD_PHOTO_SIZE_SELECT_LARGE).x;
+    ImGui::PopFont();
+
+    const float s_Spacing = ImGui::GetStyle().ItemSpacing.x;
+    const float s_ToolsWidthWithoutSlider = s_FrameHeight * 2.f + s_SmallIconWidth + s_LargeIconWidth +
+        s_Spacing * 4.f;
+    const float s_ToolsEndX = s_FooterMin.x + s_FooterWidth - ScaledSize(2.f);
+    const float s_SummaryMaxX = s_ToolsEndX - s_ToolsWidthWithoutSlider - s_MinSliderWidth - s_Spacing;
+
+    ImGui::PushClipRect(s_FooterMin, ImVec2(s_SummaryMaxX, s_FooterMin.y + p_Height), true);
 
     ImGui::AlignTextToFramePadding();
     ImGui::TextUnformatted(s_Summary.c_str());
@@ -1398,21 +1549,17 @@ void AssetBrowser::DrawFooter(const float p_Height) {
         ImGui::TextColored(c_MutedTextColor, "Generating %zu thumbnail(s)", s_QueuedThumbnails);
     }
 
-    const float s_SliderWidth = ScaledSize(120.f);
-    const float s_SmallIconWidth = ImGui::CalcTextSize(ICON_MD_PHOTO_SIZE_SELECT_SMALL).x;
+    ImGui::PopClipRect();
 
-    ImGui::PushFont(nullptr, FontSize(c_LargeIconFontSize));
-    const float s_LargeIconWidth = ImGui::CalcTextSize(ICON_MD_PHOTO_SIZE_SELECT_LARGE).x;
-    ImGui::PopFont();
-
-    const float s_Spacing = ImGui::GetStyle().ItemSpacing.x;
-    const float s_ToolsWidth = s_FrameHeight * 2.f + s_SmallIconWidth + s_SliderWidth + s_LargeIconWidth +
-        s_Spacing * 4.f;
+    const float s_SummaryEndX = ImGui::GetItemRectMax().x;
+    const float s_SliderWidth = std::clamp(
+        s_ToolsEndX - s_ToolsWidthWithoutSlider - s_SummaryEndX - s_Spacing, s_MinSliderWidth, s_MaxSliderWidth
+    );
 
     ImGui::SameLine();
     ImGui::SetCursorScreenPos(
         ImVec2(
-            s_FooterMin.x + s_FooterWidth - ScaledSize(2.f) - s_ToolsWidth,
+            s_ToolsEndX - s_ToolsWidthWithoutSlider - s_SliderWidth,
             s_FooterMin.y + (p_Height - s_FrameHeight) * 0.5f
         )
     );

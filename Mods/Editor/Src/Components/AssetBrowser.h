@@ -79,7 +79,7 @@ private:
     void UpdateTileRows(int p_Columns, float p_HeaderHeight, float p_TileRowHeight);
 
     void DrawToolbar();
-    void DrawFolderTree(float p_Height);
+    void DrawFolderTree(float p_Width, float p_Height);
     void DrawFolderRows(const AssetItem& p_Folder, FolderPath& p_RowPath, float p_Width);
     void DrawContent(float p_Height);
     void DrawTile(const TileGroup& p_Group, const AssetItem& p_Item, float p_TileWidth, float p_TileHeight);
@@ -116,6 +116,7 @@ private:
     bool m_ShowTemplates = true;
     bool m_ShowPrims = true;
     int m_TileSize = 60;
+    float m_FolderTreeWidth = 180.f;
 
     std::vector<TileGroup> m_TileGroups;
     size_t m_TileCount = 0;
