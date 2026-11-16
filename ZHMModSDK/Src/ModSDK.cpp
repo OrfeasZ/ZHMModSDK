@@ -73,6 +73,94 @@ extern void SetupLogging(spdlog::level::level_enum p_LogLevel);
 
 extern void FlushLoggers();
 
+static std::string DescribeCodeAddress(uint64_t p_Address) {
+    HMODULE s_Module = nullptr;
+
+    if (!GetModuleHandleExA(
+        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+        reinterpret_cast<LPCSTR>(p_Address),
+        &s_Module
+    )) {
+        return fmt::format("0x{:X}", p_Address);
+    }
+
+    char s_ModulePath[MAX_PATH] {};
+    GetModuleFileNameA(s_Module, s_ModulePath, MAX_PATH);
+
+    return fmt::format(
+        "{}+0x{:X} (0x{:X})",
+        PathFindFileNameA(s_ModulePath),
+        p_Address - reinterpret_cast<uint64_t>(s_Module),
+        p_Address
+    );
+}
+
+static void LogCrashStack(const EXCEPTION_POINTERS* p_ExceptionInfo) {
+    const auto s_Record = p_ExceptionInfo->ExceptionRecord;
+    CONTEXT s_Context = *p_ExceptionInfo->ContextRecord;
+
+    Logger::Error(
+        "Unhandled exception 0x{:08X} at {}.",
+        s_Record->ExceptionCode,
+        DescribeCodeAddress(reinterpret_cast<uint64_t>(s_Record->ExceptionAddress))
+    );
+
+    if (s_Record->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && s_Record->NumberParameters >= 2) {
+        Logger::Error(
+            "Access violation: {} 0x{:X}.",
+            s_Record->ExceptionInformation[0] == 0 ? "read" : s_Record->ExceptionInformation[0] == 1 ? "write" : "execute",
+            s_Record->ExceptionInformation[1]
+        );
+    }
+
+    Logger::Error(
+        "rax={:016X} rbx={:016X} rcx={:016X} rdx={:016X} rsi={:016X} rdi={:016X} rsp={:016X} rbp={:016X}",
+        s_Context.Rax, s_Context.Rbx, s_Context.Rcx, s_Context.Rdx,
+        s_Context.Rsi, s_Context.Rdi, s_Context.Rsp, s_Context.Rbp
+    );
+
+    Logger::Error(
+        "r8={:016X} r9={:016X} r10={:016X} r11={:016X} r12={:016X} r13={:016X} r14={:016X} r15={:016X}",
+        s_Context.R8, s_Context.R9, s_Context.R10, s_Context.R11,
+        s_Context.R12, s_Context.R13, s_Context.R14, s_Context.R15
+    );
+
+    for (int i = 0; i < 64 && s_Context.Rip != 0; ++i) {
+        Logger::Error("  [{}] {}", i, DescribeCodeAddress(s_Context.Rip));
+
+        DWORD64 s_ImageBase = 0;
+        const auto s_Function = RtlLookupFunctionEntry(s_Context.Rip, &s_ImageBase, nullptr);
+
+        if (!s_Function) {
+            // Leaf function or no unwind data, so the return address is on top of the stack.
+            s_Context.Rip = *reinterpret_cast<DWORD64*>(s_Context.Rsp);
+            s_Context.Rsp += 8;
+            continue;
+        }
+
+        void* s_HandlerData = nullptr;
+        DWORD64 s_EstablisherFrame = 0;
+
+        RtlVirtualUnwind(
+            UNW_FLAG_NHANDLER,
+            s_ImageBase,
+            s_Context.Rip,
+            s_Function,
+            &s_Context,
+            &s_HandlerData,
+            &s_EstablisherFrame,
+            nullptr
+        );
+    }
+
+    FlushLoggers();
+}
+
+static long LogCrashAndCallG2ExceptionHandler(EXCEPTION_POINTERS* p_ExceptionInfo) {
+    LogCrashStack(p_ExceptionInfo);
+    return GetG2ExceptionHandler()(p_ExceptionInfo);
+}
+
 extern void ClearLoggers();
 
 ZHMSDK_API IModSDK* SDK() {
@@ -859,6 +947,8 @@ bool ModSDK::Startup() {
 
 // Pass the exception information to the engine so it can generate its own crash metrics.
 sentry_value_t ModSDK_OnCrashCallback(const sentry_ucontext_t* uctx, sentry_value_t event, void* closure) {
+    LogCrashStack(&uctx->exception_ptrs);
+
     G2DefaultRetailExceptionHandler_t G2DefaultRetailExceptionHandler = GetG2ExceptionHandler();
     if (!G2DefaultRetailExceptionHandler)
     {
@@ -894,7 +984,7 @@ void ModSDK::ThreadedStartup() {
     }
     else if (GetG2ExceptionHandler()) {
         // If sentry is not enabled, default to the engine's exception handler.
-        SetUnhandledExceptionFilter(GetG2ExceptionHandler());
+        SetUnhandledExceptionFilter(LogCrashAndCallG2ExceptionHandler);
     }
 
     // If the engine is already initialized, inform the mods.
