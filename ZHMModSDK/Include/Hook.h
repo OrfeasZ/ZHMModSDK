@@ -65,7 +65,7 @@ class Hook;
 template <class ReturnType, class... Args>
 class Hook<ReturnType(Args...)> : public HookBase {
 public:
-    typedef ReturnType (__fastcall*OriginalFunc_t)(Args...);
+    typedef ReturnType (*OriginalFunc_t)(Args...);
     typedef HookResult<ReturnType> (*DetourFunc_t)(void*, Hook<ReturnType(Args...)>*, Args...);
 
     void AddDetour(void* p_Context, DetourFunc_t p_Detour) {
@@ -111,7 +111,7 @@ public:
 template <class... Args>
 class Hook<void(Args...)> : public HookBase {
 public:
-    typedef void (__fastcall*OriginalFunc_t)(Args...);
+    typedef void (*OriginalFunc_t)(Args...);
     typedef HookResult<void> (*DetourFunc_t)(void*, Hook<void(Args...)>*, Args...);
 
     void AddDetour(void* p_Context, DetourFunc_t p_Detour) {
