@@ -100,7 +100,8 @@ namespace Util {
                 ImGuiWindowFlags_NoTitleBar |
                 ImGuiWindowFlags_NoMove |
                 ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_HorizontalScrollbar
+                ImGuiWindowFlags_HorizontalScrollbar |
+                ImGuiWindowFlags_NoFocusOnAppearing
             );
 
             if (s_IsOpen) {
@@ -222,7 +223,8 @@ namespace Util {
                 ImGuiWindowFlags_NoTitleBar |
                 ImGuiWindowFlags_NoMove |
                 ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_HorizontalScrollbar
+                ImGuiWindowFlags_HorizontalScrollbar |
+                ImGuiWindowFlags_NoFocusOnAppearing
             );
 
             if (s_IsOpen) {
