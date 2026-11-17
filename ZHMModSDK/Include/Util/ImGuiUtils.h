@@ -105,6 +105,12 @@ namespace Util {
             );
 
             if (s_IsOpen) {
+                ImGuiWindow* s_PopupWindow = ImGui::GetCurrentWindow();
+
+                if (ImGui::IsWindowAppearing()) {
+                    ImGui::BringWindowToDisplayFront(s_PopupWindow);
+                }
+
                 for (auto& s_Item : p_Collection) {
                     if constexpr (!std::is_same_v<FilterFn, std::nullptr_t>) {
                         if (!p_FilterFn(s_Item)) {
@@ -127,8 +133,6 @@ namespace Util {
                     ImGui::PopID();
 
                     if (s_Selected) {
-                        ImGui::ClearActiveID();
-
                         strcpy_s(p_InputBuffer, p_BufferSize, s_OptionName.c_str());
 
                         if constexpr (!std::is_same_v<GetOptionValueFn, std::nullptr_t>) {
@@ -228,6 +232,12 @@ namespace Util {
             );
 
             if (s_IsOpen) {
+                ImGuiWindow* s_PopupWindow = ImGui::GetCurrentWindow();
+
+                if (ImGui::IsWindowAppearing()) {
+                    ImGui::BringWindowToDisplayFront(s_PopupWindow);
+                }
+
                 for (auto& s_Item : p_Collection) {
                     if constexpr (!std::is_same_v<FilterFn, std::nullptr_t>) {
                         if (!p_FilterFn(s_Item)) {
@@ -250,8 +260,6 @@ namespace Util {
                     ImGui::PopID();
 
                     if (s_Selected) {
-                        ImGui::ClearActiveID();
-
                         p_InputBuffer = s_OptionName;
 
                         if constexpr (!std::is_same_v<GetOptionValueFn, std::nullptr_t>) {
