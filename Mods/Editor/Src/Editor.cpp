@@ -480,15 +480,39 @@ void Editor::DrawDockSpace() {
     }
 }
 
+static ImVec2 ClampToMainViewport(const ImVec2& p_Pos, const ImVec2& p_Size) {
+    const ImGuiViewport* s_Viewport = ImGui::GetMainViewport();
+
+    return ImVec2(
+        std::clamp(
+            p_Pos.x,
+            s_Viewport->Pos.x,
+            std::max(s_Viewport->Pos.x, s_Viewport->Pos.x + s_Viewport->Size.x - p_Size.x)
+        ),
+        std::clamp(
+            p_Pos.y,
+            s_Viewport->Pos.y,
+            std::max(s_Viewport->Pos.y, s_Viewport->Pos.y + s_Viewport->Size.y - p_Size.y)
+        )
+    );
+}
+
 void Editor::DrawTransformToolbar(const ImVec2& p_GameViewPos) {
     static constexpr float c_FontSize = 12.f;
 
+    const ImGuiWindow* s_Window = ImGui::FindWindowByName("##TransformToolbar");
+    const ImVec2 s_WindowSize = s_Window ? s_Window->Size : ImVec2(0.f, 0.f);
+
     ImGui::SetNextWindowPos(
-        ImVec2(
-            p_GameViewPos.x + ScaledSize(m_TransformToolbarOffset.x),
-            p_GameViewPos.y + ScaledSize(m_TransformToolbarOffset.y)
+        ClampToMainViewport(
+            ImVec2(
+                p_GameViewPos.x + ScaledSize(m_TransformToolbarOffset.x),
+                p_GameViewPos.y + ScaledSize(m_TransformToolbarOffset.y)
+            ),
+            s_WindowSize
         )
     );
+    ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(ScaledSize(5.f), ScaledSize(2.f)));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
@@ -507,6 +531,10 @@ void Editor::DrawTransformToolbar(const ImVec2& p_GameViewPos) {
     if (!s_IsOpen) {
         ImGui::End();
         return;
+    }
+
+    if (!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel)) {
+        ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());
     }
 
     ImGui::PushFont(nullptr, FontSize(c_FontSize));
@@ -663,30 +691,31 @@ void Editor::DrawTransformToolbarHandle(const ImVec2& p_GameViewPos) {
     ImGui::InvisibleButton("##TransformToolbarHandle", ImVec2(ScaledSize(8.f), ScaledSize(16.f)));
 
     const bool s_IsActive = ImGui::IsItemActive();
+    const ImVec2 s_Min = ImGui::GetItemRectMin();
+    const ImVec2 s_Max = ImGui::GetItemRectMax();
 
     if (s_IsActive || ImGui::IsItemHovered()) {
         ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
     }
 
     if (s_IsActive) {
-        const ImGuiViewport* s_Viewport = ImGui::GetMainViewport();
         const ImVec2 s_WindowPos = ImGui::GetWindowPos();
-        const ImVec2 s_WindowSize = ImGui::GetWindowSize();
-        const ImVec2 s_MouseDelta = ImGui::GetIO().MouseDelta;
+        const ImVec2 s_MousePos = ImGui::GetMousePos();
+        const ImVec2 s_ClickOffset = ImGui::GetCurrentContext()->ActiveIdClickOffset;
 
-        const float s_X = std::clamp(
-            s_WindowPos.x + s_MouseDelta.x,
-            s_Viewport->Pos.x,
-            s_Viewport->Pos.x + s_Viewport->Size.x - s_WindowSize.x
-        );
-        const float s_Y = std::clamp(
-            s_WindowPos.y + s_MouseDelta.y,
-            s_Viewport->Pos.y,
-            s_Viewport->Pos.y + s_Viewport->Size.y - s_WindowSize.y
+        const ImVec2 s_Pos = ClampToMainViewport(
+            ImVec2(
+                s_MousePos.x - s_ClickOffset.x - (s_Min.x - s_WindowPos.x),
+                s_MousePos.y - s_ClickOffset.y - (s_Min.y - s_WindowPos.y)
+            ),
+            ImGui::GetWindowSize()
         );
 
         const float s_Scale = ScaledSize(1.f);
-        m_TransformToolbarOffset = ImVec2((s_X - p_GameViewPos.x) / s_Scale, (s_Y - p_GameViewPos.y) / s_Scale);
+        m_TransformToolbarOffset = ImVec2(
+            (s_Pos.x - p_GameViewPos.x) / s_Scale,
+            (s_Pos.y - p_GameViewPos.y) / s_Scale
+        );
     }
 
     if (ImGui::IsItemDeactivated()) {
@@ -694,8 +723,6 @@ void Editor::DrawTransformToolbarHandle(const ImVec2& p_GameViewPos) {
         SetSettingDouble("general", "transform_toolbar_y", m_TransformToolbarOffset.y);
     }
 
-    const ImVec2 s_Min = ImGui::GetItemRectMin();
-    const ImVec2 s_Max = ImGui::GetItemRectMax();
     const float s_CenterX = (s_Min.x + s_Max.x) * 0.5f;
     const float s_CenterY = (s_Min.y + s_Max.y) * 0.5f;
     const float s_DotSpacing = ScaledSize(4.f);
