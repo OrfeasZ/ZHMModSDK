@@ -1086,8 +1086,8 @@ void Editor::StartBoxReflectionPass(const bool p_HideExistingReflections) {
     m_HideBoxReflectionsInBoxReflectionPass = p_HideExistingReflections;
     m_BoxReflectionPassRequested = true;
 
-    Globals::RenderManager->m_BoxReflectionManager.m_eUpdateRequest =
-        ZBoxReflectionManager::EUpdateRequest::RenderAll;
+    // Only 2 makes the manager start a full update.
+    Globals::RenderManager->m_BoxReflectionManager.m_nSignalUpdateAll = 2;
 }
 
 void Editor::UpdateBoxReflectionPasses() {
@@ -1098,8 +1098,8 @@ void Editor::UpdateBoxReflectionPasses() {
     // The render thread sets the in-progress flag before it clears the request.
     const auto& s_Manager = Globals::RenderManager->m_BoxReflectionManager;
 
-    if (s_Manager.m_eUpdateRequest != ZBoxReflectionManager::EUpdateRequest::None ||
-        s_Manager.m_bRenderAllInProgress) {
+    if (s_Manager.m_nSignalUpdateAll != 0 ||
+        s_Manager.m_nUpdateAll) {
         return;
     }
 
@@ -1114,7 +1114,7 @@ void Editor::UpdateBoxReflectionPasses() {
 
 bool Editor::IsRenderingBoxReflections() const {
     return m_BoxReflectionPassRequested ||
-        Globals::RenderManager->m_BoxReflectionManager.m_bRenderAllInProgress;
+        Globals::RenderManager->m_BoxReflectionManager.m_nUpdateAll;
 }
 
 DEFINE_PLUGIN_DETOUR(

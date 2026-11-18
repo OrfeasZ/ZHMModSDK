@@ -363,20 +363,14 @@ static_assert(offsetof(ZRenderGraphNodeCamera, m_nStickyRoomId) == 0x5E8);
 
 class ZBoxReflectionManager {
 public:
-    enum class EUpdateRequest : int32 {
-        None = 0,
-        Rebuild = 1,
-        RenderAll = 2,
-    };
-
     PAD(0x11AF0);
-    int32 m_bRenderAllInProgress; // 0x11AF0
-    EUpdateRequest m_eUpdateRequest; // 0x11AF4
-    int32 m_bRebuildLists; // 0x11AF8
+    int32 m_nUpdateAll; // 0x11AF0
+    int m_nSignalUpdateAll; // 0x11AF4
+    int32 m_nSignalResetBoxReflections; // 0x11AF8
 };
 
-static_assert(offsetof(ZBoxReflectionManager, m_bRenderAllInProgress) == 0x11AF0);
-static_assert(offsetof(ZBoxReflectionManager, m_eUpdateRequest) == 0x11AF4);
+static_assert(offsetof(ZBoxReflectionManager, m_nUpdateAll) == 0x11AF0);
+static_assert(offsetof(ZBoxReflectionManager, m_nSignalUpdateAll) == 0x11AF4);
 
 class ZRenderManager : public IComponentInterface {
 public:
