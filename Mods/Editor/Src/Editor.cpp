@@ -109,6 +109,7 @@ void Editor::Init() {
     );
     Hooks::SignalInputPin->AddDetour(this, &Editor::OnInputPin);
     Hooks::SignalOutputPin->AddDetour(this, &Editor::OnOutputPin);
+    Hooks::CLightTile_DispatchShadeDeferred->AddDetour(this, &Editor::CLightTile_DispatchShadeDeferred);
 
     Hooks::ZEntityManager_NewUninitializedEntity->AddDetour(this, &Editor::ZEntityManager_NewUninitializedEntity);
     Hooks::ZEntityManager_DeleteEntity->AddDetour(this, &Editor::ZEntityManager_DeleteEntity);
@@ -381,6 +382,8 @@ void Editor::OnDrawUI(bool p_HasFocus) {
     else {
         m_AssetBrowser.ClearHoverPreview();
     }
+
+    UpdateBoxReflectionPasses();
 
     {
         std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
@@ -1574,6 +1577,9 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     ClearBoxReflectionPreview();
 
     m_SelectedBoxReflectionGraphNode = nullptr;
+    m_RemainingBoxReflectionPasses = 0;
+    m_BoxReflectionPassRequested = false;
+    m_HideBoxReflectionsInBoxReflectionPass = false;
 
     return { HookAction::Continue() };
 }

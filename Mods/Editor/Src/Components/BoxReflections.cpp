@@ -42,6 +42,25 @@ void Editor::DrawBoxReflectionsWindow(const bool p_HasFocus) {
         ImGui::SetTooltip("Must be enabled before loading a scene to take effect.");
     }
 
+    const bool s_IsRendering = IsRenderingBoxReflections();
+
+    ImGui::BeginDisabled(s_IsRendering);
+
+    if (ImGui::Button(ICON_MD_REFRESH " Re-render all")) {
+        RenderAllBoxReflections();
+    }
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(ImGui::GetFontSize() * 6.f);
+    ImGui::SliderInt("Bounces", &m_BoxReflectionBounces, 0, 6);
+
+    ImGui::EndDisabled();
+
+    if (s_IsRendering) {
+        ImGui::SameLine();
+        ImGui::TextDisabled("Rendering (%d passes left)...", m_RemainingBoxReflectionPasses);
+    }
+
     ImGui::Separator();
 
     if (!m_CachedEntityTree || !m_CachedEntityTree->Entity) {
@@ -1056,6 +1075,68 @@ bool Editor::GenerateBoxReflectionCacheResource(const std::filesystem::path& p_O
     }
 
     return true;
+}
+
+void Editor::RenderAllBoxReflections() {
+    m_RemainingBoxReflectionPasses = m_BoxReflectionBounces;
+    StartBoxReflectionPass(true);
+}
+
+void Editor::StartBoxReflectionPass(const bool p_HideExistingReflections) {
+    m_HideBoxReflectionsInBoxReflectionPass = p_HideExistingReflections;
+    m_BoxReflectionPassRequested = true;
+
+    Globals::RenderManager->m_BoxReflectionManager.m_eUpdateRequest =
+        ZBoxReflectionManager::EUpdateRequest::RenderAll;
+}
+
+void Editor::UpdateBoxReflectionPasses() {
+    if (!m_BoxReflectionPassRequested) {
+        return;
+    }
+
+    // The render thread sets the in-progress flag before it clears the request.
+    const auto& s_Manager = Globals::RenderManager->m_BoxReflectionManager;
+
+    if (s_Manager.m_eUpdateRequest != ZBoxReflectionManager::EUpdateRequest::None ||
+        s_Manager.m_bRenderAllInProgress) {
+        return;
+    }
+
+    m_BoxReflectionPassRequested = false;
+    m_HideBoxReflectionsInBoxReflectionPass = false;
+
+    if (m_RemainingBoxReflectionPasses > 0) {
+        --m_RemainingBoxReflectionPasses;
+        StartBoxReflectionPass(false);
+    }
+}
+
+bool Editor::IsRenderingBoxReflections() const {
+    return m_BoxReflectionPassRequested ||
+        Globals::RenderManager->m_BoxReflectionManager.m_bRenderAllInProgress;
+}
+
+DEFINE_PLUGIN_DETOUR(
+    Editor, void, CLightTile_DispatchShadeDeferred,
+    CLightTile* th, ZRenderContext* pRenderContext, ZRenderDeviceContext* pDeviceContext, void* a4, void* a5,
+    void* a6, void* a7, void* a8, void* a9, void* a10, void* a11, void* a12, void* a13, void* a14, int32_t a15,
+    void* a16, const float4* vClearColor, bool bDisableLighting, bool bMergeDiffuse,
+    int32_t nSelectedBoxReflectionId, bool bDisableBoxReflections, bool bEnableAtmosphericScatteringBackdrop,
+    bool bIsBoxReflectionPass, int32_t a24
+) {
+    if (!bIsBoxReflectionPass || !m_HideBoxReflectionsInBoxReflectionPass) {
+        return HookResult<void>(HookAction::Continue());
+    }
+
+    // Prevent the first pass from including the current box reflections
+    p_Hook->CallOriginal(
+        th, pRenderContext, pDeviceContext, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16,
+        vClearColor, bDisableLighting, bMergeDiffuse, nSelectedBoxReflectionId, true,
+        bEnableAtmosphericScatteringBackdrop, bIsBoxReflectionPass, a24
+    );
+
+    return HookResult<void>(HookAction::Return());
 }
 
 size_t Editor::CalculateCubemapSize(const DirectX::ScratchImage& p_Image, uint32_t p_CubeIndex) {
