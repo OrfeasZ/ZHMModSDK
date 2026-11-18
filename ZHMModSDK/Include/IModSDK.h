@@ -410,6 +410,14 @@ public:
      * @return The number of rpkgs that can be mounted.
      */
     virtual size_t GetMaxResourcePackageCount() = 0;
+
+    /**
+     * Try to get the resource ID associated with a runtime resource ID.
+     * @param p_RuntimeResourceID The runtime resource ID to look up.
+     * @param p_ResourceID The output resource ID.
+     * @return True if the resource ID was found, false otherwise.
+     */
+    virtual bool GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZString& p_ResourceID) = 0;
 };
 
 /**

@@ -37,7 +37,8 @@
                 "dx12"
             ]
         },
-        "nlohmann-json"
+        "nlohmann-json",
+        "libarchive"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [

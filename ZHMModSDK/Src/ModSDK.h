@@ -60,6 +60,8 @@ private:
     void SkipVersionUpdate(const std::string& p_Version);
     bool CheckForUpdates() const;
 
+    void UpdateResourceIDsDownload();
+
 public:
     void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
     void OnModUnloading(const std::string& p_Name, IPluginInterface* p_Mod);
@@ -283,6 +285,8 @@ public:
     size_t GetResourcePackageCount(uint32_t p_ChunkIndex) override;
     size_t GetMaxResourcePackageCount() override;
 
+    bool GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZString& p_ResourceID) override;
+
     // A byte patch of game code, found by pattern and checked against the original bytes before it is applied.
     struct SCodePatch {
         const char* Name;
@@ -342,6 +346,10 @@ private:
     std::unordered_map<uint32_t, size_t> m_ChunkIndexToResourcePackageCount;
     std::vector<SCodePatch> m_WwiseDestructorPatches;
     std::atomic<bool> m_IsResourcePackageLimitRaised = false;
+
+    std::unordered_map<ZRuntimeResourceID, std::string> m_RuntimeResourceIDToResourceID;
+    std::mutex m_ResourceIDsMutex;
+    std::jthread m_ResourceIDsDownloadThread;
 
     std::optional<std::string> m_SmfDeploymentPath;
 

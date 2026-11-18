@@ -1,5 +1,8 @@
 #include "ModSDK.h"
 
+#include <archive.h>
+#include <archive_entry.h>
+
 #include "Functions.h"
 #include "ModLoader.h"
 #include "Globals.h"
@@ -12,6 +15,7 @@
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
 #include "Util/StringUtils.h"
+#include "Util/HttpUtils.h"
 
 #include "Rendering/Renderers/DirectXTKRenderer.h"
 #include "Rendering/Renderers/ImGuiRenderer.h"
@@ -876,6 +880,8 @@ bool ModSDK::Startup() {
     }
 
     ResolveSmfDeploymentPath();
+
+    UpdateResourceIDsDownload();
 
     m_ModLoader->Startup();
 
@@ -1809,6 +1815,20 @@ void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Si
     }
 }
 
+bool ModSDK::GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZString& p_ResourceID) {
+    std::lock_guard s_Lock(m_ResourceIDsMutex);
+
+    const auto s_It = m_RuntimeResourceIDToResourceID.find(p_RuntimeResourceID);
+
+    if (s_It == m_RuntimeResourceIDToResourceID.end()) {
+        return false;
+    }
+
+    p_ResourceID = s_It->second;
+
+    return true;
+}
+
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {
     auto s_Result = p_Hook->CallOriginal(th, a2);
 
@@ -1927,6 +1947,179 @@ void ModSDK::ImDrawCallback_SetGameDescriptorHeap(const ImDrawList*, const ImDra
 
 void ModSDK::ImDrawCallback_ResetDescriptorHeap(const ImDrawList*, const ImDrawCmd*) {
     GetInstance()->GetImguiRenderer()->ResetDescriptorHeap();
+}
+
+namespace {
+    std::string ExtractResourceIDsArchive(const std::string& p_ArchiveData) {
+        archive* s_Archive = archive_read_new();
+
+        if (!s_Archive) {
+            throw std::runtime_error("Failed to create archive reader.");
+        }
+
+        archive_read_support_format_7zip(s_Archive);
+        archive_read_support_filter_all(s_Archive);
+
+        if (archive_read_open_memory(
+            s_Archive,
+            p_ArchiveData.data(),
+            p_ArchiveData.size()
+        ) != ARCHIVE_OK) {
+            const std::string s_Error = archive_error_string(s_Archive);
+            archive_read_free(s_Archive);
+            throw std::runtime_error(s_Error);
+        }
+
+        std::string s_Content;
+        archive_entry* s_Entry = nullptr;
+
+        const int s_HeaderResult = archive_read_next_header(s_Archive, &s_Entry);
+
+        if (s_HeaderResult != ARCHIVE_OK || archive_entry_filetype(s_Entry) != AE_IFREG) {
+            archive_read_free(s_Archive);
+            throw std::runtime_error("Archive does not contain a valid file.");
+        }
+
+        std::array<char, 8192> s_Buffer;
+        la_ssize_t s_BytesRead = 0;
+
+        while ((s_BytesRead = archive_read_data(
+            s_Archive,
+            s_Buffer.data(),
+            s_Buffer.size()
+        )) > 0) {
+            s_Content.append(s_Buffer.data(), static_cast<size_t>(s_BytesRead));
+        }
+
+        if (s_BytesRead < 0) {
+            const std::string s_Error = archive_error_string(s_Archive);
+            archive_read_free(s_Archive);
+            throw std::runtime_error(s_Error);
+        }
+
+        archive_read_free(s_Archive);
+
+        return s_Content;
+    }
+
+    std::unordered_map<ZRuntimeResourceID, std::string> ParseResourceIDsArchive(const std::string& p_ArchiveData) {
+        const std::string s_Content = ExtractResourceIDsArchive(p_ArchiveData);
+
+        std::unordered_map<ZRuntimeResourceID, std::string> s_ResourceIDs;
+
+        std::istringstream s_Stream(s_Content);
+        std::string s_Line;
+
+        while (std::getline(s_Stream, s_Line)) {
+            if (!s_Line.empty() && s_Line.back() == '\r') {
+                s_Line.pop_back();
+            }
+
+            if (s_Line.starts_with("# Hashes=")) {
+                size_t s_HashCount = 0;
+
+                const std::string_view s_Value(s_Line.data() + 9, s_Line.size() - 9);
+
+                const auto [s_Ptr, s_Ec] = std::from_chars(
+                    s_Value.data(),
+                    s_Value.data() + s_Value.size(),
+                    s_HashCount
+                );
+
+                if (s_Ec == std::errc{} && s_Ptr == s_Value.data() + s_Value.size()) {
+                    s_ResourceIDs.reserve(s_HashCount);
+                }
+
+                continue;
+            }
+
+            if (s_Line.empty() || s_Line[0] == '#') {
+                continue;
+            }
+
+            const size_t s_DotPos = s_Line.find('.');
+            const size_t s_CommaPos = s_Line.find(',', s_DotPos);
+
+            if (s_DotPos != 16 ||
+                s_CommaPos == std::string::npos ||
+                s_CommaPos <= s_DotPos + 1) {
+                continue;
+            }
+
+            uint64_t s_Hash = 0;
+
+            const auto [s_Ptr, s_Error] = std::from_chars(
+                s_Line.data(),
+                s_Line.data() + s_DotPos,
+                s_Hash,
+                16
+            );
+
+            if (s_Error != std::errc{} || s_Ptr != s_Line.data() + s_DotPos) {
+                continue;
+            }
+
+            std::string s_ResourceID = s_Line.substr(s_CommaPos + 1);
+
+            if (!s_ResourceID.empty()) {
+                s_ResourceIDs.emplace(s_Hash, std::move(s_ResourceID));
+            }
+        }
+
+        return s_ResourceIDs;
+    }
+}
+
+void ModSDK::UpdateResourceIDsDownload() {
+    m_ResourceIDsDownloadThread = std::jthread([this]() {
+        constexpr int s_MaxDownloadAttempts = 5;
+
+        const std::string s_HashesUrl =
+            "https://github.com/glacier-modding/Hitman-Hashes/releases/latest/download/latest-hashes.7z";
+
+        for (int s_Attempt = 1; s_Attempt <= s_MaxDownloadAttempts; ++s_Attempt) {
+            try {
+                const std::string s_ArchiveData = Util::HttpUtils::DownloadFromUrl(s_HashesUrl);
+
+                if (s_ArchiveData.empty()) {
+                    throw std::runtime_error("Downloaded resource ID archive is empty.");
+                }
+
+                auto s_ResourceIDs = ParseResourceIDsArchive(s_ArchiveData);
+
+                if (s_ResourceIDs.empty()) {
+                    throw std::runtime_error("Resource ID list is empty.");
+                }
+
+                const auto s_Count = s_ResourceIDs.size();
+
+                {
+                    std::lock_guard s_Lock(m_ResourceIDsMutex);
+                    m_RuntimeResourceIDToResourceID = std::move(s_ResourceIDs);
+                }
+
+                Logger::Debug(
+                    "Resource ID list download complete! Loaded {} resource IDs.",
+                    s_Count
+                );
+
+                return;
+            }
+            catch (const std::exception& p_Exception) {
+                Logger::Error(
+                    "Failed to download resource ID list (attempt {}/{}): {}",
+                    s_Attempt,
+                    s_MaxDownloadAttempts,
+                    p_Exception.what()
+                );
+            }
+
+            if (s_Attempt < s_MaxDownloadAttempts)
+                std::this_thread::sleep_for(std::chrono::seconds(30));
+        }
+
+        Logger::Error("Resource ID list download failed after 5 attempts.");
+        });
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(
