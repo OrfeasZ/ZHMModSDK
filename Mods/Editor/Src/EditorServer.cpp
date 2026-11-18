@@ -1478,6 +1478,57 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SP
         s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
         (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
     }
+    else if (s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->IsArray()) {
+        const auto* s_ArrayType = reinterpret_cast<const IArrayType*>(
+            s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()
+        );
+        const auto* s_ElementTypeID = s_ArrayType->containerType.elementType;
+        const auto* s_ElementTypeInfo = s_ElementTypeID->GetTypeInfo();
+
+        if (s_ElementTypeInfo->IsEntity()) {
+            p_Stream << "[";
+
+            void* s_Iterator = s_ArrayType->containerType.pVTab->begin(s_Data);
+            void* s_End = s_ArrayType->containerType.pVTab->end(s_Data);
+
+            bool s_IsFirst = true;
+
+            for (; s_Iterator != s_End; s_Iterator = s_ArrayType->containerType.pVTab->next(s_Data, s_Iterator)) {
+                if (!s_IsFirst) {
+                    p_Stream << ",";
+                }
+
+                s_IsFirst = false;
+
+                const auto* s_EntityRef = reinterpret_cast<const ZEntityRef*>(s_Iterator);
+
+                if (*s_EntityRef) {
+                    p_Stream << write_json(
+                        std::format("{:016x}", (*s_EntityRef)->GetType()->m_nEntityID)
+                    );
+                }
+                else {
+                    p_Stream << "null";
+                }
+            }
+
+            p_Stream << "]}";
+        }
+        else {
+            auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
+
+            s_PropertyInfo->m_propertyInfo.m_Type->GetTypeInfo()->m_pTypeFunctions->destruct(s_Data);
+            (*Globals::MemoryManager)->m_pNormalAllocator->Free(s_Data);
+
+            if (!s_JsonProperty) {
+                p_Stream << "null" << "}";
+                return;
+            }
+
+            p_Stream << std::string_view(s_JsonProperty->JsonData, s_JsonProperty->StrSize) << "}";
+            HM3_FreeJsonString(s_JsonProperty);
+        }
+    }
     else {
         auto s_JsonProperty = HM3_GameStructToJson(s_TypeName.c_str(), s_Data, s_TypeSize);
 
