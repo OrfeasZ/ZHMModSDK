@@ -112,6 +112,19 @@ class ZFreeCameraControlEditorStyleEntity;
 struct SDestinationLocationInfo;
 class ZSaveSlotManager;
 
+namespace bfx {
+    class AreaHandle;
+    struct PathSpec;
+    struct PathCreationOptions;
+    class PolylinePath;
+}
+
+class ZPFLocation;
+class ZPFAsynchPathRequest;
+class IPathModifier;
+class ZMoveAnimProgram;
+template <class T> class TRefCountPtr;
+
 class ZHMSDK_API Hooks {
 public:
     static Hook<void(ZActor*, ZComponentCreateInfo*)>* ZActor_ZActor;
@@ -288,6 +301,32 @@ public:
 
     static Hook<void(ZPFObstacleEntity* th, uint32 nObstacleBlockageFlags, bool bEnabled, bool forceUpdate)>*
     ZPFObstacleEntity_UpdateObstacle;
+
+    static Hook<bfx::PolylinePath*(
+        const bfx::AreaHandle& startArea,
+        const SVector3& startPos,
+        const bfx::AreaHandle& goalArea,
+        const SVector3& goalPos,
+        const bfx::PathSpec& pathSpec,
+        const bfx::PathCreationOptions& options
+    )>* bfx_CreatePolylinePath_Internal;
+
+    static Hook<bool(const bfx::AreaHandle& areaA, const bfx::AreaHandle& areaB)>* bfx_IsAreaReachableFromArea;
+
+    static Hook<TRefCountPtr<ZPFAsynchPathRequest>*(
+        ZPathfinder* th,
+        TRefCountPtr<ZPFAsynchPathRequest>* result,
+        const ZPFLocation& lFrom,
+        const ZPFLocation& lTo,
+        float32 fPathSharingPenalty,
+        uint32 nObstacleBlockageFlags,
+        float32 fMaxCost,
+        bool bPostProcess,
+        IPathModifier* pPathModifier
+    )>* ZPathfinder_RequestPath;
+
+    static Hook<void(ZMoveAnimProgram* th, const ZPFLocation& startLocation, const TArray<ZPFLocation>& waypoints)>*
+    ZMoveAnimProgram_AsyncRequestPath;
 
     static Hook<bool(ZUIText* th, int32 nNameHash, ZString& sResult, int32_t& outMarkupResult)>* ZUIText_TryGetTextFromNameHash;
 

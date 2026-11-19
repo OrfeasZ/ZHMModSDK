@@ -10,6 +10,8 @@
 #include <list>
 #include <shared_mutex>
 #include <variant>
+#include <atomic>
+#include <chrono>
 
 #include <SimpleMath.h>
 
@@ -27,6 +29,8 @@
 #include "Glacier/ZSequence.h"
 #include "Glacier/ZCover.h"
 #include "Glacier/ZCollision.h"
+#include "Glacier/ZPathfinder.h"
+#include "Glacier/ZActor.h"
 
 #include "IPluginInterface.h"
 #include "IconsMaterialDesign.h"
@@ -610,6 +614,39 @@ private:
 
     void DrawItemsWindow(bool p_HasFocus);
     void DrawActorsWindow(bool p_HasFocus);
+    enum class EPathQueryResult {
+        Path,
+        NoPath,
+        IslandPrecheckFailed,
+        InvalidLocation
+    };
+
+    void DrawSelectedActorPathQueries();
+    void UpdatePathQueryActor();
+    void DrawPathQueries(IRenderer* p_Renderer);
+    bool IsTrackedActorRequest(const ZPFLocation& p_From);
+    const ZPFLocation* GetTrackedActorPathLocation() const;
+    void AddPendingTrackedPathRequest(const SVector3& p_From, const SVector3& p_To, uint32 p_ObstacleBlockageFlags);
+    bool ConsumePendingTrackedPathRequest(const SVector3& p_From, const SVector3& p_To, uint32 p_ObstacleBlockageFlags);
+    void RecordPathQuery(
+        const SVector3& p_From,
+        const SVector3& p_To,
+        uint32 p_ObstacleBlockageFlags,
+        EPathQueryResult p_Result,
+        bool p_FromBehaviorPrecheck,
+        std::vector<SVector3>&& p_Points,
+        std::vector<SVector3>&& p_UnblockedPoints
+    );
+    void ResolveBlockingObstacles();
+    static std::vector<SVector3> GetPolylinePoints(const bfx::PolylinePath* p_Path);
+    static std::vector<SVector3> PlanUnblockedPath(
+        const bfx::AreaHandle& p_FromArea,
+        const SVector3& p_FromPos,
+        const bfx::AreaHandle& p_ToArea,
+        const SVector3& p_ToPos,
+        const bfx::PathSpec& p_PathSpec,
+        const bfx::PathCreationOptions& p_Options
+    );
     void DrawDebugChannelsWindow(bool p_HasFocus);
     void DrawRoomsWindow(bool p_HasFocus);
     void DrawBoxReflectionsWindow(bool p_HasFocus);
@@ -865,6 +902,38 @@ private:
 
     DECLARE_PLUGIN_DETOUR(Editor, void, ZResourceManager_UninstallResource,
         ZResourceManager* th, ZResourceIndex index
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, bfx::PolylinePath*, bfx_CreatePolylinePath_Internal,
+        const bfx::AreaHandle& p_FromArea,
+        const SVector3& p_FromPos,
+        const bfx::AreaHandle& p_ToArea,
+        const SVector3& p_ToPos,
+        const bfx::PathSpec& p_PathSpec,
+        const bfx::PathCreationOptions& p_Options
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, bool, bfx_IsAreaReachableFromArea,
+        const bfx::AreaHandle& p_FromArea,
+        const bfx::AreaHandle& p_ToArea
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, TRefCountPtr<ZPFAsynchPathRequest>*, ZPathfinder_RequestPath,
+        ZPathfinder* th,
+        TRefCountPtr<ZPFAsynchPathRequest>* p_Result,
+        const ZPFLocation& p_From,
+        const ZPFLocation& p_To,
+        float32 p_PathSharingPenalty,
+        uint32 p_ObstacleBlockageFlags,
+        float32 p_MaxCost,
+        bool p_PostProcess,
+        IPathModifier* p_PathModifier
+    );
+
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZMoveAnimProgram_AsyncRequestPath,
+        ZMoveAnimProgram* th,
+        const ZPFLocation& p_StartLocation,
+        const TArray<ZPFLocation>& p_Waypoints
     );
 
 private:
@@ -1195,6 +1264,40 @@ private:
     std::vector<std::string> m_ClassNames;
 
     TResourcePtr<ZTemplateEntityFactory> m_RepositoryResource;
+
+    struct SBlockingObstacle {
+        SMatrix m_Transform;
+        SVector3 m_HalfSize;
+        uint32 m_BlockageFlags = 0;
+    };
+
+    struct SPathQueryRecord {
+        SVector3 m_From;
+        SVector3 m_To;
+        uint32 m_ObstacleBlockageFlags = 0;
+        EPathQueryResult m_Result = EPathQueryResult::Path;
+        bool m_FromBehaviorPrecheck = false;
+        std::vector<SVector3> m_Points;
+        std::vector<SVector3> m_UnblockedPoints;
+        std::vector<SBlockingObstacle> m_BlockingObstacles;
+        bool m_BlockingObstaclesResolved = false;
+        uint32 m_HitCount = 0;
+        std::chrono::steady_clock::time_point m_LastSeen;
+    };
+
+    struct SPendingPathRequest {
+        SVector3 m_From;
+        SVector3 m_To;
+        uint32 m_ObstacleBlockageFlags = 0;
+        std::chrono::steady_clock::time_point m_RequestedAt;
+    };
+
+    std::mutex m_PathQueryMutex;
+    std::vector<SPathQueryRecord> m_PathQueries;
+    std::vector<SPendingPathRequest> m_PendingTrackedPathRequests;
+    std::atomic_bool m_RecordPathQueries = false;
+    ZActor* m_PathQueryActor = nullptr;
+    std::atomic<ZAnimatedActor*> m_PathQueryAnimatedActor = nullptr;
 
     ZRenderGraphNodeBoxReflection* m_SelectedBoxReflectionGraphNode = nullptr;
     BoxReflectionPreview m_BoxReflectionPreview;
