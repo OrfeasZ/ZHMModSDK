@@ -822,6 +822,10 @@ private:
     );
 
     static bool GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputFolder);
+    void RenderAllBoxReflections();
+    void StartBoxReflectionPass(bool p_HideExistingReflections);
+    void UpdateBoxReflectionPasses();
+    bool IsRenderingBoxReflections() const;
     static size_t CalculateCubemapSize(const DirectX::ScratchImage& p_Image, uint32_t p_CubeIndex);
 
 private:
@@ -834,6 +838,14 @@ private:
     );
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
+
+    DECLARE_PLUGIN_DETOUR(Editor, void, CLightTile_DispatchShadeDeferred,
+        CLightTile* th, ZRenderContext* pRenderContext, ZRenderDeviceContext* pDeviceContext, void* a4, void* a5,
+        void* a6, void* a7, void* a8, void* a9, void* a10, void* a11, void* a12, void* a13, void* a14, int32_t a15,
+        void* a16, const float4* vClearColor, bool bDisableLighting, bool bMergeDiffuse,
+        int32_t nSelectedBoxReflectionId, bool bDisableBoxReflections, bool bEnableAtmosphericScatteringBackdrop,
+        bool bIsBoxReflectionPass, int32_t a24
+    );
 
     DECLARE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
         ZEntityManager* th,
@@ -1200,6 +1212,10 @@ private:
     BoxReflectionPreview m_BoxReflectionPreview;
 
     bool m_EnableBoxReflectionCache = true;
+    int m_BoxReflectionBounces = 1;
+    int m_RemainingBoxReflectionPasses = 0;
+    bool m_BoxReflectionPassRequested = false;
+    std::atomic<bool> m_HideBoxReflectionsInBoxReflectionPass = false;
 
     std::string m_BoxReflectionOutputFolder;
 };
