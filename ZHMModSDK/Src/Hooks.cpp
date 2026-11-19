@@ -450,6 +450,37 @@ PATTERN_HOOK(
 );
 
 PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x18\x55\x57\x41\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xD9\x48\x81\xEC\xE0\x00\x00\x00\x48\x8B\x05\x00\x00\x00\x00\x4D\x8B\xF1\x49\x8B\xD8\x4C\x8B\xFA\x48\x8B\xF9\x4C\x8B\x50\x10",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxx????xxxxxxxxxxxxxxxx",
+    bfx_CreatePolylinePath_Internal,
+    bfx::PolylinePath*(const bfx::AreaHandle& startArea, const SVector3& startPos, const bfx::AreaHandle& goalArea,
+        const SVector3& goalPos, const bfx::PathSpec& pathSpec, const bfx::PathCreationOptions& options)
+);
+
+PATTERN_HOOK(
+    "\x4C\x89\x44\x24\x18\x57\x48\x83\xEC\x30\x4C\x8B\x05\x00\x00\x00\x00\x48\x89\x5C\x24\x40\x48\x89\x74\x24\x58\x4C\x89\x74\x24\x28\x4C\x8B\xF1\x49\x8B\x78\x70\x4C\x89\x7C\x24\x20\x4C\x8B\xFA",
+    "xxxxxxxxxxxxx????xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    bfx_IsAreaReachableFromArea,
+    bool(const bfx::AreaHandle& areaA, const bfx::AreaHandle& areaB)
+);
+
+PATTERN_HOOK(
+    "\x48\x89\x5C\x24\x10\x48\x89\x4C\x24\x08\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\x6C\x24\xF9\x48\x81\xEC\x90\x00\x00\x00\x45\x33\xFF\x49\x8B\xD9\x66\x44\x89",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    ZPathfinder_RequestPath,
+    TRefCountPtr<ZPFAsynchPathRequest>*(ZPathfinder* th, TRefCountPtr<ZPFAsynchPathRequest>* result, const ZPFLocation& lFrom,
+        const ZPFLocation& lTo, float32 fPathSharingPenalty, uint32 nObstacleBlockageFlags, float32 fMaxCost, bool bPostProcess,
+        IPathModifier* pPathModifier)
+);
+
+PATTERN_HOOK(
+    "\x40\x56\x57\x41\x56\x48\x81\xEC\x80\x00\x00\x00\x4C\x8B\xF1\x49\x8B\xF8\x48\x8B\xCA\x48\x8B\xF2\xE8",
+    "xxxxxxxxxxxxxxxxxxxxxxxxx",
+    ZMoveAnimProgram_AsyncRequestPath,
+    void(ZMoveAnimProgram* th, const ZPFLocation& startLocation, const TArray<ZPFLocation>& waypoints)
+);
+
+PATTERN_HOOK(
     "\x48\x89\x5C\x24\x08\x48\x89\x6C\x24\x10\x48\x89\x74\x24\x18\x48\x89\x7C\x24\x20\x41\x54\x41\x56\x41\x57\x48\x83\xEC\x00\x48\x8D\x59\x28",
     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx?xxxx",
     ZUIText_TryGetTextFromNameHash,
