@@ -718,12 +718,13 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
                     const auto s_VolumeSphereEntities = Plugin()->FindEntitiesByType(
                         "ZSphereVolumeEntity", "00B86A9EE991EFB2"
                     );
+                    const auto s_MapSpaceConfigEntities = Plugin()->FindEntitiesByType("ZUIMapSpaceConfig", "00972D765AF6B272");
 
                     DeferToClient(
                         p_ClientId,
                         [s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities,
                             s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities,
-                            p_PrimMatis, p_MatiTextures](WebSocket* p_Socket) {
+                            s_MapSpaceConfigEntities, p_PrimMatis, p_MatiTextures](WebSocket* p_Socket) {
                                 p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                                 SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
@@ -747,6 +748,9 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
 
                                 p_Socket->send("],\"volumeSpheres\":[", uWS::OpCode::TEXT);
                                 SendEntitiesDetails(p_Socket, s_VolumeSphereEntities);
+
+                                p_Socket->send("],\"mapSpaceConfigs\":[", uWS::OpCode::TEXT);
+                                SendEntitiesDetails(p_Socket, s_MapSpaceConfigEntities);
 
                                 p_Socket->send("],\"matis\":[", uWS::OpCode::TEXT);
 
@@ -1145,7 +1149,8 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
         {"m_vRoomMin", "roomExtentMin"},
         {"m_vRoomMax", "roomExtentMax"},
         {"m_rParentArea", "parent"},
-        {"m_fRadius", "radius"}
+        {"m_fRadius", "radius"},
+        {"m_aInclusions", "inclusions"}
     };
 
     if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pPropertyData) {
