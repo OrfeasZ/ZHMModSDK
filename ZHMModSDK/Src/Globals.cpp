@@ -188,7 +188,7 @@ PATTERN_RELATIVE_GLOBAL(
     "\x4C\x8B\x0D\x00\x00\x00\x00\x49\x8B\x49\x08",
     "xxx????xxxx",
     3,
-    bfx::SystemInstance*, NavPowerSystemInstance
+    bfx::SystemInstance**, NavPowerSystemInstance
 );
 
 PATTERN_RELATIVE_GLOBAL(

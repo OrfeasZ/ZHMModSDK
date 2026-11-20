@@ -60,22 +60,30 @@ namespace bfx {
 
     class SystemInstance {
     public:
+        PAD(0x70);
         APICriticalSection* m_pGlobalCS; // 0x70
     };
 
     class APIExclusiveAccessOb {
     public:
         APIExclusiveAccessOb() {
-            if (Globals::NavPowerSystemInstance) {
-                Globals::NavPowerSystemInstance->m_pGlobalCS->Enter();
+            if (Globals::NavPowerSystemInstance && *Globals::NavPowerSystemInstance) {
+                m_pGlobalCS = (*Globals::NavPowerSystemInstance)->m_pGlobalCS;
+            }
+
+            if (m_pGlobalCS) {
+                m_pGlobalCS->Enter();
             }
         }
 
         ~APIExclusiveAccessOb() {
-            if (Globals::NavPowerSystemInstance) {
-                Globals::NavPowerSystemInstance->m_pGlobalCS->Leave();
+            if (m_pGlobalCS) {
+                m_pGlobalCS->Leave();
             }
         }
+
+    private:
+        APICriticalSection* m_pGlobalCS = nullptr;
     };
 
     class APISharedAccessOb : public APIExclusiveAccessOb {};
@@ -159,6 +167,66 @@ namespace bfx {
     public:
         void* m_handleImpl;
         void* m_pSpace;
+    };
+
+    template <class T>
+    struct Array {
+        T* m_data;
+        int32 m_size;
+        int32 m_cap;
+        uint32 m_tag;
+    };
+
+    enum BlockageMode : uint32 {
+        BLOCKED_IF_ANY_MATCH = 0,
+        BLOCKED_IF_ALL_MATCH = 1,
+    };
+
+    struct PathSpec {
+        BlockageMode m_obstacleMode = BLOCKED_IF_ANY_MATCH;
+        uint32 m_obstacleBlockageFlags = 0;
+        uint32 m_areaUsageFlags = 0xEFFFFFFF;
+        uint32 m_areaPenaltyFlags = 0xFFFFFFFF;
+        uint32 m_linkUsageFlags = 0xFFFFFFFF;
+        bool m_usePathSharingPenalty = false;
+        float32 m_pathSharingPenalty = 0.f;
+        float32 m_maxPathSharingPenalty = 0.f;
+        float32 m_maxSearchDist = 10000.f;
+    };
+
+    static_assert(sizeof(PathSpec) == 0x24);
+
+    struct PathCreationOptions {
+        bool m_performInitialNavProbe = true;
+        bool m_performAdditionalSmoothing = false;
+        bool m_forceFirstPosOntoNavGraph = false;
+    };
+
+    class Space;
+
+    struct PathSegmentImpl {
+        Space* m_pSpace;
+        uint32 m_type;
+        SVector3 m_startPos;
+        SVector3 m_endPos;
+        SVector3 m_normal;
+        uint64 m_userData;
+        void* m_areaHandle;
+        void* m_linkHandle;
+    };
+
+    static_assert(sizeof(PathSegmentImpl) == 0x48);
+
+    class PolylinePath : public HandleTargetBase {
+    public:
+        void Release() {
+            using DeletingDestructor_t = void(*)(PolylinePath*, uint64);
+            (**reinterpret_cast<DeletingDestructor_t**>(this))(this, 1);
+        }
+
+        Space* m_pSpace; // 0x10
+        Array<PathSegmentImpl> m_segs; // 0x18
+        uint32 m_pathID; // 0x30
     };
 }
 
@@ -257,3 +325,29 @@ public:
 };
 
 #pragma pack(pop)
+
+static_assert(offsetof(ZPFLocation, m_area) == 0xC);
+static_assert(sizeof(ZPFLocation) == 0x20);
+
+class ZPFPath;
+
+enum EPathRequestStatus : uint32 {
+    ePRS_Initialize = 0,
+    ePRS_Pending = 1,
+    ePRS_Done = 2,
+};
+
+class ZPFAsynchPathRequest {
+public:
+    int32 m_nRefCount;
+    bool m_bReady; // 0x4
+    ZPFLocation m_lFrom; // 0x8
+    ZPFLocation m_lTo; // 0x28
+    ZPFPath* m_pathResult; // 0x48
+    uint32 m_nNodeKeyTo; // 0x50
+    float32 m_fMaxCost; // 0x54
+    EPathRequestStatus m_ePathRequestStatus; // 0x58
+};
+
+static_assert(offsetof(ZPFAsynchPathRequest, m_ePathRequestStatus) == 0x58);
+static_assert(sizeof(ZPFAsynchPathRequest) == 0x60);

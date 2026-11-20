@@ -114,7 +114,7 @@ public:
     static ZHM5GridManager* HM5GridManager;
     static ZPathfinder* Pathfinder;
     static SReasoningGrid** ActiveGrid;
-    static bfx::SystemInstance* NavPowerSystemInstance;
+    static bfx::SystemInstance** NavPowerSystemInstance;
     static ZSharedSoundSensor** SharedSoundSensor;
     static SPrimitiveBufferData* PrimitiveBufferData;
     static IGameMode** GameMode;

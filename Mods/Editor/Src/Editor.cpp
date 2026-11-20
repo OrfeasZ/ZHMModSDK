@@ -120,6 +120,11 @@ void Editor::Init() {
 
     Hooks::ZResourceManager_UninstallResource->AddDetour(this, &Editor::ZResourceManager_UninstallResource);
 
+    Hooks::bfx_CreatePolylinePath_Internal->AddDetour(this, &Editor::bfx_CreatePolylinePath_Internal);
+    Hooks::bfx_IsAreaReachableFromArea->AddDetour(this, &Editor::bfx_IsAreaReachableFromArea);
+    Hooks::ZPathfinder_RequestPath->AddDetour(this, &Editor::ZPathfinder_RequestPath);
+    Hooks::ZMoveAnimProgram_AsyncRequestPath->AddDetour(this, &Editor::ZMoveAnimProgram_AsyncRequestPath);
+
     LoadSmfEnumVariants();
 
     m_UseSnap = GetSettingBool("general", "snap", true);
@@ -260,7 +265,8 @@ void Editor::CopyToClipboard(const std::string& p_String) const {
 void Editor::OnDraw3D(IRenderer* p_Renderer) {
     std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
 
-    DrawEntityAABB(p_Renderer,  0.15f);
+    DrawEntityAABB(p_Renderer);
+    DrawPathQueries(p_Renderer,  0.15f);
 
     /*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
     const auto s_LineColor = SVector4(0.94, 0.12, 0.05, 1.0);
@@ -809,6 +815,7 @@ void Editor::DrawSettingsWindow(const bool p_HasFocus) {
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     ProcessTasks();
+    UpdatePathQueryActor();
     if (m_TrackCamActive) {
         if (!*Globals::ApplicationEngineWin32)
             return;
@@ -1491,6 +1498,14 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         }
 
         m_EntitiesToDestroy.clear();
+    }
+
+    {
+        std::scoped_lock s_Lock(m_PathQueryMutex);
+        m_PathQueries.clear();
+        m_PendingTrackedPathRequests.clear();
+        m_PathQueryActor = nullptr;
+        m_PathQueryAnimatedActor = nullptr;
     }
 
     {

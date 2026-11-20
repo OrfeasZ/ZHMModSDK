@@ -528,6 +528,10 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
 
         ImGui::Separator();
 
+        DrawSelectedActorPathQueries();
+
+        ImGui::Separator();
+
         ImGui::Text("Add weapon to inventory");
         ImGui::Spacing();
 
