@@ -287,7 +287,7 @@ private:
     bool RayCastCollision(const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output);
 
     void DrawEntityManipulator(bool p_HasFocus);
-    void DrawEntityAABB(IRenderer* p_Renderer);
+    void DrawEntityAABB(IRenderer* p_Renderer, float p_Alpha);
 
     void DrawEntityPropertiesWindow();
 
