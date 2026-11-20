@@ -46,6 +46,21 @@ public:
     static bool GetEnabled();
 
 private:
+    using EntityIndexMap = std::unordered_map<const void*, size_t>;
+
+    using SceneEntities = std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>;
+
+    struct CrowdVolumeIndices {
+        EntityIndexMap Boxes;
+        EntityIndexMap Spheres;
+        EntityIndexMap Shapes;
+    };
+
+    struct CrowdsJson {
+        std::vector<std::string> VolumeShapes;
+        std::vector<std::string> Crowds;
+    };
+
     void OnMessage(WebSocket* p_Socket, std::string_view p_Message) noexcept(false);
     void QueueRequest(const std::string& p_ClientId, std::optional<int64_t> p_MessageId, std::function<void()> p_Request);
     void DeferToClient(const std::string& p_ClientId, std::function<void(WebSocket*)> p_Send);
@@ -63,7 +78,27 @@ private:
     static bool SendEntitiesDetails(
         WebSocket* p_Socket, const std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>>& p_Entities
     );
+    static void SendJsonList(WebSocket* p_Socket, const std::vector<std::string>& p_Items);
+    static CrowdsJson WriteCrowdsJson(
+        const SceneEntities& p_VolumeBoxEntities, const SceneEntities& p_VolumeSphereEntities
+    );
+    static std::string WriteCrowdEntity(ZEntityRef p_Crowd, const CrowdVolumeIndices& p_VolumeIndices);
+    static std::string WriteVolumeShape(ZEntityRef p_Shape);
+    static void WriteCrowdTeleport(std::ostream& p_Stream, ZEntityRef p_Teleport);
+    static void WriteSplineFlow(std::ostream& p_Stream, ZEntityRef p_Spline);
+    static void WriteVolume(std::ostream& p_Stream, ZEntityRef p_Volume);
+    static void WriteControlPoints(std::ostream& p_Stream, ZEntityRef p_Entity);
+    static void WriteWorldMatrix(std::ostream& p_Stream, ZEntityRef p_Entity);
+    static void WriteSVector3(std::ostream& p_Stream, const SVector3& p_Vector);
+    static void WriteCrowdVolumeIndexArray(
+        std::ostream& p_Stream,
+        ZEntityRef p_Crowd,
+        std::string_view p_Key,
+        std::string_view p_PropertyName,
+        const EntityIndexMap& p_Indices
+    );
     static void WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity);
+    static void WriteEntityIdentity(std::ostream& p_Stream, ZEntityRef p_Entity);
     static void WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entity);
     static void WriteVector3(std::ostream& p_Stream, double p_X, double p_Y, double p_Z);
     static void WriteRotation(std::ostream& p_Stream, double p_Yaw, double p_Pitch, double p_Roll);

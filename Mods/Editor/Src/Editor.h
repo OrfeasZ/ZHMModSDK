@@ -90,6 +90,7 @@ public:
         const std::string& p_EntityType, const std::string& p_Hash
     );
     void RebuildEntityTree();
+    static Quat GetWorldQuat(ZEntityRef p_Entity);
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
     static int32_t GetEnumValue(const IEnumType* p_Type, const void* p_Data);
     static void SetEnumValue(const IEnumType* p_Type, void* p_Data, int32_t p_Value);

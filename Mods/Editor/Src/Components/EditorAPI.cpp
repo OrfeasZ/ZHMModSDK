@@ -268,6 +268,10 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
     return {};
 }
 
+Quat Editor::GetWorldQuat(const ZEntityRef p_Entity) {
+    return GetParentQuat(p_Entity) * GetQuatFromProperty(p_Entity);
+}
+
 Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
     const auto* s_Entity = p_Entity.QueryInterface<ZSpatialEntity>();
 
@@ -692,18 +696,15 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
 
         if (const char* s_EntityType = s_TypeInfo->pszTypeName;
             strcmp(s_EntityType, p_EntityType.c_str()) == 0) {
-            const Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-            Quat s_ParentQuat;
+            Quat s_CombinedQuat;
 
             try {
-                s_ParentQuat = GetParentQuat(s_Node->Entity);
+                s_CombinedQuat = GetWorldQuat(s_Node->Entity);
             }
             catch (const std::runtime_error&) {
                 Logger::Error("[Editor] Circular reference found! Skipping entity.");
                 continue;
             }
-
-            Quat s_CombinedQuat = s_ParentQuat * s_EntityQuat;
 
             s_Entities.emplace_back(
                 std::vector{ p_Hash },
