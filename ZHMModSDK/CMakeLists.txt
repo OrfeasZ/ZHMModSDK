@@ -118,7 +118,8 @@ target_link_libraries(ZHMModSDK PUBLIC
         sentry::sentry
         zhmmodsdk_rs
         ResourceLib_HM3
-        LibArchive::LibArchive
+        zstd::libzstd
+        msgpack-cxx
 )
 
 # Export imgui, implot and ImGuizmo as whole, so mods can use them.

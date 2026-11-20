@@ -43,6 +43,13 @@ public:
     static void DestroyInstance();
 
 public:
+    struct ResourceIDData {
+        std::string m_ResourceType;
+        std::string m_Path;
+        std::string m_Hint;
+        uint32_t m_GameFlags = 0;
+    };
+
     ModSDK();
     ~ModSDK();
 
@@ -347,7 +354,7 @@ private:
     std::vector<SCodePatch> m_WwiseDestructorPatches;
     std::atomic<bool> m_IsResourcePackageLimitRaised = false;
 
-    std::unordered_map<ZRuntimeResourceID, std::string> m_RuntimeResourceIDToResourceID;
+    std::unordered_map<ZRuntimeResourceID, ResourceIDData> m_RuntimeResourceIDToResourceID;
     std::mutex m_ResourceIDsMutex;
     std::jthread m_ResourceIDsDownloadThread;
 

@@ -38,7 +38,8 @@
             ]
         },
         "nlohmann-json",
-        "libarchive"
+        "zstd",
+        "msgpack"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [
