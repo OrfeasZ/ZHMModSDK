@@ -48,7 +48,8 @@ public:
     );
     void CreateSampler(ID3D12Device* p_Device);
 
-    void Apply(ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList);
+    void ApplyState(ID3D12GraphicsCommandList* p_CommandList);
+    void ApplyConstants(ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList);
 
     void SetWorld(const DirectX::XMFLOAT4X4& p_World);
     void SetView(const DirectX::XMFLOAT4X4& p_View);

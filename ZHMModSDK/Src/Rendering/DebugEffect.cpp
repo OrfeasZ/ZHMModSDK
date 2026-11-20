@@ -304,9 +304,7 @@ void DebugEffect::CreateSampler(ID3D12Device* p_Device) {
     p_Device->CreateSampler(&s_SamplerDesc, m_pSamplerHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void DebugEffect::Apply(ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList) {
-    m_constantBufferResource = DirectX::GraphicsMemory::Get(p_Device).AllocateConstant(m_Constants);
-
+void DebugEffect::ApplyState(ID3D12GraphicsCommandList* p_CommandList) {
     p_CommandList->SetGraphicsRootSignature(m_pRootSignature);
 
     ID3D12DescriptorHeap* s_Heaps[] = { m_pSRVHeap, m_pSamplerHeap };
@@ -320,11 +318,15 @@ void DebugEffect::Apply(ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_Com
         RootParameterIndex::TextureSampler, m_pSamplerHeap->GetGPUDescriptorHandleForHeapStart()
     );
 
+    p_CommandList->SetPipelineState(m_pPipelineState);
+}
+
+void DebugEffect::ApplyConstants(ID3D12Device* p_Device, ID3D12GraphicsCommandList* p_CommandList) {
+    m_constantBufferResource = DirectX::GraphicsMemory::Get(p_Device).AllocateConstant(m_Constants);
+
     p_CommandList->SetGraphicsRootConstantBufferView(
         RootParameterIndex::ConstantBuffer, m_constantBufferResource.GpuAddress()
     );
-
-    p_CommandList->SetPipelineState(m_pPipelineState);
 }
 
 void DebugEffect::SetWorld(const DirectX::XMFLOAT4X4& p_World) {

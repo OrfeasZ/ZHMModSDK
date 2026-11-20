@@ -269,6 +269,8 @@ void DirectXTKRenderer::Draw() {
 
     ModSDK::GetInstance()->OnDraw3D();
 
+    DrawPendingMeshes();
+
     m_TriangleBatch->End();
     m_LineBatch->End();
     m_TextBatch->End();
@@ -451,6 +453,8 @@ void DirectXTKRenderer::DepthDraw() {
 
     ModSDK::GetInstance()->OnDepthDraw3D();
 
+    DrawPendingMeshes();
+
     m_TriangleBatch->End();
     m_LineBatch->End();
     m_TextBatch->End();
@@ -596,12 +600,20 @@ bool DirectXTKRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
             std::make_unique<DirectX::BasicEffect>(s_Device, DirectX::EffectFlags::VertexColor | DirectX::EffectFlags::Texture, s_Desc);
 
         m_TriangleBatch =
-            std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(s_Device, [&]() { m_TriangleEffect->Apply(m_CommandList); });
+            std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(s_Device, [&]() {
+                DrawPendingMeshes();
+                m_TriangleEffect->Apply(m_CommandList);
+            });
 
         m_LineBatch =
-            std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(s_Device, [&]() { m_LineEffect->Apply(m_CommandList); });
+            std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColor>>(s_Device, [&]() {
+                DrawPendingMeshes();
+                m_LineEffect->Apply(m_CommandList);
+            });
 
         m_TextBatch = std::make_unique<CustomPrimitiveBatch<DirectX::VertexPositionColorTexture>>(s_Device, [&]() {
+            DrawPendingMeshes();
+
             ID3D12DescriptorHeap* s_Heaps[] = { m_fontSRVDescriptorHeap.m_Ref, m_CommonStates->Heap() };
 
             m_CommandList->SetDescriptorHeaps(static_cast<UINT>(std::size(s_Heaps)), s_Heaps);
@@ -1602,41 +1614,60 @@ void DirectXTKRenderer::DrawMesh(
         }
     }
 
-    ScopedD3DRef<ID3D12Device> s_Device;
+    const uint32_t s_FirstVertexBuffer = static_cast<uint32_t>(m_PendingMeshVertexBuffers.size());
 
-    if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) != S_OK) {
+    for (uint32_t i = 0; i < p_VertexBufferCount; ++i) {
+        D3D12_VERTEX_BUFFER_VIEW& s_View = m_PendingMeshVertexBuffers.emplace_back();
+        s_View.BufferLocation = p_VertexBuffers[i]->m_pResource->GetGPUVirtualAddress() + p_VertexBuffers[i]->m_nOffset;
+        s_View.StrideInBytes = p_VertexBuffers[i]->m_nStride;
+        s_View.SizeInBytes = p_VertexBuffers[i]->m_nSize;
+    }
+
+    PendingMesh& s_Mesh = m_PendingMeshes.emplace_back();
+    s_Mesh.FirstVertexBuffer = s_FirstVertexBuffer;
+    s_Mesh.VertexBufferCount = p_VertexBufferCount;
+    s_Mesh.IndexBuffer.BufferLocation = p_IndexBuffer->m_pResource->GetGPUVirtualAddress() + p_IndexBuffer->m_nOffset;
+    s_Mesh.IndexBuffer.SizeInBytes = p_IndexBuffer->m_nSize;
+    s_Mesh.IndexBuffer.Format = DXGI_FORMAT_R16_UINT;
+    s_Mesh.IndexCount = p_IndexBuffer->m_nSize / p_IndexBuffer->m_nStride;
+    s_Mesh.Transform = p_Transform;
+    s_Mesh.PositionScale = p_PositionScale;
+    s_Mesh.PositionBias = p_PositionBias;
+    s_Mesh.TextureScaleBias = p_TextureScaleBias;
+    s_Mesh.MaterialColor = p_MaterialColor;
+
+    ++m_MeshDrawCount;
+}
+
+void DirectXTKRenderer::DrawPendingMeshes() {
+    if (m_PendingMeshes.empty()) {
         return;
     }
 
-    std::vector<D3D12_VERTEX_BUFFER_VIEW> s_VertexBufferViews(p_VertexBufferCount);
+    ScopedD3DRef<ID3D12Device> s_Device;
 
-    for (uint32_t i = 0; i < p_VertexBufferCount; ++i) {
-        s_VertexBufferViews[i].BufferLocation = p_VertexBuffers[i]->m_pResource->GetGPUVirtualAddress() +
-            p_VertexBuffers[i]->m_nOffset;
-        s_VertexBufferViews[i].StrideInBytes = p_VertexBuffers[i]->m_nStride;
-        s_VertexBufferViews[i].SizeInBytes = p_VertexBuffers[i]->m_nSize;
+    if (m_SwapChain->GetDevice(REF_IID_PPV_ARGS(s_Device)) == S_OK) {
+        m_DebugEffect->ApplyState(m_CommandList);
+        m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        for (const PendingMesh& s_Mesh : m_PendingMeshes) {
+            m_DebugEffect->SetWorld(*reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Mesh.Transform));
+            m_DebugEffect->SetPositionScale(*reinterpret_cast<const DirectX::XMFLOAT4*>(&s_Mesh.PositionScale));
+            m_DebugEffect->SetPositionBias(*reinterpret_cast<const DirectX::XMFLOAT4*>(&s_Mesh.PositionBias));
+            m_DebugEffect->SetTextureScaleBias(*reinterpret_cast<const DirectX::XMFLOAT4*>(&s_Mesh.TextureScaleBias));
+            m_DebugEffect->SetMaterialColor(*reinterpret_cast<const DirectX::XMFLOAT4*>(&s_Mesh.MaterialColor));
+            m_DebugEffect->ApplyConstants(s_Device, m_CommandList);
+
+            m_CommandList->IASetVertexBuffers(
+                0, s_Mesh.VertexBufferCount, &m_PendingMeshVertexBuffers[s_Mesh.FirstVertexBuffer]
+            );
+            m_CommandList->IASetIndexBuffer(&s_Mesh.IndexBuffer);
+            m_CommandList->DrawIndexedInstanced(s_Mesh.IndexCount, 1, 0, 0, 0);
+        }
     }
 
-    D3D12_INDEX_BUFFER_VIEW s_IndexBufferView;
-    s_IndexBufferView.BufferLocation = p_IndexBuffer->m_pResource->GetGPUVirtualAddress() + p_IndexBuffer->m_nOffset;
-    s_IndexBufferView.SizeInBytes = p_IndexBuffer->m_nSize;
-    s_IndexBufferView.Format = DXGI_FORMAT_R16_UINT;
-
-    const uint32_t s_IndexCount = p_IndexBuffer->m_nSize / p_IndexBuffer->m_nStride;
-
-    m_DebugEffect->SetWorld(*reinterpret_cast<const DirectX::XMFLOAT4X4*>(&p_Transform));
-    m_DebugEffect->SetPositionScale(*reinterpret_cast<const DirectX::XMFLOAT4*>(&p_PositionScale));
-    m_DebugEffect->SetPositionBias(*reinterpret_cast<const DirectX::XMFLOAT4*>(&p_PositionBias));
-    m_DebugEffect->SetTextureScaleBias(*reinterpret_cast<const DirectX::XMFLOAT4*>(&p_TextureScaleBias));
-    m_DebugEffect->SetMaterialColor(*reinterpret_cast<const DirectX::XMFLOAT4*>(&p_MaterialColor));
-    m_DebugEffect->Apply(s_Device, m_CommandList);
-
-    m_CommandList->IASetVertexBuffers(0, p_VertexBufferCount, s_VertexBufferViews.data());
-    m_CommandList->IASetIndexBuffer(&s_IndexBufferView);
-    m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_CommandList->DrawIndexedInstanced(s_IndexCount, 1, 0, 0, 0);
-
-    ++m_MeshDrawCount;
+    m_PendingMeshes.clear();
+    m_PendingMeshVertexBuffers.clear();
 }
 
 bool DirectXTKRenderer::IsPointInsideViewFrustum(const SVector3& p_Point) const {
