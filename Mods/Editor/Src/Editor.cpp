@@ -260,7 +260,7 @@ void Editor::CopyToClipboard(const std::string& p_String) const {
 void Editor::OnDraw3D(IRenderer* p_Renderer) {
     std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
 
-    DrawEntityAABB(p_Renderer);
+    DrawEntityAABB(p_Renderer,  0.15f);
 
     /*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
     const auto s_LineColor = SVector4(0.94, 0.12, 0.05, 1.0);
@@ -284,6 +284,8 @@ void Editor::OnDraw3D(IRenderer* p_Renderer) {
 
 void Editor::OnDepthDraw3D(IRenderer* p_Renderer) {
     std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
+    DrawEntityAABB(p_Renderer, 1.f);
 
     DrawDebugEntities(p_Renderer);
 }

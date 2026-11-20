@@ -7,7 +7,7 @@
 #include "Glacier/ZPathfinder.h"
 #include "Glacier/ZScaleform.h"
 
-void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
+void Editor::DrawEntityAABB(IRenderer* p_Renderer, float p_Alpha) {
     if (IsSpecialEntityTreeNode(m_SelectedEntity)
     ) {
         return;
@@ -23,10 +23,10 @@ void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
 
             p_Renderer->SetFrustumCullingEnabled(false);
 
-            p_Renderer->DrawOBB3D(s_Min, s_Max, s_Transform, SVector4(0.f, 1.f, 1.f, 1.f));
+            p_Renderer->DrawOBB3D(s_Min, s_Max, s_Transform, SVector4(0.f, 1.f, 1.f, p_Alpha));
 
             if (m_EntityHighlightMode == EntityHighlightMode::LinesAndTriangles) {
-                p_Renderer->DrawBoundingQuads3D(s_Min, s_Max, s_Transform, SVector4(0.f, 1.f, 1.f, 0.1f));
+                p_Renderer->DrawBoundingQuads3D(s_Min, s_Max, s_Transform, SVector4(0.f, 1.f, 1.f, 0.1f * p_Alpha));
             }
 
             p_Renderer->SetFrustumCullingEnabled(true);
