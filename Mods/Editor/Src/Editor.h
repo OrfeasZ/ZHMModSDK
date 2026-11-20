@@ -228,10 +228,17 @@ private:
     };
 
     struct GizmoEntity : DebugEntity {
+        ZSpatialEntity* m_SpatialEntity;
         ZRuntimeResourceID m_RuntimeResourceID;
         ZResourcePtr m_PrimResourcePtr;
         SVector4 m_Color;
         SMatrix m_Transform;
+        bool m_IsTransformIdentity;
+
+        // Local bounds of the prim, set the first time the prim is loaded.
+        bool m_HasBounds = false;
+        float4 m_BoundsCenter;
+        float4 m_BoundsHalfSize;
     };
 
     struct RayCastResult {
@@ -684,7 +691,12 @@ private:
         const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
         const SMatrix& p_Transform = SMatrix()
     );
+    void StoreDebugEntity(std::unique_ptr<DebugEntity> p_DebugEntity);
     void DeleteDebugEntities(const std::shared_ptr<EntityTreeNode>& p_RootNode);
+
+    template <typename F>
+    void ForEachDrawnDebugEntity(bool p_Gizmos, const F& p_Callback);
+
     EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
 
@@ -1113,6 +1125,11 @@ private:
     ZHM5Action* m_SelectedAction = nullptr;
 
     std::unordered_map<ZEntityRef, std::vector<std::unique_ptr<DebugEntity>>> m_EntityRefToDebugEntities;
+
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, std::vector<DebugEntity*>>>
+        m_DebugChannelToTypeNameToGizmoEntities;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, std::vector<DebugEntity*>>>
+        m_DebugChannelToTypeNameToShapeEntities;
     std::shared_mutex m_DebugEntitiesMutex;
     std::vector<std::pair<std::string, EDebugChannel>> m_DebugChannels;
     std::unordered_map<std::string, std::vector<std::string>> m_DebugChannelNameToTypeNames;

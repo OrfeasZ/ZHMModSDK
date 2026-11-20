@@ -1566,6 +1566,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     {
         std::scoped_lock s_Lock(m_DebugEntitiesMutex);
         m_EntityRefToDebugEntities.clear();
+        m_DebugChannelToTypeNameToGizmoEntities.clear();
+        m_DebugChannelToTypeNameToShapeEntities.clear();
     }
 
     {
