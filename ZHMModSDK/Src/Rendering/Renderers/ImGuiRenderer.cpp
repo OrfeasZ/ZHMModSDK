@@ -805,8 +805,6 @@ void ImGuiRenderer::DestroyViewport(ImGuiViewport* p_Viewport) {
 }
 
 void ImGuiRenderer::RunFrame() {
-    m_FrameRequested.store(false, std::memory_order_release);
-
     if (m_InFrame) {
         return;
     }
@@ -933,6 +931,7 @@ void ImGuiRenderer::RunFrame() {
     const auto s_MovingHwnd = static_cast<HWND>(s_MovingWindow->Viewport->PlatformHandleRaw);
 
     if (s_MovingHwnd && (GetAsyncKeyState(VK_LBUTTON) & 0x8000)) {
+        m_FrameRequested.store(false, std::memory_order_release);
         StartWindowManagerMove(s_MovingHwnd);
     }
 }
@@ -1276,6 +1275,7 @@ DEFINE_DETOUR_WITH_CONTEXT(
 
     if (p_Message == m_FrameMessage) {
         RunFrame();
+        m_FrameRequested.store(false, std::memory_order_release);
         return { HookAction::Return(), 0 };
     }
 

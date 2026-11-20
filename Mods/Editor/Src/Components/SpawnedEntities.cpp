@@ -41,7 +41,7 @@ void Editor::AddSpawnedEntity(
         m_SpawnedEntities.emplace(s_Entity, std::move(p_SpawnedEntity));
 
         if (m_CachedEntityTree && m_CachedEntityTreeMap.size() > 0) {
-            UpdateEntityTree(m_CachedEntityTreeMap, { s_Entity }, true);
+            UpdateEntityTree(m_CachedEntityTreeMap, m_CachedEntityTreeNodesById, { s_Entity }, true);
             ReparentSpawnedEntity(m_CachedEntityTreeMap, s_Entity);
         }
     }

@@ -275,7 +275,7 @@ private:
     void ActivateCamera(ZEntityRef* m_CameraEntity);
     void DeactivateCamera();
     void CopyToClipboard(const std::string& p_String) const;
-    void OnMouseDown(SVector2 p_Pos, bool p_FirstClick);
+    void OnMouseDown(SVector2 p_Pos);
     bool RayCastCollision(const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output);
 
     void DrawEntityManipulator(bool p_HasFocus);
@@ -424,13 +424,22 @@ private:
     void UpdateEntities();
     void UpdateEntityTree(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+        std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById,
         const std::vector<ZEntityRef>& p_Entities,
         const bool p_AreEntitiesDynamic
     );
     void AddDynamicEntitiesToEntityTree(
         const std::shared_ptr<EntityTreeNode>& p_SceneNode,
-        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+        std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById
     );
+    static void SetEntityTreeNode(
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+        std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById,
+        ZEntityRef p_Entity,
+        const std::shared_ptr<EntityTreeNode>& p_Node
+    );
+    std::shared_ptr<EntityTreeNode> RemoveEntityTreeNode(ZEntityRef p_Entity);
     void ReparentDynamicOutfitEntities(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
@@ -1039,6 +1048,7 @@ private:
 
     std::shared_mutex m_CachedEntityTreeMutex;
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeMap;
+    std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeNodesById;
     std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
     std::unordered_set<EntityTreeNode*> m_OpenEntityTreeNodes;
     std::vector<EntityTreeRow> m_EntityTreeRows;

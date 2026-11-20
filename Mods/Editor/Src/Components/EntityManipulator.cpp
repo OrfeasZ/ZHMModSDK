@@ -45,9 +45,12 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
             !s_ImgGuiIO.WantCaptureMouse &&
             !m_IsGizmoBlocked &&
             !Globals::ScaleformGFxManager->GetIsMenuModeUnsafe()) {
-            const auto s_MousePos = ImGui::GetMousePos();
-            const auto s_ViewportPos = ImGui::GetMainViewport()->Pos;
-            OnMouseDown(SVector2(s_MousePos.x - s_ViewportPos.x, s_MousePos.y - s_ViewportPos.y), !m_HoldingMouse);
+            if (!m_HoldingMouse) {
+                const auto s_MousePos = ImGui::GetMousePos();
+                const auto s_ViewportPos = ImGui::GetMainViewport()->Pos;
+                OnMouseDown(SVector2(s_MousePos.x - s_ViewportPos.x, s_MousePos.y - s_ViewportPos.y));
+            }
+
             m_HoldingMouse = true;
         }
         else {
