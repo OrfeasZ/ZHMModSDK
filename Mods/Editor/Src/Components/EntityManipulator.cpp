@@ -7,7 +7,7 @@
 #include "Glacier/ZPathfinder.h"
 #include "Glacier/ZScaleform.h"
 
-void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
+void Editor::DrawEntityAABB(IRenderer* p_Renderer, float p_Alpha) {
     if (IsSpecialEntityTreeNode(m_SelectedEntity)
     ) {
         return;
@@ -23,10 +23,10 @@ void Editor::DrawEntityAABB(IRenderer* p_Renderer) {
 
             p_Renderer->SetFrustumCullingEnabled(false);
 
-            p_Renderer->DrawOBB3D(s_Min, s_Max, s_Transform, SVector4(0.f, 1.f, 1.f, 1.f));
+            p_Renderer->DrawOBB3D(s_Min, s_Max, s_Transform, SVector4(0.f, 1.f, 1.f, p_Alpha));
 
             if (m_EntityHighlightMode == EntityHighlightMode::LinesAndTriangles) {
-                p_Renderer->DrawBoundingQuads3D(s_Min, s_Max, s_Transform, SVector4(0.f, 1.f, 1.f, 0.1f));
+                p_Renderer->DrawBoundingQuads3D(s_Min, s_Max, s_Transform, SVector4(0.f, 1.f, 1.f, 0.1f * p_Alpha));
             }
 
             p_Renderer->SetFrustumCullingEnabled(true);
@@ -45,9 +45,12 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
             !s_ImgGuiIO.WantCaptureMouse &&
             !m_IsGizmoBlocked &&
             !Globals::ScaleformGFxManager->GetIsMenuModeUnsafe()) {
-            const auto s_MousePos = ImGui::GetMousePos();
-            const auto s_ViewportPos = ImGui::GetMainViewport()->Pos;
-            OnMouseDown(SVector2(s_MousePos.x - s_ViewportPos.x, s_MousePos.y - s_ViewportPos.y), !m_HoldingMouse);
+            if (!m_HoldingMouse) {
+                const auto s_MousePos = ImGui::GetMousePos();
+                const auto s_ViewportPos = ImGui::GetMainViewport()->Pos;
+                OnMouseDown(SVector2(s_MousePos.x - s_ViewportPos.x, s_MousePos.y - s_ViewportPos.y));
+            }
+
             m_HoldingMouse = true;
         }
         else {

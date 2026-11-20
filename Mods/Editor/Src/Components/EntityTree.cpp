@@ -25,8 +25,53 @@
 class ZClothCharacterEntity;
 class ZLinkedProxyEntity;
 
+static void EraseEntityTreeNodeById(
+    std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById,
+    const std::shared_ptr<EntityTreeNode>& p_Node
+) {
+    auto [s_It, s_End] = p_NodesById.equal_range(p_Node->EntityId);
+
+    for (; s_It != s_End; ++s_It) {
+        if (s_It->second == p_Node) {
+            p_NodesById.erase(s_It);
+            break;
+        }
+    }
+}
+
+void Editor::SetEntityTreeNode(
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+    std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById,
+    const ZEntityRef p_Entity,
+    const std::shared_ptr<EntityTreeNode>& p_Node
+) {
+    auto& s_MappedNode = p_NodeMap[p_Entity];
+
+    if (s_MappedNode) {
+        EraseEntityTreeNodeById(p_NodesById, s_MappedNode);
+    }
+
+    s_MappedNode = p_Node;
+    p_NodesById.emplace(p_Node->EntityId, p_Node);
+}
+
+std::shared_ptr<EntityTreeNode> Editor::RemoveEntityTreeNode(const ZEntityRef p_Entity) {
+    const auto s_NodeIt = m_CachedEntityTreeMap.find(p_Entity);
+
+    if (s_NodeIt == m_CachedEntityTreeMap.end()) {
+        return nullptr;
+    }
+
+    auto s_Node = std::move(s_NodeIt->second);
+    m_CachedEntityTreeMap.erase(s_NodeIt);
+    EraseEntityTreeNodeById(m_CachedEntityTreeNodesById, s_Node);
+
+    return s_Node;
+}
+
 void Editor::UpdateEntityTree(
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+    std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById,
     const std::vector<ZEntityRef>& p_Entities,
     const bool p_AreEntitiesDynamic
 ) {
@@ -213,7 +258,7 @@ void Editor::UpdateEntityTree(
                     s_NodeQueue.emplace(s_SubEntityFactory, s_SubEntity);
                 }
 
-                p_NodeMap[s_SubEntity] = s_SubEntityNode;
+                SetEntityTreeNode(p_NodeMap, p_NodesById, s_SubEntity, s_SubEntityNode);
             }
         }
         else if (p_AreEntitiesDynamic) {
@@ -294,7 +339,7 @@ void Editor::UpdateEntityTree(
                 s_ParentlessNodes.push(s_SubEntityNode);
             }
 
-            p_NodeMap[s_CurrentRoot] = s_SubEntityNode;
+            SetEntityTreeNode(p_NodeMap, p_NodesById, s_CurrentRoot, s_SubEntityNode);
         }
     }
 
@@ -427,10 +472,11 @@ void Editor::UpdateEntities() {
     s_SpawnedEntitiesNode->Parent = s_SceneNode;
 
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> s_NodeMap;
-    s_NodeMap.emplace(s_SceneEnt, s_SceneNode);
-    UpdateEntityTree(s_NodeMap, s_EntsToProcess, false);
+    std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>> s_NodesById;
+    SetEntityTreeNode(s_NodeMap, s_NodesById, s_SceneEnt, s_SceneNode);
+    UpdateEntityTree(s_NodeMap, s_NodesById, s_EntsToProcess, false);
 
-    AddDynamicEntitiesToEntityTree(s_SceneNode, s_NodeMap);
+    AddDynamicEntitiesToEntityTree(s_SceneNode, s_NodeMap, s_NodesById);
 
     if (m_ReparentDynamicOutfitEntities) {
         ReparentDynamicOutfitEntities(s_NodeMap);
@@ -442,8 +488,9 @@ void Editor::UpdateEntities() {
 
     // Update the cached tree.
     m_CachedEntityTreeMutex.lock();
-    m_CachedEntityTree = std::move(s_SceneNode);
-    m_CachedEntityTreeMap = std::move(s_NodeMap);
+    m_CachedEntityTree.swap(s_SceneNode);
+    m_CachedEntityTreeMap.swap(s_NodeMap);
+    m_CachedEntityTreeNodesById.swap(s_NodesById);
     m_EntityTreeRowsDirty = true;
     m_CachedEntityTreeMutex.unlock();
 
@@ -452,7 +499,8 @@ void Editor::UpdateEntities() {
 
 void Editor::AddDynamicEntitiesToEntityTree(
     const std::shared_ptr<EntityTreeNode>& p_SceneNode,
-    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
+    std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+    std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById
 ) {
     auto s_DynamicEntitiesNode = std::make_shared<EntityTreeNode>(
         "Dynamic entities",
@@ -482,7 +530,7 @@ void Editor::AddDynamicEntitiesToEntityTree(
     }
 
     if (!s_DynamicEntities.empty()) {
-        UpdateEntityTree(p_NodeMap, s_DynamicEntities, true);
+        UpdateEntityTree(p_NodeMap, p_NodesById, s_DynamicEntities, true);
     }
 }
 
@@ -874,6 +922,25 @@ bool Editor::RenderEntityRow(const EntityTreeRow& p_Row, bool& p_OpenStateChange
     const auto [s_DisplayName, s_DisplayId, s_DynamicMarker] = SplitEntityTreeNodeName(s_EntityName);
     const std::string_view s_Marker = s_IsSpawnedEntity ? " +" : s_DynamicMarker;
 
+    std::string s_Label(s_DisplayName);
+
+    if (s_DisplayName == "Scene") {
+        ZString s_ResourceID;
+
+        if (SDK()->GetResourceID(s_Node->EntityId, s_ResourceID)) {
+            const std::string_view s_Path = s_ResourceID.c_str();
+            const size_t s_Start = s_Path.find_last_of("/\\");
+            const size_t s_End = s_Path.find(']', s_Start == std::string_view::npos ? 0 : s_Start);
+
+            s_Label += " - ";
+            s_Label += s_Path.substr(
+                s_Start == std::string_view::npos ? 0 : s_Start + 1,
+                s_End == std::string_view::npos ?
+                std::string_view::npos : s_End - (s_Start == std::string_view::npos ? 0 : s_Start + 1)
+            );
+        }
+    }
+
     ImGui::TableNextRow(ImGuiTableRowFlags_None, ScaledSize(17.f));
     ImGui::TableSetColumnIndex(0);
 
@@ -885,15 +952,15 @@ bool Editor::RenderEntityRow(const EntityTreeRow& p_Row, bool& p_OpenStateChange
         "##EntityTreeNode",
         s_Flags | ImGuiTreeNodeFlags_SpanAllColumns,
         "%.*s%.*s",
-        static_cast<int>(s_DisplayName.size()),
-        s_DisplayName.data(),
+        static_cast<int>(s_Label.size()),
+        s_Label.data(),
         static_cast<int>(s_Marker.size()),
         s_Marker.data()
     );
 
     if (ImGui::IsItemVisible()) {
         const float s_NameWidth =
-            ImGui::CalcTextSize(s_DisplayName.data(), s_DisplayName.data() + s_DisplayName.size()).x +
+            ImGui::CalcTextSize(s_Label.data(), s_Label.data() + s_Label.size()).x +
             ImGui::CalcTextSize(s_Marker.data(), s_Marker.data() + s_Marker.size()).x;
 
         m_EntityTreeNameWidth = std::max(
@@ -1625,11 +1692,7 @@ void Editor::RemoveEntityFromTree(ZEntityRef p_Entity) {
     }
 
     // Remove from the tree.
-    const auto s_EntityIter = m_CachedEntityTreeMap.find(p_Entity);
-
-    if (s_EntityIter != m_CachedEntityTreeMap.end()) {
-        const auto s_NodeToRemove = s_EntityIter->second;
-        m_CachedEntityTreeMap.erase(s_EntityIter);
+    if (const auto s_NodeToRemove = RemoveEntityTreeNode(p_Entity)) {
 
         // If a child of this node is selected, deselect it (non-recursive).
         std::queue<std::shared_ptr<EntityTreeNode>> s_ChildrenQueue;
@@ -1645,7 +1708,7 @@ void Editor::RemoveEntityFromTree(ZEntityRef p_Entity) {
             auto s_CurrentChild = s_ChildrenQueue.front();
 
             // Queued changes check the map, so they skip the children too.
-            m_CachedEntityTreeMap.erase(s_CurrentChild->Entity);
+            RemoveEntityTreeNode(s_CurrentChild->Entity);
             m_OpenEntityTreeNodes.erase(s_CurrentChild.get());
             m_FilteredEntityTreeNodes.erase(s_CurrentChild.get());
 
@@ -1685,7 +1748,7 @@ void Editor::DestroyEntityNodeInternal(
     m_FilteredEntityTreeNodes.erase(p_NodeToRemove.get());
 
     if (p_NodeToRemove->Entity) {
-        m_CachedEntityTreeMap.erase(p_NodeToRemove->Entity);
+        RemoveEntityTreeNode(p_NodeToRemove->Entity);
         m_EntityNames.erase(p_NodeToRemove->Entity);
         m_SpawnedEntities.erase(p_NodeToRemove->Entity);
 
@@ -1710,7 +1773,7 @@ void Editor::DestroyEntityNodeInternal(
         s_ChildrenQueue.pop();
 
         // Queued changes check the map, so they skip the children too.
-        m_CachedEntityTreeMap.erase(s_CurrentChild->Entity);
+        RemoveEntityTreeNode(s_CurrentChild->Entity);
         m_OpenEntityTreeNodes.erase(s_CurrentChild.get());
         m_FilteredEntityTreeNodes.erase(s_CurrentChild.get());
 

@@ -40,53 +40,39 @@ ZEntityRef Editor::FindEntity(EntitySelector p_Selector) {
     // Otherwise we're selecting from the entity tree.
     const ZRuntimeResourceID s_TBLU = p_Selector.TbluHash.value();
 
-    // Create a queue and add the root to it.
-    std::queue<std::shared_ptr<EntityTreeNode>> s_NodeQueue;
-    s_NodeQueue.push(m_CachedEntityTree);
-
-    // Keep track of the last node that matched the entity ID, but not the TBLU.
+    // Keep track of a node that matched the entity ID, but not the TBLU.
     std::shared_ptr<EntityTreeNode> s_IdMatchedNode = nullptr;
 
-    // Keep iterating through the tree until we find the node we're looking for.
-    while (!s_NodeQueue.empty()) {
-        // Access the first node in the queue
-        auto s_Node = s_NodeQueue.front();
-        s_NodeQueue.pop();
+    const auto [s_Begin, s_End] = m_CachedEntityTreeNodesById.equal_range(p_Selector.EntityId);
 
-        if (s_Node->EntityId == p_Selector.EntityId) {
-            bool s_Matches = s_Node->BlueprintFactory == s_TBLU;
+    for (auto s_It = s_Begin; s_It != s_End; ++s_It) {
+        const auto& s_Node = s_It->second;
+        bool s_Matches = s_Node->BlueprintFactory == s_TBLU;
 
-            // If the TBLU doesn't match, then check the owner entity.
-            if (!s_Matches) {
-                const auto s_OwningEntity = s_Node->Entity.GetOwningEntity();
+        // If the TBLU doesn't match, then check the owner entity.
+        if (!s_Matches) {
+            const auto s_OwningEntity = s_Node->Entity.GetOwningEntity();
 
-                if (s_OwningEntity && s_OwningEntity.GetBlueprintFactory()) {
-                    s_Matches = s_OwningEntity.GetBlueprintFactory()->m_ridResource == s_TBLU;
-                }
+            if (s_OwningEntity && s_OwningEntity.GetBlueprintFactory()) {
+                s_Matches = s_OwningEntity.GetBlueprintFactory()->m_ridResource == s_TBLU;
             }
-
-            // If it's not that either, try our own factory.
-            if (!s_Matches) {
-                const auto s_Factory = s_Node->Entity.GetBlueprintFactory();
-
-                if (s_Factory) {
-                    s_Matches = s_Factory->m_ridResource == s_TBLU;
-                }
-            }
-
-            // Found the node we're looking for!
-            if (s_Matches) {
-                return s_Node->Entity;
-            }
-
-            // Otherwise, keep track of the last node that matched the entity ID.
-            s_IdMatchedNode = s_Node;
         }
 
-        // If not found, add children to the queue.
-        for (auto& childPair : s_Node->Children) {
-            s_NodeQueue.push(childPair.second);
+        // If it's not that either, try our own factory.
+        if (!s_Matches) {
+            const auto s_Factory = s_Node->Entity.GetBlueprintFactory();
+
+            if (s_Factory) {
+                s_Matches = s_Factory->m_ridResource == s_TBLU;
+            }
         }
+
+        // Found the node we're looking for!
+        if (s_Matches) {
+            return s_Node->Entity;
+        }
+
+        s_IdMatchedNode = s_Node;
     }
 
     if (s_IdMatchedNode) {
@@ -280,6 +266,10 @@ Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
     }
 
     return {};
+}
+
+Quat Editor::GetWorldQuat(const ZEntityRef p_Entity) {
+    return GetParentQuat(p_Entity) * GetQuatFromProperty(p_Entity);
 }
 
 Quat Editor::GetParentQuat(const ZEntityRef p_Entity) {
@@ -706,18 +696,15 @@ std::vector<std::tuple<std::vector<std::string>, Quat, ZEntityRef>> Editor::Find
 
         if (const char* s_EntityType = s_TypeInfo->pszTypeName;
             strcmp(s_EntityType, p_EntityType.c_str()) == 0) {
-            const Quat s_EntityQuat = GetQuatFromProperty(s_Node->Entity);
-            Quat s_ParentQuat;
+            Quat s_CombinedQuat;
 
             try {
-                s_ParentQuat = GetParentQuat(s_Node->Entity);
+                s_CombinedQuat = GetWorldQuat(s_Node->Entity);
             }
             catch (const std::runtime_error&) {
                 Logger::Error("[Editor] Circular reference found! Skipping entity.");
                 continue;
             }
-
-            Quat s_CombinedQuat = s_ParentQuat * s_EntityQuat;
 
             s_Entities.emplace_back(
                 std::vector{ p_Hash },

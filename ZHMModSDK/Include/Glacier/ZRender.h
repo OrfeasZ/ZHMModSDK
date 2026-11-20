@@ -361,12 +361,25 @@ public:
 static_assert(offsetof(ZRenderGraphNodeCamera, m_RootNodes) == 0x590);
 static_assert(offsetof(ZRenderGraphNodeCamera, m_nStickyRoomId) == 0x5E8);
 
+class ZBoxReflectionManager {
+public:
+    PAD(0x11AF0);
+    int32 m_nUpdateAll; // 0x11AF0
+    int m_nSignalUpdateAll; // 0x11AF4
+    int32 m_nSignalResetBoxReflections; // 0x11AF8
+};
+
+static_assert(offsetof(ZBoxReflectionManager, m_nUpdateAll) == 0x11AF0);
+static_assert(offsetof(ZBoxReflectionManager, m_nSignalUpdateAll) == 0x11AF4);
+
 class ZRenderManager : public IComponentInterface {
 public:
     virtual ~ZRenderManager() = default;
 
 public:
-    PAD(0x14178);
+    PAD(0x80); // 0x08
+    ZBoxReflectionManager m_BoxReflectionManager; // 0x88, look for "ZBoxReflectionManager::TraverseBoxReflections"
+    PAD(0x25FC); // 0x11B84
     ZRenderDevice* m_pDevice; // 0x14180, look for ZRenderDevice constructor
     PAD(0x08); // 0x14188
     ZRenderSharedResources* m_pSharedResources; // 0x14190
@@ -377,6 +390,7 @@ public:
     // 0x14280, look for "ZRenderManager::RenderThread" string, first thing being constructed and assigned
 };
 
+static_assert(offsetof(ZRenderManager, m_BoxReflectionManager) == 0x88);
 static_assert(offsetof(ZRenderManager, m_pDevice) == 0x14180);
 static_assert(offsetof(ZRenderManager, m_pSharedResources) == 0x14190);
 static_assert(offsetof(ZRenderManager, m_pRenderContext) == 0x14280);

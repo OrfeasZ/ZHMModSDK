@@ -109,6 +109,7 @@ void Editor::Init() {
     );
     Hooks::SignalInputPin->AddDetour(this, &Editor::OnInputPin);
     Hooks::SignalOutputPin->AddDetour(this, &Editor::OnOutputPin);
+    Hooks::CLightTile_DispatchShadeDeferred->AddDetour(this, &Editor::CLightTile_DispatchShadeDeferred);
 
     Hooks::ZEntityManager_NewUninitializedEntity->AddDetour(this, &Editor::ZEntityManager_NewUninitializedEntity);
     Hooks::ZEntityManager_DeleteEntity->AddDetour(this, &Editor::ZEntityManager_DeleteEntity);
@@ -265,7 +266,7 @@ void Editor::OnDraw3D(IRenderer* p_Renderer) {
     std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
 
     DrawEntityAABB(p_Renderer);
-    DrawPathQueries(p_Renderer);
+    DrawPathQueries(p_Renderer,  0.15f);
 
     /*const auto s_Color = SVector4(0.88, 0.88, 0.08, 0.4);
     const auto s_LineColor = SVector4(0.94, 0.12, 0.05, 1.0);
@@ -289,6 +290,8 @@ void Editor::OnDraw3D(IRenderer* p_Renderer) {
 
 void Editor::OnDepthDraw3D(IRenderer* p_Renderer) {
     std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+
+    DrawEntityAABB(p_Renderer, 1.f);
 
     DrawDebugEntities(p_Renderer);
 }
@@ -387,6 +390,8 @@ void Editor::OnDrawUI(bool p_HasFocus) {
     else {
         m_AssetBrowser.ClearHoverPreview();
     }
+
+    UpdateBoxReflectionPasses();
 
     {
         std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
@@ -890,7 +895,7 @@ void Editor::AddPendingDynamicEntities() {
     if (!s_EntitiesToAdd.empty()) {
         std::scoped_lock s_ScopedLock(m_CachedEntityTreeMutex);
 
-        UpdateEntityTree(m_CachedEntityTreeMap, s_EntitiesToAdd, true);
+        UpdateEntityTree(m_CachedEntityTreeMap, m_CachedEntityTreeNodesById, s_EntitiesToAdd, true);
 
         if (m_ReparentDynamicOutfitEntities) {
             ReparentDynamicOutfitEntities(m_CachedEntityTreeMap);
@@ -1103,7 +1108,7 @@ std::map<std::string, Editor::PinLists> Editor::ParsePinsJson(const std::string&
     return s_Result;
 }
 
-void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
+void Editor::OnMouseDown(SVector2 p_Pos) {
     SVector3 s_World;
     SVector3 s_Direction;
     SDK()->ScreenToWorld(p_Pos, s_World, s_Direction);
@@ -1118,31 +1123,29 @@ void Editor::OnMouseDown(SVector2 p_Pos, bool p_FirstClick) {
         return;
     }
 
-    if (p_FirstClick) {
-        if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
-            const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaceData;
-            Logger::Trace(
-                "[Editor] Hit entity of type '{}' with id '{:x}'.",
-                s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
-                s_RayOutput.m_pBlockingSpatialEntity.m_entityRef->GetType()->m_nEntityID
-            );
+    if (s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef) {
+        const auto& s_Interfaces = *s_RayOutput.m_pBlockingSpatialEntity.m_pInterfaceRef->GetType()->m_pInterfaceData;
+        Logger::Trace(
+            "[Editor] Hit entity of type '{}' with id '{:x}'.",
+            s_Interfaces[0].m_Type->GetTypeInfo()->pszTypeName,
+            s_RayOutput.m_pBlockingSpatialEntity.m_entityRef->GetType()->m_nEntityID
+        );
 
-            const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
-            ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_entityRef;
+        const auto s_SceneCtx = Globals::Hitman5Module->m_pEntitySceneContext;
+        ZEntityRef s_SelectedEntity = s_RayOutput.m_pBlockingSpatialEntity.m_entityRef;
 
-            for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
-                const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
+        for (int i = 0; i < s_SceneCtx->m_aLoadedBricks.size(); ++i) {
+            const auto& s_Brick = s_SceneCtx->m_aLoadedBricks[i];
 
-                if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
-                    Logger::Debug("[Editor] Found entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
-                    m_SelectedBrickIndex = i;
-                    break;
-                }
+            if (s_SelectedEntity.IsAnyParent(s_Brick.m_EntityRef)) {
+                Logger::Debug("[Editor] Found entity in brick {} (idx = {}).", s_Brick.m_RuntimeResourceID, i);
+                m_SelectedBrickIndex = i;
+                break;
             }
-
-            std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
-            OnSelectEntity(s_SelectedEntity, true, std::nullopt);
         }
+
+        std::shared_lock s_TreeLock(m_CachedEntityTreeMutex);
+        OnSelectEntity(s_SelectedEntity, true, std::nullopt);
     }
 }
 
@@ -1514,6 +1517,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_CachedEntityTree.reset();
         m_ShouldClearRecentPinFires = true;
         m_CachedEntityTreeMap.clear();
+        m_CachedEntityTreeNodesById.clear();
         m_OpenEntityTreeNodes.clear();
         m_EntityNames.clear();
         m_SortedRoomEntities.clear();
@@ -1579,6 +1583,8 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     {
         std::scoped_lock s_Lock(m_DebugEntitiesMutex);
         m_EntityRefToDebugEntities.clear();
+        m_DebugChannelToTypeNameToGizmoEntities.clear();
+        m_DebugChannelToTypeNameToShapeEntities.clear();
     }
 
     {
@@ -1589,6 +1595,9 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
     ClearBoxReflectionPreview();
 
     m_SelectedBoxReflectionGraphNode = nullptr;
+    m_RemainingBoxReflectionPasses = 0;
+    m_BoxReflectionPassRequested = false;
+    m_HideBoxReflectionsInBoxReflectionPass = false;
 
     return { HookAction::Continue() };
 }

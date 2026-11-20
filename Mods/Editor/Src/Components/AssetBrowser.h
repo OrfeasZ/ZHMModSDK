@@ -73,7 +73,7 @@ private:
         float Top;
     };
 
-    void UpdateDownload();
+    void UpdateAssetTree();
     void UpdateTileGroups();
     void CollectSearchResults(const AssetItem& p_Folder, const std::string& p_FolderPath);
     void UpdateTileRows(int p_Columns, float p_HeaderHeight, float p_TileRowHeight);
@@ -107,7 +107,7 @@ private:
     std::string GetItemPath(const ZRuntimeResourceID& p_ResourceId);
 
     std::shared_ptr<AssetItem> m_Root;
-    std::future<std::shared_ptr<AssetItem>> m_Download;
+    std::future<std::shared_ptr<AssetItem>> m_BuildFuture;
 
     FolderPath m_CurrentPath;
     std::vector<FolderPath> m_History;

@@ -50,6 +50,10 @@ HRESULT D3D12SwapChain::QueryInterface(const IID& riid, void** ppvObject) {
 }
 
 HRESULT D3D12SwapChain::Present(UINT SyncInterval, UINT Flags) {
+    if (Flags & DXGI_PRESENT_TEST) {
+        return m_Target->Present(SyncInterval, Flags);
+    }
+
     ModSDK::GetInstance()->OnPresent(m_Target);
     const auto s_Result = m_Target->Present(SyncInterval, Flags);
     ModSDK::GetInstance()->PostPresent(m_Target, s_Result);
@@ -59,6 +63,10 @@ HRESULT D3D12SwapChain::Present(UINT SyncInterval, UINT Flags) {
 HRESULT D3D12SwapChain::Present1(
     UINT SyncInterval, UINT PresentFlags, const DXGI_PRESENT_PARAMETERS* pPresentParameters
 ) {
+    if (PresentFlags & DXGI_PRESENT_TEST) {
+        return m_Target->Present1(SyncInterval, PresentFlags, pPresentParameters);
+    }
+
     ModSDK::GetInstance()->OnPresent(m_Target);
     const auto s_Result = m_Target->Present1(SyncInterval, PresentFlags, pPresentParameters);
     ModSDK::GetInstance()->PostPresent(m_Target, s_Result);

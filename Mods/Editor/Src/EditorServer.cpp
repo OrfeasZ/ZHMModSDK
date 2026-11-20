@@ -4,6 +4,7 @@
 #include <simdjson.h>
 #include <queue>
 #include <numbers>
+#include <ranges>
 
 #include "Editor.h"
 #include "JsonHelpers.h"
@@ -14,6 +15,8 @@
 #include <Glacier/ZCameraEntity.h>
 #include <Glacier/ZRoom.h>
 #include <Glacier/ZAIAreaEntity.h>
+#include <Glacier/Enums.h>
+#include <Glacier/TArray.h>
 
 #include <ResourceLib_HM3.h>
 
@@ -718,12 +721,14 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
                     const auto s_VolumeSphereEntities = Plugin()->FindEntitiesByType(
                         "ZSphereVolumeEntity", "00B86A9EE991EFB2"
                     );
+                    const auto s_MapSpaceConfigEntities = Plugin()->FindEntitiesByType("ZUIMapSpaceConfig", "00972D765AF6B272");
+                    const auto s_CrowdsJson = WriteCrowdsJson(s_VolumeBoxEntities, s_VolumeSphereEntities);
 
                     DeferToClient(
                         p_ClientId,
                         [s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities,
                             s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities,
-                            p_PrimMatis, p_MatiTextures](WebSocket* p_Socket) {
+                            s_MapSpaceConfigEntities, s_CrowdsJson, p_PrimMatis, p_MatiTextures](WebSocket* p_Socket) {
                                 p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                                 SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
@@ -747,6 +752,15 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
 
                                 p_Socket->send("],\"volumeSpheres\":[", uWS::OpCode::TEXT);
                                 SendEntitiesDetails(p_Socket, s_VolumeSphereEntities);
+
+                                p_Socket->send("],\"volumeShapes\":[", uWS::OpCode::TEXT);
+                                SendJsonList(p_Socket, s_CrowdsJson.VolumeShapes);
+
+                                p_Socket->send("],\"mapSpaceConfigs\":[", uWS::OpCode::TEXT);
+                                SendEntitiesDetails(p_Socket, s_MapSpaceConfigEntities);
+
+                                p_Socket->send("],\"crowds\":[", uWS::OpCode::TEXT);
+                                SendJsonList(p_Socket, s_CrowdsJson.Crowds);
 
                                 p_Socket->send("],\"matis\":[", uWS::OpCode::TEXT);
 
@@ -819,6 +833,71 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
 }
 
 
+namespace {
+    struct TemplateSubEntity {
+        ZTemplateEntityBlueprintFactory* Factory;
+        uint32_t Index;
+
+        const ZString& Name() const { return Factory->m_pTemplateEntityBlueprint->subEntities[Index].entityName; }
+    };
+
+    IEntityBlueprintFactory* GetDefiningBlueprintFactory(ZEntityRef p_Entity) {
+        if (const auto s_Owner = p_Entity.GetOwningEntity()) {
+            return s_Owner.GetBlueprintFactory();
+        }
+
+        return p_Entity.GetBlueprintFactory();
+    }
+
+    std::optional<TemplateSubEntity> FindTemplateSubEntity(IEntityBlueprintFactory* p_Factory, uint64_t p_EntityId) {
+        if (!p_Factory) {
+            return std::nullopt;
+        }
+
+        const auto s_Index = p_Factory->GetSubEntityIndex(p_EntityId);
+
+        if (s_Index < 0) {
+            return std::nullopt;
+        }
+
+        ZTemplateEntityBlueprintFactory* s_TemplateFactory = nullptr;
+        uint32_t s_TemplateIndex = s_Index;
+
+        if (p_Factory->IsTemplateEntityBlueprintFactory()) {
+            s_TemplateFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Factory);
+        }
+        else if (p_Factory->IsAspectEntityBlueprintFactory()) {
+            const auto s_AspectFactory = reinterpret_cast<ZAspectEntityBlueprintFactory*>(p_Factory);
+
+            if (static_cast<size_t>(s_Index) >= s_AspectFactory->m_aSubEntitiesLookUp.size()) {
+                return std::nullopt;
+            }
+
+            const auto& s_Lookup = s_AspectFactory->m_aSubEntitiesLookUp[s_Index];
+
+            if (s_Lookup.m_nAspectIdx >= s_AspectFactory->m_aBlueprintFactories.size()) {
+                return std::nullopt;
+            }
+
+            const auto s_AspectBlueprint = s_AspectFactory->m_aBlueprintFactories[s_Lookup.m_nAspectIdx];
+
+            if (!s_AspectBlueprint || !s_AspectBlueprint->IsTemplateEntityBlueprintFactory()) {
+                return std::nullopt;
+            }
+
+            s_TemplateFactory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_AspectBlueprint);
+            s_TemplateIndex = s_Lookup.m_nSubentityIdx;
+        }
+
+        if (!s_TemplateFactory || !s_TemplateFactory->m_pTemplateEntityBlueprint ||
+            s_TemplateIndex >= s_TemplateFactory->m_pTemplateEntityBlueprint->subEntities.size()) {
+            return std::nullopt;
+        }
+
+        return TemplateSubEntity { s_TemplateFactory, s_TemplateIndex };
+    }
+}
+
 void EditorServer::SendEntityList(
     const std::string& p_ClientId, std::shared_ptr<EntityTreeNode> p_Tree, std::optional<int64_t> p_MessageId
 ) {
@@ -864,13 +943,6 @@ void EditorServer::SendEntityList(
 
         s_First = false;
 
-        auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Node->Entity.GetBlueprintFactory());
-
-        if (s_Node->Entity.GetOwningEntity()) {
-            s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_Node->Entity.GetOwningEntity().
-                GetBlueprintFactory());
-        }
-
         s_EventStream << "{";
         s_EventStream << write_json("id") << ":" << write_json(std::format("{:016x}", s_Node->EntityId)) << ",";
         s_EventStream << write_json("source") << ":" << write_json("game") << ",";
@@ -881,14 +953,10 @@ void EditorServer::SendEntityList(
             (*s_Node->Entity->GetType()->m_pInterfaceData)[0].m_Type->GetTypeInfo()->pszTypeName
         );
 
-        if (s_Factory) {
-            // This is also probably wrong.
-            auto s_Index = s_Factory->GetSubEntityIndex(s_Node->Entity->GetType()->m_nEntityID);
-
-            if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
-                const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
-                s_EventStream << "," << write_json("name") << ":" << write_json(s_Name);
-            }
+        if (const auto s_SubEntity = FindTemplateSubEntity(
+            GetDefiningBlueprintFactory(s_Node->Entity), s_Node->Entity->GetType()->m_nEntityID
+        )) {
+            s_EventStream << "," << write_json("name") << ":" << write_json(s_SubEntity->Name());
         }
 
         s_EventStream << "}";
@@ -1029,12 +1097,6 @@ bool EditorServer::SendEntitiesDetails(
     bool s_DidSendAnything = false;
 
     for (const auto& [s_Hashes, s_Quat, s_Entity] : p_Entities) {
-        if (strcmp(s_Hashes.front().c_str(), "00724CDE424AFE76") != 0 &&
-            strcmp(s_Hashes.front().c_str(), "00280B8C4462FAC8") != 0 &&
-            IsExcludedFromNavMeshExport(s_Entity)) {
-            continue;
-        }
-
         for (const auto& s_Hash : s_Hashes) {
             if (!s_IsFirstItemActuallySentInThisCall) {
                 p_Socket->send(",", uWS::OpCode::TEXT);
@@ -1050,6 +1112,373 @@ bool EditorServer::SendEntitiesDetails(
     return s_DidSendAnything;
 }
 
+void EditorServer::SendJsonList(WebSocket* p_Socket, const std::vector<std::string>& p_Items) {
+    for (size_t i = 0; i < p_Items.size(); ++i) {
+        if (i) {
+            p_Socket->send(",", uWS::OpCode::TEXT);
+        }
+
+        p_Socket->send(p_Items[i], uWS::OpCode::TEXT);
+    }
+}
+
+void EditorServer::WriteEntityIdentity(std::ostream& p_Stream, ZEntityRef p_Entity) {
+    p_Stream << write_json("id") << ":" << write_json(
+        std::format("{:016x}", p_Entity->GetType()->m_nEntityID)
+    ) << ",";
+
+    const auto s_Factory = GetDefiningBlueprintFactory(p_Entity);
+
+    if (s_Factory) {
+        if (const auto s_SubEntity = FindTemplateSubEntity(s_Factory, p_Entity->GetType()->m_nEntityID)) {
+            p_Stream << write_json("name") << ":" << write_json(s_SubEntity->Name()) << ",";
+            p_Stream << write_json("tblu") << ":" << write_json(
+                std::format("{:016X}", static_cast<ZEntityBlueprintFactoryBase*>(s_Factory)->m_ridResource.GetID())
+            ) << ",";
+        }
+    }
+    else {
+        p_Stream << write_json("name") << ":" << write_json(Plugin()->GetEntityName(p_Entity, false)) << ",";
+    }
+}
+
+namespace {
+    // GetProperty<T>().Get() null-derefs unless T is the exact type, so reads check As<T>() or read entity refs raw.
+    bool IsEntityRefType(const STypeID* p_Type) {
+        const auto* s_TypeInfo = p_Type->GetTypeInfo();
+        return s_TypeInfo->IsEntity() && s_TypeInfo->m_nTypeSize == sizeof(TEntityRef<ZSpatialEntity>);
+    }
+
+    template <typename T, typename F>
+    void WriteTypedProperty(std::ostream& p_Stream, ZEntityRef p_Entity, std::string_view p_Name, F&& p_Write) {
+        const auto s_Value = p_Entity.GetProperty<T>(ZString(p_Name));
+
+        if (const T* s_Data = s_Value.template As<T>()) {
+            p_Write(*s_Data);
+            return;
+        }
+
+        Logger::Warn(
+            "[Editor] Crowd export: '{}'.{} is {}, expected {}.",
+            Plugin()->GetEntityName(p_Entity), p_Name, s_Value.GetTypeID()->GetTypeInfo()->pszTypeName, ZHMTypeName<T>
+        );
+        p_Stream << "null";
+    }
+
+    template <typename T>
+    void WriteScalarProperty(std::ostream& p_Stream, ZEntityRef p_Entity, std::string_view p_Name) {
+        WriteTypedProperty<T>(p_Stream, p_Entity, p_Name, [&](const T& p_Value) { p_Stream << write_json(p_Value); });
+    }
+
+    ZEntityRef ReadEntityRefProperty(ZEntityRef p_Entity, const ZString& p_Name) {
+        const auto s_Value = p_Entity.GetProperty<TEntityRef<ZSpatialEntity>>(p_Name);
+
+        if (s_Value.IsEmpty() || !IsEntityRefType(s_Value.GetTypeID())) {
+            return {};
+        }
+
+        return static_cast<const TEntityRef<ZSpatialEntity>*>(s_Value.GetData())->m_entityRef;
+    }
+
+    std::vector<ZEntityRef> ReadEntityRefArrayProperty(ZEntityRef p_Entity, const ZString& p_Name) {
+        const auto s_Value = p_Entity.GetProperty<TArray<TEntityRef<ZSpatialEntity>>>(p_Name);
+        std::vector<ZEntityRef> s_Refs;
+
+        if (s_Value.IsEmpty() || !s_Value.GetTypeID()->GetTypeInfo()->IsArray()) {
+            return s_Refs;
+        }
+
+        const auto* s_ArrayType = reinterpret_cast<const IArrayType*>(s_Value.GetTypeID()->GetTypeInfo());
+
+        if (!IsEntityRefType(s_ArrayType->containerType.elementType)) {
+            return s_Refs;
+        }
+
+        for (const auto& s_Ref : *static_cast<const TArray<TEntityRef<ZSpatialEntity>>*>(s_Value.GetData())) {
+            s_Refs.push_back(s_Ref.m_entityRef);
+        }
+
+        return s_Refs;
+    }
+
+    std::string_view TeleportActionName(TeleportActionType p_Action) {
+        switch (p_Action) {
+            case TeleportActionType::STAY: return "STAY";
+            case TeleportActionType::TELEPORT: return "TELEPORT";
+            case TeleportActionType::LEAVE_CROWD: return "LEAVE_CROWD";
+            default: return "UNKNOWN";
+        }
+    }
+
+    std::string_view CrowdFlowCandidatesName(ECrowdFlowCandidates p_Value) {
+        switch (p_Value) {
+            case ECrowdFlowCandidates::NONE: return "NONE";
+            case ECrowdFlowCandidates::EVERYONE: return "EVERYONE";
+            case ECrowdFlowCandidates::SPAWNED_ON_FLOW: return "SPAWNED_ON_FLOW";
+            default: return "UNKNOWN";
+        }
+    }
+
+    void WriteCrowdEntityArray(
+        std::ostream& p_Stream,
+        ZEntityRef p_Crowd,
+        std::string_view p_Key,
+        std::string_view p_PropertyName,
+        void (*p_WriteEntity)(std::ostream&, ZEntityRef)
+    ) {
+        p_Stream << "," << write_json(p_Key) << ":[";
+        bool s_First = true;
+
+        for (const auto& s_Ref : ReadEntityRefArrayProperty(p_Crowd, ZString(p_PropertyName))) {
+            if (!s_Ref) {
+                Logger::Debug(
+                    "[Editor] Crowd export: '{}'.{} has an unresolved entry, skipping it.",
+                    Plugin()->GetEntityName(p_Crowd), p_PropertyName
+                );
+                continue;
+            }
+
+            if (!s_First) {
+                p_Stream << ",";
+            }
+
+            s_First = false;
+            p_WriteEntity(p_Stream, s_Ref);
+        }
+
+        p_Stream << "]";
+    }
+}
+
+void EditorServer::WriteSVector3(std::ostream& p_Stream, const SVector3& p_Vector) {
+    WriteVector3(p_Stream, p_Vector.x, p_Vector.y, p_Vector.z);
+}
+
+void EditorServer::WriteWorldMatrix(std::ostream& p_Stream, ZEntityRef p_Entity) {
+    const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>();
+
+    if (!s_Spatial) {
+        p_Stream << "null";
+        return;
+    }
+
+    const SMatrix s_Matrix = s_Spatial->GetObjectToWorldMatrix();
+    p_Stream << "{" << write_json("x") << ":";
+    WriteVector3(p_Stream, s_Matrix.XAxis.x, s_Matrix.XAxis.y, s_Matrix.XAxis.z);
+    p_Stream << "," << write_json("y") << ":";
+    WriteVector3(p_Stream, s_Matrix.YAxis.x, s_Matrix.YAxis.y, s_Matrix.YAxis.z);
+    p_Stream << "," << write_json("z") << ":";
+    WriteVector3(p_Stream, s_Matrix.ZAxis.x, s_Matrix.ZAxis.y, s_Matrix.ZAxis.z);
+    p_Stream << "," << write_json("t") << ":";
+    WriteVector3(p_Stream, s_Matrix.Trans.x, s_Matrix.Trans.y, s_Matrix.Trans.z);
+    p_Stream << "}";
+}
+
+void EditorServer::WriteVolume(std::ostream& p_Stream, ZEntityRef p_Volume) {
+    Quat s_Quat;
+
+    if (p_Volume) {
+        try {
+            s_Quat = Editor::GetWorldQuat(p_Volume);
+        }
+        catch (const std::runtime_error&) {
+            Logger::Error("[Editor] Circular reference found! Sending crowd volume without rotation.");
+        }
+    }
+
+    WriteEntityTransforms(p_Stream, s_Quat, p_Volume);
+}
+
+void EditorServer::WriteControlPoints(std::ostream& p_Stream, ZEntityRef p_Entity) {
+    p_Stream << write_json("points") << ":";
+
+    WriteTypedProperty<TArray<SVector3>>(p_Stream, p_Entity, "m_aControlPoints", [&](const TArray<SVector3>& p_Points) {
+        p_Stream << "[";
+        bool s_First = true;
+
+        for (const auto& s_Point : p_Points) {
+            if (!s_First) {
+                p_Stream << ",";
+            }
+
+            s_First = false;
+            WriteSVector3(p_Stream, s_Point);
+        }
+
+        p_Stream << "]";
+    });
+}
+
+void EditorServer::WriteCrowdTeleport(std::ostream& p_Stream, ZEntityRef p_Teleport) {
+    p_Stream << "{";
+    WriteEntityIdentity(p_Stream, p_Teleport);
+    p_Stream << write_json("exitZone") << ":";
+    WriteVolume(p_Stream, ReadEntityRefProperty(p_Teleport, "m_rExitZone"));
+    p_Stream << "," << write_json("enterZone") << ":";
+    WriteVolume(p_Stream, ReadEntityRefProperty(p_Teleport, "m_rEnterZone"));
+    p_Stream << "," << write_json("exitActionAmbient") << ":";
+    WriteTypedProperty<TeleportActionType>(
+        p_Stream, p_Teleport, "m_eExitActionAmbient", [&](TeleportActionType p_Action) {
+            p_Stream << write_json(TeleportActionName(p_Action));
+        }
+    );
+    p_Stream << "," << write_json("exitActionScared") << ":";
+    WriteTypedProperty<TeleportActionType>(
+        p_Stream, p_Teleport, "m_eExitActionScared", [&](TeleportActionType p_Action) {
+            p_Stream << write_json(TeleportActionName(p_Action));
+        }
+    );
+    p_Stream << "}";
+}
+
+void EditorServer::WriteSplineFlow(std::ostream& p_Stream, ZEntityRef p_Spline) {
+    p_Stream << "{";
+    WriteEntityIdentity(p_Stream, p_Spline);
+    p_Stream << write_json("transform") << ":";
+    WriteWorldMatrix(p_Stream, p_Spline);
+    p_Stream << "," << write_json("flowWidth") << ":";
+    WriteScalarProperty<float32>(p_Stream, p_Spline, "m_nFlowWidth");
+    p_Stream << "," << write_json("lengthTessellation") << ":";
+    WriteScalarProperty<float32>(p_Stream, p_Spline, "m_nLengthTessellation");
+    p_Stream << "," << write_json("widthTessellation") << ":";
+    WriteScalarProperty<float32>(p_Stream, p_Spline, "m_nWidthTessellation");
+    p_Stream << "," << write_json("extrusionHeight") << ":";
+    WriteScalarProperty<float32>(p_Stream, p_Spline, "m_fExtrusionHeight");
+    p_Stream << "," << write_json("closed") << ":";
+    WriteScalarProperty<bool>(p_Stream, p_Spline, "m_bIsControlPointsPathClosed");
+    p_Stream << ",";
+    WriteControlPoints(p_Stream, p_Spline);
+    p_Stream << "}";
+}
+
+void EditorServer::WriteCrowdVolumeIndexArray(
+    std::ostream& p_Stream,
+    ZEntityRef p_Crowd,
+    std::string_view p_Key,
+    std::string_view p_PropertyName,
+    const EntityIndexMap& p_Indices
+) {
+    p_Stream << "," << write_json(p_Key) << ":[";
+    bool s_First = true;
+
+    for (const auto& s_Ref : ReadEntityRefArrayProperty(p_Crowd, ZString(p_PropertyName))) {
+        const auto s_Index = s_Ref ? p_Indices.find(s_Ref.m_pObj) : p_Indices.end();
+
+        if (s_Index == p_Indices.end()) {
+            Logger::Debug(
+                "[Editor] Crowd export: '{}'.{} references '{}', which isn't in the exported volumes, skipping it.",
+                Plugin()->GetEntityName(p_Crowd), p_PropertyName, s_Ref ? Plugin()->GetEntityName(s_Ref) : "null"
+            );
+            continue;
+        }
+
+        if (!s_First) {
+            p_Stream << ",";
+        }
+
+        s_First = false;
+        p_Stream << s_Index->second;
+    }
+
+    p_Stream << "]";
+}
+
+EditorServer::CrowdsJson EditorServer::WriteCrowdsJson(
+    const SceneEntities& p_VolumeBoxEntities, const SceneEntities& p_VolumeSphereEntities
+) {
+    const auto s_VolumeShapeEntities = Plugin()->FindEntitiesByType("ZVolumeShapeEntity", "00A69EDD9DF220A8");
+    const auto s_CrowdEntities = Plugin()->FindEntitiesByType("ZCrowdEntity", "00D97E3F727E82CB");
+
+    const auto s_BuildIndexMap = [](const SceneEntities& p_Entities) {
+        EntityIndexMap s_Indices;
+
+        for (size_t i = 0; i < p_Entities.size(); ++i) {
+            s_Indices.emplace(std::get<2>(p_Entities[i]).m_pObj, i);
+        }
+
+        return s_Indices;
+    };
+
+    const CrowdVolumeIndices s_VolumeIndices {
+        s_BuildIndexMap(p_VolumeBoxEntities),
+        s_BuildIndexMap(p_VolumeSphereEntities),
+        s_BuildIndexMap(s_VolumeShapeEntities)
+    };
+
+    CrowdsJson s_Json;
+
+    for (const auto& s_Shape : s_VolumeShapeEntities | std::views::elements<2>) {
+        s_Json.VolumeShapes.push_back(WriteVolumeShape(s_Shape));
+    }
+
+    for (const auto& s_Crowd : s_CrowdEntities | std::views::elements<2>) {
+        s_Json.Crowds.push_back(WriteCrowdEntity(s_Crowd, s_VolumeIndices));
+    }
+
+    return s_Json;
+}
+
+std::string EditorServer::WriteVolumeShape(ZEntityRef p_Shape) {
+    std::ostringstream s_Stream;
+    s_Stream << "{";
+    WriteEntityIdentity(s_Stream, p_Shape);
+    s_Stream << write_json("transform") << ":";
+    WriteWorldMatrix(s_Stream, p_Shape);
+    s_Stream << ",";
+    WriteControlPoints(s_Stream, p_Shape);
+    s_Stream << "," << write_json("extrusionHeight") << ":";
+    WriteScalarProperty<float32>(s_Stream, p_Shape, "m_fExtrusionHeight");
+    s_Stream << "," << write_json("flipSurfaceNormal") << ":";
+    WriteScalarProperty<bool>(s_Stream, p_Shape, "m_bFlipSurfaceNormal");
+    s_Stream << "," << write_json("closed") << ":";
+    WriteScalarProperty<bool>(s_Stream, p_Shape, "m_bIsControlPointsPathClosed");
+    s_Stream << "}";
+    return s_Stream.str();
+}
+
+std::string EditorServer::WriteCrowdEntity(ZEntityRef p_Crowd, const CrowdVolumeIndices& p_VolumeIndices) {
+    std::ostringstream s_Stream;
+    s_Stream << "{";
+    const auto s_Instance = p_Crowd.GetOwningEntity() ? p_Crowd.GetOwningEntity() : p_Crowd;
+    WriteEntityIdentity(s_Stream, s_Instance);
+
+    s_Stream << write_json("transform") << ":";
+    WriteWorldMatrix(s_Stream, p_Crowd);
+    s_Stream << "," << write_json("globalSize") << ":";
+    WriteTypedProperty<SVector3>(s_Stream, p_Crowd, "m_vGlobalSize", [&](const SVector3& p_Size) {
+        WriteSVector3(s_Stream, p_Size);
+    });
+    s_Stream << "," << write_json("cellSize") << ":";
+    WriteScalarProperty<float32>(s_Stream, p_Crowd, "m_nGridCellSize");
+    s_Stream << "," << write_json("navMeshShrink") << ":";
+    WriteScalarProperty<float32>(s_Stream, p_Crowd, "m_nGridCellNavMeshShrink");
+    s_Stream << "," << write_json("generatorOffset") << ":";
+    WriteScalarProperty<float32>(s_Stream, p_Crowd, "m_nGridGeneratorOffset");
+    s_Stream << "," << write_json("smoothenExitFlows") << ":";
+    WriteScalarProperty<bool>(s_Stream, p_Crowd, "m_bSmoothenExitFlows");
+    s_Stream << "," << write_json("flowCandidates") << ":";
+    WriteTypedProperty<ECrowdFlowCandidates>(s_Stream, p_Crowd, "m_eFlowCandidates", [&](ECrowdFlowCandidates p_Value) {
+        s_Stream << write_json(CrowdFlowCandidatesName(p_Value));
+    });
+
+    const auto& [s_Boxes, s_Spheres, s_Shapes] = p_VolumeIndices;
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "exclusionBoxes", "m_aCrowdExclusionBoxes", s_Boxes);
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "inclusionBoxes", "m_aCrowdInclusionBoxes", s_Boxes);
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "panicOnlyBoxes", "m_aCrowdPanicOnlyBoxes", s_Boxes);
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "exclusionSpheres", "m_aCrowdExclusionSpheres", s_Spheres);
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "exclusionShapes", "m_aCrowdExclusionVolumeShapes", s_Shapes);
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "inclusionShapes", "m_aCrowdInclusionVolumeShapes", s_Shapes);
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "panicOnlyShapes", "m_aCrowdPanicOnlyVolumeShapes", s_Shapes);
+    WriteCrowdEntityArray(s_Stream, p_Crowd, "teleports", "m_aCrowdTeleports", WriteCrowdTeleport);
+    WriteCrowdEntityArray(s_Stream, p_Crowd, "groupBoxes", "m_aCrowdGroupBoxes", WriteVolume);
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "flowBoxes", "m_aFlowBoxes", s_Boxes);
+    WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "flowBoxesTwoWay", "m_aFlowBoxesTwoWay", s_Boxes);
+    WriteCrowdEntityArray(s_Stream, p_Crowd, "splineFlows", "m_aSplineFlows", WriteSplineFlow);
+
+    s_Stream << "}";
+    return s_Stream.str();
+}
+
 void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZEntityRef p_Entity) {
     if (!p_Entity) {
         p_Stream << "null";
@@ -1058,29 +1487,7 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
 
     p_Stream << "{";
 
-    p_Stream << write_json("id") << ":" << write_json(
-        std::format("{:016x}", p_Entity->GetType()->m_nEntityID)
-    ) << ",";
-
-    auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
-
-    if (p_Entity.GetOwningEntity()) {
-        s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetOwningEntity().
-            GetBlueprintFactory());
-    }
-
-    if (s_Factory) {
-        if (auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityID); s_Index != -1) {
-            const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
-            p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
-            p_Stream << write_json("tblu") << ":" << write_json(
-                fmt::format("{:016X}", s_Factory->m_ridResource.GetID()).c_str()
-            ) << ",";
-        }
-    }
-    else {
-        p_Stream << write_json("name") << ":" << write_json(Plugin()->GetEntityName(p_Entity, false)) << ",";
-    }
+    WriteEntityIdentity(p_Stream, p_Entity);
 
     // Write transform.
     if (const auto s_Spatial = p_Entity.QueryInterface<ZSpatialEntity>()) {
@@ -1145,7 +1552,9 @@ void EditorServer::WriteEntityTransforms(std::ostream& p_Stream, Quat p_Quat, ZE
         {"m_vRoomMin", "roomExtentMin"},
         {"m_vRoomMax", "roomExtentMax"},
         {"m_rParentArea", "parent"},
-        {"m_fRadius", "radius"}
+        {"m_fRadius", "radius"},
+        {"m_aInclusions", "inclusions"},
+        {"m_nGroupSize", "groupSize"}
     };
 
     if (const auto s_EntityType = p_Entity->GetType(); s_EntityType && s_EntityType->m_pPropertyData) {
@@ -1196,26 +1605,17 @@ void EditorServer::WriteEntityDetails(std::ostream& p_Stream, ZEntityRef p_Entit
 
     p_Stream << write_json("id") << ":" << write_json(std::format("{:016x}", p_Entity->GetType()->m_nEntityID)) << ",";
 
-    auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetBlueprintFactory());
-
-    if (p_Entity.GetOwningEntity()) {
-        s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(p_Entity.GetOwningEntity().
-            GetBlueprintFactory());
-    }
+    const auto s_Factory = GetDefiningBlueprintFactory(p_Entity);
 
     if (s_Factory) {
-        // This is also probably wrong.
-        auto s_Index = s_Factory->GetSubEntityIndex(p_Entity->GetType()->m_nEntityID);
-
-        if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
-            const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
-            p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
+        if (const auto s_SubEntity = FindTemplateSubEntity(s_Factory, p_Entity->GetType()->m_nEntityID)) {
+            p_Stream << write_json("name") << ":" << write_json(s_SubEntity->Name()) << ",";
         }
 
         p_Stream << write_json("source") << ":" << write_json("game") << ",";
 
         p_Stream << write_json("tblu") << ":" << write_json(
-            std::format("{:016X}", s_Factory->m_ridResource.GetID())
+            std::format("{:016X}", static_cast<ZEntityBlueprintFactoryBase*>(s_Factory)->m_ridResource.GetID())
         ) << ",";
     }
     else {
@@ -1442,27 +1842,19 @@ void EditorServer::WriteProperty(std::ostream& p_Stream, ZEntityRef p_Entity, SP
             std::format("{:016x}", s_EntityData->m_entityRef->GetType()->m_nEntityID)
         ) << ",";
 
-        auto s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_entityRef.
-            GetBlueprintFactory());
-
-        if (s_EntityData->m_entityRef.GetOwningEntity()) {
-            s_Factory = reinterpret_cast<ZTemplateEntityBlueprintFactory*>(s_EntityData->m_entityRef.GetOwningEntity().
-                GetBlueprintFactory());
-        }
+        const auto s_Factory = GetDefiningBlueprintFactory(s_EntityData->m_entityRef);
 
         if (s_Factory) {
-            // This is also probably wrong.
-            auto s_Index = s_Factory->GetSubEntityIndex(s_EntityData->m_entityRef->GetType()->m_nEntityID);
+            const auto s_EntityId = s_EntityData->m_entityRef->GetType()->m_nEntityID;
 
-            if (s_Index != -1 && s_Factory->m_pTemplateEntityBlueprint) {
-                const auto s_Name = s_Factory->m_pTemplateEntityBlueprint->subEntities[s_Index].entityName;
-                p_Stream << write_json("name") << ":" << write_json(s_Name) << ",";
+            if (const auto s_SubEntity = FindTemplateSubEntity(s_Factory, s_EntityId)) {
+                p_Stream << write_json("name") << ":" << write_json(s_SubEntity->Name()) << ",";
             }
 
             p_Stream << write_json("source") << ":" << write_json("game") << ",";
 
             p_Stream << write_json("tblu") << ":" << write_json(
-                std::format("{:016X}", s_Factory->m_ridResource.GetID())
+                std::format("{:016X}", static_cast<ZEntityBlueprintFactoryBase*>(s_Factory)->m_ridResource.GetID())
             ) << ",";
         }
         else {

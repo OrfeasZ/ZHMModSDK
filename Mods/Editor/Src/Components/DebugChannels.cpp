@@ -1,6 +1,7 @@
 #include "Editor.h"
 
 #include <queue>
+#include <unordered_set>
 
 #include "Glacier/ZModule.h"
 #include "Glacier/Enums.h"
@@ -10,6 +11,8 @@
 #include "Logging.h"
 
 #include <SimpleMath.h>
+
+static constexpr uint32_t c_MoveToTransformId = Hash::Crc32("m_rMoveToTransform");
 
 class ZGuideLadder;
 class ZGuideWindow;
@@ -495,6 +498,50 @@ void Editor::DrawDebugChannelsWindow(bool p_HasFocus) {
     ImGui::PopFont();
 }
 
+template <typename F>
+void Editor::ForEachDrawnDebugEntity(const bool p_Gizmos, const F& p_Callback) {
+    const DebugDrawMode s_DrawMode = p_Gizmos ? m_GizmoDrawMode : m_ShapeDrawMode;
+
+    if (s_DrawMode == DebugDrawMode::SelectedEntity) {
+        const auto s_Iterator = m_EntityRefToDebugEntities.find(m_SelectedEntity);
+
+        if (s_Iterator == m_EntityRefToDebugEntities.end()) {
+            return;
+        }
+
+        for (const auto& s_DebugEntity : s_Iterator->second) {
+            if (s_DebugEntity->m_HasGizmo == p_Gizmos) {
+                p_Callback(*s_DebugEntity);
+            }
+        }
+
+        return;
+    }
+
+    auto& s_Groups = p_Gizmos ? m_DebugChannelToTypeNameToGizmoEntities : m_DebugChannelToTypeNameToShapeEntities;
+    auto& s_ChannelStates = p_Gizmos ? m_DebugChannelToGizmoState : m_DebugChannelToShapeState;
+    auto& s_TypeNameStates = p_Gizmos ? m_DebugChannelToTypeNameToGizmoState : m_DebugChannelToTypeNameToShapeState;
+    const bool s_UseFilters = s_DrawMode == DebugDrawMode::SelectedChannelsAndTypes;
+
+    for (const auto& [s_DebugChannel, s_TypeNameToDebugEntities] : s_Groups) {
+        if (s_UseFilters && !s_ChannelStates[s_DebugChannel]) {
+            continue;
+        }
+
+        auto& s_ChannelTypeNameStates = s_TypeNameStates[s_DebugChannel];
+
+        for (const auto& [s_TypeName, s_DebugEntities] : s_TypeNameToDebugEntities) {
+            if (s_UseFilters && !s_ChannelTypeNameStates[s_TypeName]) {
+                continue;
+            }
+
+            for (DebugEntity* s_DebugEntity : s_DebugEntities) {
+                p_Callback(*s_DebugEntity);
+            }
+        }
+    }
+}
+
 void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
     if (!m_DrawGizmos && !m_DrawShapes) {
         return;
@@ -504,75 +551,74 @@ void Editor::DrawDebugEntities(IRenderer* p_Renderer) {
 
     p_Renderer->SetDistanceCullingEnabled(true);
 
-    for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
-        bool s_DrawEntityID = false;
-        ZSpatialEntity* s_SpatialEntity = nullptr;
+    // An entity can have several debug entities, but its ID is drawn once.
+    std::unordered_set<ZSpatialEntity*> s_EntitiesToDrawIDFor;
 
-        const bool s_IsSelectedEntity = s_EntityRef == m_SelectedEntity;
+    if (m_DrawGizmos) {
+        ForEachDrawnDebugEntity(true, [&](DebugEntity& p_DebugEntity) {
+            auto& s_GizmoEntity = static_cast<GizmoEntity&>(p_DebugEntity);
 
-        const bool s_DrawGizmos =
-            m_DrawGizmos &&
-            (m_GizmoDrawMode != DebugDrawMode::SelectedEntity || s_IsSelectedEntity);
-
-        const bool s_DrawShapes =
-            m_DrawShapes &&
-            (m_ShapeDrawMode != DebugDrawMode::SelectedEntity || s_IsSelectedEntity);
-
-        if (!s_DrawGizmos && !s_DrawShapes) {
-            continue;
-        }
-
-        for (const auto& s_DebugEntity : s_DebugEntities) {
-            bool s_WasDrawn = false;
-
-            if (s_DebugEntity->m_HasGizmo) {
-                if (s_DrawGizmos) {
-                    s_WasDrawn = DrawGizmo(
-                        static_cast<GizmoEntity&>(*s_DebugEntity),
-                        p_Renderer
-                    );
-                }
+            if (DrawGizmo(s_GizmoEntity, p_Renderer) && m_DrawEntityIDs) {
+                s_EntitiesToDrawIDFor.insert(s_GizmoEntity.m_SpatialEntity);
             }
-            else if (s_DrawShapes) {
-                s_WasDrawn = DrawShapes(*s_DebugEntity, p_Renderer);
+        });
+    }
+
+    if (m_DrawShapes) {
+        ForEachDrawnDebugEntity(false, [&](DebugEntity& p_DebugEntity) {
+            if (DrawShapes(p_DebugEntity, p_Renderer) && m_DrawEntityIDs) {
+                s_EntitiesToDrawIDFor.insert(p_DebugEntity.m_EntityRef.QueryInterface<ZSpatialEntity>());
             }
+        });
+    }
 
-            if (s_WasDrawn) {
-                s_DrawEntityID = true;
-
-                if (!s_SpatialEntity) {
-                    s_SpatialEntity =
-                        s_DebugEntity->m_EntityRef.QueryInterface<ZSpatialEntity>();
-                }
-            }
-        }
-
-        if (s_DrawEntityID && s_SpatialEntity) {
-            DrawDebugEntityID(s_SpatialEntity, p_Renderer);
-        }
+    for (ZSpatialEntity* s_SpatialEntity : s_EntitiesToDrawIDFor) {
+        DrawDebugEntityID(s_SpatialEntity, p_Renderer);
     }
 
     p_Renderer->SetDistanceCullingEnabled(false);
 }
 
-bool Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
-    if (!m_DrawGizmos) {
+static bool GetPrimBounds(const ZRenderPrimitiveResource* p_Resource, float4& p_Center, float4& p_HalfSize) {
+    if (p_Resource->m_Primitives.size() == 0) {
         return false;
     }
 
-    if (m_GizmoDrawMode == DebugDrawMode::SelectedChannelsAndTypes) {
-        if (!m_DebugChannelToGizmoState[p_GizmoEntity.m_DebugChannel]) {
-            return false;
-        }
+    SVector3 s_Min(FLT_MAX, FLT_MAX, FLT_MAX);
+    SVector3 s_Max(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
-        if (!m_DebugChannelToTypeNameToGizmoState[p_GizmoEntity.m_DebugChannel][p_GizmoEntity.m_TypeName]) {
-            return false;
-        }
+    for (size_t i = 0; i < p_Resource->m_Primitives.size(); ++i) {
+        const auto* s_Primitive = static_cast<ZRenderPrimitiveMesh*>(p_Resource->m_Primitives[i].m_pObject);
+        const SPrimitiveBufferData& s_BufferData = Globals::PrimitiveBufferData[s_Primitive->m_BufferDataIndex];
+
+        const SVector3 s_Scale(s_BufferData.vPositionScale);
+        const SVector3 s_Bias(s_BufferData.vPositionBias);
+        const SVector3 s_A = p_Resource->m_vMin * s_Scale + s_Bias;
+        const SVector3 s_B = p_Resource->m_vMax * s_Scale + s_Bias;
+
+        s_Min = SVector3(
+            std::min({ s_Min.x, s_A.x, s_B.x }),
+            std::min({ s_Min.y, s_A.y, s_B.y }),
+            std::min({ s_Min.z, s_A.z, s_B.z })
+        );
+        s_Max = SVector3(
+            std::max({ s_Max.x, s_A.x, s_B.x }),
+            std::max({ s_Max.y, s_A.y, s_B.y }),
+            std::max({ s_Max.z, s_A.z, s_B.z })
+        );
     }
 
+    p_Center = float4((s_Min + s_Max) * 0.5f, 1.f);
+    p_HalfSize = float4((s_Max - s_Min) * 0.5f, 1.f);
+
+    return true;
+}
+
+bool Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
     if (p_GizmoEntity.m_DebugChannel == EDebugChannel::DEBUGCHANNEL_PARTITIONING &&
         p_GizmoEntity.m_TypeName == "ZGateEntity") {
-        const bool s_IsOpen = p_GizmoEntity.m_EntityRef.GetProperty<bool>("m_bIsOpen").Get();
+        constexpr uint32_t c_IsOpenId = Hash::Crc32("m_bIsOpen");
+        const bool s_IsOpen = p_GizmoEntity.m_EntityRef.GetProperty<bool>(c_IsOpenId).Get();
 
         if (s_IsOpen && p_GizmoEntity.m_RuntimeResourceID.GetID() !=
             ResId<"[assembly:/geometry/g2/gizmos.wl2?/gizmo_gate_01.prim].pc_prim">) {
@@ -589,13 +635,15 @@ bool Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
         p_GizmoEntity.m_RuntimeResourceID.GetID() ==
         ResId<"[assembly:/geometry/g2/gizmos.wl2?/unit_circle.prim].pc_prim">
         ) {
-        const float s_Radius = p_GizmoEntity.m_EntityRef.GetProperty<float>("m_fRadius").Get();
+        constexpr uint32_t c_RadiusId = Hash::Crc32("m_fRadius");
+        const float s_Radius = p_GizmoEntity.m_EntityRef.GetProperty<float>(c_RadiusId).Get();
 
         if (p_GizmoEntity.m_Transform.XAxis.x != s_Radius) {
             const float4 s_RadiusGizmoScale(s_Radius, s_Radius, s_Radius, 0.f);
             const float4 s_RadiusGizmoTranslate(0.f, 0.f, 0.f, 0.f);
 
             p_GizmoEntity.m_Transform = SMatrix::ScaleTranslate(s_RadiusGizmoScale, s_RadiusGizmoTranslate);
+            p_GizmoEntity.m_IsTransformIdentity = false;
         }
     }
 
@@ -604,15 +652,25 @@ bool Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
     if (p_GizmoEntity.m_DebugChannel == EDebugChannel::DEBUGCHANNEL_AI &&
         p_GizmoEntity.m_TypeName == "ZActBehaviorEntity") {
         const TEntityRef<ZSpatialEntity> s_MoveToTransform =
-            p_GizmoEntity.m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
+            p_GizmoEntity.m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>(c_MoveToTransformId).Get();
 
-        s_Transform = s_MoveToTransform.m_pInterfaceRef->GetObjectToWorldMatrix() * p_GizmoEntity.m_Transform;
+        s_Transform = s_MoveToTransform.m_pInterfaceRef->GetObjectToWorldMatrix();
     }
     else {
-        static STypeID* s_SpatialEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZSpatialEntity");
-        auto s_SpatialEntity = p_GizmoEntity.m_EntityRef.QueryInterface<ZSpatialEntity>(s_SpatialEntityTypeID);
+        s_Transform = p_GizmoEntity.m_SpatialEntity->GetObjectToWorldMatrix();
+    }
 
-        s_Transform = s_SpatialEntity->GetObjectToWorldMatrix() * p_GizmoEntity.m_Transform;
+    if (!p_GizmoEntity.m_IsTransformIdentity) {
+        s_Transform = s_Transform * p_GizmoEntity.m_Transform;
+    }
+
+    // Culling here instead of in DrawMesh means culled gizmos never read their prim data.
+    if (p_GizmoEntity.m_HasBounds && p_Renderer->IsFrustumCullingEnabled()) {
+        const float4 s_WorldCenter = s_Transform.WVectorTransform(p_GizmoEntity.m_BoundsCenter);
+
+        if (!p_Renderer->IsOBBInsideViewFrustum(s_WorldCenter, p_GizmoEntity.m_BoundsHalfSize, s_Transform)) {
+            return false;
+        }
     }
 
     ZRenderPrimitiveResource* s_pRenderPrimitiveResource =
@@ -621,6 +679,14 @@ bool Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
     if (!s_pRenderPrimitiveResource) {
         Logger::Error("[Editor] PRIM of {:016x} gizmo isn't installed!", p_GizmoEntity.m_RuntimeResourceID.GetID());
         return false;
+    }
+
+    if (!p_GizmoEntity.m_HasBounds) {
+        p_GizmoEntity.m_HasBounds = GetPrimBounds(
+            s_pRenderPrimitiveResource,
+            p_GizmoEntity.m_BoundsCenter,
+            p_GizmoEntity.m_BoundsHalfSize
+        );
     }
 
     for (size_t j = 0; j < s_pRenderPrimitiveResource->m_Primitives.size(); ++j) {
@@ -646,20 +712,6 @@ bool Editor::DrawGizmo(GizmoEntity& p_GizmoEntity, IRenderer* p_Renderer) {
 }
 
 bool Editor::DrawShapes(const DebugEntity& p_DebugEntity, IRenderer* p_Renderer) {
-    if (!m_DrawShapes) {
-        return false;
-    }
-
-    if (m_ShapeDrawMode == DebugDrawMode::SelectedChannelsAndTypes) {
-        if (!m_DebugChannelToShapeState[p_DebugEntity.m_DebugChannel]) {
-            return false;
-        }
-
-        if (!m_DebugChannelToTypeNameToShapeState[p_DebugEntity.m_DebugChannel][p_DebugEntity.m_TypeName]) {
-            return false;
-        }
-    }
-
     if (p_DebugEntity.m_TypeName == "ZCoverPlane") {
         DrawShapes(
             p_DebugEntity.m_EntityRef.QueryInterface<ZCoverPlane>(
@@ -2120,11 +2172,7 @@ void Editor::AddDebugEntity(
     s_DebugEntity->m_DebugChannel = p_DebugChannel;
     s_DebugEntity->m_HasGizmo = false;
 
-    std::scoped_lock s_Lock(m_DebugEntitiesMutex);
-    m_EntityRefToDebugEntities[p_EntityRef].push_back(std::move(s_DebugEntity));
-
-    ++m_DebugChannelToDebugEntityCount[p_DebugChannel];
-    ++m_DebugChannelToTypeNameToDebugEntityCount[p_DebugChannel][p_TypeName];
+    StoreDebugEntity(std::move(s_DebugEntity));
 }
 
 void Editor::AddGizmoEntity(
@@ -2145,16 +2193,14 @@ void Editor::AddGizmoEntity(
     s_GizmoEntity->m_EntityRef = p_EntityRef;
     s_GizmoEntity->m_DebugChannel = p_DebugChannel;
     s_GizmoEntity->m_HasGizmo = true;
+    s_GizmoEntity->m_SpatialEntity = p_EntityRef.QueryInterface<ZSpatialEntity>();
     s_GizmoEntity->m_RuntimeResourceID = p_RuntimeResourceID;
     s_GizmoEntity->m_PrimResourcePtr = s_ResourcePtr;
     s_GizmoEntity->m_Color = p_Color;
     s_GizmoEntity->m_Transform = p_Transform;
+    s_GizmoEntity->m_IsTransformIdentity = DirectX::XMMatrixIsIdentity(p_Transform.DX());
 
-    std::scoped_lock s_Lock(m_DebugEntitiesMutex);
-    m_EntityRefToDebugEntities[p_EntityRef].push_back(std::move(s_GizmoEntity));
-
-    ++m_DebugChannelToDebugEntityCount[p_DebugChannel];
-    ++m_DebugChannelToTypeNameToDebugEntityCount[p_DebugChannel][p_TypeName];
+    StoreDebugEntity(std::move(s_GizmoEntity));
 }
 
 void Editor::AddGizmoEntity(
@@ -2177,16 +2223,14 @@ void Editor::AddGizmoEntity(
         s_GizmoEntity->m_EntityRef = p_EntityRef;
         s_GizmoEntity->m_DebugChannel = p_DebugChannel;
         s_GizmoEntity->m_HasGizmo = true;
+        s_GizmoEntity->m_SpatialEntity = p_EntityRef.QueryInterface<ZSpatialEntity>();
         s_GizmoEntity->m_RuntimeResourceID = s_RuntimeResourceID;
         s_GizmoEntity->m_PrimResourcePtr = s_ResourcePtr;
         s_GizmoEntity->m_Color = p_Color;
         s_GizmoEntity->m_Transform = p_Transform;
+        s_GizmoEntity->m_IsTransformIdentity = DirectX::XMMatrixIsIdentity(p_Transform.DX());
 
-        std::scoped_lock s_Lock(m_DebugEntitiesMutex);
-        m_EntityRefToDebugEntities[p_EntityRef].push_back(std::move(s_GizmoEntity));
-
-        ++m_DebugChannelToDebugEntityCount[p_DebugChannel];
-        ++m_DebugChannelToTypeNameToDebugEntityCount[p_DebugChannel][p_TypeName];
+        StoreDebugEntity(std::move(s_GizmoEntity));
     }
     else {
         const uint64_t s_EntityId = p_EntityRef.GetEntity()->GetType()->m_nEntityID;
@@ -2195,10 +2239,34 @@ void Editor::AddGizmoEntity(
     }
 }
 
+void Editor::StoreDebugEntity(std::unique_ptr<DebugEntity> p_DebugEntity) {
+    const EDebugChannel s_DebugChannel = p_DebugEntity->m_DebugChannel;
+    const std::string& s_TypeName = p_DebugEntity->m_TypeName;
+
+    auto& s_Groups = p_DebugEntity->m_HasGizmo
+        ? m_DebugChannelToTypeNameToGizmoEntities
+        : m_DebugChannelToTypeNameToShapeEntities;
+
+    std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+
+    s_Groups[s_DebugChannel][s_TypeName].push_back(p_DebugEntity.get());
+
+    ++m_DebugChannelToDebugEntityCount[s_DebugChannel];
+    ++m_DebugChannelToTypeNameToDebugEntityCount[s_DebugChannel][s_TypeName];
+
+    const ZEntityRef s_EntityRef = p_DebugEntity->m_EntityRef;
+    m_EntityRefToDebugEntities[s_EntityRef].push_back(std::move(p_DebugEntity));
+}
+
 void Editor::DeleteDebugEntities(
     const std::shared_ptr<EntityTreeNode>& p_RootNode
 ) {
     std::scoped_lock s_Lock(m_DebugEntitiesMutex);
+
+    // Group vectors can be large, so each one is filtered once after all removed entities are known.
+    std::unordered_set<DebugEntity*> s_RemovedDebugEntities;
+    std::unordered_set<std::vector<DebugEntity*>*> s_AffectedGroups;
+    std::vector<ZEntityRef> s_EntitiesToErase;
 
     std::queue<std::shared_ptr<EntityTreeNode>> s_Nodes;
     s_Nodes.push(p_RootNode);
@@ -2224,14 +2292,31 @@ void Editor::DeleteDebugEntities(
                 if (s_TypeCount > 0) {
                     --s_TypeCount;
                 }
+
+                auto& s_Groups = s_DebugEntity->m_HasGizmo
+                    ? m_DebugChannelToTypeNameToGizmoEntities
+                    : m_DebugChannelToTypeNameToShapeEntities;
+
+                s_RemovedDebugEntities.insert(s_DebugEntity.get());
+                s_AffectedGroups.insert(&s_Groups[s_DebugChannel][s_TypeName]);
             }
 
-            m_EntityRefToDebugEntities.erase(s_Iterator);
+            s_EntitiesToErase.push_back(s_Node->Entity);
         }
 
         for (const auto& [_, s_Child] : s_Node->Children) {
             s_Nodes.push(s_Child);
         }
+    }
+
+    for (auto* s_Group : s_AffectedGroups) {
+        std::erase_if(*s_Group, [&](DebugEntity* p_DebugEntity) {
+            return s_RemovedDebugEntities.contains(p_DebugEntity);
+        });
+    }
+
+    for (const auto& s_Entity : s_EntitiesToErase) {
+        m_EntityRefToDebugEntities.erase(s_Entity);
     }
 }
 
@@ -2351,84 +2436,53 @@ void Editor::RayCastGizmos(const SVector3& p_WorldPosition, const SVector3& p_Di
     std::string s_HitEntityTypeName;
     EDebugChannel s_HitEntityDebugChannel{};
 
-    static STypeID* s_SpatialEntityTypeID = (*Globals::TypeRegistry)->GetTypeID("ZSpatialEntity");
-
     {
         std::scoped_lock s_Lock(m_DebugEntitiesMutex);
 
-        for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
-            for (const auto& s_DebugEntity : s_DebugEntities) {
-                if (!s_DebugEntity->m_HasGizmo) {
-                    continue;
-                }
+        ForEachDrawnDebugEntity(true, [&](DebugEntity& p_DebugEntity) {
+            GizmoEntity* s_GizmoEntity = static_cast<GizmoEntity*>(&p_DebugEntity);
 
-                GizmoEntity* s_GizmoEntity = static_cast<GizmoEntity*>(s_DebugEntity.get());
+            ZRenderPrimitiveResource* s_RenderPrimitiveResource =
+                static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());
 
-                switch (m_GizmoDrawMode) {
-                    case DebugDrawMode::SelectedChannelsAndTypes: {
-                        if (!m_DebugChannelToGizmoState[s_GizmoEntity->m_DebugChannel] ||
-                            !m_DebugChannelToTypeNameToGizmoState
-                            [s_GizmoEntity->m_DebugChannel][s_GizmoEntity->m_TypeName]) {
-                            continue;
-                        }
-
-                        break;
-                    }
-                    case DebugDrawMode::SelectedEntity: {
-                        if (s_GizmoEntity->m_EntityRef != m_SelectedEntity) {
-                            continue;
-                        }
-
-                        break;
-                    }
-                    case DebugDrawMode::All:
-                        break;
-                }
-
-                ZRenderPrimitiveResource* s_RenderPrimitiveResource =
-                    static_cast<ZRenderPrimitiveResource*>(s_GizmoEntity->m_PrimResourcePtr.GetResourceData());
-
-                if (!s_RenderPrimitiveResource) {
-                    continue;
-                }
-
-                SVector3 s_Center = (s_RenderPrimitiveResource->m_vMin + s_RenderPrimitiveResource->m_vMax) * 0.5f;
-                SVector3 s_Extents = (s_RenderPrimitiveResource->m_vMax - s_RenderPrimitiveResource->m_vMin) * 0.5f;
-
-                DirectX::BoundingBox s_Box(
-                    DirectX::SimpleMath::Vector3(s_Center.x, s_Center.y, s_Center.z),
-                    DirectX::SimpleMath::Vector3(s_Extents.x, s_Extents.y, s_Extents.z)
-                );
-
-                SMatrix s_Transform;
-
-                if (s_GizmoEntity->m_TypeName == "ZActBehaviorEntity") {
-                    const TEntityRef<ZSpatialEntity> s_MoveToTransform =
-                        s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>("m_rMoveToTransform").Get();
-
-                    s_Transform = s_MoveToTransform.m_pInterfaceRef->GetObjectToWorldMatrix() * s_GizmoEntity->m_Transform;
-                }
-                else {
-                    auto s_SpatialEntity = s_GizmoEntity->m_EntityRef.QueryInterface<ZSpatialEntity>(s_SpatialEntityTypeID);
-
-                    s_Transform = s_SpatialEntity->GetObjectToWorldMatrix();
-                }
-
-                DirectX::XMMATRIX s_Transform2 =
-                    DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));
-
-                s_Box.Transform(s_Box, s_Transform2);
-
-                float s_Distance = 0.f;
-
-                if (s_Ray.Intersects(s_Box, s_Distance) && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
-                    p_Result.m_Distance = s_Distance;
-                    p_Result.m_Entity = s_GizmoEntity->m_EntityRef;
-                    p_Result.m_TypeName = s_GizmoEntity->m_TypeName;
-                    p_Result.m_DebugChannel = s_GizmoEntity->m_DebugChannel;
-                }
+            if (!s_RenderPrimitiveResource) {
+                return;
             }
-        }
+
+            SVector3 s_Center = (s_RenderPrimitiveResource->m_vMin + s_RenderPrimitiveResource->m_vMax) * 0.5f;
+            SVector3 s_Extents = (s_RenderPrimitiveResource->m_vMax - s_RenderPrimitiveResource->m_vMin) * 0.5f;
+
+            DirectX::BoundingBox s_Box(
+                DirectX::SimpleMath::Vector3(s_Center.x, s_Center.y, s_Center.z),
+                DirectX::SimpleMath::Vector3(s_Extents.x, s_Extents.y, s_Extents.z)
+            );
+
+            SMatrix s_Transform;
+
+            if (s_GizmoEntity->m_TypeName == "ZActBehaviorEntity") {
+                const TEntityRef<ZSpatialEntity> s_MoveToTransform =
+                    s_GizmoEntity->m_EntityRef.GetProperty<TEntityRef<ZSpatialEntity>>(c_MoveToTransformId).Get();
+
+                s_Transform = s_MoveToTransform.m_pInterfaceRef->GetObjectToWorldMatrix() * s_GizmoEntity->m_Transform;
+            }
+            else {
+                s_Transform = s_GizmoEntity->m_SpatialEntity->GetObjectToWorldMatrix();
+            }
+
+            DirectX::XMMATRIX s_Transform2 =
+                DirectX::XMLoadFloat4x4(reinterpret_cast<const DirectX::XMFLOAT4X4*>(&s_Transform));
+
+            s_Box.Transform(s_Box, s_Transform2);
+
+            float s_Distance = 0.f;
+
+            if (s_Ray.Intersects(s_Box, s_Distance) && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
+                p_Result.m_Distance = s_Distance;
+                p_Result.m_Entity = s_GizmoEntity->m_EntityRef;
+                p_Result.m_TypeName = s_GizmoEntity->m_TypeName;
+                p_Result.m_DebugChannel = s_GizmoEntity->m_DebugChannel;
+            }
+        });
     }
 }
 
@@ -2452,90 +2506,63 @@ void Editor::RayCastShapes(const SVector3& p_WorldPosition, const SVector3& p_Di
 
     std::scoped_lock s_Lock(m_DebugEntitiesMutex);
 
-    for (const auto& [s_EntityRef, s_DebugEntities] : m_EntityRefToDebugEntities) {
-        for (const auto& s_DebugEntity : s_DebugEntities) {
-            if (s_DebugEntity->m_HasGizmo) {
-                continue;
+    ForEachDrawnDebugEntity(false, [&](DebugEntity& p_DebugEntity) {
+        float s_Distance = FLT_MAX;
+        bool s_Hit = false;
+
+        if (p_DebugEntity.m_TypeName == "ZSoundGateEntity") {
+            auto s_SoundGateEntity = p_DebugEntity.m_EntityRef.QueryInterface<ZSoundGateEntity>(
+                m_DebugEntityTypeIds[DebugEntityTypeName::SoundGateEntity]
+            );
+
+            if (!s_SoundGateEntity) {
+                return;
             }
 
-            switch (m_ShapeDrawMode) {
-                case DebugDrawMode::SelectedChannelsAndTypes: {
-                    if (!m_DebugChannelToShapeState[s_DebugEntity->m_DebugChannel] ||
-                        !m_DebugChannelToTypeNameToShapeState
-                        [s_DebugEntity->m_DebugChannel][s_DebugEntity->m_TypeName]) {
-                        continue;
-                    }
-
-                    break;
-                }
-                case DebugDrawMode::SelectedEntity: {
-                    if (s_DebugEntity->m_EntityRef != m_SelectedEntity) {
-                        continue;
-                    }
-
-                    break;
-                }
-                case DebugDrawMode::All:
-                    break;
-            }
-
-            float s_Distance = FLT_MAX;
-            bool s_Hit = false;
-
-            if (s_DebugEntity->m_TypeName == "ZSoundGateEntity") {
-                auto s_SoundGateEntity = s_DebugEntity->m_EntityRef.QueryInterface<ZSoundGateEntity>(
-                    m_DebugEntityTypeIds[DebugEntityTypeName::SoundGateEntity]
-                );
-
-                if (!s_SoundGateEntity) {
-                    continue;
-                }
-
-                s_Hit = RayCastShape(
-                    s_Ray,
-                    s_SoundGateEntity,
-                    s_Distance
-                );
-            }
-            else if (s_DebugEntity->m_TypeName == "ZSequenceEntity") {
-                auto s_SequenceEntity = s_DebugEntity->m_EntityRef.QueryInterface<ZSequenceEntity>(
-                    m_DebugEntityTypeIds[DebugEntityTypeName::SequenceEntity]
-                );
-
-                if (!s_SequenceEntity) {
-                    continue;
-                }
-
-                s_Hit = RayCastShape(
-                    s_Ray,
-                    s_SequenceEntity,
-                    s_Distance
-                );
-            }
-            else if (s_DebugEntity->m_TypeName == "ZCoverPlane") {
-                auto s_CoverPlane = s_DebugEntity->m_EntityRef.QueryInterface<ZCoverPlane>(
-                    m_DebugEntityTypeIds[DebugEntityTypeName::CoverPlane]
-                );
-
-                if (!s_CoverPlane) {
-                    continue;
-                }
-
-                s_Hit = RayCastShape(
-                    s_Ray,
-                    s_CoverPlane,
-                    s_Distance
-                );
-            }
-
-            if (s_Hit && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
-                p_Result.m_Distance = s_Distance;
-                p_Result.m_Entity = s_DebugEntity->m_EntityRef;
-                p_Result.m_TypeName = s_DebugEntity->m_TypeName;
-                p_Result.m_DebugChannel = s_DebugEntity->m_DebugChannel;
-            }
+            s_Hit = RayCastShape(
+                s_Ray,
+                s_SoundGateEntity,
+                s_Distance
+            );
         }
-    }
+        else if (p_DebugEntity.m_TypeName == "ZSequenceEntity") {
+            auto s_SequenceEntity = p_DebugEntity.m_EntityRef.QueryInterface<ZSequenceEntity>(
+                m_DebugEntityTypeIds[DebugEntityTypeName::SequenceEntity]
+            );
+
+            if (!s_SequenceEntity) {
+                return;
+            }
+
+            s_Hit = RayCastShape(
+                s_Ray,
+                s_SequenceEntity,
+                s_Distance
+            );
+        }
+        else if (p_DebugEntity.m_TypeName == "ZCoverPlane") {
+            auto s_CoverPlane = p_DebugEntity.m_EntityRef.QueryInterface<ZCoverPlane>(
+                m_DebugEntityTypeIds[DebugEntityTypeName::CoverPlane]
+            );
+
+            if (!s_CoverPlane) {
+                return;
+            }
+
+            s_Hit = RayCastShape(
+                s_Ray,
+                s_CoverPlane,
+                s_Distance
+            );
+        }
+
+        if (s_Hit && s_Distance < p_Result.m_Distance && s_Distance <= 200.f) {
+            p_Result.m_Distance = s_Distance;
+            p_Result.m_Entity = p_DebugEntity.m_EntityRef;
+            p_Result.m_TypeName = p_DebugEntity.m_TypeName;
+            p_Result.m_DebugChannel = p_DebugEntity.m_DebugChannel;
+        }
+    });
 }
 
 bool Editor::RayCastShape(

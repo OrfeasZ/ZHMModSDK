@@ -101,6 +101,7 @@ namespace Rendering::Renderers {
         bool SetupRenderer(IDXGISwapChain3* p_SwapChain);
         void Draw();
         void DepthDraw();
+        void DrawPendingMeshes();
         void WaitForCurrentFrameToFinish() const;
 
         uint64_t GetTotalDrawCount() const;
@@ -302,6 +303,21 @@ namespace Rendering::Renderers {
         // Whether the previous frame's depth pass actually submitted any geometry.
         bool m_DepthDrewLastFrame = false;
         uint64_t m_MeshDrawCount = 0;
+
+        struct PendingMesh {
+            uint32_t FirstVertexBuffer;
+            uint32_t VertexBufferCount;
+            D3D12_INDEX_BUFFER_VIEW IndexBuffer;
+            uint32_t IndexCount;
+            SMatrix Transform;
+            float4 PositionScale;
+            float4 PositionBias;
+            float4 TextureScaleBias;
+            SVector4 MaterialColor;
+        };
+
+        std::vector<PendingMesh> m_PendingMeshes;
+        std::vector<D3D12_VERTEX_BUFFER_VIEW> m_PendingMeshVertexBuffers;
         uint64_t m_SpriteDrawCount = 0;
 
         // Our own copy of the depth buffer

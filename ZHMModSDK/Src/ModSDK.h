@@ -43,6 +43,13 @@ public:
     static void DestroyInstance();
 
 public:
+    struct ResourceIDData {
+        std::string m_ResourceType;
+        std::string m_Path;
+        std::string m_Hint;
+        uint32_t m_GameFlags = 0;
+    };
+
     ModSDK();
     ~ModSDK();
 
@@ -59,6 +66,8 @@ private:
     static void ShowVersionNotice(const std::string& p_Version);
     void SkipVersionUpdate(const std::string& p_Version);
     bool CheckForUpdates() const;
+
+    void UpdateResourceIDsDownload();
 
 public:
     void OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad);
@@ -283,6 +292,19 @@ public:
     size_t GetResourcePackageCount(uint32_t p_ChunkIndex) override;
     size_t GetMaxResourcePackageCount() override;
 
+    bool GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZString& p_ResourceID) override;
+
+    bool GetResourceIDInfo(const ZRuntimeResourceID& p_RuntimeResourceID, ResourceIDInfo& p_Info) override;
+
+    void EnumerateResourceIDs(
+        const char* p_ResourceType,
+        uint32_t p_GameFlags,
+        ResourceIDCallback p_Callback,
+        void* p_UserData = nullptr
+    ) override;
+
+    bool AreResourceIDsLoaded() override;
+
     // A byte patch of game code, found by pattern and checked against the original bytes before it is applied.
     struct SCodePatch {
         const char* Name;
@@ -342,6 +364,11 @@ private:
     std::unordered_map<uint32_t, size_t> m_ChunkIndexToResourcePackageCount;
     std::vector<SCodePatch> m_WwiseDestructorPatches;
     std::atomic<bool> m_IsResourcePackageLimitRaised = false;
+
+    std::unordered_map<ZRuntimeResourceID, ResourceIDData> m_RuntimeResourceIDToResourceID;
+    std::mutex m_ResourceIDsMutex;
+    std::jthread m_ResourceIDsDownloadThread;
+    std::atomic<bool> m_AreResourceIDsLoaded = false;
 
     std::optional<std::string> m_SmfDeploymentPath;
 

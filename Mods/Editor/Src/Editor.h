@@ -94,6 +94,7 @@ public:
         const std::string& p_EntityType, const std::string& p_Hash
     );
     void RebuildEntityTree();
+    static Quat GetWorldQuat(ZEntityRef p_Entity);
     static QneTransform MatrixToQneTransform(const SMatrix& p_Matrix);
     static int32_t GetEnumValue(const IEnumType* p_Type, const void* p_Data);
     static void SetEnumValue(const IEnumType* p_Type, void* p_Data, int32_t p_Value);
@@ -232,10 +233,17 @@ private:
     };
 
     struct GizmoEntity : DebugEntity {
+        ZSpatialEntity* m_SpatialEntity;
         ZRuntimeResourceID m_RuntimeResourceID;
         ZResourcePtr m_PrimResourcePtr;
         SVector4 m_Color;
         SMatrix m_Transform;
+        bool m_IsTransformIdentity;
+
+        // Local bounds of the prim, set the first time the prim is loaded.
+        bool m_HasBounds = false;
+        float4 m_BoundsCenter;
+        float4 m_BoundsHalfSize;
     };
 
     struct RayCastResult {
@@ -279,11 +287,11 @@ private:
     void ActivateCamera(ZEntityRef* m_CameraEntity);
     void DeactivateCamera();
     void CopyToClipboard(const std::string& p_String) const;
-    void OnMouseDown(SVector2 p_Pos, bool p_FirstClick);
+    void OnMouseDown(SVector2 p_Pos);
     bool RayCastCollision(const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output);
 
     void DrawEntityManipulator(bool p_HasFocus);
-    void DrawEntityAABB(IRenderer* p_Renderer);
+    void DrawEntityAABB(IRenderer* p_Renderer, float p_Alpha);
 
     void DrawEntityPropertiesWindow();
 
@@ -428,13 +436,22 @@ private:
     void UpdateEntities();
     void UpdateEntityTree(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+        std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById,
         const std::vector<ZEntityRef>& p_Entities,
         const bool p_AreEntitiesDynamic
     );
     void AddDynamicEntitiesToEntityTree(
         const std::shared_ptr<EntityTreeNode>& p_SceneNode,
-        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+        std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById
     );
+    static void SetEntityTreeNode(
+        std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap,
+        std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>>& p_NodesById,
+        ZEntityRef p_Entity,
+        const std::shared_ptr<EntityTreeNode>& p_Node
+    );
+    std::shared_ptr<EntityTreeNode> RemoveEntityTreeNode(ZEntityRef p_Entity);
     void ReparentDynamicOutfitEntities(
         std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap
     );
@@ -712,7 +729,12 @@ private:
         const SVector4& p_Color = SVector4(1.f, 1.f, 1.f, 1.f),
         const SMatrix& p_Transform = SMatrix()
     );
+    void StoreDebugEntity(std::unique_ptr<DebugEntity> p_DebugEntity);
     void DeleteDebugEntities(const std::shared_ptr<EntityTreeNode>& p_RootNode);
+
+    template <typename F>
+    void ForEachDrawnDebugEntity(bool p_Gizmos, const F& p_Callback);
+
     EDebugChannel ConvertDrawLayerToDebugChannel(const ZDebugGizmoEntity_EDrawLayer p_DrawLayer);
     static bool EntityIDMatches(void* p_Interface, const uint64 p_EntityID);
 
@@ -859,6 +881,10 @@ private:
     );
 
     static bool GenerateBoxReflectionCacheResource(const std::filesystem::path& p_OutputFolder);
+    void RenderAllBoxReflections();
+    void StartBoxReflectionPass(bool p_HideExistingReflections);
+    void UpdateBoxReflectionPasses();
+    bool IsRenderingBoxReflections() const;
     static size_t CalculateCubemapSize(const DirectX::ScratchImage& p_Image, uint32_t p_CubeIndex);
 
 private:
@@ -871,6 +897,14 @@ private:
     );
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnInputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
     DECLARE_PLUGIN_DETOUR(Editor, bool, OnOutputPin, ZEntityRef entity, uint32_t pinId, const ZObjectRef& data);
+
+    DECLARE_PLUGIN_DETOUR(Editor, void, CLightTile_DispatchShadeDeferred,
+        CLightTile* th, ZRenderContext* pRenderContext, ZRenderDeviceContext* pDeviceContext, void* a4, void* a5,
+        void* a6, void* a7, void* a8, void* a9, void* a10, void* a11, void* a12, void* a13, void* a14, int32_t a15,
+        void* a16, const float4* vClearColor, bool bDisableLighting, bool bMergeDiffuse,
+        int32_t nSelectedBoxReflectionId, bool bDisableBoxReflections, bool bEnableAtmosphericScatteringBackdrop,
+        bool bIsBoxReflectionPass, int32_t a24
+    );
 
     DECLARE_PLUGIN_DETOUR(Editor, ZEntityRef*, ZEntityManager_NewUninitializedEntity,
         ZEntityManager* th,
@@ -1096,6 +1130,7 @@ private:
 
     std::shared_mutex m_CachedEntityTreeMutex;
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeMap;
+    std::unordered_multimap<uint64_t, std::shared_ptr<EntityTreeNode>> m_CachedEntityTreeNodesById;
     std::shared_ptr<EntityTreeNode> m_CachedEntityTree;
     std::unordered_set<EntityTreeNode*> m_OpenEntityTreeNodes;
     std::vector<EntityTreeRow> m_EntityTreeRows;
@@ -1160,6 +1195,11 @@ private:
     ZHM5Action* m_SelectedAction = nullptr;
 
     std::unordered_map<ZEntityRef, std::vector<std::unique_ptr<DebugEntity>>> m_EntityRefToDebugEntities;
+
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, std::vector<DebugEntity*>>>
+        m_DebugChannelToTypeNameToGizmoEntities;
+    std::unordered_map<EDebugChannel, std::unordered_map<std::string, std::vector<DebugEntity*>>>
+        m_DebugChannelToTypeNameToShapeEntities;
     std::shared_mutex m_DebugEntitiesMutex;
     std::vector<std::pair<std::string, EDebugChannel>> m_DebugChannels;
     std::unordered_map<std::string, std::vector<std::string>> m_DebugChannelNameToTypeNames;
@@ -1303,6 +1343,10 @@ private:
     BoxReflectionPreview m_BoxReflectionPreview;
 
     bool m_EnableBoxReflectionCache = true;
+    int m_BoxReflectionBounces = 1;
+    int m_RemainingBoxReflectionPasses = 0;
+    bool m_BoxReflectionPassRequested = false;
+    std::atomic<bool> m_HideBoxReflectionsInBoxReflectionPass = false;
 
     std::string m_BoxReflectionOutputFolder;
 };
