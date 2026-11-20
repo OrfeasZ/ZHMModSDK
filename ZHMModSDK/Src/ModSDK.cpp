@@ -1828,6 +1828,65 @@ bool ModSDK::GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZStrin
     return true;
 }
 
+bool ModSDK::GetResourceIDInfo(const ZRuntimeResourceID& p_RuntimeResourceID, ResourceIDInfo& p_Info) {
+    std::lock_guard s_Lock(m_ResourceIDsMutex);
+    const auto s_It = m_RuntimeResourceIDToResourceID.find(p_RuntimeResourceID);
+
+    if (s_It == m_RuntimeResourceIDToResourceID.end()) {
+        return false;
+    }
+
+    const auto& s_Info = s_It->second;
+
+    p_Info = {
+        s_Info.m_ResourceType.c_str(),
+        s_Info.m_Path.c_str(),
+        s_Info.m_Hint.c_str(),
+        s_Info.m_GameFlags
+    };
+
+    return true;
+}
+
+void ModSDK::EnumerateResourceIDs(
+    const char* p_ResourceType,
+    uint32_t p_GameFlags,
+    ResourceIDCallback p_Callback,
+    void* p_UserData
+) {
+    if (!p_Callback) {
+        return;
+    }
+
+    std::lock_guard s_Lock(m_ResourceIDsMutex);
+
+    for (const auto& [s_Hash, s_Info] : m_RuntimeResourceIDToResourceID) {
+        if (p_ResourceType && *p_ResourceType &&
+            s_Info.m_ResourceType != p_ResourceType) {
+            continue;
+        }
+
+        if (p_GameFlags && (s_Info.m_GameFlags & p_GameFlags) != p_GameFlags) {
+            continue;
+        }
+
+        const ResourceIDInfo s_PublicInfo{
+            s_Info.m_ResourceType.c_str(),
+            s_Info.m_Path.c_str(),
+            s_Info.m_Hint.c_str(),
+            s_Info.m_GameFlags
+        };
+
+        if (!p_Callback(s_Hash, s_PublicInfo, p_UserData)) {
+            break;
+        }
+    }
+}
+
+bool ModSDK::AreResourceIDsLoaded() {
+    return m_AreResourceIDsLoaded.load(std::memory_order_acquire);
+}
+
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {
     auto s_Result = p_Hook->CallOriginal(th, a2);
 
@@ -2326,7 +2385,7 @@ void ModSDK::UpdateResourceIDsDownload() {
                 std::lock_guard s_Lock(m_ResourceIDsMutex);
                 m_RuntimeResourceIDToResourceID = std::move(p_Parsed.m_ResourceIDs);
                 m_AreResourceIDsLoaded.store(true, std::memory_order_release);
-                };
+            };
 
             // Try the cached database first when an update
             // is not known to be necessary.

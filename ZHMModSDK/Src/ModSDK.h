@@ -294,6 +294,17 @@ public:
 
     bool GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZString& p_ResourceID) override;
 
+    bool GetResourceIDInfo(const ZRuntimeResourceID& p_RuntimeResourceID, ResourceIDInfo& p_Info) override;
+
+    void EnumerateResourceIDs(
+        const char* p_ResourceType,
+        uint32_t p_GameFlags,
+        ResourceIDCallback p_Callback,
+        void* p_UserData = nullptr
+    ) override;
+
+    bool AreResourceIDsLoaded() override;
+
     // A byte patch of game code, found by pattern and checked against the original bytes before it is applied.
     struct SCodePatch {
         const char* Name;
@@ -357,6 +368,7 @@ private:
     std::unordered_map<ZRuntimeResourceID, ResourceIDData> m_RuntimeResourceIDToResourceID;
     std::mutex m_ResourceIDsMutex;
     std::jthread m_ResourceIDsDownloadThread;
+    std::atomic<bool> m_AreResourceIDsLoaded = false;
 
     std::optional<std::string> m_SmfDeploymentPath;
 

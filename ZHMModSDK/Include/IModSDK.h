@@ -26,6 +26,19 @@ class ZHitman5;
 
 struct ImGuiTexture;
 
+struct ResourceIDInfo {
+    const char* m_ResourceType = nullptr;
+    const char* m_Path = nullptr;
+    const char* m_Hint = nullptr;
+    uint32_t m_GameFlags = 0;
+};
+
+using ResourceIDCallback = bool(*)(
+    const ZRuntimeResourceID& p_RuntimeResourceID,
+    const ResourceIDInfo& p_Info,
+    void* p_UserData
+);
+
 class IModSDK {
 public:
     /**
@@ -418,6 +431,34 @@ public:
      * @return True if the resource ID was found, false otherwise.
      */
     virtual bool GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZString& p_ResourceID) = 0;
+
+    /**
+     * Try to get information associated with a runtime resource ID.
+     * @param p_RuntimeResourceID The runtime resource ID to look up.
+     * @param p_Info The output resource ID information.
+     * @return True if the resource ID was found, false otherwise.
+     */
+    virtual bool GetResourceIDInfo(const ZRuntimeResourceID& p_RuntimeResourceID, ResourceIDInfo& p_Info) = 0;
+
+    /**
+     * Enumerate resource IDs matching the specified filters.
+     * @param p_ResourceType The resource type to filter by, or nullptr for all types.
+     * @param p_GameFlags The game flags that must be set, or 0 for all flags.
+     * @param p_Callback The callback invoked for each matching resource ID.
+     * @param p_UserData User-defined data passed to the callback.
+     */
+    virtual void EnumerateResourceIDs(
+        const char* p_ResourceType,
+        uint32_t p_GameFlags,
+        ResourceIDCallback p_Callback,
+        void* p_UserData = nullptr
+    ) = 0;
+
+    /**
+     * Check whether the resource ID database has finished loading successfully.
+     * @return True if the resource IDs are available, false otherwise.
+     */
+    virtual bool AreResourceIDsLoaded() = 0;
 };
 
 /**
