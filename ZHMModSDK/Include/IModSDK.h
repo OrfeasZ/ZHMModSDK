@@ -26,6 +26,9 @@ class ZHitman5;
 
 struct ImGuiTexture;
 
+/**
+ * Resource ID metadata containing non-owning string pointers.
+ */
 struct ResourceIDInfo {
     const char* m_ResourceType = nullptr;
     const char* m_Path = nullptr;
@@ -436,6 +439,7 @@ public:
      * Try to get information associated with a runtime resource ID.
      * @param p_RuntimeResourceID The runtime resource ID to look up.
      * @param p_Info The output resource ID information.
+     *               String pointers remain valid until SDK shutdown.
      * @return True if the resource ID was found, false otherwise.
      */
     virtual bool GetResourceIDInfo(const ZRuntimeResourceID& p_RuntimeResourceID, ResourceIDInfo& p_Info) = 0;
@@ -445,6 +449,8 @@ public:
      * @param p_ResourceType The resource type to filter by, or nullptr for all types.
      * @param p_GameFlags The game flags that must be set, or 0 for all flags.
      * @param p_Callback The callback invoked for each matching resource ID.
+     *                   Return true to continue enumeration, or false to stop.
+     *                   String pointers in ResourceIDInfo are valid only during the callback.
      * @param p_UserData User-defined data passed to the callback.
      */
     virtual void EnumerateResourceIDs(
