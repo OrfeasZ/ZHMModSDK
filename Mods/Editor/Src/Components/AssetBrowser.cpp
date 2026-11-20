@@ -1,6 +1,5 @@
 #include "AssetBrowser.h"
 
-#include <simdjson.h>
 #include <algorithm>
 #include <cmath>
 #include <map>
@@ -13,7 +12,6 @@
 #include "SpawnSafety.h"
 #include "Logging.h"
 #include "IconsMaterialDesign.h"
-#include "Util/HttpUtils.h"
 #include "Util/StringUtils.h"
 #include "Widgets.h"
 
@@ -489,36 +487,30 @@ static void SortAssetChildren(AssetItem& p_Item) {
     }
 }
 
-static std::shared_ptr<AssetItem> ParseHashesJson(const std::string& p_HashesJson) {
-    // ResId -> Path mapping
-    // Example: 006D2D1E3D8C6598 -> [assembly:/_pro/_licensed/quixel/geometry/foliage/quixel_nasturtium_rijwe_a.wl2?/quixel_nasturtium_rijwe_a.prim].pc_entitytype
-    std::vector<std::tuple<ZRuntimeResourceID, std::string>> s_Files;
+static std::shared_ptr<AssetItem> BuildAssetTree() {
+    std::vector<std::pair<ZRuntimeResourceID, std::string>> s_Files;
 
-    try {
-        simdjson::ondemand::parser s_Parser;
-        simdjson::padded_string s_Json(p_HashesJson);
-        simdjson::ondemand::document s_Doc = s_Parser.iterate(s_Json);
+    SDK()->EnumerateResourceIDs(
+        "TEMP",
+        1u << 3, // If bit 3 is not set, it means this file is not in HM3, so we skip it.
+        [](const ZRuntimeResourceID& p_Hash,
+            const ResourceIDInfo& p_Info,
+            void* p_UserData) -> bool {
+                auto& s_Files = *static_cast<
+                    std::vector<std::pair<ZRuntimeResourceID, std::string>>*
+                >(p_UserData);
 
-        for (auto s_File : s_Doc.get_array()) {
-            std::string_view s_HashStr = s_File["hash"];
-            std::string_view s_PathStr = s_File["path"];
-            int64_t s_GameFlags = s_File["gameFlags"];
+                if (p_Info.m_Path && !FindUnspawnablePath(p_Info.m_Path)) {
+                    s_Files.emplace_back(p_Hash, p_Info.m_Path);
+                }
 
-            // If bit 3 is not set, it means this file is not in HM3, so we skip it.
-            if ((s_GameFlags & (1 << 3)) == 0) {
-                continue;
-            }
+                return true;
+        },
+        &s_Files
+    );
 
-            if (FindUnspawnablePath(s_PathStr)) {
-                continue;
-            }
-
-            s_Files.emplace_back(ZRuntimeResourceID::FromString(std::string(s_HashStr)), s_PathStr);
-        }
-    }
-    catch (const std::exception& e) {
-        // Log error but don't crash
-        Logger::Error("[Editor] Failed to parse hashes JSON: {}", e.what());
+    if (s_Files.empty()) {
+        return nullptr;
     }
 
     // Create a tree using BFS.
@@ -776,26 +768,24 @@ bool AssetBrowser::IsItemShown(const AssetItem& p_Item) const {
     return IsPrimAsset(p_Item) ? m_ShowPrims : m_ShowTemplates;
 }
 
-void AssetBrowser::UpdateDownload() {
-    if (m_Root) {
+void AssetBrowser::UpdateAssetTree() {
+    if (m_Root || !SDK()->AreResourceIDsLoaded()) {
         return;
     }
 
-    if (!m_Download.valid()) {
-        m_Download = std::async(
-            std::launch::async, [] {
-                const std::string s_Json = Util::HttpUtils::DownloadFromUrl(
-                    "https://raw.githubusercontent.com/glacier-modding/Hitman-Hashes/refs/heads/main/paths/TEMP.json"
-                );
-
-                return s_Json.empty() ? std::make_shared<AssetItem>() : ParseHashesJson(s_Json);
-            }
-        );
+    if (!m_BuildFuture.valid()) {
+        m_BuildFuture = std::async(std::launch::async, [] {
+            return BuildAssetTree();
+        });
     }
 
-    if (m_Download.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-        m_Root = m_Download.get();
-        Logger::Debug("[Editor] Hashlist download complete! Loaded {} items.", m_Root->Children.size());
+    if (m_BuildFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        m_Root = m_BuildFuture.get();
+
+        Logger::Debug(
+            "[Editor] Asset tree built successfully! Loaded {} root items.",
+            m_Root->Children.size()
+        );
     }
 }
 
@@ -900,7 +890,7 @@ void AssetBrowser::UpdateTileRows(const int p_Columns, const float p_HeaderHeigh
 }
 
 void AssetBrowser::Draw(const char* p_WindowName) {
-    UpdateDownload();
+    UpdateAssetTree();
 
     m_NextPath.reset();
     m_IsGoingBack = false;
