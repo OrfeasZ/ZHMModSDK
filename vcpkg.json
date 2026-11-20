@@ -37,7 +37,9 @@
                 "dx12"
             ]
         },
-        "nlohmann-json"
+        "nlohmann-json",
+        "zstd",
+        "msgpack"
     ],
     "vcpkg-configuration": {
         "overlay-ports": [

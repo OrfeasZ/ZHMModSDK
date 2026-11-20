@@ -1,5 +1,8 @@
 #include "ModSDK.h"
 
+#include <msgpack.hpp>
+#include <zstd.h>
+
 #include "Functions.h"
 #include "ModLoader.h"
 #include "Globals.h"
@@ -12,6 +15,7 @@
 #include "PinRegistry.h"
 #include "Util/ProcessUtils.h"
 #include "Util/StringUtils.h"
+#include "Util/HttpUtils.h"
 
 #include "Rendering/Renderers/DirectXTKRenderer.h"
 #include "Rendering/Renderers/ImGuiRenderer.h"
@@ -876,6 +880,8 @@ bool ModSDK::Startup() {
     }
 
     ResolveSmfDeploymentPath();
+
+    UpdateResourceIDsDownload();
 
     m_ModLoader->Startup();
 
@@ -1809,6 +1815,78 @@ void ModSDK::AllocateZString(ZString* p_Target, const char* p_Str, uint32_t p_Si
     }
 }
 
+bool ModSDK::GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZString& p_ResourceID) {
+    std::lock_guard s_Lock(m_ResourceIDsMutex);
+    const auto s_It = m_RuntimeResourceIDToResourceID.find(p_RuntimeResourceID);
+
+    if (s_It == m_RuntimeResourceIDToResourceID.end()) {
+        return false;
+    }
+
+    p_ResourceID = s_It->second.m_Path;
+
+    return true;
+}
+
+bool ModSDK::GetResourceIDInfo(const ZRuntimeResourceID& p_RuntimeResourceID, ResourceIDInfo& p_Info) {
+    std::lock_guard s_Lock(m_ResourceIDsMutex);
+    const auto s_It = m_RuntimeResourceIDToResourceID.find(p_RuntimeResourceID);
+
+    if (s_It == m_RuntimeResourceIDToResourceID.end()) {
+        return false;
+    }
+
+    const auto& s_Info = s_It->second;
+
+    p_Info = {
+        s_Info.m_ResourceType.c_str(),
+        s_Info.m_Path.c_str(),
+        s_Info.m_Hint.c_str(),
+        s_Info.m_GameFlags
+    };
+
+    return true;
+}
+
+void ModSDK::EnumerateResourceIDs(
+    const char* p_ResourceType,
+    uint32_t p_GameFlags,
+    ResourceIDCallback p_Callback,
+    void* p_UserData
+) {
+    if (!p_Callback) {
+        return;
+    }
+
+    std::lock_guard s_Lock(m_ResourceIDsMutex);
+
+    for (const auto& [s_Hash, s_Info] : m_RuntimeResourceIDToResourceID) {
+        if (p_ResourceType && *p_ResourceType &&
+            s_Info.m_ResourceType != p_ResourceType) {
+            continue;
+        }
+
+        if (p_GameFlags && (s_Info.m_GameFlags & p_GameFlags) != p_GameFlags) {
+            continue;
+        }
+
+        const ResourceIDInfo s_PublicInfo{
+            s_Info.m_ResourceType.c_str(),
+            s_Info.m_Path.c_str(),
+            s_Info.m_Hint.c_str(),
+            s_Info.m_GameFlags
+        };
+
+        if (!p_Callback(s_Hash, s_PublicInfo, p_UserData)) {
+            break;
+        }
+    }
+}
+
+bool ModSDK::AreResourceIDsLoaded() {
+    return m_AreResourceIDsLoaded.load(std::memory_order_acquire);
+}
+
 DEFINE_DETOUR_WITH_CONTEXT(ModSDK, bool, Engine_Init, void* th, void* a2) {
     auto s_Result = p_Hook->CallOriginal(th, a2);
 
@@ -1927,6 +2005,506 @@ void ModSDK::ImDrawCallback_SetGameDescriptorHeap(const ImDrawList*, const ImDra
 
 void ModSDK::ImDrawCallback_ResetDescriptorHeap(const ImDrawList*, const ImDrawCmd*) {
     GetInstance()->GetImguiRenderer()->ResetDescriptorHeap();
+}
+
+namespace {
+    using ResourceIDMap = std::unordered_map<ZRuntimeResourceID, ModSDK::ResourceIDData>;
+
+    struct ParsedResourceIDs {
+        std::string m_Version;
+        ResourceIDMap m_ResourceIDs;
+    };
+
+    class ResourceIDVisitor : public msgpack::null_visitor {
+    public:
+        ParsedResourceIDs TakeResult() {
+            return std::move(m_Result);
+        }
+
+        bool start_map(uint32_t p_Size) {
+            if (m_Depth == 0) {
+                // Root object.
+            }
+            else if (m_Depth == 1) {
+                if (m_CurrentField != "hashes") {
+                    return false;
+                }
+
+                m_HasHashes = true;
+                m_Result.m_ResourceIDs.reserve(p_Size);
+            }
+            else if (m_Depth == 2) {
+                m_CurrentInfo = {};
+                m_HasResourceType = false;
+                m_HasPath = false;
+                m_HasHint = false;
+                m_HasGameFlags = false;
+            }
+            else {
+                return false;
+            }
+
+            ++m_Depth;
+            return true;
+        }
+
+        bool end_map() {
+            if (m_Depth == 0) {
+                return false;
+            }
+
+            if (m_Depth == 3 && m_HasHash &&
+                m_HasResourceType && m_HasPath &&
+                m_HasHint && m_HasGameFlags) {
+                m_Result.m_ResourceIDs.emplace(ZRuntimeResourceID(m_CurrentHash), std::move(m_CurrentInfo));
+            }
+
+            --m_Depth;
+            return true;
+        }
+
+        bool start_map_key() {
+            m_IsReadingKey = true;
+            return true;
+        }
+
+        bool end_map_key() {
+            m_IsReadingKey = false;
+            return true;
+        }
+
+        bool visit_str(const char* p_Value, uint32_t p_Size) {
+            const std::string_view s_Value(p_Value, p_Size);
+
+            if (m_IsReadingKey) {
+                if (m_Depth == 1) {
+                    m_CurrentField = s_Value;
+                }
+                else if (m_Depth == 2) {
+                    m_HasHash = ParseHash(s_Value, m_CurrentHash);
+                }
+                else if (m_Depth == 3) {
+                    m_CurrentField = s_Value;
+                }
+
+                return true;
+            }
+
+            if (m_Depth != 3) {
+                return false;
+            }
+
+            if (m_CurrentField == "resourceType") {
+                m_CurrentInfo.m_ResourceType.assign(s_Value);
+                m_HasResourceType = true;
+            }
+            else if (m_CurrentField == "path") {
+                m_CurrentInfo.m_Path.assign(s_Value);
+                m_HasPath = true;
+            }
+            else if (m_CurrentField == "hint") {
+                m_CurrentInfo.m_Hint.assign(s_Value);
+                m_HasHint = true;
+            }
+
+            return true;
+        }
+
+        bool visit_positive_integer(uint64_t p_Value) {
+            if (m_Depth == 1 && !m_IsReadingKey && m_CurrentField == "version") {
+                m_Result.m_Version = std::to_string(p_Value);
+                m_HasVersion = true;
+                return true;
+            }
+
+            if (m_Depth == 3 && !m_IsReadingKey && m_CurrentField == "gameFlags") {
+                if (p_Value > UINT32_MAX) {
+                    return false;
+                }
+
+                m_CurrentInfo.m_GameFlags = static_cast<uint32_t>(p_Value);
+                m_HasGameFlags = true;
+            }
+
+            return true;
+        }
+
+        bool visit_negative_integer(int64_t) {
+            if (m_Depth == 3 && !m_IsReadingKey && m_CurrentField == "gameFlags") {
+                return false;
+            }
+
+            return true;
+        }
+
+        bool start_array(uint32_t) {
+            return false;
+        }
+
+        bool IsValid() const {
+            return m_Depth == 0 &&
+                m_HasVersion &&
+                m_HasHashes &&
+                !m_Result.m_Version.empty() &&
+                !m_Result.m_ResourceIDs.empty();
+        }
+
+    private:
+        static bool ParseHash(std::string_view p_Hash, uint64_t& p_Result) {
+            if (p_Hash.size() != 16) {
+                return false;
+            }
+
+            const auto s_Result = std::from_chars(
+                p_Hash.data(),
+                p_Hash.data() + p_Hash.size(),
+                p_Result,
+                16
+            );
+
+            return s_Result.ec == std::errc{} && s_Result.ptr == p_Hash.data() + p_Hash.size();
+        }
+
+    private:
+        ParsedResourceIDs m_Result;
+        ModSDK::ResourceIDData m_CurrentInfo;
+
+        std::string_view m_CurrentField;
+
+        uint64_t m_CurrentHash = 0;
+        uint32_t m_Depth = 0;
+
+        bool m_IsReadingKey = false;
+        bool m_HasHash = false;
+        bool m_HasVersion = false;
+        bool m_HasHashes = false;
+        bool m_HasResourceType = false;
+        bool m_HasPath = false;
+        bool m_HasHint = false;
+        bool m_HasGameFlags = false;
+    };
+
+    ParsedResourceIDs ParseResourceIDs(std::string_view p_Data) {
+        ResourceIDVisitor s_Visitor;
+        size_t s_Offset = 0;
+
+        const bool s_Success = msgpack::parse(
+            p_Data.data(),
+            p_Data.size(),
+            s_Offset,
+            s_Visitor
+        );
+
+        if (!s_Success ||
+            s_Offset != p_Data.size() ||
+            !s_Visitor.IsValid()) {
+            throw std::runtime_error("Invalid MessagePack resource database.");
+        }
+
+        return s_Visitor.TakeResult();
+    }
+
+    std::string DecompressResourceIDs(std::string_view p_CompressedData) {
+        const auto s_Size = ZSTD_getFrameContentSize(p_CompressedData.data(), p_CompressedData.size());
+
+        if (s_Size == ZSTD_CONTENTSIZE_ERROR ||
+            s_Size == ZSTD_CONTENTSIZE_UNKNOWN ||
+            s_Size > std::numeric_limits<size_t>::max()) {
+            throw std::runtime_error("Invalid Zstd resource database size.");
+        }
+
+        std::string s_Result(static_cast<size_t>(s_Size), '\0');
+
+        const size_t s_DecompressedSize = ZSTD_decompress(
+            s_Result.data(),
+            s_Result.size(),
+            p_CompressedData.data(),
+            p_CompressedData.size()
+        );
+
+        if (ZSTD_isError(s_DecompressedSize)) {
+            throw std::runtime_error(ZSTD_getErrorName(s_DecompressedSize));
+        }
+
+        s_Result.resize(s_DecompressedSize);
+        return s_Result;
+    }
+
+    std::string ReadFile(const std::filesystem::path& p_Path) {
+        std::ifstream s_File(p_Path, std::ios::binary | std::ios::ate);
+
+        if (!s_File) {
+            throw std::runtime_error("Failed to open file.");
+        }
+
+        const std::streampos s_Size = s_File.tellg();
+
+        if (s_Size < 0) {
+            throw std::runtime_error("Failed to determine file size.");
+        }
+
+        if (static_cast<uintmax_t>(s_Size) >
+            static_cast<uintmax_t>(std::numeric_limits<std::streamsize>::max())) {
+            throw std::runtime_error("File is too large.");
+        }
+
+        std::string s_Data(static_cast<size_t>(s_Size), '\0');
+
+        s_File.seekg(0, std::ios::beg);
+
+        if (!s_File) {
+            throw std::runtime_error("Failed to seek to beginning of file.");
+        }
+
+        if (!s_Data.empty()) {
+            s_File.read(
+                s_Data.data(),
+                static_cast<std::streamsize>(s_Data.size())
+            );
+
+            if (!s_File) {
+                throw std::runtime_error("Failed to read file.");
+            }
+        }
+
+        return s_Data;
+    }
+
+    void WriteFileAtomic(const std::filesystem::path& p_Path, std::string_view p_Data) {
+        if (!p_Path.parent_path().empty()) {
+            std::filesystem::create_directories(p_Path.parent_path());
+        }
+
+        const auto s_TempPath = std::filesystem::path(p_Path.wstring() + L".tmp");
+
+        {
+            std::ofstream s_File(s_TempPath, std::ios::binary | std::ios::trunc);
+
+            if (!s_File) {
+                throw std::runtime_error("Failed to create temporary cache file.");
+            }
+
+            s_File.write(p_Data.data(), p_Data.size());
+            s_File.flush();
+
+            if (!s_File) {
+                throw std::runtime_error("Failed to write temporary cache file.");
+            }
+        }
+
+        if (!MoveFileExW(
+            s_TempPath.c_str(),
+            p_Path.c_str(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+        )) {
+            const DWORD s_Error = GetLastError();
+
+            std::error_code s_Ec;
+            std::filesystem::remove(s_TempPath, s_Ec);
+
+            throw std::system_error(
+                static_cast<int32_t>(s_Error),
+                std::system_category(),
+                "Failed to replace cache file"
+            );
+        }
+    }
+
+    void TrimVersion(std::string& p_Version) {
+        const auto s_Last = p_Version.find_last_not_of(" \t\r\n");
+
+        if (s_Last == std::string::npos) {
+            p_Version.clear();
+        }
+        else {
+            p_Version.erase(s_Last + 1);
+        }
+    }
+
+    ParsedResourceIDs LoadResourceIDs(std::string_view p_CompressedData) {
+        const std::string s_DecompressedData = DecompressResourceIDs(p_CompressedData);
+
+        return ParseResourceIDs(s_DecompressedData);
+    }
+}
+
+void ModSDK::UpdateResourceIDsDownload() {
+    constexpr const char* s_VersionUrl =
+        "https://github.com/glacier-modding/Hitman-Hashes/releases/latest/download/version";
+
+    constexpr const char* s_DatabaseUrl =
+        "https://github.com/glacier-modding/Hitman-Hashes/releases/latest/download/hash_list.msgpack";
+
+    const auto s_ExecutableDirectory = Util::ProcessUtils::GetExecutableDirectory();
+
+    if (!s_ExecutableDirectory) {
+        Logger::Error("Failed to get executable directory.");
+        return;
+    }
+
+    const auto s_DatabasePath = *s_ExecutableDirectory / "hash_list.msgpack";
+    const auto s_VersionPath = *s_ExecutableDirectory / "hash_list.version";
+
+    m_ResourceIDsDownloadThread = std::jthread(
+        [this, s_DatabasePath, s_VersionPath](std::stop_token p_StopToken) {
+            if (p_StopToken.stop_requested()) {
+                return;
+            }
+
+            const bool s_HasCachedDatabase = std::filesystem::exists(s_DatabasePath);
+
+            std::string s_CachedVersion;
+            std::string s_LatestVersion;
+
+            try {
+                if (std::filesystem::exists(s_VersionPath)) {
+                    s_CachedVersion = ReadFile(s_VersionPath);
+                    TrimVersion(s_CachedVersion);
+                }
+            }
+            catch (const std::exception& s_Exception) {
+                Logger::Error("Failed to read cached resource database version: {}", s_Exception.what());
+            }
+
+            try {
+                s_LatestVersion = Util::HttpUtils::DownloadFromUrl(s_VersionUrl);
+
+                TrimVersion(s_LatestVersion);
+            }
+            catch (const std::exception& s_Exception) {
+                Logger::Error("Failed to check resource database version: {}", s_Exception.what());
+            }
+
+            const bool s_ShouldDownload =
+                !s_HasCachedDatabase ||
+                (!s_LatestVersion.empty() &&
+                    !s_CachedVersion.empty() &&
+                    s_CachedVersion != s_LatestVersion);
+
+            auto s_InstallResourceIDs = [this](ParsedResourceIDs&& p_Parsed) {
+                std::lock_guard s_Lock(m_ResourceIDsMutex);
+                m_RuntimeResourceIDToResourceID = std::move(p_Parsed.m_ResourceIDs);
+                m_AreResourceIDsLoaded.store(true, std::memory_order_release);
+            };
+
+            // Try the cached database first when an update
+            // is not known to be necessary.
+            if (!s_ShouldDownload && s_HasCachedDatabase) {
+                try {
+                    const std::string s_CachedData = ReadFile(s_DatabasePath);
+                    auto s_Parsed = LoadResourceIDs(s_CachedData);
+
+                    if (!s_CachedVersion.empty() &&
+                        s_Parsed.m_Version != s_CachedVersion) {
+                        throw std::runtime_error(
+                            "Cached resource database version mismatch."
+                        );
+                    }
+
+                    if (!s_LatestVersion.empty() &&
+                        s_Parsed.m_Version != s_LatestVersion) {
+                        throw std::runtime_error(
+                            "Cached resource database is outdated."
+                        );
+                    }
+
+                    // Recreate the local version file if missing.
+                    if (s_CachedVersion.empty()) {
+                        try {
+                            WriteFileAtomic(s_VersionPath, s_Parsed.m_Version);
+                        }
+                        catch (const std::exception& s_Exception) {
+                            Logger::Error("Failed to restore resource database version: {}", s_Exception.what());
+                        }
+                    }
+
+                    s_InstallResourceIDs(std::move(s_Parsed));
+                    return;
+                }
+                catch (const std::exception& s_Exception) {
+                    Logger::Error("Failed to load cached resource database: {}", s_Exception.what());
+                }
+            }
+
+            // Download a fresh database when the version changed,
+            // the cache is missing, or the cache is invalid.
+            constexpr int32_t s_MaxAttempts = 5;
+
+            for (int32_t s_Attempt = 1; s_Attempt <= s_MaxAttempts && !p_StopToken.stop_requested(); ++s_Attempt) {
+                try {
+                    const std::string s_DownloadedData = Util::HttpUtils::DownloadFromUrl(s_DatabaseUrl);
+
+                    if (s_DownloadedData.empty()) {
+                        throw std::runtime_error("Downloaded resource database is empty.");
+                    }
+
+                    auto s_Parsed = LoadResourceIDs(s_DownloadedData);
+
+                    if (!s_LatestVersion.empty() && s_Parsed.m_Version != s_LatestVersion) {
+                        throw std::runtime_error("Downloaded resource database version mismatch.");
+                    }
+
+                    if (p_StopToken.stop_requested()) {
+                        return;
+                    }
+
+                    const std::string s_DatabaseVersion = s_Parsed.m_Version;
+
+                    // Install validated data even if cache writing fails.
+                    s_InstallResourceIDs(std::move(s_Parsed));
+
+                    try {
+                        // Database must be saved before its version.
+                        WriteFileAtomic(s_DatabasePath, s_DownloadedData);
+
+                        WriteFileAtomic(s_VersionPath, s_DatabaseVersion);
+                    }
+                    catch (const std::exception& s_Exception) {
+                        Logger::Error("Failed to update resource database cache: {}", s_Exception.what());
+                    }
+
+                    return;
+                }
+                catch (const std::exception& s_Exception) {
+                    Logger::Error(
+                        "Resource database download attempt {}/{} failed: {}",
+                        s_Attempt,
+                        s_MaxAttempts,
+                        s_Exception.what()
+                    );
+                }
+
+                if (s_Attempt < s_MaxAttempts) {
+                    // Stop-aware 30-second retry delay.
+                    for (int32_t i = 0; i < 300 && !p_StopToken.stop_requested(); ++i) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    }
+                }
+            }
+
+            if (p_StopToken.stop_requested()) {
+                return;
+            }
+
+            // Final fallback: load the old cached database.
+            // Do not modify either cache file.
+            if (s_HasCachedDatabase) {
+                try {
+                    const std::string s_CachedData = ReadFile(s_DatabasePath);
+                    auto s_Parsed = LoadResourceIDs(s_CachedData);
+
+                    if (!s_CachedVersion.empty() && s_Parsed.m_Version != s_CachedVersion) {
+                        throw std::runtime_error("Cached resource database version mismatch.");
+                    }
+
+                    s_InstallResourceIDs(std::move(s_Parsed));
+                }
+                catch (const std::exception& s_Exception) {
+                    Logger::Error("Failed to load fallback resource database: {}", s_Exception.what());
+                }
+            }
+        }
+    );
 }
 
 DEFINE_DETOUR_WITH_CONTEXT(

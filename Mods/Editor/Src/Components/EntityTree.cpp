@@ -922,6 +922,25 @@ bool Editor::RenderEntityRow(const EntityTreeRow& p_Row, bool& p_OpenStateChange
     const auto [s_DisplayName, s_DisplayId, s_DynamicMarker] = SplitEntityTreeNodeName(s_EntityName);
     const std::string_view s_Marker = s_IsSpawnedEntity ? " +" : s_DynamicMarker;
 
+    std::string s_Label(s_DisplayName);
+
+    if (s_DisplayName == "Scene") {
+        ZString s_ResourceID;
+
+        if (SDK()->GetResourceID(s_Node->EntityId, s_ResourceID)) {
+            const std::string_view s_Path = s_ResourceID.c_str();
+            const size_t s_Start = s_Path.find_last_of("/\\");
+            const size_t s_End = s_Path.find(']', s_Start == std::string_view::npos ? 0 : s_Start);
+
+            s_Label += " - ";
+            s_Label += s_Path.substr(
+                s_Start == std::string_view::npos ? 0 : s_Start + 1,
+                s_End == std::string_view::npos ?
+                std::string_view::npos : s_End - (s_Start == std::string_view::npos ? 0 : s_Start + 1)
+            );
+        }
+    }
+
     ImGui::TableNextRow(ImGuiTableRowFlags_None, ScaledSize(17.f));
     ImGui::TableSetColumnIndex(0);
 
@@ -933,15 +952,15 @@ bool Editor::RenderEntityRow(const EntityTreeRow& p_Row, bool& p_OpenStateChange
         "##EntityTreeNode",
         s_Flags | ImGuiTreeNodeFlags_SpanAllColumns,
         "%.*s%.*s",
-        static_cast<int>(s_DisplayName.size()),
-        s_DisplayName.data(),
+        static_cast<int>(s_Label.size()),
+        s_Label.data(),
         static_cast<int>(s_Marker.size()),
         s_Marker.data()
     );
 
     if (ImGui::IsItemVisible()) {
         const float s_NameWidth =
-            ImGui::CalcTextSize(s_DisplayName.data(), s_DisplayName.data() + s_DisplayName.size()).x +
+            ImGui::CalcTextSize(s_Label.data(), s_Label.data() + s_Label.size()).x +
             ImGui::CalcTextSize(s_Marker.data(), s_Marker.data() + s_Marker.size()).x;
 
         m_EntityTreeNameWidth = std::max(
