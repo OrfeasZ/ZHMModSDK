@@ -5,6 +5,7 @@
 #include <queue>
 #include <numbers>
 #include <ranges>
+#include <functional>
 
 #include "Editor.h"
 #include "JsonHelpers.h"
@@ -1224,7 +1225,7 @@ namespace {
         ZEntityRef p_Crowd,
         std::string_view p_Key,
         std::string_view p_PropertyName,
-        void (*p_WriteEntity)(std::ostream&, ZEntityRef)
+        const std::function<void(std::ostream&, ZEntityRef)>& p_WriteEntity
     ) {
         p_Stream << "," << write_json(p_Key) << ":[";
         bool s_First = true;
@@ -1328,6 +1329,22 @@ void EditorServer::WriteCrowdTeleport(std::ostream& p_Stream, ZEntityRef p_Telep
             p_Stream << write_json(TeleportActionName(p_Action));
         }
     );
+    p_Stream << "}";
+}
+
+void EditorServer::WriteCrowdGroupBox(
+    std::ostream& p_Stream, ZEntityRef p_Group, const CrowdVolumeIndices& p_VolumeIndices
+) {
+    std::ostringstream s_Volume;
+    WriteVolume(s_Volume, p_Group);
+    std::string s_VolumeJson = s_Volume.str();
+    s_VolumeJson.pop_back();
+    p_Stream << s_VolumeJson;
+    WriteCrowdVolumeIndexArray(p_Stream, p_Group, "exclusionBoxes", "m_aExclusionBoxes", p_VolumeIndices.Boxes);
+    WriteCrowdVolumeIndexArray(
+        p_Stream, p_Group, "exclusionShapes", "m_aExclusionVolumeShapes", p_VolumeIndices.Shapes
+    );
+    WriteCrowdVolumeIndexArray(p_Stream, p_Group, "seedPoints", "m_aSeedPoints", p_VolumeIndices.Boxes);
     p_Stream << "}";
 }
 
@@ -1470,7 +1487,11 @@ std::string EditorServer::WriteCrowdEntity(ZEntityRef p_Crowd, const CrowdVolume
     WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "inclusionShapes", "m_aCrowdInclusionVolumeShapes", s_Shapes);
     WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "panicOnlyShapes", "m_aCrowdPanicOnlyVolumeShapes", s_Shapes);
     WriteCrowdEntityArray(s_Stream, p_Crowd, "teleports", "m_aCrowdTeleports", WriteCrowdTeleport);
-    WriteCrowdEntityArray(s_Stream, p_Crowd, "groupBoxes", "m_aCrowdGroupBoxes", WriteVolume);
+    WriteCrowdEntityArray(
+        s_Stream, p_Crowd, "groupBoxes", "m_aCrowdGroupBoxes", [&](std::ostream& p_Stream, ZEntityRef p_Group) {
+            WriteCrowdGroupBox(p_Stream, p_Group, p_VolumeIndices);
+        }
+    );
     WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "flowBoxes", "m_aFlowBoxes", s_Boxes);
     WriteCrowdVolumeIndexArray(s_Stream, p_Crowd, "flowBoxesTwoWay", "m_aFlowBoxesTwoWay", s_Boxes);
     WriteCrowdEntityArray(s_Stream, p_Crowd, "splineFlows", "m_aSplineFlows", WriteSplineFlow);
