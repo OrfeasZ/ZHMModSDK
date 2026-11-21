@@ -423,7 +423,7 @@ void Editor::UpdateEntities() {
         std::unique_lock s_Lock(m_EntityRefToFactoryRuntimeResourceIDsMutex);
 
         m_EntityRefToFactoryRuntimeResourceIDs[s_SceneEnt] = {
-            ResId<"	[modules:/zsceneentity.class].pc_entitytype">,
+            ResId<"[modules:/zsceneentity.class].pc_entitytype">,
             s_SceneCtx->m_SceneConfig.m_ridSceneFactory
         };
     }
