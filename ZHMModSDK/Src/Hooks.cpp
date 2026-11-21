@@ -738,3 +738,10 @@ PATTERN_HOOK(
         TArrayRef<uint32_t> resourceIndices
     )
 );
+
+PATTERN_HOOK(
+    "\x48\x8B\xC4\x55\x53\x48\x8D\x68\xA8\x48\x81\xEC\x00\x00\x00\x00\x4C\x89\x60\xE0",
+    "xxxxxxxxxxxx????xxxx",
+    ZPlanningPageControllerEntity_OnPageOpened,
+    void(ZPlanningPageControllerEntity* th, const SMenuPageChangeRequest& request)
+);

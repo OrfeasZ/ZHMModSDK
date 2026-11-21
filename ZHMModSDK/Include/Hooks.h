@@ -111,6 +111,8 @@ class ZEvergreenCampaignManager;
 class ZFreeCameraControlEditorStyleEntity;
 struct SDestinationLocationInfo;
 class ZSaveSlotManager;
+class ZPlanningPageControllerEntity;
+struct SMenuPageChangeRequest;
 
 class ZHMSDK_API Hooks {
 public:
@@ -419,4 +421,8 @@ public:
         ZSaveSlotManager* th, SSaveGameMetaData& metaData, TFnSaveStatusCallback* callback,
         TArrayRef<uint32_t> resourceIndices
     )>* ZSaveSlotManager_QuickSave;
+
+    static Hook<void(
+        ZPlanningPageControllerEntity* th, const SMenuPageChangeRequest& request
+    )>* ZPlanningPageControllerEntity_OnPageOpened;
 };

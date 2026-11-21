@@ -120,6 +120,11 @@ void Editor::Init() {
 
     Hooks::ZResourceManager_UninstallResource->AddDetour(this, &Editor::ZResourceManager_UninstallResource);
 
+    Hooks::ZPlanningPageControllerEntity_OnPageOpened->AddDetour(
+        this,
+        &Editor::ZPlanningPageControllerEntity_OnPageOpened
+    );
+
     LoadSmfEnumVariants();
 
     m_UseSnap = GetSettingBool("general", "snap", true);
@@ -1728,6 +1733,19 @@ DEFINE_PLUGIN_DETOUR(
     }
 
     return HookResult<void>(HookAction::Continue());
+}
+
+/*
+ * ZPlanningPageControllerEntity::OnPageOpened() unmounts resource partitions
+ * before ZEntitySceneContext::ClearScene() is called, so resources must be released here too.
+ */
+DEFINE_PLUGIN_DETOUR(Editor, void, ZPlanningPageControllerEntity_OnPageOpened,
+    ZPlanningPageControllerEntity* th,
+    const SMenuPageChangeRequest& request
+) {
+    m_AssetBrowser.OnPlanningPageOpened();
+
+    return { HookAction::Continue() };
 }
 
 DEFINE_ZHM_PLUGIN(Editor);

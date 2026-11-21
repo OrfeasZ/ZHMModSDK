@@ -29,6 +29,12 @@ void AssetBrowser::OnClearScene() {
     m_AssetPreview.Destroy();
 }
 
+void AssetBrowser::OnPlanningPageOpened() {
+    AbortCapture();
+    m_Prefetched.clear();
+    m_AssetPreview.Destroy();
+}
+
 void AssetBrowser::SetHoverPreview(const ZRuntimeResourceID& p_ResourceId, const std::string& p_Path) {
     std::scoped_lock s_Lock(m_QueueMutex);
     m_HoverRequest = p_ResourceId;

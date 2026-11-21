@@ -41,6 +41,7 @@ public:
     void Draw(const char* p_WindowName);
     void Update(float p_DeltaSeconds);
     void OnClearScene();
+    void OnPlanningPageOpened();
 
     void LoadFactory(const ZRuntimeResourceID& p_ResourceId, TResourcePtr<ZTemplateEntityFactory>& p_Factory);
     static EResourceStatus GetFactoryStatus(const TResourcePtr<ZTemplateEntityFactory>& p_Factory);

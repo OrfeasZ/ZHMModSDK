@@ -901,6 +901,11 @@ private:
         ZResourceManager* th, ZResourceIndex index
     );
 
+    DECLARE_PLUGIN_DETOUR(Editor, void, ZPlanningPageControllerEntity_OnPageOpened,
+        ZPlanningPageControllerEntity* th,
+        const SMenuPageChangeRequest& request
+    );
+
 private:
     enum class EntityHighlightMode {
         Lines,
