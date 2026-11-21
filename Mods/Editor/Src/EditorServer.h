@@ -86,6 +86,9 @@ private:
     static std::string WriteVolumeShape(ZEntityRef p_Shape);
     static void WriteCrowdTeleport(std::ostream& p_Stream, ZEntityRef p_Teleport);
     static void WriteSplineFlow(std::ostream& p_Stream, ZEntityRef p_Spline);
+    static void WriteCrowdGroupBox(
+        std::ostream& p_Stream, ZEntityRef p_Group, const CrowdVolumeIndices& p_VolumeIndices
+    );
     static void WriteVolume(std::ostream& p_Stream, ZEntityRef p_Volume);
     static void WriteControlPoints(std::ostream& p_Stream, ZEntityRef p_Entity);
     static void WriteWorldMatrix(std::ostream& p_Stream, ZEntityRef p_Entity);
