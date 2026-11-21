@@ -44,7 +44,13 @@ ImGuiRenderer::DrawDataSnapshot::DrawDataSnapshot(const ImDrawData* p_Source) : 
 
         // Resolve texture ids now so the snapshot doesn't read ImTextureData that the window thread owns.
         for (auto& s_Command : s_DrawList->CmdBuffer) {
-            s_Command.TexRef = ImTextureRef(s_Command.GetTexID());
+            const ImTextureID s_TextureID = s_Command.GetTexID();
+
+            s_Command.TexRef = ImTextureRef(s_TextureID);
+
+            if (s_TextureID) {
+                m_TextureIDs.insert(s_TextureID);
+            }
         }
     }
 }
@@ -320,7 +326,7 @@ void ImGuiRenderer::OnPresent(IDXGISwapChain3* p_SwapChain) {
         ImGui_ImplDX12_RenderDrawData(&m_RenderSnapshot->m_DrawData, m_CommandList);
     }
 
-    s_FrameCtx.m_DeferredResources = TakeDeferredResources();
+    RetireUnusedTextures(s_FrameCtx);
 
     D3D12_RESOURCE_BARRIER s_PresentBarrier {};
     s_PresentBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -417,11 +423,6 @@ void ImGuiRenderer::FreeSRVDescriptor(
     m_FreeSRVDescriptorIndices.push_back(s_Index);
 }
 
-std::vector<ImGuiRenderer::DeferredResource> ImGuiRenderer::TakeDeferredResources() {
-    std::scoped_lock s_Lock(m_DescriptorMutex);
-    return std::exchange(m_PendingDeferredResources, {});
-}
-
 void ImGuiRenderer::ReleaseDeferredResources(
     std::vector<DeferredResource>& p_Resources
 ) {
@@ -435,6 +436,33 @@ void ImGuiRenderer::ReleaseDeferredResources(
     }
 
     p_Resources.clear();
+}
+
+void ImGuiRenderer::RetireUnusedTextures(FrameContext& p_FrameCtx) {
+    std::scoped_lock s_Lock(m_SnapshotMutex, m_DescriptorMutex);
+
+    const auto s_IsReferenced = [&](ImTextureID p_TextureID) {
+        if (!p_TextureID) {
+            return false;
+        }
+
+        return (m_RenderSnapshot &&
+            m_RenderSnapshot->m_TextureIDs.contains(p_TextureID)) ||
+            (m_PendingSnapshot &&
+                m_PendingSnapshot->m_TextureIDs.contains(p_TextureID));
+        };
+
+    auto s_It = m_PendingDeferredResources.begin();
+
+    while (s_It != m_PendingDeferredResources.end()) {
+        if (s_IsReferenced(s_It->m_ImGuiTexture.id)) {
+            ++s_It;
+            continue;
+        }
+
+        p_FrameCtx.m_DeferredResources.push_back(std::move(*s_It));
+        s_It = m_PendingDeferredResources.erase(s_It);
+    }
 }
 
 bool ImGuiRenderer::SetupRenderer(IDXGISwapChain3* p_SwapChain) {
@@ -669,19 +697,30 @@ void ImGuiRenderer::TeardownRenderer() {
 void ImGuiRenderer::ReleaseFrameResources() {
     WaitForCurrentFrameToFinish();
 
+    {
+        std::scoped_lock s_Lock(m_SnapshotMutex);
+
+        m_RenderSnapshot.reset();
+        m_PendingSnapshot.reset();
+    }
+
     for (auto& s_FrameCtx : m_FrameContext) {
         ReleaseDeferredResources(s_FrameCtx.m_DeferredResources);
 
-        s_FrameCtx.m_FenceValue.store(m_FenceValue.load(std::memory_order_acquire));
+        s_FrameCtx.m_FenceValue.store(
+            m_FenceValue.load(std::memory_order_acquire),
+            std::memory_order_release
+        );
     }
 
-    auto s_PendingResources = TakeDeferredResources();
+    std::vector<DeferredResource> s_PendingResources;
+
+    {
+        std::scoped_lock s_Lock(m_DescriptorMutex);
+        s_PendingResources = std::move(m_PendingDeferredResources);
+    }
+
     ReleaseDeferredResources(s_PendingResources);
-
-    m_RenderSnapshot.reset();
-
-    std::scoped_lock s_Lock(m_SnapshotMutex);
-    m_PendingSnapshot.reset();
 }
 
 void ImGuiRenderer::OnReset(IDXGISwapChain3* p_SwapChain) {
