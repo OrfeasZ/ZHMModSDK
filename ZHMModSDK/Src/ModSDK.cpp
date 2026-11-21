@@ -1819,7 +1819,7 @@ bool ModSDK::GetResourceID(const ZRuntimeResourceID& p_RuntimeResourceID, ZStrin
     std::lock_guard s_Lock(m_ResourceIDsMutex);
     const auto s_It = m_RuntimeResourceIDToResourceID.find(p_RuntimeResourceID);
 
-    if (s_It == m_RuntimeResourceIDToResourceID.end()) {
+    if (s_It == m_RuntimeResourceIDToResourceID.end() || s_It->second.m_Path.empty()) {
         return false;
     }
 
