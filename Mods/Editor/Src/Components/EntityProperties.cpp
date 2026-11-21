@@ -231,7 +231,8 @@ Editor::EntityDetails Editor::CollectEntityDetails(ZEntityRef p_Entity) {
                 auto s_Iterator2 = m_EntityRefToFactoryRuntimeResourceIDs.find(p_Entity);
 
                 if (s_Iterator2 != m_EntityRefToFactoryRuntimeResourceIDs.end()) {
-                    const auto [s_TemplateFactoryRuntimeResourceID, s_ParentTemplateFactoryRuntimeResourceID] = s_Iterator2->second;
+                    const auto [s_TemplateFactoryRuntimeResourceID, s_ParentTemplateFactoryRuntimeResourceID] =
+                        s_Iterator2->second;
 
                     s_Details.ReferencedTemplateFactoryType = GetTemplateFactoryType(
                         s_EntityTreeNode->ReferencedBlueprintFactoryType
@@ -240,29 +241,29 @@ Editor::EntityDetails Editor::CollectEntityDetails(ZEntityRef p_Entity) {
 
                     s_Details.Rows.emplace_back(
                         s_Details.ReferencedTemplateFactoryType,
-                        fmt::format("{:016X}", s_TemplateFactoryRuntimeResourceID.GetID())
+                        GetResourceIDDisplayString(s_TemplateFactoryRuntimeResourceID)
                     );
 
                     s_Details.Rows.emplace_back(
                         s_EntityTreeNode->ReferencedBlueprintFactoryType,
-                        fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID())
+                        GetResourceIDDisplayString(s_EntityTreeNode->ReferencedBlueprintFactory)
                     );
 
                     s_Details.Rows.emplace_back(
                         fmt::format("In {}", s_EntityTreeNode->BlueprintFactoryType == "TBLU" ? "TEMP" : "ASET"),
-                        fmt::format("{:016X}", s_ParentTemplateFactoryRuntimeResourceID.GetID())
+                        GetResourceIDDisplayString(s_ParentTemplateFactoryRuntimeResourceID)
                     );
                 }
                 else if (!s_EntityTreeNode->ReferencedBlueprintFactoryType.empty()) {
                     s_Details.Rows.emplace_back(
                         s_EntityTreeNode->ReferencedBlueprintFactoryType,
-                        fmt::format("{:016X}", s_EntityTreeNode->ReferencedBlueprintFactory.GetID())
+                        GetResourceIDDisplayString(s_EntityTreeNode->ReferencedBlueprintFactory)
                     );
                 }
 
                 s_Details.Rows.emplace_back(
                     fmt::format("In {}", s_EntityTreeNode->BlueprintFactoryType),
-                    fmt::format("{:016X}", s_EntityTreeNode->BlueprintFactory.GetID())
+                    GetResourceIDDisplayString(s_EntityTreeNode->BlueprintFactory)
                 );
             }
         }
@@ -273,11 +274,21 @@ Editor::EntityDetails Editor::CollectEntityDetails(ZEntityRef p_Entity) {
             const auto s_PrimResourceInfo = (*Globals::ResourceContainer)->m_resources[s_GeomEntity->m_ResourceID.
                 m_nResourceIndex.val];
 
-            s_Details.Rows.emplace_back("PRIM", fmt::format("{:016X}", s_PrimResourceInfo.rid.GetID()));
+            s_Details.Rows.emplace_back("PRIM", GetResourceIDDisplayString(s_PrimResourceInfo.rid));
         }
     }
 
     return s_Details;
+}
+
+std::string Editor::GetResourceIDDisplayString(const ZRuntimeResourceID& p_RuntimeResourceID) {
+    ZString s_ResourceID;
+
+    if (SDK()->GetResourceID(p_RuntimeResourceID, s_ResourceID)) {
+        return s_ResourceID.c_str();
+    }
+
+    return fmt::format("{:016X}", p_RuntimeResourceID.GetID());
 }
 
 void Editor::DrawEntityName(const EntityDetails& p_Details) {
@@ -331,7 +342,9 @@ void Editor::DrawEntityDetails(const EntityDetails& p_Details) {
 
             ImGui::TableSetColumnIndex(1);
             ImGui::AlignTextToFramePadding();
+            ImGui::PushTextWrapPos(0.f);
             ImGui::TextUnformatted(s_Value.c_str());
+            ImGui::PopTextWrapPos();
 
             ImGui::TableSetColumnIndex(2);
 

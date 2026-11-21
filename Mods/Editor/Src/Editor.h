@@ -305,6 +305,7 @@ private:
 
     bool DrawEntityToolbar(ZEntityRef p_Entity, ZSpatialEntity* p_Spatial);
     EntityDetails CollectEntityDetails(ZEntityRef p_Entity);
+    std::string GetResourceIDDisplayString(const ZRuntimeResourceID& p_RuntimeResourceID);
     ZRenderMaterialInstance* LoadSelectedMaterialInstance(ZEntityRef p_Entity);
     void DrawEntityName(const EntityDetails& p_Details);
     void DrawEntityDetails(const EntityDetails& p_Details);
