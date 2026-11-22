@@ -17,7 +17,7 @@ public:
     uint32 m_nRayFilter;
     ECollidablesType m_eType;
     ERayDetailLevel m_eRayDetailLevel;
-    ZDelegate<bool(ZEntityRef, TEntityRef<ZSpatialEntity>)> m_FilterCallback;
+    ZDelegate<bool(const ZEntityRef&, const TEntityRef<ZSpatialEntity>&)> m_FilterCallback;
     bool m_bIgnoreTransparentMaterials;
     bool m_bIgnoreDecalMaterials;
 };

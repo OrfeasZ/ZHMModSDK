@@ -140,6 +140,16 @@ private:
         bool IsCommitted() const { return CommitSerial != 0; }
     };
 
+    struct SurfaceMove {
+        ZEntityRef Entity;
+        SMatrix StartTransform;
+        SVector3 RayOrigin;
+        SVector3 RayDirection;
+        bool IsAligned = false;
+        bool HasRay = false;
+        bool HasPlacement = false;
+    };
+
     // Entities in a spawned tree get new refs when an undo spawns the tree again, so we find
     // those by the root's entity ID and their position in ForEachEntityInTree.
     struct HistoryTarget {
@@ -284,7 +294,17 @@ private:
     void DeactivateCamera();
     void CopyToClipboard(const std::string& p_String) const;
     void OnMouseDown(SVector2 p_Pos);
-    bool RayCastCollision(const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output);
+    bool RayCastCollision(
+        const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output,
+        ZEntityRef p_IgnoredEntity = {}
+    );
+    bool IsRayHitAllowed(const ZEntityRef& p_Entity, const TEntityRef<ZSpatialEntity>& p_SpatialEntity);
+    bool IsInRayCastIgnoredTree(ZEntityRef p_Entity) const;
+
+    void StartSurfaceMove(ZEntityRef p_Entity, const SMatrix& p_Transform);
+    void UpdateSurfaceMove(bool p_SurfaceAligned);
+    void EndSurfaceMove(ChangeMode p_Mode);
+    SMatrix GetSurfaceMoveTransform(const SVector3& p_Position, const SVector3& p_Normal) const;
 
     void DrawEntityManipulator(bool p_HasFocus);
     void DrawEntityAABB(IRenderer* p_Renderer, float p_Alpha);
@@ -1214,6 +1234,8 @@ private:
     std::optional<ActiveEdit> m_PropertyEdit;
     std::optional<ActiveEdit> m_GizmoEdit;
     bool m_IsGizmoBlocked = false;
+    std::optional<SurfaceMove> m_SurfaceMove;
+    ZEntityRef m_RayCastIgnoredEntity;
     std::atomic<bool> m_ShouldResetEdits = false;
     uint64_t m_LastCommitSerial = 0;
     std::atomic<uint64_t> m_AppliedCommitSerial = 0;
