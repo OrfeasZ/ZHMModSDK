@@ -44,6 +44,14 @@ void MainMenu::Draw(bool p_HasFocus) {
 
     ModSDK::GetInstance()->OnDrawMenu();
 
+    const ImGuiIO& s_IO = ImGui::GetIO();
+
+    if (s_IO.MouseWheel != 0.f && !s_IO.KeyShift &&
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) {
+        const float s_ScrollStep = ImGui::GetFontSize() * 2.f; // Matches normal horizontal scrolling speed
+        ImGui::SetScrollX(ImGui::GetScrollX() - s_IO.MouseWheel * s_ScrollStep);
+    }
+
     ImGui::End();
 
     ImGui::PopStyleVar(1);
