@@ -1229,9 +1229,9 @@ QneTransform Editor::MatrixToQneTransform(const SMatrix& p_Matrix) {
         * (-n13 * n22 * n31 - n11 * n23 * n32 + n11 * n22 * n33 + n13 * n21 * n32 - n12 * n21 * n33
             + n12 * n23 * n31);
 
-    auto sx = n11 * n11 + n21 * n21 + n31 * n31;
-    const auto sy = n12 * n12 + n22 * n22 + n32 * n32;
-    const auto sz = n13 * n13 + n23 * n23 + n33 * n33;
+    auto sx = sqrtf(n11 * n11 + n21 * n21 + n31 * n31);
+    const auto sy = sqrtf(n12 * n12 + n22 * n22 + n32 * n32);
+    const auto sz = sqrtf(n13 * n13 + n23 * n23 + n33 * n33);
 
     if (det < 0.0f) {
         sx = -sx;
@@ -1321,6 +1321,27 @@ SMatrix Editor::QneTransformToMatrix(const QneTransform& p_Transform) {
     s_Matrix.Trans.z = p_Transform.Position.z;
 
     return s_Matrix;
+}
+
+QneTransform Editor::GetEditableQneTransform(const std::string& p_Id, const SMatrix43& p_Matrix) const {
+    auto s_Transform = MatrixToQneTransform(p_Matrix);
+
+    // Use the user's angles to prevent gimbal lock
+    if (m_LastEditedQneRotation && m_LastEditedQneRotation->Id == p_Id) {
+        const auto* s_Cached = &m_LastEditedQneRotation->Matrix.XAxis.x;
+        const auto* s_Current = &p_Matrix.XAxis.x;
+
+        if (std::equal(s_Cached, s_Cached + 12, s_Current, [](float a, float b) { return fabsf(a - b) < 1e-4f; })) {
+            s_Transform.Rotation = m_LastEditedQneRotation->Rotation;
+        }
+    }
+
+    return s_Transform;
+}
+
+void Editor::ApplyEditedQneTransform(const std::string& p_Id, const QneTransform& p_Transform, SMatrix43& p_Matrix) {
+    p_Matrix = QneTransformToMatrix(p_Transform).ToMatrix43();
+    m_LastEditedQneRotation = EditedQneRotation { p_Id, p_Matrix, p_Transform.Rotation };
 }
 
 std::string Editor::FormatFloat(float p_Value, bool p_Round, uint32_t p_Decimals) {

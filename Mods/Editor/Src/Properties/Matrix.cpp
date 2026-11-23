@@ -6,14 +6,14 @@ bool Editor::SMatrix43Property(const std::string& p_Id, void* p_Data) {
     auto* s_Value = static_cast<SMatrix43*>(p_Data);
 
     if (m_UseQneTransforms) {
-        auto s_QneTransform = MatrixToQneTransform(*s_Value);
+        auto s_QneTransform = GetEditableQneTransform(p_Id, *s_Value);
 
         bool s_IsQneChanged = DrawVectorChildRow(p_Id + "p", "Position", nullptr, &s_QneTransform.Position.x);
         s_IsQneChanged |= DrawVectorChildRow(p_Id + "r", "Rotation", "\xC2\xB0", &s_QneTransform.Rotation.x);
 
         // We can't update scale like this. Use the gizmo instead.
         if (s_IsQneChanged) {
-            *s_Value = QneTransformToMatrix(s_QneTransform).ToMatrix43();
+            ApplyEditedQneTransform(p_Id, s_QneTransform, *s_Value);
             s_IsChanged = true;
         }
     }

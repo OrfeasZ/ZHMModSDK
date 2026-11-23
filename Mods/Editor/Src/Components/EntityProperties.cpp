@@ -1215,14 +1215,14 @@ bool Editor::DrawEntityPropertyValue(const std::string& p_Id, const STypeID* p_T
 
 void Editor::DrawEntityPinValue(const std::string& p_Id, SMatrix43* p_Value) {
     if (m_UseQneTransforms) {
-        auto s_QneTransform = MatrixToQneTransform(*p_Value);
+        auto s_QneTransform = GetEditableQneTransform(p_Id, *p_Value);
 
         if (ImGui::DragFloat3((p_Id + "p").c_str(), &s_QneTransform.Position.x, 0.1f)) {
-            *p_Value = QneTransformToMatrix(s_QneTransform).ToMatrix43();
+            ApplyEditedQneTransform(p_Id, s_QneTransform, *p_Value);
         }
 
         if (ImGui::DragFloat3((p_Id + "r").c_str(), &s_QneTransform.Rotation.x, 0.1f)) {
-            *p_Value = QneTransformToMatrix(s_QneTransform).ToMatrix43();
+            ApplyEditedQneTransform(p_Id, s_QneTransform, *p_Value);
         }
     }
     else {
