@@ -673,7 +673,7 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
 
                         *s_LastLoggedMilestone = currentMilestone;
                     }
-                    for (auto& [s_AlocHash, s_PrimHash, s_Quat, s_RoomName, s_FolderName, s_Entity] : p_Entities) {
+                    for (auto& [s_AlocHash, s_PrimHash, s_Quat, s_RoomName, s_FolderName, s_Entity, s_IsWater] : p_Entities) {
                         if (IsExcludedFromNavMeshExport(s_Entity)) continue;
 
                         if (!s_IsFirstItemInBatch) {
@@ -687,6 +687,7 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
                         s_BatchJson << write_json("primHash") << ":" << write_json(s_PrimHash) << ",";
                         s_BatchJson << write_json("roomName") << ":" << write_json(s_RoomName) << ",";
                         s_BatchJson << write_json("roomFolderName") << ":" << write_json(s_FolderName) << ",";
+                        s_BatchJson << write_json("isWater") << ":" << (s_IsWater ? "true" : "false") << ",";
                         s_BatchJson << write_json("entity") << ":";
 
                         WriteEntityTransforms(s_BatchJson, s_Quat, s_Entity);

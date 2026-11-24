@@ -344,19 +344,24 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
     std::map<std::string, std::vector<std::string>>& p_PrimMatis,
     bool p_OnlyCollidableMeshes
 ) {
-    std::string s_AlocHash = GetCollisionHash(p_Node->Entity);
-
-    if (p_OnlyCollidableMeshes && (s_AlocHash.empty() || s_AlocHash == "null")) {
-        return;
-    }
+    bool s_IsWater = false;
 
     for (auto s_Interface : p_Interfaces) {
         if (s_Interface.m_Type->GetTypeInfo() != nullptr) {
             p_EntityType = s_Interface.m_Type->GetTypeInfo()->pszTypeName;
             if (strcmp(p_EntityType, "ZPureWaterAspect") == 0) {
-                return;
+                s_IsWater = true;
+                break;
             }
         }
+    }
+
+    std::string s_AlocHash = GetCollisionHash(p_Node->Entity);
+
+    // Water surfaces rarely have collision, but NavKit needs them even when it only asks for collidable meshes: it
+    // keeps them out of the navmesh and draws them as water on the map.
+    if (!s_IsWater && p_OnlyCollidableMeshes && (s_AlocHash.empty() || s_AlocHash == "null")) {
+        return;
     }
 
     const ZGeomEntity* s_GeomEntity = p_Node->Entity.QueryInterface<ZGeomEntity>();
@@ -458,8 +463,8 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
         p_PrimMatis[s_PrimHash] = s_PrimMatis;
 
         Logger::Debug(
-            "[Editor] Found ALOC. ID: {} TBLU: {} PRIM: {} ALOC: {}",
-            s_EntityID, s_TbluHashString, s_PrimHash, s_AlocHash
+            "[Editor] Found {}. ID: {} TBLU: {} PRIM: {} ALOC: {}",
+            s_IsWater ? "water" : "ALOC", s_EntityID, s_TbluHashString, s_PrimHash, s_AlocHash
         );
 
         const Quat s_EntityQuat = GetQuatFromProperty(p_Node->Entity);
@@ -486,7 +491,8 @@ void Editor::FindAlocAndPrimForZGeomEntityNode(
                 s_CombinedQuat,
                 s_RoomName,
                 s_FolderName,
-                p_Node->Entity
+                p_Node->Entity,
+                s_IsWater
             );
         p_Entities.push_back(s_Entity);
     }
@@ -507,54 +513,55 @@ void Editor::FindAlocAndPrimForZPrimitiveProxyEntityNode(
         std::format("<{:08X}{:08X}>", p_Node->BlueprintFactory.m_IDHigh, p_Node->BlueprintFactory.m_IDLow);
     // TODO: Check if the prim hash is needed here
 
+    bool s_IsWater = false;
+
+    for (auto s_Interface : p_Interfaces) {
+        if (s_Interface.m_Type->GetTypeInfo() != nullptr) {
+            s_EntityType = s_Interface.m_Type->GetTypeInfo()->pszTypeName;
+            if (strcmp(s_EntityType, "ZPureWaterAspect") == 0) {
+                s_IsWater = true;
+                break;
+            }
+        }
+    }
+
+    // Water surfaces are sent even without collision; see FindAlocAndPrimForZGeomEntityNode.
     if (std::string s_AlocHash = GetCollisionHash(p_Node->Entity);
-        !p_OnlyCollidableMeshes || (!s_AlocHash.empty() && s_AlocHash != "null")) {
-        bool s_Skip = false;
+        s_IsWater || !p_OnlyCollidableMeshes || (!s_AlocHash.empty() && s_AlocHash != "null")) {
+        Logger::Debug(
+            "[Editor] Found {}. ID: {} TBLU: {} ALOC: {}", s_IsWater ? "water" : "ALOC", s_Id, s_PrimHash,
+            s_AlocHash
+        );
 
-        for (auto s_Interface : p_Interfaces) {
-            if (s_Interface.m_Type->GetTypeInfo() != nullptr) {
-                s_EntityType = s_Interface.m_Type->GetTypeInfo()->pszTypeName;
-                if (strcmp(s_EntityType, "ZPureWaterAspect") == 0) {
-                    s_Skip = true;
-                    break;
-                }
-            }
+        // s_NavKitMeshHashInfos.emplace_back(s_AlocHash, s_PrimHash);
+
+        const Quat s_EntityQuat = GetQuatFromProperty(p_Node->Entity);
+        Quat s_ParentQuat;
+
+        try {
+            s_ParentQuat = GetParentQuat(p_Node->Entity);
         }
-
-        if (!s_Skip) {
-            Logger::Debug(
-                "[Editor] Found ALOC. ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
+        catch (std::runtime_error) {
+            Logger::Error(
+                "[Editor] Circular reference found! Skipping entity with ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
             );
-
-            // s_NavKitMeshHashInfos.emplace_back(s_AlocHash, s_PrimHash);
-
-            const Quat s_EntityQuat = GetQuatFromProperty(p_Node->Entity);
-            Quat s_ParentQuat;
-
-            try {
-                s_ParentQuat = GetParentQuat(p_Node->Entity);
-            }
-            catch (std::runtime_error) {
-                Logger::Error(
-                    "[Editor] Circular reference found! Skipping entity with ID: {} TBLU: {} ALOC: {}", s_Id, s_PrimHash, s_AlocHash
-                );
-                return;
-            }
-
-            Quat s_CombinedQuat;
-            s_CombinedQuat = s_ParentQuat * s_EntityQuat;
-            const auto [s_RoomName, s_FolderName] = Plugin()->FindRoomForEntity(p_Node->Entity, p_RoomNameToFolderName);
-            NavKitMeshEntity s_Entity =
-                NavKitMeshEntity(
-                    s_AlocHash,
-                    s_PrimHash,
-                    s_CombinedQuat,
-                    s_RoomName,
-                    s_FolderName,
-                    p_Node->Entity
-                );
-            p_Entities.push_back(s_Entity);
+            return;
         }
+
+        Quat s_CombinedQuat;
+        s_CombinedQuat = s_ParentQuat * s_EntityQuat;
+        const auto [s_RoomName, s_FolderName] = Plugin()->FindRoomForEntity(p_Node->Entity, p_RoomNameToFolderName);
+        NavKitMeshEntity s_Entity =
+            NavKitMeshEntity(
+                s_AlocHash,
+                s_PrimHash,
+                s_CombinedQuat,
+                s_RoomName,
+                s_FolderName,
+                p_Node->Entity,
+                s_IsWater
+            );
+        p_Entities.push_back(s_Entity);
     }
 }
 
