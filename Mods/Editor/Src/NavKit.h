@@ -17,8 +17,8 @@ struct NavKitMeshEntity {
         std::string m_AlocHash,
         std::string m_PrimHash,
         const Quat m_Quat,
-        std::string m_FolderName,
         std::string m_RoomName,
+        std::string m_FolderName,
         const ZEntityRef m_Entity
     ) :
         m_AlocHash(std::move(m_AlocHash)),
