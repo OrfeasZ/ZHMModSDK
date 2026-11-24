@@ -434,6 +434,11 @@ void ModSDK::LoadConfiguration() {
             const auto s_Value = s_Mod.second.get("scaleform_logging");
             m_IsScaleformLoggingEnabled = s_Value == "true" || s_Value == "1";
         }
+
+        if (s_Mod.second.has("use_game_cursor")) {
+            const auto s_Value = s_Mod.second.get("use_game_cursor");
+            m_UseGameCursor = s_Value == "true" || s_Value == "1";
+        }
     }
 }
 

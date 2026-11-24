@@ -815,7 +815,11 @@ void ImGuiRenderer::RunFrame() {
             return;
         }
 
-        ImGui_ImplWin32_SetArrowCursor((*Globals::ApplicationEngineWin32)->m_hDefaultCursor);
+        ImGui_ImplWin32_SetArrowCursor(
+            ModSDK::GetInstance()->GetUseGameCursor()
+            ? (*Globals::ApplicationEngineWin32)->m_hDefaultCursor
+            : nullptr
+        );
 
         // ImGui shows windows dragged out of the game without activating them, so they end up behind the game
         // window, which stays active. Popups, menus and tooltips have no taskbar icon and keep that behavior.

@@ -128,6 +128,21 @@ For example, to change it to `F2`, write the following:
 ui_toggle_key = 0x3C
 ```
 
+## Using the game's cursor
+
+By default, the SDK UI uses the game's cursor instead of the native cursor. You can change this behavior by editing the `mods.ini` file in your game's `Retail` folder.
+
+To use the native cursor, open the `mods.ini` file and add the following:
+
+```ini
+[sdk]
+use_game_cursor = false
+```
+
+(If the `[sdk]` section already exists, just add the `use_game_cursor` key and value)
+
+Set `use_game_cursor` to `true` to use the game's cursor again.
+
 ## Game Logging
 
 **Options**

@@ -111,6 +111,8 @@ public:
 
     void SetHasShownUIToggleWarning();
 
+    bool GetUseGameCursor() const { return m_UseGameCursor; }
+
 public:
 #pragma region IModSDK implementation
 
@@ -359,6 +361,8 @@ private:
     bool m_IsGameStateLoggingEnabled = false;
     bool m_IsSceneLoadingLoggingEnabled = false;
     bool m_IsScaleformLoggingEnabled = false;
+
+    bool m_UseGameCursor = true;
 
     std::unordered_map<ZRuntimeResourceID, TArray<uint32_t>> m_ResourceIdToChunkMap;
     std::unordered_map<uint32_t, size_t> m_ChunkIndexToResourcePackageCount;
