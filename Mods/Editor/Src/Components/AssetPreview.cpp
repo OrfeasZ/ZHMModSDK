@@ -379,7 +379,7 @@ const ImGuiTexture* AssetPreview::GetRTTexture() {
     return m_RTTexture.id ? &m_RTTexture : nullptr;
 }
 
-bool AssetPreview::SpawnPreview(ZTemplateEntityFactory* p_Factory, const std::string& p_ItemName) {
+bool AssetPreview::SpawnPreview(IEntityFactory* p_Factory, const std::string& p_ItemName) {
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene || !m_Camera || !p_Factory) {

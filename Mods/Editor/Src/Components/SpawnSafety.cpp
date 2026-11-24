@@ -188,7 +188,7 @@ size_t UnregisterLookAtTriggersIf(const std::function<bool(ZEntityType**)>& p_Sh
     return s_Triggers.size();
 }
 
-bool CanSpawnTemplate(ZTemplateEntityFactory* p_Factory, const std::string& p_ItemName) {
+bool CanSpawnTemplate(IEntityFactory* p_Factory, const std::string& p_ItemName) {
     if (const auto s_Path = FindUnspawnablePath(p_ItemName)) {
         Logger::Warn("[Editor] Not spawning asset {}: items in {} can't be spawned.", p_ItemName, *s_Path);
         return false;
