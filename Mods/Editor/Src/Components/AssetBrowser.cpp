@@ -501,11 +501,17 @@ static bool EnumerateResourceCallback(
     const ResourceIDInfo& p_Info,
     void* p_UserData
 ) {
+    if (!p_Info.m_Path || FindUnspawnablePath(p_Info.m_Path)) {
+        return true;
+    }
+
+    if (SDK()->GetChunkIndicesForRuntimeResourceId(p_Hash).size() == 0) {
+        return true;
+    }
+
     auto& s_Files = *static_cast<std::vector<std::pair<ZRuntimeResourceID, std::string>>*>(p_UserData);
 
-    if (p_Info.m_Path && !FindUnspawnablePath(p_Info.m_Path)) {
-        s_Files.emplace_back(p_Hash, p_Info.m_Path);
-    }
+    s_Files.emplace_back(p_Hash, p_Info.m_Path);
 
     return true;
 }
