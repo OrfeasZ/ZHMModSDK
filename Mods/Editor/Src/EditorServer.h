@@ -82,6 +82,7 @@ private:
     static CrowdsJson WriteCrowdsJson(
         const SceneEntities& p_VolumeBoxEntities, const SceneEntities& p_VolumeSphereEntities
     );
+    static std::vector<std::string> WriteUIControlsJson(const SceneEntities& p_UIControlEntities);
     static std::string WriteCrowdEntity(ZEntityRef p_Crowd, const CrowdVolumeIndices& p_VolumeIndices);
     static std::string WriteVolumeShape(ZEntityRef p_Shape);
     static void WriteCrowdTeleport(std::ostream& p_Stream, ZEntityRef p_Teleport);
