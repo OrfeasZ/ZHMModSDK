@@ -18,6 +18,7 @@
 #include <DirectXTex.h>
 
 #include "Glacier/ZEntity.h"
+#include "Util/ActorTeleporter.h"
 #include "Glacier/ZInput.h"
 #include "Glacier/ZFreeCamera.h"
 #include "Glacier/EDebugChannel.h"
@@ -1102,6 +1103,9 @@ private:
     bool m_ShowRoomsWindow = false;
     bool m_ShowBoxReflectionsWindow = false;
     ZActor* m_SelectedActor = nullptr;
+
+    // Actor teleports, watched for a few frames.
+    ActorTeleporter m_ActorTeleporter;
     TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
     const std::vector<std::string> m_CharSetCharacterTypes = { "Actor", "Nude", "HeroA" };
     bool m_ShowAliveActors = false;

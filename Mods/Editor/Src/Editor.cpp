@@ -814,6 +814,7 @@ void Editor::DrawSettingsWindow(const bool p_HasFocus) {
 
 void Editor::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     ProcessTasks();
+    m_ActorTeleporter.Update();
     if (m_TrackCamActive) {
         if (!*Globals::ApplicationEngineWin32)
             return;
@@ -1477,6 +1478,7 @@ DEFINE_PLUGIN_DETOUR(
 
 DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
     m_SelectedBrickIndex = 0;
+    m_ActorTeleporter.Clear();
 
     {
         std::scoped_lock s_Lock(m_ChangeQueueMutex);
