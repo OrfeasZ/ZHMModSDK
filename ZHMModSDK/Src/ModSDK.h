@@ -32,6 +32,7 @@ class IRenderer;
 class IPluginInterface;
 class ModLoader;
 class DebugConsole;
+class HotkeyManager;
 struct IDXGISwapChain3;
 
 class ModSDK : public IModSDK {
@@ -107,6 +108,11 @@ public:
 
     uint8_t GetConsoleScanCode() const { return m_ConsoleScanCode; }
     uint8_t GetUIToggleScanCode() const { return m_UIToggleScanCode; }
+
+    // SDK keys, editable from the shortcuts window.
+    void SetConsoleScanCode(uint8_t p_ScanCode);
+    void SetUIToggleScanCode(uint8_t p_ScanCode);
+    std::shared_ptr<HotkeyManager> GetHotkeys() const { return m_Hotkeys; }
     bool HasShownUIToggleWarning() const { return m_HasShownUIToggleWarning.load(std::memory_order_acquire); }
 
     void SetHasShownUIToggleWarning();
@@ -307,6 +313,10 @@ public:
 
     bool AreResourceIDsLoaded() override;
 
+    void RegisterHotkey(IPluginInterface* p_Plugin, const char* p_Id, const char* p_Label, const char* p_Default) override;
+    bool IsHotkeyPressed(IPluginInterface* p_Plugin, const char* p_Id) override;
+    void GetHotkeyText(IPluginInterface* p_Plugin, const char* p_Id, char* p_Buffer, size_t p_Size) override;
+
     // A byte patch of game code, found by pattern and checked against the original bytes before it is applied.
     struct SCodePatch {
         const char* Name;
@@ -389,4 +399,5 @@ private:
     std::shared_ptr<UI::Console> m_UIConsole {};
     std::shared_ptr<UI::MainMenu> m_UIMainMenu {};
     std::shared_ptr<UI::ModSelector> m_UIModSelector {};
+    std::shared_ptr<HotkeyManager> m_Hotkeys {};
 };
