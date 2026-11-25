@@ -401,6 +401,35 @@ void Player::OnDrawUI(const bool p_HasFocus) {
     ImGui::PopFont();
 }
 
+// True if the outfit has an actual resource for this character type and variation.
+bool Player::HasOutfit(
+    ZOutfitVariationCollection* p_Collection, const std::string& p_CharSetCharacterType, uint8_t p_VariationIndex
+) {
+    ECharSetCharacterType s_Type = ECharSetCharacterType::ECSCT_HeroA;
+
+    if (p_CharSetCharacterType == "Actor") {
+        s_Type = ECharSetCharacterType::ECSCT_Actor;
+    }
+    else if (p_CharSetCharacterType == "Nude") {
+        s_Type = ECharSetCharacterType::ECSCT_Nude;
+    }
+
+    const auto& s_Character = p_Collection->m_aCharacters[static_cast<size_t>(s_Type)];
+
+    if (!s_Character.m_pInterfaceRef) {
+        return false;
+    }
+
+    const auto& s_Variations = s_Character.m_pInterfaceRef->m_aVariations;
+    const size_t s_Index = p_VariationIndex < s_Variations.size() ? p_VariationIndex : 0;
+
+    if (s_Variations.size() == 0 || !s_Variations[s_Index].m_pInterfaceRef) {
+        return false;
+    }
+
+    return s_Variations[s_Index].m_pInterfaceRef->m_Outfit.GetID() != 0xFFFFFFFFFFFFFFFFull;
+}
+
 void Player::EquipOutfit(
     const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit,
     uint8_t p_CharSetIndex,
@@ -427,9 +456,28 @@ void Player::EquipOutfit(
         return;
     }
 
+    // Many NPC outfits (Dalia Margolis, the guests...) only have an "Actor" version: their
+    // "HeroA" and "Nude" versions exist but are empty (resource FFFFFFFFFFFFFFFF), and the game
+    // then silently applied nothing, so "Get actor's outfit" seemed to do nothing. Fall back to
+    // a version that actually exists.
+    std::string s_CharSetCharacterType = p_CharSetCharacterType;
+
+    if (!HasOutfit(s_Collection, s_CharSetCharacterType, p_OutfitVariationIndex)) {
+        for (const char* s_Fallback : { "HeroA", "Actor" }) {
+            if (s_Fallback != s_CharSetCharacterType && HasOutfit(s_Collection, s_Fallback, p_OutfitVariationIndex)) {
+                Logger::Info(
+                    "[Player] Outfit has no '{}' version, using '{}' instead.",
+                    s_CharSetCharacterType, s_Fallback
+                );
+                s_CharSetCharacterType = s_Fallback;
+                break;
+            }
+        }
+    }
+
     std::vector<ZRuntimeResourceID> s_OriginalHeroVariations;
 
-    if (p_CharSetCharacterType != "HeroA") {
+    if (s_CharSetCharacterType != "HeroA") {
         auto* s_HeroType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_HeroA)];
 
         if (!s_HeroType->m_pInterfaceRef) {
@@ -439,10 +487,10 @@ void Player::EquipOutfit(
 
         TEntityRef<ZCharsetCharacterType>* s_TargetType = nullptr;
 
-        if (p_CharSetCharacterType == "Actor") {
+        if (s_CharSetCharacterType == "Actor") {
             s_TargetType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
         }
-        else if (p_CharSetCharacterType == "Nude") {
+        else if (s_CharSetCharacterType == "Nude") {
             s_TargetType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Nude)];
         }
 
@@ -468,7 +516,7 @@ void Player::EquipOutfit(
         p_Hitman, p_GlobalOutfitKit, p_CharSetIndex, p_OutfitVariationIndex, false, false
     );
 
-    if (p_CharSetCharacterType != "HeroA" && !s_OriginalHeroVariations.empty()) {
+    if (s_CharSetCharacterType != "HeroA" && !s_OriginalHeroVariations.empty()) {
         auto* s_HeroType = &s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].
             m_pInterfaceRef->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_HeroA)];
 

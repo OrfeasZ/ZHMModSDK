@@ -7,6 +7,7 @@
 class ZGlobalOutfitKit;
 class ZHitman5;
 class ZHM5CrippleBox;
+class ZOutfitVariationCollection;
 
 class Player : public IPluginInterface {
 public:
@@ -18,6 +19,10 @@ private:
     static void EquipOutfit(
         const TEntityRef<ZGlobalOutfitKit>& p_GlobalOutfitKit, uint8_t n_CharSetIndex,
         const std::string& s_CharSetCharacterType, uint8_t n_OutfitVariationIndex, ZHitman5* p_Hitman
+    );
+
+    static bool HasOutfit(
+        ZOutfitVariationCollection* p_Collection, const std::string& p_CharSetCharacterType, uint8_t p_VariationIndex
     );
 
     void ToggleInfiniteAmmo();
