@@ -4,6 +4,11 @@
 
 #include <Glacier/ZEntity.h>
 
+#include <atomic>
+
+struct SGameUpdateEvent;
+class ZGameStatsManager;
+
 class ZGlobalOutfitKit;
 class ZHitman5;
 class ZHM5CrippleBox;
@@ -11,7 +16,10 @@ class ZOutfitVariationCollection;
 
 class Player : public IPluginInterface {
 public:
+    ~Player() override;
+
     void Init() override;
+    void OnEngineInitialized() override;
     void OnDrawMenu() override;
     void OnDrawUI(bool p_HasFocus) override;
 
@@ -27,6 +35,9 @@ private:
 
     void ToggleInfiniteAmmo();
     bool CreateHM5CrippleBoxEntity();
+
+    void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
+    bool CreateAICrippleEntity();
 
     DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
@@ -71,6 +82,8 @@ private:
 
     DECLARE_PLUGIN_DETOUR(Player, bool, ZActor_YouGotHit, IBaseCharacter* th, const SHitInfo& hitInfo);
 
+    DECLARE_PLUGIN_DETOUR(Player, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th);
+
     bool m_ShowPlayerWindow = false;
     bool m_IsInfiniteAmmoEnabled = false;
     bool m_IsNoReloadEnabled = false;
@@ -84,6 +97,14 @@ private:
     TEntityRef<ZGlobalOutfitKit> m_GlobalOutfitKit = {};
 
     ZEntityRef m_HM5CrippleBoxEntity;
+
+    // Invisibility: m_bIsHiding alone left 47 "partially visible". The AI is also told through
+    // the cutscene signal of a ZAICrippleEntity (SetHeroHidden / SetHeroVisible), sent from the
+    // game update. -1: nothing to do, 0: make 47 visible, 1: hide him.
+    ZEntityRef m_AICrippleEntity;
+    std::atomic<int> m_PendingHeroHidden = -1;
+    bool m_IsInvisible = false;
+    int m_EnforceTimer = 0;
 };
 
 DECLARE_ZHM_PLUGIN(Player)

@@ -12,10 +12,88 @@
 #include <Glacier/ZModule.h>
 #include <Glacier/ZItem.h>
 #include <Glacier/SExternalReferences.h>
+#include <Glacier/ZGameLoopManager.h>
+#include <Glacier/ZAIGameState.h>
 
 #include <Util/ImGuiUtils.h>
 
 #undef min
+
+Player::~Player() {
+    const ZMemberDelegate<Player, void(const SGameUpdateEvent&)> s_Delegate(this, &Player::OnFrameUpdate);
+    Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
+}
+
+void Player::OnEngineInitialized() {
+    const ZMemberDelegate<Player, void(const SGameUpdateEvent&)> s_Delegate(this, &Player::OnFrameUpdate);
+    Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
+}
+
+void Player::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
+    ZHitman5* s_Hitman = s_LocalHitman.m_pInterfaceRef;
+
+    // The game clears m_bIsHiding on its own (leaving a hiding spot, cutscenes...).
+    if (s_Hitman && m_IsInvisible && ++m_EnforceTimer >= 20) {
+        m_EnforceTimer = 0;
+
+        if (!s_Hitman->m_bIsHiding) {
+            s_Hitman->m_bIsHiding = true;
+        }
+    }
+
+    const int s_Pending = m_PendingHeroHidden.exchange(-1);
+
+    if (s_Pending < 0) {
+        return;
+    }
+
+    if (!m_AICrippleEntity && !CreateAICrippleEntity()) {
+        return;
+    }
+
+    const std::string s_PinName = s_Pending == 1 ? "SetHeroHidden" : "SetHeroVisible";
+
+    m_AICrippleEntity.SignalInputPin(s_PinName);
+}
+
+bool Player::CreateAICrippleEntity() {
+    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+    if (!s_Scene) {
+        Logger::Error("[Player] Scene not loaded!");
+        return false;
+    }
+
+    constexpr auto s_AICrippleEntityFactoryId = ResId<"[modules:/zaicrippleentity.class].pc_entitytype">;
+
+    TResourcePtr<ZTemplateEntityFactory> s_AICrippleEntityFactory;
+    Globals::ResourceManager->LoadResource(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId);
+
+    if (!s_AICrippleEntityFactory) {
+        Logger::Error("[Player] AI cripple entity resource is not loaded!");
+        return false;
+    }
+
+    SExternalReferences s_ExternalRefs;
+
+    Functions::ZEntityManager_NewEntity->Call(
+        Globals::EntityManager,
+        m_AICrippleEntity,
+        "",
+        s_AICrippleEntityFactory,
+        s_Scene.m_entityRef,
+        s_ExternalRefs,
+        -1
+    );
+
+    if (!m_AICrippleEntity) {
+        Logger::Error("[Player] Failed to spawn AI cripple entity!");
+        return false;
+    }
+
+    return true;
+}
 
 void Player::Init() {
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Player::OnClearScene);
@@ -35,6 +113,8 @@ void Player::Init() {
     Hooks::ZHM5ItemWeapon_FireProjectiles->AddDetour(this, &Player::ZHM5ItemWeapon_FireProjectiles);
     Hooks::ZHM5ItemWeapon_IsFiring->AddDetour(this, &Player::ZHM5ItemWeapon_IsFiring);
     Hooks::ZActor_YouGotHit->AddDetour(this, &Player::ZActor_YouGotHit);
+    Hooks::ZGameStatsManager_SendAISignals01->AddDetour(this, &Player::ZGameStatsManager_SendAISignals);
+    Hooks::ZGameStatsManager_SendAISignals02->AddDetour(this, &Player::ZGameStatsManager_SendAISignals);
 }
 
 void Player::OnDrawMenu() {
@@ -72,10 +152,12 @@ void Player::OnDrawUI(const bool p_HasFocus) {
 
         ImGui::EndDisabled();
 
-        bool s_IsInvisible = s_Hitman ? s_Hitman->m_bIsHiding : false;
+        if (ImGui::Checkbox("Is invisible", &m_IsInvisible)) {
+            if (s_Hitman) {
+                s_Hitman->m_bIsHiding = m_IsInvisible;
+            }
 
-        if (ImGui::Checkbox("Is invisible", &s_IsInvisible)) {
-            s_Hitman->m_bIsHiding = s_IsInvisible;
+            m_PendingHeroHidden = m_IsInvisible ? 1 : 0;
         }
 
         if (ImGui::Checkbox("Infinite ammo", &m_IsInfiniteAmmoEnabled)) {
@@ -617,6 +699,11 @@ DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p
     m_IsInfiniteAmmoEnabled = false;
     m_GlobalOutfitKit = {};
 
+    // The AI cripple entity belongs to the scene being unloaded; the new 47 starts visible.
+    m_AICrippleEntity = {};
+    m_PendingHeroHidden = -1;
+    m_IsInvisible = false;
+
     return { HookAction::Continue() };
 }
 
@@ -789,6 +876,29 @@ DEFINE_PLUGIN_DETOUR(Player, bool, ZActor_YouGotHit, IBaseCharacter* th, const S
         ZActor* s_Actor = static_cast<ZActor*>(th);
 
         s_Actor->m_fCurrentHitPoints = 0.f;
+    }
+
+    return { HookAction::Continue() };
+}
+
+// While invisible, 47 is never identified. Before the game broadcasts its AI state (the
+// "Compromised" HUD, signals to NPCs), clear what points at 47: broken / suspicious /
+// investigated disguise, 47 in vision, trespassing spotted, and the tension towards him.
+// The general tension is left untouched: a gunshot is still heard and a body is still found
+// and investigated, NPCs just don't know who did it.
+// Note: capping ZKnowledge::SetGameTension instead makes the game crash ~60-75 s after a kill
+// (guards keep requesting combat in a loop).
+DEFINE_PLUGIN_DETOUR(Player, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th) {
+    if (m_IsInvisible && th) {
+        auto& s_State = th->m_gameState;
+
+        s_State.m_bDisguiseBroken = false;
+        s_State.m_bDisguiseSuspicious = false;
+        s_State.m_bDisguiseBeingInvestigated = false;
+        s_State.m_bHitmanInVision = false;
+        s_State.m_bHitmanTrespassingSpotted = false;
+        s_State.m_eGameTensionToHitmanGuard = EGameTension::EGT_Ambient;
+        s_State.m_eGameTensionToHitmanCivilian = EGameTension::EGT_Ambient;
     }
 
     return { HookAction::Continue() };
