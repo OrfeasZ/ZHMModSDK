@@ -3,15 +3,21 @@
 #include "IPluginInterface.h"
 
 #include <Glacier/ZEntity.h>
+#include <Glacier/ZInput.h>
+
+#include <Util/ActorTeleporter.h>
+
+#include <string>
+#include <vector>
 
 #include <atomic>
 
 struct SGameUpdateEvent;
-class ZGameStatsManager;
 
 class ZGlobalOutfitKit;
 class ZHitman5;
 class ZHM5CrippleBox;
+class ZGameStatsManager;
 class ZOutfitVariationCollection;
 
 class Player : public IPluginInterface {
@@ -33,11 +39,23 @@ private:
         ZOutfitVariationCollection* p_Collection, const std::string& p_CharSetCharacterType, uint8_t p_VariationIndex
     );
 
-    void ToggleInfiniteAmmo();
-    bool CreateHM5CrippleBoxEntity();
-
+    // Invisibility: m_bIsHiding alone left 47 "partially visible". The AI is also told through
+    // the cutscene signal of a ZAICrippleEntity (SetHeroHidden / SetHeroVisible), sent from the
+    // game update.
     void OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent);
     bool CreateAICrippleEntity();
+
+    // Options remembered between missions, ZHitman5 layout check on mission start, and
+    // "Teleport all actors" done one actor per frame.
+    void LoadOptions();
+    void SaveOptions();
+    void ApplyHitmanState(ZHitman5* p_Hitman, bool p_OnLoad);
+    bool CheckLayout(const TEntityRef<ZHitman5>& p_Hitman);
+    void TeleportAimedActor();
+    void BuildTeleportAllQueue();
+
+    void ToggleInfiniteAmmo();
+    bool CreateHM5CrippleBoxEntity();
 
     DECLARE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene);
 
@@ -98,13 +116,36 @@ private:
 
     ZEntityRef m_HM5CrippleBoxEntity;
 
-    // Invisibility: m_bIsHiding alone left 47 "partially visible". The AI is also told through
-    // the cutscene signal of a ZAICrippleEntity (SetHeroHidden / SetHeroVisible), sent from the
-    // game update. -1: nothing to do, 0: make 47 visible, 1: hide him.
     ZEntityRef m_AICrippleEntity;
+    // -1: nothing to do, 0: make 47 visible, 1: hide him.
     std::atomic<int> m_PendingHeroHidden = -1;
     bool m_IsInvisible = false;
+    bool m_IsInvincible = false;
+
+    bool m_RememberOptions = true;
+    bool m_LayoutOk = true;
+    std::string m_LayoutError;
+
+    ZHitman5* m_LastHitman = nullptr;
+    int m_ApplyDelay = 0;
     int m_EnforceTimer = 0;
+    std::atomic<bool> m_StateDirty = false;
+    std::atomic<bool> m_TeleportAllRequested = false;
+
+    // Freeze all NPCs (ZActorManager::m_bDisableAIBehavior).
+    // -1 nothing to do, 0 unfreeze, 1 freeze, 2 toggle; applied in OnFrameUpdate.
+    std::atomic<int> m_FreezeNpcsRequest = -1;
+    static bool AreNpcsFrozen();
+    static void SetNpcsFrozen(bool p_Frozen);
+
+    struct PendingTeleport {
+        ZEntityRef Entity;
+        void* Actor;
+        SMatrix Target;
+    };
+
+    std::vector<PendingTeleport> m_TeleportAllQueue;
+    ActorTeleporter m_ActorTeleporter;
 };
 
 DECLARE_ZHM_PLUGIN(Player)
