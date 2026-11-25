@@ -269,6 +269,8 @@ private:
 
 #pragma endregion
 
+    bool PatchSetUnhandledExceptionFilterCall();
+
     bool PatchCodeInternal(
         const char* p_Pattern, const char* p_Mask, void* p_NewCode, size_t p_CodeSize, ptrdiff_t p_Offset,
         void* p_OriginalCode
