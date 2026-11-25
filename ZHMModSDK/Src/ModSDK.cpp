@@ -26,6 +26,7 @@
 #include "UI/Console.h"
 #include "UI/MainMenu.h"
 #include "UI/ModSelector.h"
+#include "Hotkeys.h"
 
 #include "Glacier/ZModule.h"
 #include "Glacier/ZScene.h"
@@ -232,6 +233,7 @@ ModSDK::ModSDK() {
     m_UIConsole = std::make_shared<UI::Console>();
     m_UIMainMenu = std::make_shared<UI::MainMenu>();
     m_UIModSelector = std::make_shared<UI::ModSelector>();
+    m_Hotkeys = std::make_shared<HotkeyManager>();
 
     m_DirectXTKRenderer = std::make_shared<Rendering::Renderers::DirectXTKRenderer>();
     m_ImguiRenderer = std::make_shared<Rendering::Renderers::ImGuiRenderer>();
@@ -440,6 +442,43 @@ void ModSDK::LoadConfiguration() {
             m_UseGameCursor = s_Value == "true" || s_Value == "1";
         }
     }
+}
+
+void ModSDK::SetConsoleScanCode(uint8_t p_ScanCode) {
+    m_ConsoleScanCode = p_ScanCode;
+
+    UpdateSDKIni(
+        [&](auto& s_SdkMap) {
+            s_SdkMap.set("console_key", std::format("0x{:02X}", p_ScanCode));
+        }
+    );
+}
+
+void ModSDK::SetUIToggleScanCode(uint8_t p_ScanCode) {
+    m_UIToggleScanCode = p_ScanCode;
+
+    UpdateSDKIni(
+        [&](auto& s_SdkMap) {
+            s_SdkMap.set("ui_toggle_key", std::format("0x{:02X}", p_ScanCode));
+        }
+    );
+}
+
+void ModSDK::RegisterHotkey(IPluginInterface* p_Plugin, const char* p_Id, const char* p_Label, const char* p_Default) {
+    m_Hotkeys->Register(p_Plugin, p_Id, p_Label, p_Default);
+}
+
+bool ModSDK::IsHotkeyPressed(IPluginInterface* p_Plugin, const char* p_Id) {
+    return m_Hotkeys->IsPressed(p_Plugin, p_Id);
+}
+
+void ModSDK::GetHotkeyText(IPluginInterface* p_Plugin, const char* p_Id, char* p_Buffer, size_t p_Size) {
+    if (!p_Buffer || p_Size == 0) {
+        return;
+    }
+
+    const std::string s_Text = m_Hotkeys->Text(p_Plugin, p_Id);
+    strncpy_s(p_Buffer, p_Size, s_Text.c_str(), _TRUNCATE);
 }
 
 void ModSDK::SetHasShownUIToggleWarning() {
@@ -1017,6 +1056,7 @@ void ModSDK::OnDrawUI(bool p_HasFocus) {
     m_UIConsole->Draw(p_HasFocus);
     m_UIMainMenu->Draw(p_HasFocus);
     m_UIModSelector->Draw(p_HasFocus);
+    m_Hotkeys->Draw(p_HasFocus);
 
     // If crash reporting is not configured, ask the user if they want to enable it.
     if (!m_EnableSentry.has_value()) {
@@ -1128,6 +1168,7 @@ void ModSDK::OnDepthDraw3D() const {
 }
 
 void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, bool p_LiveLoad) {
+    m_Hotkeys->NoteMod(p_Mod, p_Name);
     p_Mod->SetupUI();
     p_Mod->Init();
 
@@ -1138,6 +1179,7 @@ void ModSDK::OnModLoaded(const std::string& p_Name, IPluginInterface* p_Mod, boo
 }
 
 void ModSDK::OnModUnloading(const std::string& p_Name, IPluginInterface* p_Mod) {
+    m_Hotkeys->RemovePlugin(p_Mod);
     p_Mod->CleanupUI();
 }
 

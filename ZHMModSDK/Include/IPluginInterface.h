@@ -4,6 +4,8 @@
 #include "IModSDK.h"
 #include "IRenderer.h"
 
+#include <string>
+
 class IPluginInterface {
 public:
     virtual ~IPluginInterface() = default;
@@ -86,6 +88,32 @@ public:
      */
     void SetSettingBool(const ZString& p_Section, const ZString& p_Name, bool p_Value) {
         SDK()->SetPluginSettingBool(this, p_Section, p_Name, p_Value);
+    }
+
+    /**
+     * Declare a keyboard shortcut that the user can change from the SDK menu (SHORTCUTS).
+     * @param p_Id Stable identifier, stored in this mod's settings, section [hotkeys].
+     * @param p_Label Text shown in the shortcuts window.
+     * @param p_Default Default combination, e.g. "Alt+I", "F9", or "" for none.
+     */
+    void RegisterHotkey(const char* p_Id, const char* p_Label, const char* p_Default) {
+        SDK()->RegisterHotkey(this, p_Id, p_Label, p_Default);
+    }
+
+    /**
+     * True on the frame the shortcut is pressed. Call it once per frame.
+     */
+    bool IsHotkeyPressed(const char* p_Id) {
+        return SDK()->IsHotkeyPressed(this, p_Id);
+    }
+
+    /**
+     * The current combination as text ("Alt+I", "None").
+     */
+    std::string GetHotkeyText(const char* p_Id) {
+        char s_Buffer[128] {};
+        SDK()->GetHotkeyText(this, p_Id, s_Buffer, sizeof(s_Buffer));
+        return s_Buffer;
     }
 
     /**

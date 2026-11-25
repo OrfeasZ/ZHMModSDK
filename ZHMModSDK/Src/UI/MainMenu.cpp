@@ -6,6 +6,7 @@
 #include "imgui_internal.h"
 #include "ModSDK.h"
 #include "ModSelector.h"
+#include "Hotkeys.h"
 
 using namespace UI;
 
@@ -40,6 +41,10 @@ void MainMenu::Draw(bool p_HasFocus) {
 
     if (ImGui::Button(ICON_MD_TOKEN " MODS")) {
         ModSDK::GetInstance()->GetUIModSelector()->Show();
+    }
+
+    if (ImGui::Button(ICON_MD_KEYBOARD " SHORTCUTS")) {
+        ModSDK::GetInstance()->GetHotkeys()->Show();
     }
 
     ModSDK::GetInstance()->OnDrawMenu();
