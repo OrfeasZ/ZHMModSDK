@@ -144,7 +144,9 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         static ZRepositoryID s_RepositoryId = ZRepositoryID("");
         static TEntityRef<ZGlobalOutfitKit> s_GlobalOutfitKit = {};
         static uint8_t s_CurrentCharacterSetIndex = 0;
-        static std::string s_CurrentCharSetCharacterType = "HeroA";
+        // An NPC wears the "Actor" version of an outfit; "HeroA" is 47's and is empty for almost
+        // every NPC outfit, which spawned black silhouettes (#166).
+        static std::string s_CurrentCharSetCharacterType = "Actor";
         static uint8_t s_CurrentOutfitVariationIndex = 0;
 
         Util::ImGuiUtils::InputWithAutocomplete(
@@ -550,8 +552,22 @@ void Assets::EquipOutfit(
             const auto& s_TargetVariations = s_TargetType->m_pInterfaceRef->m_aVariations;
             const size_t s_Count = std::min(s_ActorVariations.size(), s_TargetVariations.size());
 
+            size_t s_Copied = 0;
+
             for (size_t i = 0; i < s_Count; ++i) {
+                // An empty version (FFFFFFFFFFFFFFFF) would leave the actor without an outfit:
+                // keep its "Actor" version instead.
+                if (!s_TargetVariations[i].m_pInterfaceRef ||
+                    s_TargetVariations[i].m_pInterfaceRef->m_Outfit.GetID() == 0xFFFFFFFFFFFFFFFFull) {
+                    continue;
+                }
+
                 s_ActorVariations[i].m_pInterfaceRef->m_Outfit = s_TargetVariations[i].m_pInterfaceRef->m_Outfit;
+                ++s_Copied;
+            }
+
+            if (s_Copied == 0) {
+                Logger::Info("[Assets] Outfit has no '{}' version, using 'Actor' instead.", p_CharSetCharacterType);
             }
         }
     }

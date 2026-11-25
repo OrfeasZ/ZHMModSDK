@@ -783,8 +783,22 @@ void Editor::EquipOutfit(
             const auto& s_TargetVariations = s_TargetType->m_pInterfaceRef->m_aVariations;
             const size_t s_Count = std::min(s_ActorVariations.size(), s_TargetVariations.size());
 
+            size_t s_Copied = 0;
+
             for (size_t i = 0; i < s_Count; ++i) {
+                // An empty version (FFFFFFFFFFFFFFFF) would leave the actor without an outfit:
+                // keep its "Actor" version instead.
+                if (!s_TargetVariations[i].m_pInterfaceRef ||
+                    s_TargetVariations[i].m_pInterfaceRef->m_Outfit.GetID() == 0xFFFFFFFFFFFFFFFFull) {
+                    continue;
+                }
+
                 s_ActorVariations[i].m_pInterfaceRef->m_Outfit = s_TargetVariations[i].m_pInterfaceRef->m_Outfit;
+                ++s_Copied;
+            }
+
+            if (s_Copied == 0) {
+                Logger::Info("[Editor] Outfit has no '{}' version, using 'Actor' instead.", p_CharSetCharacterType);
             }
         }
     }
