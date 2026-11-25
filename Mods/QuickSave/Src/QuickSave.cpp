@@ -29,6 +29,9 @@ QuickSave::~QuickSave() {
 }
 
 void QuickSave::Init() {
+    RegisterHotkey("save", "Quick save", "F5");
+    RegisterHotkey("load", "Quick load", "F9");
+
     Hooks::ZEntitySceneContext_LoadScene->AddDetour(this, &QuickSave::OnLoadScene);
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &QuickSave::OnClearScene);
     Hooks::ZSaveSlotManager_QuickSave->AddDetour(this, &QuickSave::OnQuickSave);
@@ -37,29 +40,18 @@ void QuickSave::Init() {
 void QuickSave::OnEngineInitialized() {
     const ZMemberDelegate<QuickSave, void(const SGameUpdateEvent&)> s_Delegate(this, &QuickSave::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
-
-    const char* binds = "QuickSaveInput={"
-        "QuickSave=tap(kb,f5);"
-        "QuickLoad=tap(kb,f9);};";
-
-    if (ZInputActionManager::AddBindings(binds)) {
-        Logger::Debug("[QuickSave] Successfully added bindings.");
-    }
-    else {
-        Logger::Debug("[QuickSave] Failed to add bindings.");
-    }
 }
 
 void QuickSave::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     if (!*Globals::ApplicationEngineWin32)
         return;
 
-    if (Functions::ZInputAction_Digital->Call(&m_QuickSave, -1)) {
+    if (IsHotkeyPressed("save")) {
         if (const auto s_Ent = GetLevelControlEntity()) {
             s_Ent.SignalInputPin("SaveQuick");
         }
     }
-    else if (Functions::ZInputAction_Digital->Call(&m_QuickLoad, -1)) {
+    else if (IsHotkeyPressed("load")) {
         if (const auto s_Ent = GetLevelControlEntity()) {
             s_Ent.SignalInputPin("LoadQuick");
         }

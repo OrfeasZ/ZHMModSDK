@@ -36,7 +36,6 @@ void Noclip::OnEngineInitialized() {
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
 
     const char* binds = "NoclipInput={"
-        "ToggleNoclip=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,n);"
         "Forward=hold(kb,w);"
         "Backward=hold(kb,s);"
         "Left=hold(kb,a);"
@@ -52,6 +51,8 @@ void Noclip::OnEngineInitialized() {
 }
 
 void Noclip::Init() {
+    RegisterHotkey("toggle", "Toggle noclip", "Ctrl+N");
+
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Noclip::OnClearScene);
 }
 
@@ -84,7 +85,7 @@ void Noclip::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
     if (!s_CurrentCamera)
         return;
 
-    if (Functions::ZInputAction_Digital->Call(&m_ToggleNoclipAction, -1)) {
+    if (IsHotkeyPressed("toggle")) {
         m_NoclipEnabled = !m_NoclipEnabled;
 
         if (m_NoclipEnabled) {
