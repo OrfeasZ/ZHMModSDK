@@ -142,6 +142,25 @@ void Editor::Init() {
     m_TransformToolbarOffset.y = GetSettingDouble("general", "transform_toolbar_y", 8.0);
     m_EditorWindowsVisible = GetSettingBool("general", "editor_windows_visible", true);
     m_UiScale = static_cast<float>(GetSettingDouble("general", "ui_scale", 1.0));
+
+    // Actors window filters, remembered between sessions (editor.ini, section [actors_filter]).
+    m_ShowAliveActors = GetSettingBool("actors_filter", "alive", false);
+    m_ShowCivilians = GetSettingBool("actors_filter", "civilians", true);
+    m_ShowGuards = GetSettingBool("actors_filter", "guards", true);
+    m_ShowMaleActors = GetSettingBool("actors_filter", "male", false);
+    m_ShowFemaleActors = GetSettingBool("actors_filter", "female", false);
+    m_ShowTargets = GetSettingBool("actors_filter", "targets", false);
+    m_ShowActiveEnforcers = GetSettingBool("actors_filter", "active_enforcers", false);
+    m_ShowPotentialEnforcers = GetSettingBool("actors_filter", "potential_enforcers", false);
+    m_ShowDynamicEnforcers = GetSettingBool("actors_filter", "dynamic_enforcers", false);
+    m_ShowCrowdCharacters = GetSettingBool("actors_filter", "crowd_characters", false);
+    m_ShowActiveSentries = GetSettingBool("actors_filter", "active_sentries", false);
+    m_ShowActorsWithClothOutfit = GetSettingBool("actors_filter", "cloth_outfit", false);
+    m_SelectActorOnMouseClick = GetSettingBool("actors_filter", "select_on_click", false);
+    {
+        const ZString s_Name = GetSetting("actors_filter", "name", "");
+        m_SavedActorName = std::string(s_Name.c_str(), s_Name.size());
+    }
     SetEditorScale(m_UiScale);
 
     m_BoxReflectionOutputFolder = GetSetting("general", "box_reflection_output_folder", "").c_str();

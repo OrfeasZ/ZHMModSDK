@@ -1117,6 +1117,7 @@ private:
     bool m_ShowActiveSentries = false;
     bool m_ShowActorsWithClothOutfit = false;
     bool m_SelectActorOnMouseClick = false;
+    std::string m_SavedActorName;
     bool m_ScrollToActor = false;
 
     std::vector<std::pair<ZRepositoryID, std::string>> m_RepositoryWeapons;

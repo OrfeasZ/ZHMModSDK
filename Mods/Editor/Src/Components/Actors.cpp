@@ -47,33 +47,43 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
         ImGui::Text("Actor name");
         ImGui::SameLine();
 
-        ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName));
+        // The searched name is remembered like the filters.
+        static bool s_ActorNameLoaded = false;
+
+        if (!s_ActorNameLoaded) {
+            s_ActorNameLoaded = true;
+            strncpy_s(s_ActorName, sizeof(s_ActorName), m_SavedActorName.c_str(), _TRUNCATE);
+        }
+
+        if (ImGui::InputText("##ActorName", s_ActorName, sizeof(s_ActorName))) {
+            SetSetting("actors_filter", "name", std::string(s_ActorName));
+        }
 
         if (ImGui::CollapsingHeader("Filters")) {
-            ImGui::Checkbox("Show alive actors", &m_ShowAliveActors);
+            if (ImGui::Checkbox("Show alive actors", &m_ShowAliveActors)) SetSettingBool("actors_filter", "alive", m_ShowAliveActors);
 
             ImGui::Separator();
 
-            ImGui::Checkbox("Show civilians", &m_ShowCivilians);
-            ImGui::Checkbox("Show guards", &m_ShowGuards);
+            if (ImGui::Checkbox("Show civilians", &m_ShowCivilians)) SetSettingBool("actors_filter", "civilians", m_ShowCivilians);
+            if (ImGui::Checkbox("Show guards", &m_ShowGuards)) SetSettingBool("actors_filter", "guards", m_ShowGuards);
 
             ImGui::Spacing();
 
-            ImGui::Checkbox("Show male actors", &m_ShowMaleActors);
-            ImGui::Checkbox("Show female actors", &m_ShowFemaleActors);
+            if (ImGui::Checkbox("Show male actors", &m_ShowMaleActors)) SetSettingBool("actors_filter", "male", m_ShowMaleActors);
+            if (ImGui::Checkbox("Show female actors", &m_ShowFemaleActors)) SetSettingBool("actors_filter", "female", m_ShowFemaleActors);
 
             ImGui::Separator();
 
-            ImGui::Checkbox("Show targets", &m_ShowTargets);
-            ImGui::Checkbox("Show active enforcers", &m_ShowActiveEnforcers);
-            ImGui::Checkbox("Show potential enforcers", &m_ShowPotentialEnforcers);
-            ImGui::Checkbox("Show dynamic enforcers", &m_ShowDynamicEnforcers);
-            ImGui::Checkbox("Show crowd characters", &m_ShowCrowdCharacters);
-            ImGui::Checkbox("Show active sentries", &m_ShowActiveSentries);
-            ImGui::Checkbox("Show actors with cloth outfit", &m_ShowActorsWithClothOutfit);
+            if (ImGui::Checkbox("Show targets", &m_ShowTargets)) SetSettingBool("actors_filter", "targets", m_ShowTargets);
+            if (ImGui::Checkbox("Show active enforcers", &m_ShowActiveEnforcers)) SetSettingBool("actors_filter", "active_enforcers", m_ShowActiveEnforcers);
+            if (ImGui::Checkbox("Show potential enforcers", &m_ShowPotentialEnforcers)) SetSettingBool("actors_filter", "potential_enforcers", m_ShowPotentialEnforcers);
+            if (ImGui::Checkbox("Show dynamic enforcers", &m_ShowDynamicEnforcers)) SetSettingBool("actors_filter", "dynamic_enforcers", m_ShowDynamicEnforcers);
+            if (ImGui::Checkbox("Show crowd characters", &m_ShowCrowdCharacters)) SetSettingBool("actors_filter", "crowd_characters", m_ShowCrowdCharacters);
+            if (ImGui::Checkbox("Show active sentries", &m_ShowActiveSentries)) SetSettingBool("actors_filter", "active_sentries", m_ShowActiveSentries);
+            if (ImGui::Checkbox("Show actors with cloth outfit", &m_ShowActorsWithClothOutfit)) SetSettingBool("actors_filter", "cloth_outfit", m_ShowActorsWithClothOutfit);
         }
 
-        ImGui::Checkbox("Select actor in list when clicked in game", &m_SelectActorOnMouseClick);
+        if (ImGui::Checkbox("Select actor in list when clicked in game", &m_SelectActorOnMouseClick)) SetSettingBool("actors_filter", "select_on_click", m_SelectActorOnMouseClick);
 
         ImGui::Separator();
 
