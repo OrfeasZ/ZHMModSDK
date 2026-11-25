@@ -206,7 +206,7 @@ protected:
         m_Detours.push_back(nullptr);
 
         if (p_Target == nullptr) {
-            Fail();
+            Fail(p_HookName);
             Logger::Error(
                 "Could not find address for hook '{}'. This probably means that the game was updated and the SDK requires changes.",
                 p_HookName
@@ -222,7 +222,7 @@ protected:
         auto s_Result = MH_CreateHook(m_Target, p_Detour, &s_Original);
 
         if (s_Result != MH_OK) {
-            Fail();
+            Fail(p_HookName);
             Logger::Error(
                 "Could not create hook '{}' at address {}. Error code: {}.", p_HookName, fmt::ptr(p_Target),
                 static_cast<int>(s_Result)
@@ -233,7 +233,7 @@ protected:
         s_Result = MH_EnableHook(m_Target);
 
         if (s_Result != MH_OK) {
-            Fail();
+            Fail(p_HookName);
             Logger::Error(
                 "Could install detour for hook '{}' at address {}. Error code: {}.", p_HookName, fmt::ptr(p_Target),
                 static_cast<int>(s_Result)
@@ -255,7 +255,7 @@ protected:
         m_Detours.push_back(nullptr);
 
         if (p_Original == nullptr) {
-            Fail();
+            Fail(p_HookName);
             Logger::Error(
                 "Could not find address for hook '{}'. This probably means that the game was updated and the SDK requires changes.",
                 p_HookName
@@ -588,6 +588,8 @@ private:
         const auto s_Module = LoadLibraryA(p_ModuleName);
 
         if (s_Module == nullptr) {
+            // Not a game update: the module is simply not part of this version of the game.
+            g_NextFailureIsMissingModule = true;
             Logger::Error(
                 "Could not load requested module '{}' for hook '{}' (error: {}).", p_ModuleName, p_HookName,
                 GetLastError()

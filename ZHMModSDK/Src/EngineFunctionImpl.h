@@ -15,7 +15,7 @@ public:
     PatternEngineFunction(const char* p_FunctionName, const char* p_Pattern, const char* p_Mask) :
         EngineFunction<ReturnType(Args...)>(GetTarget(p_Pattern, p_Mask)) {
         if (this->m_Address == nullptr) {
-            Fail();
+            Fail(p_FunctionName);
             Logger::Error(
                 "Could not locate address for function '{}'. This probably means that the game was updated and the SDK requires changes.",
                 p_FunctionName
@@ -44,7 +44,7 @@ public:
     PatternRelativeEngineFunction(const char* p_FunctionName, const char* p_Pattern, const char* p_Mask) :
         EngineFunction<ReturnType(Args...)>(GetTarget(p_FunctionName, p_Pattern, p_Mask)) {
         if (this->m_Address == nullptr) {
-            Fail();
+            Fail(p_FunctionName);
             Logger::Error(
                 "Could not locate address for function '{}'. This probably means that the game was updated and the SDK requires changes.",
                 p_FunctionName
