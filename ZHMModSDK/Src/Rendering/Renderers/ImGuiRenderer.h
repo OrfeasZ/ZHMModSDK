@@ -10,6 +10,7 @@
 #include <vector>
 #include <directx/d3d12.h>
 #include <dxgi1_4.h>
+#include <unordered_set>
 
 #include <imgui.h>
 
@@ -47,6 +48,7 @@ namespace Rendering::Renderers {
             DrawDataSnapshot& operator=(const DrawDataSnapshot&) = delete;
 
             ImDrawData m_DrawData;
+            std::unordered_set<ImTextureID> m_TextureIDs;
         };
 
         ImGuiRenderer();
@@ -146,8 +148,7 @@ namespace Rendering::Renderers {
         );
 
         void ReleaseDeferredResources(std::vector<DeferredResource>& p_Resources);
-
-        std::vector<DeferredResource> TakeDeferredResources();
+        void RetireUnusedTextures(FrameContext& p_FrameCtx);
 
         // Waits for the GPU, then releases deferred textures and draw data snapshots before textures are destroyed.
         void ReleaseFrameResources();
