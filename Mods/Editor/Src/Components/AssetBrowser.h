@@ -20,6 +20,8 @@
 #include "TextureReadback.h"
 #include "ThumbnailCache.h"
 
+class Editor;
+
 struct AssetItem {
     std::string Name;
     std::string SearchName;
@@ -36,7 +38,9 @@ std::string_view GetAssetItemLabel(const AssetItem& p_Item);
 
 class AssetBrowser {
 public:
-    explicit AssetBrowser(EntityTreeDeleter& p_TreeDeleter);
+    explicit AssetBrowser(Editor& p_Editor);
+
+    void Init();
 
     void Draw(const char* p_WindowName);
     void Update(float p_DeltaSeconds);
@@ -106,6 +110,8 @@ private:
     void AbortCapture();
     void DestroyPreview();
     std::string GetItemPath(const ZRuntimeResourceID& p_ResourceId);
+
+    Editor& m_Editor;
 
     std::shared_ptr<AssetItem> m_Root;
     std::future<std::shared_ptr<AssetItem>> m_BuildFuture;

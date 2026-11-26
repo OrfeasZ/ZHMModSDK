@@ -34,7 +34,7 @@
 #include "Util/StringUtils.h"
 #include "Util/HttpUtils.h"
 
-Editor::Editor() : m_AssetBrowser(m_EntityTreeDeleter) {
+Editor::Editor() : m_AssetBrowser(*this) {
     // Disable ZTemplateEntityBlueprintFactory freeing its associated data.
     uint8_t s_Nop[0x45] = {};
     memset(s_Nop, 0x90, sizeof(s_Nop));
@@ -145,6 +145,8 @@ void Editor::Init() {
     SetEditorScale(m_UiScale);
 
     m_BoxReflectionOutputFolder = GetSetting("general", "box_reflection_output_folder", "").c_str();
+
+    m_AssetBrowser.Init();
 }
 
 void Editor::OnDrawMenu() {

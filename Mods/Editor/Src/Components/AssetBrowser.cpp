@@ -14,6 +14,7 @@
 #include "IconsMaterialDesign.h"
 #include "Util/StringUtils.h"
 #include "Widgets.h"
+#include "../Editor.h"
 
 #include <Globals.h>
 #include <Glacier/ZModule.h>
@@ -21,7 +22,18 @@
 #include <Glacier/ZApplicationEngineWin32.h>
 #include <Glacier/ZResource.h>
 
-AssetBrowser::AssetBrowser(EntityTreeDeleter& p_TreeDeleter) : m_AssetPreview(p_TreeDeleter) {}
+AssetBrowser::AssetBrowser(Editor& p_Editor) :
+    m_Editor(p_Editor),
+    m_AssetPreview(p_Editor.m_EntityTreeDeleter) {
+}
+
+void AssetBrowser::Init() {
+    m_TileSize = static_cast<int32>(std::clamp<int64>(
+        m_Editor.GetSettingInt("asset_browser", "tile_size", m_TileSize),
+        40,
+        128
+    ));
+}
 
 void AssetBrowser::OnClearScene() {
     AbortCapture();
@@ -1585,6 +1597,10 @@ void AssetBrowser::DrawFooter(const float p_Height) {
 
     if (ImGui::SliderInt("##AssetBrowserTileSize", &m_TileSize, 40, 128, "Size %d")) {
         m_TileSize = std::clamp((m_TileSize + 2) / 4 * 4, 40, 128);
+    }
+
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        m_Editor.SetSettingInt("asset_browser", "tile_size", m_TileSize);
     }
 
     ImGui::PopStyleVar();

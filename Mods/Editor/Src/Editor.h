@@ -47,6 +47,8 @@ struct QneTransform {
 
 class Editor : public IPluginInterface {
 public:
+    friend class AssetBrowser;
+
     Editor();
     ~Editor() override;
 
