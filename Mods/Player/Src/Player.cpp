@@ -1,5 +1,8 @@
 #include "Player.h"
 
+#include <format>
+#include <string>
+
 #include <imgui_internal.h>
 
 #include <IconsMaterialDesign.h>
@@ -12,12 +15,415 @@
 #include <Glacier/ZModule.h>
 #include <Glacier/ZItem.h>
 #include <Glacier/SExternalReferences.h>
+#include <Glacier/ZGameLoopManager.h>
+#include <Glacier/ZAIGameState.h>
+#include <Glacier/ZCameraEntity.h>
+#include <Glacier/ZInputActionManager.h>
+
+#include <cfloat>
+#include <cmath>
 
 #include <Util/ImGuiUtils.h>
 
 #undef min
 
+Player::~Player() {
+    const ZMemberDelegate<Player, void(const SGameUpdateEvent&)> s_Delegate(this, &Player::OnFrameUpdate);
+    Globals::GameLoopManager->UnregisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
+
+    // Mod unloaded: do not leave the NPCs frozen with no checkbox to unfreeze them.
+    SetNpcsFrozen(false);
+}
+
+// Freeze all NPCs. This is the game's own debug switch: while it is set, ZActorManager skips
+// the AI update (and the situations update), NPCs stay where they are and react to nothing.
+// No position is ever written. Tested in Paris: 45 s frozen, then everything resumes.
+bool Player::AreNpcsFrozen() {
+    return Globals::ActorManager && Globals::ActorManager->m_bDisableAIBehavior;
+}
+
+void Player::SetNpcsFrozen(bool p_Frozen) {
+    if (!Globals::ActorManager || Globals::ActorManager->m_bDisableAIBehavior == p_Frozen) {
+        return;
+    }
+
+    Globals::ActorManager->m_bDisableAIBehavior = p_Frozen;
+    Logger::Info("[Player] NPCs frozen: {}", p_Frozen);
+}
+
+void Player::OnEngineInitialized() {
+    const ZMemberDelegate<Player, void(const SGameUpdateEvent&)> s_Delegate(this, &Player::OnFrameUpdate);
+    Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdateAlways);
+}
+
+void Player::LoadOptions() {
+    m_RememberOptions = GetSettingBool("options", "remember", true);
+
+    if (!m_RememberOptions) {
+        return;
+    }
+
+    m_IsInvincible = GetSettingBool("options", "invincible", false);
+    m_IsInvisible = GetSettingBool("options", "invisible", false);
+    m_IsInfiniteAmmoEnabled = GetSettingBool("options", "infinite_ammo", false);
+    m_IsNoReloadEnabled = GetSettingBool("options", "no_reload", false);
+    m_IsNoRecoilEnabled = GetSettingBool("options", "no_recoil", false);
+    m_IsSuperAccuracyEnabled = GetSettingBool("options", "super_accuracy", false);
+    m_IsRapidFireEnabled = GetSettingBool("options", "rapid_fire", false);
+    m_IsOneHitKillEnabled = GetSettingBool("options", "one_hit_kill", false);
+}
+
+void Player::SaveOptions() {
+    SetSettingBool("options", "remember", m_RememberOptions);
+    SetSettingBool("options", "invincible", m_IsInvincible);
+    SetSettingBool("options", "invisible", m_IsInvisible);
+    SetSettingBool("options", "infinite_ammo", m_IsInfiniteAmmoEnabled);
+    SetSettingBool("options", "no_reload", m_IsNoReloadEnabled);
+    SetSettingBool("options", "no_recoil", m_IsNoRecoilEnabled);
+    SetSettingBool("options", "super_accuracy", m_IsSuperAccuracyEnabled);
+    SetSettingBool("options", "rapid_fire", m_IsRapidFireEnabled);
+    SetSettingBool("options", "one_hit_kill", m_IsOneHitKillEnabled);
+}
+
+// Layout check: the fields the game describes itself (reflected properties) must be where the
+// SDK expects them. After a game update that moves ZHitman5, invincibility and invisibility
+// (which write to undescribed fields between these markers) are disabled instead of crashing.
+bool Player::CheckLayout(const TEntityRef<ZHitman5>& p_Hitman) {
+    ZHitman5* s_Hitman = p_Hitman.m_pInterfaceRef;
+    auto* s_Entity = p_Hitman.m_entityRef.GetEntity();
+
+    if (!s_Hitman || !s_Entity || !s_Entity->GetType()) {
+        return true;
+    }
+
+    struct SField {
+        const char* Name;
+        uintptr_t Address;
+    };
+
+    const SField s_Fields[] = {
+        { "m_InitialOutfitId", reinterpret_cast<uintptr_t>(&s_Hitman->m_InitialOutfitId) },
+        { "m_rOutfitKit", reinterpret_cast<uintptr_t>(&s_Hitman->m_rOutfitKit) },
+        { "m_nOutfitCharset", reinterpret_cast<uintptr_t>(&s_Hitman->m_nOutfitCharset) },
+        { "m_nOutfitVariation", reinterpret_cast<uintptr_t>(&s_Hitman->m_nOutfitVariation) },
+    };
+
+    const auto s_Base = reinterpret_cast<uintptr_t>(p_Hitman.m_entityRef.m_pObj);
+    int s_Checked = 0;
+    std::string s_Wrong;
+
+    for (const auto& s_Field : s_Fields) {
+        const auto* s_Property = s_Entity->GetType()->FindProperty(
+            Hash::Crc32(s_Field.Name, strlen(s_Field.Name))
+        );
+
+        if (!s_Property) {
+            continue;
+        }
+
+        ++s_Checked;
+
+        if (s_Base + s_Property->m_nPropertyOffset != s_Field.Address) {
+            s_Wrong += std::format(
+                " {} (game +0x{:X}, SDK +0x{:X})", s_Field.Name, s_Property->m_nPropertyOffset,
+                s_Field.Address - s_Base
+            );
+        }
+    }
+
+    if (s_Checked == 0) {
+        Logger::Warn("[Player] Could not verify the ZHitman5 layout (no known property found).");
+        return true;
+    }
+
+    if (!s_Wrong.empty()) {
+        m_LayoutError = "The game was updated: ZHitman5 moved." + s_Wrong;
+        Logger::Error("[Player] {} Invincibility and invisibility are disabled.", m_LayoutError);
+        return false;
+    }
+
+    Logger::Info("[Player] ZHitman5 layout verified ({} fields).", s_Checked);
+    return true;
+}
+
+void Player::ApplyHitmanState(ZHitman5* p_Hitman, bool p_OnLoad) {
+    if (!p_Hitman || !m_LayoutOk) {
+        return;
+    }
+
+    ZHM5Health* s_Health = p_Hitman->m_pHealth;
+
+    if (p_OnLoad) {
+        if (m_IsInvincible && s_Health) {
+            s_Health->m_bInvincible.Set(true);
+        }
+
+        if (m_IsInvisible) {
+            p_Hitman->m_bIsHiding = true;
+            m_PendingHeroHidden = 1;
+        }
+
+        if (m_IsInfiniteAmmoEnabled && !m_HM5CrippleBoxEntity) {
+            ToggleInfiniteAmmo();
+        }
+
+        return;
+    }
+
+    // Change requested (menu or shortcut).
+    if (s_Health) {
+        s_Health->m_bInvincible.Set(m_IsInvincible);
+    }
+
+    p_Hitman->m_bIsHiding = m_IsInvisible;
+    m_PendingHeroHidden = m_IsInvisible ? 1 : 0;
+}
+
+// Bring the actor closest to the center of the screen (8 degrees at most) to 47.
+void Player::TeleportAimedActor() {
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
+    auto* s_Camera = Functions::GetCurrentCamera->Call();
+
+    if (!s_LocalHitman || !s_Camera || !Globals::ActorManager) {
+        return;
+    }
+
+    const SMatrix s_CameraMatrix = s_Camera->GetObjectToWorldMatrix();
+    const float4 s_From = s_CameraMatrix.Trans;
+    const float4 s_Forward = -s_CameraMatrix.ZAxis;
+
+    ZActor* s_Best = nullptr;
+    ZEntityRef s_BestRef;
+    float s_BestCos = std::cos(8.f * 3.14159265f / 180.f);
+
+    for (int i = 0; i < *Globals::NextActorId; ++i) {
+        ZActor* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
+
+        if (!s_Actor || !s_Actor->IsAlive()) {
+            continue;
+        }
+
+        ZEntityRef s_Ref;
+        s_Actor->GetID(s_Ref);
+
+        const auto* s_Spatial = s_Ref.QueryInterface<ZSpatialEntity>();
+
+        if (!s_Spatial) {
+            continue;
+        }
+
+        const float4 s_Pos = s_Spatial->GetObjectToWorldMatrix().Trans;
+        const float s_Dx = s_Pos.x - s_From.x;
+        const float s_Dy = s_Pos.y - s_From.y;
+        const float s_Dz = s_Pos.z + 1.2f - s_From.z;
+        const float s_Dist = std::sqrt(s_Dx * s_Dx + s_Dy * s_Dy + s_Dz * s_Dz);
+
+        if (s_Dist < 1.f || s_Dist > 120.f) {
+            continue;
+        }
+
+        const float s_Cos = (s_Dx * s_Forward.x + s_Dy * s_Forward.y + s_Dz * s_Forward.z) / s_Dist;
+
+        if (s_Cos > s_BestCos) {
+            s_BestCos = s_Cos;
+            s_Best = s_Actor;
+            s_BestRef = s_Ref;
+        }
+    }
+
+    if (!s_Best) {
+        Logger::Info("[Player] No actor under the crosshair.");
+        return;
+    }
+
+    // 1.5 m in front of 47, along the camera direction.
+    SMatrix s_Target = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
+    const float s_Len = std::sqrt(s_Forward.x * s_Forward.x + s_Forward.y * s_Forward.y);
+
+    if (s_Len > 0.01f) {
+        s_Target.Trans.x += s_Forward.x / s_Len * 1.5f;
+        s_Target.Trans.y += s_Forward.y / s_Len * 1.5f;
+    }
+
+    Logger::Info("[Player] Bringing {} to the player.", s_Best->m_sActorName.c_str());
+    m_ActorTeleporter.Queue(s_BestRef, s_Best, s_Target);
+}
+
+// Every living actor around 47, in rings, one per frame (each teleport scans the actor's
+// memory, which costs a few dozen milliseconds: all at once froze the game for seconds).
+void Player::BuildTeleportAllQueue() {
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
+
+    if (!s_LocalHitman || !Globals::ActorManager) {
+        return;
+    }
+
+    const SMatrix s_Center = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
+    m_TeleportAllQueue.clear();
+
+    int s_Index = 0;
+
+    for (int i = 0; i < *Globals::NextActorId; ++i) {
+        ZActor* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
+
+        if (!s_Actor || !s_Actor->IsAlive()) {
+            continue;
+        }
+
+        ZEntityRef s_Ref;
+        s_Actor->GetID(s_Ref);
+
+        const int s_Ring = s_Index / 12;
+        const float s_Radius = 1.5f + 1.2f * s_Ring;
+        const float s_Angle = (s_Index % 12) * (2.f * 3.14159265f / 12.f) + s_Ring * 0.26f;
+
+        SMatrix s_Target = s_Center;
+        s_Target.Trans.x += std::cos(s_Angle) * s_Radius;
+        s_Target.Trans.y += std::sin(s_Angle) * s_Radius;
+
+        m_TeleportAllQueue.push_back(PendingTeleport { s_Ref, s_Actor, s_Target });
+        ++s_Index;
+    }
+
+    Logger::Info("[Player] Teleporting {} actors to the player, one per frame.", m_TeleportAllQueue.size());
+}
+
+void Player::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
+    auto s_LocalHitman = SDK()->GetLocalPlayer();
+    ZHitman5* s_Hitman = s_LocalHitman.m_pInterfaceRef;
+
+    // New mission (or new 47): layout check, then options applied again.
+    if (s_Hitman != m_LastHitman) {
+        m_LastHitman = s_Hitman;
+        m_ApplyDelay = s_Hitman ? 30 : 0;
+    }
+
+    if (s_Hitman && m_ApplyDelay > 0 && --m_ApplyDelay == 0) {
+        m_LayoutOk = CheckLayout(s_LocalHitman);
+        ApplyHitmanState(s_Hitman, true);
+    }
+
+    if (s_Hitman && m_ApplyDelay == 0) {
+        if (IsHotkeyPressed("invincible")) {
+            m_IsInvincible = !m_IsInvincible;
+            m_StateDirty = true;
+            SaveOptions();
+            Logger::Info("[Player] Invincible: {}", m_IsInvincible);
+        }
+
+        if (IsHotkeyPressed("invisible")) {
+            m_IsInvisible = !m_IsInvisible;
+            m_StateDirty = true;
+            SaveOptions();
+            Logger::Info("[Player] Invisible: {}", m_IsInvisible);
+        }
+
+        if (IsHotkeyPressed("teleport_aimed_actor")) {
+            TeleportAimedActor();
+        }
+
+        if (IsHotkeyPressed("freeze_npcs")) {
+            m_FreezeNpcsRequest = 2;
+        }
+
+        if (const int s_Request = m_FreezeNpcsRequest.exchange(-1); s_Request >= 0) {
+            SetNpcsFrozen(s_Request == 2 ? !AreNpcsFrozen() : s_Request == 1);
+        }
+
+        if (m_StateDirty.exchange(false)) {
+            ApplyHitmanState(s_Hitman, false);
+        }
+
+        // The game sometimes resets these states (leaving a hiding spot, cutscene).
+        if (++m_EnforceTimer >= 20 && m_LayoutOk) {
+            m_EnforceTimer = 0;
+
+            if (m_IsInvincible && s_Hitman->m_pHealth && !s_Hitman->m_pHealth->m_bInvincible.Get()) {
+                s_Hitman->m_pHealth->m_bInvincible.Set(true);
+            }
+
+            if (m_IsInvisible && !s_Hitman->m_bIsHiding) {
+                s_Hitman->m_bIsHiding = true;
+            }
+        }
+
+        if (m_TeleportAllRequested.exchange(false)) {
+            BuildTeleportAllQueue();
+        }
+
+        if (!m_TeleportAllQueue.empty()) {
+            const PendingTeleport s_Next = m_TeleportAllQueue.back();
+            m_TeleportAllQueue.pop_back();
+            m_ActorTeleporter.Queue(s_Next.Entity, s_Next.Actor, s_Next.Target);
+        }
+    }
+
+    m_ActorTeleporter.Update();
+
+    const int s_Pending = m_PendingHeroHidden.exchange(-1);
+
+    if (s_Pending < 0) {
+        return;
+    }
+
+    if (!m_AICrippleEntity && !CreateAICrippleEntity()) {
+        return;
+    }
+
+    const std::string s_PinName = s_Pending == 1 ? "SetHeroHidden" : "SetHeroVisible";
+
+    m_AICrippleEntity.SignalInputPin(s_PinName);
+}
+
+
+bool Player::CreateAICrippleEntity() {
+    const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
+
+    if (!s_Scene) {
+        Logger::Error("[Player] Scene not loaded!");
+        return false;
+    }
+
+    constexpr auto s_AICrippleEntityFactoryId = ResId<"[modules:/zaicrippleentity.class].pc_entitytype">;
+
+    TResourcePtr<ZTemplateEntityFactory> s_AICrippleEntityFactory;
+    Globals::ResourceManager->LoadResource(s_AICrippleEntityFactory, s_AICrippleEntityFactoryId);
+
+    if (!s_AICrippleEntityFactory) {
+        Logger::Error("[Player] AI cripple entity resource is not loaded!");
+        return false;
+    }
+
+    SExternalReferences s_ExternalRefs;
+
+    Functions::ZEntityManager_NewEntity->Call(
+        Globals::EntityManager,
+        m_AICrippleEntity,
+        "",
+        s_AICrippleEntityFactory,
+        s_Scene.m_entityRef,
+        s_ExternalRefs,
+        -1
+    );
+
+    if (!m_AICrippleEntity) {
+        Logger::Error("[Player] Failed to spawn AI cripple entity!");
+        return false;
+    }
+
+    return true;
+}
+
 void Player::Init() {
+    LoadOptions();
+
+    // Shortcuts, configurable from the SDK menu (SHORTCUTS). Alt rather than Ctrl by
+    // default: Ctrl makes 47 crouch.
+    RegisterHotkey("invincible", "Toggle invincibility", "Alt+I");
+    RegisterHotkey("invisible", "Toggle invisibility", "Alt+U");
+    RegisterHotkey("teleport_aimed_actor", "Bring the actor under the crosshair to the player", "Alt+T");
+    RegisterHotkey("freeze_npcs", "Freeze all NPCs (AI paused)", "Alt+G");
+
     Hooks::ZEntitySceneContext_ClearScene->AddDetour(this, &Player::OnClearScene);
 
     Hooks::ZSecuritySystemCameraManager_OnFrameUpdate->AddDetour(
@@ -35,6 +441,8 @@ void Player::Init() {
     Hooks::ZHM5ItemWeapon_FireProjectiles->AddDetour(this, &Player::ZHM5ItemWeapon_FireProjectiles);
     Hooks::ZHM5ItemWeapon_IsFiring->AddDetour(this, &Player::ZHM5ItemWeapon_IsFiring);
     Hooks::ZActor_YouGotHit->AddDetour(this, &Player::ZActor_YouGotHit);
+    Hooks::ZGameStatsManager_SendAISignals01->AddDetour(this, &Player::ZGameStatsManager_SendAISignals);
+    Hooks::ZGameStatsManager_SendAISignals02->AddDetour(this, &Player::ZGameStatsManager_SendAISignals);
 }
 
 void Player::OnDrawMenu() {
@@ -53,6 +461,8 @@ void Player::OnDrawUI(const bool p_HasFocus) {
     auto s_LocalHitman = SDK()->GetLocalPlayer();
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    // The window used to open too small to be readable.
+    ImGui::SetNextWindowSizeConstraints(ImVec2(560.f, 560.f), ImVec2(FLT_MAX, FLT_MAX));
     const auto s_IsWindowExpanded = ImGui::Begin(ICON_MD_MAN " Player", &m_ShowPlayerWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 
@@ -60,37 +470,72 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         ImGui::BeginDisabled(!s_LocalHitman);
 
         ZHitman5* s_Hitman = s_LocalHitman.m_pInterfaceRef;
-        ZHM5Health* s_Health = s_Hitman ? s_Hitman->m_pHealth : nullptr;
 
-        bool s_IsInvincible = s_Health ? s_Health->m_bInvincible.Get() : false;
+        if (ImGui::Checkbox("Remember options between missions", &m_RememberOptions)) {
+            SaveOptions();
+        }
 
-        ImGui::BeginDisabled(!s_Health);
+        if (!m_LayoutOk) {
+            ImGui::TextColored(ImVec4(1.f, 0.35f, 0.35f, 1.f), "%s", m_LayoutError.c_str());
+        }
 
-        if (ImGui::Checkbox("Is invincible", &s_IsInvincible)) {
-            s_Health->m_bInvincible.Set(s_IsInvincible);
+        ImGui::BeginDisabled(!m_LayoutOk);
+
+        if (ImGui::Checkbox(std::format("Is invincible ({})###invincible", GetHotkeyText("invincible")).c_str(), &m_IsInvincible)) {
+            m_StateDirty = true;
+            SaveOptions();
+        }
+
+        if (ImGui::Checkbox(std::format("Is invisible ({})###invisible", GetHotkeyText("invisible")).c_str(), &m_IsInvisible)) {
+            m_StateDirty = true;
+            SaveOptions();
         }
 
         ImGui::EndDisabled();
 
-        bool s_IsInvisible = s_Hitman ? s_Hitman->m_bIsHiding : false;
+        {
+            bool s_Frozen = AreNpcsFrozen();
 
-        if (ImGui::Checkbox("Is invisible", &s_IsInvisible)) {
-            s_Hitman->m_bIsHiding = s_IsInvisible;
+            if (ImGui::Checkbox(
+                std::format("Freeze all NPCs ({})###freeze_npcs", GetHotkeyText("freeze_npcs")).c_str(), &s_Frozen
+            )) {
+                m_FreezeNpcsRequest = s_Frozen ? 1 : 0;
+            }
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("NPCs stop where they are and react to nothing until unfrozen.\nTurned off when the mission ends.");
+            }
         }
 
         if (ImGui::Checkbox("Infinite ammo", &m_IsInfiniteAmmoEnabled)) {
             ToggleInfiniteAmmo();
+            SaveOptions();
         }
 
-        ImGui::Checkbox("No reload", &m_IsNoReloadEnabled);
+        if (ImGui::Checkbox("No reload", &m_IsNoReloadEnabled)) {
+            SaveOptions();
+        }
 
-        ImGui::Checkbox("No recoil", &m_IsNoRecoilEnabled);
+        if (ImGui::Checkbox("No recoil", &m_IsNoRecoilEnabled)) {
+            SaveOptions();
+        }
 
-        ImGui::Checkbox("Super accuracy", &m_IsSuperAccuracyEnabled);
+        if (ImGui::Checkbox("Super accuracy", &m_IsSuperAccuracyEnabled)) {
+            SaveOptions();
+        }
 
-        ImGui::Checkbox("Rapid fire", &m_IsRapidFireEnabled);
+        if (ImGui::Checkbox("Rapid fire", &m_IsRapidFireEnabled)) {
+            SaveOptions();
+        }
 
-        ImGui::Checkbox("One hit kill", &m_IsOneHitKillEnabled);
+        if (ImGui::Checkbox("One hit kill", &m_IsOneHitKillEnabled)) {
+            SaveOptions();
+        }
+
+        ImGui::TextDisabled(
+            "%s: bring the actor under the crosshair to the player (shortcuts: SDK menu > SHORTCUTS)",
+            GetHotkeyText("teleport_aimed_actor").c_str()
+        );
 
         static char s_OutfitName[2048] { "" };
         static uint8_t s_CurrentCharacterSetIndex = 0;
@@ -377,20 +822,8 @@ void Player::OnDrawUI(const bool p_HasFocus) {
         }
 
         if (ImGui::Button("Teleport all actors to player")) {
-            const auto s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-
-            for (size_t i = 0; i < *Globals::NextActorId; ++i) {
-                ZActor* s_Actor = Globals::ActorManager->m_activatedActors[i].m_pInterfaceRef;
-                ZEntityRef s_Ref;
-
-                s_Actor->GetID(s_Ref);
-
-                ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
-
-                s_ActorSpatialEntity->SetObjectToWorldMatrixFromEditor(
-                    s_HitmanSpatialEntity->GetObjectToWorldMatrix()
-                );
-            }
+            // Done from the game update, one actor per frame.
+            m_TeleportAllRequested = true;
         }
 
         ImGui::EndDisabled();
@@ -399,6 +832,35 @@ void Player::OnDrawUI(const bool p_HasFocus) {
     ImGui::PopFont();
     ImGui::End();
     ImGui::PopFont();
+}
+
+// True if the outfit has an actual resource for this character type and variation.
+bool Player::HasOutfit(
+    ZOutfitVariationCollection* p_Collection, const std::string& p_CharSetCharacterType, uint8_t p_VariationIndex
+) {
+    ECharSetCharacterType s_Type = ECharSetCharacterType::ECSCT_HeroA;
+
+    if (p_CharSetCharacterType == "Actor") {
+        s_Type = ECharSetCharacterType::ECSCT_Actor;
+    }
+    else if (p_CharSetCharacterType == "Nude") {
+        s_Type = ECharSetCharacterType::ECSCT_Nude;
+    }
+
+    const auto& s_Character = p_Collection->m_aCharacters[static_cast<size_t>(s_Type)];
+
+    if (!s_Character.m_pInterfaceRef) {
+        return false;
+    }
+
+    const auto& s_Variations = s_Character.m_pInterfaceRef->m_aVariations;
+    const size_t s_Index = p_VariationIndex < s_Variations.size() ? p_VariationIndex : 0;
+
+    if (s_Variations.size() == 0 || !s_Variations[s_Index].m_pInterfaceRef) {
+        return false;
+    }
+
+    return s_Variations[s_Index].m_pInterfaceRef->m_Outfit.GetID() != 0xFFFFFFFFFFFFFFFFull;
 }
 
 void Player::EquipOutfit(
@@ -427,9 +889,28 @@ void Player::EquipOutfit(
         return;
     }
 
+    // Many NPC outfits (Dalia Margolis, the guests...) only have an "Actor" version: their
+    // "HeroA" and "Nude" versions exist but are empty (resource FFFFFFFFFFFFFFFF), and the game
+    // then silently applied nothing, so "Get actor's outfit" seemed to do nothing. Fall back to
+    // a version that actually exists.
+    std::string s_CharSetCharacterType = p_CharSetCharacterType;
+
+    if (!HasOutfit(s_Collection, s_CharSetCharacterType, p_OutfitVariationIndex)) {
+        for (const char* s_Fallback : { "HeroA", "Actor" }) {
+            if (s_Fallback != s_CharSetCharacterType && HasOutfit(s_Collection, s_Fallback, p_OutfitVariationIndex)) {
+                Logger::Info(
+                    "[Player] Outfit has no '{}' version, using '{}' instead.",
+                    s_CharSetCharacterType, s_Fallback
+                );
+                s_CharSetCharacterType = s_Fallback;
+                break;
+            }
+        }
+    }
+
     std::vector<ZRuntimeResourceID> s_OriginalHeroVariations;
 
-    if (p_CharSetCharacterType != "HeroA") {
+    if (s_CharSetCharacterType != "HeroA") {
         auto* s_HeroType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_HeroA)];
 
         if (!s_HeroType->m_pInterfaceRef) {
@@ -439,10 +920,10 @@ void Player::EquipOutfit(
 
         TEntityRef<ZCharsetCharacterType>* s_TargetType = nullptr;
 
-        if (p_CharSetCharacterType == "Actor") {
+        if (s_CharSetCharacterType == "Actor") {
             s_TargetType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Actor)];
         }
-        else if (p_CharSetCharacterType == "Nude") {
+        else if (s_CharSetCharacterType == "Nude") {
             s_TargetType = &s_Collection->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_Nude)];
         }
 
@@ -468,7 +949,7 @@ void Player::EquipOutfit(
         p_Hitman, p_GlobalOutfitKit, p_CharSetIndex, p_OutfitVariationIndex, false, false
     );
 
-    if (p_CharSetCharacterType != "HeroA" && !s_OriginalHeroVariations.empty()) {
+    if (s_CharSetCharacterType != "HeroA" && !s_OriginalHeroVariations.empty()) {
         auto* s_HeroType = &s_GlobalOutfitKit->m_aCharSets[p_CharSetIndex].
             m_pInterfaceRef->m_aCharacters[static_cast<size_t>(ECharSetCharacterType::ECSCT_HeroA)];
 
@@ -560,14 +1041,31 @@ bool Player::CreateHM5CrippleBoxEntity() {
 }
 
 DEFINE_PLUGIN_DETOUR(Player, void, OnClearScene, ZEntitySceneContext* th, bool p_FullyUnloadScene) {
+    // Freezing never carries over to the next mission.
+    m_FreezeNpcsRequest = -1;
+    SetNpcsFrozen(false);
+
     if (m_HM5CrippleBoxEntity) {
         Functions::ZEntityManager_DeleteEntity->Call(Globals::EntityManager, m_HM5CrippleBoxEntity, {});
 
         m_HM5CrippleBoxEntity = {};
     }
 
-    m_IsInfiniteAmmoEnabled = false;
+    // Remembered options stay on and are applied again in the next mission.
+    if (!m_RememberOptions) {
+        m_IsInfiniteAmmoEnabled = false;
+        m_IsInvincible = false;
+        m_IsInvisible = false;
+    }
+
     m_GlobalOutfitKit = {};
+
+    // These entities belong to the scene being unloaded.
+    m_AICrippleEntity = {};
+    m_PendingHeroHidden = -1;
+    m_LastHitman = nullptr;
+    m_TeleportAllQueue.clear();
+    m_ActorTeleporter.Clear();
 
     return { HookAction::Continue() };
 }
@@ -741,6 +1239,29 @@ DEFINE_PLUGIN_DETOUR(Player, bool, ZActor_YouGotHit, IBaseCharacter* th, const S
         ZActor* s_Actor = static_cast<ZActor*>(th);
 
         s_Actor->m_fCurrentHitPoints = 0.f;
+    }
+
+    return { HookAction::Continue() };
+}
+
+// While invisible, 47 is never identified. Before the game broadcasts its AI state (the
+// "Compromised" HUD, signals to NPCs), clear what points at 47: broken / suspicious /
+// investigated disguise, 47 in vision, trespassing spotted, and the tension towards him.
+// The general tension is left untouched: a gunshot is still heard and a body is still found
+// and investigated, NPCs just don't know who did it.
+// Note: capping ZKnowledge::SetGameTension instead makes the game crash ~60-75 s after a kill
+// (guards keep requesting combat in a loop).
+DEFINE_PLUGIN_DETOUR(Player, void, ZGameStatsManager_SendAISignals, ZGameStatsManager* th) {
+    if (m_IsInvisible && th) {
+        auto& s_State = th->m_gameState;
+
+        s_State.m_bDisguiseBroken = false;
+        s_State.m_bDisguiseSuspicious = false;
+        s_State.m_bDisguiseBeingInvestigated = false;
+        s_State.m_bHitmanInVision = false;
+        s_State.m_bHitmanTrespassingSpotted = false;
+        s_State.m_eGameTensionToHitmanGuard = EGameTension::EGT_Ambient;
+        s_State.m_eGameTensionToHitmanCivilian = EGameTension::EGT_Ambient;
     }
 
     return { HookAction::Continue() };

@@ -11,6 +11,7 @@
 #include <Glacier/ZHM5InputManager.h>
 #include <Glacier/ZFreeCamera.h>
 #include <Glacier/ZTargetManager.h>
+#include <Glacier/ZCollision.h>
 
 #include "imgui_internal.h"
 
@@ -477,18 +478,63 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
         }
 
         if (ImGui::Button("Teleport actor to player")) {
-            QueueTask([s_Actor = m_SelectedActor] {
+            // Goes through ActorTeleporter: the actor is no longer pulled back to its place.
+            QueueTask([this, s_Actor = m_SelectedActor] {
                 if (auto s_LocalHitman = SDK()->GetLocalPlayer()) {
                     ZEntityRef s_Ref;
                     s_Actor->GetID(s_Ref);
 
                     ZSpatialEntity* s_HitmanSpatialEntity = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>();
-                    ZSpatialEntity* s_ActorSpatialEntity = s_Ref.QueryInterface<ZSpatialEntity>();
 
-                    s_ActorSpatialEntity->SetObjectToWorldMatrixFromEditor(
-                        s_HitmanSpatialEntity->GetObjectToWorldMatrix()
-                    );
+                    m_ActorTeleporter.Queue(s_Ref, s_Actor, s_HitmanSpatialEntity->GetObjectToWorldMatrix());
                 }
+            });
+        }
+
+        if (ImGui::Button("Teleport actor to crosshair")) {
+            // Puts the actor where the game camera is aiming. The ray starts a bit past 47 so it
+            // does not hit him.
+            QueueTask([this, s_Actor = m_SelectedActor] {
+                auto s_LocalHitman = SDK()->GetLocalPlayer();
+                auto* s_Camera = Functions::GetCurrentCamera->Call();
+
+                if (!s_Actor || !s_LocalHitman || !s_Camera || !*Globals::CollisionManager) {
+                    return;
+                }
+
+                const SMatrix s_CameraMatrix = s_Camera->GetObjectToWorldMatrix();
+                const float4 s_Forward = -s_CameraMatrix.ZAxis;
+                const float4 s_HitmanPos = s_LocalHitman.m_entityRef.QueryInterface<ZSpatialEntity>()->
+                    GetObjectToWorldMatrix().Trans;
+                const float4 s_Diff = s_HitmanPos - s_CameraMatrix.Trans;
+                const float s_Skip = std::sqrt(s_Diff.x * s_Diff.x + s_Diff.y * s_Diff.y + s_Diff.z * s_Diff.z) + 0.8f;
+
+                // w = 1, otherwise the engine treats both points as directions and hits nothing.
+                float4 s_From = s_CameraMatrix.Trans + s_Forward * s_Skip;
+                float4 s_To = s_CameraMatrix.Trans + s_Forward * 300.f;
+                s_From.w = 1.f;
+                s_To.w = 1.f;
+
+                ZRayQueryInput s_RayInput {
+                    .m_vFrom = s_From,
+                    .m_vTo = s_To,
+                };
+
+                ZRayQueryOutput s_RayOutput {};
+
+                if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &s_RayOutput)) {
+                    Logger::Info("[Editor] Nothing under the crosshair.");
+                    return;
+                }
+
+                ZEntityRef s_Ref;
+                s_Actor->GetID(s_Ref);
+
+                SMatrix s_Target = s_Ref.QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
+                s_Target.Trans = s_RayOutput.m_vPosition;
+                s_Target.Trans.w = 1.f;
+
+                m_ActorTeleporter.Queue(s_Ref, s_Actor, s_Target);
             });
         }
 
@@ -783,8 +829,22 @@ void Editor::EquipOutfit(
             const auto& s_TargetVariations = s_TargetType->m_pInterfaceRef->m_aVariations;
             const size_t s_Count = std::min(s_ActorVariations.size(), s_TargetVariations.size());
 
+            size_t s_Copied = 0;
+
             for (size_t i = 0; i < s_Count; ++i) {
+                // An empty version (FFFFFFFFFFFFFFFF) would leave the actor without an outfit:
+                // keep its "Actor" version instead.
+                if (!s_TargetVariations[i].m_pInterfaceRef ||
+                    s_TargetVariations[i].m_pInterfaceRef->m_Outfit.GetID() == 0xFFFFFFFFFFFFFFFFull) {
+                    continue;
+                }
+
                 s_ActorVariations[i].m_pInterfaceRef->m_Outfit = s_TargetVariations[i].m_pInterfaceRef->m_Outfit;
+                ++s_Copied;
+            }
+
+            if (s_Copied == 0) {
+                Logger::Info("[Editor] Outfit has no '{}' version, using 'Actor' instead.", p_CharSetCharacterType);
             }
         }
     }
