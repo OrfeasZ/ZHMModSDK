@@ -10,6 +10,7 @@
 #include <list>
 #include <shared_mutex>
 #include <variant>
+#include <optional>
 
 #include <SimpleMath.h>
 
@@ -43,6 +44,12 @@ struct QneTransform {
     SVector3 Position;
     SVector3 Rotation;
     SVector3 Scale;
+};
+
+struct EditedQneRotation {
+    std::string Id;
+    SMatrix43 Matrix;
+    SVector3 Rotation;
 };
 
 class Editor : public IPluginInterface {
@@ -621,6 +628,8 @@ private:
     static std::string FormatZCurveForClipboard(ZCurve* p_Curve);
 
     static SMatrix QneTransformToMatrix(const QneTransform& p_Transform);
+    QneTransform GetEditableQneTransform(const std::string& p_Id, const SMatrix43& p_Matrix) const;
+    void ApplyEditedQneTransform(const std::string& p_Id, const QneTransform& p_Transform, SMatrix43& p_Matrix);
 
     static std::string FormatFloat(float p_Value, bool p_Round, uint32_t p_Decimals);
     static std::string FormatMatrixAsRtJson(const SMatrix43& p_Matrix, bool p_Round, uint32_t p_Decimals);
@@ -1017,6 +1026,7 @@ private:
     bool m_UseAngleSnap = false;
     bool m_UseScaleSnap = false;
     bool m_UseQneTransforms = false;
+    std::optional<EditedQneRotation> m_LastEditedQneRotation;
     bool m_RoundCopiedMatrixValues = false;
     int32_t m_CopyDecimalPlaces = 3;
     double m_SnapValue = 1.0;
