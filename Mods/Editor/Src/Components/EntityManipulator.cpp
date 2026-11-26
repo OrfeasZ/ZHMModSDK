@@ -39,11 +39,16 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
 
     ImGuizmo::BeginFrame();
 
+    if (m_SurfaceMove) {
+        UpdateSurfaceMove(s_ImgGuiIO.KeyShift);
+    }
+
     // The raycast waits on the physics world, so it runs without the tree lock.
     if (p_HasFocus) {
         if (ImGui::IsMouseDown(ImGuiMouseButton_Left) &&
             !s_ImgGuiIO.WantCaptureMouse &&
             !m_IsGizmoBlocked &&
+            !m_SurfaceMove &&
             !Globals::ScaleformGFxManager->GetIsMenuModeUnsafe()) {
             if (!m_HoldingMouse) {
                 const auto s_MousePos = ImGui::GetMousePos();
@@ -84,7 +89,7 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
         }
 
         // Only spawned entities can be destroyed.
-        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && m_SpawnedEntities.contains(m_SelectedEntity)) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !m_SurfaceMove && m_SpawnedEntities.contains(m_SelectedEntity)) {
             OnDestroyEntity(m_SelectedEntity, std::nullopt);
         }
 
@@ -98,12 +103,51 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
         }
     }
 
+    if (m_SurfaceMove && (!m_GizmoEdit || m_GizmoEdit->IsCommitted())) {
+        m_SurfaceMove.reset();
+    }
+
+    if (m_SurfaceMove && m_SelectedEntity != m_SurfaceMove->Entity) {
+        EndSurfaceMove(ChangeMode::Commit);
+    }
+
+    if (p_HasFocus && !s_ImgGuiIO.WantTextInput) {
+        const bool s_IsClickInGameView = !s_ImgGuiIO.WantCaptureMouse;
+
+        if (m_SurfaceMove) {
+            if (ImGui::IsKeyPressed(ImGuiKey_G, false) ||
+                ImGui::IsKeyPressed(ImGuiKey_Enter, false) ||
+                (s_IsClickInGameView && ImGui::IsMouseClicked(ImGuiMouseButton_Left))) {
+                EndSurfaceMove(ChangeMode::Commit);
+                m_IsGizmoBlocked = true;
+            }
+            else if (s_IsClickInGameView && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                EndSurfaceMove(ChangeMode::Revert);
+                m_IsGizmoBlocked = true;
+            }
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey_G, false) &&
+            !s_IsGizmoDragging &&
+            !ImGuizmo::IsUsing() &&
+            !IsSpecialEntityTreeNode(m_SelectedEntity)) {
+            if (const auto s_SpatialEntity = m_SelectedEntity.QueryInterface<ZSpatialEntity>()) {
+                // A committed drag may not be applied yet, so its transform is the current one.
+                const bool s_HasPendingEdit = m_GizmoEdit && m_GizmoEdit->Key == ChangeKey { m_SelectedEntity };
+
+                StartSurfaceMove(
+                    m_SelectedEntity,
+                    s_HasPendingEdit ? m_GizmoEdit->Transform : s_SpatialEntity->GetObjectToWorldMatrix()
+                );
+            }
+        }
+    }
+
     // A cancelled drag stays cancelled until the mouse button is released.
     if (m_IsGizmoBlocked && !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
         m_IsGizmoBlocked = false;
     }
 
-    ImGuizmo::Enable(p_HasFocus && !m_IsGizmoBlocked);
+    ImGuizmo::Enable(p_HasFocus && !m_IsGizmoBlocked && !m_SurfaceMove);
 
     if (IsSpecialEntityTreeNode(m_SelectedEntity)) {
         return;
@@ -198,12 +242,123 @@ void Editor::DrawEntityManipulator(bool p_HasFocus) {
                     }
                 }
 
-                if (m_GizmoEdit && !m_GizmoEdit->IsCommitted() && !ImGuizmo::IsUsing()) {
+                if (m_GizmoEdit && !m_GizmoEdit->IsCommitted() && !ImGuizmo::IsUsing() && !m_SurfaceMove) {
                     CommitGizmoEdit(ChangeMode::Commit);
                 }
             }
         }
     }
+}
+
+void Editor::StartSurfaceMove(ZEntityRef p_Entity, const SMatrix& p_Transform) {
+    m_GizmoEdit = ActiveEdit {
+        .Key = ChangeKey { p_Entity },
+        .Transform = p_Transform,
+        .StartTransform = p_Transform,
+        .IsDrawn = true,
+    };
+
+    m_SurfaceMove = SurfaceMove {
+        .Entity = p_Entity,
+        .StartTransform = p_Transform,
+    };
+}
+
+void Editor::UpdateSurfaceMove(bool p_SurfaceAligned) {
+    auto& s_Move = *m_SurfaceMove;
+
+    if (!m_GizmoEdit || m_GizmoEdit->IsCommitted() || m_GizmoEdit->Key != ChangeKey { s_Move.Entity }) {
+        m_SurfaceMove.reset();
+        return;
+    }
+
+    m_GizmoEdit->IsDrawn = true;
+
+    const ImVec2 s_MousePos = ImGui::GetMousePos();
+    const ImVec2 s_ViewportPos = ImGui::GetMainViewport()->Pos;
+
+    SVector3 s_Origin;
+    SVector3 s_Direction;
+    SDK()->ScreenToWorld(SVector2(s_MousePos.x - s_ViewportPos.x, s_MousePos.y - s_ViewportPos.y), s_Origin, s_Direction);
+
+    if (s_Move.HasRay &&
+        s_Move.RayOrigin == s_Origin &&
+        s_Move.RayDirection == s_Direction &&
+        s_Move.IsAligned == p_SurfaceAligned) {
+        return;
+    }
+
+    s_Move.RayOrigin = s_Origin;
+    s_Move.RayDirection = s_Direction;
+    s_Move.IsAligned = p_SurfaceAligned;
+    s_Move.HasRay = true;
+
+    ZRayQueryOutput s_RayOutput {};
+
+    if (!RayCastCollision(s_Origin, s_Direction, s_RayOutput, s_Move.Entity)) {
+        return;
+    }
+
+    const SMatrix s_Transform = GetSurfaceMoveTransform(
+        SVector3(s_RayOutput.m_vPosition.x, s_RayOutput.m_vPosition.y, s_RayOutput.m_vPosition.z),
+        SVector3(s_RayOutput.m_vNormal.x, s_RayOutput.m_vNormal.y, s_RayOutput.m_vNormal.z)
+    );
+
+    s_Move.HasPlacement = true;
+    m_GizmoEdit->Transform = s_Transform;
+
+    OnEntityTransformChange(s_Move.Entity, s_Transform, false, std::nullopt, ChangeMode::Preview);
+}
+
+void Editor::EndSurfaceMove(ChangeMode p_Mode) {
+    const auto s_Move = *m_SurfaceMove;
+    m_SurfaceMove.reset();
+
+    if (!m_GizmoEdit || m_GizmoEdit->IsCommitted() || m_GizmoEdit->Key != ChangeKey { s_Move.Entity }) {
+        return;
+    }
+
+    CommitGizmoEdit(s_Move.HasPlacement ? p_Mode : ChangeMode::Revert);
+}
+
+// Keeps the start rotation, or turns its up axis to the surface normal while keeping its heading.
+SMatrix Editor::GetSurfaceMoveTransform(const SVector3& p_Position, const SVector3& p_Normal) const {
+    const auto& s_Move = *m_SurfaceMove;
+    SMatrix s_Transform = s_Move.StartTransform;
+    SVector3 s_Position = p_Position;
+
+    if (m_UseSnap && m_SnapValue > 0.0) {
+        const float s_Snap = static_cast<float>(m_SnapValue);
+
+        s_Position.x = std::round(s_Position.x / s_Snap) * s_Snap;
+        s_Position.y = std::round(s_Position.y / s_Snap) * s_Snap;
+    }
+
+    if (s_Move.IsAligned) {
+        const auto& s_Start = s_Move.StartTransform;
+        const SVector3 s_StartX(s_Start.XAxis.x, s_Start.XAxis.y, s_Start.XAxis.z);
+        const SVector3 s_StartY(s_Start.YAxis.x, s_Start.YAxis.y, s_Start.YAxis.z);
+        const SVector3 s_StartZ(s_Start.ZAxis.x, s_Start.ZAxis.y, s_Start.ZAxis.z);
+
+        const SVector3 s_Up = p_Normal.Normalized();
+        SVector3 s_Right = s_StartX - s_Up * s_StartX.Dot(s_Up);
+
+        if (s_Right.Length() < 1e-3f * s_StartX.Length()) {
+            const SVector3 s_Forward = s_StartY - s_Up * s_StartY.Dot(s_Up);
+            s_Right = s_Forward.Cross(s_Up);
+        }
+
+        s_Right = s_Right.Normalized();
+        const SVector3 s_Forward = s_Up.Cross(s_Right);
+
+        s_Transform.XAxis = float4(s_Right * s_StartX.Length(), 0.f);
+        s_Transform.YAxis = float4(s_Forward * s_StartY.Length(), 0.f);
+        s_Transform.ZAxis = float4(s_Up * s_StartZ.Length(), 0.f);
+    }
+
+    s_Transform.Trans = float4(s_Position, 1.f);
+
+    return s_Transform;
 }
 
 void Editor::RefreshPathfinderObstacle(ZEntityRef p_Entity, bool p_Force) {

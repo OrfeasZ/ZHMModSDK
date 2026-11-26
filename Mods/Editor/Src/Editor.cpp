@@ -693,6 +693,13 @@ void Editor::DrawTransformToolbar(const ImVec2& p_GameViewPos) {
     ImGui::PopStyleColor(2);
     ImGui::EndDisabled();
 
+    if (m_SurfaceMove) {
+        ImGui::SameLine();
+        s_Separator();
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("Surface move: click/G to place, Shift to align, Esc/right click to cancel");
+    }
+
     ImGui::PopStyleVar(4);
     ImGui::PopFont();
 
@@ -1149,7 +1156,9 @@ void Editor::OnMouseDown(SVector2 p_Pos) {
     }
 }
 
-bool Editor::RayCastCollision(const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output) {
+bool Editor::RayCastCollision(
+    const SVector3& p_World, const SVector3& p_Direction, ZRayQueryOutput& p_Output, ZEntityRef p_IgnoredEntity
+) {
     if (!*Globals::CollisionManager) {
         Logger::Error("[Editor] Collision manager not found.");
         return false;
@@ -1163,11 +1172,22 @@ bool Editor::RayCastCollision(const SVector3& p_World, const SVector3& p_Directi
         .m_vTo = s_To,
     };
 
+    if (p_IgnoredEntity) {
+        const ZMemberDelegate<Editor, bool(const ZEntityRef&, const TEntityRef<ZSpatialEntity>&)> s_Delegate(
+            this, &Editor::IsRayHitAllowed
+        );
+        s_RayInput.m_FilterCallback = s_Delegate;
+    }
+
     if (m_raycastLogging) {
         Logger::Debug("[Editor] RayCasting from {} to {}.", s_From, s_To);
     }
 
-    if (!(*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &p_Output)) {
+    m_RayCastIgnoredEntity = p_IgnoredEntity;
+    const bool s_HasHit = (*Globals::CollisionManager)->RayCastClosestHit(s_RayInput, &p_Output);
+    m_RayCastIgnoredEntity = {};
+
+    if (!s_HasHit) {
         if (m_raycastLogging) {
             Logger::Error("[Editor] Raycast failed.");
         }
@@ -1180,6 +1200,15 @@ bool Editor::RayCastCollision(const SVector3& p_World, const SVector3& p_Directi
     }
 
     return true;
+}
+
+bool Editor::IsRayHitAllowed(const ZEntityRef& p_Entity, const TEntityRef<ZSpatialEntity>& p_SpatialEntity) {
+    return !IsInRayCastIgnoredTree(p_Entity) && !IsInRayCastIgnoredTree(p_SpatialEntity.m_entityRef);
+}
+
+bool Editor::IsInRayCastIgnoredTree(ZEntityRef p_Entity) const {
+    return p_Entity && m_RayCastIgnoredEntity &&
+        (p_Entity == m_RayCastIgnoredEntity || p_Entity.IsAnyParent(m_RayCastIgnoredEntity));
 }
 
 void Editor::ActivateCamera(ZEntityRef* m_CameraEntity) {
