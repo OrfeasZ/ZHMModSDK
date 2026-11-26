@@ -93,6 +93,11 @@ namespace detail {
                 continue;
             }
 
+            // MSVC writes nested templates as "> >".
+            if (p_TypeName[i] == ' ' && i + 1 < N && p_TypeName[i + 1] == '>') {
+                continue;
+            }
+
             if (p_TypeName[i] == ':' && i + 1 < N && p_TypeName[i + 1] == ':') {
                 ++i;
                 s_ZHMTypeNameStorage[s_FinalSize++] = '.';
