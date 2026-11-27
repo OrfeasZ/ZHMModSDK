@@ -50,6 +50,93 @@ void Editor::AddSpawnedEntity(
 }
 
 // Needs m_CachedEntityTreeMutex.
+ZEntityRef Editor::FindSpawnedRoot(const ZEntityRef p_Entity) {
+    for (const auto& [s_Root, s_SpawnedEntity] : m_SpawnedEntities) {
+        if (s_SpawnedEntity.Tree.Entities.contains(p_Entity.m_pObj)) {
+            return s_Root;
+        }
+    }
+
+    return {};
+}
+
+bool Editor::IsEntityInSpawnedTree(const ZEntityRef p_Entity) {
+    std::shared_lock s_Lock(m_CachedEntityTreeMutex);
+
+    return static_cast<bool>(FindSpawnedRoot(p_Entity));
+}
+
+void Editor::TrackSpawnedEntityReference(
+    const ZEntityRef p_Entity, const uint32_t p_PropertyId, const ZObjectRef& p_Value
+) {
+    const ChangeKey s_Key { p_Entity, p_PropertyId };
+    const ZEntityRef s_Target = GetEntityRefFromValue(p_Value);
+
+    if (s_Target && !std::ranges::contains(m_SpawnedEntityReferences, s_Key) && IsEntityInSpawnedTree(s_Target)) {
+        m_SpawnedEntityReferences.push_back(s_Key);
+    }
+}
+
+// Returns what was cleared, so undoing the destroy can point the properties at the new tree.
+std::vector<Editor::PropertyHistoryEntry> Editor::ClearReferencesToTree(const SpawnedTree& p_Tree) {
+    std::vector<PropertyHistoryEntry> s_Cleared;
+    std::vector<ChangeKey> s_Kept;
+
+    for (const ChangeKey& s_Key : std::exchange(m_SpawnedEntityReferences, {})) {
+        const ZEntityRef s_Entity = s_Key.Entity;
+
+        if (p_Tree.Entities.contains(s_Entity.m_pObj) || !IsEntityInTree(s_Entity)) {
+            continue;
+        }
+
+        const SPropertyData* s_Property = s_Entity->GetType()->FindProperty(*s_Key.PropertyId);
+
+        if (!s_Property) {
+            continue;
+        }
+
+        const ZObjectRef s_Value = GetPropertyValue(s_Entity, s_Property);
+        const ZEntityRef s_Target = GetEntityRefFromValue(s_Value);
+
+        if (!s_Target) {
+            continue;
+        }
+
+        if (!p_Tree.Entities.contains(s_Target.m_pObj)) {
+            if (IsEntityInSpawnedTree(s_Target)) {
+                s_Kept.push_back(s_Key);
+            }
+
+            continue;
+        }
+
+        try {
+            const PropertyHistoryEntry s_Reference {
+                .Target = MakeHistoryTarget(s_Entity),
+                .PropertyId = *s_Key.PropertyId,
+                .OldValue = MakeHistoryValue(s_Value),
+                .NewValue = { .Value = MakeEntityRefValue(s_Value.GetTypeID(), {}) },
+            };
+
+            SetPropertyValueInternal(
+                s_Entity, s_Reference.PropertyId, s_Reference.NewValue.Value, std::nullopt, ChangeMode::Revert
+            );
+            s_Cleared.push_back(s_Reference);
+        }
+        catch (const std::exception& p_Exception) {
+            Logger::Warn(
+                "[Editor] Skipping the clear of property {:08x} on {:016x}: {}", *s_Key.PropertyId,
+                s_Entity->GetType()->m_nEntityID, p_Exception.what()
+            );
+        }
+    }
+
+    m_SpawnedEntityReferences.insert(m_SpawnedEntityReferences.end(), s_Kept.begin(), s_Kept.end());
+
+    return s_Cleared;
+}
+
+// Needs m_CachedEntityTreeMutex.
 void Editor::ReparentSpawnedEntity(
     std::unordered_map<ZEntityRef, std::shared_ptr<EntityTreeNode>>& p_NodeMap, ZEntityRef p_Entity
 ) {

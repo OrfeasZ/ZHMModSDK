@@ -119,6 +119,7 @@ void Editor::SetPropertyValueInternal(
     const ZObjectRef s_OldValue = s_Start ? std::move(s_Start->Value) : GetPropertyValue(p_Entity, s_Property);
 
     Hooks::SetPropertyValue->Call(p_Entity, p_PropertyId, p_Value, true);
+    TrackSpawnedEntityReference(p_Entity, p_PropertyId, p_Value);
     RefreshPathfinderObstacle(p_Entity, true);
 
     if (p_Mode == ChangeMode::Commit) {

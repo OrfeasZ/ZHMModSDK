@@ -1657,8 +1657,13 @@ void Editor::DestroyEntityInternal(ZEntityRef p_Entity, std::optional<std::strin
         return;
     }
 
+    auto s_ClearedReferences = ClearReferencesToTree(s_It->second.Tree);
+
     if (p_Mode == ChangeMode::Commit) {
-        PushHistory({ .Change = DestroyHistoryEntry { MakeSpawnInfo(s_It->second) }, .ClientId = p_ClientId });
+        PushHistory({
+            .Change = DestroyHistoryEntry { MakeSpawnInfo(s_It->second), std::move(s_ClearedReferences) },
+            .ClientId = p_ClientId,
+        });
     }
 
     m_Server.OnEntityDestroying(p_Entity->GetType()->m_nEntityID, std::move(p_ClientId));
