@@ -12,26 +12,24 @@
 Editor::HistoryTarget Editor::MakeHistoryTarget(const ZEntityRef p_Entity) {
     std::shared_lock s_Lock(m_CachedEntityTreeMutex);
 
-    for (const auto& [s_Root, s_SpawnedEntity] : m_SpawnedEntities) {
-        if (!s_SpawnedEntity.Tree.Entities.contains(p_Entity.m_pObj)) {
-            continue;
-        }
+    const ZEntityRef s_Root = FindSpawnedRoot(p_Entity);
 
-        HistoryTarget s_Target { .SpawnedRootId = s_Root->GetType()->m_nEntityID };
-        size_t s_Index = 0;
-
-        ForEachEntityInTree(s_Root, [&](const ZEntityRef p_TreeEntity) {
-            if (p_TreeEntity == p_Entity) {
-                s_Target.TreeIndex = s_Index;
-            }
-
-            ++s_Index;
-        });
-
-        return s_Target;
+    if (!s_Root) {
+        return { .Entity = p_Entity };
     }
 
-    return { .Entity = p_Entity };
+    HistoryTarget s_Target { .SpawnedRootId = s_Root->GetType()->m_nEntityID };
+    size_t s_Index = 0;
+
+    ForEachEntityInTree(s_Root, [&](const ZEntityRef p_TreeEntity) {
+        if (p_TreeEntity == p_Entity) {
+            s_Target.TreeIndex = s_Index;
+        }
+
+        ++s_Index;
+    });
+
+    return s_Target;
 }
 
 ZEntityRef Editor::ResolveHistoryTarget(const HistoryTarget& p_Target) {
@@ -64,17 +62,7 @@ ZEntityRef Editor::ResolveHistoryTarget(const HistoryTarget& p_Target) {
 Editor::HistoryValue Editor::MakeHistoryValue(const ZObjectRef& p_Value) {
     HistoryValue s_Value { .Value = p_Value };
 
-    const IType* s_TypeInfo = p_Value.GetTypeID()->GetTypeInfo();
-
-    if (!s_TypeInfo->IsEntity()) {
-        return s_Value;
-    }
-
-    const ZEntityRef s_EntityRef = std::string_view(s_TypeInfo->pszTypeName) == "ZEntityRef"
-        ? *static_cast<ZEntityRef*>(p_Value.GetData())
-        : static_cast<TEntityRef<void>*>(p_Value.GetData())->m_entityRef;
-
-    if (s_EntityRef) {
+    if (const ZEntityRef s_EntityRef = GetEntityRefFromValue(p_Value)) {
         s_Value.EntityRef = MakeHistoryTarget(s_EntityRef);
     }
 
@@ -252,6 +240,10 @@ bool Editor::ApplyHistoryEntry(const HistoryEntry& p_Entry, const bool p_IsUndo)
 
         if (const ZEntityRef s_Entity = ResolveHistoryTarget({ .SpawnedRootId = s_Spawn.EntityId })) {
             SetEntityTransformInternal(s_Entity, s_Spawn.Transform, false, std::nullopt, ChangeMode::Revert);
+        }
+
+        for (const auto& s_Reference : s_DestroyChange->ClearedReferences) {
+            ApplyHistoryEntry({ .Change = s_Reference }, true);
         }
     }
 

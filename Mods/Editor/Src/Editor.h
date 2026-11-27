@@ -188,6 +188,7 @@ private:
 
     struct DestroyHistoryEntry {
         SpawnInfo Spawn;
+        std::vector<PropertyHistoryEntry> ClearedReferences;
     };
 
     struct HistoryEntry {
@@ -523,6 +524,11 @@ private:
     );
     static ZObjectRef GetPropertyValue(ZEntityRef p_Entity, const SPropertyData* p_Property);
     static ZObjectRef MakeEntityRefValue(STypeID* p_Type, ZEntityRef p_Entity);
+    static ZEntityRef GetEntityRefFromValue(const ZObjectRef& p_Value);
+    ZEntityRef FindSpawnedRoot(ZEntityRef p_Entity);
+    bool IsEntityInSpawnedTree(ZEntityRef p_Entity);
+    void TrackSpawnedEntityReference(ZEntityRef p_Entity, uint32_t p_PropertyId, const ZObjectRef& p_Value);
+    std::vector<PropertyHistoryEntry> ClearReferencesToTree(const SpawnedTree& p_Tree);
     void OnSignalEntityPin(
         ZEntityRef p_Entity,
         const std::string& p_Pin,
@@ -1212,6 +1218,8 @@ private:
 
     // Only used on the update thread.
     std::vector<EditStart> m_EditStarts;
+    // Entity refs the editor pointed into spawned trees, which the game won't clear on delete.
+    std::vector<ChangeKey> m_SpawnedEntityReferences;
 
     std::optional<ActiveEdit> m_PropertyEdit;
     std::optional<ActiveEdit> m_GizmoEdit;

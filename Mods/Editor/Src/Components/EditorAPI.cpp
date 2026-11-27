@@ -230,6 +230,18 @@ ZObjectRef Editor::MakeEntityRefValue(STypeID* p_Type, ZEntityRef p_Entity) {
     return s_EntityRefObj;
 }
 
+ZEntityRef Editor::GetEntityRefFromValue(const ZObjectRef& p_Value) {
+    const IType* s_TypeInfo = p_Value.GetTypeID()->GetTypeInfo();
+
+    if (!s_TypeInfo->IsEntity()) {
+        return {};
+    }
+
+    return std::string_view(s_TypeInfo->pszTypeName) == "ZEntityRef"
+        ? *static_cast<ZEntityRef*>(p_Value.GetData())
+        : static_cast<TEntityRef<void>*>(p_Value.GetData())->m_entityRef;
+}
+
 Quat Editor::GetQuatFromProperty(ZEntityRef p_Entity) {
     const std::string s_TransformPropertyName = "m_mTransform";
     const auto s_EntityType = p_Entity->GetType();

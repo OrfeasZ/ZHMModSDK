@@ -1484,6 +1484,7 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         std::scoped_lock s_Lock(m_ChangeQueueMutex);
         m_ChangeQueue.clear();
         m_EditStarts.clear();
+        m_SpawnedEntityReferences.clear();
         m_UndoHistory.clear();
         m_RedoHistory.clear();
     }
