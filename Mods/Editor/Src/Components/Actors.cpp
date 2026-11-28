@@ -670,20 +670,38 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
         ImGui::Separator();
 
         if (ImGui::Button(std::format("Track this actor##{}", s_ActorName).c_str())) {
-
-            if (m_RenderDest.m_entityRef == nullptr) {
-                GetRenderDest();
-            }
-
-            if (m_TrackCam.m_entityRef == nullptr) {
-                GetTrackCam();
-            }
-
-            if (m_PlayerCam == nullptr) {
-                GetPlayerCam();
-            }
-
+            // The cameras are looked up on the game thread every time tracking starts. They used
+            // to be cached once and kept across missions (references into a destroyed scene), and
+            // the free camera might not exist yet, in which case UpdateTrackCam read null.
             QueueTask([this, s_Actor = m_SelectedActor] {
+                if (!s_Actor || !*Globals::ApplicationEngineWin32) {
+                    return;
+                }
+
+                auto& s_EngineAppCommon = (*Globals::ApplicationEngineWin32)->m_pEngineAppCommon;
+
+                if (!s_EngineAppCommon.m_pFreeCamera01.m_pInterfaceRef) {
+                    Functions::ZEngineAppCommon_CreateFreeCameraAndControl->Call(&s_EngineAppCommon);
+                }
+
+                GetRenderDest();
+                GetTrackCam();
+
+                if (!m_RenderDest.m_pInterfaceRef || !m_TrackCam.m_pInterfaceRef) {
+                    Logger::Error("[Editor] Cannot track actor: camera not available.");
+                    return;
+                }
+
+                // Already tracking: the current source is the track camera, not the player's.
+                if (!m_TrackCamActive) {
+                    GetPlayerCam();
+                }
+
+                if (!m_PlayerCam) {
+                    Logger::Error("[Editor] Cannot track actor: player camera not found.");
+                    return;
+                }
+
                 m_ActorTracked = s_Actor;
                 m_TrackCamActive = true;
 
@@ -693,6 +711,12 @@ void Editor::DrawActorsWindow(const bool p_HasFocus) {
         ImGui::SameLine();
         if (ImGui::Button("Stop tracking")) {
             QueueTask([this] {
+                // Without an active tracking, this used to hand control back to a camera that
+                // was never looked up (null pointer).
+                if (!m_TrackCamActive) {
+                    return;
+                }
+
                 m_TrackCamActive = false;
                 m_ActorTracked = nullptr;
 
@@ -912,11 +936,21 @@ void Editor::EnableTrackCam() {
 }
 
 void Editor::UpdateTrackCam() const {
+    if (!m_ActorTracked || !m_TrackCam.m_pInterfaceRef) {
+        return;
+    }
+
     ZEntityRef s_Ref;
 
     m_ActorTracked->GetID(s_Ref);
 
-    SMatrix s_ActorWorldMatrix = s_Ref.QueryInterface<ZSpatialEntity>()->GetObjectToWorldMatrix();
+    const auto s_ActorSpatial = s_Ref.QueryInterface<ZSpatialEntity>();
+
+    if (!s_ActorSpatial) {
+        return;
+    }
+
+    SMatrix s_ActorWorldMatrix = s_ActorSpatial->GetObjectToWorldMatrix();
     SMatrix s_TrackCamWorldMatrix = m_TrackCam.m_pInterfaceRef->GetObjectToWorldMatrix();
     s_TrackCamWorldMatrix.Trans = s_ActorWorldMatrix.Trans + float4(0.f, 0.f, 2.f, 0.f);
 
@@ -924,7 +958,10 @@ void Editor::UpdateTrackCam() const {
 }
 
 void Editor::DisableTrackCam() {
-    m_RenderDest.m_pInterfaceRef->SetSource(&m_PlayerCam);
+    if (m_RenderDest.m_pInterfaceRef && m_PlayerCam) {
+        m_RenderDest.m_pInterfaceRef->SetSource(&m_PlayerCam);
+    }
+
     SetPlayerControlActive(true);
 }
 

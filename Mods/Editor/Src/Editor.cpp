@@ -1563,6 +1563,12 @@ DEFINE_PLUGIN_DETOUR(Editor, void, OnClearScene, ZEntitySceneContext* th, bool p
         m_TrackCamActive = false;
     }
 
+    // These cameras belong to the scene being unloaded.
+    m_ActorTracked = nullptr;
+    m_PlayerCam = nullptr;
+    m_TrackCam = {};
+    m_RenderDest = {};
+
     m_AssetBrowser.OnClearScene();
 
     m_SelectedActor = nullptr;
