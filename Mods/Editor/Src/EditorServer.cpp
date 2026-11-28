@@ -722,13 +722,17 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
                         "ZSphereVolumeEntity", "00B86A9EE991EFB2"
                     );
                     const auto s_MapSpaceConfigEntities = Plugin()->FindEntitiesByType("ZUIMapSpaceConfig", "00972D765AF6B272");
+                    const auto s_UIControlsJson = WriteUIControlsJson(
+                        Plugin()->FindEntitiesByType("ZUIControlEntity", "002C4526CC9753E6")
+                    );
                     const auto s_CrowdsJson = WriteCrowdsJson(s_VolumeBoxEntities, s_VolumeSphereEntities);
 
                     DeferToClient(
                         p_ClientId,
                         [s_PfBoxEntities, s_PfSeedPointEntities, s_GateEntities, s_RoomEntities,
                             s_AIAreaWorldEntities, s_AIAreaEntities, s_VolumeBoxEntities, s_VolumeSphereEntities,
-                            s_MapSpaceConfigEntities, s_CrowdsJson, p_PrimMatis, p_MatiTextures](WebSocket* p_Socket) {
+                            s_MapSpaceConfigEntities, s_UIControlsJson, s_CrowdsJson, p_PrimMatis,
+                            p_MatiTextures](WebSocket* p_Socket) {
                                 p_Socket->send("],\"pfBoxes\":[", uWS::OpCode::TEXT);
                                 SendEntitiesDetails(p_Socket, s_PfBoxEntities);
 
@@ -758,6 +762,9 @@ void EditorServer::SendNavKitScene(const std::string& p_ClientId, bool s_OnlyCol
 
                                 p_Socket->send("],\"mapSpaceConfigs\":[", uWS::OpCode::TEXT);
                                 SendEntitiesDetails(p_Socket, s_MapSpaceConfigEntities);
+
+                                p_Socket->send("],\"uiControls\":[", uWS::OpCode::TEXT);
+                                SendJsonList(p_Socket, s_UIControlsJson);
 
                                 p_Socket->send("],\"crowds\":[", uWS::OpCode::TEXT);
                                 SendJsonList(p_Socket, s_CrowdsJson.Crowds);
@@ -1159,7 +1166,7 @@ namespace {
         }
 
         Logger::Warn(
-            "[Editor] Crowd export: '{}'.{} is {}, expected {}.",
+            "[Editor] NavKit export: '{}'.{} is {}, expected {}.",
             Plugin()->GetEntityName(p_Entity), p_Name, s_Value.GetTypeID()->GetTypeInfo()->pszTypeName, ZHMTypeName<T>
         );
         p_Stream << "null";
@@ -1381,6 +1388,25 @@ void EditorServer::WriteCrowdVolumeIndexArray(
     }
 
     p_Stream << "]";
+}
+
+// The ZUIControlEntity entities with their m_sClassName, such as "<package>.SLICE_00" for a map layer, which NavKit
+// uses to name the ActionScript classes of the map GFX it builds.
+std::vector<std::string> EditorServer::WriteUIControlsJson(const SceneEntities& p_UIControlEntities) {
+    std::vector<std::string> s_UIControls;
+
+    for (const auto& s_Entity : p_UIControlEntities | std::views::elements<2>) {
+        std::ostringstream s_Stream;
+        s_Stream << "{";
+        WriteEntityIdentity(s_Stream, s_Entity);
+        s_Stream << write_json("m_sClassName") << ":{" << write_json("type") << ":" << write_json("ZString") << ","
+            << write_json("value") << ":";
+        WriteScalarProperty<ZString>(s_Stream, s_Entity, "m_sClassName");
+        s_Stream << "}}";
+        s_UIControls.push_back(s_Stream.str());
+    }
+
+    return s_UIControls;
 }
 
 EditorServer::CrowdsJson EditorServer::WriteCrowdsJson(
