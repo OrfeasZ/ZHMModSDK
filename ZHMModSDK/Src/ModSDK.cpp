@@ -852,8 +852,11 @@ bool ModSDK::Startup() {
 
     // If there's at least 3 failures, we probably have a problem.
     // Unless the bypass flag is set, show a message and exit.
-    if (g_Failures >= 3 && !m_ForceLoad) {
-        Logger::Error("Too many errors occurred ({}). Unloading SDK.", g_Failures);
+    // Failures caused by a module that is not loaded at all (EOS on Steam) are not counted.
+    const int s_Failures = g_Failures - g_MissingModuleFailures;
+
+    if (s_Failures >= 3 && !m_ForceLoad) {
+        Logger::Error("Too many errors occurred ({}: {}). Unloading SDK.", s_Failures, g_FailedNames);
 
         // Remove detours.
         HookRegistry::ClearDetoursWithContext(this);
