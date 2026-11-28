@@ -465,6 +465,30 @@ public:
      * @return True if the resource IDs are available, false otherwise.
      */
     virtual bool AreResourceIDsLoaded() = 0;
+
+    // Keyboard shortcuts that users can change from the SDK menu (SHORTCUTS button).
+    // Added at the end of the vtable so that mods built against an older SDK keep working.
+
+    /**
+     * Declare a keyboard shortcut that the user can change from the SDK menu.
+     * The chosen combination is stored in the mod's settings, section [hotkeys].
+     * @param p_Id Stable identifier (settings key).
+     * @param p_Label Text shown in the shortcuts window.
+     * @param p_Default Default combination, e.g. "Alt+I", "F9", "Ctrl+Shift+K", or "" for none.
+     */
+    virtual void RegisterHotkey(
+        IPluginInterface* p_Plugin, const char* p_Id, const char* p_Label, const char* p_Default
+    ) = 0;
+
+    /**
+     * True on the frame the shortcut's combination is pressed. Call it once per frame.
+     */
+    virtual bool IsHotkeyPressed(IPluginInterface* p_Plugin, const char* p_Id) = 0;
+
+    /**
+     * Write the current combination as text ("Alt+I", "None") into the buffer.
+     */
+    virtual void GetHotkeyText(IPluginInterface* p_Plugin, const char* p_Id, char* p_Buffer, size_t p_Size) = 0;
 };
 
 /**

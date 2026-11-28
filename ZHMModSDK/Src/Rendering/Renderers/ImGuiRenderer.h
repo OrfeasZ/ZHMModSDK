@@ -78,6 +78,7 @@ namespace Rendering::Renderers {
         ImFont* GetFontBlack() { return m_FontBlack; }
 
         void SetFocus(bool p_HasFocus) { m_ImGuiHasFocus.store(p_HasFocus, std::memory_order_release); }
+        bool HasFocus() const { return m_ImGuiHasFocus.load(std::memory_order_acquire); }
 
         bool CreateDDSTextureFromMemory(
             const void* p_Data,

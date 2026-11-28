@@ -46,7 +46,6 @@ FreeCam::FreeCam() :
     m_HasToggledFreeCamBefore(false),
     m_EditorStyleFreeCam(false) {
     m_PcControls = {
-        {"K", "Toggle freecam"},
         {"F3", "Lock camera and enable 47 input"},
         {"Ctrl + W/S", "Change FOV"},
         {"Ctrl + A/D", "Roll camera"},
@@ -55,13 +54,9 @@ FreeCam::FreeCam() :
         {"Space + Q/E", "Change camera height"},
         {"Space + W/S", "Move camera on axis"},
         {"Shift", "Increase camera speed"},
-        {"F9", "Kill NPC"},
-        {"Ctrl + F6", "Teleport hitman"},
-        {"F8", "Pause/resume game"},
     };
 
     m_PcControlsEditorStyle = {
-        {"P", "Toggle freecam"},
         {"F3", "Lock camera and enable 47 input"},
         {"MMB", "Drag camera"},
         {"Scroll Wheel", "Zoom camera"},
@@ -127,24 +122,16 @@ void FreeCam::Init() {
     m_EditorStyleFreeCam = GetSettingBool("general", "use_editor_style_freecam", false);
     m_GamePaused = GetSettingBool("general", "toggle_pause", false);
     m_MoveInFreeCam = GetSettingBool("general", "move_in_freecam", false);
+
+    RegisterHotkey("toggle", "Toggle free camera", "K");
+    RegisterHotkey("teleport", "Teleport 47 to the camera (free camera on)", "Ctrl+F6");
+    RegisterHotkey("instant_kill", "Kill the NPC under the crosshair (free camera on)", "F9");
+    RegisterHotkey("pause", "Pause / resume the game (free camera on)", "F8");
 }
 
 void FreeCam::OnEngineInitialized() {
     const ZMemberDelegate<FreeCam, void(const SGameUpdateEvent&)> s_Delegate(this, &FreeCam::OnFrameUpdate);
     Globals::GameLoopManager->RegisterFrameUpdate(s_Delegate, 1, EUpdateMode::eUpdatePlayMode);
-
-    const char* binds = "FreeCameraInput={"
-        "ToggleFreeCamera=tap(kb,k);"
-        "Teleport=& | hold(kb,lctrl) hold(kb,rctrl) tap(kb,f6);"
-        "InstantKill=tap(kb,f9);"
-        "TogglePauseGame=tap(kb,f8);};";
-
-    if (ZInputActionManager::AddBindings(binds)) {
-        Logger::Debug("[FreeCam] Successfully added bindings.");
-    }
-    else {
-        Logger::Debug("[FreeCam] Failed to add bindings.");
-    }
 }
 
 void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
@@ -171,7 +158,7 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         );
     }
 
-    if (Functions::ZInputAction_Digital->Call(&m_ToggleFreeCamAction, -1)) {
+    if (IsHotkeyPressed("toggle")) {
         ToggleFreeCam();
     }
 
@@ -189,17 +176,17 @@ void FreeCam::OnFrameUpdate(const SGameUpdateEvent& p_UpdateEvent) {
         if (Functions::ZInputAction_Digital->Call(&m_FreezeFreeCamActionKb, -1))
             m_FreeCamFrozen = !m_FreeCamFrozen;
 
-        if (Functions::ZInputAction_Digital->Call(&m_TogglePauseGame, -1)) {
+        if (IsHotkeyPressed("pause")) {
             m_GamePaused = !m_GamePaused;
             SetSettingBool("general", "toggle_pause", m_GamePaused);
             Globals::GameTimeManager->m_bPaused = m_GamePaused;
         }
 
-        if (Functions::ZInputAction_Digital->Call(&m_InstantlyKillNpcAction, -1)) {
+        if (IsHotkeyPressed("instant_kill")) {
             InstantlyKillNpc();
         }
 
-        if (Functions::ZInputAction_Digital->Call(&m_TeleportMainCharacterAction, -1)) {
+        if (IsHotkeyPressed("teleport")) {
             TeleportMainCharacter();
         }
 
@@ -398,6 +385,26 @@ void FreeCam::OnDrawUI(bool p_HasFocus) {
             ImGui::TextUnformatted("PC controls");
 
             if (ImGui::BeginTable("FreeCamControlsPc", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_SizingFixedFit)) {
+                // Configurable shortcuts, shown with their current combination.
+                const std::pair<const char*, const char*> s_Hotkeys[] = {
+                    { "toggle", "Toggle freecam" },
+                    { "instant_kill", "Kill NPC" },
+                    { "teleport", "Teleport hitman" },
+                    { "pause", "Pause/resume game" },
+                };
+
+                for (const auto& [s_Id, s_Description] : s_Hotkeys) {
+                    if (m_EditorStyleFreeCam && std::string_view(s_Id) != "toggle") {
+                        continue;
+                    }
+
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(GetHotkeyText(s_Id).c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(s_Description);
+                }
+
                 if (m_EditorStyleFreeCam) {
                     for (auto& [s_Key, s_Description] : m_PcControlsEditorStyle) {
                         ImGui::TableNextRow();
