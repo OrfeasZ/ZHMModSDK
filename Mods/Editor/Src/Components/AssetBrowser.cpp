@@ -333,13 +333,13 @@ void AssetBrowser::StartCapture(const ZRuntimeResourceID& p_ResourceId, bool p_I
     }
 }
 
-void AssetBrowser::LoadFactory(const ZRuntimeResourceID& p_ResourceId, TResourcePtr<ZTemplateEntityFactory>& p_Factory) {
+void AssetBrowser::LoadFactory(const ZRuntimeResourceID& p_ResourceId, TResourcePtr<IEntityFactory>& p_Factory) {
     if (MountChunk(p_ResourceId)) {
         Globals::ResourceManager->GetResourcePtr(p_Factory, p_ResourceId, 0);
     }
 }
 
-EResourceStatus AssetBrowser::GetFactoryStatus(const TResourcePtr<ZTemplateEntityFactory>& p_Factory) {
+EResourceStatus AssetBrowser::GetFactoryStatus(const TResourcePtr<IEntityFactory>& p_Factory) {
     return p_Factory.m_nResourceIndex.val < 0 ? RESOURCE_STATUS_FAILED : p_Factory.GetResourceInfo().status;
 }
 
@@ -480,6 +480,9 @@ std::string_view GetAssetItemLabel(const AssetItem& p_Item) {
     else if (s_Label.ends_with(".prim")) {
         s_Label.remove_suffix(std::string_view(".prim").size());
     }
+    else if (s_Label.ends_with(".class")) {
+        s_Label.remove_suffix(std::string_view(".class").size());
+    }
 
     return s_Label;
 }
@@ -505,27 +508,32 @@ static void SortAssetChildren(AssetItem& p_Item) {
     }
 }
 
+static bool EnumerateResourceCallback(
+    const ZRuntimeResourceID& p_Hash,
+    const ResourceIDInfo& p_Info,
+    void* p_UserData
+) {
+    if (!p_Info.m_Path || FindUnspawnablePath(p_Info.m_Path)) {
+        return true;
+    }
+
+    if (SDK()->GetChunkIndicesForRuntimeResourceId(p_Hash).size() == 0) {
+        return true;
+    }
+
+    auto& s_Files = *static_cast<std::vector<std::pair<ZRuntimeResourceID, std::string>>*>(p_UserData);
+
+    s_Files.emplace_back(p_Hash, p_Info.m_Path);
+
+    return true;
+}
+
 static std::shared_ptr<AssetItem> BuildAssetTree() {
     std::vector<std::pair<ZRuntimeResourceID, std::string>> s_Files;
 
-    SDK()->EnumerateResourceIDs(
-        "TEMP",
-        1u << 3, // If bit 3 is not set, it means this file is not in HM3, so we skip it.
-        [](const ZRuntimeResourceID& p_Hash,
-            const ResourceIDInfo& p_Info,
-            void* p_UserData) -> bool {
-                auto& s_Files = *static_cast<
-                    std::vector<std::pair<ZRuntimeResourceID, std::string>>*
-                >(p_UserData);
-
-                if (p_Info.m_Path && !FindUnspawnablePath(p_Info.m_Path)) {
-                    s_Files.emplace_back(p_Hash, p_Info.m_Path);
-                }
-
-                return true;
-        },
-        &s_Files
-    );
+    // If bit 3 is not set, it means this file is not in HM3, so we skip it.
+    SDK()->EnumerateResourceIDs("TEMP", 1u << 3, EnumerateResourceCallback, &s_Files);
+    SDK()->EnumerateResourceIDs("CPPT", 1u << 3, EnumerateResourceCallback, &s_Files);
 
     if (s_Files.empty()) {
         return nullptr;
@@ -544,6 +552,9 @@ static std::shared_ptr<AssetItem> BuildAssetTree() {
         if (s_CleanPath.starts_with("[assembly:")) {
             s_CleanPath = s_CleanPath.substr(std::string("[assembly:").length());
         }
+        else if (s_CleanPath.starts_with("[modules:")) {
+            s_CleanPath.replace(0, std::string_view("[modules:").size(), "modules");
+        }
 
         if (s_CleanPath.ends_with("].pc_entitytype")) {
             s_CleanPath = s_CleanPath.substr(0, s_CleanPath.length() - std::string("].pc_entitytype").length());
@@ -553,7 +564,9 @@ static std::shared_ptr<AssetItem> BuildAssetTree() {
         }
 
         // If it doesn't end in .entitytemplate or .prim, skip it.
-        if (!s_CleanPath.ends_with(".entitytemplate") && !s_CleanPath.ends_with(".prim")) {
+        if (!s_CleanPath.ends_with(".entitytemplate") &&
+            !s_CleanPath.ends_with(".prim") &&
+            !s_CleanPath.ends_with(".class")) {
             continue;
         }
 
@@ -624,6 +637,7 @@ static std::shared_ptr<AssetItem> BuildAssetTree() {
 static constexpr ImU32 c_NoThumbnailColor = IM_COL32(0x26, 0x27, 0x2c, 0xff);
 static constexpr ImU32 c_PrimBadgeColor = IM_COL32(0x2e, 0x7d, 0x32, 0xff);
 static constexpr ImU32 c_TemplateBadgeColor = IM_COL32(0x1f, 0x5f, 0xbf, 0xff);
+static constexpr ImU32 c_CpptBadgeColor = IM_COL32(0x7b, 0x1f, 0xa2, 0xff);
 
 // Font sizes in canvas pixels.
 static constexpr float c_FolderTileIconFontSize = 24.f;
@@ -644,14 +658,22 @@ static std::string GetFolderPathString(const std::vector<const AssetItem*>& p_Pa
     return s_Result;
 }
 
-static void CollectTemplates(
+static bool IsPrimAsset(const AssetItem& p_Item) {
+    return p_Item.Name.ends_with(".prim");
+}
+
+static bool IsCpptAsset(const AssetItem& p_Item) {
+    return p_Item.Name.ends_with(".class");
+}
+
+static void CollectPreviewableAssets(
     const AssetItem& p_Folder, std::vector<std::pair<ZRuntimeResourceID, std::string>>& p_Templates
 ) {
     for (const auto& s_Item : p_Folder.Children) {
         if (IsAssetFolder(*s_Item)) {
-            CollectTemplates(*s_Item, p_Templates);
+            CollectPreviewableAssets(*s_Item, p_Templates);
         }
-        else {
+        else if (!IsCpptAsset(*s_Item)) {
             p_Templates.emplace_back(*s_Item->ResId, s_Item->Path);
         }
     }
@@ -681,13 +703,18 @@ static void DrawAssetThumbnail(ImDrawList* p_DrawList, const ImVec2& p_Min, cons
     );
 }
 
-static bool IsPrimAsset(const AssetItem& p_Item) {
-    return p_Item.Name.ends_with(".prim");
-}
-
 static void DrawTypeBadge(ImDrawList* p_DrawList, const ImVec2& p_ThumbMax, const AssetItem& p_Item) {
-    const bool s_IsPrim = IsPrimAsset(p_Item);
-    const char* s_Text = s_IsPrim ? "PRIM" : "TEMP";
+    const char* s_Text = "TEMP";
+    ImU32 s_Color = c_TemplateBadgeColor;
+
+    if (IsPrimAsset(p_Item)) {
+        s_Text = "PRIM";
+        s_Color = c_PrimBadgeColor;
+    }
+    else if (IsCpptAsset(p_Item)) {
+        s_Text = "CPPT";
+        s_Color = c_CpptBadgeColor;
+    }
 
     ImGui::PushFont(nullptr, FontSize(c_TypeBadgeFontSize));
 
@@ -698,7 +725,7 @@ static void DrawTypeBadge(ImDrawList* p_DrawList, const ImVec2& p_ThumbMax, cons
         p_ThumbMax.y - s_TextSize.y - s_Padding.y * 2.f
     );
 
-    p_DrawList->AddRectFilled(s_BadgeMin, p_ThumbMax, s_IsPrim ? c_PrimBadgeColor : c_TemplateBadgeColor);
+    p_DrawList->AddRectFilled(s_BadgeMin, p_ThumbMax, s_Color);
     p_DrawList->AddText(
         ImVec2(s_BadgeMin.x + s_Padding.x, s_BadgeMin.y + s_Padding.y),
         IM_COL32_WHITE,
@@ -783,7 +810,15 @@ bool AssetBrowser::IsItemShown(const AssetItem& p_Item) const {
         return true;
     }
 
-    return IsPrimAsset(p_Item) ? m_ShowPrims : m_ShowTemplates;
+    if (IsPrimAsset(p_Item)) {
+        return m_ShowPrims;
+    }
+
+    if (IsCpptAsset(p_Item)) {
+        return m_ShowCppts;
+    }
+
+    return m_ShowTemplates;
 }
 
 void AssetBrowser::UpdateAssetTree() {
@@ -810,9 +845,12 @@ void AssetBrowser::UpdateAssetTree() {
 void AssetBrowser::UpdateTileGroups() {
     const AssetItem& s_CurrentFolder = GetCurrentFolder();
 
-    if (m_TileGroupsQuery == m_SearchFilter && m_TileGroupsEverywhere == m_IsSearchEverywhere &&
-        m_TileGroupsFolder == &s_CurrentFolder && m_TileGroupsShowTemplates == m_ShowTemplates &&
-        m_TileGroupsShowPrims == m_ShowPrims) {
+    if (m_TileGroupsQuery == m_SearchFilter &&
+        m_TileGroupsEverywhere == m_IsSearchEverywhere &&
+        m_TileGroupsFolder == &s_CurrentFolder &&
+        m_TileGroupsShowTemplates == m_ShowTemplates &&
+        m_TileGroupsShowPrims == m_ShowPrims &&
+        m_TileGroupsShowCppts == m_ShowCppts) {
         return;
     }
 
@@ -822,6 +860,7 @@ void AssetBrowser::UpdateTileGroups() {
     m_TileGroupsFolder = &s_CurrentFolder;
     m_TileGroupsShowTemplates = m_ShowTemplates;
     m_TileGroupsShowPrims = m_ShowPrims;
+    m_TileGroupsShowCppts = m_ShowCppts;
 
     m_TileGroups.clear();
     m_AreTileRowsStale = true;
@@ -991,7 +1030,7 @@ void AssetBrowser::Draw(const char* p_WindowName) {
 
     ImGui::End();
 
-    if (m_HoveredItem) {
+    if (m_HoveredItem && !IsCpptAsset(*m_HoveredItem)) {
         SetHoverPreview(*m_HoveredItem->ResId, m_HoveredItem->Path);
     }
     else {
@@ -1021,8 +1060,13 @@ void AssetBrowser::DrawToolbar() {
     const float s_SearchWidth = ScaledSize(200.f);
     const float s_MinSearchWidth = ScaledSize(80.f);
     const float s_ScopeWidth = ScaledSize(104.f);
-    const float s_FiltersWidth = s_FrameHeight * 2.f + s_Style.ItemInnerSpacing.x * 2.f +
-        ImGui::CalcTextSize("TEMP").x + ImGui::CalcTextSize("PRIM").x + s_Style.ItemSpacing.x;
+    const float s_FiltersWidth =
+        s_FrameHeight * 2.f +
+        s_Style.ItemInnerSpacing.x * 2.f +
+        ImGui::CalcTextSize("TEMP").x +
+        ImGui::CalcTextSize("PRIM").x +
+        ImGui::CalcTextSize("CPPT").x +
+        s_Style.ItemSpacing.x;
     const float s_ControlsWidth = s_FiltersWidth + s_SearchWidth + s_ScopeWidth + s_Style.ItemSpacing.x * 2.f;
 
     ImGui::BeginDisabled(m_History.empty());
@@ -1199,6 +1243,9 @@ void AssetBrowser::DrawToolbar() {
     ImGui::SameLine();
     ImGui::Checkbox("PRIM", &m_ShowPrims);
     ImGui::SetItemTooltip("Show prims");
+    ImGui::SameLine();
+    ImGui::Checkbox("CPPT", &m_ShowCppts);
+    ImGui::SetItemTooltip("Show C++ entity types");
 
     ImGui::SameLine();
 
@@ -1347,7 +1394,7 @@ void AssetBrowser::DrawContent(const float p_Height) {
             ImGui::TextColored(c_MutedTextColor, "This folder is empty.");
         }
         else if (m_TileCount == 0) {
-            ImGui::TextColored(c_MutedTextColor, "No assets match the TEMP / PRIM filters.");
+            ImGui::TextColored(c_MutedTextColor, "No assets match the TEMP / PRIM / CPPT filters.");
         }
 
         const ImVec2 s_Start = ImGui::GetCursorPos();
@@ -1440,7 +1487,7 @@ void AssetBrowser::DrawTile(
             ImGui::PopFont();
         }
         else {
-            const ImGuiTexture* s_Thumbnail = GetThumbnail(*p_Item.ResId, p_Item.Path);
+            const ImGuiTexture* s_Thumbnail = IsCpptAsset(p_Item) ? nullptr : GetThumbnail(*p_Item.ResId, p_Item.Path);
 
             DrawAssetThumbnail(s_DrawList, s_Min, s_ThumbMax, s_Thumbnail);
             DrawTypeBadge(s_DrawList, s_ThumbMax, p_Item);
@@ -1581,7 +1628,7 @@ void AssetBrowser::DrawFooter(const float p_Height) {
     if (GhostButton(ICON_MD_PHOTO_LIBRARY, "##GenerateThumbnails", "Generate all thumbnails")) {
         std::vector<std::pair<ZRuntimeResourceID, std::string>> s_Templates;
 
-        CollectTemplates(*m_Root, s_Templates);
+        CollectPreviewableAssets(*m_Root, s_Templates);
         QueueThumbnails(s_Templates);
     }
 
@@ -1628,18 +1675,20 @@ void AssetBrowser::DrawHoverPopup() {
 
     ImGui::BeginTooltip();
 
-    const ImVec2 s_PreviewMin = ImGui::GetCursorScreenPos();
-    const float s_PreviewSize = ImGui::GetContentRegionAvail().x;
-    const ImVec2 s_PreviewMax(s_PreviewMin.x + s_PreviewSize, s_PreviewMin.y + s_PreviewSize);
+    if (!IsCpptAsset(*m_HoveredItem)) {
+        const ImVec2 s_PreviewMin = ImGui::GetCursorScreenPos();
+        const float s_PreviewSize = ImGui::GetContentRegionAvail().x;
+        const ImVec2 s_PreviewMax(s_PreviewMin.x + s_PreviewSize, s_PreviewMin.y + s_PreviewSize);
 
-    const ImGuiTexture* s_Texture = GetHoverPreviewTexture(*m_HoveredItem->ResId);
+        const ImGuiTexture* s_Texture = GetHoverPreviewTexture(*m_HoveredItem->ResId);
 
-    if (!s_Texture) {
-        s_Texture = GetThumbnail(*m_HoveredItem->ResId, m_HoveredItem->Path);
+        if (!s_Texture) {
+            s_Texture = GetThumbnail(*m_HoveredItem->ResId, m_HoveredItem->Path);
+        }
+
+        DrawAssetThumbnail(ImGui::GetWindowDrawList(), s_PreviewMin, s_PreviewMax, s_Texture);
+        ImGui::Dummy(ImVec2(s_PreviewSize, s_PreviewSize));
     }
-
-    DrawAssetThumbnail(ImGui::GetWindowDrawList(), s_PreviewMin, s_PreviewMax, s_Texture);
-    ImGui::Dummy(ImVec2(s_PreviewSize, s_PreviewSize));
 
     const std::string_view s_Label = GetAssetItemLabel(*m_HoveredItem);
 

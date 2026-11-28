@@ -156,7 +156,7 @@ private:
     };
 
     struct SpawnInfo {
-        TResourcePtr<ZTemplateEntityFactory> Factory;
+        TResourcePtr<IEntityFactory> Factory;
         std::string Name;
         uint64_t EntityId = 0;
         SMatrix Transform;
@@ -461,7 +461,7 @@ private:
     struct SpawnedEntity {
         ZEntityRef Entity;
 
-        std::optional<TResourcePtr<ZTemplateEntityFactory>> Factory;
+        std::optional<TResourcePtr<IEntityFactory>> Factory;
         bool IsAsset = false;
 
         SpawnedTree Tree;
@@ -481,7 +481,7 @@ private:
 
     struct PendingAssetSpawn {
         AssetSpawnRequest Request;
-        TResourcePtr<ZTemplateEntityFactory> Factory;
+        TResourcePtr<IEntityFactory> Factory;
         int LoadFrames = 0;
     };
 

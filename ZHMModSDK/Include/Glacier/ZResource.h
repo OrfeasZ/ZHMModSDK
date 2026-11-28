@@ -190,6 +190,12 @@ public:
         m_nResourceIndex = p_Index;
     }
 
+    template <typename U>
+        requires std::is_convertible_v<U*, T*>
+    TResourcePtr(const TResourcePtr<U>& p_Other)
+        : ZResourcePtr(p_Other) {
+    }
+
 public:
     T* GetResource() const {
         return static_cast<T*>(GetResourceData());

@@ -36,7 +36,7 @@ public:
     void Destroy();
     bool IsReady() const;
 
-    bool SpawnPreview(ZTemplateEntityFactory* p_Factory, const std::string& p_ItemName);
+    bool SpawnPreview(IEntityFactory* p_Factory, const std::string& p_ItemName);
     void DestroyPreview();
     bool FramePreview(float p_Yaw);
     bool HasRenderables() const;

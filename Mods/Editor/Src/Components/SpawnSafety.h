@@ -21,7 +21,7 @@ struct SpawnedTree {
 
 void ForEachEntityInTree(const ZEntityRef& p_Root, const std::function<void(ZEntityRef)>& p_Callback);
 std::optional<std::string_view> FindUnspawnablePath(std::string_view p_Path);
-bool CanSpawnTemplate(ZTemplateEntityFactory* p_Factory, const std::string& p_ItemName);
+bool CanSpawnTemplate(IEntityFactory* p_Factory, const std::string& p_ItemName);
 std::unordered_set<ZEntityType**> GetRegisteredLookAtTriggers();
 size_t UnregisterLookAtTriggersIf(const std::function<bool(ZEntityType**)>& p_ShouldUnregister);
 SpawnedTree CollectSpawnedTree(const ZEntityRef& p_Root);

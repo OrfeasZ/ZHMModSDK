@@ -47,8 +47,8 @@ public:
     void OnClearScene();
     void OnPlanningPageOpened();
 
-    void LoadFactory(const ZRuntimeResourceID& p_ResourceId, TResourcePtr<ZTemplateEntityFactory>& p_Factory);
-    static EResourceStatus GetFactoryStatus(const TResourcePtr<ZTemplateEntityFactory>& p_Factory);
+    void LoadFactory(const ZRuntimeResourceID& p_ResourceId, TResourcePtr<IEntityFactory>& p_Factory);
+    static EResourceStatus GetFactoryStatus(const TResourcePtr<IEntityFactory>& p_Factory);
 
     void CaptureThumbnail();
     void ClearHoverPreview();
@@ -122,6 +122,7 @@ private:
     bool m_IsSearchEverywhere = true;
     bool m_ShowTemplates = true;
     bool m_ShowPrims = true;
+    bool m_ShowCppts = true;
     int m_TileSize = 60;
     float m_FolderTreeWidth = 180.f;
 
@@ -132,6 +133,7 @@ private:
     bool m_TileGroupsEverywhere = true;
     bool m_TileGroupsShowTemplates = true;
     bool m_TileGroupsShowPrims = true;
+    bool m_TileGroupsShowCppts = true;
     const AssetItem* m_TileGroupsFolder = nullptr;
 
     std::vector<TileRow> m_TileRows;
@@ -156,10 +158,10 @@ private:
 
     std::unordered_map<ZRuntimeResourceID, std::string> m_ItemPaths;
 
-    std::optional<TResourcePtr<ZTemplateEntityFactory>> m_PreviewFactory;
+    std::optional<TResourcePtr<IEntityFactory>> m_PreviewFactory;
 
     // TResourcePtr's assignment doesn't count references, so these must not move.
-    std::unordered_map<ZRuntimeResourceID, TResourcePtr<ZTemplateEntityFactory>> m_Prefetched;
+    std::unordered_map<ZRuntimeResourceID, TResourcePtr<IEntityFactory>> m_Prefetched;
 
     float m_Yaw = 0.f;
     CaptureState m_CaptureState = CaptureState::Idle;
