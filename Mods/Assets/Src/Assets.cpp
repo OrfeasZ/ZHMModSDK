@@ -144,7 +144,9 @@ void Assets::OnDrawUI(bool p_HasFocus) {
         static ZRepositoryID s_RepositoryId = ZRepositoryID("");
         static TEntityRef<ZGlobalOutfitKit> s_GlobalOutfitKit = {};
         static uint8_t s_CurrentCharacterSetIndex = 0;
-        static std::string s_CurrentCharSetCharacterType = "HeroA";
+        // An NPC wears the "Actor" version of an outfit; "HeroA" is 47's and is empty for almost
+        // every NPC outfit, which spawned black silhouettes (#166).
+        static std::string s_CurrentCharSetCharacterType = "Actor";
         static uint8_t s_CurrentOutfitVariationIndex = 0;
 
         Util::ImGuiUtils::InputWithAutocomplete(
@@ -164,6 +166,9 @@ void Assets::OnDrawUI(bool p_HasFocus) {
                 const auto& p_Pair) {
                     s_RepositoryId = p_Pair.first;
                     s_GlobalOutfitKit = p_Pair.second;
+                    // The previous outfit's indices may be out of range for this one.
+                    s_CurrentCharacterSetIndex = 0;
+                    s_CurrentOutfitVariationIndex = 0;
             },
             nullptr,
             [](auto& p_Pair) -> bool {
@@ -180,8 +185,11 @@ void Assets::OnDrawUI(bool p_HasFocus) {
                 for (size_t i = 0; i < s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets.size(); ++i) {
                     const bool s_IsSelected = s_CurrentCharacterSetIndex == i;
 
-                    if (ImGui::Selectable(std::to_string(s_CurrentCharacterSetIndex).data(), s_IsSelected)) {
+                    // Every row used to show the current index (same label, same ImGui ID), so
+                    // only the first one could be picked.
+                    if (ImGui::Selectable(std::to_string(i).data(), s_IsSelected)) {
                         s_CurrentCharacterSetIndex = i;
+                        s_CurrentOutfitVariationIndex = 0;
                     }
                 }
             }
@@ -223,11 +231,17 @@ void Assets::OnDrawUI(bool p_HasFocus) {
                     s_CharSetCharacterType = ECharSetCharacterType::ECSCT_HeroA;
                 }
 
-                const TEntityRef<ZOutfitVariationCollection>& s_OutfitVariationCollection =
-                    s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets[s_CurrentCharacterSetIndex];
-                const ZCharsetCharacterType* s_CharsetCharacterType = s_OutfitVariationCollection.m_pInterfaceRef->
-                    m_aCharacters[static_cast<size_t>(s_CharSetCharacterType)].m_pInterfaceRef;
-                const size_t s_VariationCount = s_CharsetCharacterType->m_aVariations.size();
+                // A missing character set or character type used to dereference null here.
+                const auto& s_CharSets = s_GlobalOutfitKit.m_pInterfaceRef->m_aCharSets;
+                const ZOutfitVariationCollection* s_OutfitVariationCollection =
+                    s_CurrentCharacterSetIndex < s_CharSets.size()
+                    ? s_CharSets[s_CurrentCharacterSetIndex].m_pInterfaceRef
+                    : nullptr;
+                const ZCharsetCharacterType* s_CharsetCharacterType = s_OutfitVariationCollection
+                    ? s_OutfitVariationCollection->m_aCharacters[static_cast<size_t>(s_CharSetCharacterType)].
+                    m_pInterfaceRef
+                    : nullptr;
+                const size_t s_VariationCount = s_CharsetCharacterType ? s_CharsetCharacterType->m_aVariations.size() : 0;
 
                 for (size_t i = 0; i < s_VariationCount; ++i) {
                     const bool s_IsSelected = s_CurrentOutfitVariationIndex == i;
@@ -418,6 +432,12 @@ void Assets::SpawnActor(
     const std::string& p_CharSetCharacterType,
     uint8_t p_OutfitVariationIndex
 ) {
+    // Without an outfit the actor spawned undressed (black silhouette, #166).
+    if (!p_GlobalOutfitKit) {
+        Logger::Warn("[Assets] Choose an outfit before spawning an actor.");
+        return;
+    }
+
     const auto s_Scene = Globals::Hitman5Module->m_pEntitySceneContext->m_pScene;
 
     if (!s_Scene) {
@@ -550,8 +570,22 @@ void Assets::EquipOutfit(
             const auto& s_TargetVariations = s_TargetType->m_pInterfaceRef->m_aVariations;
             const size_t s_Count = std::min(s_ActorVariations.size(), s_TargetVariations.size());
 
+            size_t s_Copied = 0;
+
             for (size_t i = 0; i < s_Count; ++i) {
+                // An empty version (FFFFFFFFFFFFFFFF) would leave the actor without an outfit:
+                // keep its "Actor" version instead.
+                if (!s_TargetVariations[i].m_pInterfaceRef ||
+                    s_TargetVariations[i].m_pInterfaceRef->m_Outfit.GetID() == 0xFFFFFFFFFFFFFFFFull) {
+                    continue;
+                }
+
                 s_ActorVariations[i].m_pInterfaceRef->m_Outfit = s_TargetVariations[i].m_pInterfaceRef->m_Outfit;
+                ++s_Copied;
+            }
+
+            if (s_Copied == 0) {
+                Logger::Info("[Assets] Outfit has no '{}' version, using 'Actor' instead.", p_CharSetCharacterType);
             }
         }
     }
