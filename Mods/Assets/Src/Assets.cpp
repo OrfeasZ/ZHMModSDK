@@ -1,5 +1,7 @@
 #include "Assets.h"
 
+#include <cfloat>
+
 #include <IconsMaterialDesign.h>
 
 #include "imgui_internal.h"
@@ -32,6 +34,8 @@ void Assets::OnDrawUI(bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont());
+    // The window used to open too narrow to read the fields.
+    ImGui::SetNextWindowSizeConstraints(ImVec2(640.f, 420.f), ImVec2(FLT_MAX, FLT_MAX));
     const auto s_IsWindowExpanded = ImGui::Begin("Assets", &m_ShowAssetsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont());
 

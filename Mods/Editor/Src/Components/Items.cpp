@@ -1,5 +1,6 @@
 #include "Editor.h"
 
+#include <cfloat>
 #include <format>
 
 #include <Glacier/ZItem.h>
@@ -11,6 +12,8 @@ void Editor::DrawItemsWindow(bool p_HasFocus) {
     }
 
     ImGui::PushFont(SDK()->GetImGuiBlackFont(), 0.f);
+    // The window used to open too small to show the list.
+    ImGui::SetNextWindowSizeConstraints(ImVec2(760.f, 460.f), ImVec2(FLT_MAX, FLT_MAX));
     const auto s_IsWindowExpanded = ImGui::Begin("Items", &m_ShowItemsWindow);
     ImGui::PushFont(SDK()->GetImGuiRegularFont(), 0.f);
 
