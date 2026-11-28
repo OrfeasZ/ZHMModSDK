@@ -293,6 +293,61 @@ bool ModSDK::PatchCodeStoreOriginal(
     return PatchCodeInternal(p_Pattern, p_Mask, p_NewCode, p_CodeSize, p_Offset, p_OriginalCode);
 }
 
+// Finds the `call qword ptr [rip+X]` whose target really is kernel32!SetUnhandledExceptionFilter
+// (and that is followed by `lea rcx, [rbp+X]`, like the original pattern) and NOPs it out.
+// The fixed pattern stopped matching after the November 2026 game update (the local moved from
+// rbp+0x1D0 to rbp+0x1E0), and a wildcard pattern matches seven unrelated calls, so the call is
+// identified by its target instead of its surrounding bytes.
+bool ModSDK::PatchSetUnhandledExceptionFilterCall() {
+    const auto s_Target = reinterpret_cast<uintptr_t>(
+        GetProcAddress(GetModuleHandleA("kernel32.dll"), "SetUnhandledExceptionFilter")
+    );
+
+    if (s_Target == 0) {
+        return false;
+    }
+
+    const auto* s_Code = reinterpret_cast<const uint8_t*>(GetModuleBase());
+    const size_t s_Size = GetSizeOfCode();
+
+    for (size_t i = 0; i + 13 <= s_Size; ++i) {
+        // call qword ptr [rip+rel32]
+        if (s_Code[i] != 0xFF || s_Code[i + 1] != 0x15) {
+            continue;
+        }
+
+        // lea rcx, [rbp+disp32] right after the call
+        if (s_Code[i + 6] != 0x48 || s_Code[i + 7] != 0x8D || s_Code[i + 8] != 0x8D) {
+            continue;
+        }
+
+        const int32_t s_Rel = *reinterpret_cast<const int32_t*>(&s_Code[i + 2]);
+        const auto* s_Slot = reinterpret_cast<const uintptr_t*>(
+            reinterpret_cast<uintptr_t>(&s_Code[i + 6]) + s_Rel
+        );
+
+        if (*s_Slot != s_Target) {
+            continue;
+        }
+
+        uint8_t s_Nops[6];
+        memset(s_Nops, 0x90, sizeof(s_Nops));
+
+        auto* s_CallSite = const_cast<uint8_t*>(&s_Code[i]);
+
+        DWORD s_OldProtect;
+        VirtualProtect(s_CallSite, sizeof(s_Nops), PAGE_EXECUTE_READWRITE, &s_OldProtect);
+        memcpy(s_CallSite, s_Nops, sizeof(s_Nops));
+        VirtualProtect(s_CallSite, sizeof(s_Nops), s_OldProtect, &s_OldProtect);
+
+        Logger::Debug("Patched SetUnhandledExceptionFilter call at {}.", fmt::ptr(s_CallSite));
+
+        return true;
+    }
+
+    return false;
+}
+
 bool ModSDK::PatchCodeInternal(
     const char* p_Pattern,
     const char* p_Mask,
@@ -925,13 +980,7 @@ bool ModSDK::Startup() {
     }
 
     // Patch call to SetUnhandledExceptionFilter to nop it out.
-    if (!PatchCode(
-        "\xFF\x15\x00\x00\x00\x00\x48\x8D\x8D\xD0\x01\x00\x00",
-        "xx????xxxxxxx",
-        s_NopBytes,
-        6,
-        0
-    )) {
+    if (!PatchSetUnhandledExceptionFilterCall()) {
         Logger::Warn("Could not patch SetUnhandledExceptionFilter. Crash reporting will not work.");
     }
 
